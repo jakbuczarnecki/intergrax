@@ -8,7 +8,7 @@ scope: OBSERVABILITY
 plan_ref:
   - EBE-9
 status: completed
-commit: pending
+commit: 181ded35
 adr: docs/adr/entries/2026-06-19/ADR-OBS-004.md
 ---
 
