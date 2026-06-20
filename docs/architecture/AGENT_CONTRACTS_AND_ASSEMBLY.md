@@ -12,6 +12,8 @@
 
 **Observability spine:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) — agents extend Plane B via `DiagnosticPayload`; execution truth lives on `RuntimeEvent` (Plane A). See §31 and [event ownership rules](OBSERVABILITY.md#event-ownership-rules).
 
+**Retry / recovery:** agents emit recovery **intent** only — runtime owns retry policy, layers and stop reasons — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8.
+
 ---
 
 ## Cursor read scope (token budget)

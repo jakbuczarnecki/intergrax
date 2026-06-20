@@ -282,6 +282,8 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
     → ToolExecutionResult(success, output | error)
 ```
 
+**Retry ownership:** tool retries are **R1 — ToolRuntime** layer only — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#retry-layers). Attempt metadata must be reconstructable via the observability spine ([`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine)).
+
 `ToolRuntime.invoke_request(ToolRequest)` is the UAEP §42.12 surface; routes **sandbox**, **runtime-bound** ids, **capability aliases**, and **catalog `tool_id`s** via `BoundToolGateway` → `RuntimeToolGateway` (TOOL-ENG-2 **Done** · ADR-TOOL-001).
 
 ### Logging detail

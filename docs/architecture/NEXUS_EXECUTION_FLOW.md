@@ -815,6 +815,8 @@ Accepted and implemented: [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries
 
 ## 14. Retry, failure, and abandonment
 
+**Attempt Ledger:** retry/failure/HITL decisions must be reconstructable from runtime events and retry metadata — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) (R0–R4 layers, stop reasons, ownership rules).
+
 ### 14.1 Three retry layers (do not conflate)
 
 | Layer | Component | Trigger | Scope | Who decides | Default |

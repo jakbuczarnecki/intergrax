@@ -623,7 +623,7 @@ AutonomyLevel:
 
 **Events:** `AUTONOMY_LEVEL_SET`, `AUTONOMY_LEVEL_CHANGED` on `ops:governance` channel.
 
-**Full model:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §35.
+**Full model:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §35 · **Attempt Ledger / retry layers:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) (R0–R4, stop reasons).
 
 **Implementation coverage (2026-06-09):** runtime enforcement **Done** (REL-ADV). **HTTP mid-run setter** is lab-only (`harness_task_routes`); see [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.4 · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.7.
 

@@ -147,8 +147,12 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 - Verification results must be traceable through the runtime observability spine.
 - Human approval boundaries are owned by Nexus / HITL runtime, not ad-hoc agent flows.
 - Idempotency **MUST** be used for side-effectful tools where applicable.
+- Retry/failure/HITL decisions must be reconstructable through runtime events and attempt metadata.
+- Agents may request recovery intent, but runtime owns retry policy and stop conditions.
+- Every retry must have an identifiable retry layer (R0–R4).
+- Terminal outcomes should expose explicit stop reasons.
 
-**Canon:** [`RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md) · [`CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md#verification-safety-boundaries)
+**Canon:** [`RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md#verification-safety-boundaries)
 
 ## 9. Adaptive and scaling invariants
 

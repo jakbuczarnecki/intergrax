@@ -6,7 +6,17 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates REL + REL-ADV closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-09** Attempt Ledger canon.
+
+---
+
+## Architecture documentation (P2)
+
+| ID | Task | Status |
+|----|------|--------|
+| **P2-ARCH-09** | Clarify attempt ledger and retry ownership | **Done** (2026-06-20) |
+
+Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger).
 
 ---
 

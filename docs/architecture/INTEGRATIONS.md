@@ -98,6 +98,8 @@ Integrations **MAY**:
 - provide low-level clients for platform-owned services,
 - handle retry only when it is backend/protocol-level and does not conflict with runtime retry policy.
 
+Integration retries are **R0 — Backend/protocol** layer — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#retry-layers). Must not duplicate R1–R4 retries or hide semantic failures from the Attempt Ledger.
+
 ---
 
 ## Disallowed integration responsibilities
