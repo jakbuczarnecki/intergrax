@@ -36,6 +36,7 @@ This document is the **single cross-layer maturity vocabulary**. It defines **fo
 | [ADAPTIVE_HARNESS_INTELLIGENCE.md](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) | AHI governance boundary, risk classes, production auto-apply rule |
 | [ELASTIC_CAPACITY_AND_SCALING.md](../architecture/ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) | ECP production boundary, scaling governance, autoscaling maturity claims |
 | [CODE_CRAFT.md](../architecture/CODE_CRAFT.md#codecraft-safety-boundary) | CodeCraft safety boundary, execution modes, sandbox and promotion rules |
+| [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) | Experimentation/DX architecture vs Cursor/workflow rules placement |
 | [LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md) | Workflow for closing a domain layer; convergence scores must map to four axes |
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | Audit layers and evidence expectations |
 

@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25–27, 30  
 **Audit instruction:** [`audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates DX + W-OPS closeout)
+**Last updated:** 2026-06-20 — **P2-ARCH-13** Experimentation/DX architecture vs implementation rules boundary
 
 ---
 
@@ -22,10 +22,112 @@
 
 ---
 
+## Architecture vs Implementation Rules Boundary
+
+This document defines the **architecture** of experimentation, evaluation, developer feedback loops, and DX support.
+
+Operational instructions for Cursor, Codex, or human implementation workflows belong in guides such as [`LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) or [`AGENTS.md`](../../AGENTS.md).
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §11 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+
+---
+
+## Experimentation / DX architecture owns
+
+This layer **may** describe:
+
+- experiment definitions,
+- evaluation scenarios,
+- developer feedback loops,
+- local/lab execution ergonomics,
+- smoke/e2e evidence collection,
+- harness playgrounds,
+- trace review workflows,
+- test data and scenario catalogs,
+- comparison of runs,
+- documentation of evidence,
+- developer-facing observability views,
+- repeatable validation loops.
+
+---
+
+## Experimentation / DX architecture does not own
+
+This architecture **MUST NOT** own:
+
+- Tier-0/Tier-1/Tier-2/Tier-3 responsibility boundaries,
+- agent runtime lifecycle,
+- Nexus orchestration semantics,
+- production policy decisions,
+- HITL authority,
+- tool side-effect gateway,
+- integration access paths,
+- context assembly rules,
+- memory/RAG ownership,
+- CodeCraft safety rules,
+- AHI auto-apply decisions,
+- ECP production scaling decisions.
+
+It **may reference** those documents, but **must not redefine** them.
+
+---
+
+## Cursor / implementation rules placement
+
+Cursor-specific implementation rules **SHOULD** live in:
+
+- [`AGENTS.md`](../../AGENTS.md) — repo-wide coding agent behavior,
+- [`LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) — layer completion workflow,
+- [`AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) — agent authoring,
+- [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) — Tier-3 product hypothesis,
+- [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) — cross-layer invariants.
+
+This architecture document **may link** to these guides, but **should not duplicate** their full content.
+
+---
+
+## Recommended document placement
+
+| Content type | Canonical location |
+|---|---|
+| Cross-layer invariants | [`docs/guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) |
+| Maturity wording | [`docs/guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) |
+| Cursor layer workflow | [`docs/guides/LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) |
+| Repo-wide coding agent behavior | [`AGENTS.md`](../../AGENTS.md) |
+| Agent authoring shortcut | [`docs/guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) |
+| Tier-3 product hypothesis | [`docs/guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) |
+| Experiment definitions/evidence loops | [`docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+| Subsystem architecture | [`docs/architecture/*.md`](.) |
+| Implementation plan | [`docs/plan/*.md`](../plan/) |
+
+---
+
+## Cursor review checklist
+
+Before modifying Experimentation / DX documentation, Cursor **must** verify:
+
+- Is this architecture or implementation workflow guidance?
+- If it is repo-wide coding behavior, should it be in [`AGENTS.md`](../../AGENTS.md)?
+- If it is layer-completion process, should it be in [`LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md)?
+- If it is a subsystem rule, should it stay in the subsystem architecture document?
+- Does this document redefine rules already owned by [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md)?
+- Does this document accidentally override Nexus, ToolRuntime, Context, Memory, RAG, CVL, CodeCraft, AHI, or ECP boundaries?
+- Are maturity claims expressed through [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?
+- Are implementation examples clearly marked as examples, not architecture mandates?
+
+---
+
+## Migration note (§39–§41 legacy placement)
+
+Sections **§39–§41** below predate this boundary split. They contain **Cursor implementation rules**, **minimal first implementation**, and **minimal runtime flow** — operational guidance, not Experimentation/DX subsystem architecture.
+
+**TODO (future doc pass):** migrate §39–§41 to [`AGENT_INSTRUCTIONS.md`](../guides/AGENT_INSTRUCTIONS.md) / [`AGENTS.md`](../../AGENTS.md) without losing cross-refs from [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) and other domain pairs. Until then, treat §39–§41 as **legacy canonical copies**; do not add new Cursor workflow rules here.
 
 ---
 
 # 39. Implementation Rules For Cursor AI
+
+> **Legacy placement** — see [Architecture vs Implementation Rules Boundary](#architecture-vs-implementation-rules-boundary) and [Migration note (§39–§41 legacy placement)](#migration-note-3941-legacy-placement). Prefer [`AGENTS.md`](../../AGENTS.md) and [`AGENT_INSTRUCTIONS.md`](../guides/AGENT_INSTRUCTIONS.md) for repo-wide coding agent behavior.
 
 When Cursor AI or an LLM coding agent implements Intergrax, it MUST follow these rules.
 

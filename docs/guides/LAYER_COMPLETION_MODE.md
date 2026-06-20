@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
-**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [implementation-journal/](../implementation-journal/README.md)
+**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules) · [implementation-journal/](../implementation-journal/README.md)
 
 **Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 

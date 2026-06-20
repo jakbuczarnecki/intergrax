@@ -181,10 +181,14 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 ## 11. Documentation authority invariants
 
 - `docs/intergrax_runtime_architecture.md` is the hub, not the detailed owner of every subsystem.
+- Architecture documents define subsystem boundaries and contracts.
+- Guides define operational authoring/workflow rules.
+- [`AGENTS.md`](../../AGENTS.md) defines repo-wide coding agent behavior.
 - Each `docs/architecture/*.md` file is the source of truth for its own subsystem.
 - Each architecture document **SHOULD** have a corresponding implementation plan in `docs/plan/*.md`.
 - When documents conflict, the more specific domain architecture owns subsystem-specific rules.
 - Any cross-layer rule **MUST** be reflected or referenced from this file (`SYSTEM_INVARIANTS.md`).
+- Experimentation/DX architecture **MUST NOT** redefine cross-layer invariants or subsystem ownership rules — see [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary).
 
 **Canon:** [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 
