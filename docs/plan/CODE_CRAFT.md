@@ -386,7 +386,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | DOC-ECC-02 | P1 | Known gaps list stale (orchestrator missing) | Regenerated audit prompt |
 | RUN-ECC-01 | P1 | `max_total_exec_time_s` tracked but not enforced before exec | S11 orchestrator + `codecraft.run` cap |
 
-**Verdict:** Runtime **Done** (ECC-0…ECC-6 + S7–S10). Remaining work = depth backlog only (GAP-ECC-20…23).
+**Verdict:** Runtime **Done** (ECC-0…ECC-6 + S7–S11 + §6.1av ECC-MAINT-01..04). No open P0/P1 in domain scope.
 
 ---
 
@@ -405,7 +405,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | PLATFORM_FOUNDATION `codecraft.* (planned)` | **Done** — synced 2026-06-13 doc-sync |
 | Root `README.md` Overview `(planned)` vs ECC Done elsewhere | **Done** — P1-ARCH-03 sync (2026-06-17) |
 
-**Remaining depth (not blocking L3):** metrics dashboards (§10.2), `container` isolation tier backend, `codegen_llm_profile_ref` → dedicated LLM adapter wiring.
+**Remaining depth (not blocking L3):** none in domain scope — GAP-ECC-20…23 closed via ECC-MAINT-01..04 (2026-06-18). Accepted: local sandbox ≠ OS containment.
 
 ---
 
@@ -419,12 +419,12 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | GAP-ECC-17 | routing | `codecraft.run` bypasses `resolve_craft_sandbox_session` (no cloud tier on single-shot) | **S9** **Done** | P1 |
 | GAP-ECC-18 | ops | `health.check_codecraft` probe not registered in health bundle | **S10** **Done** | P2 |
 | GAP-ECC-19 | CI | No `check_codecraft_layer.py` harness gate | **S10** **Done** | P2 |
-| GAP-ECC-20 | codegen | `codegen_llm_profile_ref` unused — template adapter only | backlog | P3 |
-| GAP-ECC-21 | security | `container` isolation tier not implemented | backlog | P3 |
-| GAP-ECC-22 | observability | §10.2 metrics dashboards | backlog | P3 |
-| GAP-ECC-23 | control | `Task.metadata.codecraft_mode` per-task override not wired | backlog | P2 |
+| GAP-ECC-20 | codegen | `codegen_llm_profile_ref` unused — template adapter only | **ECC-MAINT-02** **Done** | P3 |
+| GAP-ECC-21 | security | `container` isolation tier not implemented | **ECC-MAINT-03** **Done** (local fallback) | P3 |
+| GAP-ECC-22 | observability | §10.2 metrics dashboards | **ECC-MAINT-04** **Done** | P3 |
+| GAP-ECC-23 | control | `Task.metadata.codecraft_mode` per-task override not wired | **ECC-MAINT-01** **Done** | P2 |
 
-**Coverage:** 4 actionable (S8–S10) **Done** · S11 doc-sync + exec budget **Done** · 4 depth backlog (GAP-ECC-20…23).
+**Coverage:** S8–S11 **Done** · §6.1av ECC-MAINT-01..04 **Done** · depth backlog **closed**.
 
 ---
 
@@ -562,9 +562,9 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | CODE_CRAFT-LC-S3 | **Gate verification** | **Done** | High | 7 unit tests · `check_codecraft_layer.py` |
 | CODE_CRAFT-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
-**Deferred P2–P4:** GAP-ECC-23 task metadata override · GAP-ECC-20 codegen LLM profile ref · GAP-ECC-21 container tier · GAP-ECC-22 metrics dashboards
+**Deferred P2–P4:** none — GAP-ECC-20…23 closed (ECC-MAINT-01..04). Accepted: local sandbox ≠ OS containment.
 
-### 6.1av Harness implementation queue — Code Craft audit maintenance (planned)
+### 6.1av Harness implementation queue — Code Craft audit maintenance (closed)
 
 **Source:** Layer 9 audit (2026-06-18) — `CODE_CRAFT` layer 11b · [`../audit_results/2026-06-18/CODE_CRAFT.md`](../audit_results/2026-06-18/CODE_CRAFT.md)  
 **Priority ladder:** **Band 1** (§6.1) — depth backlog only; **one ID per PR**
@@ -576,9 +576,21 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | 3 | **ECC-MAINT-03** | Code | P3 | **Done** | GAP-ECC-21 — design spike + `container` isolation tier implementation | ADR spike or extension; tier selectable in profile |
 | 4 | **ECC-MAINT-04** | Observability | P3 | **Done** | GAP-ECC-22 — §10.2 metrics dashboards / trace panels for Code Craft | Metrics emitted; dashboard or trace explorer panel |
 
-**Suggested PR order:** ECC-MAINT-01 → ECC-MAINT-02 → ECC-MAINT-03 → ECC-MAINT-04.
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
 
 **Explicitly accepted (no MAINT):** local `SandboxSession` ≠ OS containment — documented canon constraint.
+
+### 6.1aw Harness implementation queue — Code Craft audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `CODE_CRAFT` layer 11b · [`../audit_results/2026-06-19/CODE_CRAFT.md`](../audit_results/2026-06-19/CODE_CRAFT.md) (pending) · prior: [`../audit_results/2026-06-18/CODE_CRAFT.md`](../audit_results/2026-06-18/CODE_CRAFT.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ECC-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av; sync GAP-ECC-20..23 register; fix architecture §6.3; regenerate audit prompt known gaps | Canon matches ECC-MAINT-01..04 |
+| 2 | **ECC-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `CODE_CRAFT.md` + `progress.json`; L3+ verdict layer 11b |
+
+**Suggested PR order:** ECC-MAINT-DOC-01 → ECC-MAINT-AUDIT-01.
 
 ---
 
