@@ -61,6 +61,7 @@ Normative rules:
 - Integrations are **not context engines**.
 - Integrations are **not HITL systems**.
 - Integrations **must not** own agent lifecycle or application lifecycle.
+- **Elastic Capacity Plane** provisions infrastructure only through approved integration/deployment backends — see [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary).
 
 **Tools** are agent-facing semantic operations. **Applications** configure and wire integrations. **Agents never call integrations directly.**
 
@@ -81,6 +82,8 @@ Normative rules:
 | Memory state | Memory services |
 | RAG retrieval orchestration | RAG service / catalog tools |
 | Observability events | RuntimeEventBus / [observability spine](OBSERVABILITY.md#observability-event-spine) — backend logs ≠ harness execution truth |
+| Capacity signal observation / scaling proposals | [ECP](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) |
+| Actual infrastructure mutation (scale/deploy) | Integration / platform deployment backend |
 
 ---
 

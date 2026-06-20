@@ -7,7 +7,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates ECP-PROD closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary.
 
 ---
 
@@ -139,5 +139,13 @@ Load **only** the satellite matching your task or cited gap ID.
 |----|-------------|--------|----------|--------|------------|
 | ECP-OBS.1 | **Capacity metrics** — `harness_scale_actions_total`, replica gauge | **Done** | High | `capacity/metrics.py` | `test_ecp_depth_gate.py` |
 | ECP-OBS.2 | **`CapacityScheduler`** — async cron driver | **Done** | **Critical** | `capacity/scheduler.py` | Async lifespan on lab host when enabled |
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-11** | Clarify ECP production boundary and scaling governance | **Done** (2026-06-20) |
 
 ---

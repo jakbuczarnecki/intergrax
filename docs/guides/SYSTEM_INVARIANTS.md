@@ -160,10 +160,13 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 - AHI must not silently mutate production prompts, routing, policies, profiles, retrievers, critic thresholds, tools or HITL boundaries.
 - Production auto-apply is disabled by default unless explicitly enabled by governance.
 - AHI recommendations must be traceable and evidence-backed.
-- Elastic Capacity Plane scales infrastructure capacity only.
+- Elastic Capacity Plane scales infrastructure capacity only — ECP manages capacity, not graph topology or domain strategy.
 - ECP **MUST NOT** decide agent topology or domain execution strategy.
+- ECP **MUST NOT** change agent routing, HITL, tool permissions or product workflows.
+- Production scaling mutations require explicit configuration/governance and traceable evidence.
+- ECP **MUST NOT** be described as production autoscaler without maturity/evidence statement.
 
-**Canon:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
+**Canon:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md#production-boundary)
 
 ## 10. Documentation authority invariants
 

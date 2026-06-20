@@ -752,7 +752,7 @@ Adaptive Harness Intelligence (AHI) is a **controlled mechanism for observation,
 
 AHI extends the laboratory evidence discipline (`ExperimentSession` → KEEP/DISCARD) into production learning. Every recommendation or applied change must remain **versioned, gated, rollback-ready, and traceable** through the observability spine.
 
-**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §9 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 (S8) · [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §9 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 (S8) · [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) · [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
 
 ---
 
