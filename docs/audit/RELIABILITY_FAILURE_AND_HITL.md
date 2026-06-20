@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md) · [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md)  
-**Audit map layers:** 22 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 22 · compact slice: [`audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -58,46 +58,30 @@ REL-LC Done · §6.1av REL-MAINT Done · durable async queue → ORCH-MAINT-04 �
 
 ---
 
-## 0. Context budget (mandatory — quality without bulk loading)
+## 0. Context budget (mandatory)
 
-Deep audit = **targeted reads + code/gate evidence**, not loading entire plan files.
+**Load first:** [`docs/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md) — compact slice (layers **22**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
-### Session rules
-- **One domain per chat** unless the operator explicitly batches.
-- **Never** read a file >500 lines in full — grep section headers, then `Read` with offset/limit.
-- **Never** re-read the same file in one session unless it changed.
-- Prefer **grep with path filters** over repo-wide semantic search for known symbols.
-- Run **only** scripts in section 10 — no full-suite pytest unless this prompt lists a domain slice.
-- Do **not** load `docs/audit_results/` unless RESUME/bootstrap says so.
-- Respect **`.cursorignore`** — excluded paths are out of scope unless the operator points to them.
-
-### Scoped plan read (`docs/plan/{DOMAIN}.md`)
-Read **only**: `## 6.` open queue rows only · gap/remediation registers tied to **Known open gaps** and **Active plan phases** · skip `(closed)`, `(complete)`, `Archived` unless re-validating a listed gap
-
-### Scoped architecture read (`docs/architecture/{DOMAIN}.md`)
-Table of contents + sections for audit-map layers **22** + registers tied to **Known open gaps**. Skip historical paydown logs unless a gap ID points there.
-
-### Scoped guide reads
-- **Prefer** [`docs/guides/audit_slices/{DOMAIN}.md`](../guides/audit_slices/{DOMAIN}.md) — compact slice for this domain (replaces bulk IDEAL + AUDIT_MAP load)
-- Otherwise: `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **22** only
-- `INTEGRAX_HARNESS_AUDIT_MAP.md` — layers **22** + maturity §5 only
-- `SYSTEM_INVARIANTS.md` — skim invariant IDs referenced in section 3 dimensions only
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
 
-## 1. Canonical reads (scoped — in order)
+## 1. Canonical reads (order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — **layers 22 only** (see §0)
-2. `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` — **scoped sections** (see §0)
-3. `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` — **scoped sections only** (see §0) — do **not** load the full file
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — **layers 22** + §5 maturity
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H (risk/HITL)**
-
+1. **`docs/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+5. `@docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H (risk/HITL)** — on demand
+**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md` — then inspect:
 
 ```text
 intergrax/runtime/nexus/retry/retry_engine.py
@@ -108,7 +92,7 @@ autonomy_middleware · CancellationCoordinator · ActiveTaskRegistry
 tests/acceptance/agent_os/ (04, 05, 05b HITL/checkpoint)
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -210,11 +194,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` gap rows + `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

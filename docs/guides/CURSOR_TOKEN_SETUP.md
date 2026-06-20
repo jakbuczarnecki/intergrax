@@ -45,7 +45,7 @@ Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
 ## F4 — Architecture hub + `docs/architecture/arch/` satellites
 
-Split domains: ACP, TIER3, PLATFORM, TOOLS.
+Split domains: all 21 architecture hubs (F4-C wave 2 complete).
 
 ```bash
 uv run python scripts/split_domain_architecture.py [DOMAIN ...]
@@ -54,13 +54,36 @@ uv run python scripts/check_arch_hub_size.py
 
 ---
 
-## G1 — Plan hub second pass
+## G1 — Plan hub splits
 
-Split domains: PLATFORM, UAEP, EXP_DX (+ prior splits).
+Split domains: all token-heavy plan hubs (G1-D wave 2 complete).
 
 ```bash
 uv run python scripts/split_domain_plan.py [DOMAIN ...]
 uv run python scripts/check_plan_hub_size.py
+```
+
+---
+
+## H2 — Bulky guides in `.cursorignore`
+
+Explicit `@` load only (reduces accidental index/search noise):
+
+- `docs/guides/AGENT_CREATION_GUIDE.md`
+- `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`
+- `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`
+- `docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`
+- `docs/plan/AUDIT_IDEAL_2026.md`
+
+---
+
+## H3 — Slim domain audit prompts
+
+`docs/audit/<DOMAIN>.md` prompt bodies ≤2,400 tok — slice-first §0, no bulk IDEAL/AUDIT_MAP reads.
+
+```bash
+uv run python scripts/generate_domain_audit_prompts.py
+uv run python scripts/check_audit_token_discipline.py
 ```
 
 ---

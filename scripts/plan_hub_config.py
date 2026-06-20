@@ -209,20 +209,113 @@ EXP_DX = PlanSplitConfig(
 
 AGENT_CONTRACTS = PlanSplitConfig(
     domain="AGENT_CONTRACTS_AND_ASSEMBLY",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
     keep_h2_prefixes=(
         "Agent architecture completion — executive",
         "Phase AUDIT-IDEAL",
-        "Phase ACP — Agent Cognitive",
-        "Phase ACP-CLOSE",
-        "Phase ACP-FINISH",
     ),
     move_h2_prefixes=(
+        "Phase ACP —",
+        "Phase ACP-CLOSE",
+        "Phase ACP-FINISH",
         "Phase ACP-DEPTH",
         "Phase AS —",
         "Phase PE —",
         "Phase REG —",
         "Phase CG —",
         "Phase ACP-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+SKILLS_CFG = PlanSplitConfig(
+    domain="SKILLS",
+    hub_h3_prefixes=("6.1av ", "6.1aw "),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=("Phase TS —", "Phase SKILLS-LC"),
+    move_h2_appendix=True,
+)
+
+CONTEXT_CFG = PlanSplitConfig(
+    domain="CONTEXT_ENGINEERING",
+    hub_h3_prefixes=("6.1",),
+    keep_h2_prefixes=("Status summary",),
+    move_h2_prefixes=(
+        "Layer audit register",
+        "Gap traceability",
+        "Phase CE-",
+        "Master deliverables",
+        "Inherited closeout",
+        "Sprints",
+        "Phase CONTEXT",
+    ),
+    move_h2_detail_prefixes=(
+        "Verification commands",
+        "Explicitly out of scope",
+        "Suggested PR order",
+    ),
+    move_h2_appendix=True,
+)
+
+CODE_CRAFT_CFG = PlanSplitConfig(
+    domain="CODE_CRAFT",
+    hub_h3_prefixes=("6.1",),
+    keep_h2_prefixes=("Delivery rules",),
+    move_h2_prefixes=(
+        "Phase ECC-",
+        "Audit §",
+        "Sprint S",
+        "Phase CODE_CRAFT-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+REASONING_CFG = PlanSplitConfig(
+    domain="REASONING_AND_COGNITION",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    keep_h2_prefixes=("Phase COG-PROD —",),
+    move_h2_prefixes=(
+        "Phase COG-DOC",
+        "Phase COG-DEPTH",
+        "COG-DEPTH —",
+        "Phase COG-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+OBSERVABILITY_CFG = PlanSplitConfig(
+    domain="OBSERVABILITY",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=(
+        "Phase IDEAL-L3",
+        "Phase OBS —",
+        "Phase OBS-BUS",
+        "Phase EBE —",
+        "Phase OBS-EVOL",
+        "Phase OBSERVABILITY-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+ADAPTIVE_HARNESS_INTELLIGENCE_CFG = PlanSplitConfig(
+    domain="ADAPTIVE_HARNESS_INTELLIGENCE",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=("Phase W-ADAPT —", "Phase AHI-LC"),
+    move_h2_appendix=True,
+)
+
+ELASTIC_CAPACITY_CFG = PlanSplitConfig(
+    domain="ELASTIC_CAPACITY_AND_SCALING",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=(
+        "Phase ECP-",
+        "Phase ECP —",
+        "Phase ELASTIC",
     ),
     move_h2_appendix=True,
 )
@@ -333,5 +426,12 @@ CONFIGS: dict[str, PlanSplitConfig] = {
         TIER3_PLAN,
         MEMORY_CFG,
         RAG_CFG,
+        SKILLS_CFG,
+        CONTEXT_CFG,
+        CODE_CRAFT_CFG,
+        REASONING_CFG,
+        OBSERVABILITY_CFG,
+        ADAPTIVE_HARNESS_INTELLIGENCE_CFG,
+        ELASTIC_CAPACITY_CFG,
     )
 }

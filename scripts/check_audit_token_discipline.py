@@ -43,6 +43,10 @@ REQUIRED_IN_DOMAIN_AUDIT = (
     "Context budget",
 )
 
+MAX_PROMPT_BODY_TOKENS = 2_400
+BEGIN = "---BEGIN PROMPT---"
+END = "---END PROMPT---"
+
 
 def main() -> int:
     errors: list[str] = []
@@ -60,6 +64,13 @@ def main() -> int:
         for req in REQUIRED_IN_DOMAIN_AUDIT:
             if req not in text:
                 errors.append(f"{path.relative_to(ROOT)}: missing required marker {req!r}")
+        if BEGIN in text and END in text:
+            body = text.split(BEGIN, 1)[1].split(END, 1)[0]
+            tok = len(body) // 4
+            if tok > MAX_PROMPT_BODY_TOKENS:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: prompt body ~{tok} tok exceeds max {MAX_PROMPT_BODY_TOKENS}"
+                )
 
     for name in AUDIT_BOOTSTRAPS:
         path = BOOTSTRAP / name

@@ -60,3 +60,10 @@ agents/**/tests/**/snapshots/
 
 # LLM crawler maps (hub docs suffice)
 llms-full.txt
+
+# Bulky guides — load with explicit @ only (H2)
+docs/guides/AGENT_CREATION_GUIDE.md
+docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md
+docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md
+docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md
+docs/plan/AUDIT_IDEAL_2026.md

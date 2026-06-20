@@ -9,6 +9,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP = ROOT / "docs" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
+CURSORIGNORE = ROOT / ".cursorignore"
+H2_IGNORE_PATHS = (
+    "docs/guides/AGENT_CREATION_GUIDE.md",
+    "docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md",
+    "docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md",
+    "docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md",
+    "docs/plan/AUDIT_IDEAL_2026.md",
+)
 AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
 SYMBOL_INDEX = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
@@ -38,6 +46,14 @@ def main() -> int:
         errors.append("missing docs/guides/CURSOR_TOKEN_SETUP.md")
     elif "O1" not in CURSOR_SETUP.read_text(encoding="utf-8"):
         errors.append("CURSOR_TOKEN_SETUP.md must document O1 terse output policy")
+
+    if not CURSORIGNORE.is_file():
+        errors.append("missing .cursorignore")
+    else:
+        ignore = CURSORIGNORE.read_text(encoding="utf-8")
+        for path in H2_IGNORE_PATHS:
+            if path not in ignore:
+                errors.append(f".cursorignore must exclude bulky guide {path} (H2)")
 
     if not SYMBOL_INDEX.is_file():
         errors.append("missing docs/guides/SYMBOL_INDEX.md")

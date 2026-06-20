@@ -23,13 +23,6 @@
 ---
 
 
-
-
-
-
-
-
-
 ## Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
