@@ -10,7 +10,17 @@
 
 **Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9 closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-07** event spine canon.
+
+---
+
+## Architecture documentation (P2)
+
+| ID | Task | Status |
+|----|------|--------|
+| **P2-ARCH-07** | Clarify observability event spine and event ownership | **Done** (2026-06-20) |
+
+Architecture: [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md#observability-event-spine).
 
 ---
 

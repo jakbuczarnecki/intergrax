@@ -80,7 +80,7 @@ Normative rules:
 | LLM context assembly | ContextCompiler / ContextEngine |
 | Memory state | Memory services |
 | RAG retrieval orchestration | RAG service / catalog tools |
-| Observability events | RuntimeEventBus / observability spine |
+| Observability events | RuntimeEventBus / [observability spine](OBSERVABILITY.md#observability-event-spine) — backend logs ≠ harness execution truth |
 
 ---
 
@@ -196,7 +196,7 @@ Before adding or modifying an integration, Cursor must verify:
 - [ ] Are secrets handled through approved config/policy mechanisms?
 - [ ] Does the integration avoid orchestration, HITL and product workflow ownership?
 - [ ] Are backend errors normalized?
-- [ ] Is observability routed through the platform spine?
+- [ ] Is observability routed through the platform spine ([`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine), [event ownership rules](OBSERVABILITY.md#event-ownership-rules))?
 - [ ] Is retry limited to protocol/backend concerns and compatible with runtime retry?
 - [ ] Is the integration wired through Tier-3 profile/config where required?
 - [ ] Are maturity claims expressed through [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?

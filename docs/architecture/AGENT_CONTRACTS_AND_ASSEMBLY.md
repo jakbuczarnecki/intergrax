@@ -10,6 +10,8 @@
 
 > **Practical minimal authoring path:** [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md)
 
+**Observability spine:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) — agents extend Plane B via `DiagnosticPayload`; execution truth lives on `RuntimeEvent` (Plane A). See §31 and [event ownership rules](OBSERVABILITY.md#event-ownership-rules).
+
 ---
 
 ## Cursor read scope (token budget)

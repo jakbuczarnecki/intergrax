@@ -125,14 +125,16 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 
 ## 7. Observability invariants
 
-- RuntimeEvent is the canonical event/audit envelope.
+- `RuntimeEvent` is the canonical runtime event/audit envelope for meaningful execution transitions.
+- Logs, metrics, diagnostic traces and external sinks **MUST NOT** become competing sources of execution truth.
 - New runtime components **SHOULD** emit through RuntimeEventBus / approved observability spine.
+- New components **MUST** preserve correlation identifiers where available.
 - Agents **MUST NOT** create private trace stores or private logging pipelines.
 - Every meaningful execution transition **MUST** be traceable.
-- Events **MUST NOT** contain secrets.
+- Event payloads **MUST NOT** contain secrets; redaction **MUST** happen before persistence or external export where required.
 - Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily.
 
-**Canon:** [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42
+**Canon:** [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) — [Observability Event Spine](../architecture/OBSERVABILITY.md#observability-event-spine) · [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42
 
 ## 8. Reliability, policy and HITL invariants
 
