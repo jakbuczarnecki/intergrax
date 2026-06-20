@@ -1,8 +1,8 @@
 # Attestation Demo — Partner PoC Quickstart
 
-**Audience:** AgentReceipt partner integration and internal harness reviewers.
+**Audience:** BoundaryAttest partner integration and internal harness reviewers.
 
-This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emits **unsigned** `execution_boundary_event.v1` records at the `RuntimeToolInvoker` boundary. The partner adapter signs receipts externally (`client_observed` recommended).
+This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emits `execution_boundary_event.v1` records at tool and harness boundaries. **By default (EBE-9)** each event includes an Ed25519 **host attestation** envelope; BoundaryAttest verifies the host claim and may add a separate `client_observed` wrapper.
 
 ## Documentation
 
@@ -13,7 +13,8 @@ This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emi
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
 | [`DOCKER_VERIFY_RUNBOOK.md`](DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** — build image, run, verify PoC assumptions |
 | [`adr/README.md`](adr/README.md) | Application architecture decisions |
-| [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** — auth, mapping, sample JSON |
+| [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** — auth, mapping, EBE-9 golden vector |
+| [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) | Host signing verifier spec |
 
 ## Run locally
 
@@ -50,7 +51,9 @@ curl -s -X POST "http://127.0.0.1:8097/v1/attestation_demo/poc/run" \
   }'
 ```
 
-### Example response (truncated)
+### Example response (truncated — EBE-9 default)
+
+Successful runs return **two** signed events (`tool_execution` seq 1, `harness_step` seq 2):
 
 ```json
 {
@@ -61,29 +64,27 @@ curl -s -X POST "http://127.0.0.1:8097/v1/attestation_demo/poc/run" \
   "boundary_events": [
     {
       "schema_id": "execution_boundary_event.v1",
-      "signed": false,
+      "signed": true,
+      "boundary_type": "tool_execution",
+      "event_sequence": 1,
       "tool_id": "records.put",
-      "agent_id": "boundary_demo_agent",
-      "action_status": "executed",
-      "input": {
-        "partition_key": "attestation_demo",
-        "row_key": "poc-001",
-        "data": { "title": "PoC report", "version": 1 }
-      },
-      "output": {
-        "stored": true,
-        "partition_key": "attestation_demo",
-        "row_key": "poc-001"
-      },
-      "lineage": { "ref": "run-…:store_demo_record", "type": "execution_record" }
+      "host_attestation": {
+        "schema_id": "host_attestation_envelope.v1",
+        "context": "boundaryattest.host-attestation.v1",
+        "signed_payload_hash": "sha256:…",
+        "public_key_id": "attestation-demo-host-1",
+        "signature": "…"
+      }
     }
   ],
   "trust_model": {
-    "platform_signed": "false",
-    "recommended_receipt_role": "client_observed"
+    "platform_signed": "true",
+    "recommended_receipt_role": "host_attested"
   }
 }
 ```
+
+Full shapes: [`partner_handoff/ebe9_golden_vector.v1.json`](partner_handoff/ebe9_golden_vector.v1.json) · unsigned v2 reference [`partner_handoff/poc_run_response.v2.json`](partner_handoff/poc_run_response.v2.json).
 
 ## Debug endpoints
 
@@ -95,23 +96,30 @@ curl -s -X POST "http://127.0.0.1:8097/v1/attestation_demo/poc/run" \
 
 ## Partner adapter mapping (external)
 
-Map each `boundary_events[]` item to AgentReceipt `createSignedReceipt`:
+1. Verify `host_attestation` per event (EBE-9).
+2. Map each `boundary_events[]` item to BoundaryAttest `createSignedReceipt` with partner `client_observed` wrapper.
 
-| Boundary event | AgentReceipt field |
-|----------------|-------------------|
+| Boundary event | Partner field |
+|----------------|---------------|
+| `event_id` | stable receipt / evidence key |
+| `event_sequence` | ordering within run |
+| `boundary_type` | tool vs harness claim |
 | `agent_id` | `agentId` |
 | `tool_id` | `tool` |
 | `action_status` | `actionStatus` |
-| `input` / `output` | `input` / `output` (hashed via partner `stableJson`) |
+| `input` / `output` | `input` / `output` |
 | `lineage.ref` | `lineage.ref` |
-| — | `receiptRole: "client_observed"` (recommended) |
+| `host_attestation` | host verify (pinned pubkey) |
+| — | `receiptRole: "client_observed"` on partner wrapper |
 
-Intergrax does **not** ship the adapter or sign receipts.
+Intergrax does **not** ship the adapter or sign partner receipts.
 
-## Trust model (PoC v1)
+## Trust model
 
-- Intergrax emits **unsigned** facts (`signed: false`).
-- Partner signs locally — proves the adapter recorded a payload, not platform attestation.
-- Do not label receipts as `server_attested` by Intergrax unless co-located deployment is explicitly documented.
+**Default (EBE-9):** Intergrax host-signs each boundary event (`host_attested`). BoundaryAttest keeps a **separate** `client_observed` wrapper — two signatures, two claims.
 
-See `ARCHITECTURE.md` for full design.
+**Unsigned mode:** set `host_signing_enabled=false` in manifest → `signed: false`, `client_observed` recommended.
+
+Do not label receipts as `server_attested` by Intergrax unless co-located deployment is explicitly documented.
+
+See `ARCHITECTURE.md` and `partner_handoff/EBE-9_HOST_SIGNING.md` for full design.

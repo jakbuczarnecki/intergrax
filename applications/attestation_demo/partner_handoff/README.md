@@ -1,6 +1,6 @@
-# Partner handoff — AgentReceipt integration (PoC v2)
+# Partner handoff — BoundaryAttest integration (PoC v2 + EBE-9)
 
-**Audience:** AgentReceipt adapter authors and integration operators.
+**Audience:** BoundaryAttest (formerly AgentReceipt) adapter authors and integration operators.
 
 ## Base URL
 
@@ -19,14 +19,17 @@ X-Api-Key: <key>
 
 or `Authorization: Bearer <key>`. When the env var is unset (local dev default), requests pass without credentials.
 
-## Primary integration flow
+## Primary integration flow (default: EBE-9 host signing)
 
 1. `POST /v1/attestation_demo/poc/run` with body from [`poc_run_request.v1.json`](poc_run_request.v1.json)
-2. Read `boundary_events[]` from the JSON response (shapes: [`poc_run_response.v2.json`](poc_run_response.v2.json), failure example: [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json))
-3. **Create one receipt per boundary event** (not one composite receipt per run)
-4. Map each event → AgentReceipt `createSignedReceipt` with `receiptRole: "client_observed"`
-5. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
-6. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host (run/task-level correlation only — see below)
+2. Read `boundary_events[]` from the JSON response — each element includes `signed`, `host_attestation` (when signing enabled), and full `execution_boundary_event.v1` fields
+3. **Verify Intergrax host signature** per event (see [`EBE-9_HOST_SIGNING.md`](EBE-9_HOST_SIGNING.md) and golden vector [`ebe9_golden_vector.v1.json`](ebe9_golden_vector.v1.json))
+4. **Create one receipt per boundary event** (not one composite receipt per run)
+5. Map each verified event → BoundaryAttest `createSignedReceipt` with a separate `receiptRole: "client_observed"` wrapper (partner key — not the host key)
+6. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
+7. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host (run/task-level correlation only — see below)
+
+**Unsigned v2 reference shapes** (when `host_signing_enabled=false`): [`poc_run_response.v2.json`](poc_run_response.v2.json), failure example [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json).
 
 ## Trace vs boundary correlation
 
@@ -37,9 +40,9 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 
 Use **`boundary_events[]` as the authoritative per-event source** for receipt keys and tool/harness claims. Use trace for optional run-level journal comparison.
 
-**Partner validated:** commit `106aee776fcc6053e8265b9c3656638d107d351d` on branch `agent_experiment_runtime` (live Docker, BoundaryAttest adapter, 2026-06).
+**Partner validated (unsigned v2):** commit `106aee776fcc6053e8265b9c3656638d107d351d` on branch `agent_experiment_runtime` (live Docker, BoundaryAttest adapter, 2026-06).
 
-**EBE-9 (host signing):** see [`EBE-9_HOST_SIGNING.md`](EBE-9_HOST_SIGNING.md) and golden vector [`ebe9_golden_vector.v1.json`](ebe9_golden_vector.v1.json). Default `attestation_demo` manifest enables signing; set `host_signing_enabled=false` for unsigned v2.
+**Current handoff (EBE-9 signed default):** branch `agent_experiment_runtime` — see repo tip after merge from `development`. Default manifest: `host_signing_enabled=true`, `public_key_id=attestation-demo-host-1`. Set `host_signing_enabled=false` to reproduce unsigned v2.
 
 ## PoC v2 event shape
 
@@ -81,18 +84,27 @@ See [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json) for the
 | `policy_verdicts` / `step_outcome` | harness-step metadata (optional mapping) |
 | `lineage.ref` | `lineage.ref` |
 | `lineage.type` | `lineage.type` |
-| — | `receiptRole: "client_observed"` (recommended) |
+| `host_attestation` | verify with pinned `public_key_ed25519` before partner wrapper |
+| — | `receiptRole: "client_observed"` on partner wrapper (separate from host claim) |
 
 ## Trust model
 
-- Intergrax emits **unsigned** facts (`signed: false`). Response includes `trust_model` metadata.
-- Partner signs locally — does **not** prove Intergrax server attestation.
-- Do **not** use `server_attested` unless co-located deployment is explicitly documented.
+**Default (EBE-9 enabled):**
 
-## Deferred (not in PoC v2)
+- Intergrax emits **host-signed** boundary facts (`signed: true`) with `host_attestation` envelope per event.
+- Response `trust_model.recommended_receipt_role` is **`host_attested`** — honest runtime/host claim only.
+- BoundaryAttest verifies the host signature, then may add its own **`client_observed`** wrapper with a separate partner key.
+- Two signatures, two claims — do **not** conflate them.
+- Do **not** use `server_attested` for Intergrax unless co-located deployment is explicitly documented.
+
+**Unsigned fallback (`host_signing_enabled=false`):**
+
+- Intergrax emits `signed: false`, `host_attestation: null`; `trust_model.recommended_receipt_role` is `client_observed`.
+- Partner signs locally — proves what the adapter recorded, not platform attestation.
+
+## Deferred
 
 - Webhook delivery of boundary events
-- Intergrax host-side signing
 - Run-level composite signed receipt (derived summary may come later)
 
 Full design: [`ARCHITECTURE.md`](../ARCHITECTURE.md) · Application ADR: [`adr/ADR-ATTESTATION_DEMO-001.md`](../adr/ADR-ATTESTATION_DEMO-001.md)  

@@ -2,7 +2,9 @@
 
 **Audience:** Operators and partners validating the Attestation Demo PoC before handoff.
 
-This runbook walks through **building the Docker image**, **starting the host**, and **checking PoC v2 assumptions** (tool + harness boundary events) from [`ARCHITECTURE.md`](ARCHITECTURE.md) §17.
+This runbook walks through **building the Docker image**, **starting the host**, and **checking PoC v2 + EBE-9 assumptions** (two boundary events, host signing by default) from [`ARCHITECTURE.md`](ARCHITECTURE.md) §17.
+
+**Default manifest:** `host_signing_enabled=true` (signed events, `trust_model.host_attested`). For unsigned v2 regression, set `host_signing_enabled=false` in `manifest.py` or use pytest unsigned tests.
 
 Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/README.md`](partner_handoff/README.md)
 
@@ -13,12 +15,13 @@ Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/
 | # | Project assumption (ARCHITECTURE §17) | How this runbook checks it |
 |---|--------------------------------------|----------------------------|
 | 1 | `POST /poc/run` works without Intergrax fork | Step 5 — HTTP trigger |
-| 2 | Response has unsigned `execution_boundary_event.v1` for `records.put` **and** `harness_step` | Step 6 — two events, `event_sequence` 1 and 2 |
-| 3 | Fields map to AgentReceipt `createSignedReceipt` | Step 6 — mapping table |
+| 2 | Response has `execution_boundary_event.v1` for `records.put` **and** `harness_step` | Step 6 — two events, `event_sequence` 1 and 2 |
+| 3 | Fields map to BoundaryAttest adapter | Step 6 — mapping table |
 | 4 | Debug journal available for same `run_id` | Step 8 — trace endpoint |
-| 5 | No Intergrax `server_attested` claim | Step 6 — `trust_model` + `signed: false` |
-| 6 | HOS trace reconstructs the run | Step 8 — non-empty `trace_events` |
-| 7 | No partner packages in Intergrax | Design invariant (no runtime check) |
+| 5 | No dishonest `server_attested` claim from Intergrax | Step 6 — `trust_model` uses `host_attested` when signed |
+| 6 | EBE-9 host attestation verifiable per event | Step 6 — `signed: true`, `host_attestation` envelope |
+| 7 | HOS trace reconstructs the run | Step 8 — non-empty `trace_events` |
+| 8 | No partner packages in Intergrax | Design invariant (no runtime check) |
 
 ---
 
@@ -216,24 +219,30 @@ Inspect the JSON from Step 5. Every item below must pass.
 
 ### 6.1 Run outcome
 
-| Field | Expected |
-|-------|----------|
+| Field | Expected (EBE-9 default) |
+|-------|--------------------------|
 | `state` | `"completed"` |
 | `agent_id` | `"boundary_demo_agent"` |
 | `run_id` | non-empty string |
-| `trust_model.platform_signed` | `"false"` |
-| `trust_model.recommended_receipt_role` | `"client_observed"` |
+| `trust_model.platform_signed` | `"true"` |
+| `trust_model.recommended_receipt_role` | `"host_attested"` |
 
-### 6.2 Boundary events (PoC v2 — two receipts per run)
+> **Unsigned v2** (`host_signing_enabled=false`): `platform_signed` = `"false"`, `recommended_receipt_role` = `"client_observed"`.
+
+### 6.2 Boundary events (PoC v2 — two claims per run)
 
 Expect **two** events in `boundary_events[]`, ordered by `event_sequence`.
 
 **Event 1 — `tool_execution` (`event_sequence: 1`)**
 
-| Field | Expected |
-|-------|----------|
+| Field | Expected (EBE-9 default) |
+|-------|--------------------------|
 | `schema_id` | `"execution_boundary_event.v1"` |
-| `signed` | `false` |
+| `signed` | `true` |
+| `host_attestation.schema_id` | `"host_attestation_envelope.v1"` |
+| `host_attestation.context` | `"boundaryattest.host-attestation.v1"` |
+| `host_attestation.public_key_id` | `"attestation-demo-host-1"` |
+| `host_attestation.signature` | non-empty base64 |
 | `boundary_type` | `"tool_execution"` |
 | `event_id` | non-empty UUID (unique per event) |
 | `tool_id` | `"records.put"` |
@@ -260,12 +269,12 @@ Expect **two** events in `boundary_events[]`, ordered by `event_sequence`.
 
 **Failure path:** if storage fails, event 1 has `action_status: failed`; event 2 may still be `harness_step` / `completed` (separate claims). See [`partner_handoff/poc_run_response.failed.v2.json`](partner_handoff/poc_run_response.failed.v2.json).
 
-### 6.3 AgentReceipt mapping readiness (partner-side)
+### 6.3 BoundaryAttest mapping readiness (partner-side)
 
-These Intergrax fields must be present so the external adapter can call `createSignedReceipt`:
+After verifying `host_attestation` (see [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md)), these Intergrax fields must be present for the partner wrapper:
 
-| Intergrax field | AgentReceipt field |
-|-----------------|-------------------|
+| Intergrax field | Partner use |
+|-----------------|-------------|
 | `event_id` | stable evidence / receipt key |
 | `event_sequence` | ordering within run |
 | `boundary_type` | distinguishes tool vs harness claim |
@@ -274,7 +283,8 @@ These Intergrax fields must be present so the external adapter can call `createS
 | `action_status` | `actionStatus` |
 | `input` / `output` | `input` / `output` |
 | `lineage.ref` | `lineage.ref` |
-| *(partner sets)* | `receiptRole: "client_observed"` |
+| `host_attestation` | host signature verify (pinned pubkey) |
+| *(partner sets)* | `receiptRole: "client_observed"` on separate wrapper |
 
 Create **one receipt per** `boundary_events[]` element — not one composite receipt per run.
 
@@ -294,7 +304,7 @@ curl -s "http://127.0.0.1:8097/v1/attestation_demo/poc/runs/{run_id}/boundary-ev
 
 - HTTP **200**
 - `"count"` equals length of `boundary_events` from Step 5
-- Same `tool_id` and `signed: false` in buffered event
+- Same `tool_id` and `signed: true` with non-null `host_attestation` in buffered events (EBE-9 default)
 
 ---
 
@@ -397,9 +407,10 @@ Before sharing with a partner, confirm:
 
 - [ ] Step 4 — agents list returns `boundary_demo_agent`
 - [ ] Step 5 — PoC run returns `state: completed`
-- [ ] Step 6 — both boundary events pass (tool + harness, `event_sequence` 1 and 2)
+- [ ] Step 6 — both boundary events pass (tool + harness, `event_sequence` 1 and 2, `signed: true`)
+- [ ] Step 6 — `host_attestation` verifies against golden vector pubkey (optional crypto check)
 - [ ] Step 8 — debug trace available for `run_id`
 - [ ] Step 10 — pytest green (recommended)
 - [ ] `INTERGRAX_HARNESS_API_KEY` set if exposing publicly (Step 9)
 
-Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md)
+Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md) · EBE-9 spec: [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md)
