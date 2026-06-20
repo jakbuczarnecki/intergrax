@@ -168,6 +168,7 @@ Before committing a new or modified agent, verify:
 - [ ] Are all side effects routed through ToolRuntime?
 - [ ] Are all LLM calls routed through LLMAdapter or approved abstractions?
 - [ ] Is context runtime-provided rather than built from unbounded history?
+- [ ] Is LLM context assembled via ContextCompiler / ContextEngine or an approved equivalent ([`CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) §12)?
 - [ ] Are outputs typed where required?
 - [ ] Are retries/HITL/policy handled by runtime rather than ad-hoc agent code?
 - [ ] Are observability events emitted through the harness spine?
@@ -187,7 +188,7 @@ Extended pre-implementation questions: [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../ar
 | [`NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) | Nexus routing and graph execution |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) | AgentEngine, policy, harness kernel |
 | [`TOOLS.md`](../architecture/TOOLS.md) | ToolRuntime and tool invocation |
-| [`CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) | ContextCompiler / ContextEngine |
+| [`CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) | ContextCompiler / ContextEngine; Context Path Unification (§12) |
 | [`MEMORY.md`](../architecture/MEMORY.md) | MemoryView and approved memory services |
 | [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) | Cross-layer MUST/MUST NOT |
 | [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) | Maturity vocabulary (A/I/P/E) |

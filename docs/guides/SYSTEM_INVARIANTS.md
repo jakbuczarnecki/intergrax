@@ -100,7 +100,9 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 - Knowledge/RAG is document or corpus retrieval.
 - Trace is immutable audit evidence.
 - These concepts **MUST NOT** be conflated.
-- ContextCompiler / ContextEngine is the approved path for assembling LLM context.
+- ContextCompiler / ContextEngine is the **canonical production path** for LLM-facing context.
+- Any alternative production context path **MUST** be explicitly approved and documented ([`CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) §12 Context Path Unification).
+- Lab/test shortcuts **MUST NOT** be promoted to production by accident.
 - Agents **MUST NOT** hand-assemble production prompts from unbounded history.
 - Agents **MUST NOT** query vector stores directly.
 - RAG retrieval **MUST** go through the approved RAG service / catalog tools.

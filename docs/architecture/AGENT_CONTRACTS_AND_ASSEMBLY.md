@@ -412,6 +412,8 @@ Prompt artifacts are **governed platform assets**, not ad-hoc strings in agents.
 
 **Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix M](../guides/AGENT_CREATION_GUIDE.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase PE.
 
+**Context assembly boundary:** Prompt Registry supplies governed **fragments** only — not a full LLM window. Production context **MUST** flow through `ContextCompiler` / `ContextEngine` or an explicitly approved equivalent. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
+
 ---
 
 # 18. Registry Architecture

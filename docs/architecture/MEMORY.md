@@ -26,6 +26,8 @@
 | **Vector index ≠ primary store** | Relational / document stores remain the source of truth for session turns and LTM entries. Vector backends are **retrieval indexes** — optional, scoped, and tombstoned on delete. |
 | **Harness-owned vector wiring** | Tier-3 hosts MUST wire the integration RAG stack into memory facades (`UserProfileManager`, session turn index) — agents never open vector DBs directly. |
 
+**Context path:** Memory reads for LLM-facing context **MUST** go through `MemoryView` / approved memory services and be injected via Context Engineering — not direct store reads or ad-hoc history joins. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
+
 ---
 
 ## Cursor read scope (token budget)

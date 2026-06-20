@@ -52,7 +52,10 @@ Tier-3 IntegrationProfile + RagProfile
   → create_default_rag_stack() / rag_runtime_bridge
   → RetrievalService + IngestPipeline
   → rag.* catalog tools + Nexus RagStep
+  → RagContextProvider → ContextCompiler / ContextEngine (LLM window)
 ```
+
+**Context path:** RAG is knowledge **retrieval**, not memory. Retrieved chunks reach the model through CE (`RagContextProvider`) with citations and provenance — not as ad-hoc agent prompt joins or direct vector queries. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
 
 ---
 

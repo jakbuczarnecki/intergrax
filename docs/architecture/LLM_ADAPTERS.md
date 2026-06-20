@@ -320,6 +320,8 @@ These read `adapter.context_window_tokens` — they **automatically benefit** fr
 - `verify_context_preflight()` — `context_preflight.py`
 - `engine_history_layer` — history compression budget
 
+**Context path rule:** Messages passed to `LLMAdapter.generate_messages` / `stream_messages` in production **SHOULD** originate from `ContextCompiler` / `ContextEngine` (or an explicitly approved equivalent) — not ad-hoc agent concatenation. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
+
 ---
 
 ## Token accounting
