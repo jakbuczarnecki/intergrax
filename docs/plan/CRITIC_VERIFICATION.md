@@ -6,7 +6,15 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates CVL-LC-1…4 closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-08** verification safety boundaries.
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-08** | Clarify verification safety boundaries | **Done** (2026-06-20) |
 
 ---
 

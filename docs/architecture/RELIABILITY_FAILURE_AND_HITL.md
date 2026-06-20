@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 22  
 **Audit instruction:** [`audit/RELIABILITY_FAILURE_AND_HITL.md`](../audit/RELIABILITY_FAILURE_AND_HITL.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates REL-ADV); REL + HITL **Done**
+**Last updated:** 2026-06-20 — **P2-ARCH-08** verification safety cross-ref; REL + HITL **Done**
 
 ---
 
@@ -22,6 +22,10 @@
 
 ---
 
+
+---
+
+**Verification safety:** High-risk side effects and HITL boundaries — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8
 
 ---
 

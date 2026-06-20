@@ -754,6 +754,8 @@ Terminal:
     CVL final verification if require_critic_on_completion
 ```
 
+**Verification safety:** L0 / L1 / L2 authority, high-risk side-effect rules, and disallowed patterns — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8
+
 #### What is explicitly not a guardrail layer
 
 | Anti-pattern | Why |

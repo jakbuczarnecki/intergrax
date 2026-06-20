@@ -143,9 +143,12 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 - Human approval is managed by Nexus / HITL mechanisms, not ad-hoc agent messages.
 - High-risk side effects require policy approval and trace evidence.
 - LLM-as-judge alone **MUST NOT** authorize irreversible high-risk side effects.
+- Semantic verification **MUST NOT** override deterministic validation failure.
+- Verification results must be traceable through the runtime observability spine.
+- Human approval boundaries are owned by Nexus / HITL runtime, not ad-hoc agent flows.
 - Idempotency **MUST** be used for side-effectful tools where applicable.
 
-**Canon:** [`RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md) · [`CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md)
+**Canon:** [`RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md) · [`CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md#verification-safety-boundaries)
 
 ## 9. Adaptive and scaling invariants
 
