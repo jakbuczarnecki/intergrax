@@ -6,6 +6,7 @@ Authoring guides, strategic context, and audit methodology.
 | Document | Purpose |
 |----------|---------|
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | **Cross-layer MUST/MUST NOT rules** + `SYS-INV-*` index (P2-ARCH-01) — read before every implementation session |
+| [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) | **Four-axis maturity vocabulary** (A/I/P/E) — required before using *production-ready*, *L4*, *done*, etc. (P2-ARCH-02) |
 | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, work cycle |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | Target Harness AI reference model |
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | 32 auditable layers, evidence, audit procedure |

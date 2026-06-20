@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
-**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [implementation-journal/](../implementation-journal/README.md)
+**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [implementation-journal/](../implementation-journal/README.md)
 
 **Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
@@ -67,6 +67,8 @@ Bring the designated layer to a state that is:
 - aligned with architecture,
 - aligned with the implementation plan,
 - ready for long-term evolution.
+
+**Maturity vocabulary:** terms like *complete*, *production-ready*, and *frozen* (Step 12 State C) **MUST** be expressed as explicit [four-axis maturity](MATURITY_TAXONOMY.md) (**A** / **I** / **P** / **E**) in the final report — see [MATURITY_TAXONOMY.md §3](MATURITY_TAXONOMY.md#3-labeling-rule-normative).
 
 ---
 
@@ -263,6 +265,8 @@ After the final audit, score maturity (0–100% each):
 - Production Readiness
 - Documentation Consistency
 - Implementation Consistency
+
+Also publish a [Maturity Statement](MATURITY_TAXONOMY.md#required-maturity-block) (**A** / **I** / **P** / **E**) — percentages alone are not sufficient for cross-doc comparison.
 
 ### State A — Not ready
 

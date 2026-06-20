@@ -3,7 +3,7 @@
 **Status:** Canonical index (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
 **Audit ID:** P2-ARCH-01  
-**Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
@@ -22,7 +22,7 @@ Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs,
 | **Onboarding** | Read [Cross-Layer System Invariants](#cross-layer-system-invariants) + §4 (execution stack) before opening a domain pair |
 | **Code review** | Check diff against cross-layer rules and §5 index; escalate violations before merge |
 | **Domain implementation** | Read your domain pair; use cross-layer rules as guardrails |
-| **External audit** | Cross-layer rules + §5 + §7 (CI mapping) + §8 (rejected patterns) |
+| **External audit** | Cross-layer rules + §5 + §7 (CI mapping) + §8 (rejected patterns) + [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) four-axis statements |
 | **LLM session start** | Hub → this file (cross-layer section) → one domain pair (per-iteration rule) |
 
 **Decision hierarchy** (when rules appear to conflict): [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Decision hierarchy — strategy → ideal architecture → domain architecture → domain plan.
@@ -345,7 +345,8 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 ## 10. Reading order
 
 1. This file — [Cross-Layer System Invariants](#cross-layer-system-invariants) + §4 execution stack  
-2. Hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-3. **One** domain pair for your task ([`AGENTS.md`](../../AGENTS.md) task routing)  
-4. Author guides when building: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
-5. Deep layer closeout (full domain): [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)
+2. [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) — four-axis maturity vocabulary  
+3. Hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+4. **One** domain pair for your task ([`AGENTS.md`](../../AGENTS.md) task routing)  
+5. Author guides when building: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
+6. Deep layer closeout (full domain): [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)
