@@ -955,9 +955,9 @@ TARGET (remaining TOOL-ENG):
 | TOOLS-LC-S3 | **Gate verification** | **Done** | High | 58 unit tests · 2 CI scripts |
 | TOOLS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
-**Deferred P2–P4:** hierarchical LLM category pass · per-tool L1 critic (CVL) · host EP pattern packages
+**Deferred P2–P4:** per-tool L1 critic semantic judge (CVL optional) · cross-domain legacy planner cleanup (PF-MAINT-LEG-01 **Done**)
 
-### 6.1av Harness implementation queue — Tools audit maintenance (planned)
+### 6.1av Harness implementation queue — Tools audit maintenance (closed)
 
 **Source:** Layer 8 audit (2026-06-18) — `TOOLS` layer 11 · [`../audit_results/2026-06-18/TOOLS.md`](../audit_results/2026-06-18/TOOLS.md)  
 **Priority ladder:** **Band 1** (§6.1) — selection depth + DX hygiene; **one ID per PR**
@@ -969,9 +969,23 @@ TARGET (remaining TOOL-ENG):
 | 3 | **TOOL-MAINT-03** | DX | P3 | **Done** | Host EP pattern packages — scaffold/docs for custom entry-point tool patterns | Scaffold or guide section; example host wiring |
 | 4 | **TOOL-MAINT-04** | DX | P3 | **Done** | Tool gate subset in `intergrax doctor` — `check_tool_injection_defense` + `check_legacy_tool_plan_booleans` | `intergrax doctor --ci` runs tool checks |
 
-**Suggested PR order:** TOOL-MAINT-01 → TOOL-MAINT-02 → TOOL-MAINT-04 → TOOL-MAINT-03.
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
 
-**Cross-domain (not TOOLS-owned):** PF-MAINT-LEG-01 — legacy `use_rag`/`use_websearch` planner schema — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+**Cross-domain (not TOOLS-owned):** PF-MAINT-LEG-01 — legacy `use_rag`/`use_websearch` planner schema — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) **Done**.
+
+### 6.1aw Harness implementation queue — Tools audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `TOOLS` layer 11 · [`../audit_results/2026-06-19/TOOLS.md`](../audit_results/2026-06-19/TOOLS.md) (pending) · prior: [`../audit_results/2026-06-18/TOOLS.md`](../audit_results/2026-06-18/TOOLS.md)  
+**Priority ladder:** **Band 1** (§6.1) — wiring + test sync + doc hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **TOOL-MAINT-01b** | Code | P2 | **Planned** | Wire `rank_categories_with_llm` opt-in on hierarchical hot path (`RuntimeConfig.tool_selection_hierarchical_llm_pass`) + async resolver + unit test | Mocked LLM test; deterministic default unchanged |
+| 2 | **TOOL-MAINT-TEST-01** | Test | P2 | **Planned** | Sync catalog/bundle tests (200 tools, rag/notify/sandbox bundles) + codecraft cloud fallback + trace count | `pytest tests/unit/tools/providers/` green |
+| 3 | **TOOL-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av; sync architecture (200 tools, scale roadmap Done, LLM pass v2 note) | Canon matches code |
+| 4 | **TOOL-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `TOOLS.md` + `progress.json`; L3 verdict layer 11 |
+
+**Suggested PR order:** TOOL-MAINT-01b → TOOL-MAINT-TEST-01 → TOOL-MAINT-DOC-01 → TOOL-MAINT-AUDIT-01.
 
 ---
 
