@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **In progress** — EVID-POSTURE-01 **Done** (C8); EVID-POSTURE-02…04 **Planned**.
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **In progress** — EVID-POSTURE-01/02 **Done** (C8/C9); EVID-POSTURE-03/04 **Planned**.
 
 ---
 
@@ -437,7 +437,7 @@ The posture surface should make Intergrax easier to evaluate without reading the
 | ID | Wave | Priority | Status | Deliverable | Acceptance criteria |
 |----|------|----------|--------|-------------|---------------------|
 | **EVID-POSTURE-01** | HEP-3 | P1 | **Done** | Evidence posture contract | Pydantic/read-model contract for posture summary; no CLI yet |
-| **EVID-POSTURE-02** | HEP-3 | P1 | **Planned** | Evidence posture collector | Reads existing artifacts and optional command outputs; no new runtime proof |
+| **EVID-POSTURE-02** | HEP-3 | P1 | **Done** | Evidence posture collector | Reads existing artifacts and optional command outputs; no new runtime proof |
 | **EVID-POSTURE-03** | HEP-3 | P1 | **Planned** | `intergrax evidence posture` CLI | Renders current evidence posture to stdout |
 | **EVID-POSTURE-04** | HEP-3 | P2 | **Planned** | Posture export JSON/Markdown | Writes posture artifacts under `build/evidence/posture/` |
 
@@ -448,7 +448,7 @@ The posture surface should make Intergrax easier to evaluate without reading the
 | Step | IDs | Scope |
 |------|-----|-------|
 | C8 | EVID-POSTURE-01 | Posture contracts only | **Done** |
-| C9 | EVID-POSTURE-02 | Artifact collector / read-only aggregation |
+| C9 | EVID-POSTURE-02 | Artifact collector / read-only aggregation | **Done** |
 | C10 | EVID-POSTURE-03/04 | CLI + export |
 
 ---
@@ -462,6 +462,18 @@ The posture surface should make Intergrax easier to evaluate without reading the
 | Public exports | `intergrax/runtime/evidence/__init__.py` |
 
 **Verify:** `uv run pytest tests/unit/runtime/evidence/test_evidence_posture_contracts.py -q`
+
+---
+
+## Implementation notes (C9 · EVID-POSTURE-02)
+
+| Artifact | Path |
+|----------|------|
+| Evidence posture collector | `intergrax/runtime/evidence/evidence_posture_collector.py` |
+| Unit tests | `tests/unit/runtime/evidence/test_evidence_posture_collector.py` |
+| Public exports | `intergrax/runtime/evidence/__init__.py` |
+
+**Verify:** `uv run pytest tests/unit/runtime/evidence/test_evidence_posture_collector.py -q`
 
 ---
 
