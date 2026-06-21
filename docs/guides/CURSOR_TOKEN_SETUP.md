@@ -9,9 +9,12 @@
 | File | Auto-loaded | ~tok |
 |------|-------------|------|
 | `AGENTS.md` (root stub) | Yes (Cursor) | ~350 |
-| `.cursor/rules/intergrax-token-budget.mdc` | Yes (`alwaysApply: true`) | ~280 |
-| `docs/guides/AGENT_INSTRUCTIONS.md` | No — `@` on demand | ~3,300 |
+| `.cursor/rules/intergrax-token-budget.mdc` | Yes (`alwaysApply: true`) | ~380 |
+| `.cursor/rules/intergrax-hep-step.mdc` | On demand / `@` | ~120 |
 | `.cursor/rules/intergrax-iteration.mdc` | On demand / `@` | ~350 |
+| `docs/guides/AGENT_INSTRUCTIONS.md` | No — `@` on demand | ~3,300 |
+
+**Only `intergrax-token-budget.mdc` is always-on.** All other rules and full guides load on explicit `@` or operator request — see root `AGENTS.md` § Cursor rule loading.
 
 **Do not delete** root `AGENTS.md` via Cursor Settings trash icon.
 
@@ -27,7 +30,7 @@ No Background Agents / Task subagents for layer audits unless operator opts in.
 
 Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
-HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) — edit `STEP=` / `SCOPE=` per C13–C16.
+HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) — edit `STEP=` / `SCOPE=` per C13–C16. **Also `@`:** [`.cursor/rules/intergrax-hep-step.mdc`](../../.cursor/rules/intergrax-hep-step.mdc) — strict scoped execution; operator prompt is source of truth.
 
 ---
 
@@ -35,13 +38,15 @@ HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) 
 
 | Always-on | ~tok |
 |-----------|------|
-| I1 block in `intergrax-token-budget.mdc` | ~120 |
+| I1 + mandatory preflight in `intergrax-token-budget.mdc` | ~180 |
+
+**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, or full hubs unless explicitly requested.
 
 **Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
 
 **Expand context** (full hub, subagent, >3 files): **STOP** — ask operator once; wait for OK.
 
-Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one satellite — see `intergrax-iteration.mdc`.
+Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one satellite — see `intergrax-iteration.mdc` (on demand only).
 
 ---
 
@@ -57,6 +62,16 @@ Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one 
 **Expand only when:** operator says `pełny raport` / `full report` / `iteration summary`, or milestone / closeout / journal.
 
 **Minimal:** `krótko` / `terse` → ≤6 lines.
+
+---
+
+## HEP step execution (on demand)
+
+| Rule | When |
+|------|------|
+| [`.cursor/rules/intergrax-hep-step.mdc`](../../.cursor/rules/intergrax-hep-step.mdc) | Operator asks for HEP / EVID implementation step (C13+) |
+
+Operator instruction + listed files = source of truth. No repo search, no full docs, no subagents, no full test suite unless listed. Token usage in final report: only if Cursor provides it — no guesses.
 
 ---
 
