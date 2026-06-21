@@ -140,6 +140,12 @@ from intergrax.runtime.evidence.cost_evidence_contracts import (
     generate_cost_evidence_report_id,
     validate_cost_evidence_report,
 )
+from intergrax.runtime.evidence.cost_evidence_export import (
+    DEFAULT_COST_EVIDENCE_OUTPUT_DIR,
+    format_cost_evidence_cli,
+    format_cost_evidence_markdown,
+    write_cost_evidence_report,
+)
 from intergrax.runtime.evidence.cost_evidence_runner import (
     COST_EVIDENCE_OPERATOR_NOTE,
     COST_EVIDENCE_RUNNER_KIND,
@@ -240,6 +246,7 @@ __all__ = [
     "CostEvidenceStatus",
     "DEFAULT_CORE_CERTIFICATION_OUTPUT_DIR",
     "DEFAULT_CORE_REPORT_PATH",
+    "DEFAULT_COST_EVIDENCE_OUTPUT_DIR",
     "DEFAULT_EVAL_EVIDENCE_REPORT_PATH",
     "DEFAULT_LIVE_CORE_PROBE_OUTPUT_DIR",
     "DEFAULT_LIVE_CORE_PROBE_REPORT_PATH",
@@ -281,6 +288,8 @@ __all__ = [
     "build_timeline_from_certification_report",
     "build_trace_timeline_signal",
     "collect_evidence_posture",
+    "format_cost_evidence_cli",
+    "format_cost_evidence_markdown",
     "format_eval_evidence_cli",
     "format_eval_evidence_markdown",
     "format_evidence_posture_cli",
@@ -376,6 +385,7 @@ __all__ = [
     "validate_trace_timeline",
     "validate_trace_timeline_event_facets",
     "write_core_certification_report",
+    "write_cost_evidence_report",
     "write_eval_evidence_report",
     "write_evidence_posture",
     "write_live_core_probe_report",

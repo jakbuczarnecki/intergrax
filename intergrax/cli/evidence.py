@@ -27,6 +27,13 @@ from intergrax.runtime.evidence.live_core_probe_export import (
     format_live_core_probe_cli,
     write_live_core_probe_report,
 )
+from intergrax.runtime.evidence.cost_evidence_contracts import CostEvidenceStatus
+from intergrax.runtime.evidence.cost_evidence_export import (
+    DEFAULT_COST_EVIDENCE_OUTPUT_DIR,
+    format_cost_evidence_cli,
+    write_cost_evidence_report,
+)
+from intergrax.runtime.evidence.cost_evidence_runner import run_cost_evidence_checks
 from intergrax.runtime.evidence.eval_evidence_contracts import EvalEvidenceStatus
 from intergrax.runtime.evidence.eval_evidence_export import (
     DEFAULT_EVAL_EVIDENCE_OUTPUT_DIR,
@@ -152,6 +159,33 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         help="Render report to stdout only; do not write files.",
     )
 
+    cost_cmd = evidence_sub.add_parser(
+        "cost",
+        help="Run cost evidence checks and write cost report.",
+    )
+    cost_cmd.add_argument(
+        "--root",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository root for default output directory.",
+    )
+    cost_cmd.add_argument(
+        "--root-label",
+        default="local",
+        help="Label for deterministic report id/run id (default: local).",
+    )
+    cost_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Cost evidence output directory (default: build/evidence/cost).",
+    )
+    cost_cmd.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Render report to stdout only; do not write files.",
+    )
+
     posture = evidence_sub.add_parser(
         "posture",
         help="Render read-only evidence posture from existing artifacts.",
@@ -213,10 +247,36 @@ def _eval_exit_code(status: EvalEvidenceStatus) -> int:
     return 1
 
 
+def _cost_exit_code(status: CostEvidenceStatus) -> int:
+    if status is CostEvidenceStatus.PASSED:
+        return 0
+    return 1
+
+
+def _resolve_cost_output_dir(args: argparse.Namespace) -> Path:
+    if args.output_dir is not None:
+        return args.output_dir.resolve()
+    return (args.root.resolve() / DEFAULT_COST_EVIDENCE_OUTPUT_DIR).resolve()
+
+
 def _resolve_eval_output_dir(args: argparse.Namespace) -> Path:
     if args.output_dir is not None:
         return args.output_dir.resolve()
     return (args.root.resolve() / DEFAULT_EVAL_EVIDENCE_OUTPUT_DIR).resolve()
+
+
+def run_evidence_cost(args: argparse.Namespace) -> int:
+    report = run_cost_evidence_checks(root_label=args.root_label)
+    print(format_cost_evidence_cli(report))
+
+    if args.no_write:
+        return _cost_exit_code(report.status)
+
+    output_dir = _resolve_cost_output_dir(args)
+    json_path, md_path = write_cost_evidence_report(report, output_dir)
+    print(f"cost evidence report: {json_path}")
+    print(f"cost evidence report: {md_path}")
+    return _cost_exit_code(report.status)
 
 
 def run_evidence_eval(args: argparse.Namespace) -> int:
@@ -277,6 +337,8 @@ def run_evidence_posture_export(args: argparse.Namespace) -> int:
 def run_evidence(args: argparse.Namespace) -> int:
     if args.evidence_command == "live-core":
         return run_evidence_live_core(args)
+    if args.evidence_command == "cost":
+        return run_evidence_cost(args)
     if args.evidence_command == "eval":
         return run_evidence_eval(args)
     if args.evidence_command != "posture":
