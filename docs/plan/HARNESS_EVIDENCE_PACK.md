@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10).
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Mode I planning **Done** (C12).
 
 ---
 
@@ -18,6 +18,7 @@
 - **Implement HEP-1 (closed):** § Mode I summary · § Certification semantics · § CORE levels · **EVID-CORE-*** rows.
 - **Implement HEP-2 Trace:** § Mode I — HEP-2 · § Trace semantics · open **EVID-TRACE-*** rows only.
 - **HEP-3 Posture (closed):** § HEP-3 closeout · § HEP-3 operator path · **EVID-POSTURE-*** rows.
+- **EVID-CORE-FU-01 (C12 closed):** § Follow-up Mode I — EVID-CORE-FU-01 · **EVID-CORE-FU-01A…E** rows only when implementing C13+.
 - **Skip** HEP-2 EVID-EVAL / EVID-COST and HEP-4+ unless implementing those waves.
 - **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
 - **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
@@ -184,7 +185,7 @@ tests/unit/runtime/evidence/
 
 **Docs (EVID-CORE-06):** README Quick start + `guides/HARNESS_ENVIRONMENT.md` § Core certification evidence path (HEP).
 
-**Follow-up (EVID-CORE-FU-01):** `tests/integration/evidence/test_core_certification.py` — optional live Tier-0 runtime probes; not HEP-1 scope.
+**Follow-up (EVID-CORE-FU-01):** Mode I approved (C12) — selected live Tier-0 probes alongside deterministic CORE certification; see § Follow-up Mode I — EVID-CORE-FU-01. Does not replace CORE-L* certification.
 
 **Tier boundaries:** Tier-0 only — no `applications/` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
 
@@ -564,6 +565,134 @@ Expected posture summary should clearly state:
 
 ---
 
+## Follow-up Mode I — EVID-CORE-FU-01 Selected Live Tier-0 Probes
+
+| Field | Value |
+|-------|-------|
+| **Idea label** | `selected-live-tier0-probes` |
+| **Verdict** | `approved_for_small_follow_up` (Mode I approved — small follow-up only) |
+| **Type** | `harness_capability` · `improvement` · `evidence_packaging` |
+| **Tier** | Tier-0 (`intergrax/runtime/evidence/`, future live probe runner) |
+| **Domains** | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · `PLATFORM_FOUNDATION` |
+
+**Context (do not conflate):**
+
+| Path | What it proves |
+|------|----------------|
+| HEP-1 `certify core` | Deterministic mock contract evidence (CORE-L*) |
+| HEP-2 `trace show` / `trace export` | Report-derived deterministic mock timeline |
+| HEP-3 `evidence posture` | Read-only aggregation over existing evidence artifacts |
+| **EVID-CORE-FU-01** | Future **selected live Tier-0 probes** — small controlled follow-up only |
+
+### Problem statement
+
+HEP-1/2/3 provide deterministic mock evidence, report-derived timeline, and read-only posture. The remaining explicit gap is `LIVE_TIER0_PROBES: DEFERRED`. EVID-CORE-FU-01 defines a small, controlled live-probe follow-up that checks whether selected Tier-0 runtime paths can execute without network, providers, or real LLM calls.
+
+### Target outcome
+
+After the full EVID-CORE-FU-01 implementation, `LIVE_TIER0_PROBES` is no longer only **DEFERRED** in posture when a live probe report exists. Posture can show **PASSED** / **FAILED** / **AVAILABLE** for selected probes, while still clearly stating that this is selected live Tier-0 evidence, not full runtime certification.
+
+### First selected probes (C13–C15 scope)
+
+Only these three probes are approved for the first wave:
+
+| Probe ID | Rationale |
+|----------|-----------|
+| `basic_run_completed_live` | Proves a minimal runtime path can complete. |
+| `trace_persisted_live` | Proves execution leaves an inspectable evidence/trace artifact. |
+| `tool_denied_by_policy_live` | Proves policy denial works through the live probe path. |
+
+**Future candidates only** (not C13–C15 scope): `retry_executed_live`, `budget_exceeded_handled_live`, `hitl_required_live`, `memory_read_write_live`, `rag_context_recorded_live`.
+
+### Non-goals
+
+- Not full live runtime certification.
+- Not production readiness certification.
+- Not business application certification.
+- Not provider proof.
+- Not real LLM proof.
+- Not network execution.
+- Not external API execution.
+- Not replacement for CORE-L1/L2/L3 deterministic certification.
+- Not replacement for `pytest -m gate`.
+- Not replacement for `intergrax doctor`.
+- Not W-ADAPT L4.
+- Not EVID-EVAL.
+- Not EVID-COST.
+- Not EVID-POL.
+- Not replay system.
+- Not Trace Explorer UI.
+- Not policy DSL.
+
+### Runtime constraints
+
+- No network.
+- No provider calls.
+- No real LLM calls.
+- Mock LLM only.
+- Mock tools only.
+- Local or in-memory stores only.
+- Deterministic execution where possible.
+- No dependency on external credentials.
+- No dependency on user environment outside the repo.
+
+### Evidence semantics
+
+| Field | Value |
+|-------|-------|
+| Evidence basis | `LIVE_RUNTIME` for the selected probe path only |
+| LLM basis | `MOCK_LLM` |
+| Execution boundary | `LOCAL_NO_NETWORK` |
+| Scope | `SELECTED_TIER0_PROBES` |
+
+`LIVE_RUNTIME` here means the selected probe path exercises real Tier-0 runtime mechanisms locally — **not** full production runtime, **not** a real provider, **not** real LLM proof.
+
+### Planned artifacts
+
+```text
+build/evidence/live_core_probes/
+  live_core_report.json
+  live_core_report.md
+```
+
+### Planned command (not implemented in C12)
+
+```bash
+uv run intergrax evidence live-core
+```
+
+This command is planning only for C12. Implementation is C15 scope.
+
+### Planned integration with posture
+
+After EVID-CORE-FU-01 implementation, `intergrax evidence posture` should read the live core probe report when present and map `LIVE_TIER0_PROBES` from **DEFERRED** to **PASSED** / **FAILED** / **AVAILABLE**. If the live probe report is missing, posture should continue to show `LIVE_TIER0_PROBES` as **DEFERRED**.
+
+Posture must still label this surface as selected live Tier-0 evidence — not full runtime certification, not production certification, not provider-validated proof.
+
+### Suggested implementation order
+
+| Step | Scope | Status |
+|------|-------|--------|
+| C12 | Mode I / planning docs | **Done** |
+| C13 | Live probe contracts | Planned |
+| C14 | Live probe runner | Planned |
+| C15 | CLI + report + posture integration | Planned |
+| C16 | Docs closeout / cleanup | Planned |
+
+---
+
+## Implementation register — EVID-CORE-FU-01 Selected Live Tier-0 Probes
+
+| ID | Priority | Status | Deliverable | Acceptance criteria |
+|----|----------|--------|-------------|---------------------|
+| **EVID-CORE-FU-01A** | P1 | **Planned** | Live probe contracts | Contracts for selected live Tier-0 probe result/report; no runner yet |
+| **EVID-CORE-FU-01B** | P1 | **Planned** | Live probe runner | Executes selected probes locally with mock LLM/tools; no network/provider calls |
+| **EVID-CORE-FU-01C** | P1 | **Planned** | `intergrax evidence live-core` CLI | Writes live core probe report JSON/Markdown |
+| **EVID-CORE-FU-01D** | P1 | **Planned** | Posture integration | Posture maps live probe report to LIVE_TIER0_PROBES PASSED/FAILED/AVAILABLE |
+| **EVID-CORE-FU-01E** | P2 | **Planned** | Closeout docs | Documents final operator path and semantics |
+
+---
+
 ## Completed waves
 
 | Wave | IDs | Status |
@@ -581,15 +710,9 @@ Expected posture summary should clearly state:
 | HEP-2 (other) | EVID-EVAL, EVID-COST | External audit #4, #7 — not Mode I approved yet |
 | HEP-4 | EVID-POL | External audit #3 |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 |
-| HEP-FU | **EVID-CORE-FU-01** | Replace selected mock scenarios with real Tier-0 runtime probes (post HEP-1; not mixed with CORE-L* contract delivery) |
+| HEP-FU | **EVID-CORE-FU-01** | **Mode I approved for small follow-up** — selected live Tier-0 probes; adds selected live Tier-0 probes alongside deterministic CORE certification; does not replace CORE-L* certification; no network/provider/real LLM |
 
-Register future rows in this file when Mode I approves each wave.
-
-### EVID-CORE-FU-01 (deferred follow-up — not HEP-1)
-
-| ID | Priority | Status | Deliverable | Acceptance |
-|----|----------|--------|-------------|------------|
-| **EVID-CORE-FU-01** | P2 | **Deferred** | Live Tier-0 runtime probes for selected CORE scenarios | Subset of scenarios exercise real HarnessKernel/event spine with mock LLM only; no §6.3 product scope |
+Register future rows in this file when Mode I approves each wave. EVID-CORE-FU-01 implementation register: § Implementation register — EVID-CORE-FU-01 Selected Live Tier-0 Probes.
 
 ---
 
