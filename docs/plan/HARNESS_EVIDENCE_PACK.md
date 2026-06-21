@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Mode I approved** (C1–C4 Done; EVID-COST-01…03 Done; EVID-COST-04…05 Planned).
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done).
 
 ---
 
@@ -20,7 +20,7 @@
 - **HEP-3 Posture (closed):** § HEP-3 closeout · § HEP-3 operator path · **EVID-POSTURE-*** rows.
 - **EVID-CORE-FU-01 (closed):** § EVID-CORE-FU-01 closeout · **EVID-CORE-FU-01A…E** rows.
 - **EVID-EVAL (closed):** § Mode I — EVID-EVAL · § EVID-EVAL closeout · **EVID-EVAL-01…05** rows · § Future waves.
-- **EVID-COST (C1–C4 done):** § Mode I — EVID-COST · **EVID-COST-01…03 Done** · **EVID-COST-04…05** rows · § Evidence ROI roadmap · § Future waves.
+- **EVID-COST (Done):** § Mode I — EVID-COST · **EVID-COST-01…05 Done** · § EVID-COST closeout · § Evidence ROI roadmap · § Future waves.
 - **Skip** HEP-4+ unless implementing those waves.
 - **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
 - **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
@@ -924,7 +924,7 @@ This command is planned for implementation after C1.
 | C2 | Cost evidence contracts | **Done** |
 | C3 | Cost evidence runner / collector | **Done** |
 | C4 | CLI + report export | **Done** |
-| C5 | Optional posture integration + closeout docs | Planned |
+| C5 | Optional posture integration + closeout docs | **Done** |
 
 **Implementation note (C1):** C1 approved EVID-COST as the next small HEP evidence packaging wave. Scope is read-only packaging over existing local budget/cost/trace information (`TraceBudgetFacet`, trace timeline budget facets, certification cost/budget signals). No contracts, runner, CLI, export, posture integration, billing engine, provider pricing, or real LLM usage metering. EVID-COST-01…05 remain Planned.
 
@@ -933,6 +933,8 @@ This command is planned for implementation after C1.
 **Implementation note (C3):** C3 added a read-only cost evidence runner / collector that produces an in-memory CostEvidenceReport from existing local trace budget facets. It does not write artifacts, add CLI, add posture integration, compute provider pricing, implement billing, meter real LLM usage, use network, or create a new budget policy framework.
 
 **Implementation note (C4):** C4 added `intergrax evidence cost`, cost evidence JSON/Markdown export, and operator CLI rendering. It does not add posture integration, compute provider pricing, implement billing, meter real LLM usage, use network, execute trace export, or create a new budget policy framework.
+
+**Implementation note (C5):** C5 added optional read-only posture integration for cost evidence and closed EVID-COST docs. Missing cost report does not fail posture; existing cost report maps to COST_EVIDENCE PASSED/FAILED/UNKNOWN. It does not compute provider pricing, implement billing, meter real LLM usage, use network, execute trace export, or create a new budget policy framework.
 
 ---
 
@@ -943,8 +945,43 @@ This command is planned for implementation after C1.
 | **EVID-COST-01** | P1 | Done | Cost evidence contracts | Report/result contracts for local cost evidence; no runner yet |
 | **EVID-COST-02** | P1 | Done | Cost evidence runner / collector | Read-only packaging over existing local budget/cost/trace information; no billing engine |
 | **EVID-COST-03** | P1 | Done | `intergrax evidence cost` CLI + export | Writes `build/evidence/cost/report.json` and `report.md` |
-| **EVID-COST-04** | P2 | Planned | Posture integration | Optional read-only `COST_EVIDENCE` signal in evidence posture when report exists |
-| **EVID-COST-05** | P2 | Planned | Closeout docs | Final operator path and semantics |
+| **EVID-COST-04** | P2 | Done | Posture integration | Optional read-only `COST_EVIDENCE` signal in evidence posture when report exists |
+| **EVID-COST-05** | P2 | Done | Closeout docs | Final operator path and semantics |
+
+---
+
+## EVID-COST closeout
+
+EVID-COST Cost Evidence: **Done**
+
+Delivered:
+
+- cost evidence contracts,
+- read-only cost evidence runner / collector,
+- `intergrax evidence cost`,
+- `build/evidence/cost/report.json`,
+- `build/evidence/cost/report.md`,
+- optional posture integration via `COST_EVIDENCE`.
+
+### Final operator path
+
+```bash
+uv run intergrax evidence cost
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+### Semantics
+
+* `evidence cost` packages existing local budget/cost/trace information into deterministic evidence artifacts.
+* `evidence cost` does not compute provider pricing.
+* `evidence cost` does not implement billing.
+* `evidence cost` does not estimate cloud costs.
+* `evidence cost` does not meter real LLM usage.
+* `evidence cost` does not use network.
+* `evidence cost` does not create a new budget policy framework.
+* `evidence posture` includes `COST_EVIDENCE` only when `build/evidence/cost/report.json` exists.
+* Missing cost evidence report does not fail posture and does not make posture missing.
 
 ---
 
@@ -957,6 +994,7 @@ This command is planned for implementation after C1.
 | HEP-3 Evidence Posture / Scoreboard | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** — `evidence posture` / `evidence posture export` delivered |
 | EVID-CORE-FU-01 Selected Live Tier-0 Probes | EVID-CORE-FU-01A … EVID-CORE-FU-01E | **Done** — `evidence live-core` + posture integration delivered |
 | EVID-EVAL Eval Regression Evidence | EVID-EVAL-01 … EVID-EVAL-05 | **Done** — `evidence eval` + optional posture `EVAL_REGRESSION` delivered |
+| EVID-COST Cost Evidence | EVID-COST-01 … EVID-COST-05 | **Done** — `evidence cost` + optional posture `COST_EVIDENCE` delivered |
 
 ---
 
@@ -973,6 +1011,7 @@ This roadmap tracks the remaining highest-ROI HEP / evidence work after the comp
 | HEP-3 Evidence Posture / Scoreboard | **Done** | `intergrax evidence posture` aggregates evidence artifacts |
 | EVID-CORE-FU-01 Selected Live Tier-0 Probes | **Done** | `intergrax evidence live-core` adds selected local no-network live Tier-0 probes |
 | EVID-EVAL Eval Regression Evidence | **Done** | `intergrax evidence eval` packages eval regression evidence and optionally enriches posture |
+| EVID-COST Cost Evidence | **Done** | `intergrax evidence cost` packages cost evidence and optionally enriches posture via `COST_EVIDENCE` |
 
 ### Minimal remaining ROI
 
@@ -984,12 +1023,12 @@ The minimal remaining ROI is to complete cost evidence and then close the operat
 | 2 | EVID-COST contracts | 1 | **Done** | Define report/result contracts for cost evidence |
 | 3 | EVID-COST runner / collector | 1 | **Done** | Package existing cost/budget information into evidence results |
 | 4 | EVID-COST CLI + JSON/Markdown export | 1 | **Done** | Add `intergrax evidence cost` and write artifacts under `build/evidence/cost/` |
-| 5 | EVID-COST posture integration + closeout | 1 | Planned | Add optional posture signal and close EVID-COST docs |
+| 5 | EVID-COST posture integration + closeout | 1 | **Done** | Add optional posture signal and close EVID-COST docs |
 | 6 | Final evidence operator path closeout | 1 | Planned | Document one canonical evidence onboarding flow |
 
-Estimated remaining tasks for minimal ROI: **2**.
+Estimated remaining tasks for minimal ROI: **1**.
 
-**Progress note:** EVID-COST C1–C4 are Done. Remaining estimated tasks after C4: minimal ROI **2**, strong ROI **4**, polished/adopter-ready ROI **6**.
+**Progress note:** EVID-COST C1–C5 are Done. Remaining estimated tasks after C5: minimal ROI **1**, strong ROI **3**, polished/adopter-ready ROI **5**.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1000,7 +1039,7 @@ After minimal ROI, two additional tasks make the evidence path stronger for exte
 | 7 | End-to-end evidence smoke audit | 1 | Planned | Verify the full local evidence command sequence and artifact consistency |
 | 8 | README / onboarding update | 1 | Planned | Document how a developer verifies Intergrax harness locally |
 
-Estimated remaining tasks for strong ROI: **4 total**.
+Estimated remaining tasks for strong ROI: **3 total**.
 
 ### Optional presentation/adopter polish
 
@@ -1011,7 +1050,7 @@ These are useful but not required for the core ROI path.
 | 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
 | 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **6 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **5 total**.
 
 ### Deferred from highest-ROI path
 
@@ -1029,11 +1068,11 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **EVID-COST** — **Mode I approved** (C1–C4 Done; EVID-COST-01…03 Done; implementation C5 Planned).
+Recommended next wave: **final evidence operator path closeout** — EVID-COST **Done** (C1–C5 Done; EVID-COST-01…05 Done).
 
 Reason:
 
-EVID-COST is the natural remaining HEP-2 sibling after EVID-EVAL. It follows the same evidence packaging pattern without introducing a new runtime mechanism: contracts → runner/collector → CLI/export → optional posture integration → closeout. See § Mode I — EVID-COST for scope, non-goals, and implementation register.
+EVID-COST is complete. The highest-ROI remaining evidence work is final operator-path closeout, end-to-end evidence smoke audit, and onboarding documentation. See § Evidence ROI roadmap.
 
 ---
 
@@ -1041,7 +1080,7 @@ EVID-COST is the natural remaining HEP-2 sibling after EVID-EVAL. It follows the
 
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
-| HEP-2 / EVID-COST | **EVID-COST** | **Mode I approved** — cost evidence packaging; next implementation wave |
+| HEP-2 / EVID-COST | **EVID-COST** | **Done** — cost evidence packaging + optional posture `COST_EVIDENCE` |
 | HEP-4 | EVID-POL | External audit #3 — not Mode I approved yet |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 — not Mode I approved yet |
 

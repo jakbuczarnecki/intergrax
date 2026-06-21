@@ -87,6 +87,13 @@ def _add_posture_common_args(parser: argparse.ArgumentParser) -> None:
         "(default: build/evidence/eval/report.json).",
     )
     parser.add_argument(
+        "--cost-report",
+        type=Path,
+        default=None,
+        help="Path to cost evidence report.json "
+        "(default: build/evidence/cost/report.json).",
+    )
+    parser.add_argument(
         "--root-label",
         default="local",
         help="Label for evidence posture ID generation (default: local).",
@@ -214,6 +221,7 @@ def _collect_from_args(args: argparse.Namespace):
             trace_timeline_path=args.trace_timeline,
             live_core_probe_report_path=getattr(args, "live_core_report", None),
             eval_evidence_report_path=getattr(args, "eval_report", None),
+            cost_evidence_report_path=getattr(args, "cost_report", None),
             include_unknown_operational_signals=not args.no_operational_unknowns,
             root_label=args.root_label,
         )
