@@ -7,6 +7,8 @@ alwaysApply: false
 
 Use only when operator explicitly asks for a HEP / EVID implementation step.
 
+**Start:** operator prompt should begin with `@.cursor/rules/intergrax-hep-step.mdc` and require mandatory preflight from `intergrax-token-budget.mdc` before any read/edit.
+
 - Operator instruction is the source of truth.
 - Read only listed files.
 - No repo-wide search.

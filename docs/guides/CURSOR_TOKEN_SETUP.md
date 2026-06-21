@@ -30,7 +30,7 @@ No Background Agents / Task subagents for layer audits unless operator opts in.
 
 Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
-HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) — edit `STEP=` / `SCOPE=` per C13–C16. **Also `@`:** [`.cursor/rules/intergrax-hep-step.mdc`](../../.cursor/rules/intergrax-hep-step.mdc) — strict scoped execution; operator prompt is source of truth.
+HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) — edit `STEP=` / `SCOPE=` per C13–C16. Bootstrap lines 1–3 require `@intergrax-hep-step.mdc` + mandatory preflight before read/edit. **Also `@`:** [`.cursor/rules/intergrax-hep-step.mdc`](../../.cursor/rules/intergrax-hep-step.mdc).
 
 ---
 
