@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (LLM_ADAPTERS plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 

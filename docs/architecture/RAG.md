@@ -16,7 +16,7 @@
 
 **Do not read this entire file in one session** (RAG canon).
 
-- **Implement / audit default:** retrieval pipeline + index lifecycle (hub). Pipelines detail: [`arch/RAG_pipelines_detail.md`](arch/RAG_pipelines_detail.md).
+- **Implement / audit default:** retrieval pipeline + index lifecycle (hub). Pipelines detail: [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/RAG.md`](../plan/RAG.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/RAG.md`](../guides/audit_slices/RAG.md).
@@ -32,7 +32,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/RAG_pipelines_detail.md`](arch/RAG_pipelines_detail.md) | pipelines detail |
+| [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | pipelines detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Maturity score (audit map L0–L4)

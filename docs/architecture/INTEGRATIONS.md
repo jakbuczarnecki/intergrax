@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (INTEGRATIONS canon).
 
-- **Implement / audit default:** IntegrationLayer contract + wiring + checklists (hub). Provider catalog: [`arch/INTEGRATIONS_provider_catalog.md`](arch/INTEGRATIONS_provider_catalog.md).
+- **Implement / audit default:** IntegrationLayer contract + wiring + checklists (hub). Provider catalog: [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/INTEGRATIONS.md`](../guides/audit_slices/INTEGRATIONS.md).
@@ -28,7 +28,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/INTEGRATIONS_provider_catalog.md`](arch/INTEGRATIONS_provider_catalog.md) | provider catalog |
+| [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) | provider catalog |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Allowed integration responsibilities

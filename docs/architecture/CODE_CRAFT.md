@@ -16,7 +16,7 @@
 
 **Do not read this entire file in one session** (CODE_CRAFT canon).
 
-- **Implement / audit default:** ephemeral codegen loop contracts (§1–§6). Extended §7+: [`arch/CODE_CRAFT_extended_depth.md`](arch/CODE_CRAFT_extended_depth.md).
+- **Implement / audit default:** ephemeral codegen loop contracts (§1–§6). Extended §7+: [`satellites/CODE_CRAFT_extended_depth.md`](satellites/CODE_CRAFT_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/CODE_CRAFT.md`](../guides/audit_slices/CODE_CRAFT.md).
@@ -32,7 +32,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/CODE_CRAFT_extended_depth.md`](arch/CODE_CRAFT_extended_depth.md) | extended depth |
+| [`satellites/CODE_CRAFT_extended_depth.md`](satellites/CODE_CRAFT_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

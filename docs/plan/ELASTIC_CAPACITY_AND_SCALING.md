@@ -5,7 +5,7 @@
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 **ADR:** [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../adr/entries/2026-06-08/ADR-SCALE-001.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 **Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary.
 
@@ -20,7 +20,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -31,8 +31,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/plan/ELASTIC_CAPACITY_AND_SCALING_appendices.md`](plan/plan/ELASTIC_CAPACITY_AND_SCALING_appendices.md) | appendices |
-| [`plan/plan/ELASTIC_CAPACITY_AND_SCALING_audit_history.md`](plan/plan/ELASTIC_CAPACITY_AND_SCALING_audit_history.md) | audit history |
+| [`plan/satellites/ELASTIC_CAPACITY_AND_SCALING_appendices.md`](plan/satellites/ELASTIC_CAPACITY_AND_SCALING_appendices.md) | appendices |
+| [`plan/satellites/ELASTIC_CAPACITY_AND_SCALING_audit_history.md`](plan/satellites/ELASTIC_CAPACITY_AND_SCALING_audit_history.md) | audit history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

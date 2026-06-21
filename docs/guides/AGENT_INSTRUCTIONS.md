@@ -25,7 +25,7 @@ Tier-3  applications/        Deployable product environments
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
-**Cursor context budget:** respect `.cursorignore`. Plan hubs + [`../plan/plan/`](../plan/plan/) satellites. Audits: [`audit_slices/<DOMAIN>.md`](audit_slices/). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat. **O1:** terse operator replies by default — see § Operator communication below.
+**Cursor context budget:** respect `.cursorignore`. Plan hubs + [`../plan/satellites/`](../plan/satellites/) satellites. Audits: [`audit_slices/<DOMAIN>.md`](audit_slices/). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat. **O1:** terse operator replies by default — see § Operator communication below.
 
 ---
 

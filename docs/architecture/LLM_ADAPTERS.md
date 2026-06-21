@@ -15,7 +15,7 @@
 
 **Do not read this entire file in one session** (LLM_ADAPTERS canon).
 
-- **Implement / audit default:** adapter envelope + routing hub. Failover: [`arch/LLM_ADAPTERS_routing_failover.md`](arch/LLM_ADAPTERS_routing_failover.md). Providers: [`arch/LLM_ADAPTERS_providers_catalog.md`](arch/LLM_ADAPTERS_providers_catalog.md). Audit register: [`arch/LLM_ADAPTERS_audit_register.md`](arch/LLM_ADAPTERS_audit_register.md).
+- **Implement / audit default:** adapter envelope + routing hub. Failover: [`satellites/LLM_ADAPTERS_routing_failover.md`](satellites/LLM_ADAPTERS_routing_failover.md). Providers: [`satellites/LLM_ADAPTERS_providers_catalog.md`](satellites/LLM_ADAPTERS_providers_catalog.md). Audit register: [`satellites/LLM_ADAPTERS_audit_register.md`](satellites/LLM_ADAPTERS_audit_register.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md).
@@ -31,8 +31,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/LLM_ADAPTERS_audit_register.md`](arch/LLM_ADAPTERS_audit_register.md) | audit register |
-| [`arch/LLM_ADAPTERS_providers_catalog.md`](arch/LLM_ADAPTERS_providers_catalog.md) | providers catalog |
+| [`satellites/LLM_ADAPTERS_audit_register.md`](satellites/LLM_ADAPTERS_audit_register.md) | audit register |
+| [`satellites/LLM_ADAPTERS_providers_catalog.md`](satellites/LLM_ADAPTERS_providers_catalog.md) | providers catalog |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Layer map

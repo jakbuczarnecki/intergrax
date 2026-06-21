@@ -80,10 +80,10 @@ Foreign **Platform / ORCH / FLOW / FAUDIT** registers were removed from this hub
 |------|------------------|
 | Platform gate maintenance | [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.1 |
 | ORCH closeout | [`ORCHESTRATION.md`](ORCHESTRATION.md) |
-| FAUDIT-32 | [`plan/plan/PLATFORM_FOUNDATION_phase_closeout.md`](plan/plan/PLATFORM_FOUNDATION_phase_closeout.md) |
+| FAUDIT-32 | [`plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md`](plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md) |
 | FLOW depth | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 
-**Audit history (CVL-1…3, LC closeout):** [`plan/plan/CRITIC_VERIFICATION_audit_history.md`](plan/plan/CRITIC_VERIFICATION_audit_history.md)
+**Audit history (CVL-1…3, LC closeout):** [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md)
 
 ---
 """,
@@ -140,8 +140,8 @@ ORCHESTRATION_CFG = PlanSplitConfig(
 
 | Need | Source |
 |------|--------|
-| Platform appendices | [`plan/plan/PLATFORM_FOUNDATION_appendices.md`](plan/plan/PLATFORM_FOUNDATION_appendices.md) |
-| Master registers | [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) |
+| Platform appendices | [`plan/satellites/PLATFORM_FOUNDATION_appendices.md`](plan/satellites/PLATFORM_FOUNDATION_appendices.md) |
+| Master registers | [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) |
 
 ---
 """,
@@ -167,7 +167,7 @@ UAEP = PlanSplitConfig(
 
 ## Cross-domain ORCH/flow registers removed
 
-See [`ORCHESTRATION.md`](ORCHESTRATION.md) · [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md).
+See [`ORCHESTRATION.md`](ORCHESTRATION.md) · [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md).
 
 ---
 """,

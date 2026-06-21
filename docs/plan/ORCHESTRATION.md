@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 ---
 
@@ -17,7 +17,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -127,8 +127,8 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 | Need | Source |
 |------|--------|
-| Platform appendices | [`plan/plan/PLATFORM_FOUNDATION_appendices.md`](plan/plan/PLATFORM_FOUNDATION_appendices.md) |
-| Master registers | [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) |
+| Platform appendices | [`plan/satellites/PLATFORM_FOUNDATION_appendices.md`](plan/satellites/PLATFORM_FOUNDATION_appendices.md) |
+| Master registers | [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) |
 
 ---
 ## Phase ORCH — Orchestration control plane closeout

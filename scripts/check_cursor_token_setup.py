@@ -11,8 +11,8 @@ BOOTSTRAP = ROOT / "docs" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
 CURSORIGNORE = ROOT / ".cursorignore"
 H2_IGNORE_DIRS = (
-    "docs/architecture/arch/",
-    "docs/plan/plan/",
+    "docs/architecture/satellites/",
+    "docs/plan/satellites/",
 )
 H2_IGNORE_PATHS = (
     "docs/guides/AGENT_CREATION_GUIDE.md",

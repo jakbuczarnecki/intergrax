@@ -68,7 +68,7 @@ INTEGRATIONS_ARCH = ArchSplitConfig(
     h2_satellite_markers=(("## Catalog", "provider_catalog"),),
 )
 
-# F4-C wave 2 — numbered ## N. hubs (extended § → arch/*_extended_depth.md)
+# F4-C wave 2 — numbered ## N. hubs (extended § → satellites/*_extended_depth.md)
 ADAPTIVE_HARNESS_INTELLIGENCE_ARCH = _num("ADAPTIVE_HARNESS_INTELLIGENCE", 7)
 CODE_CRAFT_ARCH = _num("CODE_CRAFT", 6)
 CONTEXT_ENGINEERING_ARCH = _num("CONTEXT_ENGINEERING", 7)

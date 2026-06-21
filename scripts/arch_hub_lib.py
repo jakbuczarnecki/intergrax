@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCH_DIR = ROOT / "docs" / "architecture"
-SAT_DIR = ARCH_DIR / "arch"
+SAT_DIR = ARCH_DIR / "satellites"
 
 H1_SECTION = re.compile(r"^# (\d+)\.\s+(.+)$", re.MULTILINE)
 NUMBERED_H2 = re.compile(r"^## (\d+)\.\s", re.MULTILINE)
@@ -108,7 +108,7 @@ def satellite_index_rows(domain: str, files: dict[str, str]) -> list[str]:
     ]
     for fname in sorted(files):
         label = fname.replace(f"{domain}_", "").replace(".md", "").replace("_", " ")
-        rows.append(f"| [`arch/{fname}`](arch/{fname}) | {label} |")
+        rows.append(f"| [`satellites/{fname}`](satellites/{fname}) | {label} |")
     rows.extend(
         [
             "",

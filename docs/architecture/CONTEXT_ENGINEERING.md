@@ -17,7 +17,7 @@
 
 **Do not read this entire file in one session** (CONTEXT_ENGINEERING canon).
 
-- **Implement / audit default:** context assembly engine + scoring (§1–§7). Extended §8+: [`arch/CONTEXT_ENGINEERING_extended_depth.md`](arch/CONTEXT_ENGINEERING_extended_depth.md).
+- **Implement / audit default:** context assembly engine + scoring (§1–§7). Extended §8+: [`satellites/CONTEXT_ENGINEERING_extended_depth.md`](satellites/CONTEXT_ENGINEERING_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../guides/audit_slices/CONTEXT_ENGINEERING.md).
@@ -33,7 +33,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/CONTEXT_ENGINEERING_extended_depth.md`](arch/CONTEXT_ENGINEERING_extended_depth.md) | extended depth |
+| [`satellites/CONTEXT_ENGINEERING_extended_depth.md`](satellites/CONTEXT_ENGINEERING_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

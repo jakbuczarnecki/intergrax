@@ -34,7 +34,7 @@
 
 **Do not read this entire file in one session** (MEMORY canon).
 
-- **Implement / audit default:** LTM store contracts + scope model (§1–§7). Extended §8+: [`arch/MEMORY_extended_depth.md`](arch/MEMORY_extended_depth.md).
+- **Implement / audit default:** LTM store contracts + scope model (§1–§7). Extended §8+: [`satellites/MEMORY_extended_depth.md`](satellites/MEMORY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/MEMORY.md`](../plan/MEMORY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/MEMORY.md`](../guides/audit_slices/MEMORY.md).
@@ -50,7 +50,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/MEMORY_extended_depth.md`](arch/MEMORY_extended_depth.md) | extended depth |
+| [`satellites/MEMORY_extended_depth.md`](satellites/MEMORY_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

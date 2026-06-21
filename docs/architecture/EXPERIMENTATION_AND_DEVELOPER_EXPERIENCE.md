@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE canon).
 
-- **Implement / audit default:** §39–§41 DX + minimal runtime flow. Extended §42+: [`arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md`](arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md). §43+: [`arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md`](arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md).
+- **Implement / audit default:** §39–§41 DX + minimal runtime flow. Extended §42+: [`satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md`](satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md). §43+: [`satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md`](satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
@@ -30,8 +30,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md`](arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md) | extended depth |
-| [`arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md`](arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md) | production gates |
+| [`satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md`](satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md) | extended depth |
+| [`satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md`](satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Experimentation / DX architecture owns

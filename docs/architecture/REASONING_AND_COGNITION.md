@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (REASONING_AND_COGNITION canon).
 
-- **Implement / audit default:** DecisionRecord + planner/classifier spine (§1–§7). Extended §8+: [`arch/REASONING_AND_COGNITION_extended_depth.md`](arch/REASONING_AND_COGNITION_extended_depth.md).
+- **Implement / audit default:** DecisionRecord + planner/classifier spine (§1–§7). Extended §8+: [`satellites/REASONING_AND_COGNITION_extended_depth.md`](satellites/REASONING_AND_COGNITION_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/REASONING_AND_COGNITION.md`](../guides/audit_slices/REASONING_AND_COGNITION.md).
@@ -26,7 +26,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/REASONING_AND_COGNITION_extended_depth.md`](arch/REASONING_AND_COGNITION_extended_depth.md) | extended depth |
+| [`satellites/REASONING_AND_COGNITION_extended_depth.md`](satellites/REASONING_AND_COGNITION_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

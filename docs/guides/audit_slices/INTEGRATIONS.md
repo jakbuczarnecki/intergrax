@@ -18,7 +18,7 @@
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §11–§12 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-INT-* (grep IDs — do not read full file) |
 | `docs/plan/INTEGRATIONS.md` | **Read-scope:** Phase INT / H-INT hub · satellites on demand |
-| `docs/architecture/INTEGRATIONS.md` | wiring + design principles hub · [`arch/INTEGRATIONS_provider_catalog.md`](../architecture/arch/INTEGRATIONS_provider_catalog.md) on demand |
+| `docs/architecture/INTEGRATIONS.md` | wiring + design principles hub · [`satellites/INTEGRATIONS_provider_catalog.md`](../architecture/satellites/INTEGRATIONS_provider_catalog.md) on demand |
 
 ## Code entry (grep first — F5-B)
 

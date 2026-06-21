@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (PLATFORM_FOUNDATION plan).
 
-- **Implement / audit default:** §6.1 gate maintenance (default) · §6.3 deferred product only · §4.0a scope split. **On demand:** [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) · [`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed only)
+- **Implement / audit default:** §6.1 gate maintenance (default) · §6.3 deferred product only · §4.0a scope split. **On demand:** [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) · [`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed only)
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/PLATFORM_FOUNDATION.md`](../architecture/PLATFORM_FOUNDATION.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../guides/audit_slices/PLATFORM_FOUNDATION.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -107,7 +107,7 @@ Verify (every harness PR):
 | 11 | P-Ext.1.3a, 1.4, 1.9, 1.11–1.12 | Typed resolve expansion, health API, integration wiring helper | P3 |
 | 12 | P-Ext.5.1, 3.10, 3.12 | Scaffold CLI (all three catalogs) + harness `requires_skills` demo | P3 |
 
-Full task register: [Appendix I](plan/plan/PLATFORM_FOUNDATION_appendices.md).
+Full task register: [Appendix I](plan/satellites/PLATFORM_FOUNDATION_appendices.md).
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (closed).
 

@@ -63,7 +63,7 @@ REL-LC Done · §6.1av REL-MAINT Done · durable async queue → ORCH-MAINT-04 �
 **Load first:** [`docs/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md) — compact slice (layers **22**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -72,8 +72,8 @@ REL-LC Done · §6.1av REL-MAINT Done · durable async queue → ORCH-MAINT-04 �
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 5. `@docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H (risk/HITL)** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.

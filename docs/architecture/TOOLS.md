@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (TOOLS canon).
 
-- **Implement / audit default:** ToolRuntime path + plugin model + policy invoke (hub through production posture). Selection / invocation: [`arch/TOOLS_selection_and_plugins.md`](arch/TOOLS_selection_and_plugins.md). RuntimeConfig fields: [`arch/TOOLS_runtime_config_reference.md`](arch/TOOLS_runtime_config_reference.md).
+- **Implement / audit default:** ToolRuntime path + plugin model + policy invoke (hub through production posture). Selection / invocation: [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md). RuntimeConfig fields: [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/TOOLS.md`](../plan/TOOLS.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/TOOLS.md`](../guides/audit_slices/TOOLS.md).
@@ -28,8 +28,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/TOOLS_runtime_config_reference.md`](arch/TOOLS_runtime_config_reference.md) | runtime config reference |
-| [`arch/TOOLS_selection_and_plugins.md`](arch/TOOLS_selection_and_plugins.md) | selection and plugins |
+| [`satellites/TOOLS_runtime_config_reference.md`](satellites/TOOLS_runtime_config_reference.md) | runtime config reference |
+| [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md) | selection and plugins |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Four-layer stack

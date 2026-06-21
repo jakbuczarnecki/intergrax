@@ -15,7 +15,7 @@
 
 **Do not read this entire file in one session** (ELASTIC_CAPACITY_AND_SCALING canon).
 
-- **Implement / audit default:** capacity adapter contracts (§1–§7). Extended §8+: [`arch/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](arch/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md).
+- **Implement / audit default:** capacity adapter contracts (§1–§7). Extended §8+: [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
@@ -29,7 +29,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](arch/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md) | extended depth |
+| [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

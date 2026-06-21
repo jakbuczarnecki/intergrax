@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
-"""Split domain plan files into token-efficient hubs + plan/plan/ satellites."""
+"""Split domain plan files into token-efficient hubs + plan/satellites/ satellites."""
 
 from __future__ import annotations
 
@@ -251,7 +251,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     hub_text = "\n".join(hub)
     hub_text = hub_text.replace(
         "read **only** the architecture doc and this plan doc for the domain.",
-        "read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).",
+        "read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).",
     )
     if satellites:
         hub_text = insert_satellite_index(hub_text, satellite_index_rows(d, satellites))
@@ -261,7 +261,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     # Shared appendix links → platform satellites when duplicated
     hub_text = re.sub(
         r"\[Appendix ([B-M])\]\(plan/" + re.escape(d) + r"\.md\)",
-        r"[Appendix \1](plan/plan/PLATFORM_FOUNDATION_appendices.md)",
+        r"[Appendix \1](plan/satellites/PLATFORM_FOUNDATION_appendices.md)",
         hub_text,
     )
 
@@ -276,7 +276,7 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     print(f"{cfg.domain}: hub {stats['hub_lines']} lines ~{stats['hub_tokens']:,} tok "
           f"(was ~{stats['orig_tokens']:,}, satellites ~{stats['sat_tokens']:,})")
     for fname in sorted(satellites):
-        print(f"  wrote plan/plan/{fname}")
+        print(f"  wrote plan/satellites/{fname}")
     return stats
 
 

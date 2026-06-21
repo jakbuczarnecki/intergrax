@@ -24,7 +24,7 @@
 
 **Do not read this entire file in one session** (ADAPTIVE_HARNESS_INTELLIGENCE canon).
 
-- **Implement / audit default:** L4 adaptive loop contracts (§1–§7). Extended §8+: [`arch/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](arch/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md).
+- **Implement / audit default:** L4 adaptive loop contracts (§1–§7). Extended §8+: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md).
@@ -38,7 +38,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](arch/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md) | extended depth |
+| [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

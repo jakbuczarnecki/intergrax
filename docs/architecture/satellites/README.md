@@ -1,4 +1,4 @@
-﻿# Architecture satellites (`docs/architecture/arch/`)
+﻿# Architecture satellites (`docs/architecture/satellites/`)
 
 **Parent directory:** [`../`](../) — token-efficient **hubs** (one file per domain).
 
@@ -7,7 +7,7 @@ This folder holds **extended architecture canon** split out of hubs for Cursor c
 | Layer | Path | Cursor indexing | When to load |
 |-------|------|-----------------|--------------|
 | **Hub** | `docs/architecture/<DOMAIN>.md` | Yes (default) | Implement / audit — read **Cursor read scope** block only |
-| **Satellite** | `docs/architecture/arch/<DOMAIN>_*.md` | No (`.cursorignore`) | Explicit `@` or `Read` when read-scope, TOC, or audit cites extended § |
+| **Satellite** | `docs/architecture/satellites/<DOMAIN>_*.md` | No (`.cursorignore`) | Explicit `@` or `Read` when read-scope, TOC, or audit cites extended § |
 
 **Naming:**
 

@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (ORCHESTRATION canon).
 
-- **Implement / audit default:** intake + NexusLoop + graph executor (§10–§26). §27+: [`arch/ORCHESTRATION_production_gates.md`](arch/ORCHESTRATION_production_gates.md).
+- **Implement / audit default:** intake + NexusLoop + graph executor (§10–§26). §27+: [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md).
@@ -40,7 +40,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/ORCHESTRATION_production_gates.md`](arch/ORCHESTRATION_production_gates.md) | production gates |
+| [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

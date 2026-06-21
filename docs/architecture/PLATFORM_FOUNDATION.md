@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (PLATFORM_FOUNDATION canon).
 
-- **Implement / audit default:** §1–§6 platform spine. Extended §7+: [`arch/PLATFORM_FOUNDATION_extended_depth.md`](arch/PLATFORM_FOUNDATION_extended_depth.md). §43+: [`arch/PLATFORM_FOUNDATION_production_gates.md`](arch/PLATFORM_FOUNDATION_production_gates.md).
+- **Implement / audit default:** §1–§6 platform spine. Extended §7+: [`satellites/PLATFORM_FOUNDATION_extended_depth.md`](satellites/PLATFORM_FOUNDATION_extended_depth.md). §43+: [`satellites/PLATFORM_FOUNDATION_production_gates.md`](satellites/PLATFORM_FOUNDATION_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../guides/audit_slices/PLATFORM_FOUNDATION.md).
@@ -28,8 +28,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/PLATFORM_FOUNDATION_extended_depth.md`](arch/PLATFORM_FOUNDATION_extended_depth.md) | extended depth |
-| [`arch/PLATFORM_FOUNDATION_production_gates.md`](arch/PLATFORM_FOUNDATION_production_gates.md) | production gates |
+| [`satellites/PLATFORM_FOUNDATION_extended_depth.md`](satellites/PLATFORM_FOUNDATION_extended_depth.md) | extended depth |
+| [`satellites/PLATFORM_FOUNDATION_production_gates.md`](satellites/PLATFORM_FOUNDATION_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Tier-1 — Nexus Runtime (Agent Operating System)

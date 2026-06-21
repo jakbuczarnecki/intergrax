@@ -34,8 +34,8 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
         "known_gaps": "Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)",
         "plan_read_scope": (
             "**Hub only** (`docs/plan/PLATFORM_FOUNDATION.md`): §4 ladder · §6.1 maintenance · §6.3 deferred product · satellite index. "
-            "**On demand:** [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) (gap IDs) · "
-            "[`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed items only)"
+            "**On demand:** [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) (gap IDs) · "
+            "[`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed items only)"
         ),
         "dimensions": [
             "Harness treated as durable product — not single-agent optimization (§1 strategic frame).",
@@ -1241,7 +1241,7 @@ def _context_budget_block(*, did: str, layers: str) -> str:
 **Load first:** [`docs/guides/audit_slices/{did}.md`](../guides/audit_slices/{did}.md) — compact slice (layers **{layers}**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -1354,8 +1354,8 @@ Perform a **rigorous, evidence-backed audit** of the **{title}** domain. You mus
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/{did}.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/{did}.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/{did}.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/{did}.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/{did}.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 {appendix_block}**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---

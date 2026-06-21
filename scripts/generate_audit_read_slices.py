@@ -66,8 +66,8 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "ideal": "§1 Strategic frame · §2 Tier model · §32 Documentation governance",
         "audit_map": "§1–§2 · §32 · maturity §5",
         "invariants": "SYS-INV-TIER-* · SYS-INV-DOC-* · P2-ARCH-01",
-        "plan_hub": "§6.1 maintenance · §6.3 deferred · [`plan/plan/`](../plan/plan/) on demand",
-        "architecture": "§1–§6 hub · [`arch/`](../architecture/arch/) on demand",
+        "plan_hub": "§6.1 maintenance · §6.3 deferred · [`plan/satellites/`](../plan/satellites/) on demand",
+        "architecture": "§1–§6 hub · [`satellites/`](../architecture/satellites/) on demand",
     },
     "UNIFIED_EXECUTION_RUNTIME": {
         "layers": "4–5, 8, 23–24",
@@ -75,7 +75,7 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "audit_map": "§4–§5 · §8 · §23–§24",
         "invariants": "SYS-INV-POL-* · SYS-INV-UAEP-*",
         "plan_hub": "§6.1av hub · phase satellites on demand",
-        "architecture": "§42.1–§42.15 hub · [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](../architecture/arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) on demand",
+        "architecture": "§42.1–§42.15 hub · [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](../architecture/satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) on demand",
     },
     "ORCHESTRATION": {
         "layers": "3, 9",
@@ -83,7 +83,7 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "audit_map": "§3 · §9",
         "invariants": "SYS-INV-ORCH-*",
         "plan_hub": "Phase ORCH-* hub · satellites on demand",
-        "architecture": "§10–§26 hub · [`arch/ORCHESTRATION_extended_depth.md`](../architecture/arch/ORCHESTRATION_extended_depth.md) on demand",
+        "architecture": "§10–§26 hub · [`satellites/ORCHESTRATION_extended_depth.md`](../architecture/satellites/ORCHESTRATION_extended_depth.md) on demand",
     },
     "NEXUS_EXECUTION_FLOW": {
         "layers": "8–10",
@@ -91,7 +91,7 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "audit_map": "§8–§10",
         "invariants": "SYS-INV-FLOW-* · SYS-INV-DELEG-*",
         "plan_hub": "Phase FLOW hub · satellites on demand",
-        "architecture": "§1–§8 hub · [`arch/NEXUS_EXECUTION_FLOW_extended_depth.md`](../architecture/arch/NEXUS_EXECUTION_FLOW_extended_depth.md) on demand",
+        "architecture": "§1–§8 hub · [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](../architecture/satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) on demand",
     },
     "CRITIC_VERIFICATION": {
         "layers": "25–27, 30",
@@ -107,7 +107,7 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "audit_map": "§17–§20 · §31",
         "invariants": "SYS-INV-ACP-* · SYS-INV-AGENT-*",
         "plan_hub": "§6 open · ACP closeout registers on demand",
-        "architecture": "§12–§21 hub · [`arch/`](../architecture/arch/) on demand",
+        "architecture": "§12–§21 hub · [`satellites/`](../architecture/satellites/) on demand",
     },
     "INTEGRATIONS": {
         "layers": "11–12",
@@ -115,7 +115,7 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "audit_map": "§11–§12",
         "invariants": "SYS-INV-INT-*",
         "plan_hub": "Phase INT / H-INT hub · satellites on demand",
-        "architecture": "wiring + design principles hub · [`arch/INTEGRATIONS_provider_catalog.md`](../architecture/arch/INTEGRATIONS_provider_catalog.md) on demand",
+        "architecture": "wiring + design principles hub · [`satellites/INTEGRATIONS_provider_catalog.md`](../architecture/satellites/INTEGRATIONS_provider_catalog.md) on demand",
     },
 }
 
@@ -186,7 +186,7 @@ def main() -> None:
             "ideal": f"Sections matching audit-map layers {layers}",
             "audit_map": f"Layers {layers} · maturity §5",
             "invariants": "Grep SYS-INV-* IDs from audit dimensions only",
-            "plan_hub": f"Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand",
+            "plan_hub": f"Hub §6 · [`plan/satellites/`](../plan/satellites/) satellites on demand",
             "architecture": f"Read-scope block + TOC sections for layers {layers}",
         }
 

@@ -62,8 +62,8 @@ agents/**/tests/**/snapshots/
 llms-full.txt
 
 # Architecture / plan satellites — hub read-scope + explicit Read/@ only (F4 / G1)
-docs/architecture/arch/
-docs/plan/plan/
+docs/architecture/satellites/
+docs/plan/satellites/
 
 # Bulky guides — load with explicit @ / Read only (H2)
 docs/guides/AGENT_CREATION_GUIDE.md

@@ -20,7 +20,7 @@
 
 **Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY canon).
 
-- **Implement / audit default:** §12–§21 (contract, registry, capability, ACP). Extended §22–§39 + checklist §45: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). §40+: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md).
+- **Implement / audit default:** §12–§21 (contract, registry, capability, ACP). Extended §22–§39 + checklist §45: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). §40+: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
@@ -34,8 +34,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) | extended depth |
-| [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) | production gates |
+| [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) | extended depth |
+| [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

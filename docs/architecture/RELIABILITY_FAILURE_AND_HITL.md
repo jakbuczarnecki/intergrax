@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (RELIABILITY_FAILURE_AND_HITL canon).
 
-- **Implement / audit default:** §30–§32 failure + retry + HITL core. Extended §33+: [`arch/RELIABILITY_FAILURE_AND_HITL_extended_depth.md`](arch/RELIABILITY_FAILURE_AND_HITL_extended_depth.md). §35+: [`arch/RELIABILITY_FAILURE_AND_HITL_production_gates.md`](arch/RELIABILITY_FAILURE_AND_HITL_production_gates.md).
+- **Implement / audit default:** §30–§32 failure + retry + HITL core. Extended §33+: [`satellites/RELIABILITY_FAILURE_AND_HITL_extended_depth.md`](satellites/RELIABILITY_FAILURE_AND_HITL_extended_depth.md). §35+: [`satellites/RELIABILITY_FAILURE_AND_HITL_production_gates.md`](satellites/RELIABILITY_FAILURE_AND_HITL_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md).
@@ -30,8 +30,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/RELIABILITY_FAILURE_AND_HITL_extended_depth.md`](arch/RELIABILITY_FAILURE_AND_HITL_extended_depth.md) | extended depth |
-| [`arch/RELIABILITY_FAILURE_AND_HITL_production_gates.md`](arch/RELIABILITY_FAILURE_AND_HITL_production_gates.md) | production gates |
+| [`satellites/RELIABILITY_FAILURE_AND_HITL_extended_depth.md`](satellites/RELIABILITY_FAILURE_AND_HITL_extended_depth.md) | extended depth |
+| [`satellites/RELIABILITY_FAILURE_AND_HITL_production_gates.md`](satellites/RELIABILITY_FAILURE_AND_HITL_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

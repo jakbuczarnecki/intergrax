@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY plan).
 
-- **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand
+- **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 

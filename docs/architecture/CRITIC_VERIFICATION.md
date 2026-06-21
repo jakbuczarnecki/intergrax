@@ -13,7 +13,7 @@
 
 **Do not read this entire file in one session** (CRITIC_VERIFICATION canon).
 
-- **Implement / audit default:** CVL contracts + orchestrator + wiring (§1–§6). Extended §7+: [`arch/CRITIC_VERIFICATION_extended_depth.md`](arch/CRITIC_VERIFICATION_extended_depth.md).
+- **Implement / audit default:** CVL contracts + orchestrator + wiring (§1–§6). Extended §7+: [`satellites/CRITIC_VERIFICATION_extended_depth.md`](satellites/CRITIC_VERIFICATION_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/CRITIC_VERIFICATION.md`](../guides/audit_slices/CRITIC_VERIFICATION.md).
@@ -29,7 +29,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/CRITIC_VERIFICATION_extended_depth.md`](arch/CRITIC_VERIFICATION_extended_depth.md) | extended depth |
+| [`satellites/CRITIC_VERIFICATION_extended_depth.md`](satellites/CRITIC_VERIFICATION_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

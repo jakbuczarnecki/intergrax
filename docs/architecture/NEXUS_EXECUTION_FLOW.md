@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW canon).
 
-- **Implement / audit default:** §1–§8 flow spine (purpose → classification). Extended §9+: [`arch/NEXUS_EXECUTION_FLOW_extended_depth.md`](arch/NEXUS_EXECUTION_FLOW_extended_depth.md).
+- **Implement / audit default:** §1–§8 flow spine (purpose → classification). Extended §9+: [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
@@ -28,7 +28,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/NEXUS_EXECUTION_FLOW_extended_depth.md`](arch/NEXUS_EXECUTION_FLOW_extended_depth.md) | extended depth |
+| [`satellites/NEXUS_EXECUTION_FLOW_extended_depth.md`](satellites/NEXUS_EXECUTION_FLOW_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

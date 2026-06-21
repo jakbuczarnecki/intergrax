@@ -17,7 +17,7 @@ L4 AHI
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers L4 AHI |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers L4 AHI · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` | **Read-scope:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
+| `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` | **Read-scope:** Hub §6 · [`plan/satellites/`](../plan/satellites/) satellites on demand |
 | `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` | Read-scope block + TOC sections for layers L4 AHI |
 
 ## Code entry (grep first — F5-B)

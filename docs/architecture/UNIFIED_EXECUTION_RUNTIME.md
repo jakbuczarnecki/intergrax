@@ -13,7 +13,7 @@
 
 **Do not read this entire file in one session** (UNIFIED_EXECUTION_RUNTIME canon).
 
-- **Implement / audit default:** UAEP + RuntimeEvent spine (§42.1–§42.7). Extended §42.8+: [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
+- **Implement / audit default:** UAEP + RuntimeEvent spine (§42.1–§42.7). Extended §42.8+: [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
@@ -29,7 +29,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) | runtime extended |
+| [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) | runtime extended |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

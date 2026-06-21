@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 **Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture ACP §30 · TIER3 §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
 
@@ -22,12 +22,12 @@
 
 **Do not read this entire file in one session** (TIER3_APPLICATION_ENVIRONMENT plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. **On demand (one max):** [`plan/plan/TIER3_APPLICATION_ENVIRONMENT_audit_history.md`](plan/plan/TIER3_APPLICATION_ENVIRONMENT_audit_history.md) · [`plan/plan/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/plan/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. **On demand (one max):** [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md) · [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -64,8 +64,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/plan/TIER3_APPLICATION_ENVIRONMENT_audit_history.md`](plan/plan/TIER3_APPLICATION_ENVIRONMENT_audit_history.md) | audit history |
-| [`plan/plan/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/plan/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md) | embedded detail |
+| [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_audit_history.md) | audit history |
+| [`plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md`](plan/satellites/TIER3_APPLICATION_ENVIRONMENT_embedded_detail.md) | embedded detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

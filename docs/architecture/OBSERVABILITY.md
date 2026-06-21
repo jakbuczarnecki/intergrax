@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY canon).
 
-- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4). Extended §5+: [`arch/OBSERVABILITY_extended_depth.md`](arch/OBSERVABILITY_extended_depth.md).
+- **Implement / audit default:** trace spine + HOS + signal planes (§1–§4). Extended §5+: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/OBSERVABILITY.md`](../plan/OBSERVABILITY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../guides/audit_slices/OBSERVABILITY.md).
@@ -30,7 +30,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/OBSERVABILITY_extended_depth.md`](arch/OBSERVABILITY_extended_depth.md) | extended depth |
+| [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

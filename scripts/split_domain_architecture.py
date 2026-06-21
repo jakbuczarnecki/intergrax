@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
-"""Split large architecture domain docs into token-efficient hubs + arch/ satellites (F4)."""
+"""Split large architecture domain docs into token-efficient hubs + satellites/ (F4)."""
 
 from __future__ import annotations
 
@@ -102,7 +102,7 @@ def split_arch_domain(cfg: ArchSplitConfig, *, reassemble: bool = True) -> dict[
     for stale in SAT_DIR.glob(f"{d}_*.md"):
         if stale.name not in satellites:
             stale.unlink()
-            print(f"  removed stale architecture/arch/{stale.name}")
+            print(f"  removed stale architecture/satellites/{stale.name}")
 
     if satellites:
         hub_text = insert_arch_satellite_index(hub_text, satellite_index_rows(d, satellites))
@@ -123,7 +123,7 @@ def split_arch_domain(cfg: ArchSplitConfig, *, reassemble: bool = True) -> dict[
         f"(was ~{stats['orig_tokens']:,}, satellites ~{stats['sat_tokens']:,})"
     )
     for fname in sorted(satellites):
-        print(f"  wrote architecture/arch/{fname}")
+        print(f"  wrote architecture/satellites/{fname}")
     return stats
 
 

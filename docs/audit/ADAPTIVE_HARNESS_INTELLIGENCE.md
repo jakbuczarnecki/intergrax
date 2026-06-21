@@ -63,7 +63,7 @@ AHI-LC Done · §6.1av AHI-MAINT Done · L4 auto-apply requires explicit product
 **Load first:** [`docs/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md) — compact slice (layers **L4 AHI**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -72,8 +72,8 @@ AHI-LC Done · §6.1av AHI-MAINT Done · L4 auto-apply requires explicit product
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
