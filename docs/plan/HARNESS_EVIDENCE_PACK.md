@@ -675,7 +675,7 @@ Posture must still label this surface as selected live Tier-0 evidence — not f
 |------|-------|--------|
 | C12 | Mode I / planning docs | **Done** |
 | C13 | Live probe contracts | **Done** |
-| C14 | Live probe runner | Planned |
+| C14 | Live probe runner | **Done** |
 | C15 | CLI + report + posture integration | Planned |
 | C16 | Docs closeout / cleanup | Planned |
 
@@ -686,12 +686,14 @@ Posture must still label this surface as selected live Tier-0 evidence — not f
 | ID | Priority | Status | Deliverable | Acceptance criteria |
 |----|----------|--------|-------------|---------------------|
 | **EVID-CORE-FU-01A** | P1 | **Done** | Live probe contracts | Contracts for selected live Tier-0 probe result/report; no runner yet |
-| **EVID-CORE-FU-01B** | P1 | **Planned** | Live probe runner | Executes selected probes locally with mock LLM/tools; no network/provider calls |
+| **EVID-CORE-FU-01B** | P1 | **Done** | Live probe runner | Executes selected probes locally with mock LLM/tools; no network/provider calls |
 | **EVID-CORE-FU-01C** | P1 | **Planned** | `intergrax evidence live-core` CLI | Writes live core probe report JSON/Markdown |
 | **EVID-CORE-FU-01D** | P1 | **Planned** | Posture integration | Posture maps live probe report to LIVE_TIER0_PROBES PASSED/FAILED/AVAILABLE |
 | **EVID-CORE-FU-01E** | P2 | **Planned** | Closeout docs | Documents final operator path and semantics |
 
 **Implementation note (C13):** C13 added live core probe contracts only; no runner, CLI, export, runtime execution, provider calls, or posture integration.
+
+**Implementation note (C14):** C14 added a controlled local live-core probe runner. It produces an in-memory LiveCoreProbeReport only. No CLI, no export, no posture integration, no provider calls, no network, no real LLM.
 
 ---
 
