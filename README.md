@@ -150,14 +150,18 @@ uv sync --extra dev
 ```bash
 uv run intergrax doctor
 uv run pytest -m gate -q
-```
 
-Optional — **core certification evidence** (deterministic mock contracts, not live LLM/provider E2E):
-
-```bash
+# Optional — core certification evidence
 uv run intergrax certify core --level L2
-# Reports: build/evidence/core_certification/report.json · report.md
+
+# Optional — report-derived evidence timeline
+uv run intergrax trace show
+uv run intergrax trace export
 ```
+
+`trace show` renders the report-derived timeline to stdout.
+`trace export` writes `build/evidence/trace/timeline.json` and `timeline.md`.
+This is deterministic mock evidence derived from the certification report, not live runtime tracing.
 
 See [Harness Environment — core certification](docs/guides/HARNESS_ENVIRONMENT.md#core-certification-evidence-path-hep).
 
@@ -187,7 +191,9 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 | `python -m intergrax.scaffold new-application {name} --profile lab` | Create Tier-3 host |
 | `python -m intergrax.scaffold new-stack {name}` | Agent + application bundle |
 | `uv run intergrax run {module}:app` | Launch any ASGI application host |
-| `uv run intergrax certify core --level L2` | Core certification report (mock contract evidence) |
+| `uv run intergrax certify core --level L2` | Core certification report (deterministic mock contract evidence) |
+| `uv run intergrax trace show` | Render report-derived evidence timeline to stdout |
+| `uv run intergrax trace export` | Write timeline JSON/Markdown under `build/evidence/trace/` |
 | `python -m intergrax.debug` | Debug CLI |
 
 **Full workflow:** [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) · **Contributing setup:** [CONTRIBUTING.md](CONTRIBUTING.md)

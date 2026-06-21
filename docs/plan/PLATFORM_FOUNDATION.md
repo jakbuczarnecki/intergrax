@@ -88,9 +88,9 @@ Verify (every harness PR):
 
 **Explicitly excluded:** Phase K, §50 marketplace, new Tier-0 mechanisms — [§6.3](#63-end-of-plan--deferred-product-work-only).
 
-### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae — Planned)
+### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae — Done)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6) — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md) § Mode I — HEP-2.  
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done** — operator path: `certify core` → `trace show` → `trace export`. Details: [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md).  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** §6.3 product work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 

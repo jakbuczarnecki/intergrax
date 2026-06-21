@@ -354,6 +354,28 @@ uv run intergrax trace export
 
 ---
 
+## HEP-2 closeout (2026-06-21)
+
+HEP-2 Trace Evidence Path: **Done**  
+EVID-TRACE-01…04: **Done**
+
+HEP-2 delivered the report-derived operator timeline path:
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace show
+uv run intergrax trace export
+```
+
+`trace show` renders the timeline to stdout.
+`trace export` writes `build/evidence/trace/timeline.json` and `timeline.md`.
+
+The timeline is derived from `build/evidence/core_certification/report.json` and uses deterministic mock evidence. It is not live RuntimeEventBus, persisted trace store, or provider tracing.
+
+The `certification_report_emitted` scenario is represented in the timeline by a `REPORT_WRITTEN` event kind — not a separate scenario lifecycle triplet.
+
+---
+
 ## Future waves (not approved for implementation)
 
 | Wave | IDs | Audit priority |
