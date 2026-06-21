@@ -800,7 +800,7 @@ This command is planned for implementation after N1.
 | N2 | Eval evidence contracts | **Done** |
 | N3 | Eval evidence runner | **Done** |
 | N4 | CLI + report export | **Done** |
-| N5 | Optional posture integration + closeout docs | Planned |
+| N5 | Optional posture integration + closeout docs | **Done** |
 
 ---
 
@@ -811,14 +811,49 @@ This command is planned for implementation after N1.
 | **EVID-EVAL-01** | P1 | Done | Eval evidence contracts | Report/result contracts for eval scenario library evidence; no runner yet |
 | **EVID-EVAL-02** | P1 | Done | Eval evidence runner | Read-only wrapper over existing eval check mechanism; no new eval framework |
 | **EVID-EVAL-03** | P1 | Done | `intergrax evidence eval` CLI + export | Writes `build/evidence/eval/report.json` and `report.md` |
-| **EVID-EVAL-04** | P2 | Planned | Posture integration | Optional read-only signal in evidence posture, if report exists |
-| **EVID-EVAL-05** | P2 | Planned | Closeout docs | Final operator path and semantics |
+| **EVID-EVAL-04** | P2 | Done | Posture integration | Optional read-only signal in evidence posture, if report exists |
+| **EVID-EVAL-05** | P2 | Done | Closeout docs | Final operator path and semantics |
 
 **Implementation note (N2):** N2 added eval evidence contracts only; no runner, CLI, export, posture integration, real LLM evaluation, provider comparison, or new eval framework.
 
 **Implementation note (N3):** N3 added a read-only eval evidence runner that produces an in-memory EvalEvidenceReport from existing local eval/check availability. It does not execute real LLM evaluation, compare providers, use network, write artifacts, add CLI, add posture integration, or create a new eval framework.
 
 **Implementation note (N4):** N4 added `intergrax evidence eval`, eval evidence JSON/Markdown export, and operator CLI rendering. It does not add posture integration, execute real LLM evaluation, compare providers, use network, execute the eval source script, or create a new eval framework.
+
+**Implementation note (N5):** N5 added optional read-only posture integration for eval evidence and closed EVID-EVAL docs. Missing eval report does not fail posture; existing eval report maps to EVAL_REGRESSION PASSED/FAILED/UNKNOWN.
+
+---
+
+## EVID-EVAL closeout
+
+EVID-EVAL Eval Regression Evidence: **Done**
+
+Delivered:
+
+- eval evidence contracts,
+- read-only eval evidence runner,
+- `intergrax evidence eval`,
+- `build/evidence/eval/report.json`,
+- `build/evidence/eval/report.md`,
+- optional posture integration via `EVAL_REGRESSION`.
+
+### Final operator path
+
+```bash
+uv run intergrax evidence eval
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+### Semantics
+
+* `evidence eval` packages existing local eval/check availability into deterministic evidence artifacts.
+* `evidence eval` does not execute real LLM evaluation.
+* `evidence eval` does not compare providers.
+* `evidence eval` does not use network.
+* `evidence eval` does not create a new eval framework.
+* `evidence posture` includes `EVAL_REGRESSION` only when `build/evidence/eval/report.json` exists.
+* Missing eval evidence report does not fail posture and does not make posture missing.
 
 ---
 

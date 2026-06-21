@@ -39,6 +39,7 @@ class EvidenceSignalKind(str, Enum):
     TRACE_TIMELINE = "TRACE_TIMELINE"
     W_ADAPT_L4 = "W_ADAPT_L4"
     LIVE_TIER0_PROBES = "LIVE_TIER0_PROBES"
+    EVAL_REGRESSION = "EVAL_REGRESSION"
 
 
 class EvidenceBasis(str, Enum):

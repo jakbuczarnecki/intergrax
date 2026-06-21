@@ -9,6 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.runtime.evidence.certification_report import CoreCertificationReport
+from intergrax.runtime.evidence.eval_evidence_contracts import (
+    EvalEvidenceReport,
+    EvalEvidenceStatus,
+)
 from intergrax.runtime.evidence.live_core_probe_contracts import (
     LiveCoreProbeReport,
     LiveCoreProbeStatus,
@@ -34,6 +38,7 @@ DEFAULT_TRACE_TIMELINE_PATH = Path("build/evidence/trace/timeline.json")
 DEFAULT_LIVE_CORE_PROBE_REPORT_PATH = Path(
     "build/evidence/live_core_probes/live_core_report.json"
 )
+DEFAULT_EVAL_EVIDENCE_REPORT_PATH = Path("build/evidence/eval/report.json")
 
 _POSTURE_TITLE = "Intergrax evidence posture"
 
@@ -105,6 +110,27 @@ def load_live_core_probe_report_if_available(path: Path) -> LiveCoreProbeReport 
         raise ValueError(
             f"failed to parse live core probe report at {path}"
         ) from exc
+
+
+def resolve_eval_evidence_report_path(
+    *,
+    root: Path,
+    eval_evidence_report_path: Path | None = None,
+) -> Path:
+    """Return absolute eval evidence report path under ``root``."""
+    if eval_evidence_report_path is not None:
+        return eval_evidence_report_path.resolve()
+    return (root / DEFAULT_EVAL_EVIDENCE_REPORT_PATH).resolve()
+
+
+def load_eval_evidence_report_if_available(path: Path) -> EvalEvidenceReport | None:
+    """Load eval evidence report from ``path``, or ``None`` when missing."""
+    if not path.is_file():
+        return None
+    try:
+        return EvalEvidenceReport.model_validate_json(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"failed to parse eval evidence report at {path}") from exc
 
 
 def load_trace_timeline_if_available(path: Path) -> TraceTimeline | None:
@@ -319,6 +345,102 @@ def build_live_tier0_probe_signal(
     )
 
 
+def _count_eval_check_statuses(
+    report: EvalEvidenceReport,
+) -> dict[str, int]:
+    counts = {
+        "checks_total": len(report.results),
+        "checks_passed": 0,
+        "checks_failed": 0,
+        "checks_skipped": 0,
+        "checks_unavailable": 0,
+    }
+    for result in report.results:
+        if result.status is EvalEvidenceStatus.PASSED:
+            counts["checks_passed"] += 1
+        elif result.status is EvalEvidenceStatus.FAILED:
+            counts["checks_failed"] += 1
+        elif result.status is EvalEvidenceStatus.SKIPPED:
+            counts["checks_skipped"] += 1
+        elif result.status is EvalEvidenceStatus.UNAVAILABLE:
+            counts["checks_unavailable"] += 1
+    return counts
+
+
+def build_eval_regression_signal(
+    *,
+    report: EvalEvidenceReport | None,
+    report_path: Path,
+) -> EvidenceSignal | None:
+    """Build EVAL_REGRESSION signal from an optional eval evidence report."""
+    if report is None:
+        return None
+
+    counts = _count_eval_check_statuses(report)
+    metadata = {
+        "report_id": report.report_id,
+        "report_status": report.status.value,
+        "checks_total": str(counts["checks_total"]),
+        "checks_passed": str(counts["checks_passed"]),
+        "checks_failed": str(counts["checks_failed"]),
+        "checks_skipped": str(counts["checks_skipped"]),
+        "checks_unavailable": str(counts["checks_unavailable"]),
+        "scope": "eval_regression_evidence",
+        "llm": "none",
+        "network": "disabled",
+        "provider_calls": "disabled",
+        "real_llm_evaluation": "disabled",
+    }
+    artifact_refs = [
+        EvidencePostureArtifactRef(
+            kind=EvidencePostureArtifactKind.OTHER,
+            path=str(report_path),
+        ),
+        EvidencePostureArtifactRef(
+            kind=EvidencePostureArtifactKind.OTHER,
+            path=str(report_path.parent / "report.md"),
+        ),
+    ]
+
+    if report.status is EvalEvidenceStatus.PASSED:
+        return create_evidence_signal(
+            kind=EvidenceSignalKind.EVAL_REGRESSION,
+            status=EvidenceSignalStatus.PASSED,
+            title="Eval regression evidence",
+            message=(
+                f"{counts['checks_passed']}/{counts['checks_total']} "
+                "eval evidence checks passed"
+            ),
+            basis=EvidenceBasis.REPORT_DERIVED,
+            artifact_refs=artifact_refs,
+            metadata=metadata,
+        )
+
+    if report.status is EvalEvidenceStatus.FAILED:
+        return create_evidence_signal(
+            kind=EvidenceSignalKind.EVAL_REGRESSION,
+            status=EvidenceSignalStatus.FAILED,
+            title="Eval regression evidence",
+            message=(
+                f"{counts['checks_failed']}/{counts['checks_total']} "
+                "eval evidence checks failed"
+            ),
+            basis=EvidenceBasis.REPORT_DERIVED,
+            artifact_refs=artifact_refs,
+            metadata=metadata,
+        )
+
+    return create_evidence_signal(
+        kind=EvidenceSignalKind.EVAL_REGRESSION,
+        status=EvidenceSignalStatus.UNKNOWN,
+        title="Eval regression evidence",
+        message=report.summary,
+        basis=EvidenceBasis.REPORT_DERIVED,
+        artifact_refs=artifact_refs,
+        metadata=metadata,
+    )
+
+
 def build_static_posture_signals(
     *,
     include_unknown_operational_signals: bool = True,
@@ -402,6 +524,7 @@ def collect_evidence_posture(
     core_report_path: Path | None = None,
     trace_timeline_path: Path | None = None,
     live_core_probe_report_path: Path | None = None,
+    eval_evidence_report_path: Path | None = None,
     include_unknown_operational_signals: bool = True,
     root_label: str = "local",
 ) -> EvidencePostureSummary:
@@ -418,10 +541,15 @@ def collect_evidence_posture(
         root=root,
         live_core_probe_report_path=live_core_probe_report_path,
     )
+    resolved_eval_path = resolve_eval_evidence_report_path(
+        root=root,
+        eval_evidence_report_path=eval_evidence_report_path,
+    )
 
     report = load_core_report_if_available(resolved_core_path)
     timeline = load_trace_timeline_if_available(resolved_timeline_path)
     live_core_report = load_live_core_probe_report_if_available(resolved_live_core_path)
+    eval_report = load_eval_evidence_report_if_available(resolved_eval_path)
 
     signals = [
         build_core_certification_signal(report=report, report_path=resolved_core_path),
@@ -435,6 +563,12 @@ def collect_evidence_posture(
             include_deferred_live_tier0_probes=False,
         ),
     ]
+    eval_signal = build_eval_regression_signal(
+        report=eval_report,
+        report_path=resolved_eval_path,
+    )
+    if eval_signal is not None:
+        signals.append(eval_signal)
 
     level = derive_posture_level(signals)
     summary = EvidencePostureSummary(
