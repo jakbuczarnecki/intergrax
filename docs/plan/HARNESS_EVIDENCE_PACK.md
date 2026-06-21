@@ -867,11 +867,102 @@ uv run intergrax evidence posture export
 
 ---
 
+## Evidence ROI roadmap
+
+This roadmap tracks the remaining highest-ROI HEP / evidence work after the completed evidence waves. It exists to keep implementation planning in repo documentation rather than in external chat context.
+
+### Current completed evidence surface
+
+| Area | Status | Operator value |
+|------|--------|----------------|
+| HEP-1 Core Certification | **Done** | `intergrax certify core` produces deterministic CORE-L* evidence |
+| HEP-2 Trace Evidence Path | **Done** | `intergrax trace show` / `trace export` produce report-derived trace evidence |
+| HEP-3 Evidence Posture / Scoreboard | **Done** | `intergrax evidence posture` aggregates evidence artifacts |
+| EVID-CORE-FU-01 Selected Live Tier-0 Probes | **Done** | `intergrax evidence live-core` adds selected local no-network live Tier-0 probes |
+| EVID-EVAL Eval Regression Evidence | **Done** | `intergrax evidence eval` packages eval regression evidence and optionally enriches posture |
+
+### Minimal remaining ROI
+
+The minimal remaining ROI is to complete cost evidence and then close the operator-facing evidence path.
+
+| Order | Work item | Expected task count | Status | Purpose |
+|-------|-----------|---------------------|--------|---------|
+| 1 | EVID-COST Mode I / spec | 1 | Planned | Approve the cost evidence wave and define scope/non-goals |
+| 2 | EVID-COST contracts | 1 | Planned | Define report/result contracts for cost evidence |
+| 3 | EVID-COST runner / collector | 1 | Planned | Package existing cost/budget information into evidence results |
+| 4 | EVID-COST CLI + JSON/Markdown export | 1 | Planned | Add `intergrax evidence cost` and write artifacts under `build/evidence/cost/` |
+| 5 | EVID-COST posture integration + closeout | 1 | Planned | Add optional posture signal and close EVID-COST docs |
+| 6 | Final evidence operator path closeout | 1 | Planned | Document one canonical evidence onboarding flow |
+
+Estimated remaining tasks for minimal ROI: **6**.
+
+### Strong ROI / onboarding-ready evidence path
+
+After minimal ROI, two additional tasks make the evidence path stronger for external developers and early adopters.
+
+| Order | Work item | Expected task count | Status | Purpose |
+|-------|-----------|---------------------|--------|---------|
+| 7 | End-to-end evidence smoke audit | 1 | Planned | Verify the full local evidence command sequence and artifact consistency |
+| 8 | README / onboarding update | 1 | Planned | Document how a developer verifies Intergrax harness locally |
+
+Estimated remaining tasks for strong ROI: **8 total**.
+
+### Optional presentation/adopter polish
+
+These are useful but not required for the core ROI path.
+
+| Order | Work item | Expected task count | Status | Purpose |
+|-------|-----------|---------------------|--------|---------|
+| 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
+| 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
+
+Estimated remaining tasks for polished adopter-ready ROI: **10 total**.
+
+### Deferred from highest-ROI path
+
+The following waves remain valuable, but are not part of the immediate highest-ROI evidence onboarding path:
+
+| Candidate | Reason deferred |
+|-----------|-----------------|
+| EVID-POL | High value, but heavier mechanism/UX boundary than cost evidence |
+| EVID-CAP | Useful for capability graph UX, but not required for the first evidence onboarding path |
+| EVID-REPLAY | Higher risk of product-depth overbuild |
+| EVID-CTX | Depends on broader context engineering architecture |
+| EVID-EXT | Useful for extension SDK maturity, but lower immediate evidence ROI |
+| EVID-SEC | Important enterprise value, but not next unless security proof becomes the priority |
+| EVID-ATT | Too early; depends on deeper attestation architecture |
+
+### Recommended next wave
+
+Recommended next wave: **EVID-COST**.
+
+Reason:
+
+EVID-COST is the natural remaining HEP-2 sibling after EVID-EVAL. It can likely follow the same evidence packaging pattern without introducing a new runtime mechanism: contracts → runner/collector → CLI/export → optional posture integration → closeout.
+
+Initial planned artifact location:
+
+```text
+build/evidence/cost/
+  report.json
+  report.md
+```
+
+Planned command:
+
+```bash
+uv run intergrax evidence cost
+```
+
+This command is not implemented yet.
+
+---
+
 ## Future waves
 
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
-| HEP-2 / EVID-COST | EVID-COST | External audit #7 — not Mode I approved yet |
+| HEP-2 / EVID-COST | EVID-COST | External audit #7 — **recommended next wave**, not Mode I approved yet |
 | HEP-4 | EVID-POL | External audit #3 — not Mode I approved yet |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 — not Mode I approved yet |
 
