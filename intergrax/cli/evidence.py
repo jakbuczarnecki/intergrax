@@ -27,6 +27,13 @@ from intergrax.runtime.evidence.live_core_probe_export import (
     format_live_core_probe_cli,
     write_live_core_probe_report,
 )
+from intergrax.runtime.evidence.eval_evidence_contracts import EvalEvidenceStatus
+from intergrax.runtime.evidence.eval_evidence_export import (
+    DEFAULT_EVAL_EVIDENCE_OUTPUT_DIR,
+    format_eval_evidence_cli,
+    write_eval_evidence_report,
+)
+from intergrax.runtime.evidence.eval_evidence_runner import run_eval_evidence_checks
 from intergrax.runtime.evidence.live_core_probe_runner import (
     LIVE_CORE_PROBE_OPERATOR_NOTE,
     run_live_core_probes,
@@ -111,6 +118,33 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         help="Render report to stdout only; do not write files.",
     )
 
+    eval_cmd = evidence_sub.add_parser(
+        "eval",
+        help="Run eval regression evidence checks and write eval report.",
+    )
+    eval_cmd.add_argument(
+        "--root",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository root for default output dir and source check path.",
+    )
+    eval_cmd.add_argument(
+        "--root-label",
+        default="local",
+        help="Label for deterministic report id/run id (default: local).",
+    )
+    eval_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Eval evidence output directory (default: build/evidence/eval).",
+    )
+    eval_cmd.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Render report to stdout only; do not write files.",
+    )
+
     posture = evidence_sub.add_parser(
         "posture",
         help="Render read-only evidence posture from existing artifacts.",
@@ -165,6 +199,32 @@ def _live_core_exit_code(status: LiveCoreProbeStatus) -> int:
     return 1
 
 
+def _eval_exit_code(status: EvalEvidenceStatus) -> int:
+    if status is EvalEvidenceStatus.PASSED:
+        return 0
+    return 1
+
+
+def _resolve_eval_output_dir(args: argparse.Namespace) -> Path:
+    if args.output_dir is not None:
+        return args.output_dir.resolve()
+    return (args.root.resolve() / DEFAULT_EVAL_EVIDENCE_OUTPUT_DIR).resolve()
+
+
+def run_evidence_eval(args: argparse.Namespace) -> int:
+    report = run_eval_evidence_checks(root=args.root, root_label=args.root_label)
+    print(format_eval_evidence_cli(report))
+
+    if args.no_write:
+        return _eval_exit_code(report.status)
+
+    output_dir = _resolve_eval_output_dir(args)
+    json_path, md_path = write_eval_evidence_report(report, output_dir)
+    print(f"eval evidence report: {json_path}")
+    print(f"eval evidence report: {md_path}")
+    return _eval_exit_code(report.status)
+
+
 def run_evidence_live_core(args: argparse.Namespace) -> int:
     report = run_live_core_probes(root_label=args.root_label)
     print(format_live_core_probe_cli(report))
@@ -209,6 +269,8 @@ def run_evidence_posture_export(args: argparse.Namespace) -> int:
 def run_evidence(args: argparse.Namespace) -> int:
     if args.evidence_command == "live-core":
         return run_evidence_live_core(args)
+    if args.evidence_command == "eval":
+        return run_evidence_eval(args)
     if args.evidence_command != "posture":
         return 2
     if args.posture_command == "export":

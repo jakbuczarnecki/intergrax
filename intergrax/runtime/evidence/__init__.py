@@ -136,6 +136,12 @@ from intergrax.runtime.evidence.eval_evidence_contracts import (
     generate_eval_evidence_report_id,
     validate_eval_evidence_report,
 )
+from intergrax.runtime.evidence.eval_evidence_export import (
+    DEFAULT_EVAL_EVIDENCE_OUTPUT_DIR,
+    format_eval_evidence_cli,
+    format_eval_evidence_markdown,
+    write_eval_evidence_report,
+)
 from intergrax.runtime.evidence.eval_evidence_runner import (
     DEFAULT_EVAL_SCENARIO_LIBRARY_CHECK_PATH,
     EVAL_EVIDENCE_OPERATOR_NOTE,
@@ -195,6 +201,7 @@ __all__ = [
     "DEFAULT_POSTURE_OUTPUT_DIR",
     "DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR",
     "DEFAULT_TRACE_TIMELINE_PATH",
+    "DEFAULT_EVAL_EVIDENCE_OUTPUT_DIR",
     "DEFAULT_EVAL_SCENARIO_LIBRARY_CHECK_PATH",
     "EVAL_EVIDENCE_KIND",
     "EVAL_EVIDENCE_OPERATOR_NOTE",
@@ -227,6 +234,8 @@ __all__ = [
     "build_timeline_from_certification_report",
     "build_trace_timeline_signal",
     "collect_evidence_posture",
+    "format_eval_evidence_cli",
+    "format_eval_evidence_markdown",
     "format_evidence_posture_cli",
     "format_evidence_posture_markdown",
     "format_live_core_probe_cli",
@@ -311,6 +320,7 @@ __all__ = [
     "validate_trace_timeline",
     "validate_trace_timeline_event_facets",
     "write_core_certification_report",
+    "write_eval_evidence_report",
     "write_evidence_posture",
     "write_live_core_probe_report",
     "write_trace_timeline",
