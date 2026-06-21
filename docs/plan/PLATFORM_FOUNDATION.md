@@ -90,7 +90,7 @@ Verify (every harness PR):
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **In progress** — EVID-POSTURE-01/02 Done; 03–04 Planned — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md).  
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done** — `evidence posture` / `evidence posture export` delivered — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md).  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** §6.3 product work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 
@@ -99,7 +99,7 @@ Verify (every harness PR):
 | HEP-0 | Mapping & contracts | EVID-CORE-01 … EVID-CORE-03 | **Done** (2026-06-21 C1) |
 | HEP-1 | Core evidence path (`intergrax certify core`) | EVID-CORE-04 … EVID-CORE-06 | **Done** (2026-06-21 C2–C3) |
 | HEP-2 | Trace evidence path (`intergrax trace show` · `intergrax trace export`) | EVID-TRACE-01 … EVID-TRACE-04 | **Done** (2026-06-21 C4–C6) |
-| HEP-3 | Evidence posture / scoreboard (`intergrax evidence posture`) | EVID-POSTURE-01 … EVID-POSTURE-04 | **In progress** — EVID-POSTURE-01/02 Done; 03–04 Planned |
+| HEP-3 | Evidence posture / scoreboard (`intergrax evidence posture`) | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** (2026-06-21 C10) |
 
 **Explicitly excluded:** §6.3 product apps/agents · W-ADAPT L4 replacement · duplicate doctor CI gates · Band 2ad (M.7 P7 — **Done**).
 

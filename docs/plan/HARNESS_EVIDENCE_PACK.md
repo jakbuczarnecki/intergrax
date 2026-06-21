@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **In progress** — EVID-POSTURE-01/02 **Done** (C8/C9); EVID-POSTURE-03/04 **Planned**.
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10).
 
 ---
 
@@ -438,8 +438,8 @@ The posture surface should make Intergrax easier to evaluate without reading the
 |----|------|----------|--------|-------------|---------------------|
 | **EVID-POSTURE-01** | HEP-3 | P1 | **Done** | Evidence posture contract | Pydantic/read-model contract for posture summary; no CLI yet |
 | **EVID-POSTURE-02** | HEP-3 | P1 | **Done** | Evidence posture collector | Reads existing artifacts and optional command outputs; no new runtime proof |
-| **EVID-POSTURE-03** | HEP-3 | P1 | **Planned** | `intergrax evidence posture` CLI | Renders current evidence posture to stdout |
-| **EVID-POSTURE-04** | HEP-3 | P2 | **Planned** | Posture export JSON/Markdown | Writes posture artifacts under `build/evidence/posture/` |
+| **EVID-POSTURE-03** | HEP-3 | P1 | **Done** | `intergrax evidence posture` CLI | Renders current evidence posture to stdout |
+| **EVID-POSTURE-04** | HEP-3 | P2 | **Done** | Posture export JSON/Markdown | Writes posture artifacts under `build/evidence/posture/` |
 
 ---
 
@@ -449,7 +449,7 @@ The posture surface should make Intergrax easier to evaluate without reading the
 |------|-----|-------|
 | C8 | EVID-POSTURE-01 | Posture contracts only | **Done** |
 | C9 | EVID-POSTURE-02 | Artifact collector / read-only aggregation | **Done** |
-| C10 | EVID-POSTURE-03/04 | CLI + export |
+| C10 | EVID-POSTURE-03/04 | CLI + export | **Done** |
 
 ---
 
@@ -474,6 +474,41 @@ The posture surface should make Intergrax easier to evaluate without reading the
 | Public exports | `intergrax/runtime/evidence/__init__.py` |
 
 **Verify:** `uv run pytest tests/unit/runtime/evidence/test_evidence_posture_collector.py -q`
+
+---
+
+## Implementation notes (C10 · EVID-POSTURE-03/04)
+
+| Artifact | Path |
+|----------|------|
+| Posture CLI/export | `intergrax/runtime/evidence/evidence_posture_export.py` |
+| CLI | `intergrax/cli/evidence.py` · `intergrax evidence posture` · `intergrax evidence posture export` |
+| Unit tests | `tests/unit/runtime/evidence/test_evidence_posture_export.py` · `test_evidence_cli.py` |
+| Public exports | `intergrax/runtime/evidence/__init__.py` |
+
+**Verify:** `uv run pytest tests/unit/runtime/evidence/test_evidence_posture_export.py tests/unit/runtime/evidence/test_evidence_cli.py -q`
+
+---
+
+## HEP-3 closeout (2026-06-21)
+
+HEP-3 Evidence Posture / Scoreboard: **Done**  
+EVID-POSTURE-01…04: **Done**
+
+**Operator path:**
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace export
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+**Operator semantics:**
+
+- Posture reads existing artifacts (`report.json`, `timeline.json`); it does not run doctor, pytest, certify core, or trace export.
+- Posture is not live runtime proof — `LIVE_TIER0_PROBES` remains **DEFERRED**; `W-ADAPT L4` remains **SEPARATE**.
+- `evidence posture` renders to stdout; `evidence posture export` writes `build/evidence/posture/posture.{json,md}`.
 
 ---
 
@@ -526,6 +561,7 @@ Expected posture summary should clearly state:
 |------|-----|--------|
 | HEP-1 Core Certification | EVID-CORE-01 … EVID-CORE-06 | **Done** — `certify core` report path delivered |
 | HEP-2 Trace Evidence Path | EVID-TRACE-01 … EVID-TRACE-04 | **Done** — `trace show` / `trace export` report-derived timeline delivered |
+| HEP-3 Evidence Posture / Scoreboard | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** — `evidence posture` / `evidence posture export` delivered |
 
 ---
 
@@ -534,7 +570,6 @@ Expected posture summary should clearly state:
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
 | HEP-2 (other) | EVID-EVAL, EVID-COST | External audit #4, #7 — not Mode I approved yet |
-| HEP-3 | EVID-POSTURE-01 … EVID-POSTURE-04 | External audit #12 — **Mode I seed** (see § Mode I — HEP-3); **Planned**, not approved for implementation |
 | HEP-4 | EVID-POL | External audit #3 |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 |
 | HEP-FU | **EVID-CORE-FU-01** | Replace selected mock scenarios with real Tier-0 runtime probes (post HEP-1; not mixed with CORE-L* contract delivery) |

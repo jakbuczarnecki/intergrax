@@ -72,6 +72,13 @@ from intergrax.runtime.evidence.evidence_posture_collector import (
     resolve_core_report_path,
     resolve_trace_timeline_path,
 )
+from intergrax.runtime.evidence.evidence_posture_export import (
+    DEFAULT_POSTURE_OUTPUT_DIR,
+    POSTURE_OPERATOR_NOTE,
+    format_evidence_posture_cli,
+    format_evidence_posture_markdown,
+    write_evidence_posture,
+)
 from intergrax.runtime.evidence.evidence_posture_contracts import (
     EvidenceBasis,
     EvidencePostureArtifactKind,
@@ -117,6 +124,7 @@ __all__ = [
     "CoreScenarioStatus",
     "DEFAULT_CORE_CERTIFICATION_OUTPUT_DIR",
     "DEFAULT_CORE_REPORT_PATH",
+    "DEFAULT_POSTURE_OUTPUT_DIR",
     "DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR",
     "DEFAULT_TRACE_TIMELINE_PATH",
     "EvidenceBasis",
@@ -134,6 +142,8 @@ __all__ = [
     "build_timeline_from_certification_report",
     "build_trace_timeline_signal",
     "collect_evidence_posture",
+    "format_evidence_posture_cli",
+    "format_evidence_posture_markdown",
     "format_trace_timeline_cli",
     "format_trace_timeline_markdown",
     "load_core_certification_report",
@@ -148,6 +158,7 @@ __all__ = [
     "resolve_trace_timeline_path",
     "run_core_scenario",
     "scenario_ids_for_level",
+    "POSTURE_OPERATOR_NOTE",
     "TraceTimeline",
     "TraceTimelineArtifactKind",
     "TraceTimelineArtifactRef",
@@ -179,5 +190,6 @@ __all__ = [
     "validate_trace_timeline",
     "validate_trace_timeline_event_facets",
     "write_core_certification_report",
+    "write_evidence_posture",
     "write_trace_timeline",
 ]
