@@ -1028,7 +1028,7 @@ Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path c
 
 Estimated remaining tasks for minimal ROI: **0**.
 
-**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. A3 README / onboarding update after smoke audit is Done. Strong ROI is closed. Remaining estimated tasks: polished/adopter-ready ROI **2**.
+**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. A3 README / onboarding update after smoke audit is Done. A4 Evidence artifact sanity checker / docs checker is Done. Strong ROI is closed. Remaining estimated tasks: polished/adopter-ready ROI **1**.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1047,10 +1047,10 @@ These are useful but not required for the core ROI path.
 
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
-| 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
-| 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
+| 9 | Evidence artifact sanity checker / docs checker (A4) | 1 | **Done** | Validate expected evidence artifacts and docs consistency |
+| 10 | External one-page harness narrative (A5) | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **2 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **1 total**.
 
 ### Deferred from highest-ROI path
 
@@ -1068,11 +1068,28 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **A4 — Evidence artifact sanity checker / docs checker** — A3 README / onboarding update after smoke audit **Done**.
+Recommended next wave: **A5 — External one-page harness narrative** — A4 Evidence artifact sanity checker / docs checker **Done**.
 
 Reason:
 
-Minimal ROI and strong ROI are closed. A2 verified the canonical local evidence command sequence and artifact consistency. A3 updated README and plan onboarding so early adopters can run and interpret the proof path. The highest-ROI remaining evidence work is optional artifact/docs consistency validation. See § Evidence ROI roadmap, § A2 closeout, and § A3 closeout.
+Minimal ROI and strong ROI are closed. A2 verified the canonical local evidence command sequence and artifact consistency. A3 updated README and plan onboarding so early adopters can run and interpret the proof path. A4 added a local sanity checker for expected artifacts and README proof-path references. The highest-ROI remaining evidence work is optional external harness narrative. See § Evidence ROI roadmap, § A2 closeout, § A3 closeout, and § A4 closeout.
+
+---
+
+## A4 — Evidence artifact sanity checker / docs checker closeout
+
+A4 Evidence artifact sanity checker / docs checker: **Done**
+
+### Implementation
+
+| File | Change |
+|------|--------|
+| `scripts/check_evidence_artifacts.py` | Local, deterministic, no-network checker for 12 expected proof-path artifacts and README proof-path references |
+| `README.md` | Concise checker command under § Proof of platform |
+| `HARNESS_EVIDENCE_PACK.md` | A4 closeout; ROI counters; recommended next wave → A5 |
+| `PLATFORM_FOUNDATION.md` | §6.1aw — A4 Done; next polished/adopter-ready path → A5 |
+
+**Implementation note (A4):** Validates existing local artifacts and docs only. Does not run the proof path, generate evidence, call providers, or import Intergrax runtime modules. Operator command: `python scripts/check_evidence_artifacts.py`.
 
 ---
 

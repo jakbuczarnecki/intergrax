@@ -249,6 +249,14 @@ All artifacts land under `build/evidence/`:
 * cloud cost estimation
 * product-specific acceptance
 
+**Verify artifacts and docs** (after running the proof path):
+
+```bash
+python scripts/check_evidence_artifacts.py
+```
+
+Confirms expected evidence artifacts exist and README still documents the canonical proof path.
+
 **Next steps:** After the proof path, inspect `build/evidence/posture/posture.md` first, then drill into the individual evidence reports. For roadmap and status, see [HARNESS_EVIDENCE_PACK.md](docs/plan/HARNESS_EVIDENCE_PACK.md). For architecture framing, see [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md](docs/architecture/satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md).
 
 ---
