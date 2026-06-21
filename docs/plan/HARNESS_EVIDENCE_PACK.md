@@ -590,7 +590,7 @@ HEP-1/2/3 provide deterministic mock evidence, report-derived timeline, and read
 
 ### Target outcome
 
-After the full EVID-CORE-FU-01 implementation, `LIVE_TIER0_PROBES` is no longer only **DEFERRED** in posture when a live probe report exists. Posture can show **PASSED** / **FAILED** / **AVAILABLE** for selected probes, while still clearly stating that this is selected live Tier-0 evidence, not full runtime certification.
+After the full EVID-CORE-FU-01 implementation, `LIVE_TIER0_PROBES` is no longer only **DEFERRED** in posture when a live probe report exists. Posture can show **PASSED** / **FAILED** / **UNKNOWN** for selected probes, while still clearly stating that this is selected live Tier-0 evidence, not full runtime certification.
 
 ### First selected probes (C13–C15 scope)
 
@@ -661,11 +661,11 @@ build/evidence/live_core_probes/
 uv run intergrax evidence live-core
 ```
 
-This command is planning only for C12. Implementation is C15 scope.
+This command was implemented in C15.
 
-### Planned integration with posture
+### Posture integration semantics
 
-After EVID-CORE-FU-01 implementation, `intergrax evidence posture` should read the live core probe report when present and map `LIVE_TIER0_PROBES` from **DEFERRED** to **PASSED** / **FAILED** / **AVAILABLE**. If the live probe report is missing, posture should continue to show `LIVE_TIER0_PROBES` as **DEFERRED**.
+After EVID-CORE-FU-01 implementation, `intergrax evidence posture` should read the live core probe report when present and map `LIVE_TIER0_PROBES` from **DEFERRED** to **PASSED** / **FAILED** / **UNKNOWN**. If the live probe report is missing, posture should continue to show `LIVE_TIER0_PROBES` as **DEFERRED**.
 
 Posture must still label this surface as selected live Tier-0 evidence — not full runtime certification, not production certification, not provider-validated proof.
 
@@ -688,7 +688,7 @@ Posture must still label this surface as selected live Tier-0 evidence — not f
 | **EVID-CORE-FU-01A** | P1 | **Done** | Live probe contracts | Contracts for selected live Tier-0 probe result/report; no runner yet |
 | **EVID-CORE-FU-01B** | P1 | **Done** | Live probe runner | Executes selected probes locally with mock LLM/tools; no network/provider calls |
 | **EVID-CORE-FU-01C** | P1 | **Done** | `intergrax evidence live-core` CLI | Writes live core probe report JSON/Markdown |
-| **EVID-CORE-FU-01D** | P1 | **Done** | Posture integration | Posture maps live probe report to LIVE_TIER0_PROBES PASSED/FAILED/AVAILABLE |
+| **EVID-CORE-FU-01D** | P1 | **Done** | Posture integration | Posture maps live probe report to LIVE_TIER0_PROBES PASSED/FAILED/UNKNOWN |
 | **EVID-CORE-FU-01E** | P2 | **Done** | Closeout docs | Documents final operator path and semantics |
 
 **Implementation note (C13):** C13 added live core probe contracts only; no runner, CLI, export, runtime execution, provider calls, or posture integration.
@@ -752,7 +752,6 @@ uv run intergrax evidence posture export
 | HEP-2 (other) | EVID-EVAL, EVID-COST | External audit #4, #7 — not Mode I approved yet |
 | HEP-4 | EVID-POL | External audit #3 |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 |
-| HEP-FU | **EVID-CORE-FU-01** | **Done** — selected local live Tier-0 probes delivered; no network/provider/real LLM; does not replace deterministic CORE certification |
 
 Register future rows in this file when Mode I approves each wave.
 
