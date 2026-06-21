@@ -82,11 +82,45 @@ class AgentEngine:
 
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         agent = self._resolve_agent(request)
-        return await self.run_agent(agent, request, uaep_executor=self._uaep)
+        return await self._execute_agent_impl(agent, request, self._uaep, registry=self._registry)
 
     async def run_with_result(self, request: RuntimeRequest) -> AgentExecutionResult:
         agent = self._resolve_agent(request)
-        return await self.run_agent_with_result(agent, request, uaep_executor=self._uaep)
+        contract = self._resolve_agent_contract(agent)
+        run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
+        try:
+            answer, validation, _context, governance, structured_data = (
+                await self._execute_agent_impl(
+                    agent,
+                    request,
+                    self._uaep,
+                    registry=self._registry,
+                )
+            )
+        except UAEPBlockedError as exc:
+            return AgentExecutionResult(
+                agent_id=contract.id,
+                run_id=run_id,
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[str(exc)],
+            )
+        execution = runtime_answer_to_agent_result(
+            answer,
+            agent_id=contract.id,
+            valid=validation.valid,
+            validation_errors=validation.errors,
+            governance=governance,
+        )
+        if structured_data:
+            execution.structured_data.update(structured_data)
+        return execution
+
+    def _resolve_agent_contract(self, agent: Agent):
+        author_contract = agent.get_contract()
+        if self._registry is not None and self._registry.has(author_contract.id):
+            return self._registry.get_contract(author_contract.id)
+        return author_contract
 
     def _resolve_agent(self, request: RuntimeRequest) -> Agent:
         agent_id = request.agent_id
@@ -122,12 +156,14 @@ class AgentEngine:
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
         event_bus: Optional[RuntimeEventBus] = None,
+        registry: AgentRegistry | None = None,
     ) -> RuntimeAnswer:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
         answer, _validation, _context, _governance, _structured = await AgentEngine._execute_agent_impl(
             agent,
             request,
             executor,
+            registry=registry,
         )
         return answer
 
@@ -138,9 +174,12 @@ class AgentEngine:
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
         event_bus: Optional[RuntimeEventBus] = None,
+        registry: AgentRegistry | None = None,
     ) -> AgentExecutionResult:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
         contract = agent.get_contract()
+        if registry is not None and registry.has(contract.id):
+            contract = registry.get_contract(contract.id)
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
         try:
             answer, validation, _context, governance, structured_data = (
@@ -148,6 +187,7 @@ class AgentEngine:
                     agent,
                     request,
                     executor,
+                    registry=registry,
                 )
             )
         except UAEPBlockedError as exc:
@@ -174,6 +214,8 @@ class AgentEngine:
         agent: Agent,
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
+        *,
+        registry: AgentRegistry | None = None,
     ) -> tuple[
         RuntimeAnswer,
         ValidationResult,
@@ -195,7 +237,15 @@ class AgentEngine:
             return answer, validation, agent.build_context(request), None, dict(result.structured_data)
 
         if supports_uaep(agent):
-            answer, validation, context, governance = await uaep_executor.execute(agent, request)
+            author_contract = agent.get_contract()
+            resolved_contract = author_contract
+            if registry is not None and registry.has(author_contract.id):
+                resolved_contract = registry.get_contract(author_contract.id)
+            answer, validation, context, governance = await uaep_executor.execute(
+                agent,
+                request,
+                contract=resolved_contract,
+            )
             return answer, validation, context, governance, {}
 
         raise ValueError(
