@@ -49,6 +49,20 @@ from intergrax.runtime.evidence.trace_timeline_contracts import (
     generate_timeline_event_id,
     validate_trace_timeline,
 )
+from intergrax.runtime.evidence.trace_timeline_facets import (
+    TraceBudgetFacet,
+    TraceBudgetStatus,
+    TraceEvidenceFacet,
+    TraceEvidenceOrigin,
+    TraceHitlFacet,
+    TraceHitlStatus,
+    TracePolicyFacet,
+    TracePolicyOutcome,
+    TraceScenarioLifecycleFacet,
+    TraceScenarioPhase,
+    TraceTimelineEventFacets,
+    validate_trace_timeline_event_facets,
+)
 
 __all__ = [
     "CORE_CERTIFICATION_EVIDENCE_KIND",
@@ -83,9 +97,21 @@ __all__ = [
     "TraceTimelineSeverity",
     "TraceTimelineSourceKind",
     "TraceTimelineSourceRef",
+    "TraceBudgetFacet",
+    "TraceBudgetStatus",
+    "TraceEvidenceFacet",
+    "TraceEvidenceOrigin",
+    "TraceHitlFacet",
+    "TraceHitlStatus",
+    "TracePolicyFacet",
+    "TracePolicyOutcome",
+    "TraceScenarioLifecycleFacet",
+    "TraceScenarioPhase",
+    "TraceTimelineEventFacets",
     "create_trace_timeline_event",
     "generate_timeline_event_id",
     "validate_core_scenario_catalog",
     "validate_trace_timeline",
+    "validate_trace_timeline_event_facets",
     "write_core_certification_report",
 ]

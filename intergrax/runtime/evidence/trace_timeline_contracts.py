@@ -11,6 +11,11 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.runtime.evidence.trace_timeline_facets import (
+    TraceTimelineEventFacets,
+    validate_trace_timeline_event_facets,
+)
+
 
 class TraceTimelineKind(str, Enum):
     CORE_CERTIFICATION = "core_certification"
@@ -83,6 +88,7 @@ class TraceTimelineEvent(BaseModel):
     artifact_refs: list[TraceTimelineArtifactRef] = Field(default_factory=list)
     scenario_id: str | None = None
     timestamp: datetime | None = None
+    facets: TraceTimelineEventFacets | None = None
 
 
 class TraceTimeline(BaseModel):
@@ -151,6 +157,7 @@ def create_trace_timeline_event(
     scenario_id: str | None = None,
     event_id: str | None = None,
     timestamp: datetime | None = None,
+    facets: TraceTimelineEventFacets | None = None,
 ) -> TraceTimelineEvent:
     """Build a timeline event with a generated ``event_id`` when omitted."""
     resolved_event_id = event_id or generate_timeline_event_id(
@@ -169,6 +176,7 @@ def create_trace_timeline_event(
         artifact_refs=list(artifact_refs or []),
         scenario_id=scenario_id,
         timestamp=timestamp,
+        facets=facets,
     )
 
 
@@ -237,6 +245,8 @@ def validate_trace_timeline(timeline: TraceTimeline) -> None:
                 violations.append(
                     f"source ref must not be empty (sequence={event.sequence})"
                 )
+
+        validate_trace_timeline_event_facets(event)
 
     if violations:
         raise ValueError("; ".join(violations))
