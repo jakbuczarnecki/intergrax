@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — Mode I approved (operator); doc apply only; implementation deferred.
+**Last updated:** 2026-06-21 — HEP-1 complete: EVID-CORE-01…06 **Done**; `intergrax certify core` delivered as deterministic mock contract evidence. Live runtime probes deferred to EVID-CORE-FU-01.
 
 ---
 
@@ -59,7 +59,7 @@ Intergrax is **architecture-heavy** (32/32 L3 scorecard, extensive CI gates) but
 | `phase_v_closeout_gate --enforce-l4` | Governance artifacts OK? | Capability graph + maturity evidence | closeout stdout |
 | `check_l4_runtime_evidence.py` | W-ADAPT closed-loop OK? | 30-day utility / rollback on golden scenarios | `l4_runtime_evidence.json` |
 | `check_mvp_promotion_gates.py` G0–G2 | MVP runnable baseline exists? | File existence checks | G0–G2 OK |
-| **`intergrax certify core`** | Does **live harness** pass controlled E2E scenarios? | Mock providers, deterministic, no network | CORE-L* + certification report |
+| **`intergrax certify core`** | Does the CORE evidence contract path execute end-to-end? | Deterministic mock evidence, no network/real LLM; not live HarnessKernel/Nexus/provider E2E | CORE-L* + JSON/Markdown certification report |
 
 **CI placement (operator decision):** `certify core` is **operator-local** at HEP-1 launch. **Not** a default PR gate. Optional later: CORE-L1 as nightly or release preflight — not in scope for HEP-1.
 
@@ -162,41 +162,27 @@ Golden scenario IDs for echo baseline: `golden-echo`, `golden-policy`, `golden-r
 
 ---
 
-## Proposed modules (implementation — C1 partial)
-
-**Delivered (C1 · EVID-CORE-03):**
-
-```text
-intergrax/runtime/evidence/
-  __init__.py
-  core_certification_spec.py    # EVID-CORE-02 code enums + CORE_LEVEL_SCENARIOS
-  scenario_contracts.py         # EVID-CORE-03 contracts + validate_core_scenario_catalog()
-tests/unit/runtime/evidence/
-  test_core_certification_spec.py
-  test_scenario_contracts.py
-```
-
-**Delivered (C2 · EVID-CORE-04/05):**
+## Delivered modules (HEP-1 complete)
 
 ```text
 intergrax/cli/certify.py
 intergrax/runtime/evidence/
-  scenario_runner.py
-  certification_report.py
+  __init__.py
+  core_certification_spec.py    # EVID-CORE-02 code enums + CORE_LEVEL_SCENARIOS
+  scenario_contracts.py         # EVID-CORE-03 contracts + validate_core_scenario_catalog()
+  scenario_runner.py            # deterministic mock evidence runner
+  certification_report.py       # JSON + Markdown report
 tests/unit/runtime/evidence/
+  test_core_certification_spec.py
+  test_scenario_contracts.py
   test_scenario_runner.py
   test_certification_report.py
   test_certify_cli.py
 ```
 
-**Deferred (C3+):**
+**Docs (EVID-CORE-06):** README Quick start + `guides/HARNESS_ENVIRONMENT.md` § Core certification evidence path (HEP).
 
-```text
-intergrax/cli/certify.py          # delivered C2 — keep for EVID-CORE-06 docs only
-tests/integration/evidence/test_core_certification.py  # optional later
-```
-
-**Deferred (C3 · EVID-CORE-06):** **Done** — README Quick start + `guides/HARNESS_ENVIRONMENT.md` § Core certification evidence path (HEP).
+**Follow-up (EVID-CORE-FU-01):** `tests/integration/evidence/test_core_certification.py` — optional live Tier-0 runtime probes; not HEP-1 scope.
 
 **Tier boundaries:** Tier-0 only — no `applications/` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
 

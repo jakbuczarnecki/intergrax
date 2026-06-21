@@ -23,7 +23,7 @@ Phase S completes **environment** readiness so any new agent uses Integration �
 
 ## Core certification evidence path (HEP)
 
-**Plan:** [`plan/HARNESS_EVIDENCE_PACK.md`](plan/HARNESS_EVIDENCE_PACK.md) (Band 2ae · Phase HEP).
+**Plan:** [`HARNESS_EVIDENCE_PACK.md`](../plan/HARNESS_EVIDENCE_PACK.md) (Band 2ae · Phase HEP).
 
 **~10-minute onboarding** after clone/install — separate **repo health** from **core evidence packaging**:
 
