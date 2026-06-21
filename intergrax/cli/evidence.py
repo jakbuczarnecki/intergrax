@@ -10,6 +10,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from intergrax.utils import attribute_access
 from intergrax.runtime.evidence.evidence_posture_collector import (
     collect_evidence_posture,
     resolve_core_report_path,
@@ -219,9 +220,9 @@ def _collect_from_args(args: argparse.Namespace):
             root=args.root,
             core_report_path=args.core_report,
             trace_timeline_path=args.trace_timeline,
-            live_core_probe_report_path=getattr(args, "live_core_report", None),
-            eval_evidence_report_path=getattr(args, "eval_report", None),
-            cost_evidence_report_path=getattr(args, "cost_report", None),
+            live_core_probe_report_path=attribute_access.optional(args, "live_core_report", None),
+            eval_evidence_report_path=attribute_access.optional(args, "eval_report", None),
+            cost_evidence_report_path=attribute_access.optional(args, "cost_report", None),
             include_unknown_operational_signals=not args.no_operational_unknowns,
             root_label=args.root_label,
         )
@@ -232,7 +233,7 @@ def _collect_from_args(args: argparse.Namespace):
 
 
 def _resolve_output_dir(args: argparse.Namespace) -> Path:
-    if getattr(args, "output_dir", None) is not None:
+    if attribute_access.optional(args, "output_dir", None) is not None:
         return args.output_dir.resolve()
     return (args.root.resolve() / DEFAULT_POSTURE_OUTPUT_DIR).resolve()
 
