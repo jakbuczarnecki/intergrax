@@ -1028,7 +1028,7 @@ Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path c
 
 Estimated remaining tasks for minimal ROI: **0**.
 
-**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. Remaining estimated tasks: strong ROI **1**, polished/adopter-ready ROI **3**.
+**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. A3 README / onboarding update after smoke audit is Done. Strong ROI is closed. Remaining estimated tasks: polished/adopter-ready ROI **2**.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1037,9 +1037,9 @@ After minimal ROI, two additional tasks make the evidence path stronger for exte
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
 | 7 | End-to-end evidence smoke audit (A2) | 1 | **Done** | Verify the full local evidence command sequence and artifact consistency |
-| 8 | README / onboarding update after smoke audit (A3) | 1 | Planned | Full onboarding documentation after end-to-end evidence smoke audit |
+| 8 | README / onboarding update after smoke audit (A3) | 1 | **Done** | Full onboarding documentation after end-to-end evidence smoke audit |
 
-Estimated remaining tasks for strong ROI: **1 total**.
+Estimated remaining tasks for strong ROI: **0**.
 
 ### Optional presentation/adopter polish
 
@@ -1050,7 +1050,7 @@ These are useful but not required for the core ROI path.
 | 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
 | 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **3 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **2 total**.
 
 ### Deferred from highest-ROI path
 
@@ -1068,11 +1068,31 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **A3 — README / onboarding update after smoke audit** — A2 end-to-end evidence smoke audit **Done**.
+Recommended next wave: **A4 — Evidence artifact sanity checker / docs checker** — A3 README / onboarding update after smoke audit **Done**.
 
 Reason:
 
-Minimal ROI is closed. A2 verified the canonical local evidence command sequence and artifact consistency. The highest-ROI remaining evidence work is full onboarding documentation after smoke audit. See § Evidence ROI roadmap and § A2 closeout.
+Minimal ROI and strong ROI are closed. A2 verified the canonical local evidence command sequence and artifact consistency. A3 updated README and plan onboarding so early adopters can run and interpret the proof path. The highest-ROI remaining evidence work is optional artifact/docs consistency validation. See § Evidence ROI roadmap, § A2 closeout, and § A3 closeout.
+
+---
+
+## A3 — README / onboarding update after smoke audit closeout
+
+A3 README / onboarding update after smoke audit: **Done**
+
+### Documentation updated
+
+| File | Change |
+|------|--------|
+| `README.md` | Strengthened § Proof of platform — framing, canonical commands, artifact table, prove/does-not-prove boundaries, next steps |
+| `HARNESS_EVIDENCE_PACK.md` | A3 closeout; ROI counters; recommended next wave → A4 |
+| `PLATFORM_FOUNDATION.md` | §6.1aw — strong ROI closed; polished/adopter-ready path |
+
+### Operator onboarding outcome
+
+Early developers/adopters can answer from README alone: what the proof path is, why to run it, exact commands, expected artifacts, what it proves, what it explicitly does not prove, and where to go next (`posture.md` first, then individual reports).
+
+**Implementation note (A3):** Docs-only. No code, tests, smoke audit rerun, or provider/network execution. Canonical command sequence unchanged from A2.
 
 ---
 
