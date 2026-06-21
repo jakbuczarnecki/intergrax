@@ -1,5 +1,6 @@
 # Intergrax — Agent Instructions (Cursor stub)
 
+> **Doc map:** [`docs/DOCUMENTATION_MAP.md`](docs/DOCUMENTATION_MAP.md) — roles of all instructional artifacts (human · operator · agent).  
 > **Full reference:** [`docs/guides/AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) — use `@docs/guides/AGENT_INSTRUCTIONS.md` for task routing, verification commands, ADR workflow, anti-patterns.
 > **Always-on workflow:** [`.cursor/rules/intergrax-iteration.mdc`](.cursor/rules/intergrax-iteration.mdc). **Token setup:** [`docs/guides/CURSOR_TOKEN_SETUP.md`](docs/guides/CURSOR_TOKEN_SETUP.md)
 

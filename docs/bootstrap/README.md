@@ -1,5 +1,6 @@
 # Cursor session bootstrap (paste files)
 
+**Doc map:** [`../DOCUMENTATION_MAP.md`](../DOCUMENTATION_MAP.md) — bootstrap vs audit vs audit_results roles.  
 **F3 session rule:** `ONE DOMAIN = ONE NEW CHAT` — see [`../guides/CURSOR_TOKEN_SETUP.md`](../guides/CURSOR_TOKEN_SETUP.md).  
 **F2 setup:** root `AGENTS.md` is a Cursor auto-load stub; full reference in `docs/guides/AGENT_INSTRUCTIONS.md`. Keep `intergrax-iteration.mdc` always-on — do not delete stub via Settings trash icon.
 

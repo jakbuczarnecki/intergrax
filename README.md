@@ -446,6 +446,18 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 <a id="start-here"></a>
 
+> **Doc roles and Cursor workflow:** [DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) — single navigation hub (human · operator · AI agent).
+
+### Quick doc routing
+
+| You need… | Read |
+|-----------|------|
+| Map of all doc roles | [DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) |
+| Architecture hub + domain pairs | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) |
+| Cursor audit / implement session | [bootstrap/README.md](docs/bootstrap/README.md) → [audit/README.md](docs/audit/README.md) |
+| AI agent instructions (full) | [AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) |
+| Milestone history | [implementation-journal/README.md](docs/implementation-journal/README.md) |
+
 ### Start here
 
 | I want to… | Read |
