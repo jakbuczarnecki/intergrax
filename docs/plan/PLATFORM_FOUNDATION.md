@@ -97,7 +97,7 @@ Verify (every harness PR):
 | Wave | Scope | IDs | Status |
 |------|-------|-----|--------|
 | HEP-0 | Mapping & contracts | EVID-CORE-01 … EVID-CORE-03 | **Done** (2026-06-21 C1) |
-| HEP-1 | Core evidence path (`intergrax certify core`) | EVID-CORE-04 … EVID-CORE-06 | **Planned** |
+| HEP-1 | Core evidence path (`intergrax certify core`) | EVID-CORE-04 … EVID-CORE-06 | **In progress** — 04–05 **Done** (C2); 06 **Planned** |
 
 **Explicitly excluded:** §6.3 product apps/agents · W-ADAPT L4 replacement · duplicate doctor CI gates · Band 2ad (M.7 P7 — **Done**).
 

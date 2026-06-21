@@ -135,8 +135,8 @@ Condensed matrix from external infrastructure audit → existing evidence → ga
 | **EVID-CORE-01** | HEP-0 | P1 | **Done** | External audit → evidence matrix in plan | § External audit mapping (2026-06-21) |
 | **EVID-CORE-02** | HEP-0 | P1 | **Done** (doc) | Certification spec: CI gate vs certify-core vs W-ADAPT L4 | § Certification semantics + § CORE levels delivered in docs; **code enums** (`CoreCertificationLevel`, etc.) ship with EVID-CORE-03 in C1 — not a separate reopen of this row |
 | **EVID-CORE-03** | HEP-0 | P1 | **Done** | Runtime scenario contracts (12 scenarios) | `intergrax/runtime/evidence/` — Pydantic contracts; deterministic; no network; `validate_core_scenario_catalog()` |
-| **EVID-CORE-04** | HEP-1 | P0 | **Planned** | `intergrax certify core` CLI | `intergrax/cli/certify.py`; `--level L1\|L2\|L3`; exit non-zero on failure; registered in `cli/main.py` |
-| **EVID-CORE-05** | HEP-1 | P1 | **Planned** | JSON + Markdown certification report | Writes `build/evidence/core_certification/report.json` + `report.md`; per-scenario PASS/FAIL + evidence refs |
+| **EVID-CORE-04** | HEP-1 | P0 | **Done** | `intergrax certify core` CLI | `intergrax/cli/certify.py`; `--level L1\|L2\|L3`; exit non-zero on failure |
+| **EVID-CORE-05** | HEP-1 | P1 | **Done** | JSON + Markdown certification report | `build/evidence/core_certification/report.json` + `report.md` |
 | **EVID-CORE-06** | HEP-1 | P2 | **Planned** | README / HARNESS_ENVIRONMENT evidence path | 30-min onboarding: doctor → certify core → trace; linked from hub + `guides/HARNESS_ENVIRONMENT.md` |
 
 ---
@@ -176,15 +176,30 @@ tests/unit/runtime/evidence/
   test_scenario_contracts.py
 ```
 
-**Deferred (C2+):**
+**Delivered (C2 · EVID-CORE-04/05):**
 
 ```text
 intergrax/cli/certify.py
 intergrax/runtime/evidence/
   scenario_runner.py
   certification_report.py
-  scenarios/
-tests/integration/evidence/test_core_certification.py
+tests/unit/runtime/evidence/
+  test_scenario_runner.py
+  test_certification_report.py
+  test_certify_cli.py
+```
+
+**Deferred (C3+):**
+
+```text
+intergrax/cli/certify.py          # delivered C2 — keep for EVID-CORE-06 docs only
+tests/integration/evidence/test_core_certification.py  # optional later
+```
+
+**Deferred (C3 · EVID-CORE-06):**
+
+```text
+README / guides/HARNESS_ENVIRONMENT evidence path
 ```
 
 **Tier boundaries:** Tier-0 only — no `applications/` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
@@ -193,16 +208,19 @@ tests/integration/evidence/test_core_certification.py
 
 ---
 
-## Implementation notes (C1)
+## Implementation notes (C1 + C2)
 
 | Artifact | Path |
 |----------|------|
 | CORE levels + surfaces | `intergrax/runtime/evidence/core_certification_spec.py` |
 | Scenario contracts (12) | `intergrax/runtime/evidence/scenario_contracts.py` |
+| Scenario runner (mock proof) | `intergrax/runtime/evidence/scenario_runner.py` |
+| Report JSON/Markdown | `intergrax/runtime/evidence/certification_report.py` |
+| CLI | `intergrax/cli/certify.py` · `intergrax certify core` |
 | Public exports | `intergrax/runtime/evidence/__init__.py` |
 | Unit tests | `tests/unit/runtime/evidence/` |
 
-**Verify:** `uv run pytest tests/unit/runtime/evidence -q`
+**Verify:** `uv run pytest tests/unit/runtime/evidence -q` · `uv run intergrax certify core --level L2`
 
 ---
 
@@ -211,7 +229,7 @@ tests/integration/evidence/test_core_certification.py
 | PR | IDs | Scope | Status |
 |----|-----|-------|--------|
 | **PR1** | EVID-CORE-02 (code), EVID-CORE-03 | Spec enums + scenario contracts + unit tests | **Done** (C1) |
-| **PR2** | EVID-CORE-04, EVID-CORE-05 | CLI + report generation | **Planned** |
+| **PR2** | EVID-CORE-04, EVID-CORE-05 | CLI + report generation | **Done** (C2) |
 | **PR3** | EVID-CORE-06 | Docs: README, HARNESS_ENVIRONMENT evidence path | **Planned** |
 
 **Verify after PR2:** `uv run intergrax certify core --level L2` + `uv run pytest -m gate -q`
