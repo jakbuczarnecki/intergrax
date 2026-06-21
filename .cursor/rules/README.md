@@ -2,9 +2,13 @@
 
 | File | alwaysApply | Purpose |
 |------|-------------|---------|
-| `intergrax-iteration.mdc` | **Yes** | Workflow, F3 read budget, O1 terse output (~620 tok/turn) |
+| `intergrax-token-budget.mdc` | **Yes** | I1 input + O1 output budget; mandatory preflight before implementation |
+| `intergrax-hep-step.mdc` | **No** | HEP / EVID scoped steps — `@` on demand |
+| `intergrax-iteration.mdc` | **No** | F3 workflow, domain read scope, tier boundaries — `@` on demand |
 | `intergrax-idea-audit.mdc` | **No** | Mode I — idea audit on trigger |
 | `intergrax-implementation-journal.mdc` | **No** | Journal milestones only |
+
+**Only `intergrax-token-budget.mdc` is always-on.** All other rules load on explicit `@` reference or operator request.
 
 Root **`AGENTS.md`** = Cursor auto-load stub (~350 tok). Full reference: [`docs/guides/AGENT_INSTRUCTIONS.md`](../docs/guides/AGENT_INSTRUCTIONS.md). **Do not delete** via Settings trash icon.
 

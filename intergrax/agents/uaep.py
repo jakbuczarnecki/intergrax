@@ -24,6 +24,7 @@ from intergrax.agents.uaep_protocol import (
     supports_uaep,
 )
 from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.uaep_bridge_keys import UaepBridgeMetadataKey
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
@@ -183,8 +184,10 @@ class UAEPExecutor:
         self,
         agent: Agent,
         request: RuntimeRequest,
+        *,
+        contract: AgentContract | None = None,
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
-        contract = agent.get_contract()
+        contract = contract or agent.get_contract()
         task_options = execution_options_for_request(request)
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or uuid4().hex)
         task_id = str(request.metadata.get("task_id") or run_id)

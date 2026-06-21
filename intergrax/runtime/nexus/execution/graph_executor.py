@@ -531,7 +531,13 @@ class GraphExecutor:
                 request.metadata,
                 self._idempotency_store,
             )
-            request.metadata["allowed_tools"] = list(current_agent.get_contract().allowed_tools)
+            author_id = current_agent.get_contract().id
+            resolved_contract = (
+                self._registry.get_contract(author_id)
+                if self._registry.has(author_id)
+                else current_agent.get_contract()
+            )
+            request.metadata["allowed_tools"] = list(resolved_contract.allowed_tools)
             request.metadata["graph_node_id"] = node.node_id
             request.metadata["graph_id"] = graph.graph_id
             plan_id = task.runtime.orchestration.plan_id
@@ -580,6 +586,7 @@ class GraphExecutor:
                 current_agent,
                 request,
                 uaep_executor=self._engine.uaep_executor,
+                registry=self._registry,
             )
 
         execution, retries, validation = await self._retry_engine.execute_with_retry(

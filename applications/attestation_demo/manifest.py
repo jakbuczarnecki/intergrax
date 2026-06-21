@@ -48,7 +48,7 @@ def build_attestation_demo_environment() -> ApplicationEnvironmentProfile:
                 enabled=list(_RECORDS_TOOL_IDS),
                 enabled_bundles=["records"],
             ),
-            "skill_profile": SkillProfile(),
+            "skill_profile": SkillProfile(enabled=["data.records_admin"]),
             "context_profile": ContextProfile(enable_rag=False, enable_websearch=False),
             "sandbox": None,
             "adaptive_profile": AdaptiveProfile(enabled=False, mode="observe"),

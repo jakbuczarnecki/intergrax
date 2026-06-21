@@ -1,8 +1,6 @@
 # Intergrax — Agent Instructions (Cursor stub)
 
-> **Doc map:** [`docs/DOCUMENTATION_MAP.md`](docs/DOCUMENTATION_MAP.md) — roles of all instructional artifacts (human · operator · agent).  
-> **Full reference:** [`docs/guides/AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) — use `@docs/guides/AGENT_INSTRUCTIONS.md` for task routing, verification commands, ADR workflow, anti-patterns.
-> **Always-on workflow:** [`.cursor/rules/intergrax-iteration.mdc`](.cursor/rules/intergrax-iteration.mdc). **Token setup:** [`docs/guides/CURSOR_TOKEN_SETUP.md`](docs/guides/CURSOR_TOKEN_SETUP.md)
+> **Doc map:** [`docs/DOCUMENTATION_MAP.md`](docs/DOCUMENTATION_MAP.md) — roles of instructional artifacts (human · operator · agent).
 
 **Intergrax** is a four-tier **Agent OS / Harness AI** runtime (Python 3.12, `uv`):
 
@@ -18,6 +16,21 @@ agents/ MUST NOT import from applications/
 applications/ MAY import from agents/ and intergrax/
 ```
 
-**Session (F3):** one domain = one new chat. **Output (O1):** terse by default; full report only on request — [`AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) § Operator communication. **Canon routing:** load domain docs on demand via [`AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) — not bulk guides (invariants, maturity, strategy are `.cursorignore`; grep SYS-INV IDs or `@` explicit). Default scope: gate maintenance in [`docs/plan/PLATFORM_FOUNDATION.md`](docs/plan/PLATFORM_FOUNDATION.md) hub read-scope; Phase K / §6.3 only with explicit operator approval.
+## Cursor rule loading
 
-**Do not delete this file via Cursor Settings** — the UI entry is the file itself; use the stub + full reference split instead (see CURSOR_TOKEN_SETUP F2).
+**Always-on:** [`.cursor/rules/intergrax-token-budget.mdc`](.cursor/rules/intergrax-token-budget.mdc) — I1/O1 token budget; mandatory preflight before implementation.
+
+**On demand only** — load only when explicitly `@`-referenced or operator asks for that mode:
+
+| Artifact | When |
+|----------|------|
+| [`.cursor/rules/intergrax-iteration.mdc`](.cursor/rules/intergrax-iteration.mdc) | New domain session, F3 workflow, iteration closeout |
+| [`.cursor/rules/intergrax-hep-step.mdc`](.cursor/rules/intergrax-hep-step.mdc) | HEP / EVID implementation step |
+| [`docs/guides/AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) | Full routing, verification, ADR, Full O1 report |
+| [`docs/bootstrap/hep_step.txt`](docs/bootstrap/hep_step.txt) | HEP step bootstrap (with operator step prompt) |
+
+**Default behavior:** do not auto-load iteration rule, AGENT_INSTRUCTIONS, plan/arch hubs, or domain guides. If read scope exceeds operator-listed files → **STOP** and ask.
+
+**Token setup:** [`docs/guides/CURSOR_TOKEN_SETUP.md`](docs/guides/CURSOR_TOKEN_SETUP.md)
+
+**Do not delete this file via Cursor Settings** — use stub + full reference split (CURSOR_TOKEN_SETUP F2).

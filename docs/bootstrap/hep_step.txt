@@ -1,0 +1,14 @@
+Use @.cursor/rules/intergrax-hep-step.mdc.
+Before reading/editing, perform the mandatory preflight from intergrax-token-budget.mdc.
+Do not proceed until the preflight is printed.
+
+SESSION: ONE_DOMAIN_ONE_CHAT — one HEP step per new chat recommended.
+READ_BUDGET: `@docs/plan/HARNESS_EVIDENCE_PACK.md` read-scope + cited step § only; `@docs/plan/PLATFORM_FOUNDATION.md` §6.1aw max when hub touch needed; offset/limit; max 2 plan files; no code reads unless step requires.
+OUTPUT_BUDGET: terse default (≤12 lines) — outcome, paths, SHA; full report only on `pełny raport` / milestone — AGENT_INSTRUCTIONS § Operator communication.
+Phase HEP — Harness Evidence Pack step implementation.
+STEP=C13
+SCOPE=EVID-CORE-FU-01A
+Canonical plan: docs/plan/HARNESS_EVIDENCE_PACK.md
+Edit STEP= and SCOPE= lines above per operator step (C13–C16, EVID-* IDs).
+Rules: tier boundaries AGENTS.md; no §6.3 unless approved; commits only on request.
+Repository artifacts: English. Operator chat: session language.
