@@ -9,14 +9,15 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 complete: EVID-CORE-01…06 **Done**; `intergrax certify core` delivered as deterministic mock contract evidence. Live runtime probes deferred to EVID-CORE-FU-01.
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path Mode I approved — EVID-TRACE-01…04 **Planned** (no code yet).
 
 ---
 
 ## Cursor read scope (token budget)
 
-- **Implement default:** This file § Mode I summary · § Certification semantics · § CORE levels · open **EVID-CORE-*** rows only.
-- **Skip** future waves (HEP-2+) unless implementing that wave.
+- **Implement HEP-1 (closed):** § Mode I summary · § Certification semantics · § CORE levels · **EVID-CORE-*** rows.
+- **Implement HEP-2 Trace:** § Mode I — HEP-2 · § Trace semantics · open **EVID-TRACE-*** rows only.
+- **Skip** HEP-2 EVID-EVAL / EVID-COST and HEP-3+ unless implementing those waves.
 - **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
 - **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
 
@@ -218,11 +219,94 @@ tests/unit/runtime/evidence/
 
 ---
 
+## Mode I — HEP-2 Trace Evidence Path
+
+| Field | Value |
+|-------|-------|
+| **Idea label** | `harness-evidence-pack-hep-2-trace` |
+| **Verdict** | `partial_overlap` |
+| **Type** | `harness_capability` · `developer_experience` · `observability` |
+| **Tier** | Tier-0 / Tier-1 boundary, depending on existing trace package placement |
+| **Domains** | `OBSERVABILITY` · `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · `PLATFORM_FOUNDATION` |
+
+**Verdict:** `partial_overlap`
+
+**Reason:** Trace routes, event spine, trace stores, and debug endpoints already exist; HEP-1 report path is delivered. The gap is a lightweight, canonical evidence timeline contract and operator path (`intergrax trace show`) — not a full Trace Explorer UI in HEP-2.
+
+**ADR:** No ADR needed for HEP-2 Trace (packaging timeline over existing evidence artifacts; no Nexus/UAEP/HarnessKernel semantic change).
+
+### Problem statement (HEP-2)
+
+HEP-1 answers whether the core certification contract passed. HEP-2 must show **how** it passed.
+
+The gap is not raw observability infrastructure. The gap is a small, canonical evidence timeline that can be rendered in CLI, Markdown, JSON, and later Trace Explorer.
+
+**Strategic goal:** After `certify core`, the operator sees pass/fail and a report. After the trace evidence path, the operator sees a step-by-step timeline: certification started → scenario started → evidence emitted → policy/budget/HITL marker → scenario passed → report written → certification completed.
+
+### Trace semantics
+
+| Surface | Existing mechanism | Question | HEP-2 role |
+|---------|-------------------|----------|------------|
+| Runtime events | `RuntimeEvent` / `RuntimeEventBus` | What happened inside runtime? | Source input, not operator format |
+| Trace store | `PersistedRunTraceEventStore` / persisted trace records | What was recorded? | Source input / future adapter |
+| Trace Explorer routes | `trace_explorer_routes.py` · `/ops/trace/*` or debug trace routes | Can operators inspect traces in host? | Existing infra, not HEP-2 CLI contract |
+| Debug formatters | `build_trace_payload` (`intergrax/debug/formatters.py`) | How are persisted traces shaped for UI? | Existing infra; HEP-2 does not replace |
+| Replay bridge | `trace_replay_bridge.py` | How are trace events replayed? | Existing infra; not HEP-2 timeline contract |
+| HEP-1 report | `build/evidence/core_certification/report.json` / `report.md` | Did certification pass? | Input artifact for timeline |
+| Trace Evidence Path | planned `intergrax trace show` | What happened step-by-step? | Canonical operator timeline |
+
+### Planned trace evidence artifacts
+
+```text
+build/evidence/trace/
+  timeline.json
+  timeline.md
+```
+
+HEP-2 may read `build/evidence/core_certification/report.json` as an input artifact.
+
+### HEP-2 non-goals
+
+- Not full Trace Explorer UI.
+- Not replacement for existing trace routes (`trace_explorer_routes.py`, debug trace endpoints).
+- Not new event bus or `RuntimeEventBus` wiring.
+- Not new trace store (`PersistedRunTraceEventStore` remains separate).
+- Not live provider tracing.
+- Not W-ADAPT L4 evidence (`check_l4_runtime_evidence.py` semantics).
+- Not `doctor` changes.
+- Not a new default CI gate.
+- Not changing `intergrax certify core` semantics.
+- Not implementing EVID-CORE-FU-01 live runtime probes.
+
+---
+
+## Implementation register — Wave HEP-2 Trace Evidence Path
+
+| ID | Wave | Priority | Status | Deliverable | Acceptance criteria |
+|----|------|----------|--------|-------------|---------------------|
+| **EVID-TRACE-01** | HEP-2 | P1 | **Planned** | Trace timeline contract | Canonical timeline models for evidence runs; stable event kinds; artifact refs; no CLI yet |
+| **EVID-TRACE-02** | HEP-2 | P1 | **Planned** | Policy/budget/HITL facets | Timeline can represent policy decisions, budget markers, HITL markers, scenario lifecycle |
+| **EVID-TRACE-03** | HEP-2 | P1 | **Planned** | `intergrax trace show` CLI | Renders timeline from HEP-1 report/evidence artifacts; no UI |
+| **EVID-TRACE-04** | HEP-2 | P2 | **Planned** | Trace export JSON/Markdown | Writes timeline JSON/Markdown under `build/evidence/trace/` |
+
+---
+
+## Suggested implementation order — HEP-2
+
+| Step | IDs | Scope |
+|------|-----|-------|
+| C4 | EVID-TRACE-01 | Timeline contracts only |
+| C5 | EVID-TRACE-02 | Facets for policy/budget/HITL/evidence |
+| C6 | EVID-TRACE-03/04 | CLI + export |
+
+---
+
 ## Future waves (not approved for implementation)
 
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
-| HEP-2 | EVID-TRACE, EVID-EVAL, EVID-COST | External audit #2, #4, #7 |
+| HEP-2 Trace | EVID-TRACE-01 … EVID-TRACE-04 | External audit #2 — **Mode I approved** (see § Mode I — HEP-2) |
+| HEP-2 (other) | EVID-EVAL, EVID-COST | External audit #4, #7 — not Mode I approved yet |
 | HEP-3 | EVID-POSTURE | External audit #12 |
 | HEP-4 | EVID-POL | External audit #3 |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 |
