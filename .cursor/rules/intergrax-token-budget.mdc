@@ -7,6 +7,18 @@ alwaysApply: true
 
 **Default:** minimize tokens. Expand only when operator approves or Full mode is triggered.
 
+## Mandatory implementation preflight
+
+Before reading or editing in an implementation step, state:
+
+- **read scope:**
+- **edit scope:**
+- **tests:**
+
+If more files are needed than the operator listed → **STOP** and ask. Do not read additional files silently.
+
+Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch hubs, or domain guides unless explicitly requested.
+
 ## I1 — input (read / tools)
 
 - **Read:** `offset`/`limit` or `grep` before full file; hub **read-scope block** only unless implementing cited §.

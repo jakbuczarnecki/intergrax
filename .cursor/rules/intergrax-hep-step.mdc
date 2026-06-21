@@ -1,0 +1,18 @@
+---
+description: HEP step execution — strict scoped implementation
+alwaysApply: false
+---
+
+# Intergrax — HEP step execution
+
+Use only when operator explicitly asks for a HEP / EVID implementation step.
+
+- Operator instruction is the source of truth.
+- Read only listed files.
+- No repo-wide search.
+- No full docs.
+- No subagents.
+- No full test suite unless operator lists it.
+- No `AGENT_INSTRUCTIONS.md` unless explicitly requested.
+- If more context is needed → **STOP** and name exact file.
+- Final report: paths, tests, status, blockers; token usage only if available from Cursor (no guesses).
