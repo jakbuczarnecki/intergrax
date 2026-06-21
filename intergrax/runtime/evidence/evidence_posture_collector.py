@@ -9,6 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.runtime.evidence.certification_report import CoreCertificationReport
+from intergrax.runtime.evidence.live_core_probe_contracts import (
+    LiveCoreProbeReport,
+    LiveCoreProbeStatus,
+)
 from intergrax.runtime.evidence.evidence_posture_contracts import (
     EvidenceBasis,
     EvidencePostureArtifactKind,
@@ -27,6 +31,9 @@ from intergrax.runtime.evidence.trace_timeline_contracts import TraceTimeline
 
 DEFAULT_CORE_REPORT_PATH = Path("build/evidence/core_certification/report.json")
 DEFAULT_TRACE_TIMELINE_PATH = Path("build/evidence/trace/timeline.json")
+DEFAULT_LIVE_CORE_PROBE_REPORT_PATH = Path(
+    "build/evidence/live_core_probes/live_core_report.json"
+)
 
 _POSTURE_TITLE = "Intergrax evidence posture"
 
@@ -74,6 +81,29 @@ def load_core_report_if_available(path: Path) -> CoreCertificationReport | None:
     except Exception as exc:
         raise ValueError(
             f"failed to parse core certification report at {path}: {exc}"
+        ) from exc
+
+
+def resolve_live_core_probe_report_path(
+    *,
+    root: Path,
+    live_core_probe_report_path: Path | None = None,
+) -> Path:
+    """Return absolute live core probe report path under ``root``."""
+    if live_core_probe_report_path is not None:
+        return live_core_probe_report_path.resolve()
+    return (root / DEFAULT_LIVE_CORE_PROBE_REPORT_PATH).resolve()
+
+
+def load_live_core_probe_report_if_available(path: Path) -> LiveCoreProbeReport | None:
+    """Load live core probe report from ``path``, or ``None`` when missing."""
+    if not path.is_file():
+        return None
+    try:
+        return LiveCoreProbeReport.model_validate_json(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(
+            f"failed to parse live core probe report at {path}"
         ) from exc
 
 
@@ -191,19 +221,122 @@ def build_trace_timeline_signal(
     )
 
 
-def build_static_posture_signals(
+def _count_probe_statuses(
+    report: LiveCoreProbeReport,
+) -> dict[str, int]:
+    counts = {
+        "probes_total": len(report.results),
+        "probes_passed": 0,
+        "probes_failed": 0,
+        "probes_skipped": 0,
+        "probes_unavailable": 0,
+    }
+    for result in report.results:
+        if result.status is LiveCoreProbeStatus.PASSED:
+            counts["probes_passed"] += 1
+        elif result.status is LiveCoreProbeStatus.FAILED:
+            counts["probes_failed"] += 1
+        elif result.status is LiveCoreProbeStatus.SKIPPED:
+            counts["probes_skipped"] += 1
+        elif result.status is LiveCoreProbeStatus.UNAVAILABLE:
+            counts["probes_unavailable"] += 1
+    return counts
+
+
+def build_live_tier0_probe_signal(
     *,
-    include_unknown_operational_signals: bool = True,
-) -> list[EvidenceSignal]:
-    """Return static posture signals that are not collected from artifacts."""
-    signals = [
-        create_evidence_signal(
+    report: LiveCoreProbeReport | None,
+    report_path: Path,
+) -> EvidenceSignal:
+    """Build LIVE_TIER0_PROBES signal from an optional live core probe report."""
+    if report is None:
+        return create_evidence_signal(
             kind=EvidenceSignalKind.LIVE_TIER0_PROBES,
             status=EvidenceSignalStatus.DEFERRED,
             title="Live Tier-0 probes",
             message="Deferred follow-up: EVID-CORE-FU-01",
             basis=EvidenceBasis.UNKNOWN,
+            metadata={"path": str(report_path)},
+        )
+
+    counts = _count_probe_statuses(report)
+    metadata = {
+        "report_id": report.report_id,
+        "report_status": report.status.value,
+        "probes_total": str(counts["probes_total"]),
+        "probes_passed": str(counts["probes_passed"]),
+        "probes_failed": str(counts["probes_failed"]),
+        "probes_skipped": str(counts["probes_skipped"]),
+        "probes_unavailable": str(counts["probes_unavailable"]),
+        "scope": "selected_tier0_probes",
+        "llm": "mock",
+        "network": "disabled",
+        "provider_calls": "disabled",
+    }
+    artifact_refs = [
+        EvidencePostureArtifactRef(
+            kind=EvidencePostureArtifactKind.OTHER,
+            path=str(report_path),
         ),
+    ]
+
+    if report.status is LiveCoreProbeStatus.PASSED:
+        return create_evidence_signal(
+            kind=EvidenceSignalKind.LIVE_TIER0_PROBES,
+            status=EvidenceSignalStatus.PASSED,
+            title="Live Tier-0 probes",
+            message=(
+                f"{counts['probes_passed']}/{counts['probes_total']} "
+                "selected live Tier-0 probes passed"
+            ),
+            basis=EvidenceBasis.LIVE_RUNTIME,
+            artifact_refs=artifact_refs,
+            metadata=metadata,
+        )
+
+    if report.status is LiveCoreProbeStatus.FAILED:
+        return create_evidence_signal(
+            kind=EvidenceSignalKind.LIVE_TIER0_PROBES,
+            status=EvidenceSignalStatus.FAILED,
+            title="Live Tier-0 probes",
+            message=(
+                f"{counts['probes_failed']}/{counts['probes_total']} "
+                "selected live Tier-0 probes failed"
+            ),
+            basis=EvidenceBasis.LIVE_RUNTIME,
+            artifact_refs=artifact_refs,
+            metadata=metadata,
+        )
+
+    return create_evidence_signal(
+        kind=EvidenceSignalKind.LIVE_TIER0_PROBES,
+        status=EvidenceSignalStatus.UNKNOWN,
+        title="Live Tier-0 probes",
+        message=report.summary,
+        basis=EvidenceBasis.LIVE_RUNTIME,
+        artifact_refs=artifact_refs,
+        metadata=metadata,
+    )
+
+
+def build_static_posture_signals(
+    *,
+    include_unknown_operational_signals: bool = True,
+    include_deferred_live_tier0_probes: bool = True,
+) -> list[EvidenceSignal]:
+    """Return static posture signals that are not collected from artifacts."""
+    signals: list[EvidenceSignal] = []
+    if include_deferred_live_tier0_probes:
+        signals.append(
+            create_evidence_signal(
+                kind=EvidenceSignalKind.LIVE_TIER0_PROBES,
+                status=EvidenceSignalStatus.DEFERRED,
+                title="Live Tier-0 probes",
+                message="Deferred follow-up: EVID-CORE-FU-01",
+                basis=EvidenceBasis.UNKNOWN,
+            )
+        )
+    signals.append(
         create_evidence_signal(
             kind=EvidenceSignalKind.W_ADAPT_L4,
             status=EvidenceSignalStatus.SEPARATE,
@@ -212,8 +345,8 @@ def build_static_posture_signals(
                 "Separate adaptive utility/rollback semantics, not CORE posture"
             ),
             basis=EvidenceBasis.SEPARATE,
-        ),
-    ]
+        )
+    )
 
     if include_unknown_operational_signals:
         signals.extend(
@@ -268,6 +401,7 @@ def collect_evidence_posture(
     root: Path = Path.cwd(),
     core_report_path: Path | None = None,
     trace_timeline_path: Path | None = None,
+    live_core_probe_report_path: Path | None = None,
     include_unknown_operational_signals: bool = True,
     root_label: str = "local",
 ) -> EvidencePostureSummary:
@@ -280,15 +414,25 @@ def collect_evidence_posture(
         root=root,
         trace_timeline_path=trace_timeline_path,
     )
+    resolved_live_core_path = resolve_live_core_probe_report_path(
+        root=root,
+        live_core_probe_report_path=live_core_probe_report_path,
+    )
 
     report = load_core_report_if_available(resolved_core_path)
     timeline = load_trace_timeline_if_available(resolved_timeline_path)
+    live_core_report = load_live_core_probe_report_if_available(resolved_live_core_path)
 
     signals = [
         build_core_certification_signal(report=report, report_path=resolved_core_path),
         build_trace_timeline_signal(timeline=timeline, timeline_path=resolved_timeline_path),
+        build_live_tier0_probe_signal(
+            report=live_core_report,
+            report_path=resolved_live_core_path,
+        ),
         *build_static_posture_signals(
             include_unknown_operational_signals=include_unknown_operational_signals,
+            include_deferred_live_tier0_probes=False,
         ),
     ]
 

@@ -21,6 +21,16 @@ from intergrax.runtime.evidence.evidence_posture_export import (
     format_evidence_posture_cli,
     write_evidence_posture,
 )
+from intergrax.runtime.evidence.live_core_probe_contracts import LiveCoreProbeStatus
+from intergrax.runtime.evidence.live_core_probe_export import (
+    DEFAULT_LIVE_CORE_PROBE_OUTPUT_DIR,
+    format_live_core_probe_cli,
+    write_live_core_probe_report,
+)
+from intergrax.runtime.evidence.live_core_probe_runner import (
+    LIVE_CORE_PROBE_OPERATOR_NOTE,
+    run_live_core_probes,
+)
 
 _POSTURE_ERROR_HINT = (
     "Run first: uv run intergrax certify core --level L2\n"
@@ -49,6 +59,13 @@ def _add_posture_common_args(parser: argparse.ArgumentParser) -> None:
         help="Path to trace timeline.json (default: build/evidence/trace/timeline.json).",
     )
     parser.add_argument(
+        "--live-core-report",
+        type=Path,
+        default=None,
+        help="Path to live core probe report.json "
+        "(default: build/evidence/live_core_probes/live_core_report.json).",
+    )
+    parser.add_argument(
         "--root-label",
         default="local",
         help="Label for evidence posture ID generation (default: local).",
@@ -63,6 +80,36 @@ def _add_posture_common_args(parser: argparse.ArgumentParser) -> None:
 def register_parser(sub: argparse._SubParsersAction) -> None:
     evidence = sub.add_parser("evidence", help="Harness evidence posture.")
     evidence_sub = evidence.add_subparsers(dest="evidence_command", required=True)
+
+    live_core = evidence_sub.add_parser(
+        "live-core",
+        help="Run selected live Tier-0 probes and write live core probe report.",
+    )
+    live_core.add_argument(
+        "--root",
+        type=Path,
+        default=Path.cwd(),
+        help="Repository root for default output directory.",
+    )
+    live_core.add_argument(
+        "--root-label",
+        default="local",
+        help="Label for deterministic report id/run id (default: local).",
+    )
+    live_core.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Live core probe output directory "
+            "(default: build/evidence/live_core_probes)."
+        ),
+    )
+    live_core.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Render report to stdout only; do not write files.",
+    )
 
     posture = evidence_sub.add_parser(
         "posture",
@@ -90,6 +137,7 @@ def _collect_from_args(args: argparse.Namespace):
             root=args.root,
             core_report_path=args.core_report,
             trace_timeline_path=args.trace_timeline,
+            live_core_probe_report_path=getattr(args, "live_core_report", None),
             include_unknown_operational_signals=not args.no_operational_unknowns,
             root_label=args.root_label,
         )
@@ -103,6 +151,33 @@ def _resolve_output_dir(args: argparse.Namespace) -> Path:
     if getattr(args, "output_dir", None) is not None:
         return args.output_dir.resolve()
     return (args.root.resolve() / DEFAULT_POSTURE_OUTPUT_DIR).resolve()
+
+
+def _resolve_live_core_output_dir(args: argparse.Namespace) -> Path:
+    if args.output_dir is not None:
+        return args.output_dir.resolve()
+    return (args.root.resolve() / DEFAULT_LIVE_CORE_PROBE_OUTPUT_DIR).resolve()
+
+
+def _live_core_exit_code(status: LiveCoreProbeStatus) -> int:
+    if status is LiveCoreProbeStatus.PASSED:
+        return 0
+    return 1
+
+
+def run_evidence_live_core(args: argparse.Namespace) -> int:
+    report = run_live_core_probes(root_label=args.root_label)
+    print(format_live_core_probe_cli(report))
+
+    if args.no_write:
+        return _live_core_exit_code(report.status)
+
+    output_dir = _resolve_live_core_output_dir(args)
+    json_path, md_path = write_live_core_probe_report(report, output_dir)
+    print(f"note: {LIVE_CORE_PROBE_OPERATOR_NOTE}")
+    print(f"live core report: {json_path}")
+    print(f"live core report: {md_path}")
+    return _live_core_exit_code(report.status)
 
 
 def run_evidence_posture(args: argparse.Namespace) -> int:
@@ -132,6 +207,8 @@ def run_evidence_posture_export(args: argparse.Namespace) -> int:
 
 
 def run_evidence(args: argparse.Namespace) -> int:
+    if args.evidence_command == "live-core":
+        return run_evidence_live_core(args)
     if args.evidence_command != "posture":
         return 2
     if args.posture_command == "export":
