@@ -1,18 +1,27 @@
-# Architecture hub satellites
+﻿# Architecture satellites (`docs/architecture/arch/`)
 
-**Parent directory:** [`../`](../) — domain architecture hubs (`<DOMAIN>.md`)
+**Parent directory:** [`../`](../) — token-efficient **hubs** (one file per domain).
 
-Load **one** satellite per session when a task or audit gap cites extended § blocks.
+This folder holds **extended architecture canon** split out of hubs for Cursor context budget (F4). Nothing here is deleted from the platform — it is the **full-depth** reference for § blocks that are too large for default agent reads.
 
-| Pattern | When to load |
-|---------|----------------|
-| `<DOMAIN>_extended_depth.md` | §22–§39 depth (ACP, Tier-3, platform layers) |
-| `<DOMAIN>_production_gates.md` | §40+ production / release gates |
-| `TOOLS_selection_and_plugins.md` | Tool selection + plugin model |
-| `TOOLS_catalog_and_index.md` | Full tool catalog tables |
+| Layer | Path | Cursor indexing | When to load |
+|-------|------|-----------------|--------------|
+| **Hub** | `docs/architecture/<DOMAIN>.md` | Yes (default) | Implement / audit — read **Cursor read scope** block only |
+| **Satellite** | `docs/architecture/arch/<DOMAIN>_*.md` | No (`.cursorignore`) | Explicit `@` or `Read` when read-scope, TOC, or audit cites extended § |
 
-**Regenerate splits:** `uv run python scripts/split_domain_architecture.py [DOMAIN ...]`
+**Naming:**
 
-**CI gate:** `uv run python scripts/check_arch_hub_size.py`
+| Suffix | Typical contents |
+|--------|------------------|
+| `_extended_depth.md` | Main extended § (numbered sections moved out of hub) |
+| `_runtime_extended.md` | UAEP §42.x+ runtime depth |
+| `_production_gates.md` | §40+ production / release gates |
+| `_provider_catalog.md`, `_selection_and_plugins.md`, … | Domain-specific catalogs and reference tables |
 
-**Audit compact context:** [`../../guides/audit_slices/`](../../guides/audit_slices/)
+**Regenerate splits:**
+
+```bash
+uv run python scripts/split_domain_architecture.py [DOMAIN ...]
+uv run python scripts/check_arch_hub_size.py
+uv run python scripts/verify_arch_split_content.py
+```

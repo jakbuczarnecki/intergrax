@@ -1,6 +1,197 @@
-# MEMORY — §12+ scenarios & control
+# MEMORY — §8+ extended architecture
 
 **Parent hub:** [`MEMORY.md`](../MEMORY.md)
+
+## 8. Compression and degradation strategies
+
+### 8.1 Strategy matrix
+
+| Strategy | When | Module | Trace |
+|----------|------|--------|-------|
+| `OFF` | Debug / short sessions | `HistoryLayer` | History diag |
+| `TRUNCATE_OLDEST` | History over budget; summarization failed | `HistoryLayer` | `effective_strategy` |
+| `SUMMARIZE_OLDEST` | Long sessions; tokenizer available | `HistoryLayer` + `HistorySummaryPromptBuilder` | `summary_used=true` |
+| `HYBRID` | Aggressive long-horizon | `HistoryLayer` | Combined |
+| Summary tiers | Graph prior outputs | `ContextManager` | `AgentContextBundle.summary_tier` |
+| Char/token trim | Composed agent message | `context_budget.py` | `CONTEXT_TRIMMED` |
+| LTM top_k + threshold | Query relevance | `UserLongtermMemoryStep` | `UserLongtermMemorySummaryDiagV1` |
+| RAG top_k + rerank | Knowledge retrieval | `RetrievalService` | RAG trace |
+
+### 8.2 Target degradation ladder (MEM-DEPTH)
+
+Apply in order until invariant §1.3 is satisfied:
+
+```text
+1. FULL fidelity (all sources within budget)
+2. Lower summary tier on graph priors (FULL → SUMMARY_ONLY → MINIMAL)
+3. Reduce LTM/RAG top_k
+4. SUMMARIZE_OLDEST on session history
+5. TRUNCATE_OLDEST on session history
+6. Drop lowest-scored context fragments (relevance order)
+7. Tokenizer-aware hard trim (last resort — never silent char-cut)
+```
+
+Each step MUST emit diagnostics with `degradation_step` and bytes/tokens removed.
+
+---
+
+## 9. Intelligent strategy selection
+
+### 9.1 Decision inputs
+
+The Harness selects memory and compression strategies from:
+
+| Input | Profile field / config |
+|-------|------------------------|
+| Host memory flags | `MemoryProfile` on `ApplicationEnvironmentProfile` |
+| Context preferences | `ContextProfile.decision` (`ContextDecisionProfile`) |
+| Per-request override | `RuntimeRequest.history_compression_strategy` |
+| Model capacity | `llm_adapter.context_window_tokens` |
+| Task shape | Single chat vs `ExecutionGraph` vs delegation |
+| Query emptiness | LTM step skipped on empty query |
+
+### 9.2 `ContextDecisionProfile` (declarative policy)
+
+```python
+# intergrax/applications/contracts/environment_profile.py
+include_session_history: bool = True
+prefer_longterm_memory: bool = True
+prefer_rag_when_enabled: bool = True
+max_memory_entries_in_context: int = 8
+```
+
+**Enforced** by `ContextCompiler` via `ContextDecisionProfile` on `RuntimeConfig`.
+
+### 9.3 Selection matrix (normative)
+
+| Situation | Primary memory source | Compression | Secondary |
+|-----------|----------------------|-------------|-----------|
+| Short chat (&lt; 30% context) | Full session history | `OFF` or light | LTM if `prefer_longterm_memory` |
+| Long chat (&gt; 50% context) | Session summary + recent tail | `SUMMARIZE_OLDEST` | LTM top_k reduced |
+| Document Q&A | RAG retrieval | RAG top_k within budget | Minimal history |
+| Multi-agent graph node | Prior outputs + shared context | Summary tier per policy | Task KV via tools |
+| Delegated explore child | Isolated namespace reads | Child budget; synthesis return | Parent gets summary only |
+| User returns after days | LTM semantic search (`ltm` index) | Session history empty or short | Episodic cross-session recall when `include_cross_session_episodic` |
+| Long active session (> 50% context) | Episodic semantic recall + recent tail | `SUMMARIZE_OLDEST` on remainder | LTM top_k reduced |
+| Codebase-scale task | RAG + workspace tools | Retrieval-first; no full dump | Explore delegation (target) |
+| Regulated / high-risk | Policy + minimal context | `MINIMAL` tier; explicit citations | HITL before LTM write |
+
+### 9.4 When to use which store (authoring guide)
+
+| Need | Store | Do not use |
+|------|-------|------------|
+| "Remember this for this run only" | Task KV (`memory.write`) | Session |
+| "Remember across sessions for this user" | User LTM (consolidation or explicit entry) | Task KV |
+| "Team tone and constraints" | Org profile | User LTM |
+| "Facts from uploaded PDFs" | RAG collection | User LTM (unless extracted fact) |
+| "What happened in run #4521" | Trace / debug journal | Mutable memory |
+| "Child agent scratch pad" | Delegation namespace | Parent namespace |
+
+---
+
+## 10. Delegation and explore pattern
+
+### 10.1 Delegation memory (Done — R-Delegate)
+
+Child agents read/write under:
+
+```text
+task_id/delegation/{node_id}/
+```
+
+via `PolicyScopedMemoryView`. Parent receives bounded context via `ContextManager` — not raw child history.
+
+### 10.2 Explore pattern (Done — MEM-DEPTH-4.2 + MEM-LC-8)
+
+For wide codebase or corpus search:
+
+```mermaid
+flowchart TB
+    Parent[Parent agent context]
+    Explore[Explore delegation child]
+    Search1[Parallel RAG / grep / workspace]
+    Search2[Parallel RAG / grep / workspace]
+    Synth[Synthesis-only return]
+    Parent -->|DelegationSpec| Explore
+    Explore --> Search1
+    Explore --> Search2
+    Search1 --> Synth
+    Search2 --> Synth
+    Synth -->|findings summary only| Parent
+```
+
+Properties:
+
+- Child runs in **isolated context window**
+- Parallel searches do not bloat parent history
+- Return payload is **structured findings**, not raw file dumps
+
+Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2 — **wired** via `explore_integration.py` in `graph_executor`.
+
+---
+
+## 11. Configuration surfaces
+
+### 11.1 `MemoryProfile`
+
+```python
+enable_user_memory: bool
+enable_org_memory: bool
+enable_long_term_memory: bool
+enable_task_memory: bool
+enable_session_vector_index: bool = False          # MEM-VEC-2 — episodic turn indexing (Done)
+include_cross_session_episodic: bool = False       # episodic search across sessions for same user
+session_index_top_k: int = 8
+session_index_score_threshold: float | None = None
+vector_index_namespace: str | None = None          # collection prefix; default derived from tenant_id
+session_index_roles: tuple[str, ...] = ("user", "assistant")
+retention_days: int | None
+scope_boundary: str = "tenant"
+consolidation_mode: Literal["manual", "scheduled", "auto"]
+```
+
+Mapped to `RuntimeConfig` via `memory_runtime_bridge.py` / `materialize_runtime_config`. Vector-index flags require a resolved integration vector store — hosts without vector backend MUST fail closed (`reason=vector_backend_unavailable`) rather than silently disabling semantic recall while flags are true (MEM-VEC-1.4 gate).
+
+### 11.2 `ContextProfile`
+
+```python
+assembly_options: TaskContextAssemblyOptions  # max_prior_chars, summary tier defaults
+budget_policy: ContextBudgetPolicy | None   # max_chars, max_tokens_estimate
+decision: ContextDecisionProfile
+enable_rag: bool
+enable_websearch: bool
+```
+
+### 11.3 `RuntimeConfig` LTM limits
+
+| Field | Role |
+|-------|------|
+| `enable_user_longterm_memory` | Gates `UserLongtermMemoryStep` |
+| `max_longterm_entries_per_query` | top_k |
+| `longterm_score_threshold` | Minimum relevance |
+| `max_longterm_tokens` | Injection cap |
+
+### 11.4 Tier-3 wiring entry points
+
+| Function | Role |
+|----------|------|
+| `resolve_memory_platform_wiring()` | Session + profile stores from integration profile |
+| `build_session_manager_from_environment()` | SessionManager + profile managers — **MUST accept optional `rag_stack` for vector-enabled `UserProfileManager`** (MEM-VEC-1.1) |
+| `wire_task_memory_from_profile()` | Task KV database path |
+| `materialize_runtime_config()` | Profile → RuntimeConfig bridge |
+| `build_runtime_context_from_environment()` | Single entry — MUST pass shared RAG stack into memory + tool wiring (MEM-VEC-1.2) |
+
+### 11.5 Memory store and vector index plugins
+
+| Protocol | EP group | Factory | Replaces |
+|----------|----------|---------|----------|
+| `UserProfileStorePlugin` | `intergrax.memory_stores` | `create_user_profile_store(**kwargs)` | Default SQLite / Mongo / in-memory LTM store |
+| `SessionStoragePlugin` | `intergrax.memory_stores` | `create_session_storage(**kwargs)` | Default session persistence |
+| `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP MEM-VEC-3.1 **Done**) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
+
+Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the integrations catalog — memory plugins select **how** indexes are written, not which vendor SDK is used. Custom Tier-3 hosts register EP plugins; Tier-2 agents still use Nexus APIs and tools only.
+
+---
 
 ## 12. Persistence backend matrix
 

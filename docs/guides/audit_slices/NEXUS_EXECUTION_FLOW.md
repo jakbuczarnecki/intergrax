@@ -18,7 +18,7 @@
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §8–§10 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-FLOW-* · SYS-INV-DELEG-* (grep IDs — do not read full file) |
 | `docs/plan/NEXUS_EXECUTION_FLOW.md` | **Read-scope:** Phase FLOW hub · satellites on demand |
-| `docs/architecture/NEXUS_EXECUTION_FLOW.md` | §1–§26 hub · [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](../architecture/arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md) on demand |
+| `docs/architecture/NEXUS_EXECUTION_FLOW.md` | §1–§8 hub · [`arch/NEXUS_EXECUTION_FLOW_extended_depth.md`](../architecture/arch/NEXUS_EXECUTION_FLOW_extended_depth.md) on demand |
 
 ## Code entry (grep first — F5-B)
 

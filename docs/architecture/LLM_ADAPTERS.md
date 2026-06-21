@@ -15,7 +15,7 @@
 
 **Do not read this entire file in one session** (LLM_ADAPTERS canon).
 
-- **Implement / audit default:** adapter envelope + provider routing. Skip legacy migration tables unless cited.
+- **Implement / audit default:** adapter envelope + routing hub. Failover: [`arch/LLM_ADAPTERS_routing_failover.md`](arch/LLM_ADAPTERS_routing_failover.md). Providers: [`arch/LLM_ADAPTERS_providers_catalog.md`](arch/LLM_ADAPTERS_providers_catalog.md). Audit register: [`arch/LLM_ADAPTERS_audit_register.md`](arch/LLM_ADAPTERS_audit_register.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md).
@@ -33,52 +33,8 @@ Load **only** the satellite matching your task or cited §.
 |-----------|----------|
 | [`arch/LLM_ADAPTERS_audit_register.md`](arch/LLM_ADAPTERS_audit_register.md) | audit register |
 | [`arch/LLM_ADAPTERS_providers_catalog.md`](arch/LLM_ADAPTERS_providers_catalog.md) | providers catalog |
-| [`arch/LLM_ADAPTERS_routing_failover.md`](arch/LLM_ADAPTERS_routing_failover.md) | routing failover |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
-
-## Purpose and maturity
-
-Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapter` contract, multi-vendor providers, typed completion envelopes, tenant metering, and Nexus context budgeting.
-
-| Dimension | Current (post X-15) | Enterprise target | Evidence |
-|-----------|---------------------|-------------------|----------|
-| Typed completion envelope | **L3** | L3 (maintain) | M-LLM-R closed; CI guards |
-| Provider abstraction (19 slugs + plugins) | **L3+** | L3+ (maintain) | `LLMProfile.provider: str` · **M-LLM-X.14.3** **Done** |
-| Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
-| Model metadata / context window | **L3+** | L3+ (maintain) | `ModelCatalog` + gateway merge · **M-LLM-X.14.2** **Done** |
-| **Catalog miss observability** | **L5 ops** (trace + bus + metrics + gate + E2E + runbook + alerts) | **L5 ops** (maintain) | **M-LLM-X.15 + X-16 Done** |
-| Multi-model routing / failover | **L5** (strict core + UAEP + ACP) | L5 (maintain) | X-10…X-13 **Done** · LLM-AUDIT-17…20 **Done** |
-| Secondary LLM surfaces (planner, websearch, critic) | **L4+** (opt-in evaluating wrap) | L4+ (maintain) | **M-LLM-X.14.5** · `llm_routing_evaluating_secondary` |
-| Token accounting consistency | **L3+** | L3+ (maintain) | LC-2 **Done**; `TokenizerPlugin` stub · **M-LLM-X.14.7** |
-| Developer experience | **L3+** | L3+ (maintain) | USAGE + doctor + scaffold comment · **M-LLM-X.14.8** |
-| Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
-| **Domain closeout** (audit register + journal) | **L4 enterprise** | L4 enterprise (maintain) | **M-LLM-X.8** **Done** · **LLM-AUDIT-21** |
-
-**Maturity labels (honest, 2026-06-19):**
-
-- **Routing hot path:** **L5 strict enterprise-ready** (core `llm_adapter`, UAEP, ACP dynamic router).
-- **Catalog miss spine:** **L5 enterprise ops** — **M-LLM-X.15 + X-16 Done** (trace, bus, metrics, CI umbrella, runbook, alerts, run isolation).
-- **Whole LLM_ADAPTERS domain:** **L4 enterprise** — **M-LLM-X.8 + X-14 + X-15 Done**; LLM-AUDIT-21…26 **Done**.
-
-**Strategic rule:** The Harness owns provider plumbing; agents and applications declare **profiles**, never vendor SDKs.
-
-Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops. **Full Harness LC (2026-06-17):** no open P0/P1 on LC scope. **Post X-14:** enterprise domain closeout complete — LLM-AUDIT-21…26 **Done**.
-
----
-
-## Design principles
-
-1. **One contract** — all completions return `LLMAdapterResponse` (or stream/structured variants); no bare `str`.
-2. **Provider slug + adapter class** — commercial and self-hosted vendors map through `LLMAdapterRegistry`; OpenAI-compatible HTTP endpoints share `openai_compat_factory.py`.
-3. **Model ID is opaque string** — vendors may ship new models (`claude-opus-4`, `gpt-5.2`, `fable`, …) without platform enum changes; **metadata** resolves separately via `ModelCatalog`.
-4. **Context window is authoritative for budgeting** — Nexus context engine, preflight, and history compression read `adapter.context_window_tokens`; wrong values cause silent quality loss or API errors.
-5. **Two usage layers preserved** — per-call `LLMTokenUsage` on the envelope; run-level `LLMAdapterUsageLog` + `LLMUsageTracker` (do not merge without explicit bridge).
-6. **Tier boundaries** — `intergrax/llm_adapters/` MUST NOT import from `agents/` or `applications/`; Tier-2 uses injected `LLMAdapter` or `StepLLMRouter` port only.
-
----
-
 ## Layer map
 
 ```text

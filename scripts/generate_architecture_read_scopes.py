@@ -10,17 +10,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ARCH = ROOT / "docs" / "architecture"
 MARKER = "## Cursor read scope (token budget)"
-MIN_LINES = 500
+MIN_LINES = 200
 
 SCOPES: dict[str, str] = {
     "PLATFORM_FOUNDATION": (
-        "§1–§5 + §5.2 reuse + §5.3 terminology. "
-        "Extended §7–§8: [`arch/PLATFORM_FOUNDATION_extended_depth.md`](arch/PLATFORM_FOUNDATION_extended_depth.md). "
+        "§1–§6 platform spine. "
+        "Extended §7+: [`arch/PLATFORM_FOUNDATION_extended_depth.md`](arch/PLATFORM_FOUNDATION_extended_depth.md). "
         "§43+: [`arch/PLATFORM_FOUNDATION_production_gates.md`](arch/PLATFORM_FOUNDATION_production_gates.md)."
     ),
     "AGENT_CONTRACTS_AND_ASSEMBLY": (
         "§12–§21 (contract, registry, capability, ACP). "
-        "Extended §22–§39: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). "
+        "Extended §22–§39 + checklist §45: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). "
         "§40+: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md)."
     ),
     "TIER3_APPLICATION_ENVIRONMENT": (
@@ -29,67 +29,85 @@ SCOPES: dict[str, str] = {
         "§40+: [`arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md)."
     ),
     "TOOLS": (
-        "ToolRuntime path + plugin model + policy invoke (hub § through production posture). "
-        "Selection / invocation patterns: [`arch/TOOLS_selection_and_plugins.md`](arch/TOOLS_selection_and_plugins.md). "
+        "ToolRuntime path + plugin model + policy invoke (hub through production posture). "
+        "Selection / invocation: [`arch/TOOLS_selection_and_plugins.md`](arch/TOOLS_selection_and_plugins.md). "
         "RuntimeConfig fields: [`arch/TOOLS_runtime_config_reference.md`](arch/TOOLS_runtime_config_reference.md)."
     ),
     "UNIFIED_EXECUTION_RUNTIME": (
-        "UAEP + PolicyEngine + RuntimeEvent spine (§42.1–§42.15). "
-        "Extended: [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md)."
+        "UAEP + RuntimeEvent spine (§42.1–§42.7). "
+        "Extended §42.8+: [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md)."
     ),
     "ORCHESTRATION": (
         "intake + NexusLoop + graph executor (§10–§26). "
-        "Extended: [`arch/ORCHESTRATION_extended_depth.md`](arch/ORCHESTRATION_extended_depth.md)."
+        "§27+: [`arch/ORCHESTRATION_production_gates.md`](arch/ORCHESTRATION_production_gates.md)."
     ),
     "NEXUS_EXECUTION_FLOW": (
-        "§1–§20 flow narrative. "
-        "Reference §21+: [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md)."
+        "§1–§8 flow spine (purpose → classification). "
+        "Extended §9+: [`arch/NEXUS_EXECUTION_FLOW_extended_depth.md`](arch/NEXUS_EXECUTION_FLOW_extended_depth.md)."
     ),
     "INTEGRATIONS": (
-        "manifest registration + IntegrationProfile + wiring. "
-        "Catalog: [`arch/INTEGRATIONS_provider_catalog.md`](arch/INTEGRATIONS_provider_catalog.md)."
+        "IntegrationLayer contract + wiring + checklists (hub). "
+        "Provider catalog: [`arch/INTEGRATIONS_provider_catalog.md`](arch/INTEGRATIONS_provider_catalog.md)."
     ),
     "CRITIC_VERIFICATION": (
-        "CVL contracts + orchestrator + wiring. Skip historical LC narrative unless cited."
+        "CVL contracts + orchestrator + wiring (§1–§6). "
+        "Extended §7+: [`arch/CRITIC_VERIFICATION_extended_depth.md`](arch/CRITIC_VERIFICATION_extended_depth.md)."
     ),
     "REASONING_AND_COGNITION": (
-        "DecisionRecord + planner/classifier spine. Skip historical sprint logs unless cited."
+        "DecisionRecord + planner/classifier spine (§1–§7). "
+        "Extended §8+: [`arch/REASONING_AND_COGNITION_extended_depth.md`](arch/REASONING_AND_COGNITION_extended_depth.md)."
     ),
     "ADAPTIVE_HARNESS_INTELLIGENCE": (
-        "L4 adaptive loop contracts. Skip maturity history unless AHI task."
+        "L4 adaptive loop contracts (§1–§7). "
+        "Extended §8+: [`arch/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](arch/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md)."
     ),
     "LLM_ADAPTERS": (
-        "adapter envelope + provider routing. Skip legacy migration tables unless cited."
+        "adapter envelope + routing hub. "
+        "Failover: [`arch/LLM_ADAPTERS_routing_failover.md`](arch/LLM_ADAPTERS_routing_failover.md). "
+        "Providers: [`arch/LLM_ADAPTERS_providers_catalog.md`](arch/LLM_ADAPTERS_providers_catalog.md). "
+        "Audit register: [`arch/LLM_ADAPTERS_audit_register.md`](arch/LLM_ADAPTERS_audit_register.md)."
     ),
     "MEMORY": (
-        "LTM store contracts + scope model. Skip store inventory tables — use code grep."
+        "LTM store contracts + scope model (§1–§7). "
+        "Extended §8+: [`arch/MEMORY_extended_depth.md`](arch/MEMORY_extended_depth.md)."
     ),
     "RAG": (
-        "retrieval pipeline + index lifecycle. Skip full corpus tables unless RAG task."
+        "retrieval pipeline + index lifecycle (hub). "
+        "Pipelines detail: [`arch/RAG_pipelines_detail.md`](arch/RAG_pipelines_detail.md)."
     ),
     "SKILLS": (
-        "skill selection hook + registry. Skip LC narrative unless SK task."
+        "skill selection hook + registry (hub). "
+        "Catalog: [`arch/SKILLS_skill_catalog.md`](arch/SKILLS_skill_catalog.md)."
     ),
     "CONTEXT_ENGINEERING": (
-        "context assembly engine + scoring. Skip historical gap logs unless cited."
+        "context assembly engine + scoring (§1–§7). "
+        "Extended §8+: [`arch/CONTEXT_ENGINEERING_extended_depth.md`](arch/CONTEXT_ENGINEERING_extended_depth.md)."
     ),
     "CODE_CRAFT": (
-        "ephemeral codegen loop contracts. Skip LC closeout unless ECC task."
+        "ephemeral codegen loop contracts (§1–§6). "
+        "Extended §7+: [`arch/CODE_CRAFT_extended_depth.md`](arch/CODE_CRAFT_extended_depth.md)."
     ),
     "OBSERVABILITY": (
-        "trace spine + RuntimeEvent. Skip OBS-LC history unless cited."
+        "trace spine + HOS + signal planes (§1–§4). "
+        "Extended §5+: [`arch/OBSERVABILITY_extended_depth.md`](arch/OBSERVABILITY_extended_depth.md)."
     ),
     "RELIABILITY_FAILURE_AND_HITL": (
-        "retry/HITL contracts. Skip failure taxonomy appendices unless cited."
+        "§30–§32 failure + retry + HITL core. "
+        "Extended §33+: [`arch/RELIABILITY_FAILURE_AND_HITL_extended_depth.md`](arch/RELIABILITY_FAILURE_AND_HITL_extended_depth.md). "
+        "§35+: [`arch/RELIABILITY_FAILURE_AND_HITL_production_gates.md`](arch/RELIABILITY_FAILURE_AND_HITL_production_gates.md)."
     ),
     "MODALITY": (
-        "vision/audio modality adapters. Skip modality inventory unless MOD task."
+        "modality adapters hub. "
+        "Tool surface: [`arch/MODALITY_tool_surface_detail.md`](arch/MODALITY_tool_surface_detail.md)."
     ),
     "ELASTIC_CAPACITY_AND_SCALING": (
-        "capacity adapter contracts. Skip scaling history unless ECP task."
+        "capacity adapter contracts (§1–§7). "
+        "Extended §8+: [`arch/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](arch/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md)."
     ),
     "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE": (
-        "DX gates + eval harness. Skip W-OPS history unless DX task."
+        "§39–§41 DX + minimal runtime flow. "
+        "Extended §42+: [`arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md`](arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_extended_depth.md). "
+        "§43+: [`arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md`](arch/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md)."
     ),
 }
 
@@ -131,7 +149,7 @@ def main() -> None:
             continue
         scope = SCOPES.get(
             domain,
-            "Read TOC sections matching current task only; skip appendices and paydown logs.",
+            "Read TOC sections matching current task only; load matching `arch/<DOMAIN>_*.md` satellite on demand.",
         )
         text = path.read_text(encoding="utf-8")
         updated = upsert_scope(text, domain, scope)

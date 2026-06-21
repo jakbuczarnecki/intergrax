@@ -52,6 +52,8 @@ Satellites are in `.cursorignore` — load with explicit `Read` or `@` when read
 ```bash
 uv run python scripts/split_domain_architecture.py [DOMAIN ...]
 uv run python scripts/check_arch_hub_size.py
+uv run python scripts/verify_arch_split_content.py
+uv run python scripts/generate_architecture_read_scopes.py
 ```
 
 ---

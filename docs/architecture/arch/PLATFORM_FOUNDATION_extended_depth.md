@@ -1,4 +1,4 @@
-# PLATFORM_FOUNDATION — extended depth (§22–§39)
+# PLATFORM_FOUNDATION — extended depth
 
 **Parent hub:** [`PLATFORM_FOUNDATION.md`](../PLATFORM_FOUNDATION.md)
 

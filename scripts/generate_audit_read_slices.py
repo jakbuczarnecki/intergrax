@@ -91,7 +91,7 @@ DOMAIN_SLICES: dict[str, dict[str, str]] = {
         "audit_map": "§8–§10",
         "invariants": "SYS-INV-FLOW-* · SYS-INV-DELEG-*",
         "plan_hub": "Phase FLOW hub · satellites on demand",
-        "architecture": "§1–§26 hub · [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](../architecture/arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md) on demand",
+        "architecture": "§1–§8 hub · [`arch/NEXUS_EXECUTION_FLOW_extended_depth.md`](../architecture/arch/NEXUS_EXECUTION_FLOW_extended_depth.md) on demand",
     },
     "CRITIC_VERIFICATION": {
         "layers": "25–27, 30",
