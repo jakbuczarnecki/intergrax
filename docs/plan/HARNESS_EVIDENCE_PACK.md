@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Mode I approved (N1 planning only — not implemented).
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5).
 
 ---
 
@@ -19,7 +19,7 @@
 - **Implement HEP-2 Trace:** § Mode I — HEP-2 · § Trace semantics · open **EVID-TRACE-*** rows only.
 - **HEP-3 Posture (closed):** § HEP-3 closeout · § HEP-3 operator path · **EVID-POSTURE-*** rows.
 - **EVID-CORE-FU-01 (closed):** § EVID-CORE-FU-01 closeout · **EVID-CORE-FU-01A…E** rows.
-- **EVID-EVAL (N1 closed):** § Mode I — EVID-EVAL · **EVID-EVAL-01…05** rows · § Future waves.
+- **EVID-EVAL (closed):** § Mode I — EVID-EVAL · § EVID-EVAL closeout · **EVID-EVAL-01…05** rows · § Future waves.
 - **Skip** HEP-2 EVID-COST and HEP-4+ unless implementing those waves.
 - **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
 - **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
@@ -753,11 +753,11 @@ uv run intergrax evidence posture export
 | HEP-2 `trace show` / `trace export` | Report-derived deterministic mock timeline |
 | HEP-3 `evidence posture` | Read-only aggregation over existing evidence artifacts |
 | EVID-CORE-FU-01 `evidence live-core` | Selected local no-network live Tier-0 probes |
-| **EVID-EVAL** | Future **eval regression evidence packaging** — read-only wrapper over existing eval checks (`check_eval_scenario_library.py`, IDEAL-25.x); not a new eval framework |
+| **EVID-EVAL** | **Done** — eval regression evidence packaging; read-only wrapper over existing eval checks (`check_eval_scenario_library.py`, IDEAL-25.x); not a new eval framework |
 
 ### Problem statement
 
-HEP-1/2/3 and EVID-CORE-FU-01 prove core certification, trace timeline, posture aggregation, and selected live Tier-0 probes. The remaining HEP-2 gap is eval regression evidence: operators need a stable artifact showing whether the eval scenario library / regression surface is healthy without turning this into a new eval framework.
+HEP-1/2/3 and EVID-CORE-FU-01 prove core certification, trace timeline, posture aggregation, and selected live Tier-0 probes. EVID-EVAL closes the eval regression evidence gap: operators get a stable artifact showing whether the eval scenario library / regression surface is healthy without turning this into a new eval framework.
 
 ### Target outcome
 
@@ -776,7 +776,7 @@ After EVID-EVAL, Intergrax should provide a small operator-facing eval evidence 
 - Not replacement for `pytest -m gate`.
 - Not replacement for `intergrax certify core`.
 
-### Planned artifacts
+### Artifacts
 
 ```text
 build/evidence/eval/
@@ -784,13 +784,11 @@ build/evidence/eval/
   report.md
 ```
 
-### Planned command
+### Command
 
 ```bash
 uv run intergrax evidence eval
 ```
-
-This command is planned for implementation after N1.
 
 ### Suggested implementation order
 
@@ -865,6 +863,7 @@ uv run intergrax evidence posture export
 | HEP-2 Trace Evidence Path | EVID-TRACE-01 … EVID-TRACE-04 | **Done** — `trace show` / `trace export` report-derived timeline delivered |
 | HEP-3 Evidence Posture / Scoreboard | EVID-POSTURE-01 … EVID-POSTURE-04 | **Done** — `evidence posture` / `evidence posture export` delivered |
 | EVID-CORE-FU-01 Selected Live Tier-0 Probes | EVID-CORE-FU-01A … EVID-CORE-FU-01E | **Done** — `evidence live-core` + posture integration delivered |
+| EVID-EVAL Eval Regression Evidence | EVID-EVAL-01 … EVID-EVAL-05 | **Done** — `evidence eval` + optional posture `EVAL_REGRESSION` delivered |
 
 ---
 
@@ -872,7 +871,6 @@ uv run intergrax evidence posture export
 
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
-| HEP-2 / EVID-EVAL | **EVID-EVAL** | **Mode I approved** — eval regression evidence packaging; next implementation wave |
 | HEP-2 / EVID-COST | EVID-COST | External audit #7 — not Mode I approved yet |
 | HEP-4 | EVID-POL | External audit #3 — not Mode I approved yet |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 — not Mode I approved yet |
