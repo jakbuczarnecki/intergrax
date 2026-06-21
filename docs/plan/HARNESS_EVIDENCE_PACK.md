@@ -1015,7 +1015,7 @@ This roadmap tracks the remaining highest-ROI HEP / evidence work after the comp
 
 ### Minimal remaining ROI
 
-The minimal remaining ROI is to complete cost evidence and then close the operator-facing evidence path.
+Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path closeout are complete.
 
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
@@ -1024,11 +1024,11 @@ The minimal remaining ROI is to complete cost evidence and then close the operat
 | 3 | EVID-COST runner / collector | 1 | **Done** | Package existing cost/budget information into evidence results |
 | 4 | EVID-COST CLI + JSON/Markdown export | 1 | **Done** | Add `intergrax evidence cost` and write artifacts under `build/evidence/cost/` |
 | 5 | EVID-COST posture integration + closeout | 1 | **Done** | Add optional posture signal and close EVID-COST docs |
-| 6 | Final evidence operator path closeout | 1 | Planned | Document one canonical evidence onboarding flow |
+| 6 | Final evidence operator path closeout | 1 | **Done** | Document one canonical evidence onboarding flow |
 
-Estimated remaining tasks for minimal ROI: **1**.
+Estimated remaining tasks for minimal ROI: **0**.
 
-**Progress note:** EVID-COST C1–C5 are Done. Remaining estimated tasks after C5: minimal ROI **1**, strong ROI **3**, polished/adopter-ready ROI **5**.
+**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. Remaining estimated tasks: strong ROI **2**, polished/adopter-ready ROI **4**.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1037,9 +1037,9 @@ After minimal ROI, two additional tasks make the evidence path stronger for exte
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
 | 7 | End-to-end evidence smoke audit | 1 | Planned | Verify the full local evidence command sequence and artifact consistency |
-| 8 | README / onboarding update | 1 | Planned | Document how a developer verifies Intergrax harness locally |
+| 8 | README / onboarding update after smoke audit | 1 | Planned | Full onboarding documentation after end-to-end evidence smoke audit |
 
-Estimated remaining tasks for strong ROI: **3 total**.
+Estimated remaining tasks for strong ROI: **2 total**.
 
 ### Optional presentation/adopter polish
 
@@ -1050,7 +1050,7 @@ These are useful but not required for the core ROI path.
 | 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
 | 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **5 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **4 total**.
 
 ### Deferred from highest-ROI path
 
@@ -1068,11 +1068,11 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **final evidence operator path closeout** — EVID-COST **Done** (C1–C5 Done; EVID-COST-01…05 Done).
+Recommended next wave: **end-to-end evidence smoke audit** — final evidence operator path closeout **Done** (architecture + README proof path documented).
 
 Reason:
 
-EVID-COST is complete. The highest-ROI remaining evidence work is final operator-path closeout, end-to-end evidence smoke audit, and onboarding documentation. See § Evidence ROI roadmap.
+Minimal ROI is closed. The highest-ROI remaining evidence work is end-to-end evidence smoke audit and full onboarding documentation after smoke audit. See § Evidence ROI roadmap.
 
 ---
 

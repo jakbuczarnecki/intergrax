@@ -32,6 +32,60 @@ Architecture health MUST be measured, not inferred.
 
 Release cycles, SLO snapshots, and ops sign-off are tracked via `scripts/phase_w_ops_evidence.py` and release cycle artifacts under `build/architecture_hardening/`.
 
+## 43.4 Evidence-backed Harness Onboarding Path
+
+Intergrax exposes a local evidence-backed onboarding path that lets a developer or early adopter verify the harness without trusting claims, demos, or external services.
+
+The path is intentionally local and deterministic. It proves that the harness can produce, package, aggregate, and explain evidence artifacts across the core platform surfaces.
+
+### Canonical local proof path
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace export
+uv run intergrax evidence live-core
+uv run intergrax evidence eval
+uv run intergrax evidence cost
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+### Evidence surfaces
+
+| Surface                     | Command                                         | What it proves                                                              |
+| --------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
+| Core certification          | `intergrax certify core --level L2`             | Deterministic CORE-L* contract evidence                                     |
+| Trace evidence              | `intergrax trace export`                        | Report-derived trace timeline evidence                                      |
+| Selected live Tier-0 probes | `intergrax evidence live-core`                  | Selected local no-network live probes using mock LLM/tools                  |
+| Eval evidence               | `intergrax evidence eval`                       | Eval regression evidence packaging without real LLM/provider evaluation     |
+| Cost evidence               | `intergrax evidence cost`                       | Local cost/budget/trace evidence packaging without billing/provider pricing |
+| Evidence posture            | `intergrax evidence posture` / `posture export` | Read-only aggregation into an operator-facing evidence scoreboard           |
+
+### Architectural boundary
+
+This path is a harness proof path, not a product feature demo.
+
+It does not:
+
+* execute provider calls,
+* use network,
+* run real LLM evaluation,
+* compute provider pricing,
+* implement billing,
+* certify full production runtime behavior,
+* replace product-specific acceptance tests,
+* replace security or compliance attestation.
+
+### Relationship to ROI roadmap
+
+The implementation status and remaining ROI tasks are tracked in:
+
+```text
+docs/plan/HARNESS_EVIDENCE_PACK.md
+```
+
+The README exposes the short operator-facing version of this proof path for developers and early adopters.
+
 ---
 
 # 44. MVP-to-Product Evolution Layer

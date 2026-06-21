@@ -200,6 +200,69 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 
 ---
 
+## Proof of platform
+
+Intergrax is designed as an evidence-backed harness platform. The fastest way to verify the platform locally is to run the canonical evidence path.
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace export
+uv run intergrax evidence live-core
+uv run intergrax evidence eval
+uv run intergrax evidence cost
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+This produces and aggregates local evidence artifacts under:
+
+```text
+build/evidence/
+```
+
+Expected evidence surfaces:
+
+| Surface            | Main artifacts                                                                 |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Core certification | `build/evidence/core_certification/report.json`, `report.md`                   |
+| Trace evidence     | `build/evidence/trace/timeline.json`, `timeline.md`                            |
+| Live Tier-0 probes | `build/evidence/live_core_probes/live_core_report.json`, `live_core_report.md` |
+| Eval evidence      | `build/evidence/eval/report.json`, `report.md`                                 |
+| Cost evidence      | `build/evidence/cost/report.json`, `report.md`                                 |
+| Evidence posture   | `build/evidence/posture/posture.json`, `posture.md`                            |
+
+What this proves:
+
+* the harness can certify deterministic core behavior,
+* the harness can export trace evidence,
+* the harness can run selected local Tier-0 probes without provider calls,
+* the harness can package eval evidence without real LLM/provider evaluation,
+* the harness can package local cost evidence without billing/provider pricing,
+* the harness can aggregate all available evidence into a posture scoreboard.
+
+What this does not prove:
+
+* it does not certify every runtime path,
+* it does not execute real provider calls,
+* it does not perform real LLM evaluation,
+* it does not compute provider pricing or billing,
+* it does not replace product-specific tests,
+* it does not replace security/compliance attestation.
+
+Detailed planning and status live in:
+
+```text
+docs/plan/HARNESS_EVIDENCE_PACK.md
+```
+
+The architecture framing lives in:
+
+```text
+docs/architecture/satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md
+```
+
+---
+
 ## What you can do today
 
 | Action | How | Learn more |
