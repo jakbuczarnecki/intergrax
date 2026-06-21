@@ -1,5 +1,5 @@
 ---
-description: Intergrax Harness AI — iteration workflow, context budget, session protocol (F3)
+description: Intergrax Harness AI — iteration workflow, session protocol (F3)
 alwaysApply: false
 ---
 
@@ -7,20 +7,21 @@ alwaysApply: false
 
 Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok). Full reference: `@docs/guides/AGENT_INSTRUCTIONS.md`. Symbol lookup: `@docs/guides/SYMBOL_INDEX.md`.
 
+**I1/O1:** always-on `intergrax-token-budget.mdc` — input/output token budget.
+
 ## F3 — session
 
 ```text
 ONE DOMAIN = ONE NEW CHAT
 ```
 
-Audit / implement / closeout: one domain pair per chat. Resume: new chat + bootstrap + `RESUME: docs/audit_results/…/progress.json` only.
+Audit / implement / closeout: one domain pair per chat. HEP steps: `@docs/bootstrap/hep_step.txt`. Resume: new chat + bootstrap + `RESUME: docs/audit_results/…/progress.json` only.
 
-## Context budget
+## Domain read scope (when I1 allows load)
 
 - **Read:** arch hub read-scope block + plan hub read-scope + **one** satellite (`docs/plan/satellites/` or `docs/architecture/satellites/`).
 - **Audits:** `docs/guides/audit_slices/<DOMAIN>.md` — not full IDEAL/AUDIT_MAP.
-- **Max:** one file >5k tok per session unless RESUME cites more. Grep with path filter before semantic search.
-- **Never** load `docs/audit_results/` unless RESUME. Respect `.cursorignore`.
+- **Max:** one file >5k tok per session unless RESUME cites more.
 
 ## Never violate
 
@@ -34,17 +35,5 @@ Default scope: gate maintenance `docs/plan/PLATFORM_FOUNDATION.md` hub. Phase K 
 **Mode I:** `audyt pomysłu` / `idea audit` → `intergrax-idea-audit.mdc` (no code until approved).
 
 Repository artifacts: English. Operator chat: session language. **Do not commit** unless asked.
-
-## O1 — output (terse default)
-
-**Default: terse** — outcome, changed paths, tests pass/fail, blockers; **no** diff recap, long tables, or doc canon restatement.
-
-| Mode | Trigger |
-|------|---------|
-| Minimal | `krótko` / `terse` → ≤6 lines |
-| Terse | default implement/fix/gate → ≤12 lines |
-| Full | `pełny raport` / `full report` / `iteration summary` / milestone·closeout·journal |
-
-Full 12-point template: `@docs/guides/AGENT_INSTRUCTIONS.md` § Operator communication (load only when Full).
 
 Verification / ADR / routing: `@docs/guides/AGENT_INSTRUCTIONS.md` when needed.

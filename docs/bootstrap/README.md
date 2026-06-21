@@ -2,7 +2,7 @@
 
 **Doc map:** [`../DOCUMENTATION_MAP.md`](../DOCUMENTATION_MAP.md) — bootstrap vs audit vs audit_results roles.  
 **F3 session rule:** `ONE DOMAIN = ONE NEW CHAT` — see [`../guides/CURSOR_TOKEN_SETUP.md`](../guides/CURSOR_TOKEN_SETUP.md).  
-**F2 setup:** root `AGENTS.md` is a Cursor auto-load stub; full reference in `docs/guides/AGENT_INSTRUCTIONS.md`. Keep `intergrax-iteration.mdc` always-on — do not delete stub via Settings trash icon.
+**I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. **F2 setup:** root `AGENTS.md` is a Cursor auto-load stub; full reference in `docs/guides/AGENT_INSTRUCTIONS.md`. Do not delete stub via Settings trash icon.
 
 Copy **entire file** into a **new** Cursor agent chat as the first message.
 
@@ -16,6 +16,7 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
 | [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update architecture + plan |
 | [`07_ci_preflight.txt`](07_ci_preflight.txt) | **CI — preflight before push/merge** | Run local parity with `.github/workflows/unit-tests.yml` (`--profile all`) |
+| [`hep_step.txt`](hep_step.txt) | **HEP — one plan step** | Phase HEP C13–C16 / EVID-* rows — edit `STEP=` / `SCOPE=` |
 
 **Mode I (idea audit):** Write the idea in natural language in a **new** chat (e.g. `Zrób audyt pomysłu: …`). Agent loads `.cursor/rules/intergrax-idea-audit.mdc` on trigger → procedure [`idea_audit.txt`](idea_audit.txt). **No** file editing, **no** `init_architecture_audit_run.py`, **no** `audit_results/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
 

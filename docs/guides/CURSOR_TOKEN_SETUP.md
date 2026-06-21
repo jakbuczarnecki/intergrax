@@ -9,8 +9,9 @@
 | File | Auto-loaded | ~tok |
 |------|-------------|------|
 | `AGENTS.md` (root stub) | Yes (Cursor) | ~350 |
+| `.cursor/rules/intergrax-token-budget.mdc` | Yes (`alwaysApply: true`) | ~280 |
 | `docs/guides/AGENT_INSTRUCTIONS.md` | No — `@` on demand | ~3,300 |
-| `.cursor/rules/intergrax-iteration.mdc` | Yes | ~500 |
+| `.cursor/rules/intergrax-iteration.mdc` | On demand / `@` | ~350 |
 
 **Do not delete** root `AGENTS.md` via Cursor Settings trash icon.
 
@@ -26,13 +27,29 @@ No Background Agents / Task subagents for layer audits unless operator opts in.
 
 Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
+HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) — edit `STEP=` / `SCOPE=` per C13–C16.
+
+---
+
+## I1 — Input token budget (always-on)
+
+| Always-on | ~tok |
+|-----------|------|
+| I1 block in `intergrax-token-budget.mdc` | ~120 |
+
+**Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
+
+**Expand context** (full hub, subagent, >3 files): **STOP** — ask operator once; wait for OK.
+
+Domain read scope (when load is allowed): arch/plan hub read-scope blocks + one satellite — see `intergrax-iteration.mdc`.
+
 ---
 
 ## O1 — Terse operator replies (output token budget)
 
 | Always-on | ~tok |
 |-----------|------|
-| O1 block in `intergrax-iteration.mdc` | ~120 |
+| O1 block in `intergrax-token-budget.mdc` | ~100 |
 | Full 12-point template | `AGENT_INSTRUCTIONS.md` § Operator communication — **not** auto-loaded |
 
 **Default:** terse (≤12 lines) — outcome, paths, tests, blockers. **No** diff recap or doc restatement.

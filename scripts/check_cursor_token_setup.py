@@ -30,6 +30,7 @@ AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
 SYMBOL_INDEX = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
+TOKEN_BUDGET_RULE = ROOT / ".cursor" / "rules" / "intergrax-token-budget.mdc"
 PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
 PLAN_DIR = ROOT / "docs" / "plan"
 SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
@@ -38,6 +39,7 @@ SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
 READ_BUDGET_MARKER = "READ_BUDGET"
 OUTPUT_BUDGET_MARKER = "OUTPUT_BUDGET"
 O1_MARKER = "O1"
+I1_MARKER = "I1"
 STUB_MARKER = "AGENT_INSTRUCTIONS.md"
 STUB_MAX_LINES = 35
 FULL_MIN_LINES = 150
@@ -49,6 +51,7 @@ AUDIT_BOOTSTRAPS = (
     "05_closeout_all_domains.txt",
     "06_interactive_layer_by_layer_audit.txt",
 )
+HEP_BOOTSTRAP = "hep_step.txt"
 
 
 def main() -> int:
@@ -58,6 +61,8 @@ def main() -> int:
         errors.append("missing docs/guides/CURSOR_TOKEN_SETUP.md")
     elif "O1" not in CURSOR_SETUP.read_text(encoding="utf-8"):
         errors.append("CURSOR_TOKEN_SETUP.md must document O1 terse output policy")
+    elif I1_MARKER not in CURSOR_SETUP.read_text(encoding="utf-8"):
+        errors.append("CURSOR_TOKEN_SETUP.md must document I1 input token budget")
 
     if not CURSORIGNORE.is_file():
         errors.append("missing .cursorignore")
@@ -89,10 +94,21 @@ def main() -> int:
             errors.append(f"AGENTS.md stub too large ({stub_lines} lines; max {STUB_MAX_LINES})")
         if STUB_MARKER not in stub:
             errors.append("AGENTS.md stub must link to AGENT_INSTRUCTIONS.md")
-        if "O1" not in stub and "terse" not in stub.lower():
-            errors.append("AGENTS.md stub must mention O1 terse output policy")
+        if "O1" not in stub and "terse" not in stub.lower() and I1_MARKER not in stub:
+            errors.append("AGENTS.md stub must mention I1/O1 token budget policy")
         if "## Task routing" in stub or "## Verification" in stub:
             errors.append("AGENTS.md stub must not contain full routing/verification sections")
+
+    if not TOKEN_BUDGET_RULE.is_file():
+        errors.append("missing .cursor/rules/intergrax-token-budget.mdc (I1/O1 always-on)")
+    else:
+        token_budget = TOKEN_BUDGET_RULE.read_text(encoding="utf-8")
+        if "alwaysApply: true" not in token_budget:
+            errors.append("intergrax-token-budget.mdc must have alwaysApply: true")
+        if I1_MARKER not in token_budget:
+            errors.append("intergrax-token-budget.mdc must include I1 input token budget")
+        if O1_MARKER not in token_budget or "terse" not in token_budget.lower():
+            errors.append("intergrax-token-budget.mdc must include O1 terse output policy")
 
     iteration = ITERATION_RULE.read_text(encoding="utf-8")
     if "AGENT_INSTRUCTIONS.md" not in iteration:
@@ -101,8 +117,8 @@ def main() -> int:
         errors.append("intergrax-iteration.mdc must include F3 session protocol")
     if "SYMBOL_INDEX" not in iteration:
         errors.append("intergrax-iteration.mdc must reference SYMBOL_INDEX.md (F5)")
-    if O1_MARKER not in iteration or "terse default" not in iteration.lower():
-        errors.append("intergrax-iteration.mdc must include O1 terse output policy")
+    if "intergrax-token-budget" not in iteration:
+        errors.append("intergrax-iteration.mdc must reference intergrax-token-budget.mdc (I1/O1)")
 
     plan_gen = ROOT / "scripts" / "generate_plan_read_scopes.py"
     if not plan_gen.is_file():
@@ -130,6 +146,20 @@ def main() -> int:
             errors.append(f"{name}: missing {READ_BUDGET_MARKER}")
         if OUTPUT_BUDGET_MARKER not in text:
             errors.append(f"{name}: missing {OUTPUT_BUDGET_MARKER}")
+
+    hep_path = BOOTSTRAP / HEP_BOOTSTRAP
+    if not hep_path.is_file():
+        errors.append(f"missing bootstrap {HEP_BOOTSTRAP}")
+    else:
+        hep_text = hep_path.read_text(encoding="utf-8")
+        if SESSION_MARKER not in hep_text:
+            errors.append(f"{HEP_BOOTSTRAP}: missing {SESSION_MARKER}")
+        if READ_BUDGET_MARKER not in hep_text:
+            errors.append(f"{HEP_BOOTSTRAP}: missing {READ_BUDGET_MARKER}")
+        if OUTPUT_BUDGET_MARKER not in hep_text:
+            errors.append(f"{HEP_BOOTSTRAP}: missing {OUTPUT_BUDGET_MARKER}")
+        if "STEP=" not in hep_text or "SCOPE=" not in hep_text:
+            errors.append(f"{HEP_BOOTSTRAP}: must include STEP= and SCOPE= placeholders")
 
     if errors:
         print("check_cursor_token_setup: FAILED", file=sys.stderr)
