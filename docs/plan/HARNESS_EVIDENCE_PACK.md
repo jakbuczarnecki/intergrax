@@ -378,9 +378,10 @@ The `certification_report_emitted` scenario is represented in the timeline by a 
 
 ## Future waves (not approved for implementation)
 
+**Delivered:** HEP-2 Trace (EVID-TRACE-01…04) — **Done**; see § HEP-2 closeout.
+
 | Wave | IDs | Audit priority |
 |------|-----|----------------|
-| HEP-2 Trace | EVID-TRACE-01 … EVID-TRACE-04 | External audit #2 — **Mode I approved** (see § Mode I — HEP-2) |
 | HEP-2 (other) | EVID-EVAL, EVID-COST | External audit #4, #7 — not Mode I approved yet |
 | HEP-3 | EVID-POSTURE | External audit #12 |
 | HEP-4 | EVID-POL | External audit #3 |
