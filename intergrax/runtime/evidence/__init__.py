@@ -49,6 +49,16 @@ from intergrax.runtime.evidence.trace_timeline_contracts import (
     generate_timeline_event_id,
     validate_trace_timeline,
 )
+from intergrax.runtime.evidence.trace_timeline_adapter import (
+    build_timeline_from_certification_report,
+    load_core_certification_report,
+)
+from intergrax.runtime.evidence.trace_timeline_export import (
+    DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR,
+    format_trace_timeline_cli,
+    format_trace_timeline_markdown,
+    write_trace_timeline,
+)
 from intergrax.runtime.evidence.trace_timeline_facets import (
     TraceBudgetFacet,
     TraceBudgetStatus,
@@ -79,8 +89,13 @@ __all__ = [
     "CoreScenarioResult",
     "CoreScenarioStatus",
     "DEFAULT_CORE_CERTIFICATION_OUTPUT_DIR",
+    "DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR",
     "EvidenceRefKind",
     "build_core_certification_report",
+    "build_timeline_from_certification_report",
+    "format_trace_timeline_cli",
+    "format_trace_timeline_markdown",
+    "load_core_certification_report",
     "core_scenario_contracts_for_level",
     "get_core_scenario_contract",
     "is_scenario_in_level",
@@ -114,4 +129,5 @@ __all__ = [
     "validate_trace_timeline",
     "validate_trace_timeline_event_facets",
     "write_core_certification_report",
+    "write_trace_timeline",
 ]

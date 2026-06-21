@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path Mode I approved — EVID-TRACE-01/02 **Done** (C4/C5); EVID-TRACE-03…04 **Planned**.
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6).
 
 ---
 
@@ -286,8 +286,8 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 |----|------|----------|--------|-------------|---------------------|
 | **EVID-TRACE-01** | HEP-2 | P1 | **Done** | Trace timeline contract | Canonical timeline models for evidence runs; stable event kinds; artifact refs; no CLI yet |
 | **EVID-TRACE-02** | HEP-2 | P1 | **Done** | Policy/budget/HITL facets | Timeline can represent policy decisions, budget markers, HITL markers, scenario lifecycle |
-| **EVID-TRACE-03** | HEP-2 | P1 | **Planned** | `intergrax trace show` CLI | Renders timeline from HEP-1 report/evidence artifacts; no UI |
-| **EVID-TRACE-04** | HEP-2 | P2 | **Planned** | Trace export JSON/Markdown | Writes timeline JSON/Markdown under `build/evidence/trace/` |
+| **EVID-TRACE-03** | HEP-2 | P1 | **Done** | `intergrax trace show` CLI | Renders timeline from HEP-1 report/evidence artifacts; no UI |
+| **EVID-TRACE-04** | HEP-2 | P2 | **Done** | Trace export JSON/Markdown | Writes timeline JSON/Markdown under `build/evidence/trace/` |
 
 ---
 
@@ -297,7 +297,7 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 |------|-----|-------|
 | C4 | EVID-TRACE-01 | Timeline contracts only | **Done** |
 | C5 | EVID-TRACE-02 | Facets for policy/budget/HITL/evidence | **Done** |
-| C6 | EVID-TRACE-03/04 | CLI + export |
+| C6 | EVID-TRACE-03/04 | CLI + export | **Done** |
 
 ---
 
@@ -322,6 +322,28 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 | Public exports | `intergrax/runtime/evidence/__init__.py` |
 
 **Verify:** `uv run pytest tests/unit/runtime/evidence/test_trace_timeline_facets.py -q`
+
+---
+
+## Implementation notes (C6 · EVID-TRACE-03/04)
+
+| Artifact | Path |
+|----------|------|
+| Certification report adapter | `intergrax/runtime/evidence/trace_timeline_adapter.py` |
+| Timeline CLI/export | `intergrax/runtime/evidence/trace_timeline_export.py` |
+| CLI | `intergrax/cli/trace.py` · `intergrax trace show` · `intergrax trace export` |
+| Unit tests | `tests/unit/runtime/evidence/test_trace_timeline_adapter.py` · `test_trace_timeline_export.py` · `test_trace_cli.py` |
+| Public exports | `intergrax/runtime/evidence/__init__.py` |
+
+**Operator path:**
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace show
+uv run intergrax trace export
+```
+
+**Verify:** `uv run pytest tests/unit/runtime/evidence/test_trace_timeline_adapter.py tests/unit/runtime/evidence/test_trace_timeline_export.py tests/unit/runtime/evidence/test_trace_cli.py -q`
 
 ---
 
