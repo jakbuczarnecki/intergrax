@@ -798,7 +798,7 @@ This command is planned for implementation after N1.
 |------|-------|--------|
 | N1 | Mode I / planning docs | **Done** |
 | N2 | Eval evidence contracts | **Done** |
-| N3 | Eval evidence runner | Planned |
+| N3 | Eval evidence runner | **Done** |
 | N4 | CLI + report export | Planned |
 | N5 | Optional posture integration + closeout docs | Planned |
 
@@ -809,12 +809,14 @@ This command is planned for implementation after N1.
 | ID | Priority | Status | Deliverable | Acceptance criteria |
 |----|----------|--------|-------------|---------------------|
 | **EVID-EVAL-01** | P1 | Done | Eval evidence contracts | Report/result contracts for eval scenario library evidence; no runner yet |
-| **EVID-EVAL-02** | P1 | Planned | Eval evidence runner | Read-only wrapper over existing eval check mechanism; no new eval framework |
+| **EVID-EVAL-02** | P1 | Done | Eval evidence runner | Read-only wrapper over existing eval check mechanism; no new eval framework |
 | **EVID-EVAL-03** | P1 | Planned | `intergrax evidence eval` CLI + export | Writes `build/evidence/eval/report.json` and `report.md` |
 | **EVID-EVAL-04** | P2 | Planned | Posture integration | Optional read-only signal in evidence posture, if report exists |
 | **EVID-EVAL-05** | P2 | Planned | Closeout docs | Final operator path and semantics |
 
 **Implementation note (N2):** N2 added eval evidence contracts only; no runner, CLI, export, posture integration, real LLM evaluation, provider comparison, or new eval framework.
+
+**Implementation note (N3):** N3 added a read-only eval evidence runner that produces an in-memory EvalEvidenceReport from existing local eval/check availability. It does not execute real LLM evaluation, compare providers, use network, write artifacts, add CLI, add posture integration, or create a new eval framework.
 
 ---
 
