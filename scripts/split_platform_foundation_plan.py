@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Split docs/plan/PLATFORM_FOUNDATION.md into hub + plan/plan/ satellites."""
+"""Split docs/plan/PLATFORM_FOUNDATION.md into hub + plan/satellites/ satellites."""
 from __future__ import annotations
 
 import re
@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs/plan/PLATFORM_FOUNDATION.md"
-OUT_DIR = ROOT / "docs/plan/plan"
+OUT_DIR = ROOT / "docs" / "plan" / "satellites"
 
 HUB_H3_PREFIXES = (
     "6.1 Harness platform maintenance",
@@ -237,11 +237,11 @@ def main() -> None:
     hub_text = "\n".join(hub)
     hub_text = hub_text.replace(
         "Detailed phase registers live under [`plan/`](plan/). Appendices: [`plan/`](plan/).",
-        "Detailed registers and appendices: [`plan/plan/`](plan/plan/) — **load on demand**.",
+        "Detailed registers and appendices: [`plan/satellites/`](plan/satellites/) — **load on demand**.",
     )
     hub_text = hub_text.replace(
         "Historical phase registers (A–V) and closeout phases are decomposed under [`plan/`](plan/).",
-        "Historical phase registers: [`plan/plan/PLATFORM_FOUNDATION_phase_closeout.md`](plan/PLATFORM_FOUNDATION_phase_closeout.md).",
+        "Historical phase registers: [`plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md`](plan/PLATFORM_FOUNDATION_phase_closeout.md).",
     )
 
     insert_at = hub_text.find("**Note on audit source documents:**")

@@ -16,9 +16,9 @@ MAX_HUB_TOKENS = 25_000
 ORCH_REGISTER_MARKER = "### ORCH — Master register"
 ORCH_REGISTER_ALLOWED = {
     PLAN / "ORCHESTRATION.md",
-    PLAN / "plan" / "PLATFORM_FOUNDATION_master_registers.md",
-    PLAN / "plan" / "ORCHESTRATION_master_registers.md",
-    PLAN / "plan" / "UNIFIED_EXECUTION_RUNTIME_master_registers.md",
+    PLAN / "satellites" / "PLATFORM_FOUNDATION_master_registers.md",
+    PLAN / "satellites" / "ORCHESTRATION_master_registers.md",
+    PLAN / "satellites" / "UNIFIED_EXECUTION_RUNTIME_master_registers.md",
 }
 
 
@@ -42,7 +42,7 @@ def main() -> int:
 
         if ORCH_REGISTER_MARKER in text and path.resolve() not in {p.resolve() for p in ORCH_REGISTER_ALLOWED}:
             errors.append(
-                f"{path.relative_to(ROOT)}: contains {ORCH_REGISTER_MARKER!r} — use canonical ORCHESTRATION/plan/plan/ source"
+                f"{path.relative_to(ROOT)}: contains {ORCH_REGISTER_MARKER!r} — use canonical ORCHESTRATION/plan/satellites/ source"
             )
 
     if errors:

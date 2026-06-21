@@ -63,7 +63,7 @@ FLOW-GAP-20 hybrid daemon LKW · UC-6 research stubs · WAITING_FOR_RESOURCES/EX
 **Load first:** [`docs/guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md) — compact slice (layers **8–10**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -72,8 +72,8 @@ FLOW-GAP-20 hybrid daemon LKW · UC-6 research stubs · WAITING_FOR_RESOURCES/EX
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/NEXUS_EXECUTION_FLOW.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/NEXUS_EXECUTION_FLOW.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/NEXUS_EXECUTION_FLOW.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/NEXUS_EXECUTION_FLOW.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/NEXUS_EXECUTION_FLOW.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 5. `@docs/guides/AGENT_CREATION_GUIDE.md` **Appendix I §I.2–I.6** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.

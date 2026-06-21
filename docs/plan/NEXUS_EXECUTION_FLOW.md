@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW plan).
 
-- **Implement / audit default:** §6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. Historical flow registers — [`plan/plan/`](plan/plan/) satellite on demand
+- **Implement / audit default:** §6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. Historical flow registers — [`plan/satellites/`](plan/satellites/) satellite on demand
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 

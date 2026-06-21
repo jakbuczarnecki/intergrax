@@ -17,7 +17,7 @@ Audit / implement / closeout: one domain pair per chat. Resume: new chat + boots
 
 ## Context budget
 
-- **Read:** arch hub read-scope block + plan hub read-scope + **one** satellite (`docs/plan/plan/` or `docs/architecture/arch/`).
+- **Read:** arch hub read-scope block + plan hub read-scope + **one** satellite (`docs/plan/satellites/` or `docs/architecture/satellites/`).
 - **Audits:** `docs/guides/audit_slices/<DOMAIN>.md` — not full IDEAL/AUDIT_MAP.
 - **Max:** one file >5k tok per session unless RESUME cites more. Grep with path filter before semantic search.
 - **Never** load `docs/audit_results/` unless RESUME. Respect `.cursorignore`.

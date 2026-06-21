@@ -27,8 +27,8 @@ DEFAULT_SCOPE = (
 EXTRA_SCOPES: dict[str, str] = {
     "PLATFORM_FOUNDATION": (
         "§6.1 gate maintenance (default) · §6.3 deferred product only · §4.0a scope split. "
-        "**On demand:** [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) · "
-        "[`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed only)"
+        "**On demand:** [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md) · "
+        "[`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed only)"
     ),
     "ORCHESTRATION": (
         "Active `### 6.1*` queues with open P0/P1 · Phase AUDIT-IDEAL **Planned** rows. "
@@ -36,14 +36,14 @@ EXTRA_SCOPES: dict[str, str] = {
     ),
     "NEXUS_EXECUTION_FLOW": (
         "§6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. "
-        "Historical flow registers — [`plan/plan/`](plan/plan/) satellite on demand"
+        "Historical flow registers — [`plan/satellites/`](plan/satellites/) satellite on demand"
     ),
     "UNIFIED_EXECUTION_RUNTIME": (
         "§6.1 UAEP maintenance · R-Policy / SEC / COST open rows · phase satellites on demand"
     ),
     "AGENT_CONTRACTS_AND_ASSEMBLY": (
         "§6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · "
-        "[`plan/plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand"
+        "[`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand"
     ),
     "INTEGRATIONS": (
         "Phase INT / H-INT hub queues · §6.1 open P0/P1 · M.6 expansion registers — satellite on demand"
@@ -69,7 +69,7 @@ def _audit_slice_plan_hints() -> dict[str, str]:
         if did in slices:
             continue
         slices[did] = {
-            "plan_hub": f"Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand",
+            "plan_hub": f"Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand",
         }
     return {domain: spec["plan_hub"] for domain, spec in slices.items()}
 
@@ -97,7 +97,7 @@ def build_scope(domain: str, hub_text: str, hints: dict[str, str], explicit: dic
     if domain == "PLATFORM_FOUNDATION" and not sats:
         sats = _pf_satellites_from_disk()[:2]
     if sats:
-        links = " · ".join(f"[`plan/plan/{name}`](plan/plan/{name})" for name in sats[:2])
+        links = " · ".join(f"[`plan/satellites/{name}`](plan/satellites/{name})" for name in sats[:2])
         parts.append(f"**On demand (one max):** {links}")
     if "## Phase AUDIT-IDEAL" in hub_text:
         parts.append("Phase AUDIT-IDEAL — **Planned** / open rows only")

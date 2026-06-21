@@ -1,6 +1,7 @@
 # Harness Guides & Strategy
 
 Authoring guides, strategic context, and audit methodology.  
+**Navigation hub:** [`DOCUMENTATION_MAP.md`](../DOCUMENTATION_MAP.md) — what to read, when, and doc roles.  
 **Platform canon** (architecture + implementation pairs) lives in [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md).
 
 | Document | Purpose |

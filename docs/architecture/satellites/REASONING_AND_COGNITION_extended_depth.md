@@ -1,6 +1,243 @@
-# REASONING_AND_COGNITION — §12+ scenarios & control
+# REASONING_AND_COGNITION — §8+ extended architecture
 
 **Parent hub:** [`REASONING_AND_COGNITION.md`](../REASONING_AND_COGNITION.md)
+
+## 8. Domain boundaries
+
+```text
+REASONING_AND_COGNITION  →  what / why (plan, classify, decide, tool select)
+ORCHESTRATION            →  when / order / retry / parallel (graph, scheduler)
+NEXUS_EXECUTION_FLOW     →  end-to-end narrative across domains
+LLM_ADAPTERS             →  provider wire protocol, response envelope
+AGENT_CONTRACTS §17      →  prompt asset governance (input to cognition)
+MEMORY §7                →  context compiler output fed into cognition
+CRITIC_VERIFICATION      →  verify outputs and trajectories (post-decision)
+```
+
+| Adjacent domain | RCL hands off | RCL receives |
+|-----------------|---------------|--------------|
+| `ORCHESTRATION` | `NexusPlan` | classified `Task`, registry |
+| `UNIFIED_EXECUTION_RUNTIME` | step decisions | UAEP execution context |
+| `LLM_ADAPTERS` | `generate_messages` requests | `LLMAdapterResponse` |
+| `TOOLS` | `ToolPlanDecision` | tool schemas, policy tags |
+| `CRITIC_VERIFICATION` | agent output artifacts | validation failures (revise loops) |
+
+---
+
+## 9. Task classification
+
+Classification is the **first cognition decision** on every Nexus task. It constrains planner behavior but does **not** mutate `Task.state` — `TaskLifecycle` owns lifecycle state.
+
+**Module:** `intergrax/runtime/nexus/task_classifier.py`  
+**Runner integration:** `NexusPlanningRunner.run()` after intake hooks  
+**Wiring:** `OrchestrationProfile.classifier_kind` → `default` | `rules` | `llm` (`orchestration_wiring.py` · ORCH-CONFIG.1 · COG-3.*)
+
+### 9.1 Classification labels
+
+| `TaskClassification` | Meaning | Planner effect |
+|----------------------|---------|----------------|
+| `SINGLE_AGENT_DEFAULT` | No explicit agent or capability | One step; first registry agent |
+| `SINGLE_AGENT_EXPLICIT` | `task.agent_id` set | One step; fixed agent |
+| `CAPABILITY_ROUTED` | Capability matches one agent | One step; capability match |
+| `MULTI_AGENT` | Multiple agents share capability | Sequential steps; order from `multi_agent_order` |
+| `UNSUPPORTED` | No agent for requested capability | Empty plan → terminal FAILED |
+| `HUMAN_APPROVAL_REQUIRED` | Governance flag | Plan created; pause before graph if not resumed |
+| `HIGH_RISK` | Risk label on agent/flag | Label overlay; underlying strategy preserved |
+| `LONG_RUNNING` | Long-running profile enabled | Label; checkpoint path when scheduler enabled |
+
+### 9.2 Decision flow
+
+```mermaid
+flowchart TD
+    Start([Task enters planning]) --> HAR{require_human_approval?}
+    HAR -->|yes| HARQ[HUMAN_APPROVAL_REQUIRED]
+    HAR -->|no| CAP{capability set?}
+    CAP -->|yes, no agent| UNSUP[UNSUPPORTED]
+    CAP -->|yes, multi agent| MULTI[MULTI_AGENT]
+    CAP -->|yes, single| CAPR[CAPABILITY_ROUTED]
+    CAP -->|no| EID{agent_id set?}
+    EID -->|yes| SEX[SINGLE_AGENT_EXPLICIT]
+    EID -->|no| SDEF[SINGLE_AGENT_DEFAULT]
+    SDEF --> RISK
+    SEX --> RISK
+    CAPR --> RISK
+    MULTI --> RISK
+    RISK{high risk?} -->|yes| HRISK[HIGH_RISK]
+    RISK -->|no| LR{long_running?}
+    HRISK --> LR
+    LR -->|yes| LRQ[LONG_RUNNING]
+    LR -->|no| Done([classification stored])
+    LRQ --> Done
+    HARQ --> Done
+    UNSUP --> Done
+```
+
+### 9.3 Trace events
+
+| Phase | Event | Hint group |
+|-------|-------|------------|
+| Classification | lifecycle hook diagnostics | `ops:planning` |
+| | payload includes `classification` | |
+
+**Done (ORCH-CONFIG.1 · COG-3.*):** `classifier_kind=rules|llm` + `IntentRoute` on `OrchestrationProfile`; LLM classifier falls back to deterministic rules on parse failure; classification trace includes confidence + rationale when available.
+
+### 9.4 Orchestration routing modes (do not confuse with `TaskClassification`)
+
+`TaskClassification` labels describe **how many agents match the requested capability**, not the **multi-agent collaboration topology**. Authors need a separate mental model:
+
+| Routing mode | How it is selected | Agent roles | Typical classification label |
+|--------------|-------------------|-------------|------------------------------|
+| **Single-agent routed** | One agent matches `task.context.capability` | One specialist | `CAPABILITY_ROUTED` |
+| **Same-capability multi-agent** | Multiple agents declare **identical** capability | Competing or sequential specialists with same skill tag | `MULTI_AGENT` |
+| **Pipeline graph** | `ApplicationGraphSpec` on profile + task without `plan_id` | Different capabilities in fixed order | `CAPABILITY_ROUTED` or `MULTI_AGENT` after graph seed |
+| **Pipeline capability** | `task.context.capability` ends with `.pipeline` (convention) | Planner emits known multi-step plan | Varies; often `CAPABILITY_ROUTED` |
+| **Engine-planned** | `planner_kind=engine` | LLM builds `NexusPlan` from registry + message | Underlying label preserved |
+| **Explicit agent** | `task.agent_id` set | Fixed agent regardless of capability | `SINGLE_AGENT_EXPLICIT` |
+
+```text
+WRONG:  "I have 2 agents (docs + web) → MULTI_AGENT will chain them"
+RIGHT:  "I have 2 agents → graph_spec DEPENDS_ON chain OR *.pipeline OR engine planner"
+```
+
+| Symptom | Misconfiguration | Fix |
+|---------|------------------|-----|
+| Only first agent runs | `CAPABILITY_ROUTED` with one matching capability | Add `graph_spec` or use `*.pipeline` |
+| All same-capability agents run in sequence | `MULTI_AGENT` triggered intentionally | Expected only for redundant specialists |
+| Graph ignored | Task carries pre-built `plan_id` | Clear `plan_id` for fresh graph seed |
+| Chat sends free text, wrong agent | No L1 capability; classifier not enabled | `classifier_kind=rules` + `IntentRoute`, or host `B1` shim |
+
+**Cross-ref:** full configuration canon (CFG-*, matrices, plan register) — [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · Tier-3 host summary — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
+
+### 9.5 Intake → classification → planning contract
+
+```mermaid
+flowchart TD
+    INT["Task intake (any surface)"] --> CAP{"capability set?"}
+    CAP -->|no + classifier off| DEF["SINGLE_AGENT_DEFAULT"]
+    CAP -->|no + classifier on| CLS["COG-3 infer capability"]
+    CAP -->|yes, 1 agent| CR["CAPABILITY_ROUTED"]
+    CAP -->|yes, N agents same cap| MA["MULTI_AGENT"]
+    CLS --> PLN["Planner"]
+    DEF --> PLN
+    CR --> GS{"graph_spec + no plan_id?"}
+    MA --> PLN
+    GS -->|yes| GP["GraphSpecSeedingPlanner"]
+    GS -->|no| PLN
+    GP --> PLAN["NexusPlan"]
+    PLN --> PLAN
+```
+
+**Ownership:** Tier-3 sets `capability` unless COG-3 classifier is enabled. Tier-1 never parses vendor-specific payload formats — adapters normalize first.
+
+---
+
+## 10. Nexus planning
+
+Planning produces **`NexusPlan`** — the task-level contract consumed by `plan_to_execution_graph()`.
+
+### 10.1 Core models
+
+```python
+# intergrax/runtime/nexus/planning/task_planner.py
+
+class PlanStep(BaseModel):
+    step_id: str
+    agent_id: str | None
+    capability: str | None
+    description: str
+    depends_on: list[str]
+    delegation: DelegationSpec | None
+
+class NexusPlan(BaseModel):
+    plan_id: str
+    task_id: str
+    classification: str
+    steps: list[PlanStep]
+    validation_criteria: list[str]
+    graph_retry_on_error: int | None
+```
+
+### 10.2 Planner selection
+
+| `OrchestrationProfile.planner_kind` | Implementation | LLM? |
+|-------------------------------------|----------------|------|
+| `null` / `default` | `TaskPlanner()` | No |
+| `engine` | `EngineBackedNexusPlanner` → `build_nexus_plan_from_llm()` | Yes |
+| unknown | — | `OrchestrationWiringError` at bootstrap |
+
+**Bootstrap rule:** `planner_kind=engine` requires `OrchestrationWiringContext.llm_adapter` — host fails fast otherwise.
+
+**Parse rule:** LLM planner validates `agent_id` against `registry.list_routable_agent_ids()`; any unknown id → fallback to `TaskPlanner`.
+
+### 10.3 Deterministic TaskPlanner strategies
+
+| Trigger | Plan shape |
+|---------|------------|
+| Default / single-agent classifications | 1 step |
+| `MULTI_AGENT` | N sequential steps with `depends_on` chain |
+| `research.pipeline` or `intent=research_summarize` | 2 steps: web_search → summarize |
+| `*.pipeline` (product convention) | Prefer `graph_spec` seed or registered planner rule — do not assume generic `TaskPlanner` knows every product |
+| `UNSUPPORTED` | 0 steps |
+
+**Ordering:** `OrchestrationProfile.multi_agent_order` — `registry` (default) or declared stable order (FLOW-17).
+
+### 10.4 LLM-backed Nexus planner (FLOW-1)
+
+`EngineBackedNexusPlanner` (`orchestration_wiring.py`) delegates to `build_nexus_plan_from_llm()`:
+
+1. Resolve prompt via `nexus_planner_prompts.nexus_task_planner_prompt()` — registry id `nexus_task_planner` (system + `user_template` variables)
+2. Call planner `LLMAdapter.generate_messages` (producer-separated when `ReasoningProfile.planner_llm_profile` set — §16)
+3. Parse JSON `{"steps":[{"agent_id","description","depends_on"}]}` with optional `planner_parse_retries` (COG-PROD.2)
+4. On any validation failure → `TaskPlanner.plan()` fallback; annotate `ReasoningFailureKind` on metadata
+
+### 10.5 Planning phase runner
+
+`NexusPlanningRunner` (`planning_runner.py`):
+
+1. Intake hooks (`BEFORE_TASK_INTAKE`, classification hooks)
+2. `classifier.classify(task)`
+3. Pre-plan policy hooks (FLOW-11)
+4. `planner.plan(task, registry)` → `NexusPlan`
+5. HITL gate when `HUMAN_APPROVAL_REQUIRED`
+6. Emit `PLAN_CREATED` (`ops:planning`) with `plan_id`, `step_count`
+7. Set lifecycle `PLANNED`
+
+**Policy integration:** `PolicyEngine` may BLOCK at planning boundary — classified as reasoning-policy failure (§17).
+
+### 10.6 Plan → execution handoff
+
+```text
+NexusPlan
+    → plan_to_execution_graph()   # graph_builder.py
+    → ExecutionGraph
+    → GraphExecutor               # ORCHESTRATION domain
+```
+
+RCL responsibility **ends** at validated `NexusPlan` handoff; graph execution is orchestration.
+
+---
+
+## 11. Declarative graph seeding
+
+When Tier-3 declares `ApplicationEnvironmentProfile.graph_spec.nodes` and the task has **no** pre-set `plan_id`:
+
+```text
+GraphSpecSeedingPlanner wraps inner planner
+    if should_seed_plan_from_graph_spec(task):
+        application_graph_spec_to_nexus_plan(spec, task)
+    else:
+        inner.plan(task, registry)
+```
+
+| Edge kind | Effect on `NexusPlan` |
+|-----------|----------------------|
+| `DEPENDS_ON` | Target step `depends_on` source |
+| `DELEGATES_TO` | Child step + `DelegationSpec` on child ([ADR-FLOW-001](../adr/entries/2026-06-07/ADR-FLOW-001.md)) |
+
+**Authoring:** `AgentGraph` fluent builder — `intergrax/applications/contracts/graph_builder.py`  
+**Application domain:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
+
+---
 
 ## 12. Retired engine planner stack
 

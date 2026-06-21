@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN_DIR = ROOT / "docs" / "plan"
-SAT_DIR = PLAN_DIR / "plan"
+SAT_DIR = PLAN_DIR / "satellites"
 
 CLOSED_SIGNALS = (
     "(closed",
@@ -106,7 +106,7 @@ def satellite_index_rows(domain: str, files: dict[str, str]) -> list[str]:
     ]
     for fname in sorted(files):
         label = fname.replace(f"{domain}_", "").replace(".md", "").replace("_", " ")
-        rows.append(f"| [`plan/plan/{fname}`](plan/plan/{fname}) | {label} |")
+        rows.append(f"| [`plan/satellites/{fname}`](plan/satellites/{fname}) | {label} |")
     rows.extend(
         [
             "",
@@ -160,7 +160,7 @@ def satellite_links(hub_text: str) -> list[str]:
     if marker not in hub_text:
         return []
     section = hub_text.split(marker, 1)[1].split("\n---\n", 1)[0]
-    return re.findall(r"\[`plan/plan/([^`]+)`\]", section)
+    return re.findall(r"\[`plan/satellites/([^`]+)`\]", section)
 
 
 def render_plan_read_scope_block(domain: str, scope: str) -> str:
@@ -172,7 +172,7 @@ def render_plan_read_scope_block(domain: str, scope: str) -> str:
         f"- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.\n"
         f"- **Architecture hub:** [`architecture/{domain}.md`](../architecture/{domain}.md) read-scope block only.\n"
         f"- **Audit slice:** [`guides/audit_slices/{domain}.md`](../guides/audit_slices/{domain}.md).\n"
-        f"- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.\n\n"
+        f"- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.\n\n"
         f"---\n"
     )
 

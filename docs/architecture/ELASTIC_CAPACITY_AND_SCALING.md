@@ -15,15 +15,13 @@
 
 **Do not read this entire file in one session** (ELASTIC_CAPACITY_AND_SCALING canon).
 
-- **Implement / audit default:** capacity adapter contracts. Skip scaling history unless ECP task.
+- **Implement / audit default:** capacity adapter contracts (§1–§7). Extended §8+: [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
-
-
 ## Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
@@ -31,7 +29,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/ELASTIC_CAPACITY_AND_SCALING_scenario_catalog.md`](arch/ELASTIC_CAPACITY_AND_SCALING_scenario_catalog.md) | scenario catalog |
+| [`satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md`](satellites/ELASTIC_CAPACITY_AND_SCALING_extended_depth.md) | extended depth |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -335,123 +333,5 @@ Load increase
 | L2 → L3 “Scalable Harness” (audit map) | ECP closes operational scaling gap |
 
 Ideal does **not** yet name ECP explicitly — this domain pair adds that name to canon.
-
----
-
-## 8. Tier placement and responsibility matrix
-
-| Concern | Tier-0 | Tier-1 ECP | Tier-2 Agent | Tier-3 Application |
-|---------|--------|------------|--------------|-------------------|
-| Integration adapters (K8s, Celery bus) | **defines** | consumes | — | selects in profile |
-| `ScalingPolicy` / `ScalingAction` contracts | defines | evaluates + orchestrates | — | configures |
-| Signal collection | metrics backends | `CapacitySignalCollector` | — | webhook thresholds |
-| Provision execution | tool handlers | `ScalingProvisioner` | — | — |
-| In-process limits | — | may **raise ceiling** via profile patch | — | `OrchestrationProfile` caps |
-| Deploy manifests (Helm, HPA YAML) | — | — | — | **owns** `applications/*/docker/` |
-| Domain load patterns | — | — | may inform signals | product SLOs |
-
-### 8.1 What ECP MUST NOT do
-
-- Embed Kubernetes/nginx YAML generation in Nexus
-- Scale inside `GraphExecutor` synchronous path
-- Replace K8s HPA for raw CPU/memory without Harness-specific signals
-- Add agents to `AgentRegistry` dynamically as “scaling”
-- Bypass `PolicyEngine` for production scale-up
-
-### 8.2 What applications MUST NOT do
-
-- Call cloud APIs directly from Tier-3 host code for routine scaling
-- Fork parallel capacity controllers outside ECP
-- Set infinite `max_inflight_nodes` instead of provisioning replicas
-
----
-
-## 9. Domain boundaries
-
-```text
-ELASTIC_CAPACITY_AND_SCALING  →  how much capacity (replicas, workers, ceilings)
-ORCHESTRATION                 →  when/order/retry within capacity (graph, scheduler)
-REASONING_AND_COGNITION       →  what agents/steps (plan topology)
-INTEGRATIONS                  →  how to talk to K8s, queues, nginx (adapters)
-OBSERVABILITY                 →  SLI storage + alert; feeds ECP signals
-ADAPTIVE_HARNESS_INTELLIGENCE →  profile tuning recommendations (optional input)
-TIER3_APPLICATION_ENVIRONMENT →  deploy package, ScalingProfile host wiring
-```
-
----
-
-## 10. Signal model
-
-### 10.1 Primary signals (v1 target)
-
-| Signal ID | Source (as-built) | Normalized field | Scale implication |
-|-----------|-------------------|------------------|-----------------|
-| `SIG_BACKPRESSURE` | `RuntimeEventType.GRAPH_BACKPRESSURE` | events/min per tenant | Raise ceiling or add replicas |
-| `SIG_QUEUE_DEPTH` | `intergrax/queueing/task_index.py` | pending task count | Add async workers |
-| `SIG_TASK_LATENCY` | trace / Prometheus SLI | p95 task duration | Add replicas |
-| `SIG_SLO_BREACH` | W-OPS SLO catalog | boolean + budget burn | Scale + page |
-| `SIG_COST_PRESSURE` | `cost_budget.py` | normalized spend rate | Scale-down or block scale-up |
-| `SIG_MODALITY_QUEUE` | Celery modality executor | pending modality jobs | Modality worker pool |
-
-### 10.2 HarnessOutcomeSignal bridge (optional)
-
-[`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) `HarnessOutcomeSignal` may include step/retry/parallel efficiency — ECP MAY consume as **secondary** signal; AHI does not provision infrastructure by default.
-
-### 10.3 Signal contract
-
-**As-built** (`intergrax/runtime/capacity/contracts.py` — ECP-1.2):
-
-```python
-class CapacitySignal(BaseModel):
-    signal_id: str
-    target: ScalingTarget
-    metric_name: str
-    value: float
-    collected_at: datetime
-```
-
-**Target enrichment (ECP-PROD.1):** `tenant_id`, `source`, `unit`, `window_seconds`, `metadata` for multi-tenant fairness and PromQL windows.
-
----
-
-## 11. ScalingPolicy and rules engine
-
-### 11.1 Policy structure (target)
-
-```text
-ScalingPolicy:
-    policy_id: str
-    enabled: bool
-    targets: list[ScalingTarget]      # deployment, worker_pool, orchestration_ceiling
-    rules: list[ScalingRule]
-    cooldown_seconds: int
-    max_scale_up_step: int
-    max_scale_down_step: int
-
-ScalingRule:
-    rule_id: str
-    trigger: SignalTrigger | ScheduleTrigger | EventTrigger
-    conditions: list[ScalingCondition]   # tenant, risk, time window, min replicas
-    actions: list[ScalingAction]
-    priority: int
-```
-
-### 11.2 Trigger types
-
-| Trigger | Example |
-|---------|---------|
-| **Signal threshold** | `SIG_BACKPRESSURE > 10/min for 5m` |
-| **Schedule** | Scale up 08:00 UTC weekdays |
-| **Event** | `SLO_BREACH` runtime event |
-| **Composite** | queue depth AND latency |
-
-### 11.3 Condition examples
-
-| Condition | Purpose |
-|-----------|---------|
-| `tenant_id in allowlist` | Noisy neighbor isolation |
-| `replicas < max_replicas` | Hard cap |
-| `cost_budget_remaining > 0` | FinOps gate |
-| `application_profile == production` | Stricter HITL |
 
 ---

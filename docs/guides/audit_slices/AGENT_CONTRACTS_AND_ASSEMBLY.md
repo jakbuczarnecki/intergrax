@@ -18,7 +18,7 @@
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §17–§20 · §31 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-ACP-* · SYS-INV-AGENT-* (grep IDs — do not read full file) |
 | `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | **Read-scope:** §6 open · ACP closeout registers on demand |
-| `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §12–§21 hub · [`arch/`](../architecture/arch/) on demand |
+| `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §12–§21 hub · [`satellites/`](../architecture/satellites/) on demand |
 
 ## Code entry (grep first — F5-B)
 

@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 **Cross-plan — Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` — [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
 
@@ -16,12 +16,12 @@
 
 **Do not read this entire file in one session** (MEMORY plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. **On demand (one max):** [`plan/plan/MEMORY_appendices.md`](plan/plan/MEMORY_appendices.md) · [`plan/plan/MEMORY_audit_history.md`](plan/plan/MEMORY_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. **On demand (one max):** [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) · [`plan/satellites/MEMORY_audit_history.md`](plan/satellites/MEMORY_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/MEMORY.md`](../guides/audit_slices/MEMORY.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -32,8 +32,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/plan/MEMORY_appendices.md`](plan/plan/MEMORY_appendices.md) | appendices |
-| [`plan/plan/MEMORY_audit_history.md`](plan/plan/MEMORY_audit_history.md) | audit history |
+| [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) | appendices |
+| [`plan/satellites/MEMORY_audit_history.md`](plan/satellites/MEMORY_audit_history.md) | audit history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

@@ -63,7 +63,7 @@ model_inference/ partial · remote serving incremental · Plane A vs C boundary 
 **Load first:** [`docs/guides/audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md) — compact slice (layers **29**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -72,8 +72,8 @@ model_inference/ partial · remote serving incremental · Plane A vs C boundary 
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/MODALITY.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/MODALITY.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/MODALITY.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/MODALITY.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/MODALITY.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---

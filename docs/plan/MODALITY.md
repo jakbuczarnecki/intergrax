@@ -19,7 +19,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/MODALITY.md`](../architecture/MODALITY.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ## Documentation model
 
-This file is the **implementation plan hub**. Detailed registers and appendices: [`plan/plan/`](plan/plan/) — **load on demand**.
+This file is the **implementation plan hub**. Detailed registers and appendices: [`plan/satellites/`](plan/satellites/) — **load on demand**.
 
 ### Documentation boundary
 
@@ -34,7 +34,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Integration audit closeout (runtime bridge + health) | [Phase INT](plan/INTEGRATIONS.md) · **§6.1d** · Band **2l** · **Appendix K** |
 | RAG audit closeout (runtime bridge) | [Phase RAG](plan/RAG.md) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
 | Context engineering closeout (runtime + Nexus wiring) | [Phase CTX](plan/MEMORY.md) · **§6.1f** · Band **2n** · **Appendix L** |
-| Prompt registry closeout (runtime + environment wiring) | [Phase PE](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) · **§6.1i** · Band **2p** · **[Appendix M](plan/plan/PLATFORM_FOUNDATION_appendices.md)** |
+| Prompt registry closeout (runtime + environment wiring) | [Phase PE](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) · **§6.1i** · Band **2p** · **[Appendix M](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** |
 | Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN](plan/ORCHESTRATION.md) · **§6.1j** |
 | Agent assembly closeout (contracts, capabilities, lifecycle) | [Phase AS](plan/ORCHESTRATION.md) · **§6.1k** · Band **2q** · **Appendix N** |
 | Registry architecture closeout (snapshots, conformance, CI) | [Phase REG](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) · **§6.1l** · Band **2r** · **Appendix O** |
@@ -58,13 +58,13 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
 | Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **[Appendix A](plan/PLATFORM_FOUNDATION.md)** |
-| Technical debt backlog (analysis only) | **[Appendix B](plan/plan/PLATFORM_FOUNDATION_appendices.md)** |
-| Harness quality audit (2026-06-01) → Phase Q tracker | **This file** Phase Q + **[Appendix C](plan/plan/PLATFORM_FOUNDATION_appendices.md)** |
-| Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **[Appendix D](plan/plan/PLATFORM_FOUNDATION_appendices.md)** |
+| Technical debt backlog (analysis only) | **[Appendix B](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** |
+| Harness quality audit (2026-06-01) → Phase Q tracker | **This file** Phase Q + **[Appendix C](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** |
+| Post-audit hardening (typing, legacy, monoliths) | **This file** Phase Q+ + **[Appendix D](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** |
 | Harness GA / consolidation (no new OS features) | **This file** Phase Q / Q+ |
-| Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **[Appendix E](plan/plan/PLATFORM_FOUNDATION_appendices.md)** + canon [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) §5.3 |
-| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **[Appendix F](plan/plan/PLATFORM_FOUNDATION_appendices.md)** (K.1/K.2 → §6.3 end-of-plan) |
-| Harness production hardening (2026-06-01 audit) → Phase U | **This file** Phase U + **[Appendix G](plan/plan/PLATFORM_FOUNDATION_appendices.md)** (**Done**; does **not** schedule K.1/K.2 — see §6.3) |
+| Harness AI alignment audit (2026-06-01) → Phase R | **This file** Phase R + **[Appendix E](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** + canon [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) §5.3 |
+| Harness environment GA (2026-06-01) → Phase S | **This file** Phase S + **[Appendix F](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** (K.1/K.2 → §6.3 end-of-plan) |
+| Harness production hardening (2026-06-01 audit) → Phase U | **This file** Phase U + **[Appendix G](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** (**Done**; does **not** schedule K.1/K.2 — see §6.3) |
 | Skill / Tool / Integration layering (canon) | [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) §5.3 · [`architecture/TOOLS.md`](architecture/TOOLS.md) · [`architecture/SKILLS.md`](architecture/SKILLS.md) |
 | Skill catalog | `architecture/SKILLS.md` |
 | Model & modality plane (vision, audio, ML) | [`architecture/MODALITY.md`](architecture/MODALITY.md) · [`architecture/MODALITY.md`](architecture/MODALITY.md) · **Phase W-ML** (below) |
@@ -76,12 +76,12 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Memory platform audit (STM/LTM/org/task/context/hooks/persistence) | **Phase MEM** (below) · **§6.2aa** · **§6.1aa** · source: memory audit 2026-06-02 (conversation) |
 | **Memory intelligence depth (context compiler, lifecycle, explore)** | [`architecture/MEMORY.md`](architecture/MEMORY.md) · [Phase MEM-DEPTH](plan/MEMORY.md) · **§6.2ab** · **§6.1am** · source: memory audit 2026-06-08 |
 | Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
-| Phase V remediation traceability (audit gap → V-REM ID) | **[Appendix J](plan/plan/PLATFORM_FOUNDATION_06_phase_detail.md)** |
+| Phase V remediation traceability (audit gap → V-REM ID) | **[Appendix J](plan/satellites/PLATFORM_FOUNDATION_06_phase_detail.md)** |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
-| **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](plan/plan/PLATFORM_FOUNDATION_phase_closeout.md) · **§6.1ah** · Band **2ad** · **[Appendix M](plan/plan/PLATFORM_FOUNDATION_appendices.md)** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
+| **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md) · **§6.1ah** · Band **2ad** · **[Appendix M](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
 | **Ideal Harness L3 depth (32-layer uplift)** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
 | **Ideal architecture gap closeout (post-L3 audit 2026-06-09)** | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** · [`ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md) |
-| Infrastructure vs business scope split | **§4.0a** · closed §6.1b–g queues → [`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) · [§6.3a](#63a-business-backlog-register-consolidated) |
+| Infrastructure vs business scope split | **§4.0a** · closed §6.1b–g queues → [`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
 
@@ -192,7 +192,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 **Status:** **Done** (2026-06-06) — 32-layer audit (`scope: C`) + **23/23 FAUDIT remediation** implemented → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed)  
 **Source:** [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8  
-**Traceability:** **[Appendix M](plan/plan/PLATFORM_FOUNDATION_appendices.md)** (layer scorecard + gap → FAUDIT ID matrix)
+**Traceability:** **[Appendix M](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** (layer scorecard + gap → FAUDIT ID matrix)
 
 **Audit verdict (2026-06-06, pre-remediation snapshot):** Harness **control-plane wiring closeouts** (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, REL, SEC, COST, EVAL, W-ADAPT, M-LLM-R) are **Done** as documented — but **closeout ≠ full layer maturity**. Per-layer inspection at audit time showed **12/32 layers at L3+**, **19/32 at L2**, **1 Critical** tier-boundary violation, **~20 High** residuals — all routed to **FAUDIT.\*** and **closed** via [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed).
 

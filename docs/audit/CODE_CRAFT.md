@@ -63,7 +63,7 @@ GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04) · local SandboxSession ≠ OS con
 **Load first:** [`docs/guides/audit_slices/CODE_CRAFT.md`](../guides/audit_slices/CODE_CRAFT.md) — compact slice (layers **11b**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -72,8 +72,8 @@ GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04) · local SandboxSession ≠ OS con
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/CODE_CRAFT.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/CODE_CRAFT.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/CODE_CRAFT.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/CODE_CRAFT.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/CODE_CRAFT.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 5. `@docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J (tool surfaces)** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.

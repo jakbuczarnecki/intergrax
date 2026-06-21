@@ -43,7 +43,7 @@ Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
 ---
 
-## F4 — Architecture hub + `docs/architecture/arch/` satellites
+## F4 — Architecture hub + `docs/architecture/satellites/` satellites
 
 Split domains: all 22 architecture hubs (F4-C wave 2 complete).
 
@@ -52,6 +52,8 @@ Satellites are in `.cursorignore` — load with explicit `Read` or `@` when read
 ```bash
 uv run python scripts/split_domain_architecture.py [DOMAIN ...]
 uv run python scripts/check_arch_hub_size.py
+uv run python scripts/verify_arch_split_content.py
+uv run python scripts/generate_architecture_read_scopes.py
 ```
 
 ---
@@ -60,7 +62,7 @@ uv run python scripts/check_arch_hub_size.py
 
 Split domains: all token-heavy plan hubs (G1-D wave 2 complete).
 
-Satellites (`docs/plan/plan/`) are in `.cursorignore` — same explicit-load rule as F4.
+Satellites (`docs/plan/satellites/`) are in `.cursorignore` — same explicit-load rule as F4.
 
 ```bash
 uv run python scripts/split_domain_plan.py [DOMAIN ...]
@@ -78,8 +80,8 @@ Explicit `@` / `Read` only (reduces accidental index/search noise):
 
 **Satellite directories (F4 / G1):**
 
-- `docs/architecture/arch/`
-- `docs/plan/plan/`
+- `docs/architecture/satellites/`
+- `docs/plan/satellites/`
 
 **Bulky guides:**
 
@@ -121,7 +123,7 @@ uv run python scripts/generate_architecture_read_scopes.py
 uv run python scripts/generate_plan_read_scopes.py
 ```
 
-Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/plan/` satellite per session.
+Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/satellites/` satellite per session.
 
 ---
 

@@ -8,11 +8,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCH_DIR = ROOT / "docs" / "architecture"
-SAT_DIR = ARCH_DIR / "arch"
+SAT_DIR = ARCH_DIR / "satellites"
 
 H1_SECTION = re.compile(r"^# (\d+)\.\s+(.+)$", re.MULTILINE)
 NUMBERED_H2 = re.compile(r"^## (\d+)\.\s", re.MULTILINE)
 SUBSECTION_H2 = re.compile(r"^## (\d+)\.(\d+)\s", re.MULTILINE)
+SATELLITE_HEADER = re.compile(
+    r"^# .+ — .+\n\n\*\*Parent hub:\*\* \[`.+`\]\(\../.+\.md\)\n\n",
+    re.MULTILINE,
+)
+SATELLITE_INDEX_START = "## Architecture satellites (read on demand)"
+
+# Canonical merge order when reassembling hub + satellites before re-split.
+SATELLITE_SUFFIX_ORDER = (
+    "extended_depth",
+    "runtime_extended",
+    "production_gates",
+    "scenario_catalog",  # legacy name — removed on re-split
+    "provider_catalog",
+    "provider_index",
+    "invocation_patterns",
+    "selection_and_plugins",
+    "invocation_patterns",
+    "runtime_config_reference",
+    "providers_catalog",
+    "audit_register",
+    "pipelines_detail",
+    "graph_rag",
+    "skill_catalog",
+    "tool_surface_detail",
+    "selection_and_plugins",
+)
 
 
 def tokens(text: str) -> int:
@@ -82,7 +108,7 @@ def satellite_index_rows(domain: str, files: dict[str, str]) -> list[str]:
     ]
     for fname in sorted(files):
         label = fname.replace(f"{domain}_", "").replace(".md", "").replace("_", " ")
-        rows.append(f"| [`arch/{fname}`](arch/{fname}) | {label} |")
+        rows.append(f"| [`satellites/{fname}`](satellites/{fname}) | {label} |")
     rows.extend(
         [
             "",
@@ -93,9 +119,61 @@ def satellite_index_rows(domain: str, files: dict[str, str]) -> list[str]:
     return rows
 
 
-def insert_arch_satellite_index(hub_text: str, index_rows: list[str]) -> str:
-    if "## Architecture satellites (read on demand)" in hub_text:
+def strip_satellite_header(text: str) -> str:
+    return SATELLITE_HEADER.sub("", text, count=1).strip()
+
+
+def remove_arch_satellite_index(hub_text: str) -> str:
+    if SATELLITE_INDEX_START not in hub_text:
         return hub_text
+    start = hub_text.index(SATELLITE_INDEX_START)
+    rest = hub_text[start:]
+    m = re.search(
+        r"\n\n(?:## (?!Architecture satellites)|# \d+\.)",
+        rest,
+    )
+    end = start + m.start() if m else len(hub_text)
+    return hub_text[:start].rstrip() + "\n" + hub_text[end:].lstrip("\n")
+
+
+def satellite_sort_key(path: Path) -> tuple[int, str]:
+    stem = path.stem
+    for i, suffix in enumerate(SATELLITE_SUFFIX_ORDER):
+        if stem.endswith(suffix):
+            return (i, stem)
+    return (len(SATELLITE_SUFFIX_ORDER), stem)
+
+
+def merge_arch_satellites(domain: str) -> str:
+    """Reconstruct full canon from hub + arch/ satellites (lossless, canonical § order)."""
+    hub_path = ARCH_DIR / f"{domain}.md"
+    hub = remove_arch_satellite_index(hub_path.read_text(encoding="utf-8")).rstrip()
+    sats = sorted(SAT_DIR.glob(f"{domain}_*.md"), key=satellite_sort_key)
+    parts = [hub] + [strip_satellite_header(p.read_text(encoding="utf-8")) for p in sats]
+    combined = "\n\n".join(p.strip() for p in parts if p.strip()) + "\n"
+
+    preamble, h1 = parse_h1_sections(combined)
+    if h1:
+        ordered = sorted(h1, key=lambda x: x[0])
+        return preamble.rstrip() + "\n\n" + "\n\n".join(b.rstrip() for _, _, b in ordered) + "\n"
+
+    preamble, h2 = parse_numbered_h2(combined)
+    if h2:
+        ordered = sorted(h2, key=lambda x: x[0])
+        return preamble.rstrip() + "\n\n" + "\n\n".join(b.rstrip() for _, b in ordered) + "\n"
+
+    for major in (42,):
+        preamble, sub = parse_subsection_h2(combined, major)
+        if sub:
+            ordered = sorted(sub, key=lambda x: x[0])
+            return preamble.rstrip() + "\n\n" + "\n\n".join(b.rstrip() for _, b in ordered) + "\n"
+
+    return combined
+
+
+def insert_arch_satellite_index(hub_text: str, index_rows: list[str]) -> str:
+    if SATELLITE_INDEX_START in hub_text:
+        hub_text = remove_arch_satellite_index(hub_text)
     marker = "## Table of contents"
     if marker in hub_text:
         idx = hub_text.index(marker)

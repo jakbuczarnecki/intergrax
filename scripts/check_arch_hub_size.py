@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ARCH = ROOT / "docs" / "architecture"
 
-MAX_HUB_LINES = 1200
-MAX_HUB_TOKENS = 12_000
+MAX_HUB_LINES = 500
+MAX_HUB_TOKENS = 6_500
 SPLIT_MARKER = "## Architecture satellites (read on demand)"
 
 

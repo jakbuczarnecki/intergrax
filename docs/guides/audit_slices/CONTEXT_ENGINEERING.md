@@ -17,7 +17,7 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers 16 |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers 16 · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/CONTEXT_ENGINEERING.md` | **Read-scope:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
+| `docs/plan/CONTEXT_ENGINEERING.md` | **Read-scope:** Hub §6 · [`plan/satellites/`](../plan/satellites/) satellites on demand |
 | `docs/architecture/CONTEXT_ENGINEERING.md` | Read-scope block + TOC sections for layers 16 |
 
 ## Code entry (grep first — F5-B)

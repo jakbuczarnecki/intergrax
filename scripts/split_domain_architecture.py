@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
-"""Split large architecture domain docs into token-efficient hubs + arch/ satellites (F4)."""
+"""Split large architecture domain docs into token-efficient hubs + satellites/ (F4)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from arch_hub_lib import (
     ARCH_DIR,
     SAT_DIR,
     insert_arch_satellite_index,
+    merge_arch_satellites,
     parse_h1_sections,
     parse_numbered_h2,
     parse_subsection_h2,
@@ -25,9 +26,10 @@ from arch_hub_lib import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def split_arch_domain(cfg: ArchSplitConfig) -> dict[str, int]:
+def split_arch_domain(cfg: ArchSplitConfig, *, reassemble: bool = True) -> dict[str, int]:
     source = ARCH_DIR / f"{cfg.domain}.md"
-    raw = source.read_text(encoding="utf-8")
+    raw = merge_arch_satellites(cfg.domain) if reassemble else source.read_text(encoding="utf-8")
+    orig_chars = len(raw)
     hub_text = raw
     satellites: dict[str, str] = {}
     d = cfg.domain
@@ -83,9 +85,11 @@ def split_arch_domain(cfg: ArchSplitConfig) -> dict[str, int]:
                     tail.append(body.rstrip())
             hub_text = "\n\n".join(hub_parts).rstrip() + "\n"
             if tail:
-                fn = f"{d}_scenario_catalog.md"
+                fn = f"{d}_extended_depth.md"
                 satellites[fn] = render_arch_satellite(
-                    d, f"§{cfg.numbered_h2_max + 1}+ scenarios & control", "\n\n".join(tail)
+                    d,
+                    f"§{cfg.numbered_h2_max + 1}+ extended architecture",
+                    "\n\n".join(tail),
                 )
 
     if cfg.h2_satellite_markers:
@@ -95,6 +99,10 @@ def split_arch_domain(cfg: ArchSplitConfig) -> dict[str, int]:
     SAT_DIR.mkdir(parents=True, exist_ok=True)
     for fname, content in satellites.items():
         (SAT_DIR / fname).write_text(content, encoding="utf-8")
+    for stale in SAT_DIR.glob(f"{d}_*.md"):
+        if stale.name not in satellites:
+            stale.unlink()
+            print(f"  removed stale architecture/satellites/{stale.name}")
 
     if satellites:
         hub_text = insert_arch_satellite_index(hub_text, satellite_index_rows(d, satellites))
@@ -106,14 +114,16 @@ def split_arch_domain(cfg: ArchSplitConfig) -> dict[str, int]:
         "hub_tokens": tokens(hub_text),
         "hub_lines": len(hub_text.splitlines()),
         "orig_tokens": tokens(raw),
+        "orig_chars": orig_chars,
         "sat_tokens": sum(tokens(c) for c in satellites.values()),
+        "merged_chars": orig_chars,
     }
     print(
         f"{cfg.domain}: hub {stats['hub_lines']} lines ~{stats['hub_tokens']:,} tok "
         f"(was ~{stats['orig_tokens']:,}, satellites ~{stats['sat_tokens']:,})"
     )
     for fname in sorted(satellites):
-        print(f"  wrote architecture/arch/{fname}")
+        print(f"  wrote architecture/satellites/{fname}")
     return stats
 
 

@@ -20,15 +20,13 @@
 
 **Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY canon).
 
-- **Implement / audit default:** §12–§21 (contract, registry, capability, ACP). Extended §22–§39: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). §40+: [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md).
+- **Implement / audit default:** §12–§21 (contract, registry, capability, ACP). Extended §22–§39 + checklist §45: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md). §40+: [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
-
-
 ## Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
@@ -36,8 +34,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) | extended depth |
-| [`arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](arch/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) | production gates |
+| [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_extended_depth.md) | extended depth |
+| [`satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md`](satellites/AGENT_CONTRACTS_AND_ASSEMBLY_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -333,61 +331,6 @@ This allows agents to be replaced later.
 
 ---
 
-
----
-
-# 45. Checklist For New Agent Implementation
-
-Before implementing a new agent, answer:
-
-```text
-1. What hypothesis does this agent test?
-2. What capability does it provide?
-3. What input does it require?
-4. What structured output does it produce?
-5. What tools/adapters does it need?
-6. What is the validation rule?
-7. What are failure modes?
-8. What is the maximum acceptable cost/time?
-9. How will success be evaluated?
-10. How will Nexus route tasks to this agent?
-11. Is **`on_next_step`** (or a cognitive pattern base delegating to it) the sole author control loop — §32.5?
-12. Are **`StepOutcome`** factories the only control-flow returns — no author `decide_after_step` (§32.0.4 · §13.3)?
-13. Is **UAEP** (`get_steps` / `run_step` / `AgentDecision`) absent from Tier-2 author code — framework-internal bridge only (§13.3–§13.5)?
-14. Are all tool calls routed through ToolRuntime (§42.12)?
-15. Are forbidden runtime patterns avoided (§42.41)?
-16. Which **cognitive pattern** applies (§26.1): reflex, react, plan_execute, decomposition, reflection?
-17. Does the agent respect **three cognition planes** (§23) — no private multi-agent graph in `run_step`?
-18. Is incremental state stored in `RuntimeExecutionContext.metadata` / `acp.state.v1` — not globals?
-19. Is author entry **`run(AgentRunRequest)`** — not private `AgentEngine.run` (§29)?
-20. Are per-agent memory/tools/RAG declared on contract + binding, with host overrides via `metadata` (§30)?
-21. Is domain logic in **`on_next_step`** — not in `HarnessKernel` or `NexusLoop` (§32 · §38)?
-22. Does `AgentRunResult.trace` capture steps, tools, RAG, LLM, decisions (§31)?
-23. Is per-step LLM choice within host `LLMProfile` via `StepLLMRouter` (§33)?
-24. Is cross-agent state only via `SharedContextView` — not raw Nexus globals (§34)?
-25. Which **use case** from §35 applies (chat, multi-agent, super-agent, HITL)?
-26. Are `terminal_reason` and errors from controlled enums §37.4–§37.5?
-27. Is `state_delta` merge-patch only — not full state rewrite §37.2?
-28. Is side-effect mode explicit (immediate vs declarative) per step §32.8?
-29. Does Nexus route by **capability token**, not class name §37.6?
-30. Is **`NexusLoop` orchestration** separate from **`HarnessKernel.execute_step`** §38?
-31. Are org rules in **environment envelope** — not hardcoded in agent §39?
-32. Will compliance produce **`PolicyVerdictRecord`** per step for measurement §39.5?
-33. Is **§40 production readiness** satisfied before prod promotion (checkpoint, idempotency, gates)?
-34. Are **artifacts** typed `ArtifactRef` — not loose strings §40.6?
-35. Does agent pass **CI conformance matrix** §40.10 before roster promotion?
-36. Is **`RequestIdentity`** (`tenant_id` + `user_id` when scope=user) set by host intake §30.9?
-37. Is **`memory_scope`** explicit (user vs org vs task) — org agents not user-partitioned by mistake?
-38. Does every step **read state** via typed `AcpSessionState` (or agent subclass) — not raw `dict` keys §32.0?
-39. Does every step **update state** only via `StepOutcome.state_delta` from typed `model_dump` — not in-place mutation §32.0?
-40. Does every step **decide control flow** via one explicit `StepOutcome` factory (`continue_with`, `complete`, `fail`, `pause_hitl`, `replan`) §32.0?
-41. Is `on_next_step` short enough to review — domain work delegated to `_step_*` helpers §32.0.4?
-42. Can a reviewer understand terminal vs continue from the **final `return` only** — without tracing harness internals §32.0?
-```
-
-If these questions cannot be answered, do not implement the agent yet. **Author guide:** §29–§36 · **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md).
-
----
 
 ---
 

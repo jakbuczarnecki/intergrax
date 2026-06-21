@@ -63,7 +63,7 @@ ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partia
 **Load first:** [`docs/guides/audit_slices/REASONING_AND_COGNITION.md`](../guides/audit_slices/REASONING_AND_COGNITION.md) — compact slice (layers **7**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
 - Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
@@ -72,8 +72,8 @@ ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partia
 ## 1. Canonical reads (order)
 
 1. **`docs/guides/audit_slices/REASONING_AND_COGNITION.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/architecture/REASONING_AND_COGNITION.md` — hub read-scope + one `architecture/arch/` satellite max
-3. `docs/plan/REASONING_AND_COGNITION.md` — hub + one `plan/plan/` satellite max
+2. `docs/architecture/REASONING_AND_COGNITION.md` — hub read-scope + one `architecture/satellites/` satellite max
+3. `docs/plan/REASONING_AND_COGNITION.md` — hub + one `plan/satellites/` satellite max
 4. `docs/audit/README.md` — shared production Harness checklist
 5. `@docs/guides/AGENT_CREATION_GUIDE.md` **Appendix I §I.4** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.

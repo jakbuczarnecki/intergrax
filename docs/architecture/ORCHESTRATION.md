@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (ORCHESTRATION canon).
 
-- **Implement / audit default:** intake + NexusLoop + graph executor (§10–§26). Extended: [`arch/ORCHESTRATION_extended_depth.md`](arch/ORCHESTRATION_extended_depth.md).
+- **Implement / audit default:** intake + NexusLoop + graph executor (§10–§26). §27+: [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md).
@@ -33,7 +33,6 @@
 | [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) | Author control plane (`OrchestrationProfile`, wiring) |
 
 **Rule:** strategy **names and selection** live here; step-by-step runtime truth lives in **NEXUS_EXECUTION_FLOW**.
-
 ## Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
@@ -41,7 +40,7 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/ORCHESTRATION_production_gates.md`](arch/ORCHESTRATION_production_gates.md) | production gates |
+| [`satellites/ORCHESTRATION_production_gates.md`](satellites/ORCHESTRATION_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 

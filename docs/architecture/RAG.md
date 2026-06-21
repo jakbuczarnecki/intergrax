@@ -16,7 +16,7 @@
 
 **Do not read this entire file in one session** (RAG canon).
 
-- **Implement / audit default:** retrieval pipeline + index lifecycle. Skip full corpus tables unless RAG task.
+- **Implement / audit default:** retrieval pipeline + index lifecycle (hub). Pipelines detail: [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/RAG.md`](../plan/RAG.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/RAG.md`](../guides/audit_slices/RAG.md).
@@ -32,48 +32,9 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/RAG_pipelines_detail.md`](arch/RAG_pipelines_detail.md) | pipelines detail |
+| [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | pipelines detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
-
-## Purpose
-
-RAG is a **full Tier-0 retrieval layer**, not a vector-search shortcut. One canonical path serves catalog tools (`rag.retrieve`), Nexus `ContextBuilder` / `rag.retrieve` (catalog), and diagnostics.
-
-**Rules:**
-
-- Agents (Tier-2) MUST NOT call `vectorstore.query` directly.
-- Tier-3 selects backends via `IntegrationProfile` and tuning via `RagProfile`.
-- Vendor SDKs for vector stores and parsers live in the Integration Library; orchestration stays in `intergrax/rag/`.
-
-```text
-Tier-3 IntegrationProfile + RagProfile
-  → create_default_rag_stack() / rag_runtime_bridge
-  → RetrievalService + IngestPipeline
-  → rag.* catalog tools + Nexus RagStep
-  → RagContextProvider → ContextCompiler / ContextEngine (LLM window)
-```
-
-**Context path:** RAG is knowledge **retrieval**, not memory. Retrieved chunks reach the model through CE (`RagContextProvider`) with citations and provenance — not as ad-hoc agent prompt joins or direct vector queries. See [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12 Context Path Unification.
-
----
-
-## Production readiness verdict (audit 2026-06-13)
-
-| Question | Answer |
-|----------|--------|
-| Is the engine **absolutely production-ready** for every workload? | **No** — multi-GB sync ingest and autonomous algorithm selection remain Tier-3 / AHI boundaries. |
-| Is it a **solid Harness foundation** when Tier-3 defines profiles? | **Yes** — single path, typed contracts, GraphRAG L3, CI golden + load/soak gates. |
-| Does it **auto-select** parsers, chunkers, retrievers per document? | **No** — **Frozen** to AHI (GAP-RAG-15 / M-RAG.58). |
-| Short / medium documents? | **Ready** with explicit `RagProfile`. |
-| Multi-GB corpora / book-scale without Tier-3 jobs? | **Partial** — sync ingest rejected above `sync_ingest_max_bytes`; use `rag.schedule_ingest_job` + orchestrator worker (M-RAG.26). |
-| Untrusted surfaces via raw `rag.retrieve`? | **Ready** when `security_profile.retrieval_poisoning_defense_enabled` on `ToolWiringContext` (M-RAG.25). |
-
-**Remediation status:** M-RAG-DEPTH **complete** · M-RAG-GRAPH **complete** · M-RAG-BACKLOG **complete** · M-RAG-ITERATION-III **complete** (2026-06-17) · layer **Architecturally Mature**.
-
----
-
 ## Maturity score (audit map L0–L4)
 
 | Dimension | Score | Notes |

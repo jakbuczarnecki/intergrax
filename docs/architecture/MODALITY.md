@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (MODALITY canon).
 
-- **Implement / audit default:** vision/audio modality adapters. Skip modality inventory unless MOD task.
+- **Implement / audit default:** modality adapters hub. Tool surface: [`satellites/MODALITY_tool_surface_detail.md`](satellites/MODALITY_tool_surface_detail.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/MODALITY.md`](../plan/MODALITY.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md).
@@ -30,11 +30,9 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/MODALITY_tool_surface_detail.md`](arch/MODALITY_tool_surface_detail.md) | tool surface detail |
+| [`satellites/MODALITY_tool_surface_detail.md`](satellites/MODALITY_tool_surface_detail.md) | tool surface detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
-
 ## Why this document exists
 
 Harness AI at scale needs more than text LLMs: images, audio, dedicated CV detectors (YOLO, SAM, OCR pipelines), embeddings, rerankers, and batch classifiers. Intergrax already implements **parts** of this (Whisper ingest, HF embeddings, image smart loaders) without a single architectural name.

@@ -45,9 +45,9 @@ Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_ST
 
 ## Current platform maturity
 
-**Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model)).
+**Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model) · [Maturity Taxonomy](docs/guides/MATURITY_TAXONOMY.md)).
 
-Maturity uses **L0–L4** levels (not arbitrary percentages). Per-domain evidence lives in paired `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`.
+Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summaries in this README. Authoritative readiness claims use the four-axis **A/I/P/E** vocabulary in [MATURITY_TAXONOMY.md](docs/guides/MATURITY_TAXONOMY.md). Per-domain evidence lives in paired `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`.
 
 | Area | Maturity | Evidence / open gap |
 |------|----------|---------------------|
@@ -446,6 +446,18 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 <a id="start-here"></a>
 
+> **Doc roles and Cursor workflow:** [DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) — single navigation hub (human · operator · AI agent).
+
+### Quick doc routing
+
+| You need… | Read |
+|-----------|------|
+| Map of all doc roles | [DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) |
+| Architecture hub + domain pairs | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) |
+| Cursor audit / implement session | [bootstrap/README.md](docs/bootstrap/README.md) → [audit/README.md](docs/audit/README.md) |
+| AI agent instructions (full) | [AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) |
+| Milestone history | [implementation-journal/README.md](docs/implementation-journal/README.md) |
+
 ### Start here
 
 | I want to… | Read |
@@ -466,9 +478,16 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | Harness audit (32 layers) | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Business backlog only | [plan/PLATFORM_FOUNDATION.md §6.3a](docs/plan/PLATFORM_FOUNDATION.md#63a-business-backlog-register-consolidated) |
 
-**AI context:** [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) · [AGENTS.md](AGENTS.md) (stub) · [AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
+**AI context:** [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) · [AGENTS.md](AGENTS.md) (stub) · [AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) · [CURSOR_TOKEN_SETUP.md](docs/guides/CURSOR_TOKEN_SETUP.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
 **One source of truth per topic.** Platform docs live in [`docs/`](docs/); product and agent docs live under `applications/{product}/` and `agents/{name}/`.
+
+### Key operating guides
+
+- [Maturity Taxonomy](docs/guides/MATURITY_TAXONOMY.md) — four-axis A/I/P/E readiness vocabulary.
+- [Agent Author Minimal Path](docs/guides/AGENT_AUTHOR_MINIMAL_PATH.md) — safe Tier-2 agent authoring path.
+- [Tier-3 Product Hypothesis Contract](docs/guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) — required before new application hosts.
+- [Cursor Token Setup](docs/guides/CURSOR_TOKEN_SETUP.md) — keeps Cursor context bounded.
 
 ### Canonical map
 
@@ -493,7 +512,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 | Dimension | Status |
 |-----------|--------|
-| **Platform maturity** | **32/32 L3** harness baseline — see [Current platform maturity](#current-platform-maturity); default [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) active |
+| **Platform maturity** | **32/32 L3** harness baseline — see [Current platform maturity](#current-platform-maturity) · [Maturity Taxonomy](docs/guides/MATURITY_TAXONOMY.md); default [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) active |
 | **Active development** | Default queue: [§6.1 gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) · depth bands: [MEM-DEPTH](docs/plan/MEMORY.md), [CRIT-V](docs/plan/CRITIC_VERIFICATION.md), [OBS-BUS](docs/plan/OBSERVABILITY.md) |
 | **Business agents** | Phase K — **end of plan** until explicit product prioritization ([§6.3](docs/plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only)) |
 | **Regression gate** | `uv run pytest -m gate -q` — CI green ([workflow badge](#intergrax)) |

@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 **Last updated:** 2026-06-20 — **P2-ARCH-08** verification safety boundaries.
 
@@ -14,12 +14,12 @@
 
 **Do not read this entire file in one session** (CRITIC_VERIFICATION plan).
 
-- **Implement / audit default:** AUDIT-IDEAL · §CVL-4 backlog · audit_history satellite. **On demand (one max):** [`plan/plan/CRITIC_VERIFICATION_appendices.md`](plan/plan/CRITIC_VERIFICATION_appendices.md) · [`plan/plan/CRITIC_VERIFICATION_audit_history.md`](plan/plan/CRITIC_VERIFICATION_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** AUDIT-IDEAL · §CVL-4 backlog · audit_history satellite. **On demand (one max):** [`plan/satellites/CRITIC_VERIFICATION_appendices.md`](plan/satellites/CRITIC_VERIFICATION_appendices.md) · [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/CRITIC_VERIFICATION.md`](../guides/audit_slices/CRITIC_VERIFICATION.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -38,8 +38,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/plan/CRITIC_VERIFICATION_appendices.md`](plan/plan/CRITIC_VERIFICATION_appendices.md) | appendices |
-| [`plan/plan/CRITIC_VERIFICATION_audit_history.md`](plan/plan/CRITIC_VERIFICATION_audit_history.md) | audit history |
+| [`plan/satellites/CRITIC_VERIFICATION_appendices.md`](plan/satellites/CRITIC_VERIFICATION_appendices.md) | appendices |
+| [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md) | audit history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -72,10 +72,10 @@ Foreign **Platform / ORCH / FLOW / FAUDIT** registers were removed from this hub
 |------|------------------|
 | Platform gate maintenance | [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.1 |
 | ORCH closeout | [`ORCHESTRATION.md`](ORCHESTRATION.md) |
-| FAUDIT-32 | [`plan/plan/PLATFORM_FOUNDATION_phase_closeout.md`](plan/plan/PLATFORM_FOUNDATION_phase_closeout.md) |
+| FAUDIT-32 | [`plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md`](plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md) |
 | FLOW depth | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) |
 
-**Audit history (CVL-1…3, LC closeout):** [`plan/plan/CRITIC_VERIFICATION_audit_history.md`](plan/plan/CRITIC_VERIFICATION_audit_history.md)
+**Audit history (CVL-1…3, LC closeout):** [`plan/satellites/CRITIC_VERIFICATION_audit_history.md`](plan/satellites/CRITIC_VERIFICATION_audit_history.md)
 
 ---
 ## Audit §CVL-4 — Backlog (P2–P4, non-blocking)

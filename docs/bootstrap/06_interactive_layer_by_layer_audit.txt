@@ -76,8 +76,8 @@ For the **current domain only**:
 Follow **`docs/audit/<DOMAIN>.md` §0 Context budget** first, then read in order:
 
 1. **`docs/guides/audit_slices/<DOMAIN>.md`** — mandatory compact slice (replaces bulk IDEAL + AUDIT_MAP + full plan/arch)
-2. `docs/architecture/<DOMAIN>.md` — **Cursor read scope block only** (~150 tok); at most one `architecture/arch/` satellite if cited
-3. `docs/plan/<DOMAIN>.md` — hub scoped §6 only; at most one `plan/plan/` satellite if cited
+2. `docs/architecture/<DOMAIN>.md` — **Cursor read scope block only** (~150 tok); at most one `architecture/satellites/` satellite if cited
+3. `docs/plan/<DOMAIN>.md` — hub scoped §6 only; at most one `plan/satellites/` satellite if cited
 4. `docs/audit/<DOMAIN>.md` — domain audit prompt (§1+ if not already loaded)
 5. `docs/audit/README.md` — shared production Harness checklist
 

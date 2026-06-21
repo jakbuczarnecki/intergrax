@@ -25,7 +25,6 @@ def _num(domain: str, numbered_h2_max: int, **kwargs: object) -> ArchSplitConfig
 ACP = ArchSplitConfig(
     domain="AGENT_CONTRACTS_AND_ASSEMBLY",
     hub_section_max=21,
-    extra_hub_sections=(45,),
 )
 
 TIER3 = ArchSplitConfig(
@@ -43,7 +42,7 @@ PLATFORM_ARCH = ArchSplitConfig(
 TOOLS_ARCH = ArchSplitConfig(
     domain="TOOLS",
     h2_satellite_markers=(
-        ("## Tool invocation patterns (production orchestration)", "invocation_patterns"),
+        ("## Tool selection — strategies and layers", "selection_and_plugins"),
         ("## Runtime configuration reference", "runtime_config_reference"),
     ),
 )
@@ -51,12 +50,12 @@ TOOLS_ARCH = ArchSplitConfig(
 UAEP_ARCH = ArchSplitConfig(
     domain="UNIFIED_EXECUTION_RUNTIME",
     subsection_major=42,
-    subsection_minor_max=15,
+    subsection_minor_max=7,
 )
 
 NEXUS_ARCH = ArchSplitConfig(
     domain="NEXUS_EXECUTION_FLOW",
-    numbered_h2_max=15,
+    numbered_h2_max=8,
 )
 
 ORCH_ARCH = ArchSplitConfig(
@@ -66,25 +65,30 @@ ORCH_ARCH = ArchSplitConfig(
 
 INTEGRATIONS_ARCH = ArchSplitConfig(
     domain="INTEGRATIONS",
-    h2_satellite_markers=(
-        ("## Full provider index", "provider_index"),
-        ("## Implemented providers", "provider_catalog"),
-    ),
+    h2_satellite_markers=(("## Catalog", "provider_catalog"),),
 )
 
-# F4-C wave 2 — numbered ## N. hubs
-ADAPTIVE_HARNESS_INTELLIGENCE_ARCH = _num("ADAPTIVE_HARNESS_INTELLIGENCE", 11)
-CODE_CRAFT_ARCH = _num("CODE_CRAFT", 10)
-CONTEXT_ENGINEERING_ARCH = _num("CONTEXT_ENGINEERING", 11)
-CRITIC_VERIFICATION_ARCH = _num("CRITIC_VERIFICATION", 10)
-ELASTIC_CAPACITY_AND_SCALING_ARCH = _num("ELASTIC_CAPACITY_AND_SCALING", 11)
-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_ARCH = _num(
-    "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE", 39
+# F4-C wave 2 — numbered ## N. hubs (extended § → satellites/*_extended_depth.md)
+ADAPTIVE_HARNESS_INTELLIGENCE_ARCH = _num("ADAPTIVE_HARNESS_INTELLIGENCE", 7)
+CODE_CRAFT_ARCH = _num("CODE_CRAFT", 6)
+CONTEXT_ENGINEERING_ARCH = _num("CONTEXT_ENGINEERING", 7)
+CRITIC_VERIFICATION_ARCH = _num("CRITIC_VERIFICATION", 6)
+ELASTIC_CAPACITY_AND_SCALING_ARCH = _num("ELASTIC_CAPACITY_AND_SCALING", 7)
+MEMORY_ARCH = _num("MEMORY", 7)
+OBSERVABILITY_ARCH = _num("OBSERVABILITY", 4)
+REASONING_AND_COGNITION_ARCH = _num("REASONING_AND_COGNITION", 7)
+
+RELIABILITY_FAILURE_AND_HITL_ARCH = ArchSplitConfig(
+    domain="RELIABILITY_FAILURE_AND_HITL",
+    hub_section_max=32,
+    production_section_min=35,
 )
-MEMORY_ARCH = _num("MEMORY", 11)
-OBSERVABILITY_ARCH = _num("OBSERVABILITY", 11)
-REASONING_AND_COGNITION_ARCH = _num("REASONING_AND_COGNITION", 11)
-RELIABILITY_FAILURE_AND_HITL_ARCH = _num("RELIABILITY_FAILURE_AND_HITL", 10)
+
+EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_ARCH = ArchSplitConfig(
+    domain="EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
+    hub_section_max=41,
+    production_section_min=43,
+)
 
 LLM_ADAPTERS_ARCH = ArchSplitConfig(
     domain="LLM_ADAPTERS",

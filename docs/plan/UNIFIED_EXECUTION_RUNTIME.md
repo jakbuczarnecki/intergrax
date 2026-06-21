@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
 ---
 
@@ -17,7 +17,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
-- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -42,9 +42,9 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/plan/UNIFIED_EXECUTION_RUNTIME_06_closed_queues.md`](plan/plan/UNIFIED_EXECUTION_RUNTIME_06_closed_queues.md) | 06 closed queues |
-| [`plan/plan/UNIFIED_EXECUTION_RUNTIME_audit_history.md`](plan/plan/UNIFIED_EXECUTION_RUNTIME_audit_history.md) | audit history |
-| [`plan/plan/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md`](plan/plan/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md) | embedded detail |
+| [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_06_closed_queues.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_06_closed_queues.md) | 06 closed queues |
+| [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_audit_history.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_audit_history.md) | audit history |
+| [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md) | embedded detail |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -92,6 +92,6 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Cross-domain ORCH/flow registers removed
 
-See [`ORCHESTRATION.md`](ORCHESTRATION.md) · [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md).
+See [`ORCHESTRATION.md`](ORCHESTRATION.md) · [`plan/satellites/PLATFORM_FOUNDATION_master_registers.md`](plan/satellites/PLATFORM_FOUNDATION_master_registers.md).
 
 ---

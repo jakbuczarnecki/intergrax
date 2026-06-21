@@ -18,7 +18,7 @@
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §3 · §9 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-ORCH-* (grep IDs — do not read full file) |
 | `docs/plan/ORCHESTRATION.md` | **Read-scope:** Phase ORCH-* hub · satellites on demand |
-| `docs/architecture/ORCHESTRATION.md` | §10–§26 hub · [`arch/ORCHESTRATION_extended_depth.md`](../architecture/arch/ORCHESTRATION_extended_depth.md) on demand |
+| `docs/architecture/ORCHESTRATION.md` | §10–§26 hub · [`satellites/ORCHESTRATION_extended_depth.md`](../architecture/satellites/ORCHESTRATION_extended_depth.md) on demand |
 
 ## Code entry (grep first — F5-B)
 

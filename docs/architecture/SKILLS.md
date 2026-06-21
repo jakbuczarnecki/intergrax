@@ -15,7 +15,7 @@
 
 **Do not read this entire file in one session** (SKILLS canon).
 
-- **Implement / audit default:** skill selection hook + registry. Skip LC narrative unless SK task.
+- **Implement / audit default:** skill selection hook + registry (hub). Catalog: [`satellites/SKILLS_skill_catalog.md`](satellites/SKILLS_skill_catalog.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/SKILLS.md`](../plan/SKILLS.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/SKILLS.md`](../guides/audit_slices/SKILLS.md).
@@ -31,11 +31,9 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/SKILLS_skill_catalog.md`](arch/SKILLS_skill_catalog.md) | skill catalog |
+| [`satellites/SKILLS_skill_catalog.md`](satellites/SKILLS_skill_catalog.md) | skill catalog |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
-
 ## Four-layer stack
 
 ```text

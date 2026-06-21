@@ -15,15 +15,13 @@
 
 **Do not read this entire file in one session** (TIER3_APPLICATION_ENVIRONMENT canon).
 
-- **Implement / audit default:** §20–§25 host profile + manifest wiring. Extended §26–§39: [`arch/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](arch/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md). §40+: [`arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md).
+- **Implement / audit default:** §20–§25 host profile + manifest wiring. Extended §26–§39: [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md). §40+: [`satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
-
-
 ## Architecture satellites (read on demand)
 
 Large § blocks moved out of the architecture hub to reduce Cursor context use.
@@ -31,8 +29,8 @@ Load **only** the satellite matching your task or cited §.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`arch/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](arch/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) | extended depth |
-| [`arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) | production gates |
+| [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) | extended depth |
+| [`satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) | production gates |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
