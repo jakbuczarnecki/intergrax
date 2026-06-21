@@ -90,7 +90,7 @@ Verify (every harness PR):
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**. Follow-up **EVID-CORE-FU-01** is Mode I approved as a small selected live Tier-0 probe path; it does not replace deterministic CORE certification — details in [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md) § Follow-up Mode I — EVID-CORE-FU-01.  
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** §6.3 product work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 
