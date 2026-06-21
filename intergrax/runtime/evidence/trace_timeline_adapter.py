@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.runtime.evidence.certification_report import CoreCertificationReport
+from intergrax.runtime.evidence.core_certification_spec import CORE_CERTIFICATION_EVIDENCE_KIND
 from intergrax.runtime.evidence.scenario_contracts import (
     CoreEvidenceRef,
     CoreScenarioResult,
@@ -59,9 +60,7 @@ def _scenario_title(scenario_id: str) -> str:
 def _evidence_origin(ref: CoreEvidenceRef) -> TraceEvidenceOrigin:
     if ref.kind is EvidenceRefKind.CERTIFICATION_REPORT:
         return TraceEvidenceOrigin.REPORT
-    if ref.ref.startswith("mock:"):
-        return TraceEvidenceOrigin.MOCK
-    return TraceEvidenceOrigin.REPORT
+    return TraceEvidenceOrigin.MOCK
 
 
 def _primary_evidence_ref(evidence_refs: list[CoreEvidenceRef], scenario_id: str) -> str:
@@ -70,17 +69,34 @@ def _primary_evidence_ref(evidence_refs: list[CoreEvidenceRef], scenario_id: str
     return f"mock:{scenario_id}"
 
 
+def _first_evidence_ref(
+    evidence_refs: list[CoreEvidenceRef],
+    kind: EvidenceRefKind,
+) -> CoreEvidenceRef | None:
+    for ref in evidence_refs:
+        if ref.kind is kind:
+            return ref
+    return None
+
+
 def _build_evidence_facets(
     scenario_id: str,
     evidence_refs: list[CoreEvidenceRef],
 ) -> TraceTimelineEventFacets:
     primary_ref = _primary_evidence_ref(evidence_refs, scenario_id)
-    origin = _evidence_origin(evidence_refs[0]) if evidence_refs else TraceEvidenceOrigin.MOCK
+    primary = evidence_refs[0] if evidence_refs else None
+    origin = _evidence_origin(primary) if primary is not None else TraceEvidenceOrigin.MOCK
+    evidence_description = primary.description if primary is not None else ""
+    if origin is TraceEvidenceOrigin.MOCK and evidence_description:
+        evidence_description = f"{evidence_description} ({CORE_CERTIFICATION_EVIDENCE_KIND})"
+    elif origin is TraceEvidenceOrigin.MOCK:
+        evidence_description = CORE_CERTIFICATION_EVIDENCE_KIND
+
     facets = TraceTimelineEventFacets(
         evidence=TraceEvidenceFacet(
             origin=origin,
             ref=primary_ref,
-            description=evidence_refs[0].description if evidence_refs else "",
+            description=evidence_description,
         ),
         scenario_lifecycle=TraceScenarioLifecycleFacet(
             phase=TraceScenarioPhase.EVIDENCE,
@@ -88,24 +104,27 @@ def _build_evidence_facets(
         ),
     )
 
-    if scenario_id == "tool_denied_by_policy":
+    policy_ref = _first_evidence_ref(evidence_refs, EvidenceRefKind.POLICY_DECISION)
+    if policy_ref is not None:
+        if scenario_id == "tool_denied_by_policy":
+            outcome = TracePolicyOutcome.DENIED
+        elif scenario_id == "high_risk_tool_hitl":
+            outcome = TracePolicyOutcome.HITL_REQUIRED
+        else:
+            outcome = TracePolicyOutcome.ALLOWED
         facets.policy = TracePolicyFacet(
-            outcome=TracePolicyOutcome.DENIED,
-            tool_or_action="dangerous_tool",
-            reason="policy denied tool execution",
+            outcome=outcome,
+            reason=policy_ref.description or policy_ref.ref,
         )
-    elif scenario_id == "high_risk_tool_hitl":
-        facets.policy = TracePolicyFacet(
-            outcome=TracePolicyOutcome.HITL_REQUIRED,
-            tool_or_action="high_risk_tool",
-        )
-        facets.hitl = TraceHitlFacet(status=TraceHitlStatus.REQUESTED)
-    elif scenario_id == "budget_exceeded_handled":
+        if outcome is TracePolicyOutcome.HITL_REQUIRED:
+            facets.hitl = TraceHitlFacet(status=TraceHitlStatus.REQUESTED)
+
+    budget_ref = _first_evidence_ref(evidence_refs, EvidenceRefKind.BUDGET_TICK)
+    if budget_ref is not None:
         facets.budget = TraceBudgetFacet(
             status=TraceBudgetStatus.EXCEEDED,
-            metric="quota",
-            value="1200",
-            limit="1000",
+            metric=budget_ref.kind.value,
+            value=budget_ref.ref,
         )
 
     return facets
@@ -213,13 +232,16 @@ def build_timeline_from_certification_report(
             title="Certification started",
             message=(
                 f"Core certification {report.certification_level.value} "
+                f"({CORE_CERTIFICATION_EVIDENCE_KIND} evidence from report); "
                 f"run {report.certification_run_id}"
             ),
             source_refs=[
                 TraceTimelineSourceRef(
                     kind=TraceTimelineSourceKind.CERTIFICATION_REPORT,
                     ref=report.certification_run_id,
-                    description="HEP-1 core certification report",
+                    description=(
+                        "HEP-1 report-derived timeline; not live runtime trace"
+                    ),
                 )
             ],
         )
@@ -287,7 +309,10 @@ def build_timeline_from_certification_report(
     timeline = TraceTimeline(
         timeline_id=report.certification_run_id,
         kind=TraceTimelineKind.CORE_CERTIFICATION,
-        title=f"Core certification {report.certification_level.value} timeline",
+        title=(
+            f"Core certification {report.certification_level.value} timeline "
+            f"(report-derived {CORE_CERTIFICATION_EVIDENCE_KIND})"
+        ),
         events=events,
         source_report_path=resolved_source,
         generated_at=report.generated_at,

@@ -43,13 +43,15 @@ def test_run_trace_export_writes_artifacts(tmp_path: Path, capsys: pytest.Captur
     assert code == 0
     assert (out_dir / "timeline.json").is_file()
     assert (out_dir / "timeline.md").is_file()
+    assert "report:" in captured.out
+    assert "note:" in captured.out
     assert "timeline.json" in captured.out
 
 
-def test_run_trace_show_missing_report_raises(tmp_path: Path) -> None:
+def test_run_trace_show_missing_report_exits_with_hint(tmp_path: Path) -> None:
     args = argparse.Namespace(
         report=tmp_path / "missing.json",
         root=tmp_path,
     )
-    with pytest.raises(FileNotFoundError, match="certification report not found"):
+    with pytest.raises(SystemExit, match="Run certification first"):
         run_trace_show(args)

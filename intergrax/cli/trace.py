@@ -16,6 +16,7 @@ from intergrax.runtime.evidence.trace_timeline_adapter import (
 )
 from intergrax.runtime.evidence.trace_timeline_export import (
     DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR,
+    TRACE_TIMELINE_OPERATOR_NOTE,
     format_trace_timeline_cli,
     write_trace_timeline,
 )
@@ -49,12 +50,15 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
     trace = sub.add_parser("trace", help="Harness evidence trace timeline.")
     trace_sub = trace.add_subparsers(dest="trace_command", required=True)
 
-    show = trace_sub.add_parser("show", help="Render evidence timeline from certification report.")
+    show = trace_sub.add_parser(
+        "show",
+        help="Render report-derived evidence timeline to stdout (no artifact write).",
+    )
     _add_common_args(show)
 
     export = trace_sub.add_parser(
         "export",
-        help="Export evidence timeline JSON/Markdown under build/evidence/trace/.",
+        help="Write report-derived timeline.json and timeline.md under build/evidence/trace/.",
     )
     _add_common_args(export)
     export.add_argument(
@@ -79,7 +83,13 @@ def _resolve_trace_output_dir(args: argparse.Namespace) -> Path:
 
 def _build_timeline_from_args(args: argparse.Namespace):
     report_path = _resolve_report_path(args)
-    report = load_core_certification_report(report_path)
+    try:
+        report = load_core_certification_report(report_path)
+    except FileNotFoundError as exc:
+        raise SystemExit(
+            f"{exc}\n"
+            "Run certification first: uv run intergrax certify core --level L2"
+        ) from None
     return build_timeline_from_certification_report(
         report,
         source_report_path=str(report_path),
@@ -95,7 +105,10 @@ def run_trace_show(args: argparse.Namespace) -> int:
 def run_trace_export(args: argparse.Namespace) -> int:
     timeline = _build_timeline_from_args(args)
     output_dir = _resolve_trace_output_dir(args)
+    report_path = _resolve_report_path(args)
     json_path, md_path = write_trace_timeline(timeline, output_dir)
+    print(f"report: {report_path}")
+    print(f"note: {TRACE_TIMELINE_OPERATOR_NOTE}")
     print(f"timeline: {json_path}")
     print(f"timeline: {md_path}")
     return 0

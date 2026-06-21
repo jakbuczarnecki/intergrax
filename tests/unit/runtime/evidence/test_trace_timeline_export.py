@@ -9,9 +9,11 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.evidence.core_certification_spec import CORE_CERTIFICATION_EVIDENCE_KIND
 from intergrax.runtime.evidence.scenario_runner import run_core_certification
 from intergrax.runtime.evidence.trace_timeline_adapter import build_timeline_from_certification_report
 from intergrax.runtime.evidence.trace_timeline_export import (
+    TRACE_TIMELINE_OPERATOR_NOTE,
     format_trace_timeline_cli,
     format_trace_timeline_markdown,
     write_trace_timeline,
@@ -32,18 +34,19 @@ def test_write_trace_timeline_creates_json_and_markdown(tmp_path: Path) -> None:
     assert "Events" in md_path.read_text(encoding="utf-8")
 
 
-def test_format_trace_timeline_cli_includes_event_kinds(tmp_path: Path) -> None:
+def test_format_trace_timeline_cli_includes_operator_semantics(tmp_path: Path) -> None:
     report = run_core_certification("L1", output_dir=tmp_path)
     timeline = build_timeline_from_certification_report(report)
     rendered = format_trace_timeline_cli(timeline)
-    assert "certification_started" in rendered
-    assert "certification_completed" in rendered
-    assert report.certification_run_id in rendered
+    assert CORE_CERTIFICATION_EVIDENCE_KIND in rendered
+    assert TRACE_TIMELINE_OPERATOR_NOTE in rendered
+    assert "Not live runtime trace" in rendered
 
 
-def test_format_trace_timeline_markdown_includes_table_header(tmp_path: Path) -> None:
+def test_format_trace_timeline_markdown_includes_operator_note(tmp_path: Path) -> None:
     report = run_core_certification("L1", output_dir=tmp_path)
     timeline = build_timeline_from_certification_report(report)
     rendered = format_trace_timeline_markdown(timeline)
     assert "# Intergrax Trace Evidence Timeline" in rendered
-    assert "| Seq | Kind | Scenario | Severity | Title |" in rendered
+    assert CORE_CERTIFICATION_EVIDENCE_KIND in rendered
+    assert TRACE_TIMELINE_OPERATOR_NOTE in rendered

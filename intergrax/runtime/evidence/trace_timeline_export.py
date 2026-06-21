@@ -8,10 +8,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intergrax.runtime.evidence.core_certification_spec import CORE_CERTIFICATION_EVIDENCE_KIND
 from intergrax.runtime.evidence.trace_timeline_contracts import TraceTimeline, TraceTimelineEvent
 from intergrax.runtime.evidence.trace_timeline_facets import TraceTimelineEventFacets
 
 DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR = Path("build/evidence/trace")
+
+TRACE_TIMELINE_OPERATOR_NOTE = (
+    "Derived from certification report.json only. "
+    f"Evidence basis: {CORE_CERTIFICATION_EVIDENCE_KIND}. "
+    "Not live runtime trace, RuntimeEventBus, or persisted trace store."
+)
 
 
 def _format_event_facets(facets: TraceTimelineEventFacets | None) -> str:
@@ -35,7 +42,7 @@ def _format_event_line(event: TraceTimelineEvent) -> str:
     scenario = f" ({event.scenario_id})" if event.scenario_id else ""
     severity = f" [{event.severity.value}]" if event.severity.value != "info" else ""
     facets = _format_event_facets(event.facets)
-    message = f" — {event.message}" if event.message else ""
+    message = f" - {event.message}" if event.message else ""
     return (
         f"[{event.sequence:>3}] {event.kind.value}{scenario}{severity}{facets}\n"
         f"      {event.title}{message}"
@@ -46,6 +53,8 @@ def format_trace_timeline_cli(timeline: TraceTimeline) -> str:
     """Render a compact operator-facing timeline for terminal output."""
     lines = [
         f"Trace timeline: {timeline.title}",
+        f"Evidence basis: {CORE_CERTIFICATION_EVIDENCE_KIND}",
+        f"Note: {TRACE_TIMELINE_OPERATOR_NOTE}",
         f"Run ID: {timeline.timeline_id}",
         f"Kind: {timeline.kind.value}",
     ]
@@ -65,6 +74,8 @@ def format_trace_timeline_markdown(timeline: TraceTimeline) -> str:
         f"- **Title:** {timeline.title}",
         f"- **Timeline ID:** {timeline.timeline_id}",
         f"- **Kind:** {timeline.kind.value}",
+        f"- **Evidence basis:** {CORE_CERTIFICATION_EVIDENCE_KIND}",
+        f"- **Operator note:** {TRACE_TIMELINE_OPERATOR_NOTE}",
         f"- **Generated:** {timeline.generated_at.isoformat()}",
     ]
     if timeline.source_report_path:
@@ -82,7 +93,7 @@ def format_trace_timeline_markdown(timeline: TraceTimeline) -> str:
         scenario = event.scenario_id or ""
         title = event.title.replace("|", "\\|")
         message = event.message.replace("|", "\\|")
-        cell = f"{title} — {message}" if message else title
+        cell = f"{title} - {message}" if message else title
         lines.append(
             f"| {event.sequence} | {event.kind.value} | {scenario} | "
             f"{event.severity.value} | {cell} |"

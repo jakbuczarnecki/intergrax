@@ -55,6 +55,7 @@ from intergrax.runtime.evidence.trace_timeline_adapter import (
 )
 from intergrax.runtime.evidence.trace_timeline_export import (
     DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR,
+    TRACE_TIMELINE_OPERATOR_NOTE,
     format_trace_timeline_cli,
     format_trace_timeline_markdown,
     write_trace_timeline,
@@ -112,6 +113,7 @@ __all__ = [
     "TraceTimelineSeverity",
     "TraceTimelineSourceKind",
     "TraceTimelineSourceRef",
+    "TRACE_TIMELINE_OPERATOR_NOTE",
     "TraceBudgetFacet",
     "TraceBudgetStatus",
     "TraceEvidenceFacet",

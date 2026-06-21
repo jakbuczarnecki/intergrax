@@ -343,6 +343,13 @@ uv run intergrax trace show
 uv run intergrax trace export
 ```
 
+**Operator semantics (C6 hotfix):**
+
+- Timeline is **report-derived only** from `build/evidence/core_certification/report.json`.
+- Evidence basis matches HEP-1: `deterministic_mock` — not live runtime trace, event bus, or trace store.
+- `trace show` renders to stdout; `trace export` writes `build/evidence/trace/timeline.{json,md}`.
+- Policy/budget/HITL facets are descriptive markers mapped from scenario evidence refs, not runtime probes.
+
 **Verify:** `uv run pytest tests/unit/runtime/evidence/test_trace_timeline_adapter.py tests/unit/runtime/evidence/test_trace_timeline_export.py tests/unit/runtime/evidence/test_trace_cli.py -q`
 
 ---
