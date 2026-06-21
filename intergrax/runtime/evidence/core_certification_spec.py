@@ -79,6 +79,11 @@ class CoreCertificationSurface(str, Enum):
     CERTIFY_CORE = "certify_core"
 
 
+# HEP-1 execution model: contract validation with deterministic mock evidence refs.
+# Not live HarnessKernel/Nexus/LLM/provider E2E — see EVID-CORE-FU-01 for future runtime probes.
+CORE_CERTIFICATION_EVIDENCE_KIND: Final[str] = "deterministic_mock"
+
+
 CORE_LEVEL_SCENARIOS: Final[dict[CoreCertificationLevel, tuple[str, ...]]] = {
     CoreCertificationLevel.L1: tuple(
         scenario_id for scenario_id in CORE_SCENARIO_CATALOG_ORDER if scenario_id in _CORE_L1_SCENARIOS

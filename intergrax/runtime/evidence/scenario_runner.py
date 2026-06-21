@@ -2,7 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-"""Deterministic core certification scenario runner (HEP Band 2ae · EVID-CORE-04)."""
+"""Deterministic core certification scenario runner (HEP Band 2ae · EVID-CORE-04).
+
+Runs controlled scenario contracts with **deterministic mock evidence** —
+see ``CORE_CERTIFICATION_EVIDENCE_KIND`` in ``core_certification_spec``.
+Not live HarnessKernel/Nexus/LLM/provider E2E.
+"""
 
 from __future__ import annotations
 

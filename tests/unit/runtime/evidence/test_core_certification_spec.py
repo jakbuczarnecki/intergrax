@@ -64,6 +64,12 @@ def test_certification_surfaces_include_certify_core() -> None:
     assert CoreCertificationMode.OPERATOR_LOCAL.value == "operator_local"
 
 
+def test_core_certification_evidence_kind_is_deterministic_mock() -> None:
+    from intergrax.runtime.evidence.core_certification_spec import CORE_CERTIFICATION_EVIDENCE_KIND
+
+    assert CORE_CERTIFICATION_EVIDENCE_KIND == "deterministic_mock"
+
+
 def test_l2_scenarios_are_superset_of_l1() -> None:
     l1 = set(scenario_ids_for_level(CoreCertificationLevel.L1))
     l2 = set(scenario_ids_for_level(CoreCertificationLevel.L2))

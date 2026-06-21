@@ -137,7 +137,7 @@ Condensed matrix from external infrastructure audit → existing evidence → ga
 | **EVID-CORE-03** | HEP-0 | P1 | **Done** | Runtime scenario contracts (12 scenarios) | `intergrax/runtime/evidence/` — Pydantic contracts; deterministic; no network; `validate_core_scenario_catalog()` |
 | **EVID-CORE-04** | HEP-1 | P0 | **Done** | `intergrax certify core` CLI | `intergrax/cli/certify.py`; `--level L1\|L2\|L3`; exit non-zero on failure |
 | **EVID-CORE-05** | HEP-1 | P1 | **Done** | JSON + Markdown certification report | `build/evidence/core_certification/report.json` + `report.md` |
-| **EVID-CORE-06** | HEP-1 | P2 | **Planned** | README / HARNESS_ENVIRONMENT evidence path | 30-min onboarding: doctor → certify core → trace; linked from hub + `guides/HARNESS_ENVIRONMENT.md` |
+| **EVID-CORE-06** | HEP-1 | P2 | **Done** | README / HARNESS_ENVIRONMENT evidence path | Quick start + HARNESS_ENVIRONMENT § Core certification; mock vs live narrative |
 
 ---
 
@@ -196,11 +196,7 @@ intergrax/cli/certify.py          # delivered C2 — keep for EVID-CORE-06 docs 
 tests/integration/evidence/test_core_certification.py  # optional later
 ```
 
-**Deferred (C3 · EVID-CORE-06):**
-
-```text
-README / guides/HARNESS_ENVIRONMENT evidence path
-```
+**Deferred (C3 · EVID-CORE-06):** **Done** — README Quick start + `guides/HARNESS_ENVIRONMENT.md` § Core certification evidence path (HEP).
 
 **Tier boundaries:** Tier-0 only — no `applications/` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
 
@@ -218,7 +214,7 @@ README / guides/HARNESS_ENVIRONMENT evidence path
 | Report JSON/Markdown | `intergrax/runtime/evidence/certification_report.py` |
 | CLI | `intergrax/cli/certify.py` · `intergrax certify core` |
 | Public exports | `intergrax/runtime/evidence/__init__.py` |
-| Unit tests | `tests/unit/runtime/evidence/` |
+| Unit tests | `tests/unit/runtime/evidence/` (incl. `test_certify_cli.py`) |
 
 **Verify:** `uv run pytest tests/unit/runtime/evidence -q` · `uv run intergrax certify core --level L2`
 
@@ -230,7 +226,7 @@ README / guides/HARNESS_ENVIRONMENT evidence path
 |----|-----|-------|--------|
 | **PR1** | EVID-CORE-02 (code), EVID-CORE-03 | Spec enums + scenario contracts + unit tests | **Done** (C1) |
 | **PR2** | EVID-CORE-04, EVID-CORE-05 | CLI + report generation | **Done** (C2) |
-| **PR3** | EVID-CORE-06 | Docs: README, HARNESS_ENVIRONMENT evidence path | **Planned** |
+| **PR3** | EVID-CORE-06 | Docs: README, HARNESS_ENVIRONMENT evidence path | **Done** (C3) |
 
 **Verify after PR2:** `uv run intergrax certify core --level L2` + `uv run pytest -m gate -q`
 
@@ -244,8 +240,15 @@ README / guides/HARNESS_ENVIRONMENT evidence path
 | HEP-3 | EVID-POSTURE | External audit #12 |
 | HEP-4 | EVID-POL | External audit #3 |
 | HEP-5 | EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT | External audit #5–11 |
+| HEP-FU | **EVID-CORE-FU-01** | Replace selected mock scenarios with real Tier-0 runtime probes (post HEP-1; not mixed with CORE-L* contract delivery) |
 
 Register future rows in this file when Mode I approves each wave.
+
+### EVID-CORE-FU-01 (deferred follow-up — not HEP-1)
+
+| ID | Priority | Status | Deliverable | Acceptance |
+|----|----------|--------|-------------|------------|
+| **EVID-CORE-FU-01** | P2 | **Deferred** | Live Tier-0 runtime probes for selected CORE scenarios | Subset of scenarios exercise real HarnessKernel/event spine with mock LLM only; no §6.3 product scope |
 
 ---
 

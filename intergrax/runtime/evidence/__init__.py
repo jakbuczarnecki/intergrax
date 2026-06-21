@@ -5,6 +5,7 @@
 """Harness runtime evidence contracts (HEP Band 2ae)."""
 
 from intergrax.runtime.evidence.core_certification_spec import (
+    CORE_CERTIFICATION_EVIDENCE_KIND,
     CORE_LEVEL_SCENARIOS,
     CORE_SCENARIO_CATALOG_ORDER,
     CoreCertificationLevel,
@@ -36,6 +37,7 @@ from intergrax.runtime.evidence.certification_report import (
 from intergrax.runtime.evidence.scenario_runner import run_core_certification, run_core_scenario
 
 __all__ = [
+    "CORE_CERTIFICATION_EVIDENCE_KIND",
     "CORE_LEVEL_SCENARIOS",
     "CORE_SCENARIO_CATALOG_ORDER",
     "CORE_SCENARIO_CONTRACTS",

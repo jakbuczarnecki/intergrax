@@ -152,6 +152,15 @@ uv run intergrax doctor
 uv run pytest -m gate -q
 ```
 
+Optional — **core certification evidence** (deterministic mock contracts, not live LLM/provider E2E):
+
+```bash
+uv run intergrax certify core --level L2
+# Reports: build/evidence/core_certification/report.json · report.md
+```
+
+See [Harness Environment — core certification](docs/guides/HARNESS_ENVIRONMENT.md#core-certification-evidence-path-hep).
+
 ### 3. Run the lab host
 
 ```bash
@@ -178,6 +187,7 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 | `python -m intergrax.scaffold new-application {name} --profile lab` | Create Tier-3 host |
 | `python -m intergrax.scaffold new-stack {name}` | Agent + application bundle |
 | `uv run intergrax run {module}:app` | Launch any ASGI application host |
+| `uv run intergrax certify core --level L2` | Core certification report (mock contract evidence) |
 | `python -m intergrax.debug` | Debug CLI |
 
 **Full workflow:** [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) · **Contributing setup:** [CONTRIBUTING.md](CONTRIBUTING.md)

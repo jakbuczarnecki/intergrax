@@ -21,6 +21,47 @@ Phase S completes **environment** readiness so any new agent uses Integration �
 
 ---
 
+## Core certification evidence path (HEP)
+
+**Plan:** [`plan/HARNESS_EVIDENCE_PACK.md`](plan/HARNESS_EVIDENCE_PACK.md) (Band 2ae · Phase HEP).
+
+**~10-minute onboarding** after clone/install — separate **repo health** from **core evidence packaging**:
+
+```bash
+# 1) Repo wiring + gate scripts (not live runtime proof)
+uv run intergrax doctor
+
+# 2) Deterministic CORE scenario contracts + report (mock evidence, no network/real LLM)
+uv run intergrax certify core --level L2
+
+# 3) Inspect artifacts
+# build/evidence/core_certification/report.json
+# build/evidence/core_certification/report.md
+```
+
+### What each surface proves
+
+| Surface | Command / gate | Question | HEP-1 semantics |
+|---------|----------------|----------|-----------------|
+| **pytest gate** | `uv run pytest -m gate -q` | Do tests pass? | Unit/integration matrix |
+| **doctor** | `uv run intergrax doctor` | Is repo wiring healthy? | Script checks, not live harness E2E |
+| **certify core** | `uv run intergrax certify core` | Does CORE contract catalog pass with report? | **Deterministic mock evidence** — validates contracts + writes JSON/Markdown |
+| **W-ADAPT L4** | `check_l4_runtime_evidence.py` | Closed-loop adaptive utility OK? | **Different product** — 30-day utility/rollback, not CORE-L* |
+
+**Important:** `intergrax certify core` (HEP-1) is **not** full live runtime certification across HarnessKernel, Nexus, real LLM adapters, or external providers. The runner emits evidence refs that satisfy scenario **contracts** using controlled mocks (`CORE_CERTIFICATION_EVIDENCE_KIND = deterministic_mock`). Future live Tier-0 probes: **EVID-CORE-FU-01** in the evidence pack plan (post HEP-1).
+
+### CLI options
+
+| Flag | Default | Meaning |
+|------|---------|---------|
+| `--level` | `L2` | `CORE-L1` (4) · `CORE-L2` (8) · `CORE-L3` (12) — cumulative |
+| `--output-dir` | `build/evidence/core_certification` | Report directory |
+| `--root` | cwd | Used when resolving default output path |
+
+**Tests:** `tests/unit/runtime/evidence/` (includes `test_certify_cli.py`).
+
+---
+
 ## Lab harness stable integration stack
 
 These slugs are **`stable`** in the catalog (see `intergrax/integrations/registry/harness_lab_stack.py`):
