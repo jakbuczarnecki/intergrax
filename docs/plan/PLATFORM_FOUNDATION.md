@@ -90,7 +90,7 @@ Verify (every harness PR):
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done** — `evidence posture` / `evidence posture export` delivered — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md).  
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done** — `certify core` → `trace export` → `evidence posture` / `evidence posture export` — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md).  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** §6.3 product work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 

@@ -17,7 +17,7 @@
 
 - **Implement HEP-1 (closed):** § Mode I summary · § Certification semantics · § CORE levels · **EVID-CORE-*** rows.
 - **Implement HEP-2 Trace:** § Mode I — HEP-2 · § Trace semantics · open **EVID-TRACE-*** rows only.
-- **Plan HEP-3 Posture:** § Mode I — HEP-3 · § Evidence posture semantics · open **EVID-POSTURE-*** rows only.
+- **HEP-3 Posture (closed):** § HEP-3 closeout · § HEP-3 operator path · **EVID-POSTURE-*** rows.
 - **Skip** HEP-2 EVID-EVAL / EVID-COST and HEP-4+ unless implementing those waves.
 - **Architecture:** DX read-scope block only — smoke/e2e evidence owns list.
 - **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
@@ -512,7 +512,7 @@ uv run intergrax evidence posture export
 
 ---
 
-## Planned posture artifacts
+## Posture artifacts
 
 ```text
 build/evidence/posture/
@@ -531,7 +531,9 @@ It should not require live providers, network access, runtime event bus, or trac
 
 ---
 
-## Planned HEP-3 operator path
+## HEP-3 operator path
+
+Full operator path (preflight → evidence artifacts → read-only posture):
 
 ```bash
 uv run intergrax doctor
@@ -539,7 +541,14 @@ uv run pytest -m gate -q
 uv run intergrax certify core --level L2
 uv run intergrax trace export
 uv run intergrax evidence posture
+uv run intergrax evidence posture export
 ```
+
+`intergrax doctor` and `pytest -m gate` are **optional preflight** surfaces — repo health and test-gate signals, not required to run posture.
+
+`certify core` and `trace export` produce the artifacts posture reads (`report.json`, `timeline.json`).
+
+`intergrax evidence posture` and `intergrax evidence posture export` are read-only over existing evidence artifacts. They do not execute `doctor`, `pytest`, `certify core`, `trace export`, live runtime probes, RuntimeEventBus, trace store, or provider calls.
 
 Expected posture summary should clearly state:
 
