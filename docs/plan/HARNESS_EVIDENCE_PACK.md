@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path Mode I approved — EVID-TRACE-01…04 **Planned** (no code yet).
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path Mode I approved — EVID-TRACE-01 **Done** (C4); EVID-TRACE-02…04 **Planned**.
 
 ---
 
@@ -284,7 +284,7 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 
 | ID | Wave | Priority | Status | Deliverable | Acceptance criteria |
 |----|------|----------|--------|-------------|---------------------|
-| **EVID-TRACE-01** | HEP-2 | P1 | **Planned** | Trace timeline contract | Canonical timeline models for evidence runs; stable event kinds; artifact refs; no CLI yet |
+| **EVID-TRACE-01** | HEP-2 | P1 | **Done** | Trace timeline contract | Canonical timeline models for evidence runs; stable event kinds; artifact refs; no CLI yet |
 | **EVID-TRACE-02** | HEP-2 | P1 | **Planned** | Policy/budget/HITL facets | Timeline can represent policy decisions, budget markers, HITL markers, scenario lifecycle |
 | **EVID-TRACE-03** | HEP-2 | P1 | **Planned** | `intergrax trace show` CLI | Renders timeline from HEP-1 report/evidence artifacts; no UI |
 | **EVID-TRACE-04** | HEP-2 | P2 | **Planned** | Trace export JSON/Markdown | Writes timeline JSON/Markdown under `build/evidence/trace/` |
@@ -295,9 +295,21 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 
 | Step | IDs | Scope |
 |------|-----|-------|
-| C4 | EVID-TRACE-01 | Timeline contracts only |
+| C4 | EVID-TRACE-01 | Timeline contracts only | **Done** |
 | C5 | EVID-TRACE-02 | Facets for policy/budget/HITL/evidence |
 | C6 | EVID-TRACE-03/04 | CLI + export |
+
+---
+
+## Implementation notes (C4 · EVID-TRACE-01)
+
+| Artifact | Path |
+|----------|------|
+| Trace timeline contracts | `intergrax/runtime/evidence/trace_timeline_contracts.py` |
+| Unit tests | `tests/unit/runtime/evidence/test_trace_timeline_contracts.py` |
+| Public exports | `intergrax/runtime/evidence/__init__.py` |
+
+**Verify:** `uv run pytest tests/unit/runtime/evidence/test_trace_timeline_contracts.py -q`
 
 ---
 

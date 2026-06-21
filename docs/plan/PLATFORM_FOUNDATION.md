@@ -90,7 +90,7 @@ Verify (every harness PR):
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae — Planned)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Planned** — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md) § Mode I — HEP-2.  
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **In progress** — EVID-TRACE-01 **Done**; EVID-TRACE-02…04 **Planned** — see [`HARNESS_EVIDENCE_PACK.md`](HARNESS_EVIDENCE_PACK.md) § Mode I — HEP-2.  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** §6.3 product work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 
@@ -98,7 +98,7 @@ Verify (every harness PR):
 |------|-------|-----|--------|
 | HEP-0 | Mapping & contracts | EVID-CORE-01 … EVID-CORE-03 | **Done** (2026-06-21 C1) |
 | HEP-1 | Core evidence path (`intergrax certify core`) | EVID-CORE-04 … EVID-CORE-06 | **Done** (2026-06-21 C2–C3) |
-| HEP-2 | Trace evidence path (`intergrax trace show` — planned) | EVID-TRACE-01 … EVID-TRACE-04 | **Planned** (Mode I 2026-06-21) |
+| HEP-2 | Trace evidence path (`intergrax trace show` — planned) | EVID-TRACE-01 … EVID-TRACE-04 | **In progress** — EVID-TRACE-01 Done; 02–04 Planned (Mode I 2026-06-21) |
 
 **Explicitly excluded:** §6.3 product apps/agents · W-ADAPT L4 replacement · duplicate doctor CI gates · Band 2ad (M.7 P7 — **Done**).
 

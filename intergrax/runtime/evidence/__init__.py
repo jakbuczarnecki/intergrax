@@ -35,6 +35,20 @@ from intergrax.runtime.evidence.certification_report import (
     write_core_certification_report,
 )
 from intergrax.runtime.evidence.scenario_runner import run_core_certification, run_core_scenario
+from intergrax.runtime.evidence.trace_timeline_contracts import (
+    TraceTimeline,
+    TraceTimelineArtifactKind,
+    TraceTimelineArtifactRef,
+    TraceTimelineEvent,
+    TraceTimelineEventKind,
+    TraceTimelineKind,
+    TraceTimelineSeverity,
+    TraceTimelineSourceKind,
+    TraceTimelineSourceRef,
+    create_trace_timeline_event,
+    generate_timeline_event_id,
+    validate_trace_timeline,
+)
 
 __all__ = [
     "CORE_CERTIFICATION_EVIDENCE_KIND",
@@ -60,6 +74,18 @@ __all__ = [
     "run_core_certification",
     "run_core_scenario",
     "scenario_ids_for_level",
+    "TraceTimeline",
+    "TraceTimelineArtifactKind",
+    "TraceTimelineArtifactRef",
+    "TraceTimelineEvent",
+    "TraceTimelineEventKind",
+    "TraceTimelineKind",
+    "TraceTimelineSeverity",
+    "TraceTimelineSourceKind",
+    "TraceTimelineSourceRef",
+    "create_trace_timeline_event",
+    "generate_timeline_event_id",
     "validate_core_scenario_catalog",
+    "validate_trace_timeline",
     "write_core_certification_report",
 ]
