@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done).
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done); **A2** End-to-end evidence smoke audit **Done**.
 
 ---
 
@@ -1028,7 +1028,7 @@ Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path c
 
 Estimated remaining tasks for minimal ROI: **0**.
 
-**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. Remaining estimated tasks: strong ROI **2**, polished/adopter-ready ROI **4**.
+**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. Remaining estimated tasks: strong ROI **1**, polished/adopter-ready ROI **3**.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1036,10 +1036,10 @@ After minimal ROI, two additional tasks make the evidence path stronger for exte
 
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
-| 7 | End-to-end evidence smoke audit | 1 | Planned | Verify the full local evidence command sequence and artifact consistency |
-| 8 | README / onboarding update after smoke audit | 1 | Planned | Full onboarding documentation after end-to-end evidence smoke audit |
+| 7 | End-to-end evidence smoke audit (A2) | 1 | **Done** | Verify the full local evidence command sequence and artifact consistency |
+| 8 | README / onboarding update after smoke audit (A3) | 1 | Planned | Full onboarding documentation after end-to-end evidence smoke audit |
 
-Estimated remaining tasks for strong ROI: **2 total**.
+Estimated remaining tasks for strong ROI: **1 total**.
 
 ### Optional presentation/adopter polish
 
@@ -1050,7 +1050,7 @@ These are useful but not required for the core ROI path.
 | 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
 | 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **4 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **3 total**.
 
 ### Deferred from highest-ROI path
 
@@ -1068,11 +1068,46 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **end-to-end evidence smoke audit** — final evidence operator path closeout **Done** (architecture + README proof path documented).
+Recommended next wave: **A3 — README / onboarding update after smoke audit** — A2 end-to-end evidence smoke audit **Done**.
 
 Reason:
 
-Minimal ROI is closed. The highest-ROI remaining evidence work is end-to-end evidence smoke audit and full onboarding documentation after smoke audit. See § Evidence ROI roadmap.
+Minimal ROI is closed. A2 verified the canonical local evidence command sequence and artifact consistency. The highest-ROI remaining evidence work is full onboarding documentation after smoke audit. See § Evidence ROI roadmap and § A2 closeout.
+
+---
+
+## A2 — End-to-end evidence smoke audit closeout
+
+A2 End-to-end evidence smoke audit: **Done**
+
+### Command sequence executed
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace export
+uv run intergrax evidence live-core
+uv run intergrax evidence eval
+uv run intergrax evidence cost
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+### Artifacts verified
+
+| Surface | Artifacts |
+|---------|-----------|
+| Core certification | `build/evidence/core_certification/report.json`, `report.md` |
+| Trace evidence | `build/evidence/trace/timeline.json`, `timeline.md` |
+| Live Tier-0 probes | `build/evidence/live_core_probes/live_core_report.json`, `live_core_report.md` |
+| Eval evidence | `build/evidence/eval/report.json`, `report.md` |
+| Cost evidence | `build/evidence/cost/report.json`, `report.md` |
+| Evidence posture | `build/evidence/posture/posture.json`, `posture.md` |
+
+### Posture surfaces verified
+
+Posture `posture.json` includes: `CORE_CERTIFICATION`, `TRACE_TIMELINE` (trace surface), `LIVE_TIER0_PROBES`, `EVAL_REGRESSION`, `COST_EVIDENCE`.
+
+**Implementation note (A2):** Local smoke audit executed the canonical proof path; all expected artifacts exist and posture reflects available evidence surfaces. No code changes. No network, provider calls, real LLM evaluation, billing, provider pricing, or cloud cost estimation.
 
 ---
 
