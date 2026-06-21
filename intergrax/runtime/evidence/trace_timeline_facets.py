@@ -11,6 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from intergrax.utils import attribute_access
+
 
 class TracePolicyOutcome(str, Enum):
     ALLOWED = "allowed"
@@ -97,7 +99,7 @@ class TraceTimelineEventFacets(BaseModel):
 
 def validate_trace_timeline_event_facets(event: Any) -> None:
     """Raise ``ValueError`` when ``event.facets`` violates EVID-TRACE-02 rules."""
-    facets: TraceTimelineEventFacets | None = getattr(event, "facets", None)
+    facets: TraceTimelineEventFacets | None = attribute_access.optional(event, "facets", None)
     if facets is None:
         return
 

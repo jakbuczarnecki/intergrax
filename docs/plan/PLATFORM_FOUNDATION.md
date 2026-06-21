@@ -92,6 +92,8 @@ Verify (every harness PR):
 
 **Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.  
 EVID-EVAL Eval Regression Evidence **Done** — `evidence eval` writes deterministic eval evidence artifacts and optionally enriches `evidence posture` via `EVAL_REGRESSION` when the report exists. It is not a new eval framework and does not run real LLM/provider evaluation.  
+EVID-COST Cost Evidence **Done** — `evidence cost` writes deterministic local cost evidence artifacts and optionally enriches `evidence posture` via `COST_EVIDENCE` when the report exists. It is not a billing engine, provider pricing system, cloud cost estimator, or real LLM usage meter.  
+Highest-ROI remaining evidence path: final operator-path closeout, end-to-end evidence smoke audit, and onboarding documentation. EVID-COST C1–C5 are **Done**. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap.  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** §6.3 product work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 

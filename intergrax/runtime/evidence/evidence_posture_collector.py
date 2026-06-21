@@ -9,6 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.runtime.evidence.certification_report import CoreCertificationReport
+from intergrax.runtime.evidence.cost_evidence_contracts import (
+    CostEvidenceReport,
+    CostEvidenceStatus,
+)
 from intergrax.runtime.evidence.eval_evidence_contracts import (
     EvalEvidenceReport,
     EvalEvidenceStatus,
@@ -39,6 +43,7 @@ DEFAULT_LIVE_CORE_PROBE_REPORT_PATH = Path(
     "build/evidence/live_core_probes/live_core_report.json"
 )
 DEFAULT_EVAL_EVIDENCE_REPORT_PATH = Path("build/evidence/eval/report.json")
+DEFAULT_COST_EVIDENCE_REPORT_PATH = Path("build/evidence/cost/report.json")
 
 _POSTURE_TITLE = "Intergrax evidence posture"
 
@@ -131,6 +136,27 @@ def load_eval_evidence_report_if_available(path: Path) -> EvalEvidenceReport | N
         return EvalEvidenceReport.model_validate_json(path.read_text(encoding="utf-8"))
     except Exception as exc:
         raise ValueError(f"failed to parse eval evidence report at {path}") from exc
+
+
+def resolve_cost_evidence_report_path(
+    *,
+    root: Path,
+    cost_evidence_report_path: Path | None = None,
+) -> Path:
+    """Return absolute cost evidence report path under ``root``."""
+    if cost_evidence_report_path is not None:
+        return cost_evidence_report_path.resolve()
+    return (root / DEFAULT_COST_EVIDENCE_REPORT_PATH).resolve()
+
+
+def load_cost_evidence_report_if_available(path: Path) -> CostEvidenceReport | None:
+    """Load cost evidence report from ``path``, or ``None`` when missing."""
+    if not path.is_file():
+        return None
+    try:
+        return CostEvidenceReport.model_validate_json(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"failed to parse cost evidence report at {path}") from exc
 
 
 def load_trace_timeline_if_available(path: Path) -> TraceTimeline | None:
@@ -441,6 +467,103 @@ def build_eval_regression_signal(
     )
 
 
+def _count_cost_check_statuses(
+    report: CostEvidenceReport,
+) -> dict[str, int]:
+    counts = {
+        "checks_total": len(report.results),
+        "checks_passed": 0,
+        "checks_failed": 0,
+        "checks_skipped": 0,
+        "checks_unavailable": 0,
+    }
+    for result in report.results:
+        if result.status is CostEvidenceStatus.PASSED:
+            counts["checks_passed"] += 1
+        elif result.status is CostEvidenceStatus.FAILED:
+            counts["checks_failed"] += 1
+        elif result.status is CostEvidenceStatus.SKIPPED:
+            counts["checks_skipped"] += 1
+        elif result.status is CostEvidenceStatus.UNAVAILABLE:
+            counts["checks_unavailable"] += 1
+    return counts
+
+
+def build_cost_evidence_signal(
+    *,
+    report: CostEvidenceReport | None,
+    report_path: Path,
+) -> EvidenceSignal | None:
+    """Build COST_EVIDENCE signal from an optional cost evidence report."""
+    if report is None:
+        return None
+
+    counts = _count_cost_check_statuses(report)
+    metadata = {
+        "report_id": report.report_id,
+        "report_status": report.status.value,
+        "checks_total": str(counts["checks_total"]),
+        "checks_passed": str(counts["checks_passed"]),
+        "checks_failed": str(counts["checks_failed"]),
+        "checks_skipped": str(counts["checks_skipped"]),
+        "checks_unavailable": str(counts["checks_unavailable"]),
+        "scope": "cost_evidence",
+        "provider_pricing": "disabled",
+        "billing": "disabled",
+        "cloud_cost_estimation": "disabled",
+        "real_llm_metering": "disabled",
+        "network": "disabled",
+    }
+    artifact_refs = [
+        EvidencePostureArtifactRef(
+            kind=EvidencePostureArtifactKind.OTHER,
+            path=str(report_path),
+        ),
+        EvidencePostureArtifactRef(
+            kind=EvidencePostureArtifactKind.OTHER,
+            path=str(report_path.parent / "report.md"),
+        ),
+    ]
+
+    if report.status is CostEvidenceStatus.PASSED:
+        return create_evidence_signal(
+            kind=EvidenceSignalKind.COST_EVIDENCE,
+            status=EvidenceSignalStatus.PASSED,
+            title="Cost evidence",
+            message=(
+                f"{counts['checks_passed']}/{counts['checks_total']} "
+                "cost evidence checks passed"
+            ),
+            basis=EvidenceBasis.REPORT_DERIVED,
+            artifact_refs=artifact_refs,
+            metadata=metadata,
+        )
+
+    if report.status is CostEvidenceStatus.FAILED:
+        return create_evidence_signal(
+            kind=EvidenceSignalKind.COST_EVIDENCE,
+            status=EvidenceSignalStatus.FAILED,
+            title="Cost evidence",
+            message=(
+                f"{counts['checks_failed']}/{counts['checks_total']} "
+                "cost evidence checks failed"
+            ),
+            basis=EvidenceBasis.REPORT_DERIVED,
+            artifact_refs=artifact_refs,
+            metadata=metadata,
+        )
+
+    return create_evidence_signal(
+        kind=EvidenceSignalKind.COST_EVIDENCE,
+        status=EvidenceSignalStatus.UNKNOWN,
+        title="Cost evidence",
+        message=report.summary,
+        basis=EvidenceBasis.REPORT_DERIVED,
+        artifact_refs=artifact_refs,
+        metadata=metadata,
+    )
+
+
 def build_static_posture_signals(
     *,
     include_unknown_operational_signals: bool = True,
@@ -525,6 +648,7 @@ def collect_evidence_posture(
     trace_timeline_path: Path | None = None,
     live_core_probe_report_path: Path | None = None,
     eval_evidence_report_path: Path | None = None,
+    cost_evidence_report_path: Path | None = None,
     include_unknown_operational_signals: bool = True,
     root_label: str = "local",
 ) -> EvidencePostureSummary:
@@ -545,11 +669,16 @@ def collect_evidence_posture(
         root=root,
         eval_evidence_report_path=eval_evidence_report_path,
     )
+    resolved_cost_path = resolve_cost_evidence_report_path(
+        root=root,
+        cost_evidence_report_path=cost_evidence_report_path,
+    )
 
     report = load_core_report_if_available(resolved_core_path)
     timeline = load_trace_timeline_if_available(resolved_timeline_path)
     live_core_report = load_live_core_probe_report_if_available(resolved_live_core_path)
     eval_report = load_eval_evidence_report_if_available(resolved_eval_path)
+    cost_report = load_cost_evidence_report_if_available(resolved_cost_path)
 
     signals = [
         build_core_certification_signal(report=report, report_path=resolved_core_path),
@@ -569,6 +698,12 @@ def collect_evidence_posture(
     )
     if eval_signal is not None:
         signals.append(eval_signal)
+    cost_signal = build_cost_evidence_signal(
+        report=cost_report,
+        report_path=resolved_cost_path,
+    )
+    if cost_signal is not None:
+        signals.append(cost_signal)
 
     level = derive_posture_level(signals)
     summary = EvidencePostureSummary(

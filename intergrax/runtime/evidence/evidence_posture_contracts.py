@@ -40,6 +40,7 @@ class EvidenceSignalKind(str, Enum):
     W_ADAPT_L4 = "W_ADAPT_L4"
     LIVE_TIER0_PROBES = "LIVE_TIER0_PROBES"
     EVAL_REGRESSION = "EVAL_REGRESSION"
+    COST_EVIDENCE = "COST_EVIDENCE"
 
 
 class EvidenceBasis(str, Enum):

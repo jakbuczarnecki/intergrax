@@ -14,6 +14,7 @@ from intergrax.runtime.evidence.trace_timeline_adapter import (
     build_timeline_from_certification_report,
     load_core_certification_report,
 )
+from intergrax.utils import attribute_access
 from intergrax.runtime.evidence.trace_timeline_export import (
     DEFAULT_TRACE_EVIDENCE_OUTPUT_DIR,
     TRACE_TIMELINE_OPERATOR_NOTE,
@@ -76,7 +77,7 @@ def _resolve_report_path(args: argparse.Namespace) -> Path:
 
 
 def _resolve_trace_output_dir(args: argparse.Namespace) -> Path:
-    if getattr(args, "output_dir", None) is not None:
+    if attribute_access.optional(args, "output_dir", None) is not None:
         return args.output_dir.resolve()
     return _default_trace_output_dir(args.root)
 
