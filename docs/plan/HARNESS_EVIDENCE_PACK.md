@@ -9,7 +9,7 @@
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
 > **Naming:** Do **not** use `IDEAL-L4-EVIDENCE` — L4 in repo is W-ADAPT closed-loop semantics (`l4_runtime_evidence.py`). Do **not** reuse Band 2ad (M.7 P7 integrations — **Done**).
 
-**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done).
+**Last updated:** 2026-06-21 — HEP-1 **Done** (EVID-CORE-01…06); HEP-2 Trace Evidence Path **Done** (EVID-TRACE-01…04; C4–C6); HEP-3 Evidence Posture / Scoreboard **Done** (EVID-POSTURE-01…04; C8–C10); EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** (EVID-CORE-FU-01A…E; C12–C16); **EVID-EVAL** Eval Regression Evidence **Done** (EVID-EVAL-01…05; N1–N5); **EVID-COST** Cost Evidence **Done** (C1–C5 Done; EVID-COST-01…05 Done); **A2** End-to-end evidence smoke audit **Done**.
 
 ---
 
@@ -1015,7 +1015,7 @@ This roadmap tracks the remaining highest-ROI HEP / evidence work after the comp
 
 ### Minimal remaining ROI
 
-The minimal remaining ROI is to complete cost evidence and then close the operator-facing evidence path.
+Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path closeout are complete.
 
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
@@ -1024,11 +1024,11 @@ The minimal remaining ROI is to complete cost evidence and then close the operat
 | 3 | EVID-COST runner / collector | 1 | **Done** | Package existing cost/budget information into evidence results |
 | 4 | EVID-COST CLI + JSON/Markdown export | 1 | **Done** | Add `intergrax evidence cost` and write artifacts under `build/evidence/cost/` |
 | 5 | EVID-COST posture integration + closeout | 1 | **Done** | Add optional posture signal and close EVID-COST docs |
-| 6 | Final evidence operator path closeout | 1 | Planned | Document one canonical evidence onboarding flow |
+| 6 | Final evidence operator path closeout | 1 | **Done** | Document one canonical evidence onboarding flow |
 
-Estimated remaining tasks for minimal ROI: **1**.
+Estimated remaining tasks for minimal ROI: **0**.
 
-**Progress note:** EVID-COST C1–C5 are Done. Remaining estimated tasks after C5: minimal ROI **1**, strong ROI **3**, polished/adopter-ready ROI **5**.
+**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. A3 README / onboarding update after smoke audit is Done. A4 Evidence artifact sanity checker / docs checker is Done. A5 External one-page harness narrative is Done. Strong ROI and polished/adopter-ready ROI are closed. Remaining estimated tasks: **0** across all ROI tiers.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1036,10 +1036,10 @@ After minimal ROI, two additional tasks make the evidence path stronger for exte
 
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
-| 7 | End-to-end evidence smoke audit | 1 | Planned | Verify the full local evidence command sequence and artifact consistency |
-| 8 | README / onboarding update | 1 | Planned | Document how a developer verifies Intergrax harness locally |
+| 7 | End-to-end evidence smoke audit (A2) | 1 | **Done** | Verify the full local evidence command sequence and artifact consistency |
+| 8 | README / onboarding update after smoke audit (A3) | 1 | **Done** | Full onboarding documentation after end-to-end evidence smoke audit |
 
-Estimated remaining tasks for strong ROI: **3 total**.
+Estimated remaining tasks for strong ROI: **0**.
 
 ### Optional presentation/adopter polish
 
@@ -1047,10 +1047,10 @@ These are useful but not required for the core ROI path.
 
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
-| 9 | Evidence artifact sanity checker / docs checker | 1 | Optional | Validate expected evidence artifacts and docs consistency |
-| 10 | External one-page harness narrative | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
+| 9 | Evidence artifact sanity checker / docs checker (A4) | 1 | **Done** | Validate expected evidence artifacts and docs consistency |
+| 10 | External one-page harness narrative (A5) | 1 | **Done** | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **5 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **0**.
 
 ### Deferred from highest-ROI path
 
@@ -1068,11 +1068,100 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **final evidence operator path closeout** — EVID-COST **Done** (C1–C5 Done; EVID-COST-01…05 Done).
+No immediate HEP evidence ROI task remains; future work should move to deferred evidence waves only if explicitly prioritized.
 
 Reason:
 
-EVID-COST is complete. The highest-ROI remaining evidence work is final operator-path closeout, end-to-end evidence smoke audit, and onboarding documentation. See § Evidence ROI roadmap.
+Minimal ROI, strong ROI, and polished/adopter-ready ROI are closed. A2 verified the canonical local evidence command sequence. A3 updated README onboarding. A4 added the local artifact/docs checker. A5 added the external one-page harness narrative. See § Evidence ROI roadmap and § A2–§ A5 closeout sections. Deferred waves (EVID-POL, EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT) remain deferred until explicitly prioritized—not approved for immediate implementation.
+
+---
+
+## A5 — External one-page harness narrative closeout
+
+A5 External one-page harness narrative: **Done**
+
+### Documentation updated
+
+| File | Change |
+|------|--------|
+| `docs/guides/INTERGRAX_HARNESS_NARRATIVE.md` | External-facing one-page narrative — harness vs agent framework, proof path, boundaries, audience |
+| `README.md` | Link to narrative under § Proof of platform |
+| `HARNESS_EVIDENCE_PACK.md` | A5 closeout; ROI counters all **0**; HEP evidence ROI path closed |
+| `PLATFORM_FOUNDATION.md` | §6.1aw — A5 Done; polished/adopter-ready ROI closed |
+
+**Implementation note (A5):** Docs-only. No code, runtime changes, proof-path execution, or smoke audit rerun. Polished/adopter-ready ROI is closed; no immediate HEP evidence ROI task remains.
+
+---
+
+## A4 — Evidence artifact sanity checker / docs checker closeout
+
+A4 Evidence artifact sanity checker / docs checker: **Done**
+
+### Implementation
+
+| File | Change |
+|------|--------|
+| `scripts/check_evidence_artifacts.py` | Local, deterministic, no-network checker for 12 expected proof-path artifacts and README proof-path references |
+| `README.md` | Concise checker command under § Proof of platform |
+| `HARNESS_EVIDENCE_PACK.md` | A4 closeout; ROI counters; recommended next wave → A5 |
+| `PLATFORM_FOUNDATION.md` | §6.1aw — A4 Done; next polished/adopter-ready path → A5 |
+
+**Implementation note (A4):** Validates existing local artifacts and docs only. Does not run the proof path, generate evidence, call providers, or import Intergrax runtime modules. Operator command: `python scripts/check_evidence_artifacts.py`.
+
+---
+
+## A3 — README / onboarding update after smoke audit closeout
+
+A3 README / onboarding update after smoke audit: **Done**
+
+### Documentation updated
+
+| File | Change |
+|------|--------|
+| `README.md` | Strengthened § Proof of platform — framing, canonical commands, artifact table, prove/does-not-prove boundaries, next steps |
+| `HARNESS_EVIDENCE_PACK.md` | A3 closeout; ROI counters; recommended next wave → A4 |
+| `PLATFORM_FOUNDATION.md` | §6.1aw — strong ROI closed; polished/adopter-ready path |
+
+### Operator onboarding outcome
+
+Early developers/adopters can answer from README alone: what the proof path is, why to run it, exact commands, expected artifacts, what it proves, what it explicitly does not prove, and where to go next (`posture.md` first, then individual reports).
+
+**Implementation note (A3):** Docs-only. No code, tests, smoke audit rerun, or provider/network execution. Canonical command sequence unchanged from A2.
+
+---
+
+## A2 — End-to-end evidence smoke audit closeout
+
+A2 End-to-end evidence smoke audit: **Done**
+
+### Command sequence executed
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace export
+uv run intergrax evidence live-core
+uv run intergrax evidence eval
+uv run intergrax evidence cost
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+### Artifacts verified
+
+| Surface | Artifacts |
+|---------|-----------|
+| Core certification | `build/evidence/core_certification/report.json`, `report.md` |
+| Trace evidence | `build/evidence/trace/timeline.json`, `timeline.md` |
+| Live Tier-0 probes | `build/evidence/live_core_probes/live_core_report.json`, `live_core_report.md` |
+| Eval evidence | `build/evidence/eval/report.json`, `report.md` |
+| Cost evidence | `build/evidence/cost/report.json`, `report.md` |
+| Evidence posture | `build/evidence/posture/posture.json`, `posture.md` |
+
+### Posture surfaces verified
+
+Posture `posture.json` includes: `CORE_CERTIFICATION`, `TRACE_TIMELINE` (trace surface), `LIVE_TIER0_PROBES`, `EVAL_REGRESSION`, `COST_EVIDENCE`.
+
+**Implementation note (A2):** Local smoke audit executed the canonical proof path; all expected artifacts exist and posture reflects available evidence surfaces. No code changes. No network, provider calls, real LLM evaluation, billing, provider pricing, or cloud cost estimation.
 
 ---
 

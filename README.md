@@ -200,6 +200,69 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 
 ---
 
+## Proof of platform
+
+External narrative: [Intergrax Harness Narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md)
+
+**What is it?** The fastest local way to verify Intergrax as an evidence-backed harness platform — not a production readiness or compliance claim.
+
+**Why run it?** You get a repeatable, offline proof that the harness can produce and aggregate the core evidence surfaces an early adopter needs to trust the platform locally. The A2 end-to-end evidence smoke audit verified this exact command sequence on a clean local run.
+
+Run the canonical proof path:
+
+```bash
+uv run intergrax certify core --level L2
+uv run intergrax trace export
+uv run intergrax evidence live-core
+uv run intergrax evidence eval
+uv run intergrax evidence cost
+uv run intergrax evidence posture
+uv run intergrax evidence posture export
+```
+
+All artifacts land under `build/evidence/`:
+
+| Surface | Artifacts |
+| ------- | --------- |
+| Core certification | `build/evidence/core_certification/report.json`, `build/evidence/core_certification/report.md` |
+| Trace evidence | `build/evidence/trace/timeline.json`, `build/evidence/trace/timeline.md` |
+| Live Tier-0 probes | `build/evidence/live_core_probes/live_core_report.json`, `build/evidence/live_core_probes/live_core_report.md` |
+| Eval evidence | `build/evidence/eval/report.json`, `build/evidence/eval/report.md` |
+| Cost evidence | `build/evidence/cost/report.json`, `build/evidence/cost/report.md` |
+| Evidence posture | `build/evidence/posture/posture.json`, `build/evidence/posture/posture.md` |
+
+**What this proves** — local ability to produce and aggregate:
+
+* core certification evidence
+* trace evidence
+* selected local live Tier-0 probe evidence
+* eval regression evidence
+* cost evidence
+* evidence posture scoreboard
+
+**What this does not prove:**
+
+* production runtime certification
+* security/compliance attestation
+* real provider execution
+* real LLM evaluation
+* billing
+* provider pricing
+* cloud cost estimation
+* product-specific acceptance
+
+**Verify artifacts and docs** (after running the proof path):
+
+```bash
+python scripts/check_evidence_artifacts.py
+```
+
+Confirms expected evidence artifacts exist and README still documents the canonical proof path.
+
+**Next steps:** After the proof path, inspect `build/evidence/posture/posture.md` first, then drill into the individual evidence reports. For roadmap and status, see [HARNESS_EVIDENCE_PACK.md](docs/plan/HARNESS_EVIDENCE_PACK.md). For architecture framing, see [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md](docs/architecture/satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md).
+
+---
+
 ## What you can do today
 
 | Action | How | Learn more |

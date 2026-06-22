@@ -1,8 +1,24 @@
 # Attestation Demo — Partner PoC Quickstart
 
-**Audience:** BoundaryAttest partner integration and internal harness reviewers.
+**Audience:** external attestation integrators and internal Intergrax harness reviewers.
 
-This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emits `execution_boundary_event.v1` records at tool and harness boundaries. **By default (EBE-9)** each event includes an Ed25519 **host attestation** envelope; BoundaryAttest verifies the host claim and may add a separate `client_observed` wrapper.
+This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emits `execution_boundary_event.v1` records at tool and harness boundaries. **By default (EBE-9)** each event includes an Ed25519 **host attestation** envelope that an external verifier can validate. BoundaryAttest is the reference external project used to validate this flow and may add a separate `client_observed` wrapper.
+
+## External validation: BoundaryAttest
+
+This demo was validated with [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest), an external open-source project by Cullen Meyers for portable signed attestations of consequential agent/tool boundary events.
+
+BoundaryAttest is not part of Intergrax, is not required by Intergrax, and is not hosted or maintained by Intergrax. It is referenced here as an external partner integration validation demonstrating how a third-party system can verify Intergrax host-signed `execution_boundary_event.v1` records and preserve them with its own separate `client_observed` wrapper.
+
+The validated EBE-9 flow confirms:
+
+- Intergrax emits one host-signed boundary event per tool/harness claim.
+- BoundaryAttest verifies the Intergrax host signature using a pinned public key.
+- BoundaryAttest keeps its own `client_observed` receipt separate from the Intergrax host/runtime claim.
+- Unsigned v2 compatibility remains supported.
+- Tool execution and harness-step claims remain separate events, not one composite run receipt.
+
+This validation does not imply that BoundaryAttest is bundled with Intergrax or that Intergrax provides a full external audit/compliance product. It validates the integration pattern for third-party systems consuming Intergrax execution boundary events.
 
 ## Documentation
 
@@ -78,7 +94,7 @@ Successful runs return **two** signed events (`tool_execution` seq 1, `harness_s
     }
   ],
   "trust_model": {
-    "platform_signed": "true",
+    "platform_signed": true,
     "recommended_receipt_role": "host_attested"
   }
 }
