@@ -1028,7 +1028,7 @@ Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path c
 
 Estimated remaining tasks for minimal ROI: **0**.
 
-**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. A3 README / onboarding update after smoke audit is Done. A4 Evidence artifact sanity checker / docs checker is Done. Strong ROI is closed. Remaining estimated tasks: polished/adopter-ready ROI **1**.
+**Progress note:** The final evidence operator path closeout is Done. Minimal ROI is now closed. A2 end-to-end evidence smoke audit is Done. A3 README / onboarding update after smoke audit is Done. A4 Evidence artifact sanity checker / docs checker is Done. A5 External one-page harness narrative is Done. Strong ROI and polished/adopter-ready ROI are closed. Remaining estimated tasks: **0** across all ROI tiers.
 
 ### Strong ROI / onboarding-ready evidence path
 
@@ -1048,9 +1048,9 @@ These are useful but not required for the core ROI path.
 | Order | Work item | Expected task count | Status | Purpose |
 |-------|-----------|---------------------|--------|---------|
 | 9 | Evidence artifact sanity checker / docs checker (A4) | 1 | **Done** | Validate expected evidence artifacts and docs consistency |
-| 10 | External one-page harness narrative (A5) | 1 | Optional | Explain why Intergrax is a harness, not just an agent framework |
+| 10 | External one-page harness narrative (A5) | 1 | **Done** | Explain why Intergrax is a harness, not just an agent framework |
 
-Estimated remaining tasks for polished adopter-ready ROI: **1 total**.
+Estimated remaining tasks for polished adopter-ready ROI: **0**.
 
 ### Deferred from highest-ROI path
 
@@ -1068,11 +1068,28 @@ The following waves remain valuable, but are not part of the immediate highest-R
 
 ### Recommended next wave
 
-Recommended next wave: **A5 — External one-page harness narrative** — A4 Evidence artifact sanity checker / docs checker **Done**.
+No immediate HEP evidence ROI task remains; future work should move to deferred evidence waves only if explicitly prioritized.
 
 Reason:
 
-Minimal ROI and strong ROI are closed. A2 verified the canonical local evidence command sequence and artifact consistency. A3 updated README and plan onboarding so early adopters can run and interpret the proof path. A4 added a local sanity checker for expected artifacts and README proof-path references. The highest-ROI remaining evidence work is optional external harness narrative. See § Evidence ROI roadmap, § A2 closeout, § A3 closeout, and § A4 closeout.
+Minimal ROI, strong ROI, and polished/adopter-ready ROI are closed. A2 verified the canonical local evidence command sequence. A3 updated README onboarding. A4 added the local artifact/docs checker. A5 added the external one-page harness narrative. See § Evidence ROI roadmap and § A2–§ A5 closeout sections. Deferred waves (EVID-POL, EVID-CAP, EVID-REPLAY, EVID-CTX, EVID-EXT, EVID-SEC, EVID-ATT) remain deferred until explicitly prioritized—not approved for immediate implementation.
+
+---
+
+## A5 — External one-page harness narrative closeout
+
+A5 External one-page harness narrative: **Done**
+
+### Documentation updated
+
+| File | Change |
+|------|--------|
+| `docs/guides/INTERGRAX_HARNESS_NARRATIVE.md` | External-facing one-page narrative — harness vs agent framework, proof path, boundaries, audience |
+| `README.md` | Link to narrative under § Proof of platform |
+| `HARNESS_EVIDENCE_PACK.md` | A5 closeout; ROI counters all **0**; HEP evidence ROI path closed |
+| `PLATFORM_FOUNDATION.md` | §6.1aw — A5 Done; polished/adopter-ready ROI closed |
+
+**Implementation note (A5):** Docs-only. No code, runtime changes, proof-path execution, or smoke audit rerun. Polished/adopter-ready ROI is closed; no immediate HEP evidence ROI task remains.
 
 ---
 
