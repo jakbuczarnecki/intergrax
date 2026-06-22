@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
-**Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS implementation plan satellite; **P2-ARCH-10** AHI governance boundary.
+**Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS top-level + satellite implementation plans; **P2-ARCH-10** AHI governance boundary.
 
 ---
 
@@ -41,7 +41,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md) | audit history |
-| [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) | ADAS / Agent Design Search implementation plan |
+| [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) | ADAS / Agent Design Search detailed implementation plan |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -71,15 +71,16 @@ Load **only** the satellite matching your task or cited gap ID.
 ## Phase AHI-ADAS — Agent Design Search (Proposed)
 
 **Architecture:** [`architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
-**Implementation plan:** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**Implementation plan:** [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**Detailed plan satellite:** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
 **ADR:** [ADR-ADAPT-002](../adr/entries/2026-06-22/ADR-ADAPT-002.md)  
 **Hub canon:** [ADAS sub-capability](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability)
 
-ADAS extends AHI with a governed agent-candidate design loop (scaffold → static gate → evaluation → archive → shadow/canary → promotion → verify). Full task breakdown lives in the implementation plan satellite.
+ADAS extends AHI with a governed agent-candidate design loop (scaffold → static gate → evaluation → archive → shadow/canary → promotion → verify). Full task breakdown lives in the implementation plan and detailed plan satellite.
 
 | Phase | Purpose | Status |
 |-------|---------|--------|
-| **AHI-ADAS-00** | Documentation canon + ADR + implementation plan satellite | **Done** (2026-06-22) |
+| **AHI-ADAS-00** | Documentation canon + ADR + top-level and satellite implementation plans | **Done** (2026-06-22) |
 | **AHI-ADAS-10** | Core contracts + candidate archive | Planned |
 | **AHI-ADAS-20** | Scaffold bridge + static gate | Planned |
 | **AHI-ADAS-30** | Candidate evaluation + utility scoring | Planned |
