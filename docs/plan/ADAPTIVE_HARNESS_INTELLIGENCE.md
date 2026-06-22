@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
-**Last updated:** 2026-06-20 — **P2-ARCH-10** AHI governance boundary.
+**Last updated:** 2026-06-22 — **AHI-ADAS-00** Phase AHI-ADAS register; **P2-ARCH-10** AHI governance boundary.
 
 ---
 
@@ -64,5 +64,30 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-AHI.3 | §25 AHI | Capability marketplace readiness (trust, certification, billing) | P3 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
+## Phase AHI-ADAS — Agent Design Search (Proposed)
+
+**Architecture:** [`architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**ADR:** [ADR-ADAPT-002](../adr/entries/2026-06-22/ADR-ADAPT-002.md)  
+**Hub canon:** [ADAS sub-capability](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability)
+
+ADAS extends AHI with a governed agent-candidate design loop (scaffold → static gate → evaluation → archive → shadow/canary → promotion → verify). Full task breakdown lives in the architecture satellite §30.
+
+| Phase | Purpose | Status |
+|-------|---------|--------|
+| **AHI-ADAS-00** | Documentation canon + ADR (ADAS inside AHI) | **Done** (2026-06-22) |
+| **AHI-ADAS-10** | Core contracts + candidate archive | Planned |
+| **AHI-ADAS-20** | Scaffold bridge + static gate | Planned |
+| **AHI-ADAS-30** | Candidate evaluation + utility scoring | Planned |
+| **AHI-ADAS-40** | Search controller + strategies | Planned |
+| **AHI-ADAS-50** | Hooks and lifecycle events | Planned |
+| **AHI-ADAS-60** | Optional Tier-2 MAS agents | Planned |
+| **AHI-ADAS-70** | Shadow / canary / promotion bridge | Planned |
+| **AHI-ADAS-80** | Optional Tier-3 ADAS Lab application | Planned |
+| **AHI-ADAS-90** | Enterprise hardening (retention, tenant isolation, evidence bundles) | Planned |
+
+**Delivery rule:** One **AHI-ADAS-\*** phase (or sub-phase row) per PR → update this table → link evidence bundle when eval gates apply.
 
 ---

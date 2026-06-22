@@ -58,6 +58,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | ADR | Title | Status |
 |-----|-------|--------|
 | [ADR-ADAPT-001](entries/2026-06-05/ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
+| [ADR-ADAPT-002](entries/2026-06-22/ADR-ADAPT-002.md) | ADAS (Agent Design Search) inside AHI — not a separate layer | Accepted |
 | [ADR-LLM-001](entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
 | [ADR-LLM-002](entries/2026-06-14/ADR-LLM-002.md) | Central ModelCatalog and context window resolution | Accepted |
 | [ADR-LLM-003](entries/2026-06-19/ADR-LLM-003.md) | LLM routing rules — Protocol contract and custom rule classes | Accepted |

@@ -4,7 +4,7 @@
 
 # ADAPTIVE HARNESS INTELLIGENCE — ADAS / Agent Design Search Architecture
 
-**Status:** Proposed architecture  
+**Status:** Canonical architecture satellite (Phase AHI-ADAS-00)  
 **Layer:** `ADAPTIVE_HARNESS_INTELLIGENCE`  
 **Sub-capability:** ADAS / Agent Design Search  
 **Canonical placement:** Tier-1 Adaptive Control Plane  
@@ -680,8 +680,9 @@ create shadow registration request
 create canary registration request
 require human approval
 prevent direct production apply
-link promoted candidate to active agent registry
+link promoted candidate to active agent registry (see §22.1)
 record rollback pointer
+materialize evidence bundle reference on promotion decision
 ```
 
 ### 12.9 `AgentCandidateVerificationLoop`
@@ -704,6 +705,31 @@ It should reuse existing verification checks where possible.
 ---
 
 ## 13. Data contracts
+
+### 13.0 `AdasOperationalEnvelope` (enterprise fields — implementation v1+)
+
+Base contracts in §13.1–§13.6 define the functional shape for Phase **AHI-ADAS-10**. At enterprise production, persisted and cross-boundary ADAS records **SHOULD** compose or embed this operational envelope (additive — not required in initial stubs):
+
+```python
+class AdasOperationalEnvelope(BaseModel):
+    schema_version: str = "1.0"
+    created_at: datetime
+    updated_at: datetime | None = None
+    created_by: str
+    approved_by: str | None = None
+    approval_id: str | None = None
+    policy_context_id: str | None = None
+    correlation_id: str | None = None
+    trace_id: str | None = None
+    idempotency_key: str | None = None
+    artifact_hash: str | None = None
+    source_hash: str | None = None
+    evaluation_bundle_id: str | None = None
+    risk_class: str | None = None
+    retention_policy: str | None = None
+```
+
+Apply to: `AgentDesignObjective`, `AgentDesignSearchRun`, `AgentCandidateRecord`, `AgentCandidateEvaluationResult`, `AgentCandidatePromotionRequest`, and `AgentCandidateEvidenceBundle`.
 
 ### 13.1 `AgentDesignObjective`
 
@@ -872,6 +898,46 @@ class AgentCandidateEvaluationResult(BaseModel):
 
     failure_reasons: list[str] = Field(default_factory=list)
 ```
+
+### 13.7 `AgentCandidateEvidenceBundle`
+
+Enterprise evidence artifact — **evidence over declaration**. One bundle per promotion decision, verification window, or audit export. Immutable once sealed; references append-only archive rows.
+
+```python
+class AgentCandidateEvidenceBundle(BaseModel):
+    bundle_id: str
+    candidate_id: str
+    objective_id: str
+    tenant_id: str
+    search_run_id: str | None = None
+
+    # AdasOperationalEnvelope fields (§13.0)
+    schema_version: str = "1.0"
+    created_at: datetime
+    created_by: str
+    correlation_id: str | None = None
+    trace_id: str | None = None
+    evaluation_bundle_id: str | None = None
+    risk_class: str | None = None
+    retention_policy: str | None = None
+    artifact_hash: str | None = None
+
+    candidate_record: AgentCandidateRecord
+    baseline_evaluation_result: AgentCandidateEvaluationResult | None = None
+    evaluation_result: AgentCandidateEvaluationResult
+    static_gate_result: dict[str, Any]
+    policy_gate_result: dict[str, Any] | None = None
+    cost_report: dict[str, Any] | None = None
+    security_adversarial_result: dict[str, Any] | None = None
+    approval_record: dict[str, Any] | None = None
+    promotion_decision: dict[str, Any] | None = None
+    rollback_pointer: str | None = None
+
+    assembled_at: datetime
+    sealed: bool = False
+```
+
+The auditable report in §27 and promotion bridge in §12.8 **MUST** be derivable from a sealed bundle without recomputing from scattered partial records.
 
 ---
 
@@ -1135,6 +1201,21 @@ explaining why a candidate failed
 enterprise audit
 ```
 
+### 19.1 Archive retention and cleanup policy
+
+Append-only semantics (§19) are normative for **logical** history. Enterprise production additionally requires explicit retention and cleanup policy (Phase **AHI-ADAS-90**):
+
+| Policy | Requirement |
+|--------|-------------|
+| **Retention window** | Per `tenant_id`, `objective_id`, and `risk_class`; default from `retention_policy` on envelope (§13.0) |
+| **PII / secret scanning** | Scan on archive write, bundle seal, and export; block or redact before persist |
+| **Archive compaction** | Logical append-only; physical compaction via background job only when no **legal hold** applies |
+| **Export** | Tenant-scoped export of `AgentCandidateEvidenceBundle` + lineage for audit / regulator request |
+| **Tenant deletion** | Cascade tombstone + async purge per retention policy; bundles on legal hold exempt until released |
+| **Legal hold** | Blocks compaction and purge; extends retention until hold cleared by authorized operator |
+
+Rejected candidates and rollback outcomes remain archived for the retention window — never silent delete.
+
 ---
 
 ## 20. Static gate
@@ -1220,6 +1301,22 @@ require_human_approval = true
 ```
 
 Auto-promotion is allowed only for future low-risk lab profiles and only after explicit product decision.
+
+### 22.1 Active registration semantics
+
+**Active registration** is the post-approval outcome that makes a promoted candidate routable in production. It is a **composite** — not a single implicit write. Implementers MUST declare which layers apply in `AgentCandidatePromotionRequest.promotion_mode`.
+
+| Mode | Layer | What changes | Default v1 |
+|------|-------|--------------|------------|
+| **A** | Registry pointer | Active agent registry entry points to `candidate_id` / sandbox or canonical package ref | **Required** |
+| **B** | AgentContract version | New immutable `AgentContract` revision bound to candidate | Optional — when `contract_delta` non-empty |
+| **C** | Routing profile | `ApplicationEnvironmentProfile` weight / default agent slug for traffic allocation | Optional — canary / split traffic |
+| **D** | Materialization | Controlled move from sandbox to canonical `agents/` package | Optional — explicit product gate only |
+| **E** | Tenant / application binding | Binding record links `objective_id` → active agent for tenant/application scope | **Required** |
+
+**Default v1:** **A + E** (registry pointer + tenant/application binding). Modes **B–D** are explicit, gated promotion modes — never implied by "promoted" status alone.
+
+Promotion bridge (§12.8) writes rollback pointer against the **prior** active registration snapshot (A and/or E minimum). Verification loop compares utility against baseline using the same registration view.
 
 ---
 
@@ -1739,11 +1836,12 @@ tenant-scoped, policy-gated, and archived.
 
 ## 32. Documentation follow-up
 
-This satellite document should be followed by:
+Enterprise audit follow-ups (Phase **AHI-ADAS-00**) — **Done** (2026-06-22):
 
-```text
-1. Update docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md with a short canonical ADAS section.
-2. Update docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md with Phase AHI-ADAS.
-3. Add ADR explaining why ADAS belongs inside AHI.
-4. Run an architecture audit before implementation.
-```
+| # | Item | Status | Link |
+|---|------|--------|------|
+| 1 | Canonical ADAS section in AHI hub | Done | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability) |
+| 2 | Phase AHI-ADAS in plan hub | Done | [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md#phase-ahi-adas--agent-design-search-proposed) |
+| 3 | ADR — ADAS inside AHI | Done | [ADR-ADAPT-002](../../adr/entries/2026-06-22/ADR-ADAPT-002.md) |
+| 4 | Enterprise contract / evidence / retention / active-registration detail | Done | §13.0, §13.7, §19.1, §22.1 (this document) |
+| 5 | Architecture audit before runtime implementation | **Next** | Run Mode I / slice audit before **AHI-ADAS-10** code |

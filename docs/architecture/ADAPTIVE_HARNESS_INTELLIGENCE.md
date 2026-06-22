@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** L4 AHI  
 **Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
-**Last updated:** 2026-06-20 — **P2-ARCH-10** AHI governance boundary; **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
+**Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS canonical section + ADR-ADAPT-002; **P2-ARCH-10** AHI governance boundary; **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)
 
@@ -24,7 +24,7 @@
 
 **Do not read this entire file in one session** (ADAPTIVE_HARNESS_INTELLIGENCE canon).
 
-- **Implement / audit default:** L4 adaptive loop contracts (§1–§7). Extended §8+: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md).
+- **Implement / audit default:** L4 adaptive loop contracts (§1–§7). Extended §8+: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md). ADAS sub-capability: [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (on demand).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md).
@@ -39,6 +39,7 @@ Load **only** the satellite matching your task or cited §.
 | Satellite | Contents |
 |-----------|----------|
 | [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_extended_depth.md) | extended depth |
+| [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) | ADAS / Agent Design Search sub-capability |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -79,6 +80,7 @@ Load **only** the satellite matching your task or cited §.
 25. [Appendix A — Mapping to existing code](#appendix-a--mapping-to-existing-code)
 26. [Appendix B — Proposed implementation plan task IDs](#appendix-b--proposed-implementation-plan-task-ids)
 27. [Appendix C — ADR decision record](#appendix-c--adr-decision-record)
+35. [ADAS — Agent Design Search (sub-capability)](#adas--agent-design-search-sub-capability)
 
 ---
 
@@ -357,5 +359,24 @@ It does **not** confirm:
 8. **Capability graph before apply** — blast-radius analysis mandatory for skill/policy changes.
 9. **Shadow before production** — no skip of shadow/canary except OBSERVE mode.
 10. **Extend, don't duplicate** — evolve `adaptive_governance.py`, don't create parallel governance stack.
+
+---
+
+## ADAS — Agent Design Search (sub-capability)
+
+**ADAS / Agent Design Search** is a governed **AHI sub-capability** for systematic discovery, evaluation, archival, and promotion of agent candidates — aligned with meta-agent-building trends without bypassing harness governance.
+
+It extends (does not replace) the profile adaptation loop: same **observe → propose → validate → shadow → canary → apply/promote → verify** lifecycle, but targets **agent candidates** rather than runtime profile versions.
+
+| Rule | Constraint |
+|------|------------|
+| Placement | Inside AHI Tier-1 — **not** a separate top-level harness layer |
+| Scope | **Not** Tier-3-only; optional Tier-3 ADAS Lab is operator UI only |
+| Mutation | **No** direct production agent mutation — scaffold → static gate → evaluation → archive → governed promotion |
+| Strategy | MAS (Meta Agent Search) is one replaceable `AgentDesignStrategy`; it does not own the control plane |
+
+**Canonical detail:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**ADR:** [ADR-ADAPT-002](../adr/entries/2026-06-22/ADR-ADAPT-002.md) — ADAS inside AHI, not separate layer  
+**Plan:** Phase **AHI-ADAS** in [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 
 ---
