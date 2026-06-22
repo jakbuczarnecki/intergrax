@@ -1,11 +1,11 @@
-﻿# ADR-ADAPT-002: ADAS (Agent Design Search) inside AHI — not a separate layer
+# ADR-ADAPT-002: ADAS (Agent Design Search) inside AHI — not a separate layer
 
 | Field | Value |
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-06-22 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability) · [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) · [ADR-ADAPT-001](../2026-06-05/ADR-ADAPT-001.md) · Phase **AHI-ADAS** |
+| **Related** | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability) · [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) · [ADR-ADAPT-001](../2026-06-05/ADR-ADAPT-001.md) · Phase **AHI-ADAS** |
 
 ## Context
 
@@ -68,6 +68,6 @@ Concrete rules:
 
 ## Implementation notes
 
-- Architecture: [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
+- Architecture: [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
 - Plan phases: **AHI-ADAS-00** (docs/ADR) through **AHI-ADAS-90** (enterprise hardening)
 - No runtime code implied by this ADR alone
