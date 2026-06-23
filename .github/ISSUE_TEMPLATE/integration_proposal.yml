@@ -1,0 +1,76 @@
+name: Integration proposal
+description: Propose an integration with attestation, observability, governance, MCP, RAG, providers, or external tools
+title: "[Integration]: "
+labels: ["integration", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose an integration idea for maintainer review. Submission does not imply acceptance or implementation commitment.
+        For commercial or production use, contact the maintainer directly (see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md)).
+
+  - type: dropdown
+    id: integration_type
+    attributes:
+      label: Integration type
+      options:
+        - attestation / boundary events
+        - observability / tracing
+        - governance / policy
+        - evaluation
+        - MCP / tool surface
+        - RAG / memory
+        - LLM provider
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this integration solves
+    validations:
+      required: true
+
+  - type: textarea
+    id: external_system
+    attributes:
+      label: Proposed external system / standard / API
+    validations:
+      required: true
+
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Expected Intergrax boundary
+      options:
+        - Tier-0 integration/tool/skill
+        - Tier-2 agent
+        - Tier-3 application
+        - documentation only
+        - not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: fit
+    attributes:
+      label: Why it fits Intergrax
+    validations:
+      required: true
+
+  - type: textarea
+    id: poc_scope
+    attributes:
+      label: Minimum PoC scope
+      description: Smallest proof-of-concept that would validate the idea
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: permission_note
+    attributes:
+      label: Permission and collaboration note
+      options:
+        - label: I understand that substantial implementation work and production/commercial use require maintainer discussion and explicit permission under LICENSE/COLLABORATION.
+          required: true

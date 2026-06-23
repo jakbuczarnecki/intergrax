@@ -220,13 +220,11 @@ Intergrax framework – proprietary and confidential.
 
 ## Reporting issues
 
-Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) with the appropriate template:
-
-- **Bug report** — reproducible defect
-- **Feature request** — new capability (include Harness AI alignment rationale)
-- **Documentation** — canon correction or gap
+Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) and pick the matching issue template (bug report, proof path feedback, integration proposal, design partner interest, documentation feedback). Do not include secrets or credentials in public issues.
 
 For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open public issues.
+
+For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [COLLABORATION.md](COLLABORATION.md)) — do not use public issues for those topics.
 
 ---
 

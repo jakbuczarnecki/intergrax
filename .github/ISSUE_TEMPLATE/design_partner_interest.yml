@@ -1,0 +1,69 @@
+name: Design partner interest
+description: Express interest in design-partner collaboration as an individual or organization
+title: "[Design partner]: "
+labels: ["design-partner", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your interest in design-partner collaboration for evaluation or co-design.
+        Submission does not create a partnership or implementation commitment.
+        See [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md) and [ROADMAP.md](https://github.com/jakbuczarnecki/intergrax/blob/development/ROADMAP.md).
+
+  - type: textarea
+    id: who
+    attributes:
+      label: Who you are / organization (optional)
+      placeholder: Individual evaluator, team name, company (optional)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of interest
+      options:
+        - proof path evaluation
+        - attestation / boundary events
+        - Local Knowledge Workspace
+        - governance / observability / evaluation
+        - agent/application proposal
+        - commercial partnership
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: building
+    attributes:
+      label: What you are trying to build or evaluate
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What outcome would make collaboration successful
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Preferred contact method
+      placeholder: GitHub handle, email, or other (no secrets)
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **Confidentiality:** Do not include confidential information, secrets, proprietary customer data, or private credentials in this issue.
+
+  - type: checkboxes
+    id: permission_note
+    attributes:
+      label: Permission and collaboration note
+      options:
+        - label: I understand that substantial implementation work and production/commercial use require maintainer discussion and explicit permission under LICENSE/COLLABORATION.
+          required: true
