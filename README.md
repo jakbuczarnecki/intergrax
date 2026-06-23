@@ -72,6 +72,22 @@ Active public feedback paths are listed in the [Public Issue Index](docs/public-
 
 ---
 
+## Who this repository is for
+
+Intergrax is currently most useful for technical readers evaluating how to build governed agent applications with explicit runtime boundaries, policy-controlled tool execution, trace/evidence surfaces, and external verification hooks.
+
+It is especially relevant for:
+
+- AI platform engineers designing agent infrastructure beyond a single demo agent
+- Teams building governed agent applications that need policy, HITL, trace, evidence, or evaluation surfaces
+- Builders working on [attestation](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md), receipts, boundary events, auditability, observability, or agent governance
+- Developers evaluating Nexus orchestration, tool/skill boundaries, RAG, memory, and Tier-3 application hosts
+- Potential technical design partners willing to run proof paths and report friction
+
+Intergrax is not presented as a finished SaaS, a general-purpose open-source framework, or a production certification claim. See [COLLABORATION.md](COLLABORATION.md), [ROADMAP.md](ROADMAP.md), and [LICENSE](LICENSE).
+
+---
+
 ## The agent model — why architects choose Intergrax
 
 Most agent frameworks mix **planning, policy, tool I/O, and multi-agent routing** into a single author-facing class. That works for demos; it breaks for **governed products** — opaque control flow, untyped state, and agents that secretly become mini operating systems.
