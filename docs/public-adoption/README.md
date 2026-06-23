@@ -16,6 +16,7 @@ They do not define an open-source contribution model, production-support channel
 
 | Step | Document | Purpose |
 |------|----------|---------|
+| 0 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
 | 1 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issues and recommended evaluation paths |
 | 2 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
 | 3 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
