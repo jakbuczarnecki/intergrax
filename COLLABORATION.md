@@ -39,7 +39,7 @@ The following require **explicit written permission** from the copyright holder.
 
 ## Current collaboration tracks
 
-Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Maintainer-curated first-wave issue drafts are described in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md).
+Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Active curated public issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Maintainer-curated issue drafts are described in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md).
 
 | Track | Focus |
 |-------|-------|
@@ -64,6 +64,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 ## Related documents
 
 - [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
+- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for structured feedback and design-partner discovery
 - [LICENSE](LICENSE) — proprietary terms and permitted use
 - [README.md](README.md) — project overview and documentation index
