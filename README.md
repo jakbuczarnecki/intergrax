@@ -16,7 +16,7 @@
 - **What it provides:** Nexus Agent OS, Tier-0 catalogs (**197** integrations · **200** tools · **150** skills in **42** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (**Done** ECC-0…ECC-6), policy, trace, multi-agent graphs, and Tier-3 application hosts.
 - **Who it is for:** Teams building **governed multi-agent systems** — platform engineers, agent architects, Harness AI researchers, and product teams shipping agent-backed applications.
 - **Why it is different:** **The Harness is the product; agents are replaceable.** Agents own **domain decisions** inside a typed session loop; the harness owns **policy, trace, and execution**; Nexus owns **multi-agent orchestration**; applications own **environment, identity, and production gates** — without collapsing these into one mega-class.
-- **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **same agent class** from lab notebook to governed production roster.
+- **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **the same agent class** moving from lab evaluation toward governed deployment paths when explicitly permitted.
 
 ```text
                     Intergrax — Harness AI
@@ -135,7 +135,7 @@ inside run():
 - **Readable agent code** — reviewers see *continue / complete / fail / HITL* from the final `return StepOutcome.*`, not scattered flags in dicts.
 - **Same agent, many deployments** — lab vs legal vs research host = different `ApplicationEnvironmentProfile`, **zero agent forks**.
 - **Virtual workforce ready** — organizational policy envelope on the host, not `if customer == acme` in agent source.
-- **Production is measurable** — [Agent Production Readiness Scoreboard](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#4015-agent-production-readiness-scoreboard) (contract, runtime, policy, observability, checkpointing, idempotency, security, evaluation, lifecycle, routing).
+- **Operational readiness is measurable** — [Agent Production Readiness Scoreboard](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#4015-agent-production-readiness-scoreboard) (contract, runtime, policy, observability, checkpointing, idempotency, security, evaluation, lifecycle, routing).
 - **Agents are swappable** — capability-based routing (`research.web_search`), not hardcoded class names in Nexus.
 
 **Canonical decisions:** [ADR-AGENT-001](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) (Nexus stays Agent OS) · [ADR-AGENT-002](docs/adr/entries/2026-06-11/ADR-AGENT-002.md) (`Agent.run()` facade) · [ADR-AGENT-003](docs/adr/entries/2026-06-11/ADR-AGENT-003.md) (step loop + dual observability).
@@ -675,7 +675,7 @@ cd infra && ./manage.sh up redis qdrant postgresql
 
 All rights reserved © Artur Czarnecki. See [LICENSE](LICENSE).
 
-This repository is currently in private R&D stage. Commercial licensing and partnership opportunities are available upon request.
+This repository is in active proprietary R&D and source-available evaluation stage. Commercial licensing, production use, and partnership opportunities require explicit maintainer permission.
 
 ---
 
