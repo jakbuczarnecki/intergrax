@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Propose an integration idea for maintainer review. Submission does not imply acceptance or implementation commitment.
-        For commercial or production use, contact the maintainer directly (see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md)).
+        For commercial or production use, contact the maintainer directly (see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md)).
 
   - type: dropdown
     id: integration_type
