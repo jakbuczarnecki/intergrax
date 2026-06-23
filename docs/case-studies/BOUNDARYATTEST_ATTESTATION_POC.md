@@ -44,6 +44,25 @@ In the Harness AI model, **agents decide**; the **harness executes and records e
 
 This supports the Intergrax thesis that **the harness is the durable product; agents are replaceable**. Technical partners evaluate portable execution infrastructure and proof artifacts, not a demo-specific prompt stack.
 
+## Validation flow
+
+The PoC keeps Intergrax runtime evidence and external receipt evidence separate. Intergrax emits and signs boundary events; BoundaryAttest verifies those events and preserves them in its own client-observed wrapper.
+
+```mermaid
+flowchart LR
+    A[Agent or Nexus step] --> B[Intergrax harness boundary]
+    B --> C[execution_boundary_event.v1]
+    C --> D[Host attestation envelope<br/>Ed25519 signature]
+    D --> E[External verifier<br/>BoundaryAttest]
+    E --> F[client_observed receipt wrapper]
+
+    C -. remains Intergrax runtime claim .-> G[Intergrax trace / evidence]
+    F -. remains external observed claim .-> H[External receipt chain]
+
+    classDef boundary fill:#f7f7f7,stroke:#555,stroke-width:1px;
+    class B,C,D boundary;
+```
+
 ## What this does not claim
 
 - **BoundaryAttest is not bundled with Intergrax** and is not required to use Intergrax.
