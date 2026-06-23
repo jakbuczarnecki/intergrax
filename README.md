@@ -68,6 +68,8 @@ Intergrax is **public and source-available** for evaluation and technical partne
 
 External feedback, proof-path testing, integration proposals, and design-partner discussions are welcome under the collaboration model described in [COLLABORATION.md](COLLABORATION.md). Full terms: [LICENSE](LICENSE).
 
+Active public feedback paths are listed in the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Use it to choose the right curated issue for proof-path feedback, documentation clarity, integration feedback, or design-partner interest.
+
 ---
 
 ## The agent model — why architects choose Intergrax
@@ -205,6 +207,8 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 | `python -m intergrax.debug` | Debug CLI |
 
 **Full workflow:** [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) · **Contributing setup:** [CONTRIBUTING.md](CONTRIBUTING.md)
+
+After running the quick start, share structured feedback via [#186 README quick start feedback](https://github.com/jakbuczarnecki/intergrax/issues/186) or choose another path from the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md).
 
 ---
 
