@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Tool Library and ToolRunt
 
 ## Mission
 
-Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
+Audit the **Tool Library** (200+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
 
 ## Key symbols and contracts
 
@@ -54,7 +54,7 @@ Phase O/T-EXPAND Done · **TOOL-ENG Closed** (2026-06-12, 36/36, S0–S8) · Pha
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic per-tool output (CVL) · ACP invoke_tool/gateway consistency across 190 tools (cross-domain). TOOL-ENG register closed.
+Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic per-tool output (CVL) · ACP invoke_tool/gateway consistency across 200 tools (cross-domain). TOOL-ENG register closed. Strategic backlog: Phase **TOOL-PRODUCT-ROI** (code intelligence, git/PR context, safe patch).
 
 ---
 
@@ -128,7 +128,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- 190 tools / 48 bundles registration at bootstrap.
+- 200 tools / 49 bundles registration at bootstrap.
 - RunBudget.max_tool_calls (128 prod default) enforcement.
 - Parallel read-only tool invocations (ENG-9 target).
 - Large allow-list filtering performance.

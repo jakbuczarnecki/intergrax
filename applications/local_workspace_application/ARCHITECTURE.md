@@ -4,7 +4,8 @@
 **Tier:** Tier-3 application (`local_workspace_application`)  
 **Agents:** Tier-2 `local_indexer`, `local_search`, `local_synthesizer`  
 **Canonical plan row:** [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
-**Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere
+**Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere  
+**Public product-validation narrative:** [`docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md`](../../docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 
 ---
 

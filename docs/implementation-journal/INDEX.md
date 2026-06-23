@@ -5,12 +5,12 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-19-005 | 2026-06-19 | tier-1, tier-3 OBSERVABILITY | EBE-9 | [EBE-9 — Partner live validation (BoundaryAttest / Cullen)](entries/2026-06-19/observability-ebe-9-partner-validated.md) | 55501d76 |
+| IJ-2026-06-19-005 | 2026-06-19 | tier-1, tier-3 OBSERVABILITY | EBE-9 | [EBE-9 — Partner live validation (BoundaryAttest)](entries/2026-06-19/observability-ebe-9-partner-validated.md) | 55501d76 |
 | IJ-2026-06-19-004 | 2026-06-19 | tier-0, tier-3 LLM_ADAPTERS | M-LLM-X.8.* · M-LLM-X.14.* · LLM-AUDIT-21…26 | [M-LLM-X.8 + X-14 — LLM enterprise domain closeout](entries/2026-06-19/llm-enterprise-domain-x8-x14-closeout.md) | 757cef34 |
 | IJ-2026-06-19-006 | 2026-06-19 | tier-1, tier-3 OBSERVABILITY | EBE-9 | [EBE-9 — Host-side boundary event signing for BoundaryAttest](entries/2026-06-19/observability-ebe-9-host-signing.md) | 181ded35 |
 | IJ-2026-06-19-003 | 2026-06-19 | tier-0, tier-1, tier-3 LLM_ADAPTERS | M-LLM-X.12.* · LLM-AUDIT-19 | [M-LLM-X.12 — Strict L5 LLM routing closeout](entries/2026-06-19/llm-routing-x12-strict-l5.md) | bbd32054 |
 | IJ-2026-06-19-002 | 2026-06-19 | tier-0 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-IDEA-01..02 | [DX-IDEA — Mode I idea intake discoverability](entries/2026-06-19/dx-idea-mode-i-discoverability.md) | 5385d518 |
-| IJ-2026-06-19-001 | 2026-06-19 | tier-1, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — Partner live validation (AgentReceipt / Cullen)](entries/2026-06-19/observability-ebe-8-partner-validated.md) | 6c6fef1c |
+| IJ-2026-06-19-001 | 2026-06-19 | tier-1, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — Partner live validation (BoundaryAttest)](entries/2026-06-19/observability-ebe-8-partner-validated.md) | 6c6fef1c |
 | IJ-2026-06-18-038 | 2026-06-18 | multi-domain AUDIT-IDEAL | §6.1au Band 2az | [AUDIT-IDEAL 90/90 closeout](entries/2026-06-18/audit-ideal-band-2az-closeout.md) | 4582e585 |
 | IJ-2026-06-18-037 | 2026-06-18 | tier-0, tier-3 legal | INT-MAINT-03 | [Legal host OTEL assembly fix](entries/2026-06-18/legal-otel-assembly-fix.md) | c9503158 |
 | IJ-2026-06-18-036 | 2026-06-18 | tier-1 REASONING_AND_COGNITION | COG-MAINT-03 | [COG-MAINT-03 — replan acceptance test](entries/2026-06-18/reasoning-maint-implement.md) | 2075b0af |
@@ -47,7 +47,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 | IJ-2026-06-18-005 | 2026-06-18 | tier-0, tier-1 TOOLS | TOOL-MAINT-01..04 | [TOOL-MAINT-01..04 — Interactive layer 8 audit plan registration](entries/2026-06-18/tools-audit-maint-01-04-plan-register.md) | a5f5fbb7 |
 | IJ-2026-06-18-004 | 2026-06-18 | tier-0 LLM_ADAPTERS | LLM-MAINT-01..04 | [LLM-MAINT-01..04 — Interactive layer 7 audit plan registration](entries/2026-06-18/llm-audit-maint-01-04-plan-register.md) | 726750cb |
 | IJ-2026-06-18-003 | 2026-06-18 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-MAINT-01..03 | [ACP-MAINT-01..03 — Interactive layer 6 audit plan registration](entries/2026-06-18/acp-audit-maint-01-03-plan-register.md) | ae86fb40 |
-| IJ-2026-06-18-002 | 2026-06-18 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — PoC v2 harness_step boundary export for AgentReceipt partner](entries/2026-06-18/observability-ebe-8-poc-v2-harness-step.md) | ae4b5680 |
+| IJ-2026-06-18-002 | 2026-06-18 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — PoC v2 harness_step boundary export for BoundaryAttest partner](entries/2026-06-18/observability-ebe-8-poc-v2-harness-step.md) | ae4b5680 |
 | IJ-2026-06-18-001 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-8.6 | [APP-EVOL-8.6 — spec_version 2.0 nested canonical profile wire](entries/2026-06-18/tier3-app-evol-8-6-spec-v2-wire.md) | pending |
 | IJ-2026-06-17-044 | 2026-06-17 | tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | AUDIT-IDEAL-27.2 | [AUDIT-IDEAL-27.2 — Replay environment HTTP wiring on product hosts](entries/2026-06-17/platform-dx-audit-ideal-27-2-replay-wiring.md) | pending |
 | IJ-2026-06-17-043 | 2026-06-17 | tier-0, tier-1 LLM_ADAPTERS | M-LLM-X.4.4 | [M-LLM-X.4.4 — LLM failover routing attempt trace diagnostics](entries/2026-06-17/platform-llm-m-llm-x-4-4-routing-trace.md) | pending |
@@ -103,7 +103,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 | IJ-2026-06-14-003 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-VEC-1.* · MEM-VEC-2.* | [MEM-VEC — LTM and episodic vector recall wiring](entries/2026-06-14/platform-memory-mem-vec-wiring.md) | pending |
 | IJ-2026-06-14-002 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-10.3 · CE-HANDLE-1…4 | [CE iteration II — CE-10.3 tag classification + CE-HANDLE-FILL](entries/2026-06-14/platform-ce-iteration-ii-handle-fill.md) | 4fbebc01 |
 | IJ-2026-06-14-001 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-PROV-02…11 · CE-PROV-GATE · CE-PROV-INT | [CE-PROV-WIRE B2–B4 — builtin provider collect closeout (GAP-CTX-20)](entries/2026-06-14/platform-ce-prov-wire-b2-b4-closeout.md) | 77ba4fed |
-| IJ-2026-06-13-013 | 2026-06-13 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-1…EBE-6 | [EBE PoC v1 — deployable attestation_demo for AgentReceipt partner handoff](entries/2026-06-13/attestation-demo-partner-poc-deploy.md) | pending |
+| IJ-2026-06-13-013 | 2026-06-13 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-1…EBE-6 | [EBE PoC v1 — deployable attestation_demo for BoundaryAttest partner handoff](entries/2026-06-13/attestation-demo-partner-poc-deploy.md) | pending |
 | IJ-2026-06-13-012 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-3 · CVL-LC-4 | [CVL — Layer completion iteration II](entries/2026-06-13/cvl-layer-completion-ii.md) | 8a1ed778 |
 | IJ-2026-06-13-011 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-1 · CVL-LC-2 | [CVL — Critic Verification layer completion closeout](entries/2026-06-13/cvl-layer-completion-closeout.md) | 93995259 |
 | IJ-2026-06-13-010 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | S11 · RUN-ECC-01 · GAP-ECC-23 | [S11 — Code Craft layer completion II (audit sync + exec budget)](entries/2026-06-13/codecraft-s11-layer-completion-ii.md) | 08a0c59f |

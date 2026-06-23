@@ -1,3 +1,5 @@
+Before submitting substantial work, read [COLLABORATION.md](../COLLABORATION.md) and [LICENSE](../LICENSE).
+
 ## Summary
 
 <!-- What changed and why? How does this align with the Harness AI strategic goal? -->
@@ -60,3 +62,4 @@ uv run pytest -m gate -q
 - [ ] No secrets committed
 - [ ] Copyright header on new files
 - [ ] Follows [CONTRIBUTING.md](../CONTRIBUTING.md) work cycle
+- [ ] Read [COLLABORATION.md](../COLLABORATION.md) and [LICENSE](../LICENSE) for substantial changes

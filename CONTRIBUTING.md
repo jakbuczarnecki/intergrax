@@ -10,6 +10,8 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
+Contributions are welcome only under the **source-available / proprietary collaboration model**. Read [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
+
 ---
 
 ## Before contributing
@@ -218,13 +220,11 @@ Intergrax framework – proprietary and confidential.
 
 ## Reporting issues
 
-Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) with the appropriate template:
-
-- **Bug report** — reproducible defect
-- **Feature request** — new capability (include Harness AI alignment rationale)
-- **Documentation** — canon correction or gap
+Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) and pick the matching issue template (bug report, proof path feedback, integration proposal, design partner interest, documentation feedback). Do not include secrets or credentials in public issues.
 
 For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open public issues.
+
+For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [COLLABORATION.md](COLLABORATION.md)) — do not use public issues for those topics.
 
 ---
 

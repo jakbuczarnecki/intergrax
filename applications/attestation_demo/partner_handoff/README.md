@@ -1,6 +1,6 @@
 # Partner handoff — BoundaryAttest integration (PoC v2 + EBE-9)
 
-**Audience:** BoundaryAttest (formerly AgentReceipt) adapter authors and integration operators.
+**Audience:** BoundaryAttest adapter authors and integration operators.
 
 ## Base URL
 
@@ -72,9 +72,9 @@ This is **intentional**: tool and harness are separate claims. Sign **one receip
 
 See [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json) for the expected shape.
 
-## Field mapping (boundary event → AgentReceipt)
+## Field mapping (boundary event → BoundaryAttest)
 
-| Intergrax `boundary_events[]` | AgentReceipt |
+| Intergrax `boundary_events[]` | BoundaryAttest |
 |-------------------------------|--------------|
 | `event_id` | stable receipt / evidence key |
 | `event_sequence` | ordering within run |

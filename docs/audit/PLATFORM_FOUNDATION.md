@@ -126,7 +126,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- 185+ integration slugs in catalog — stable vs beta honesty.
+- 197+ integration slugs in catalog — stable vs beta honesty.
 - Harness lab stack (sqlite, redis, qdrant, otel) as reference Tier-3 preset.
 - Plugin entry-point registration at scale (tools, skills, integrations bundles).
 

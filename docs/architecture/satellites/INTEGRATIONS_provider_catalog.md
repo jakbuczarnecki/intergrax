@@ -2,10 +2,12 @@
 
 **Parent hub:** [`INTEGRATIONS.md`](../INTEGRATIONS.md)
 
+**Source of truth (shipped slug count):** `len(SLUG_CATEGORY)` in `intergrax/integrations/providers/layout.py` — **194** as of 2026-06-23. Historical phase closeouts (e.g. M.7 P7 → 185) retain snapshot counts.
+
 ## Catalog
 
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **185** slugs · M.7 P7 **Done** 18/18
+**Last updated:** 2026-06-23 — Phase INT-P8 planned categories (194 shipped unchanged); prior note: 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **194** slugs (current) · M.7 P7 closeout was **185** 18/18
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. See **Integration Layer Contract** above for normative tier boundaries. Applications wire backends **by category** via `IntegrationProfile`; agents consume backends **through catalog tools**, not by importing vendor adapters.
 
@@ -50,7 +52,7 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
 ```
 
-Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 providers stable in one release.
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 194 providers stable in one release.
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
@@ -90,7 +92,7 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 pr
 
 ### Speech provider (`speech_provider`) — canonical tool path
 
-Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 185+ slugs.
+Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 194 shipped slugs.
 
 | Step | Mechanism |
 |------|-----------|
@@ -120,7 +122,7 @@ Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) —
 
 **Tier-3 presets (P7):** `research_web_stack()`, `document_ingest_stack()`, `chat_bot_stack()` — CLI: `intergrax integrations-pick research_web|document_ingest|chat_bot`.
 
-**Catalog:** **185** slugs in `layout.py` (**12** core / **185** full preset).
+**Catalog:** **194** slugs in `layout.py`.
 
 ---
 
@@ -346,7 +348,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (185)
+## Implemented providers (194)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -382,7 +384,7 @@ All providers below are registered in `register_default_integrations()`.
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |
 
-**Total unique slugs:** 185.
+**Total unique slugs:** 194.
 
 ### Implementation depth (code audit)
 
@@ -817,13 +819,13 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **185** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
+**Strong harness coverage today:** **194** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
 ---
 
-All **185** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **194** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py
@@ -968,6 +970,120 @@ standalone nginx slug; Kubernetes deployment path remains canonical.
 
 Integrations cross-ref only. Host authors enable ingress via ECP profiles and
 `kubernetes` integration — see [`intergrax/integrations/USAGE.md`](../../intergrax/integrations/USAGE.md).
+
+
+---
+
+## Phase INT-P8 — Planned categories & slugs (not shipped)
+
+**Status:** **Planned** — architecture and plan only (2026-06-23)  
+**Shipped catalog unchanged:** **194** slugs in `layout.py` / 
+egister_default_integrations()  
+**Plan:** [plan/INTEGRATIONS.md](../../plan/INTEGRATIONS.md) Phase INT-P8  
+**Architecture:** [INTEGRATIONS.md](../INTEGRATIONS.md) §Phase INT-P8
+
+INT-P8 adds **gateway and workspace mechanisms** for harness/agent-OS value — not catalog padding. Planned entries below are **not** registered, **not** counted in the 185 shipped total, and **must not** appear in runtime bootstrap until their implementation task PR lands.
+
+### Selection metadata extension (INT-P8.1 — planned)
+
+All INT-P8 providers will declare extended selection metadata (in addition to existing manifest fields):
+
+| Field | Purpose |
+|-------|---------|
+| capabilities | Normalized capability tags for matching |
+| operations | Named operations with read/write/side-effect class |
+| 
+ead_write | Aggregate read/write posture |
+| uth_type | none, api_key, oauth, mTLS, etc. |
+| 
+equired_scopes | OAuth/API scopes when applicable |
+| data_sensitivity | public, internal, confidential, regulated |
+| latency_class | interactive, batch, background |
+| cost_class | free, low, metered, enterprise |
+| locality | local, regional, global, vendor_cloud |
+| deterministic | Whether outputs are reproducible |
+| side_effect_level | none, read, write, destructive, external |
+| supported_task_intents | Task intent tags (e.g. code_search, file_edit) |
+| suitable_agent_types | Agent archetypes that may bind this integration |
+| supports_dry_run | Dry-run available for write-class ops |
+| supports_rollback | Compensating action available |
+| 
+equires_human_approval | Default HITL requirement for writes |
+| 
+ate_limit_class | Provider rate-limit tier hint |
+| 	estability | fake/mock/local probe availability |
+| selection_hints | Free-form ranking hints for selection engine |
+| 
+isk | low / medium / high / critical |
+
+Existing **194** manifests remain valid; metadata backfill is optional per provider during INT-P8 rollout.
+
+### Planned new categories
+
+| Category | Planned slug(s) | Status | Distinction from existing |
+|----------|-----------------|--------|---------------------------|
+| 	ool_protocol_gateway | mcp | **Planned** | Tool protocol bridge — not a vendor SaaS slug |
+| pi_connector | openapi_http | **Planned** | Generic OpenAPI REST — not per-vendor REST adapters |
+| workspace_store | local_workspace | **Planned** | Agent policy-scoped working dir — **≠** ilesystem object storage |
+| code_repository | local_git | **Planned** | Local Git CLI/worktree — **≠** github/gitlab issue/remote hosts |
+| code_intelligence | sourcegraph | **Planned** | Cross-repo code search — **≠** github issue tracker |
+| code_intelligence | github_code | **Planned (optional, post–first wave)** | GitHub code search API — only if product requires |
+
+### Planned provider scope (first wave)
+
+#### 	ool_protocol_gateway / mcp (INT-P8.2)
+
+- Discover configured MCP servers
+- List tools and resources; fetch tool JSON schemas
+- Invoke MCP tools **only** through ToolRuntime (never agent-direct)
+- Read MCP resources; MCP server health probe
+- Pre-exec classification of write/side-effect tools; block without approval
+- Fake MCP server for tests; side-effect block tests
+
+#### pi_connector / openapi_http (INT-P8.3)
+
+- Load OpenAPI 3.x from file or URL
+- List/describe operations by operation_id
+- Validate requests against schema; execute read-only ops freely
+- Write ops (POST/PUT/PATCH/DELETE per risk table) require ToolRuntime approval
+- Auth metadata from spec + profile; spec/endpoint health probe
+- Mock API server; GET/POST, auth-missing, invalid-schema, blocked-unsafe-method tests
+
+#### workspace_store / local_workspace (INT-P8.4)
+
+- Single root-scoped workspace directory
+- List tree, read file, workspace text search
+- Write/delete/move gated through ToolRuntime
+- Glob allowlist/denylist, max file size, path traversal + symlink escape blocked
+- Workspace root health probe; security path tests
+
+#### code_repository / local_git (INT-P8.5)
+
+- Detect Git repo; status, current branch, changed files, diff, log, blame
+- Read file at ref; apply_patch and commit approval-gated
+- **Push out of scope** for first wave; branch allowlist; dirty-repo detection
+- Repo health probe; tests on ephemeral Git repo
+
+#### code_intelligence / sourcegraph (INT-P8.6)
+
+- Code, symbol, commit, diff, repository search; fetch file by repo/ref/path
+- Repo allowlist; read-only contract; health probe
+- Mock GraphQL/API tests; no-token-logging test
+
+### Planned Tier-3 presets (INT-P8.9 — not in presets.py yet)
+
+| Preset | Key slugs |
+|--------|-----------|
+| local_workspace_stack() | local_workspace, local_git, document parser, inmemory/lancedb, log/lab_json, optional otel |
+| coding_agent_stack() | local_git, local_workspace, sourcegraph, semgrep, optional sandbox, optional CI/CD |
+| enterprise_api_stack() | openapi_http, identity, secrets, observability, notification, ToolRuntime policy |
+| mcp_gateway_stack() | mcp, secrets, ToolRuntime policy, interaction surface, observability |
+
+### INT-P8 explicit non-goals (catalog)
+
+Do **not** add under INT-P8: new LLM/vector/observability/browser vendors; PM SaaS without product; LangChain/LlamaIndex; Zapier/Make.com; Git push; duplicate slugs already in the **194** shipped index below.
+
+---
 
 ---
 

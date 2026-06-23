@@ -1,0 +1,53 @@
+name: Documentation feedback
+description: Report unclear, missing, or misleading documentation
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report documentation gaps or unclear sections. One source of truth per topic lives under `docs/`.
+        Do not include secrets or credentials.
+
+  - type: input
+    id: document_path
+    attributes:
+      label: Document / path
+      placeholder: e.g. README.md, docs/guides/AGENT_CREATION_GUIDE.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: unclear
+    attributes:
+      label: What was unclear
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected to find
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+    validations:
+      required: false
+
+  - type: dropdown
+    id: reader_profile
+    attributes:
+      label: Reader profile
+      options:
+        - first-time evaluator
+        - agent developer
+        - platform engineer
+        - integration partner
+        - maintainer/internal
+        - other
+    validations:
+      required: true

@@ -1,0 +1,74 @@
+name: Proof path feedback
+description: Share feedback after running a README proof path, evidence path, or lab host
+title: "[Proof path]: "
+labels: ["feedback", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share what worked and where you hit friction after running an evaluation path.
+        Do not include secrets or credentials.
+        Intergrax is source-available/proprietary; see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md).
+
+  - type: dropdown
+    id: path
+    attributes:
+      label: Which path was run
+      options:
+        - README quick start
+        - proof of platform
+        - lab host
+        - attestation demo
+        - Local Knowledge Workspace
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked
+    validations:
+      required: true
+
+  - type: textarea
+    id: friction
+    attributes:
+      label: Where friction occurred
+    validations:
+      required: true
+
+  - type: textarea
+    id: command_output
+    attributes:
+      label: Exact command / output (if relevant)
+      description: Commands run and relevant output snippets (redact secrets)
+      render: shell
+
+  - type: textarea
+    id: clarity
+    attributes:
+      label: What would make first-run clearer
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, uv version if known, branch/commit (no secrets)
+      placeholder: |
+        OS:
+        Python:
+        uv:
+        Branch/commit:
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: License and collaboration acknowledgement
+      options:
+        - label: I understand that Intergrax is source-available/proprietary and that reporting an issue does not grant production, redistribution, derivative-work, or commercial-use rights.
+          required: true

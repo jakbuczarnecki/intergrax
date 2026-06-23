@@ -1,52 +1,37 @@
 name: Bug report
-description: Report a reproducible defect in the Intergrax platform
+description: Report a specific, reproducible defect
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug. Check [README — Start here](https://github.com/jakbuczarnecki/intergrax/blob/main/README.md#start-here) first.
-        For security issues, see [SECURITY.md](https://github.com/jakbuczarnecki/intergrax/blob/main/SECURITY.md).
+        Use this template for a concrete, reproducible bug. Do not include secrets or credentials.
+        For security vulnerabilities, see [SECURITY.md](https://github.com/jakbuczarnecki/intergrax/blob/development/SECURITY.md) — do not open a public issue.
+        Intergrax is source-available/proprietary; see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md).
 
   - type: dropdown
     id: component
     attributes:
-      label: Component
+      label: Component / area
       options:
-        - Nexus runtime (Tier-1)
-        - Agent (Tier-2)
-        - Application (Tier-3)
-        - Integration Library
-        - Tool Library
-        - Skill Library
-        - LLM adapters
-        - RAG / memory
-        - Scaffold / CLI
-        - CI / tests
-        - Documentation
-        - Other
+        - harness/runtime
+        - Nexus/orchestration
+        - agents
+        - applications
+        - tools/skills/integrations
+        - RAG/memory
+        - CLI/proof path
+        - documentation
+        - other
     validations:
       required: true
 
-  - type: textarea
-    id: description
+  - type: input
+    id: summary
     attributes:
-      label: Bug description
-      description: Clear description of what went wrong
-      placeholder: When I run X, I expect Y but get Z...
-    validations:
-      required: true
-
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Steps to reproduce
-      description: Minimal steps to reproduce the issue
-      placeholder: |
-        1. uv run pytest ...
-        2. python -m intergrax.scaffold ...
-        3. See error
+      label: Summary
+      description: One-line description of the defect
     validations:
       required: true
 
@@ -65,29 +50,41 @@ body:
       required: true
 
   - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps to reproduce the issue
+      placeholder: |
+        1. ...
+        2. ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
     id: environment
     attributes:
       label: Environment
-      description: OS, Python version, uv version, relevant env vars (no secrets)
+      description: OS, Python version, uv version if known, branch/commit (no secrets)
       placeholder: |
-        OS: Windows 11 / Ubuntu 24.04
-        Python: 3.12.x
-        uv: 0.x
-        Branch: main
+        OS:
+        Python:
+        uv:
+        Branch/commit:
     validations:
       required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: Logs / trace output
+      label: Logs / output
       description: Paste relevant error messages or trace snippets (redact secrets)
       render: shell
 
   - type: checkboxes
-    id: gate
+    id: acknowledgement
     attributes:
-      label: Verification
+      label: License and collaboration acknowledgement
       options:
-        - label: I ran `uv run pytest -m gate -q` and can share the result
-          required: false
+        - label: I understand that Intergrax is source-available/proprietary and that reporting an issue does not grant production, redistribution, derivative-work, or commercial-use rights.
+          required: true

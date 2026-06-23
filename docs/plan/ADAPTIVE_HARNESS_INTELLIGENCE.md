@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
-**Last updated:** 2026-06-20 — **P2-ARCH-10** AHI governance boundary.
+**Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS top-level + satellite implementation plans; **P2-ARCH-10** AHI governance boundary.
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Do not read this entire file in one session** (ADAPTIVE_HARNESS_INTELLIGENCE plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. **On demand (one max):** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. **On demand (one max):** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md), [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) read-scope block only.
@@ -41,6 +41,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | Satellite | Contents |
 |-----------|----------|
 | [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md) | audit history |
+| [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) | ADAS / Agent Design Search detailed implementation plan |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -59,10 +60,37 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-9.3 | §9 Orchestration | Dynamic execution strategy selection (shared ORCHESTRATION) | P2 | **Done** |
 | AUDIT-IDEAL-12.2 | §12 Skills | Dynamic skill selection L4 hook (shared SKILLS) | P2 | **Done** |
 | AUDIT-IDEAL-24.2 | §24 Cost | Automated cost optimization recommendations (shared UAEP) | P2 | **Done** |
-| AUDIT-IDEAL-AHI.1 | §25 AHI | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | **Done** |
-| AUDIT-IDEAL-AHI.2 | §25 AHI | Bounded policy learning without governance drift | P2 | **Done** |
-| AUDIT-IDEAL-AHI.3 | §25 AHI | Capability marketplace readiness (trust, certification, billing) | P3 | **Done** |
+| AUDIT-IDEAL-AHI.1 | §25 AHI | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | **Planned** — requires real deploy evidence; no production 30-day loop yet |
+| AUDIT-IDEAL-AHI.2 | §25 AHI | Bounded policy learning without governance drift | P2 | **Partial** — governance contracts done (`adaptive_governance.py`); runtime `AdaptationExecutor` loop pending |
+| AUDIT-IDEAL-AHI.3 | §25 AHI | Capability marketplace readiness (trust, certification, billing) | P3 | **Planned** — marketplace readiness not productized |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
+## Phase AHI-ADAS — Agent Design Search (Proposed)
+
+**Architecture:** [`architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**Implementation plan:** [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**Detailed plan satellite:** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
+**ADR:** [ADR-ADAPT-002](../adr/entries/2026-06-22/ADR-ADAPT-002.md)  
+**Hub canon:** [ADAS sub-capability](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#adas--agent-design-search-sub-capability)
+
+ADAS extends AHI with a governed agent-candidate design loop (scaffold → static gate → evaluation → archive → shadow/canary → promotion → verify). Full task breakdown lives in the implementation plan and detailed plan satellite.
+
+| Phase | Purpose | Status |
+|-------|---------|--------|
+| **AHI-ADAS-00** | Documentation canon + ADR + top-level and satellite implementation plans | **Done** (2026-06-22) |
+| **AHI-ADAS-10** | Core contracts + candidate archive | Planned |
+| **AHI-ADAS-20** | Scaffold bridge + static gate | Planned |
+| **AHI-ADAS-30** | Candidate evaluation + utility scoring | Planned |
+| **AHI-ADAS-40** | Search controller + strategies | Planned |
+| **AHI-ADAS-50** | Hooks and lifecycle events | Planned |
+| **AHI-ADAS-60** | Optional Tier-2 MAS agents | Planned |
+| **AHI-ADAS-70** | Shadow / canary / promotion bridge | Planned |
+| **AHI-ADAS-80** | Optional Tier-3 ADAS Lab application | Planned |
+| **AHI-ADAS-90** | Enterprise hardening (retention, tenant isolation, evidence bundles) | Planned |
+
+**Delivery rule:** One **AHI-ADAS-\*** phase (or sub-phase row) per PR → update this table → link evidence bundle when eval gates apply.
 
 ---

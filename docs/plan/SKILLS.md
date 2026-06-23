@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates 2026-06-08 closeout); SK-EXP through SK-EXP5 **Done** (149 skills · 41 bundles); SK-BRIDGE.1/2 **Done**.
+**Last updated:** 2026-06-23 — **Full Harness LC** (re-validates 2026-06-08 closeout); SK-EXP through SK-EXP5 **Done** (150 skills · 42 bundles); SK-BRIDGE.1/2 **Done**.
 
 ---
 

@@ -32,6 +32,84 @@ def test_scaling_profile_on_environment() -> None:
     assert env.scaling_profile.policy.enabled is False
 
 
+def test_scaling_evaluator_rule_cooldown_blocks_repeat_action() -> None:
+    policy = ScalingPolicy(
+        enabled=True,
+        rules=[
+            ScalingRule(
+                rule_id="q",
+                target=ScalingTarget.CELERY_POOL,
+                metric_name="queue_depth",
+                scale_up_threshold=10.0,
+                scale_down_threshold=2.0,
+                action_kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+                cooldown_seconds=300,
+            )
+        ],
+    )
+    evaluator = ScalingEvaluator(policy)
+    signals = [
+        CapacitySignal(
+            target=ScalingTarget.CELERY_POOL,
+            metric_name="queue_depth",
+            value=12.0,
+        )
+    ]
+    first = evaluator.evaluate(signals)
+    assert first.evaluation_status == "planned"
+    assert len(first.actions) == 1
+
+    second = evaluator.evaluate(signals)
+    assert second.evaluation_status == "noop"
+    assert not second.actions
+
+
+def test_scaling_evaluator_cooldown_is_per_rule() -> None:
+    policy = ScalingPolicy(
+        enabled=True,
+        rules=[
+            ScalingRule(
+                rule_id="q1",
+                target=ScalingTarget.CELERY_POOL,
+                metric_name="queue_depth",
+                scale_up_threshold=10.0,
+                scale_down_threshold=2.0,
+                action_kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+                cooldown_seconds=300,
+            ),
+            ScalingRule(
+                rule_id="q2",
+                target=ScalingTarget.NEXUS_HOST,
+                metric_name="graph_backpressure_rate",
+                scale_up_threshold=1.0,
+                scale_down_threshold=0.0,
+                action_kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+                cooldown_seconds=300,
+            ),
+        ],
+    )
+    evaluator = ScalingEvaluator(policy)
+    celery_signal = CapacitySignal(
+        target=ScalingTarget.CELERY_POOL,
+        metric_name="queue_depth",
+        value=12.0,
+    )
+    backpressure_signal = CapacitySignal(
+        target=ScalingTarget.NEXUS_HOST,
+        metric_name="graph_backpressure_rate",
+        value=2.0,
+    )
+
+    first = evaluator.evaluate([celery_signal])
+    assert first.evaluation_status == "planned"
+    assert len(first.actions) == 1
+
+    second = evaluator.evaluate([celery_signal, backpressure_signal])
+    assert second.evaluation_status == "planned"
+    assert len(second.actions) == 1
+    assert second.actions[0].target is ScalingTarget.NEXUS_HOST
+
+
 def test_scaling_evaluator_hysteresis() -> None:
     policy = ScalingPolicy(
         enabled=True,
