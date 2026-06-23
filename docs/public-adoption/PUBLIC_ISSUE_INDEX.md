@@ -59,7 +59,7 @@ The remaining issues are useful for more specific reviewers:
 
 ## Maintainer handling rules
 
-Maintainer responses should keep public issues focused and scoped.
+Maintainer responses should keep public issues focused and scoped. See [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) for the full public-adoption triage policy and response templates.
 
 Recommended handling rules:
 
@@ -91,6 +91,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 
 ## Source documents
 
+- [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) — maintainer handling rules, close/keep-open criteria, escalation rules, and response templates.
 - [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) — strategy and draft bodies for curated public issues.
 - [curated_public_issues.yml](curated_public_issues.yml) — structured source data for automation.
 - [create_curated_issues.py](../../scripts/public_adoption/create_curated_issues.py) — maintainer utility for dry-run and explicit issue creation.
