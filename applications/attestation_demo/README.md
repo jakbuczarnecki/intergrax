@@ -6,6 +6,8 @@ This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emi
 
 ## External validation: BoundaryAttest
 
+Public case study: [BoundaryAttest Attestation PoC](../../docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — condensed external-facing summary of this integration validation.
+
 This demo was validated with [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest), an external open-source project by Cullen Meyers for portable signed attestations of consequential agent/tool boundary events.
 
 BoundaryAttest is not part of Intergrax, is not required by Intergrax, and is not hosted or maintained by Intergrax. It is referenced here as an external partner integration validation demonstrating how a third-party system can verify Intergrax host-signed `execution_boundary_event.v1` records and preserve them with its own separate `client_observed` wrapper.

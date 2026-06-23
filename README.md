@@ -212,6 +212,8 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 
 External narrative: [Intergrax Harness Narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md)
 
+**External integration proof:** [BoundaryAttest Attestation PoC](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — external validation of host-signed execution boundary events (technical integration validation, not production certification).
+
 **What is it?** The fastest local way to verify Intergrax as an evidence-backed harness platform — not a production readiness or compliance claim.
 
 **Why run it?** You get a repeatable, offline proof that the harness can produce and aggregate the core evidence surfaces an early adopter needs to trust the platform locally. The A2 end-to-end evidence smoke audit verified this exact command sequence on a clean local run.

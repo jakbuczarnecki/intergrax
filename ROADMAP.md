@@ -27,6 +27,7 @@ Canonical technical architecture and implementation status remain in:
 | Core harness proof path available from README | Local evaluation path documented in [README.md](README.md) |
 | Lab host / local execution path available | Tier-3 local host and lab workflows |
 | Attestation Demo available as the primary external-integration proof | [applications/attestation_demo/README.md](applications/attestation_demo/README.md) |
+| BoundaryAttest / attestation case study available | [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Boundary events / host attestation flow documented | Attestation demo and related architecture docs |
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Local Knowledge Workspace exists as the first product-validation direction / alpha track | [applications/local_workspace_application/ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) |
@@ -40,7 +41,7 @@ Canonical technical architecture and implementation status remain in:
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
 | Add issue templates for feedback, bug reports, integration proposals and design partner interest | Structured entry points for external contributors |
 | Open curated public issues for good-first-feedback, design partner tracks and integration proposals | Visible, scoped collaboration opportunities |
-| Publish a short BoundaryAttest / attestation case study | Concrete proof-path narrative for integration partners |
+| Improve attestation case study with diagrams or demo media | Optional follow-up to [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Prepare a lightweight Local Knowledge Workspace alpha narrative | Early product-validation story for design partners |
 | Improve public demo path for trace, evidence and boundary events | Clearer end-to-end evaluation of harness observability |
 
@@ -91,5 +92,6 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [LICENSE](LICENSE) — proprietary terms
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and requirements
 - [applications/attestation_demo/README.md](applications/attestation_demo/README.md) — attestation integration proof
+- [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — BoundaryAttest external validation case study
 - [applications/local_workspace_application/ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) — Local Knowledge Workspace architecture
 - [docs/guides/INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) — harness narrative for external readers
