@@ -88,6 +88,21 @@ Intergrax is not presented as a finished SaaS, a general-purpose open-source fra
 
 ---
 
+## Start here
+
+| If you are… | Start with |
+|-------------|------------|
+| Evaluating Intergrax for the first time | [Proof of platform](#proof-of-platform) · [ROADMAP.md](ROADMAP.md) |
+| Checking collaboration or license boundaries | [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE) |
+| Reviewing the Harness AI / Agent OS model | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
+| Exploring attestation, boundary events, or external verification | [BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [attestation_demo README](applications/attestation_demo/README.md) |
+| Exploring product-validation directions | [LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [local_workspace_application ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) |
+| Interested in feedback, design-partner work, or integration proposals | [ROADMAP.md](ROADMAP.md) · [COLLABORATION.md](COLLABORATION.md) · [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
+
+This navigation is intentionally public-facing; canonical technical architecture remains in the architecture and plan documents linked below.
+
+---
+
 ## The agent model — why architects choose Intergrax
 
 Most agent frameworks mix **planning, policy, tool I/O, and multi-agent routing** into a single author-facing class. That works for demos; it breaks for **governed products** — opaque control flow, untyped state, and agents that secretly become mini operating systems.
