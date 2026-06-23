@@ -642,6 +642,7 @@ This repository is currently in private R&D stage. Commercial licensing and part
 
 | Resource | Purpose |
 |----------|---------|
+| [ROADMAP.md](ROADMAP.md) | Public adoption roadmap, collaboration tracks, and near-term public-facing priorities |
 | [COLLABORATION.md](COLLABORATION.md) | Source-available collaboration model, permitted use, contact |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, work cycle, PR process |
 | [AGENTS.md](AGENTS.md) | Cursor auto-load stub — tiers, boundaries, pointers |

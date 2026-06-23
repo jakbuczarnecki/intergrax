@@ -39,6 +39,8 @@ The following require **explicit written permission** from the copyright holder.
 
 ## Current collaboration tracks
 
+Current public priorities are summarized in [ROADMAP.md](ROADMAP.md).
+
 | Track | Focus |
 |-------|-------|
 | Proof path feedback | Run evaluation paths locally; report friction and gaps |
@@ -61,6 +63,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 
 ## Related documents
 
+- [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
 - [LICENSE](LICENSE) — proprietary terms and permitted use
 - [README.md](README.md) — project overview and documentation index
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and requirements
