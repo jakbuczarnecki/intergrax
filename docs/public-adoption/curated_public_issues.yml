@@ -3,7 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 schema_version: 1
-status: draft
+status: active
 purpose: >-
   Structured source data for maintainer-curated public GitHub issue drafts.
   This file is intended for future automation and does not create GitHub Issues by itself.
@@ -33,6 +33,8 @@ waves:
     issues:
       - id: readme-quick-start
         order: 1
+        github_issue_number: 186
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/186
         title: "Proof path feedback: README quick start"
         template: proof_path_feedback.yml
         labels:
@@ -93,6 +95,8 @@ waves:
 
       - id: first-time-evaluator-docs
         order: 2
+        github_issue_number: 187
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/187
         title: "Documentation clarity: first-time evaluator path"
         template: documentation_feedback.yml
         labels:
@@ -161,6 +165,8 @@ waves:
 
       - id: evidence-trace-inspection
         order: 3
+        github_issue_number: 188
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/188
         title: "Proof path feedback: evidence and trace inspection"
         template: proof_path_feedback.yml
         labels:
@@ -230,6 +236,8 @@ waves:
 
       - id: boundaryattest-case-study-feedback
         order: 4
+        github_issue_number: 189
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/189
         title: "Attestation integration feedback: BoundaryAttest case study"
         template: integration_proposal.yml
         labels:
@@ -311,6 +319,8 @@ waves:
 
       - id: governed-agent-applications-design-partner
         order: 5
+        github_issue_number: 190
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/190
         title: "Design partner interest: governed agent applications"
         template: design_partner_interest.yml
         labels:
@@ -382,26 +392,224 @@ waves:
 
   wave_2:
     description: >-
-      Deferred public issue candidates. These should not be opened together with Wave 1.
-    open_now: false
+      Second curated public issue wave for deeper architecture clarity, trace/evidence export feedback,
+      Local Knowledge Workspace alpha design-partner discovery, and MCP integration-shape feedback.
+    open_now: true
+    labels_policy: use_existing_template_labels_only
     issues:
       - id: harness-ai-mental-model-docs
+        order: 1
+        github_issue_number: 191
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/191
         title: "Documentation clarity: Harness AI mental model"
+        template: documentation_feedback.yml
+        labels:
+          - documentation
+          - triage
         category: documentation_clarity
-        opening_condition: >-
-          Open if Wave 1 feedback shows repeated confusion about Intergrax's architectural boundaries.
+        primary_audience:
+          - architecture reviewer
+          - technical evaluator
+          - documentation reviewer
+        goal: >-
+          Validate whether external readers understand the core Intergrax Harness AI mental model.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for documentation feedback on the core Intergrax Harness AI mental model.
+
+          The goal is to validate whether external readers understand the intended separation between:
+
+          - agents deciding,
+          - the harness executing,
+          - Nexus orchestrating,
+          - applications hosting,
+          - policies constraining execution,
+          - trace and evidence making execution reviewable.
+
+          ## Suggested review path
+
+          Please review the public documentation that explains the Intergrax architecture and external narrative, especially the README, roadmap, collaboration model, and harness narrative documents.
+
+          Useful feedback may focus on whether a first-time evaluator can understand:
+
+          - what an agent is responsible for,
+          - what the harness is responsible for,
+          - what Nexus does and does not do,
+          - how Tier-3 applications relate to the runtime,
+          - where policy, HITL, tools, trace, and evidence fit,
+          - why Intergrax is described as Harness AI / Agent OS rather than only an agent framework.
+
+          ## Useful feedback
+
+          Please share:
+
+          - which document or section helped most,
+          - where the mental model became clear,
+          - where it became confusing,
+          - which terms need sharper definitions,
+          - whether diagrams, examples, or shorter explanations would help,
+          - whether the distinction between agent, harness, Nexus, and application is understandable.
+
+          ## Out of scope
+
+          This issue is not for:
+
+          - broad feature requests,
+          - implementation tasks,
+          - production support,
+          - commercial use requests,
+          - license debates,
+          - requests to redesign the architecture without a concrete documentation-friction example.
+
+          Intergrax is source-available/proprietary. Documentation feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
       - id: trace-evidence-export-surfaces
+        order: 2
+        github_issue_number: 192
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/192
         title: "Integration feedback: trace and evidence export surfaces"
+        template: integration_proposal.yml
+        labels:
+          - integration
+          - triage
         category: integration_feedback
-        opening_condition: >-
-          Open after receiving useful feedback from evidence and trace inspection.
+        primary_audience:
+          - observability builder
+          - governance engineer
+          - integration reviewer
+        goal: >-
+          Understand which external systems could meaningfully consume Intergrax trace and evidence outputs.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for technical feedback on possible trace and evidence export surfaces for Intergrax.
+
+          The goal is to understand which external systems could meaningfully consume Intergrax trace and evidence outputs, and what information would be required for that integration to be useful.
+
+          ## Useful feedback
+
+          Please share:
+
+          - what kind of external system you would expect to consume Intergrax trace or evidence,
+          - which fields are essential,
+          - which fields are unclear or missing,
+          - whether the current public trace/evidence path is enough to evaluate integration potential,
+          - what export shape would be easiest to review,
+          - what should remain out of scope.
+
+          ## Important boundary
+
+          This issue is about integration-surface feedback.
+
+          It is not a commitment to implement a specific exporter, vendor integration, dashboard, or hosted observability product.
+
+          ## Out of scope
+
+          This issue is not for production support, certification requests, commercial use requests, hosted-product roadmap discussions, or broad feature requests unrelated to trace or evidence export surfaces.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
       - id: local-knowledge-workspace-alpha
+        order: 3
+        github_issue_number: 193
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/193
         title: "Design partner interest: Local Knowledge Workspace alpha"
+        template: design_partner_interest.yml
+        labels:
+          - design-partner
+          - triage
         category: product_validation_track
-        opening_condition: >-
-          Open after adding or improving a public Local Knowledge Workspace alpha narrative.
+        primary_audience:
+          - product team
+          - local knowledge workflow evaluator
+          - controlled-RAG user
+          - design partner
+        goal: >-
+          Understand whether a local, controlled knowledge workspace built on Intergrax solves a real problem.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for design-partner feedback on the Local Knowledge Workspace alpha direction.
+
+          The goal is to understand whether a local, controlled knowledge workspace built on Intergrax solves a real problem for teams or individuals working with private documents, local knowledge, retrieval, and reviewable AI workflows.
+
+          ## Good fit
+
+          This may be relevant if you are evaluating:
+
+          - local knowledge workflows,
+          - private document workspaces,
+          - controlled RAG-style applications,
+          - AI-assisted document review,
+          - governed internal assistants,
+          - local-first or non-SaaS knowledge tools,
+          - workflows where trace, policy, and evidence matter.
+
+          ## Useful feedback
+
+          Please share:
+
+          - what local knowledge problem you are trying to solve,
+          - what kind of documents or knowledge sources matter,
+          - what would make an alpha evaluation useful,
+          - which privacy, control, trace, or reviewability expectations matter,
+          - which proof path would help validate fit.
+
+          Do not include confidential data, private credentials, customer data, or secrets in this public issue.
+
+          ## Not a commitment
+
+          Submitting interest does not create a partnership, implementation commitment, support obligation, production-use permission, commercial-use permission, redistribution rights, derivative-work rights, or guaranteed acceptance of proposed work.
+
+          Intergrax is source-available/proprietary. Commercial, production, redistribution, derivative-work, or substantial implementation use requires explicit maintainer permission.
+
       - id: mcp-controlled-task-surface
+        order: 4
+        github_issue_number: 194
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/194
         title: "Integration feedback: MCP as a controlled Intergrax task surface"
+        template: integration_proposal.yml
+        labels:
+          - integration
+          - triage
         category: integration_feedback
-        opening_condition: >-
-          Open after first feedback confirms that external readers understand the agent, harness, Nexus, application, and trace/evidence boundaries.
+        primary_audience:
+          - MCP reviewer
+          - integration builder
+          - agent tool-surface evaluator
+        goal: >-
+          Understand how MCP-style integration should map to Intergrax task intake, tool access, policy, HITL, trace, evidence, and controlled execution.
+        risk: medium_high
+        body: |
+          ## Purpose
+
+          We are looking for feedback on MCP as a controlled task or tool surface for Intergrax.
+
+          The goal is not to collect a broad MCP wishlist. The goal is to understand how MCP-style integration should map to Intergrax concepts such as task intake, policy, human-in-the-loop checkpoints, trace, evidence, and controlled execution.
+
+          ## Useful feedback
+
+          Please share:
+
+          - which MCP-style use case matters to you,
+          - whether it should be treated as task intake, tool access, or both,
+          - what policy or approval boundaries would be required,
+          - what trace or evidence should be produced,
+          - what should remain explicitly out of scope,
+          - what would make a small proof path useful.
+
+          ## Important boundary
+
+          This issue is about integration-shape feedback.
+
+          It is not a commitment to implement broad MCP support or a specific MCP server/client integration.
+
+          ## Out of scope
+
+          This issue is not for broad feature requests, immediate implementation requests, production support, commercial use requests, hosted-product roadmap discussions, or requests to support arbitrary MCP tools without maintainer review.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
