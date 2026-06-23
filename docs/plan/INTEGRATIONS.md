@@ -8,7 +8,7 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates M.6 P5/P6, M.7 P7, M.12 closeout); **185** catalog slugs.
+**Last updated:** 2026-06-23 — Phase **INT-P8** architecture & backlog (planned); **Full Harness LC** unchanged (**185** shipped slugs).
 
 ---
 
@@ -253,6 +253,114 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 | ID | Scope | Status |
 |----|-------|--------|
 | **P2-ARCH-06** | Clarify integration layer contract and access paths | **Done** (2026-06-20) |
+
+---
+
+## Phase INT-P8 — Dynamic Integration Selection & Agent Workspace Gateways (Planned)
+
+**Status:** **Planned** — architecture & implementation backlog only (no code in this phase doc update)  
+**Prerequisites:** Phase INTEGRATIONS-LC **Done** · catalog **185** shipped slugs · Full Harness LC unchanged  
+**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) — §Phase INT-P8  
+**Catalog (planned slugs):** [`architecture/satellites/INTEGRATIONS_provider_catalog.md`](../architecture/satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8  
+**Band:** 2ae (post–Full Harness LC strategic depth)  
+**Policy:** One implementation ID per PR; **do not** register planned slugs in `layout.py` until the matching task PR; **do not** mark any INT-P8 task **Done** until code ships.
+
+### Scope split
+
+| Layer | This update | Follow-up PRs |
+|-------|-------------|---------------|
+| Architecture canon | INT-P8 boundaries, invariants, product mapping, non-goals | — |
+| Provider catalog satellite | Planned categories/slugs (**Planned**, not shipped) | Register slug + contract + tests per task |
+| Runtime / `layout.py` | **No change** | Per INT-P8.2–INT-P8.6 task |
+| Tier-3 presets (`presets.py`) | Document only (INT-P8.9) | Preset functions in dedicated PR |
+| ToolRuntime policy | Document alignment (INT-P8.8) | Policy gate extensions in TOOLS/runtime PR |
+
+### Execution order (recommended)
+
+```text
+Wave ARCH:  INT-P8.12 (docs — this update) → INT-P8.1 (selection metadata design)
+Wave CORE:  INT-P8.7 (selection engine contract) → INT-P8.8 (ToolRuntime policy alignment)
+Wave GATE:  INT-P8.2 (mcp) ∥ INT-P8.3 (openapi_http) ∥ INT-P8.4 (local_workspace) ∥ INT-P8.5 (local_git)
+Wave INTEL: INT-P8.6 (sourcegraph) — after INT-P8.5 recommended
+Wave PRE:   INT-P8.9 (Tier-3 presets) — after gateway providers wired
+Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate in reviews)
+```
+
+**Parallelism:** INT-P8.2–INT-P8.5 may proceed in parallel after INT-P8.1 metadata schema and INT-P8.7 contract stub are agreed.
+
+---
+
+### INT-P8 master register
+
+| ID | Title | Type | Priority | Status | Depends on | Acceptance criteria |
+|----|-------|------|----------|--------|------------|---------------------|
+| **INT-P8.1** | Dynamic Integration Selection Metadata | Design + Code | **P0** | **Planned** | INTEGRATIONS-LC | Extended manifest/profile fields (`capabilities`, `operations`, `read_write`, `auth_type`, `required_scopes`, `data_sensitivity`, `latency_class`, `cost_class`, `locality`, `deterministic`, `side_effect_level`, `supported_task_intents`, `suitable_agent_types`, `supports_dry_run`, `supports_rollback`, `requires_human_approval`, `rate_limit_class`, `testability`, `selection_hints`, `risk`); backward-compatible with existing 185 manifests; schema documented in architecture satellite |
+| **INT-P8.2** | MCP Gateway Integration (`tool_protocol_gateway` / `mcp`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Category contract + provider: MCP server discovery, list tools/resources, fetch tool schemas, invoke tools **via ToolRuntime only**, read resources, health probe, write/side-effect policy gate, selection metadata; fake MCP server + tests blocking side effects without approval |
+| **INT-P8.3** | OpenAPI HTTP Connector (`api_connector` / `openapi_http`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Load OpenAPI from file/URL; list/describe operations; request schema validation; read-only execution; write ops only with ToolRuntime approval; HTTP method risk classification; auth metadata; health probe; mock API server; tests: GET/POST, auth missing, schema invalid, blocked unsafe method |
+| **INT-P8.4** | Local Workspace Integration (`workspace_store` / `local_workspace`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Root-scoped workspace; list tree, read, text search; write/delete/move gated; glob allow/deny; file size limit; path traversal + symlink escape blocked; health probe; security path tests; **not** a alias of `filesystem` object storage |
+| **INT-P8.5** | Local Git Worktree Integration (`code_repository` / `local_git`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Repo detection; status, branch, changed files, diff, log, read file at ref, blame; apply_patch + commit approval-gated; push **out of scope**; branch allowlist; dirty repo detection; health probe; temp-repo tests |
+| **INT-P8.6** | Code Intelligence Integration (`code_intelligence` / `sourcegraph`) | Code | **P1** | **Planned** | INT-P8.1 | `sourcegraph`: code/symbol/commit/diff/repo search, fetch file by repo/ref/path, repo allowlist, read-only contract, health probe, mock GraphQL tests, no-token-logging test; `github_code` optional follow-up — **not** in first wave |
+| **INT-P8.7** | Integration Selection Engine Contract | Design + Code | **P0** | **Planned** | INT-P8.1 | Input: task intent, required capabilities, risk tolerance, locality, read/write, data sensitivity; output: category, provider slug, operation, reason, required approvals; candidate ranking, fallback, safe refusal, explainability, trace/diagnostic event |
+| **INT-P8.8** | ToolRuntime Policy Gate Alignment | Design + Code | **P0** | **Planned** | INT-P8.1 | Read-only without approval; write with approval; destructive with explicit HITL; external side effects always via ToolRuntime; MCP tool classification pre-exec; OpenAPI unsafe methods blocked default; workspace write/delete/move gated; git commit/patch gated; audit trail for all side effects; cross-ref [`plan/TOOLS.md`](TOOLS.md) |
+| **INT-P8.9** | New Tier-3 Integration Presets | Code | **P1** | **Planned** | INT-P8.2–INT-P8.6 (partial OK per preset) | `local_workspace_stack()`, `coding_agent_stack()`, `enterprise_api_stack()`, `mcp_gateway_stack()` documented + implemented in `registry/presets.py`; each composes existing + new slugs per architecture §INT-P8.9 |
+| **INT-P8.10** | Product Mapping | Docs | **P2** | **Planned** | INT-P8.12 | Architecture + plan document which products use which INT-P8 stacks (Local Knowledge Workspace, Dispute Simulation, research/coding/automation/enterprise/audit/document agents) |
+| **INT-P8.11** | Explicit Non-Goals | Docs + Review gate | **P2** | **Planned** | INT-P8.12 | Non-goals listed in architecture + plan; PR checklist rejects catalog-padding slugs and direct agent→integration bypass |
+| **INT-P8.12** | Documentation and Plan Structure | Docs | **P0** | **Planned** | INTEGRATIONS-LC | `architecture/INTEGRATIONS.md` §INT-P8; provider catalog §INT-P8 planned; this phase register; **no** `layout.py` / runtime catalog / shipped slug count changes; **no** task marked Done without implementation |
+
+---
+
+### INT-P8.9 — Tier-3 preset composition (planned)
+
+| Preset | Composes (existing + planned) |
+|--------|------------------------------|
+| `local_workspace_stack()` | `local_workspace`, `local_git`, local `document_parser`, `inmemory`/`lancedb`, `log`/`lab_json`, optional `otel` |
+| `coding_agent_stack()` | `local_git`, `local_workspace`, `sourcegraph` or `github_code`, `semgrep` (existing), optional `sandbox_host`, optional `ci_cd` |
+| `enterprise_api_stack()` | `openapi_http`, `identity_provider`, `secrets_store`, `observability_backend`, `notification_channel`, ToolRuntime approval policy |
+| `mcp_gateway_stack()` | `mcp`, `secrets_store`, ToolRuntime policy, `interaction_surface`, `observability_backend` |
+
+---
+
+### INT-P8.10 — Product mapping
+
+| Product / agent class | Primary INT-P8 stack | Key integrations |
+|----------------------|---------------------|------------------|
+| Local Knowledge Workspace | `local_workspace_stack` | workspace, git, parser, vector |
+| Dispute Simulation Workspace | `local_workspace_stack` (+ domain tools) | workspace, parser, vector |
+| Research agents | `research_web_stack` + selection engine | `openapi_http`, existing search/RAG |
+| Coding agents | `coding_agent_stack` | git, workspace, sourcegraph, semgrep |
+| Automation agents | `enterprise_api_stack` / `mcp_gateway_stack` | openapi, MCP, notifications |
+| Enterprise assistant | `enterprise_api_stack` | openapi, identity, secrets, observability |
+| Repo architecture audit agents | `coding_agent_stack` (read-heavy) | git, sourcegraph, semgrep |
+| Document intelligence agents | `document_ingest_stack` + workspace | workspace, parser (existing) |
+
+---
+
+### INT-P8.11 — Explicit non-goals
+
+INT-P8 implementation PRs **MUST NOT** add:
+
+- Additional LLM providers
+- Additional vector DB or graph store vendors
+- Additional observability / eval vendors
+- Additional browser automation providers
+- New project-management SaaS without Tier-3 product owner
+- LangChain / LlamaIndex as integration slugs
+- Zapier / Make.com in first wave
+- Git **push** in first wave (`local_git`)
+- Direct agent invocation of MCP tools
+- OpenAPI write/unsafe HTTP methods without ToolRuntime approval
+
+---
+
+### INT-P8 closeout target (future)
+
+- Selection metadata on new + migrated hot-path providers
+- Up to **5** new categories, **≤6** planned first-wave slugs registered (not duplicating existing 185)
+- Four Tier-3 presets shipped in code
+- Selection engine + ToolRuntime policy tests green
+- Gate green; **Full Harness LC** status unchanged until explicit LC re-validation if scope warrants
+
+**ADR:** TBD when INT-P8.1 metadata schema is implemented (likely required for selection engine contract).
 
 ---
 

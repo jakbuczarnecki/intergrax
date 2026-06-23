@@ -5,7 +5,7 @@
 ## Catalog
 
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **185** slugs · M.7 P7 **Done** 18/18
+**Last updated:** 2026-06-23 — Phase INT-P8 planned categories (185 shipped unchanged); prior note: 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **185** slugs · M.7 P7 **Done** 18/18
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. See **Integration Layer Contract** above for normative tier boundaries. Applications wire backends **by category** via `IntegrationProfile`; agents consume backends **through catalog tools**, not by importing vendor adapters.
 
@@ -968,6 +968,120 @@ standalone nginx slug; Kubernetes deployment path remains canonical.
 
 Integrations cross-ref only. Host authors enable ingress via ECP profiles and
 `kubernetes` integration — see [`intergrax/integrations/USAGE.md`](../../intergrax/integrations/USAGE.md).
+
+
+---
+
+## Phase INT-P8 — Planned categories & slugs (not shipped)
+
+**Status:** **Planned** — architecture and plan only (2026-06-23)  
+**Shipped catalog unchanged:** **185** slugs in layout.py / 
+egister_default_integrations()  
+**Plan:** [plan/INTEGRATIONS.md](../../plan/INTEGRATIONS.md) Phase INT-P8  
+**Architecture:** [INTEGRATIONS.md](../INTEGRATIONS.md) §Phase INT-P8
+
+INT-P8 adds **gateway and workspace mechanisms** for harness/agent-OS value — not catalog padding. Planned entries below are **not** registered, **not** counted in the 185 shipped total, and **must not** appear in runtime bootstrap until their implementation task PR lands.
+
+### Selection metadata extension (INT-P8.1 — planned)
+
+All INT-P8 providers will declare extended selection metadata (in addition to existing manifest fields):
+
+| Field | Purpose |
+|-------|---------|
+| capabilities | Normalized capability tags for matching |
+| operations | Named operations with read/write/side-effect class |
+| 
+ead_write | Aggregate read/write posture |
+| uth_type | none, api_key, oauth, mTLS, etc. |
+| 
+equired_scopes | OAuth/API scopes when applicable |
+| data_sensitivity | public, internal, confidential, regulated |
+| latency_class | interactive, batch, background |
+| cost_class | free, low, metered, enterprise |
+| locality | local, regional, global, vendor_cloud |
+| deterministic | Whether outputs are reproducible |
+| side_effect_level | none, read, write, destructive, external |
+| supported_task_intents | Task intent tags (e.g. code_search, file_edit) |
+| suitable_agent_types | Agent archetypes that may bind this integration |
+| supports_dry_run | Dry-run available for write-class ops |
+| supports_rollback | Compensating action available |
+| 
+equires_human_approval | Default HITL requirement for writes |
+| 
+ate_limit_class | Provider rate-limit tier hint |
+| 	estability | fake/mock/local probe availability |
+| selection_hints | Free-form ranking hints for selection engine |
+| 
+isk | low / medium / high / critical |
+
+Existing **185** manifests remain valid; metadata backfill is optional per provider during INT-P8 rollout.
+
+### Planned new categories
+
+| Category | Planned slug(s) | Status | Distinction from existing |
+|----------|-----------------|--------|---------------------------|
+| 	ool_protocol_gateway | mcp | **Planned** | Tool protocol bridge — not a vendor SaaS slug |
+| pi_connector | openapi_http | **Planned** | Generic OpenAPI REST — not per-vendor REST adapters |
+| workspace_store | local_workspace | **Planned** | Agent policy-scoped working dir — **≠** ilesystem object storage |
+| code_repository | local_git | **Planned** | Local Git CLI/worktree — **≠** github/gitlab issue/remote hosts |
+| code_intelligence | sourcegraph | **Planned** | Cross-repo code search — **≠** github issue tracker |
+| code_intelligence | github_code | **Planned (optional, post–first wave)** | GitHub code search API — only if product requires |
+
+### Planned provider scope (first wave)
+
+#### 	ool_protocol_gateway / mcp (INT-P8.2)
+
+- Discover configured MCP servers
+- List tools and resources; fetch tool JSON schemas
+- Invoke MCP tools **only** through ToolRuntime (never agent-direct)
+- Read MCP resources; MCP server health probe
+- Pre-exec classification of write/side-effect tools; block without approval
+- Fake MCP server for tests; side-effect block tests
+
+#### pi_connector / openapi_http (INT-P8.3)
+
+- Load OpenAPI 3.x from file or URL
+- List/describe operations by operation_id
+- Validate requests against schema; execute read-only ops freely
+- Write ops (POST/PUT/PATCH/DELETE per risk table) require ToolRuntime approval
+- Auth metadata from spec + profile; spec/endpoint health probe
+- Mock API server; GET/POST, auth-missing, invalid-schema, blocked-unsafe-method tests
+
+#### workspace_store / local_workspace (INT-P8.4)
+
+- Single root-scoped workspace directory
+- List tree, read file, workspace text search
+- Write/delete/move gated through ToolRuntime
+- Glob allowlist/denylist, max file size, path traversal + symlink escape blocked
+- Workspace root health probe; security path tests
+
+#### code_repository / local_git (INT-P8.5)
+
+- Detect Git repo; status, current branch, changed files, diff, log, blame
+- Read file at ref; apply_patch and commit approval-gated
+- **Push out of scope** for first wave; branch allowlist; dirty-repo detection
+- Repo health probe; tests on ephemeral Git repo
+
+#### code_intelligence / sourcegraph (INT-P8.6)
+
+- Code, symbol, commit, diff, repository search; fetch file by repo/ref/path
+- Repo allowlist; read-only contract; health probe
+- Mock GraphQL/API tests; no-token-logging test
+
+### Planned Tier-3 presets (INT-P8.9 — not in presets.py yet)
+
+| Preset | Key slugs |
+|--------|-----------|
+| local_workspace_stack() | local_workspace, local_git, document parser, inmemory/lancedb, log/lab_json, optional otel |
+| coding_agent_stack() | local_git, local_workspace, sourcegraph, semgrep, optional sandbox, optional CI/CD |
+| enterprise_api_stack() | openapi_http, identity, secrets, observability, notification, ToolRuntime policy |
+| mcp_gateway_stack() | mcp, secrets, ToolRuntime policy, interaction surface, observability |
+
+### INT-P8 explicit non-goals (catalog)
+
+Do **not** add under INT-P8: new LLM/vector/observability/browser vendors; PM SaaS without product; LangChain/LlamaIndex; Zapier/Make.com; Git push; duplicate slugs already in the **185** shipped index below.
+
+---
 
 ---
 

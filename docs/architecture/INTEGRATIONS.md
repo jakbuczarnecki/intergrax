@@ -172,3 +172,83 @@ Before implementing a new adapter, answer:
 Adapters should be generic and reusable.
 
 ---
+
+## Phase INT-P8 — Dynamic Integration Selection & Agent Workspace Gateways (Planned)
+
+**Status:** Architecture & plan only — **not shipped**  
+**Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) — Phase INT-P8  
+**Catalog (planned slugs):** [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8 planned categories
+
+**Purpose:** Extend the mature integration catalog (**185 shipped slugs**, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.
+
+### Why INT-P8 (product value, not catalog padding)
+
+| Mechanism | Need |
+|-----------|------|
+| Dynamic selection metadata + selection engine | Harness chooses provider by capability, risk, cost, locality, and task intent — not slug alone |
+| `tool_protocol_gateway` / `mcp` | Controlled access to MCP ecosystem tools/resources through ToolRuntime |
+| `api_connector` / `openapi_http` | Universal REST attachment without one provider per vendor |
+| `workspace_store` / `local_workspace` | Policy-scoped agent working directory (distinct from `filesystem` object storage) |
+| `code_repository` / `local_git` | Local repo analysis and controlled patches/commits without GitHub/GitLab dependency |
+| `code_intelligence` / `sourcegraph` | Enterprise cross-repo code search (GitHub issue tracker ≠ code intelligence) |
+| Tier-3 presets (INT-P8.9) | Composable stacks for local workspace, coding agents, enterprise API, MCP gateway |
+
+### Architectural boundaries (unchanged)
+
+INT-P8 **does not** change tier boundaries or access paths:
+
+```text
+Agent -> Tool / Skill -> ToolRuntime -> Integration
+```
+
+- Integrations remain **backend/vendor-facing**; agents **MUST NOT** invoke integrations directly.
+- MCP tools, OpenAPI write methods, workspace writes, git commits/patches — **all** side effects through **ToolRuntime** with policy/approval gates.
+- INT-P8 **MUST NOT** add LLM providers, vector DBs, observability vendors, browser automation, or project-management SaaS without a product driver.
+
+### Invariants preserved by INT-P8
+
+| Invariant | INT-P8 enforcement |
+|-----------|-------------------|
+| No direct agent → integration | MCP/OpenAPI/workspace/git exposed only via catalog tools + ToolRuntime |
+| HITL on destructive / external write | `requires_human_approval`, `side_effect_level`, unsafe HTTP methods blocked by default |
+| Explainable integration choice | Selection engine returns reason, ranked candidates, trace/diagnostic payload |
+| Safe refusal | Engine may refuse when no safe integration matches constraints |
+| Audit trail | All side effects logged through existing ToolRuntime / observability spine |
+| Catalog honesty | Planned categories/slugs documented as **Planned** — not registered in `layout.py` until implementation PRs |
+
+### Planned new categories (summary)
+
+| Category | First provider (planned) | Role |
+|----------|-------------------------|------|
+| `tool_protocol_gateway` | `mcp` | MCP server discovery, tool/resource listing, schema fetch, gated invocation |
+| `api_connector` | `openapi_http` | OpenAPI-driven REST connector with schema validation and method risk classification |
+| `workspace_store` | `local_workspace` | Root-scoped local workspace with path policy and gated writes |
+| `code_repository` | `local_git` | Local Git read ops + approval-gated patch/commit |
+| `code_intelligence` | `sourcegraph` (optional later: `github_code`) | Read-only enterprise code search |
+
+Selection metadata fields (INT-P8.1): `capabilities`, `operations`, `read_write`, `auth_type`, `required_scopes`, `data_sensitivity`, `latency_class`, `cost_class`, `locality`, `deterministic`, `side_effect_level`, `supported_task_intents`, `suitable_agent_types`, `supports_dry_run`, `supports_rollback`, `requires_human_approval`, `rate_limit_class`, `testability`, `selection_hints`, `risk`.
+
+### Product mapping (INT-P8 consumers)
+
+| Product / agent class | INT-P8 mechanisms |
+|----------------------|-------------------|
+| Local Knowledge Workspace | `local_workspace_stack` — workspace + git + parser + vector |
+| Dispute Simulation Workspace | workspace + document parser + local vector |
+| Research agents | `openapi_http`, search/RAG slots (existing), selection metadata |
+| Coding agents | `coding_agent_stack` — git + workspace + code intelligence + security scanner |
+| Automation agents | `openapi_http`, MCP gateway, enterprise API stack |
+| Enterprise assistant | `enterprise_api_stack`, identity, secrets, observability |
+| Repo architecture audit agents | `local_git`, `sourcegraph`, semgrep (existing) |
+| Document intelligence agents | workspace + document parser (existing) |
+
+### Explicit non-goals (INT-P8)
+
+- No new LLM, vector DB, observability/eval, or browser automation providers
+- No new project-management SaaS without product
+- No LangChain/LlamaIndex/Zapier/Make.com integrations in first wave
+- No Git **push** in first wave
+- No direct agent invocation of MCP tools or OpenAPI write methods without ToolRuntime approval
+
+**Implementation:** deferred to Phase INT-P8 tasks in [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) — architecture update first; no runtime catalog changes until per-task PRs.
+
+---
