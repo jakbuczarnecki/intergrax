@@ -684,6 +684,7 @@ This repository is currently in private R&D stage. Commercial licensing and part
 | Resource | Purpose |
 |----------|---------|
 | [FAQ.md](FAQ.md) | Common external-reader questions |
+| [docs/public-adoption/OUTREACH_KIT.md](docs/public-adoption/OUTREACH_KIT.md) | Maintainer-facing outreach drafts for technical reviewers, integration builders and design partners |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap, collaboration tracks, and near-term public-facing priorities |
 | [COLLABORATION.md](COLLABORATION.md) | Source-available collaboration model, permitted use, contact |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, work cycle, PR process |

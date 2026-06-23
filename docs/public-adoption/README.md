@@ -18,8 +18,9 @@ They do not define an open-source contribution model, production-support channel
 |------|----------|---------|
 | 1 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issues and recommended evaluation paths |
 | 2 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
-| 3 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
-| 4 | [curated_public_issues.yml](curated_public_issues.yml) | Structured source data for issue automation |
+| 3 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
+| 4 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
+| 5 | [curated_public_issues.yml](curated_public_issues.yml) | Structured source data for issue automation |
 
 ## Operational model
 
