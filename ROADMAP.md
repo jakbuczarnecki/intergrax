@@ -89,6 +89,7 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 
 - [README.md](README.md) — project overview, proof path, documentation index
 - [COLLABORATION.md](COLLABORATION.md) — collaboration model, permitted use, contact
+- [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for proof-path feedback, documentation clarity, selected integration feedback, and design-partner discovery
 - [LICENSE](LICENSE) — proprietary terms
