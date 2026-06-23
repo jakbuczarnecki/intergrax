@@ -30,7 +30,7 @@ Canonical technical architecture and implementation status remain in:
 | BoundaryAttest / attestation case study available | [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Boundary events / host attestation flow documented | Attestation demo and related architecture docs |
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Local Knowledge Workspace exists as the first product-validation direction / alpha track | [applications/local_workspace_application/ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) |
+| Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/ARCHITECTURE.md) |
 
 ---
 
@@ -42,7 +42,7 @@ Canonical technical architecture and implementation status remain in:
 | Add issue templates for feedback, bug reports, integration proposals and design partner interest | Structured entry points for external contributors |
 | Open curated public issues for good-first-feedback, design partner tracks and integration proposals | [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) defines the scoped first-wave public issue set; active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
 | Improve attestation case study with diagrams or demo media | Optional follow-up to [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
-| Prepare a lightweight Local Knowledge Workspace alpha narrative | Early product-validation story for design partners |
+| Collect Local Knowledge Workspace alpha feedback from design partners | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) published; structured partner feedback welcome |
 | Improve public demo path for trace, evidence and boundary events | Clearer end-to-end evaluation of harness observability |
 
 ---
@@ -65,7 +65,7 @@ Canonical technical architecture and implementation status remain in:
 |-------|-------|---------------|----------------------|
 | Proof path feedback | Run local evaluation paths; report friction, gaps, and unclear steps | Engineers evaluating the harness baseline | Follow the proof path in [README.md](README.md); open an issue with concrete findings |
 | Attestation / boundary events integration | Host attestation flows, boundary events, external trust integration | Teams building attestation, security, or compliance integrations | Review [Attestation Demo](applications/attestation_demo/README.md); propose scope via issue or maintainer contact |
-| Local Knowledge Workspace alpha feedback | Early capabilities, UX, and fit for local knowledge workflows | Design partners interested in product-validation direction | Read [LKW architecture](applications/local_workspace_application/ARCHITECTURE.md); share structured alpha feedback |
+| Local Knowledge Workspace alpha feedback | Early capabilities, UX, and fit for local knowledge workflows | Design partners interested in product-validation direction | Read [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) and [LKW architecture](applications/local_workspace_application/ARCHITECTURE.md); share structured alpha feedback |
 | Documentation clarity | Corrections, gaps, readability, and navigation improvements | Anyone reading public docs | Open an issue or PR with a specific doc fix; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries | Agent architects and product teams | Propose scope before substantial work; align with [COLLABORATION.md](COLLABORATION.md) |
 | Governance, observability and evaluation feedback | Trace, evidence, policy, and evaluation workflows | Platform engineers and governance builders | Run proof paths; inspect evidence outputs; report gaps with reproducible steps |
@@ -96,5 +96,6 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and requirements
 - [applications/attestation_demo/README.md](applications/attestation_demo/README.md) — attestation integration proof
 - [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — BoundaryAttest external validation case study
+- [docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) — Local Knowledge Workspace alpha / product-validation narrative
 - [applications/local_workspace_application/ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) — Local Knowledge Workspace architecture
 - [docs/guides/INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) — harness narrative for external readers

@@ -234,6 +234,8 @@ External narrative: [Intergrax Harness Narrative](docs/guides/INTERGRAX_HARNESS_
 
 **External integration proof:** [BoundaryAttest Attestation PoC](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — external validation of host-signed execution boundary events (technical integration validation, not production certification).
 
+**Product-validation direction:** [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) — product-validation narrative for local governed knowledge workflows (alpha track, not a finished product or SaaS).
+
 **What is it?** The fastest local way to verify Intergrax as an evidence-backed harness platform — not a production readiness or compliance claim.
 
 **Why run it?** You get a repeatable, offline proof that the harness can produce and aggregate the core evidence surfaces an early adopter needs to trust the platform locally. The A2 end-to-end evidence smoke audit verified this exact command sequence on a clean local run.
