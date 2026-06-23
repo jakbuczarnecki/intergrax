@@ -47,9 +47,9 @@ The README includes a proof path, FAQ, and collaboration boundaries. We also pub
 
 We are looking for technical feedback and qualified design-partner discovery: Does the Harness AI model make sense? Is the first-run path clear? What is confusing about license or collaboration boundaries?
 
-Links: [README](https://github.com/jakbuczarnecki/intergrax#start-here) · [FAQ](https://github.com/jakbuczarnecki/intergrax/blob/development/FAQ.md) · [BoundaryAttest case study](https://github.com/jakbuczarnecki/intergrax/blob/development/docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [Local Knowledge Workspace alpha](https://github.com/jakbuczarnecki/intergrax/blob/development/docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
+Links: [README](https://github.com/jakbuczarnecki/intergrax#start-here) · [FAQ](https://github.com/jakbuczarnecki/intergrax/blob/main/FAQ.md) · [BoundaryAttest case study](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [Local Knowledge Workspace alpha](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 
-Commercial or production use requires explicit permission — see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md).
+Commercial or production use requires explicit permission — see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md).
 
 ---
 

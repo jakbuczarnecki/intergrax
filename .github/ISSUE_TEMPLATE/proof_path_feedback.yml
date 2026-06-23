@@ -8,7 +8,7 @@ body:
       value: |
         Share what worked and where you hit friction after running an evaluation path.
         Do not include secrets or credentials.
-        Intergrax is source-available/proprietary; see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/development/COLLABORATION.md).
+        Intergrax is source-available/proprietary; see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md).
 
   - type: dropdown
     id: path
