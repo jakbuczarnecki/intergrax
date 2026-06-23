@@ -70,6 +70,12 @@ Start with the application documentation:
 2. Run the local demo if consistent with [LICENSE](../../LICENSE) and [COLLABORATION.md](../../COLLABORATION.md) (see [BUILD_AND_DEPLOY.md](../../applications/attestation_demo/BUILD_AND_DEPLOY.md)).
 3. Inspect `boundary_events[]` and the `trust_model` response from `POST /v1/attestation_demo/poc/run`; compare host attestation envelopes with the EBE-9 golden vector in `partner_handoff/`.
 
+## Acknowledgement
+
+This PoC was validated through external integration work with the [AgentReceipt](https://github.com/cullenmeyers/AgentReceipt) project. The external feedback helped verify the mapping between Intergrax host-signed `execution_boundary_event.v1` records and a separate `client_observed` receipt wrapper.
+
+This acknowledgement does not imply formal certification, bundling, ownership, partnership, or maintenance responsibility by either project. AgentReceipt remains an external project and Intergrax remains independently maintained.
+
 ## Related documents
 
 - [README.md](../../README.md) — project overview and proof paths
