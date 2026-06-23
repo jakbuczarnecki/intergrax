@@ -44,7 +44,7 @@ class ScalingEvaluator:
             return plan
 
         by_metric = {s.metric_name: s for s in signals}
-        actions: list[ScalingAction] = []
+        triggered: list[tuple[ScalingRule, ScalingAction]] = []
         for rule in self._policy.rules:
             signal = by_metric.get(rule.metric_name)
             if signal is None:
@@ -52,23 +52,31 @@ class ScalingEvaluator:
             if self._in_cooldown(rule):
                 continue
             if signal.value >= rule.scale_up_threshold:
-                actions.append(
-                    ScalingAction(
-                        kind=rule.action_kind,
-                        target=rule.target,
-                        delta=rule.delta,
-                        reason=f"{rule.metric_name}={signal.value} >= {rule.scale_up_threshold}",
+                triggered.append(
+                    (
+                        rule,
+                        ScalingAction(
+                            kind=rule.action_kind,
+                            target=rule.target,
+                            delta=rule.delta,
+                            reason=f"{rule.metric_name}={signal.value} >= {rule.scale_up_threshold}",
+                        ),
                     )
                 )
             elif signal.value <= rule.scale_down_threshold:
-                actions.append(
-                    ScalingAction(
-                        kind=rule.action_kind,
-                        target=rule.target,
-                        delta=-rule.delta,
-                        reason=f"{rule.metric_name}={signal.value} <= {rule.scale_down_threshold}",
+                triggered.append(
+                    (
+                        rule,
+                        ScalingAction(
+                            kind=rule.action_kind,
+                            target=rule.target,
+                            delta=-rule.delta,
+                            reason=f"{rule.metric_name}={signal.value} <= {rule.scale_down_threshold}",
+                        ),
                     )
                 )
+
+        actions = [action for _, action in triggered]
 
         if not actions:
             plan = ScalingActionPlan(evaluation_status="noop")
@@ -83,8 +91,8 @@ class ScalingEvaluator:
             self._emit_evaluated(plan)
             return plan
 
-        for action in actions:
-            self._record_action(action.action_id)
+        for rule, _action in triggered:
+            self._record_action(rule.rule_id)
 
         plan = ScalingActionPlan(actions=tuple(actions), evaluation_status="planned")
         self._emit_evaluated(plan)
@@ -100,9 +108,9 @@ class ScalingEvaluator:
             return False
         return datetime.now(timezone.utc) - last < timedelta(seconds=rule.cooldown_seconds)
 
-    def _record_action(self, action_id: str) -> None:
+    def _record_action(self, rule_id: str) -> None:
         now = datetime.now(timezone.utc)
-        self._last_action_at[action_id] = now
+        self._last_action_at[rule_id] = now
         self._action_timestamps.append(now)
 
     def _actions_in_last_hour(self) -> int:
