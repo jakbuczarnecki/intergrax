@@ -10,6 +10,8 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
+Contributions are welcome only under the **source-available / proprietary collaboration model**. Read [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
+
 ---
 
 ## Before contributing

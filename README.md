@@ -62,6 +62,14 @@ Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summ
 
 ---
 
+## License and collaboration model
+
+Intergrax is **public and source-available** for evaluation and technical partner discovery. It is **not** distributed under an open-source license. Production, commercial, and redistribution use require **explicit permission** from the copyright holder.
+
+External feedback, proof-path testing, integration proposals, and design-partner discussions are welcome under the collaboration model described in [COLLABORATION.md](COLLABORATION.md). Full terms: [LICENSE](LICENSE).
+
+---
+
 ## The agent model — why architects choose Intergrax
 
 Most agent frameworks mix **planning, policy, tool I/O, and multi-agent routing** into a single author-facing class. That works for demos; it breaks for **governed products** — opaque control flow, untyped state, and agents that secretly become mini operating systems.
@@ -634,6 +642,7 @@ This repository is currently in private R&D stage. Commercial licensing and part
 
 | Resource | Purpose |
 |----------|---------|
+| [COLLABORATION.md](COLLABORATION.md) | Source-available collaboration model, permitted use, contact |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, work cycle, PR process |
 | [AGENTS.md](AGENTS.md) | Cursor auto-load stub — tiers, boundaries, pointers |
 | [docs/guides/AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) | Full instructions for AI coding agents |
