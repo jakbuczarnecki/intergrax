@@ -27,7 +27,7 @@ Canonical technical architecture and implementation status remain in:
 | Core harness proof path available from README | Local evaluation path documented in [README.md](README.md) |
 | Lab host / local execution path available | Tier-3 local host and lab workflows |
 | Attestation Demo available as the primary external-integration proof | [applications/attestation_demo/README.md](applications/attestation_demo/README.md) |
-| BoundaryAttest / attestation case study available | [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
+| BoundaryAttest / attestation case study available (includes validation flow diagram) | [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Boundary events / host attestation flow documented | Attestation demo and related architecture docs |
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/ARCHITECTURE.md) |
@@ -41,7 +41,7 @@ Canonical technical architecture and implementation status remain in:
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
 | Add issue templates for feedback, bug reports, integration proposals and design partner interest | Structured entry points for external contributors |
 | Open curated public issues for good-first-feedback, design partner tracks and integration proposals | [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) defines the scoped first-wave public issue set; active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
-| Improve attestation case study with diagrams or demo media | Optional follow-up to [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
+| Optionally add demo media for the attestation case study | Validation-flow diagram is published; optional future work is short demo media for the [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Collect Local Knowledge Workspace alpha feedback from design partners | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) published; structured partner feedback welcome |
 | Improve public demo path for trace, evidence and boundary events | Clearer end-to-end evaluation of harness observability |
 

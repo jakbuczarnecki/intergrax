@@ -63,6 +63,14 @@ flowchart LR
     class B,C,D boundary;
 ```
 
+The diagram is intentionally split into two evidence paths:
+
+- Intergrax owns the runtime boundary event and optional host attestation envelope.
+- BoundaryAttest verifies the host-signed event using the agreed trust material.
+- BoundaryAttest keeps its own `client_observed` wrapper separate from the Intergrax runtime claim.
+- The two claims are complementary, not interchangeable.
+- The flow is an integration validation pattern, not a certification or compliance guarantee.
+
 ## What this does not claim
 
 - **BoundaryAttest is not bundled with Intergrax** and is not required to use Intergrax.
