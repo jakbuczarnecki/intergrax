@@ -35,7 +35,7 @@ Wire `search_provider` + RAG stack on integration profile for retrieval and web 
 
 | Benefit | Detail |
 |---------|--------|
-| **Chat-shaped harness** | Curated tools for general Q&A, not full 190-tool surface |
+| **Chat-shaped harness** | Curated tools for general Q&A, not full 200-tool surface |
 | **Skill introspection** | `skill.resolve` helps explain capability packs to users |
 | **Session-aware** | `memory.read` for multi-turn context |
 | **Delegation-ready** | Narrow hub surface; specialists carry domain skills |

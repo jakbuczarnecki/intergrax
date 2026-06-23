@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Integration Library** dom
 
 ## Mission
 
-Audit the **Integration Library** as the sole vendor boundary: 185+ slugs, typed contracts, health probes, IntegrationProfile-driven backend selection, guardrail integrations, and CI-enforced import boundaries.
+Audit the **Integration Library** as the sole vendor boundary: 197+ slugs, typed contracts, health probes, IntegrationProfile-driven backend selection, guardrail integrations, and CI-enforced import boundaries.
 
 ## Key symbols and contracts
 

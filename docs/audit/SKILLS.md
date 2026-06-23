@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Skill Library** domain. Y
 
 ## Mission
 
-Audit **149 skills / 41 bundles** as composable capability packs above tools: resolution, policy fragments, registration, roster consistency, and honest SK-BRIDGE gap status.
+Audit **150 skills / 42 bundles** as composable capability packs above tools: resolution, policy fragments, registration, roster consistency, and honest SK-BRIDGE gap status.
 
 ## Key symbols and contracts
 
@@ -121,7 +121,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- 149 skills resolved for agent with deep requires_skills chain.
+- 150 skills resolved for agent with deep requires_skills chain.
 - Roster vs environment consistency check at host bootstrap.
 - Import external SKILL.md at scale.
 

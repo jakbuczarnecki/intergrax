@@ -97,7 +97,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done** — full **190-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done** — full **200-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -267,7 +267,7 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 
 | Area | Posture | Notes |
 |------|---------|-------|
-| **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
+| **Tier-0 catalog** (`ToolContract`, plugins, 200 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
 | **Pipeline tool step** (`run_bounded_tool_loop` / `ctx.invoke_tool`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
@@ -288,6 +288,93 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **AHI dynamic tool modes** | **Done** | `ToolEngineHook` + `recommend_tool_modes` (TOOL-ENG-10) |
 | **Observability** | **Production** | Selection + pattern diag, budget ticks, `tool_traces` (TOOL-ENG-27/32) |
 
-**Strategic focus (2026-06-12):** Phase **TOOL-ENG** **closed** — maintenance via gate scripts; deferred: hierarchical LLM pass, optional L1 critic on tool output.
+**Strategic focus (2026-06-12):** Phase **TOOL-ENG** **closed** — maintenance via gate scripts; deferred runtime features → [Phase TOOL-PRODUCT-ROI](#phase-tool-product-roi--catalog-extension-by-product-value-planned).
+
+---
+
+## Phase TOOL-PRODUCT-ROI — Catalog extension by product value (Planned)
+
+**Status:** Architecture & plan only — **not shipped**  
+**Plan (1:1):** [`plan/TOOLS.md`](../plan/TOOLS.md) — Phase TOOL-PRODUCT-ROI  
+**Policy:** One implementation ID per PR; register planned `tool_id`s only in matching task PRs.
+
+**Purpose:** Extend the mature tool catalog (**200 shipped `tool_id`s**, **49** bundles, Full Harness LC **Done**) with **missing, high-ROI tools** for coding agents and change-audit agents — **not** general-purpose catalog padding. Existing families (RAG, filesystem, workspace, database, websearch, observability, eval, HITL, workflow, etc.) remain sufficient; add only gaps that improve **repository understanding** and **change safety**.
+
+### Why TOOL-PRODUCT-ROI (product value, not catalog padding)
+
+| Gap today | Harness need |
+|-----------|--------------|
+| Agents read files textually | Structured **code intelligence** — repo map, symbols, dependencies, architecture boundaries, diff risk |
+| GitHub/GitLab context scattered | Read-only **Git / PR context** for audit agents before merge/approve tools |
+| Unsafe direct writes | **Safe patch** preview + gated apply (phase 2 — write-capable) |
+| Research claims without evidence chain | **Research evidence** layer above websearch/RAG (phase 3) |
+| Full browser automation | Deferred — `browser.fetch_page` exists; interactive suite only if web-app agents become first-class |
+
+### Wave 1 — Code Intelligence Tools (read-only, **P0**)
+
+New bundle family `code_intelligence` (or extend `code` bundle when wired). All tools **read-only**, dispatch via **ToolRuntime**; backends may use `local_git` / workspace integrations (INT-P8.5) or in-process analyzers.
+
+| `tool_id` | Purpose |
+|-----------|---------|
+| `code.repo_map` | Fast repository map: directories, modules, key files |
+| `code.symbol_search` | Search classes, functions, methods, protocols, constants |
+| `code.dependency_graph` | Module and layer dependency graph |
+| `code.boundary_check` | Architecture boundary violations (e.g. tool bypassing ToolRuntime) |
+| `code.diff_risk_analyze` | Pre-commit / pre-PR change risk assessment |
+| `code.test_impact` | Tests to run after a change set |
+
+**First-wave priority (highest ROI):** `code.repo_map`, `code.symbol_search`, `code.dependency_graph`, `code.boundary_check`, `code.diff_risk_analyze`.
+
+### Wave 2 — Git / PR Context Tools (read-only, **P1**)
+
+Read-only GitHub/GitLab (and local git) context for audit agents. **No** merge, approve, push, or apply-patch tools in this wave.
+
+| `tool_id` | Purpose |
+|-----------|---------|
+| `git.branch_diff` | Diff between branches |
+| `git.pr_context` | PR metadata, description, review threads, changed files |
+| `git.ci_status` | CI/check run status for branch or PR |
+
+### Wave 3 — Safe Patch Tools (write-capable, **P2**)
+
+Requires policy, idempotency, audit trail, optional HITL.
+
+| `tool_id` | Purpose |
+|-----------|---------|
+| `patch.preview` | Show patch effect; validate allowed paths |
+| `patch.apply_safe` | Apply patch only after preview + policy gate |
+
+### Later families (product-gated)
+
+| Family | Example `tool_id`s | Gate |
+|--------|-------------------|------|
+| **Browser automation** | `browser.navigate`, `browser.click`, `browser.fill_form`, `browser.screenshot`, `browser.extract`, `browser.network_requests`, `browser.console_messages` | Only if Intergrax hosts web-app agents as first-class |
+| **Research evidence** | `research.evidence_pack`, `research.claim_verify`, `research.source_rank` | Research/audit agents needing claim↔source binding above websearch/RAG |
+
+### Deferred runtime features (not new tools)
+
+These extend existing engine paths; **default OFF**.
+
+| Feature | Config / hook | Purpose |
+|---------|---------------|---------|
+| **Hierarchical LLM category pass** | `RuntimeConfig.tool_selection_hierarchical_llm_pass = false` | Optional LLM step when deterministic hierarchical selection picks wrong category on large catalogs; **must not** expand permissions or select outside policy allow-list (ADR-TOOL-005) |
+| **Optional L1 critic on tool output** | Post-invoke hook on `RuntimeToolInvoker`: execution → output validation → optional L1 critic → allow / suspicious / block / require_hitl | High-risk tools only (e.g. `database.execute`, `filesystem.write_text`, `storage.delete`, `rag.purge_collection`, `platform.put_secret`, `collaboration.send_mail`, `patch.apply_safe`); see [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+
+### Architectural boundaries (unchanged)
+
+```text
+Agent → Skill → ToolRuntime → Tool handler → Integration (optional)
+```
+
+- All new tools register as `ToolContract` + handler; agents **MUST NOT** call git parsers, LSP, or GitHub SDKs directly.
+- Read-only waves **MUST NOT** perform writes or side effects (`side_effects=False`).
+- Write-capable patch tools **MUST** use ToolRuntime policy, idempotency keys, trace spine, and HITL where configured.
+
+### Explicit non-goals (TOOL-PRODUCT-ROI)
+
+- Duplicating existing RAG, filesystem, workspace, websearch, or eval tools under new names
+- Git write ops (merge, approve, push) before read-only context tools ship
+- Global L1 critic on all read-only tools
+- Browser automation suite without a Tier-3 product driver
 
 ---

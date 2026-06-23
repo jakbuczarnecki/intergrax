@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
-**Queue status (2026-06-12):** Phase **TOOL-ENG** **closed** (36/36) · [§Layer completion final audit](#layer-completion-final-audit-2026-06-12). Catalog expansion (Phase O / T-EXPAND) **closed**. Default harness queue → **gate maintenance** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+**Queue status (2026-06-23):** Phase **TOOL-ENG** **closed** (36/36). Catalog expansion (Phase O / T-EXPAND) **closed** at **200** tools · **49** bundles. Strategic backlog → **Phase TOOL-PRODUCT-ROI** (below). Default harness queue → **gate maintenance** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
 **Layer completion mode (2026-06-12):** [§Layer completion audit](#layer-completion-audit-2026-06-12) · [§Layer completion sprints](#layer-completion-sprints-2026-06-12) · [§Final audit](#layer-completion-final-audit-2026-06-12)
 
@@ -56,5 +56,66 @@ Load **only** the satellite matching your task or cited gap ID.
 **Follow-on (engine, not AUDIT-IDEAL id):** TOOL-ENG-1–10 — see [Phase TOOL-ENG](#phase-tool-eng--tool-engine-hardening-2026-06-10-audit).
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
+## Phase TOOL-PRODUCT-ROI — Catalog extension by product value (Planned)
+
+**Status:** **Planned** — architecture & implementation backlog only  
+**Last updated:** 2026-06-23  
+**Prerequisites:** Phase **TOOL-ENG** **Done** · catalog **200** shipped `tool_id`s · Full Harness LC unchanged  
+**Architecture (1:1):** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — §Phase TOOL-PRODUCT-ROI  
+**Band:** 2af (post–Full Harness LC product depth)  
+**Policy:** One implementation ID per PR; **do not** register planned `tool_id`s until the matching task PR; **do not** mark any TOOL-PRODUCT-ROI task **Done** until code ships.
+
+### Scope split
+
+| Layer | This update | Follow-up PRs |
+|-------|-------------|---------------|
+| Architecture canon | TOOL-PRODUCT-ROI boundaries, waves, deferred runtime features | — |
+| Tool catalog | Document planned `tool_id`s only | Register bundle + contracts + tests per task |
+| Integrations | Document backend deps (`local_git`, GitHub/GitLab) | INT-P8.5 / existing VCS integrations per tool |
+| Runtime / policy | Document alignment for patch + critic hooks | Policy gate extensions in dedicated PR |
+
+### Execution order (recommended)
+
+```text
+Wave 1 (P0):  code.repo_map → code.symbol_search → code.dependency_graph → code.boundary_check → code.diff_risk_analyze → code.test_impact
+Wave 2 (P1):  git.branch_diff ∥ git.pr_context ∥ git.ci_status
+Wave 3 (P2):  patch.preview → patch.apply_safe (policy + idempotency + audit + optional HITL)
+Later:        browser automation suite · research evidence tools (product-gated)
+Deferred:     hierarchical LLM category pass (default OFF) · optional L1 critic on high-risk tool output (default OFF)
+```
+
+**Parallelism:** Wave 2 tools may proceed in parallel after Wave 1 `code.repo_map` contract is agreed. Wave 3 **blocked** until Wave 2 read-only git context ships.
+
+---
+
+### TOOL-PRODUCT-ROI master register
+
+| ID | Title | Type | Priority | Status | Depends on | Acceptance criteria |
+|----|-------|------|----------|--------|------------|---------------------|
+| **TOOL-ROI-1.1** | `code.repo_map` | Code | **P0** | **Planned** | TOOL-ENG | Read-only tool; repo directory/module map; schema + handler + tests; ToolRuntime dispatch; no direct agent→integration |
+| **TOOL-ROI-1.2** | `code.symbol_search` | Code | **P0** | **Planned** | TOOL-ROI-1.1 | Symbol index search (classes, functions, methods, protocols, constants); bounded result set |
+| **TOOL-ROI-1.3** | `code.dependency_graph` | Code | **P0** | **Planned** | TOOL-ROI-1.1 | Module/layer dependency graph output; configurable depth |
+| **TOOL-ROI-1.4** | `code.boundary_check` | Code | **P0** | **Planned** | TOOL-ROI-1.3 | Rule-driven boundary violations (tier imports, ToolRuntime bypass, etc.) |
+| **TOOL-ROI-1.5** | `code.diff_risk_analyze` | Code | **P0** | **Planned** | TOOL-ROI-1.1 | Diff/working-tree risk score + rationale for pre-commit/PR |
+| **TOOL-ROI-1.6** | `code.test_impact` | Code | **P1** | **Planned** | TOOL-ROI-1.3 | Map changed files → recommended test targets |
+| **TOOL-ROI-2.1** | `git.branch_diff` | Code | **P1** | **Planned** | TOOL-ROI-1.1 | Read-only branch diff; local git and/or GitHub/GitLab backend |
+| **TOOL-ROI-2.2** | `git.pr_context` | Code | **P1** | **Planned** | TOOL-ROI-2.1 | PR metadata, files, review context for audit agents |
+| **TOOL-ROI-2.3** | `git.ci_status` | Code | **P1** | **Planned** | TOOL-ROI-2.1 | CI/check status for branch or PR |
+| **TOOL-ROI-3.1** | `patch.preview` | Code | **P2** | **Planned** | TOOL-ROI-1.5, TOOL-ROI-2.1 | Show patch effect; path allow-list validation |
+| **TOOL-ROI-3.2** | `patch.apply_safe` | Code | **P2** | **Planned** | TOOL-ROI-3.1 | Gated apply; policy + idempotency + audit; optional HITL |
+| **TOOL-ROI-4.1** | Browser automation suite | Code | **P3** | **Planned** | Product gate | `browser.navigate`, `click`, `fill_form`, `screenshot`, `extract`, `network_requests`, `console_messages` — only with Tier-3 web-app driver |
+| **TOOL-ROI-4.2** | Research evidence tools | Code | **P3** | **Planned** | Product gate | `research.evidence_pack`, `research.claim_verify`, `research.source_rank` — evidence layer above websearch/RAG |
+| **TOOL-ROI-D.1** | Hierarchical LLM category pass (runtime) | Code | **P3** | **Planned** | TOOL-ENG | `RuntimeConfig.tool_selection_hierarchical_llm_pass` default **false**; allow-list only; no permission expansion |
+| **TOOL-ROI-D.2** | Optional L1 critic on high-risk tool output | Code | **P3** | **Planned** | TOOL-ENG, CVL | Post-invoke hook: allow / suspicious / block / require_hitl; scoped to high-risk `tool_id`s only; default **false** |
+
+### Explicit non-goals (TOOL-PRODUCT-ROI)
+
+- General-purpose tools duplicating existing catalog families
+- Git merge / approve / push / apply-patch before read-only git context (Wave 2)
+- Global L1 critic on read-only tools
+- Browser automation without product driver
 
 ---

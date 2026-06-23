@@ -13,7 +13,7 @@
 ## Overview
 
 - **What:** Intergrax is a **Harness AI platform** — the durable runtime that runs many agents, not a single chatbot or domain bot.
-- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (**Done** ECC-0…ECC-6), policy, trace, multi-agent graphs, and Tier-3 application hosts.
+- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**197** integrations · **200** tools · **150** skills in **42** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (**Done** ECC-0…ECC-6), policy, trace, multi-agent graphs, and Tier-3 application hosts.
 - **Who it is for:** Teams building **governed multi-agent systems** — platform engineers, agent architects, Harness AI researchers, and product teams shipping agent-backed applications.
 - **Why it is different:** **The Harness is the product; agents are replaceable.** Agents own **domain decisions** inside a typed session loop; the harness owns **policy, trace, and execution**; Nexus owns **multi-agent orchestration**; applications own **environment, identity, and production gates** — without collapsing these into one mega-class.
 - **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **same agent class** from lab notebook to governed production roster.
@@ -419,7 +419,7 @@ Canon: [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_A
 
 ## Tier-0 catalog summary
 
-Shipped first-party catalogs (verified via `register_default_integrations(preset='full')`, `register_default_tools()`, `register_default_skills()` — **2026-06-08**).
+Shipped first-party catalogs (verified via `bootstrap_catalogs(integration_preset='full')` + `snapshot_catalogs()` — **2026-06-23**).
 
 ```text
 Integration  →  vendor backend (Postgres, Bing, Jira, …)
@@ -429,13 +429,13 @@ Skill        →  composable pack (tool_ids + prompts + policy fragment)
 
 | Layer | Catalog size | Module | Architecture | Plan | Usage / authoring |
 |-------|--------------|--------|--------------|------|-------------------|
-| **Integrations** | **185** slugs · **30** contract categories (116 STABLE · 69 BETA) | [`intergrax/integrations/`](intergrax/integrations/) | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) | [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) | Per-provider [USAGE.md](docs/architecture/INTEGRATIONS.md#implemented-providers-185) under `intergrax/integrations/providers/` |
-| **Tools** | **190** `tool_id`s · **48** bundles | [`intergrax/tools/`](intergrax/tools/) | [TOOLS.md](docs/architecture/TOOLS.md) | [plan/TOOLS.md](docs/plan/TOOLS.md) | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) |
-| **Skills** | **149** `skill_id`s · **41** bundles | [`intergrax/skills/`](intergrax/skills/) | [SKILLS.md](docs/architecture/SKILLS.md) | [plan/SKILLS.md](docs/plan/SKILLS.md) | Per-skill `USAGE.md` under `intergrax/skills/providers/{bundle}/{skill_id}/` |
+| **Integrations** | **197** slugs · **31** contract categories (116 STABLE · 81 BETA) | [`intergrax/integrations/`](intergrax/integrations/) | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) | [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) | Per-provider USAGE.md under `intergrax/integrations/providers/` |
+| **Tools** | **200** `tool_id`s · **49** bundles | [`intergrax/tools/`](intergrax/tools/) | [TOOLS.md](docs/architecture/TOOLS.md) | [plan/TOOLS.md](docs/plan/TOOLS.md) | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) |
+| **Skills** | **150** `skill_id`s · **42** bundles | [`intergrax/skills/`](intergrax/skills/) | [SKILLS.md](docs/architecture/SKILLS.md) | [plan/SKILLS.md](docs/plan/SKILLS.md) | Per-skill `USAGE.md` under `intergrax/skills/providers/{bundle}/{skill_id}/` |
 
 **Control plane (profiles, wiring, resolver):** [AGENT_CREATION_GUIDE.md Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · **Extension plugins:** [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md)
 
-**Skill bundles (41):** `harness`, `rag`, `workspace`, `memory`, `research`, `knowledge`, `legal`, `ops`, `dev`, `browser`, `collaboration`, `data`, `platform`, `sandbox`, `hitl`, `graph`, `storage`, `message_bus`, `cache`, `eval`, `modality`, `notify`, `cost`, `identity`, `health`, `context`, `agent`, `vector_store`, `crm`, `billing`, `metrics`, `catalog`, `cloud_platform`, `code`, `filesystem`, `http`, `interaction`, `jira`, `gitlab`, `ml`, `openai` — **149** skills — full index in [SKILLS.md § First-party catalog](docs/architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles).
+**Skill bundles (42):** `agent`, `billing`, `browser`, `cache`, `catalog`, `cloud_platform`, `code`, `codecraft`, `collaboration`, `context`, `cost`, `crm`, `data`, `dev`, `eval`, `filesystem`, `gitlab`, `graph`, `harness`, `health`, `hitl`, `http`, `identity`, `interaction`, `jira`, `knowledge`, `legal`, `memory`, `message_bus`, `metrics`, `ml`, `modality`, `notify`, `openai`, `ops`, `platform`, `rag`, `research`, `sandbox`, `storage`, `vector_store`, `workspace` — **150** skills — full index in [SKILLS.md](docs/architecture/SKILLS.md).
 
 ---
 
@@ -445,9 +445,9 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 
 | Concern | Scale / module | Documentation |
 |---------|----------------|---------------|
-| **Integrations** | **185** providers · `intergrax/integrations/` | [architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan](docs/plan/INTEGRATIONS.md) |
-| **Tools** | **190** catalog tools · **48** bundles · `intergrax/tools/` | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [plan](docs/plan/TOOLS.md) · [USAGE](intergrax/tools/USAGE.md) |
-| **Skills** | **149** skills · **41** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
+| **Integrations** | **197** providers · `intergrax/integrations/` | [architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan](docs/plan/INTEGRATIONS.md) |
+| **Tools** | **200** catalog tools · **49** bundles · `intergrax/tools/` | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [plan](docs/plan/TOOLS.md) · [USAGE](intergrax/tools/USAGE.md) |
+| **Skills** | **150** skills · **42** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
 | **LLM adapters** | 19 providers · typed `LLMAdapterResponse` | [architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
 | **RAG** | Retrieval, ingest, hybrid/graph/agentic (profile-configured) · golden + load/soak gates | [architecture/RAG.md](docs/architecture/RAG.md) · [plan](docs/plan/RAG.md) |
 | **Ephemeral Code Craft** | Dynamic codegen, test/fix loop, sandbox promotion (**Done** ECC-0…ECC-6) | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan](docs/plan/CODE_CRAFT.md) |

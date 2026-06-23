@@ -179,7 +179,7 @@ Adapters should be generic and reusable.
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) — Phase INT-P8  
 **Catalog (planned slugs):** [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8 planned categories
 
-**Purpose:** Extend the mature integration catalog (**185 shipped slugs**, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.
+**Purpose:** Extend the mature integration catalog (**197 shipped slugs**, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.
 
 ### Why INT-P8 (product value, not catalog padding)
 
