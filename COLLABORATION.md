@@ -63,6 +63,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 
 ## Related documents
 
+- [FAQ.md](FAQ.md) — common external-reader questions
 - [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
