@@ -205,6 +205,14 @@ Recommended Wave 1 size: five issues.
 
 A small set signals intentional public adoption. A large initial issue set may look like an uncontrolled backlog or an artificial community-building tactic.
 
+### 3.11 Wave 1 should not require new repository labels
+
+The first public issue wave should use only labels already referenced by the current GitHub issue templates.
+
+This keeps the first-wave rollout simple and avoids blocking issue creation on label taxonomy work.
+
+Additional semantic labels such as `proof-path`, `evidence`, `attestation`, or `public-adoption` may be considered later, but they are not required for opening the first curated public issues.
+
 ## 4. Issue Categories
 
 ### 4.1 Proof path feedback
@@ -283,11 +291,13 @@ Wave 1 contains exactly five curated public issues.
 
 These issues are selected because they maximize proof-path feedback, documentation clarity, external technical validation, and design-partner discovery while avoiding broad feature requests, support expectations, open-source assumptions, or uncontrolled product-roadmap discussions.
 
+Wave 1 uses only labels already referenced by the current issue templates. Additional semantic labels may be introduced later, but they are not required for the first-wave rollout.
+
 ### 5.1 Proof path feedback: README quick start
 
 **Category:** Proof path feedback  
 **Recommended template:** `proof_path_feedback.yml`  
-**Recommended labels:** `feedback`, `triage`, `proof-path`  
+**Recommended labels:** `feedback`, `triage`  
 **Primary audience:** first-time evaluator, platform engineer, technical reviewer  
 **Open now:** Yes — Wave 1, priority 1
 
@@ -348,7 +358,7 @@ Intergrax is source-available/proprietary. Evaluation feedback does not grant pr
 
 **Category:** Documentation clarity  
 **Recommended template:** `documentation_feedback.yml`  
-**Recommended labels:** `documentation`, `triage`, `feedback`  
+**Recommended labels:** `documentation`, `triage`  
 **Primary audience:** first-time evaluator, AI systems architect, technical reviewer, potential design partner  
 **Open now:** Yes — Wave 1, priority 2
 
@@ -416,7 +426,7 @@ Intergrax is source-available/proprietary. Documentation feedback does not creat
 
 **Category:** Proof path feedback / evidence feedback  
 **Recommended template:** `proof_path_feedback.yml`  
-**Recommended labels:** `feedback`, `triage`, `proof-path`, `evidence`  
+**Recommended labels:** `feedback`, `triage`  
 **Primary audience:** platform engineer, observability builder, governance engineer, technical reviewer  
 **Open now:** Yes — Wave 1, priority 3
 
@@ -486,7 +496,7 @@ Intergrax is source-available/proprietary. Feedback does not grant production, r
 
 **Category:** Evidence / attestation / boundary events feedback  
 **Recommended template:** `integration_proposal.yml`, framed as feedback rather than implementation request  
-**Recommended labels:** `integration`, `feedback`, `triage`, `attestation`, `evidence`  
+**Recommended labels:** `integration`, `triage`  
 **Primary audience:** attestation integrator, auditability builder, governance engineer, security-oriented platform engineer  
 **Open now:** Yes — Wave 1, priority 4
 
@@ -568,7 +578,7 @@ Intergrax is source-available/proprietary. Feedback does not grant production, r
 
 **Category:** Design partner interest  
 **Recommended template:** `design_partner_interest.yml`  
-**Recommended labels:** `design-partner`, `triage`, `feedback`  
+**Recommended labels:** `design-partner`, `triage`  
 **Primary audience:** AI product teams, platform teams, agent application builders, governance-focused teams, potential design partners  
 **Open now:** Yes — Wave 1, priority 5
 
