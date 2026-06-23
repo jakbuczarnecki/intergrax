@@ -4,12 +4,12 @@
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-06-13 |
-| **Deciders** | Platform + partner (AgentReceipt) |
+| **Deciders** | Platform + partner (BoundaryAttest) |
 | **Related** | [`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md) |
 
 ## Context
 
-AgentReceipt (external) provides portable signed receipts. Intergrax must demonstrate governed tool execution and export **neutral execution-boundary facts** without becoming a receipt product or implying platform attestation.
+BoundaryAttest (external) provides portable signed receipts. Intergrax must demonstrate governed tool execution and export **neutral execution-boundary facts** without becoming a receipt product or implying platform attestation.
 
 Partner agreed on:
 
@@ -26,7 +26,7 @@ Partner agreed on:
 
 Rejected for PoC v1:
 
-- Embedding AgentReceipt in Intergrax
+- Embedding BoundaryAttest in Intergrax
 - Intergrax signing receipts or claiming `server_attested`
 - Webhook-first delivery (partner chose synchronous API response)
 
@@ -47,7 +47,7 @@ Rejected for PoC v1:
 ## Compliance
 
 - Tier boundaries preserved — no `agents/` or `applications/` imports in `intergrax/`
-- AgentReceipt remains external; no vendor SDK in platform
+- BoundaryAttest remains external; no vendor SDK in platform
 - Trust documentation states `client_observed`; no `server_attested` claim from Intergrax
 
 ## Implementation notes

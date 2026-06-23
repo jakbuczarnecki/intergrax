@@ -40,7 +40,7 @@ It does **not** natively answer **outside the organization**:
 - Can a partner verify that a side-effecting tool action occurred **without** access to our journal?
 - Can execution evidence be attached to a ticket, audit packet, or external workflow?
 
-**AgentReceipt** is an external partner product that provides portable signed receipts. Intergrax does **not** build or host that product.
+**BoundaryAttest** is an external partner product that provides portable signed receipts. Intergrax does **not** build or host that product.
 
 ### 1.2 Business goal of this solution
 
@@ -48,7 +48,7 @@ It does **not** natively answer **outside the organization**:
 |------|-------|
 | Demonstrate governed tool execution on Intergrax | Intergrax |
 | Emit **unsigned, neutral execution-boundary facts** at the harness tool boundary | Intergrax (platform) |
-| Sign, chain, verify portable receipts | AgentReceipt (partner) |
+| Sign, chain, verify portable receipts | BoundaryAttest (partner) |
 | Validate that receipts add value beyond internal trace | Joint PoC |
 
 ### 1.3 What we sell vs what we do not sell
@@ -56,7 +56,7 @@ It does **not** natively answer **outside the organization**:
 | Intergrax provides | Intergrax does **not** provide |
 |--------------------|--------------------------------|
 | Optional **Execution Boundary Export (EBE)** on side-effecting tools | Receipt product |
-| Test Tier-3 host + demo agent for partner PoC | AgentReceipt hosting |
+| Test Tier-3 host + demo agent for partner PoC | BoundaryAttest hosting |
 | Stable `execution_boundary_event.v1` payload (unsigned) | Ed25519 receipt signing or host attestation keys |
 | Boundary events in **API response** (PoC v1) | Implied cryptographic attestation by Intergrax |
 | Internal HOS trace (unchanged) | Compliance-grade external audit product |
@@ -65,11 +65,11 @@ It does **not** natively answer **outside the organization**:
 
 ## 2. Implementation purpose
 
-Build the **smallest end-to-end path** that lets an external consumer (AgentReceipt adapter) receive tool execution facts **at the harness boundary** without:
+Build the **smallest end-to-end path** that lets an external consumer (BoundaryAttest adapter) receive tool execution facts **at the harness boundary** without:
 
 - forking Intergrax,
 - changing trace/policy semantics,
-- embedding AgentReceipt in the platform.
+- embedding BoundaryAttest in the platform.
 
 **PoC scope:** tool-level boundary (`RuntimeToolInvoker`) **and** harness-step boundary (`HarnessKernel`, EBE-8) when `step_level_enabled=true`.
 
@@ -124,7 +124,7 @@ Host-side signing of boundary events (optional `event_integrity_seal` or platfor
 3. **Event-first, receipt-second** — platform emits unsigned facts; partner signs receipts.
 4. **No HOS fork** — boundary events are an optional side channel; unified journal unchanged.
 5. **Tier-3 configures, Tier-1 emits** — profile on the application host; emission in `RuntimeToolInvoker`.
-6. **Vendor-neutral schema** — `execution_boundary_event.v1`, not “AgentReceipt schema”.
+6. **Vendor-neutral schema** — `execution_boundary_event.v1`, not “BoundaryAttest schema”.
 7. **Honest trust documentation** — never overstate what unsigned events prove.
 
 ---
@@ -134,7 +134,7 @@ Host-side signing of boundary events (optional `event_integrity_seal` or platfor
 ```mermaid
 flowchart TB
     subgraph External["External (partner)"]
-        AR[AgentReceipt]
+        AR[BoundaryAttest]
         AD[intergrax-adapter in partner repo]
     end
 
@@ -188,7 +188,7 @@ flowchart TB
 | **Tier-1** | `RuntimeToolInvoker` | Unchanged semantics; calls emitter post-execution |
 | **Tier-1** | HOS | Internal trace/policy journal (no receipt logic) |
 | **Tier-0** | `records.put` | Side-effecting catalog tool |
-| **External** | AgentReceipt + adapter | Map event → `createSignedReceipt` → sign/chain/verify; compare with journal |
+| **External** | BoundaryAttest + adapter | Map event → `createSignedReceipt` → sign/chain/verify; compare with journal |
 
 ---
 
@@ -288,9 +288,9 @@ Events are **unsigned**. Field `signed: false` is explicit in PoC v1 payloads.
 }
 ```
 
-### 8.2 Partner mapping (AgentReceipt adapter — external)
+### 8.2 Partner mapping (BoundaryAttest adapter — external)
 
-| Boundary event | AgentReceipt `createSignedReceipt` |
+| Boundary event | BoundaryAttest `createSignedReceipt` |
 |----------------|-----------------------------------|
 | `agent_id` | `agentId` |
 | `tool_id` | `tool` |
@@ -309,7 +309,7 @@ Intergrax does **not** ship the adapter.
 
 ### 8.3 Privacy
 
-- PoC includes canonical `input`/`output` for hash compatibility with AgentReceipt `stableJson`.
+- PoC includes canonical `input`/`output` for hash compatibility with BoundaryAttest `stableJson`.
 - Production profiles may move to hash-only modes (future).
 
 ---
@@ -441,7 +441,7 @@ on_next_step / run_step:
 | `allowed_tools` | `records.put` |
 | `side_effect_mode` | `immediate` |
 
-Agent **never** calls AgentReceipt, webhooks, or signing APIs.
+Agent **never** calls BoundaryAttest, webhooks, or signing APIs.
 
 ---
 
@@ -508,7 +508,7 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 | `HarnessKernel` policy pre/post | None in PoC v1 |
 | HOS / `RuntimeEvent` / unified journal | None |
 | `MiddlewarePipeline` AFTER_TOOL_CALL | None (EBE is invoker-level) |
-| AgentReceipt repository | None |
+| BoundaryAttest repository | None |
 | Tier dependency rules | Preserved |
 
 ---
@@ -587,5 +587,5 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 - Intergrax host signing of boundary events
 - `server_attested` receipts implied by platform
 - Platform-wide mandatory EBE for all hosts
-- AgentReceipt embedding or pip dependency
+- BoundaryAttest embedding or pip dependency
 - Compliance / legal-grade audit claims

@@ -2,7 +2,7 @@
 
 ## Summary
 
-Intergrax Attestation Demo demonstrates how a Tier-3 application can emit host-signed execution boundary events. [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest), an external project by Cullen Meyers, validated the integration pattern by verifying Intergrax host-signed boundary events and preserving them in a separate `client_observed` receipt wrapper.
+Intergrax Attestation Demo demonstrates how a Tier-3 application can emit host-signed execution boundary events. [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest), an external attestation project, validated the integration pattern by verifying Intergrax host-signed boundary events and preserving them in a separate `client_observed` receipt wrapper.
 
 This is a technical integration validation, not production certification or compliance attestation.
 
@@ -72,9 +72,9 @@ Start with the application documentation:
 
 ## Acknowledgement
 
-This PoC was validated through external integration work with the [AgentReceipt](https://github.com/cullenmeyers/AgentReceipt) project. The external feedback helped verify the mapping between Intergrax host-signed `execution_boundary_event.v1` records and a separate `client_observed` receipt wrapper.
+This PoC was validated through external integration work with the [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest) project. The external feedback helped verify the mapping between Intergrax host-signed `execution_boundary_event.v1` records and a separate `client_observed` receipt wrapper.
 
-This acknowledgement does not imply formal certification, bundling, ownership, partnership, or maintenance responsibility by either project. AgentReceipt remains an external project and Intergrax remains independently maintained.
+This acknowledgement does not imply formal certification, bundling, ownership, partnership, or maintenance responsibility by either project. BoundaryAttest remains an external project and Intergrax remains independently maintained.
 
 ## Related documents
 
