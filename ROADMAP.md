@@ -40,7 +40,7 @@ Canonical technical architecture and implementation status remain in:
 |------|-------|
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
 | Add issue templates for feedback, bug reports, integration proposals and design partner interest | Structured entry points for external contributors |
-| Open curated public issues for good-first-feedback, design partner tracks and integration proposals | [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) defines the scoped first-wave public issue set |
+| Open curated public issues for good-first-feedback, design partner tracks and integration proposals | [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) defines the scoped first-wave public issue set; active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
 | Improve attestation case study with diagrams or demo media | Optional follow-up to [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Prepare a lightweight Local Knowledge Workspace alpha narrative | Early product-validation story for design partners |
 | Improve public demo path for trace, evidence and boundary events | Clearer end-to-end evaluation of harness observability |
@@ -89,6 +89,7 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 
 - [README.md](README.md) — project overview, proof path, documentation index
 - [COLLABORATION.md](COLLABORATION.md) — collaboration model, permitted use, contact
+- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for proof-path feedback, documentation clarity, selected integration feedback, and design-partner discovery
 - [LICENSE](LICENSE) — proprietary terms
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and requirements
