@@ -89,6 +89,10 @@ Deferred:     hierarchical LLM category pass (default OFF) · optional L1 critic
 
 **Parallelism:** Wave 2 tools may proceed in parallel after Wave 1 `code.repo_map` contract is agreed. Wave 3 **blocked** until Wave 2 read-only git context ships.
 
+**Bundle vs namespace (Wave 1):** bundle id `code_intelligence`; public `tool_id`s remain `code.*` (`code.repo_map`, `code.symbol_search`, …).
+
+**Backend vs tools (Wave 2):** `local_git` (INT-P8.5) may expose approval-gated write backend ops (`apply_patch`, `commit`); Wave 2 `git.*` tools are **read-only** only. Patch/commit ships later via `patch.*` + ToolRuntime policy.
+
 ---
 
 ### TOOL-PRODUCT-ROI master register

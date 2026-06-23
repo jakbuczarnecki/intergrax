@@ -179,7 +179,7 @@ Adapters should be generic and reusable.
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) — Phase INT-P8  
 **Catalog (planned slugs):** [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8 planned categories
 
-**Purpose:** Extend the mature integration catalog (**197 shipped slugs**, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.
+**Purpose:** Extend the mature integration catalog (**194 shipped slugs** per `layout.py` · `SLUG_CATEGORY`, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.
 
 ### Why INT-P8 (product value, not catalog padding)
 
@@ -223,7 +223,7 @@ Agent -> Tool / Skill -> ToolRuntime -> Integration
 | `tool_protocol_gateway` | `mcp` | MCP server discovery, tool/resource listing, schema fetch, gated invocation |
 | `api_connector` | `openapi_http` | OpenAPI-driven REST connector with schema validation and method risk classification |
 | `workspace_store` | `local_workspace` | Root-scoped local workspace with path policy and gated writes |
-| `code_repository` | `local_git` | Local Git read ops + approval-gated patch/commit |
+| `code_repository` | `local_git` | Local Git read ops + approval-gated patch/commit (backend); Wave 2 `git.*` tools read-only only |
 | `code_intelligence` | `sourcegraph` (optional later: `github_code`) | Read-only enterprise code search |
 
 Selection metadata fields (INT-P8.1): `capabilities`, `operations`, `read_write`, `auth_type`, `required_scopes`, `data_sensitivity`, `latency_class`, `cost_class`, `locality`, `deterministic`, `side_effect_level`, `supported_task_intents`, `suitable_agent_types`, `supports_dry_run`, `supports_rollback`, `requires_human_approval`, `rate_limit_class`, `testability`, `selection_hints`, `risk`.

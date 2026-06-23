@@ -8,7 +8,7 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-06-23 — Phase **INT-P8** architecture & backlog (planned); **Full Harness LC** unchanged; shipped catalog **197** slugs (116 STABLE · 81 BETA).
+**Last updated:** 2026-06-23 — Phase **INT-P8** architecture & backlog (planned); **Full Harness LC** unchanged; shipped catalog **194** slugs (`layout.py` · `SLUG_CATEGORY` — source of truth).
 
 ---
 
@@ -153,7 +153,11 @@ Load **only** the satellite matching your task or cited gap ID.
 |------|-----|-------------|----------|
 | 1 | INT-1 | `integration_runtime_bridge` | Critical |
 | 2 | INT-2 | `integration_health_wiring` | High |
-| 3 | INT-DOC.1–2 | Appendix K + plan sync | Low |### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
+| 3 | INT-DOC.1–2 | Appendix K + plan sync | Low |
+
+---
+
+### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
 
 **Status:** **Done** · register: [Phase TS](plan/TOOLS.md) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
@@ -259,7 +263,7 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 ## Phase INT-P8 — Dynamic Integration Selection & Agent Workspace Gateways (Planned)
 
 **Status:** **Planned** — architecture & implementation backlog only (no code in this phase doc update)  
-**Prerequisites:** Phase INTEGRATIONS-LC **Done** · catalog **197** shipped slugs · Full Harness LC unchanged  
+**Prerequisites:** Phase INTEGRATIONS-LC **Done** · catalog **194** shipped slugs (`layout.py`) · Full Harness LC unchanged  
 **Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) — §Phase INT-P8  
 **Catalog (planned slugs):** [`architecture/satellites/INTEGRATIONS_provider_catalog.md`](../architecture/satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8  
 **Band:** 2ae (post–Full Harness LC strategic depth)  
@@ -294,7 +298,7 @@ Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate 
 
 | ID | Title | Type | Priority | Status | Depends on | Acceptance criteria |
 |----|-------|------|----------|--------|------------|---------------------|
-| **INT-P8.1** | Dynamic Integration Selection Metadata | Design + Code | **P0** | **Planned** | INTEGRATIONS-LC | Extended manifest/profile fields (`capabilities`, `operations`, `read_write`, `auth_type`, `required_scopes`, `data_sensitivity`, `latency_class`, `cost_class`, `locality`, `deterministic`, `side_effect_level`, `supported_task_intents`, `suitable_agent_types`, `supports_dry_run`, `supports_rollback`, `requires_human_approval`, `rate_limit_class`, `testability`, `selection_hints`, `risk`); backward-compatible with existing 197 manifests; schema documented in architecture satellite |
+| **INT-P8.1** | Dynamic Integration Selection Metadata | Design + Code | **P0** | **Planned** | INTEGRATIONS-LC | Extended manifest/profile fields (`capabilities`, `operations`, `read_write`, `auth_type`, `required_scopes`, `data_sensitivity`, `latency_class`, `cost_class`, `locality`, `deterministic`, `side_effect_level`, `supported_task_intents`, `suitable_agent_types`, `supports_dry_run`, `supports_rollback`, `requires_human_approval`, `rate_limit_class`, `testability`, `selection_hints`, `risk`); backward-compatible with existing **194** manifests; schema documented in architecture satellite |
 | **INT-P8.2** | MCP Gateway Integration (`tool_protocol_gateway` / `mcp`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Category contract + provider: MCP server discovery, list tools/resources, fetch tool schemas, invoke tools **via ToolRuntime only**, read resources, health probe, write/side-effect policy gate, selection metadata; fake MCP server + tests blocking side effects without approval |
 | **INT-P8.3** | OpenAPI HTTP Connector (`api_connector` / `openapi_http`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Load OpenAPI from file/URL; list/describe operations; request schema validation; read-only execution; write ops only with ToolRuntime approval; HTTP method risk classification; auth metadata; health probe; mock API server; tests: GET/POST, auth missing, schema invalid, blocked unsafe method |
 | **INT-P8.4** | Local Workspace Integration (`workspace_store` / `local_workspace`) | Code | **P0** | **Planned** | INT-P8.1, INT-P8.8 | Root-scoped workspace; list tree, read, text search; write/delete/move gated; glob allow/deny; file size limit; path traversal + symlink escape blocked; health probe; security path tests; **not** a alias of `filesystem` object storage |
@@ -355,7 +359,7 @@ INT-P8 implementation PRs **MUST NOT** add:
 ### INT-P8 closeout target (future)
 
 - Selection metadata on new + migrated hot-path providers
-- Up to **5** new categories, **≤6** planned first-wave slugs registered (not duplicating existing 197)
+- Up to **5** new categories, **≤6** planned first-wave slugs registered (not duplicating existing **194**)
 - Four Tier-3 presets shipped in code
 - Selection engine + ToolRuntime policy tests green
 - Gate green; **Full Harness LC** status unchanged until explicit LC re-validation if scope warrants

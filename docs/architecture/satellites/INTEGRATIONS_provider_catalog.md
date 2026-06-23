@@ -2,10 +2,12 @@
 
 **Parent hub:** [`INTEGRATIONS.md`](../INTEGRATIONS.md)
 
+**Source of truth (shipped slug count):** `len(SLUG_CATEGORY)` in `intergrax/integrations/providers/layout.py` — **194** as of 2026-06-23. Historical phase closeouts (e.g. M.7 P7 → 185) retain snapshot counts.
+
 ## Catalog
 
 
-**Last updated:** 2026-06-23 — Phase INT-P8 planned categories (185 shipped unchanged); prior note: 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **185** slugs · M.7 P7 **Done** 18/18
+**Last updated:** 2026-06-23 — Phase INT-P8 planned categories (194 shipped unchanged); prior note: 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **194** slugs (current) · M.7 P7 closeout was **185** 18/18
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. See **Integration Layer Contract** above for normative tier boundaries. Applications wire backends **by category** via `IntegrationProfile`; agents consume backends **through catalog tools**, not by importing vendor adapters.
 
@@ -50,7 +52,7 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
 ```
 
-Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 providers stable in one release.
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 194 providers stable in one release.
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
@@ -90,7 +92,7 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 pr
 
 ### Speech provider (`speech_provider`) — canonical tool path
 
-Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 185+ slugs.
+Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 194 shipped slugs.
 
 | Step | Mechanism |
 |------|-----------|
@@ -120,7 +122,7 @@ Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) —
 
 **Tier-3 presets (P7):** `research_web_stack()`, `document_ingest_stack()`, `chat_bot_stack()` — CLI: `intergrax integrations-pick research_web|document_ingest|chat_bot`.
 
-**Catalog:** **185** slugs in `layout.py` (**12** core / **185** full preset).
+**Catalog:** **194** slugs in `layout.py`.
 
 ---
 
@@ -346,7 +348,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (185)
+## Implemented providers (194)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -382,7 +384,7 @@ All providers below are registered in `register_default_integrations()`.
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |
 
-**Total unique slugs:** 185.
+**Total unique slugs:** 194.
 
 ### Implementation depth (code audit)
 
@@ -817,13 +819,13 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **185** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
+**Strong harness coverage today:** **194** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
 ---
 
-All **185** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **194** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py
@@ -975,7 +977,7 @@ Integrations cross-ref only. Host authors enable ingress via ECP profiles and
 ## Phase INT-P8 — Planned categories & slugs (not shipped)
 
 **Status:** **Planned** — architecture and plan only (2026-06-23)  
-**Shipped catalog unchanged:** **185** slugs in layout.py / 
+**Shipped catalog unchanged:** **194** slugs in `layout.py` / 
 egister_default_integrations()  
 **Plan:** [plan/INTEGRATIONS.md](../../plan/INTEGRATIONS.md) Phase INT-P8  
 **Architecture:** [INTEGRATIONS.md](../INTEGRATIONS.md) §Phase INT-P8
@@ -1014,7 +1016,7 @@ ate_limit_class | Provider rate-limit tier hint |
 | 
 isk | low / medium / high / critical |
 
-Existing **185** manifests remain valid; metadata backfill is optional per provider during INT-P8 rollout.
+Existing **194** manifests remain valid; metadata backfill is optional per provider during INT-P8 rollout.
 
 ### Planned new categories
 
@@ -1079,7 +1081,7 @@ Existing **185** manifests remain valid; metadata backfill is optional per provi
 
 ### INT-P8 explicit non-goals (catalog)
 
-Do **not** add under INT-P8: new LLM/vector/observability/browser vendors; PM SaaS without product; LangChain/LlamaIndex; Zapier/Make.com; Git push; duplicate slugs already in the **185** shipped index below.
+Do **not** add under INT-P8: new LLM/vector/observability/browser vendors; PM SaaS without product; LangChain/LlamaIndex; Zapier/Make.com; Git push; duplicate slugs already in the **194** shipped index below.
 
 ---
 

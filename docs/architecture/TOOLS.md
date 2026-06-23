@@ -284,7 +284,8 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` (TOOL-ENG-1) |
 | **§42.12 gateway** | **Done** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
-| **Post-tool verification** | **Done** | `run_post_tool_verify` trace + enforce block (TOOL-ENG-7); optional L1 critic via CVL — safety boundaries [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) |
+| **Post-tool verification** | **Done** | `run_post_tool_verify` trace + enforce block (TOOL-ENG-7) — safety boundaries [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) |
+| **Optional L1 critic on tool output** | **Planned** / **Deferred** (default **OFF**) | Post-invoke hook via CVL on high-risk tools only — not part of post-tool verification ship; see [Deferred runtime features](#deferred-runtime-features-not-new-tools) |
 | **AHI dynamic tool modes** | **Done** | `ToolEngineHook` + `recommend_tool_modes` (TOOL-ENG-10) |
 | **Observability** | **Production** | Selection + pattern diag, budget ticks, `tool_traces` (TOOL-ENG-27/32) |
 
@@ -312,7 +313,9 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 
 ### Wave 1 — Code Intelligence Tools (read-only, **P0**)
 
-New bundle family `code_intelligence` (or extend `code` bundle when wired). All tools **read-only**, dispatch via **ToolRuntime**; backends may use `local_git` / workspace integrations (INT-P8.5) or in-process analyzers.
+**Bundle id:** `code_intelligence` · **Public `tool_id` namespace:** `code.*` (bundle name and tool namespace are intentionally distinct).
+
+All tools **read-only**, dispatch via **ToolRuntime**; backends may use `local_git` / workspace integrations (INT-P8.5) or in-process analyzers.
 
 | `tool_id` | Purpose |
 |-----------|---------|
@@ -328,6 +331,8 @@ New bundle family `code_intelligence` (or extend `code` bundle when wired). All 
 ### Wave 2 — Git / PR Context Tools (read-only, **P1**)
 
 Read-only GitHub/GitLab (and local git) context for audit agents. **No** merge, approve, push, or apply-patch tools in this wave.
+
+**Backend vs tools:** `local_git` (INT-P8.5) may expose approval-gated write backend operations (`apply_patch`, `commit`); Wave 2 `git.*` tools consume **read-only** operations only. Patch/commit surface ships later via `patch.*` tools and ToolRuntime policy gates.
 
 | `tool_id` | Purpose |
 |-----------|---------|

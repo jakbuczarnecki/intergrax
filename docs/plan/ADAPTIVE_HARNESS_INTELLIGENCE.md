@@ -60,9 +60,9 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-9.3 | §9 Orchestration | Dynamic execution strategy selection (shared ORCHESTRATION) | P2 | **Done** |
 | AUDIT-IDEAL-12.2 | §12 Skills | Dynamic skill selection L4 hook (shared SKILLS) | P2 | **Done** |
 | AUDIT-IDEAL-24.2 | §24 Cost | Automated cost optimization recommendations (shared UAEP) | P2 | **Done** |
-| AUDIT-IDEAL-AHI.1 | §25 AHI | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | **Done** |
-| AUDIT-IDEAL-AHI.2 | §25 AHI | Bounded policy learning without governance drift | P2 | **Done** |
-| AUDIT-IDEAL-AHI.3 | §25 AHI | Capability marketplace readiness (trust, certification, billing) | P3 | **Done** |
+| AUDIT-IDEAL-AHI.1 | §25 AHI | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | **Planned** — requires real deploy evidence; no production 30-day loop yet |
+| AUDIT-IDEAL-AHI.2 | §25 AHI | Bounded policy learning without governance drift | P2 | **Partial** — governance contracts done (`adaptive_governance.py`); runtime `AdaptationExecutor` loop pending |
+| AUDIT-IDEAL-AHI.3 | §25 AHI | Capability marketplace readiness (trust, certification, billing) | P3 | **Planned** — marketplace readiness not productized |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
