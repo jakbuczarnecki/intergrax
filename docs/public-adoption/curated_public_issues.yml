@@ -1,0 +1,407 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+schema_version: 1
+status: draft
+purpose: >-
+  Structured source data for maintainer-curated public GitHub issue drafts.
+  This file is intended for future automation and does not create GitHub Issues by itself.
+
+safety:
+  creates_real_github_issues: false
+  requires_explicit_apply_flag: true
+  dry_run_should_be_default: true
+  source_available_proprietary_notice_required: true
+  do_not_create:
+    - production_support_issues
+    - sla_or_support_commitment_issues
+    - commercial_use_permission_issues
+    - redistribution_or_derivative_work_permission_issues
+    - public_security_vulnerability_reports
+    - broad_feature_request_issues
+    - help_wanted_or_good_first_issue_tasks
+    - hosted_saas_or_pricing_issues
+
+waves:
+  wave_1:
+    description: >-
+      First curated public issue wave for proof-path feedback, documentation clarity,
+      evidence and trace inspection, attestation feedback, and qualified design-partner discovery.
+    open_now: true
+    labels_policy: use_existing_template_labels_only
+    issues:
+      - id: readme-quick-start
+        order: 1
+        title: "Proof path feedback: README quick start"
+        template: proof_path_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: proof_path_feedback
+        primary_audience:
+          - first-time evaluator
+          - platform engineer
+          - technical reviewer
+        goal: >-
+          Validate whether an external evaluator can follow the README quick start path
+          without internal project knowledge.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for first-run feedback from external evaluators following the README quick start path.
+
+          The goal is not to request new features, but to identify friction in the public evaluation path:
+
+          - clone the repository
+          - install dependencies
+          - run verification commands
+          - start the lab host
+          - execute a sample request
+          - inspect the resulting trace
+
+          ## Suggested evaluation path
+
+          Start from the README quick start section and follow the documented local evaluation flow.
+
+          Please note where the path was clear, where it was unclear, and where a command or expectation did not match your environment.
+
+          ## Useful feedback
+
+          Please share:
+
+          - which steps worked as expected
+          - where the instructions became unclear
+          - which command failed, if any
+          - relevant command output, with secrets redacted
+          - your environment: OS, Python version, uv version, branch or commit
+          - what would make the first-run path easier to evaluate
+
+          ## Out of scope
+
+          This issue is not for:
+
+          - production support
+          - commercial use requests
+          - broad feature requests
+          - license debates
+          - security vulnerabilities
+          - requests for free implementation work
+
+          Intergrax is source-available/proprietary. Evaluation feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: first-time-evaluator-docs
+        order: 2
+        title: "Documentation clarity: first-time evaluator path"
+        template: documentation_feedback.yml
+        labels:
+          - documentation
+          - triage
+        category: documentation_clarity
+        primary_audience:
+          - first-time evaluator
+          - AI systems architect
+          - technical reviewer
+          - potential design partner
+        goal: >-
+          Validate whether the public repository clearly explains what Intergrax is,
+          what it is not, who it is for, and where an evaluator should start.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for documentation feedback from first-time evaluators.
+
+          The goal is to understand whether the public repository clearly explains:
+
+          - what Intergrax is
+          - what Intergrax is not
+          - who it is for
+          - where an evaluator should start
+          - what collaboration tracks are currently appropriate
+          - what requires maintainer permission
+
+          ## Useful feedback
+
+          Please share:
+
+          - the first document you opened
+          - where the project became clear
+          - where the project became confusing
+          - which term, diagram, or boundary was hardest to understand
+          - whether the source-available/proprietary collaboration model was clear
+          - whether the difference between agent, harness, Nexus, and application was understandable
+          - what link, section, diagram, or wording would improve the first-time evaluator path
+
+          ## Reader profile
+
+          It is helpful to mention your perspective, for example:
+
+          - first-time evaluator
+          - agent developer
+          - platform engineer
+          - integration partner
+          - AI systems architect
+          - product team
+          - other
+
+          ## Out of scope
+
+          This issue is not for:
+
+          - broad feature requests
+          - production support
+          - commercial use requests
+          - license debates
+          - implementation tasks
+          - general product brainstorming
+
+          Intergrax is source-available/proprietary. Documentation feedback does not create partnership, support, production-use, commercial-use, redistribution, or derivative-work rights.
+
+      - id: evidence-trace-inspection
+        order: 3
+        title: "Proof path feedback: evidence and trace inspection"
+        template: proof_path_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: proof_path_feedback
+        primary_audience:
+          - platform engineer
+          - observability builder
+          - governance engineer
+          - technical reviewer
+        goal: >-
+          Validate whether trace and evidence outputs are understandable to external reviewers.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the public trace and evidence inspection path.
+
+          The goal is to understand whether an external evaluator can inspect Intergrax outputs and understand:
+
+          - what happened during a run
+          - which events or records were produced
+          - what information is clear
+          - what information is missing
+          - which fields require better explanation
+          - whether the difference between runtime trace and evidence output is understandable
+
+          ## Suggested evaluation path
+
+          Start from the README proof path and inspect available trace or evidence outputs, such as:
+
+          - trace rendering commands
+          - trace export commands
+          - lab host debug or trace endpoints, where applicable
+          - generated evidence files, where applicable
+
+          ## Useful feedback
+
+          Please share:
+
+          - which trace or evidence output you inspected
+          - whether the output was understandable without internal project knowledge
+          - which fields were clear
+          - which fields were unclear
+          - whether the ordering, lineage, run identifiers, or step identifiers were understandable
+          - what additional explanation, diagram, or example would make inspection easier
+
+          ## Important boundary
+
+          This issue is about evaluation-path clarity.
+
+          It is not a production audit request, not a compliance attestation request, and not a production certification claim.
+
+          ## Out of scope
+
+          This issue is not for:
+
+          - production support
+          - compliance certification
+          - legal or security approval
+          - commercial use requests
+          - broad observability feature requests
+          - requests to implement a specific exporter or dashboard without prior maintainer discussion
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: boundaryattest-case-study-feedback
+        order: 4
+        title: "Attestation integration feedback: BoundaryAttest case study"
+        template: integration_proposal.yml
+        labels:
+          - integration
+          - triage
+        category: attestation_boundary_events_feedback
+        primary_audience:
+          - attestation integrator
+          - auditability builder
+          - governance engineer
+          - security-oriented platform engineer
+        goal: >-
+          Collect technical feedback on the BoundaryAttest case study and Intergrax Execution Boundary Export pattern.
+        risk: medium_high
+        body: |
+          ## Purpose
+
+          We are looking for technical feedback on the BoundaryAttest attestation case study and the Intergrax Execution Boundary Export pattern.
+
+          The goal is to validate whether the public case study clearly explains:
+
+          - host-signed execution boundary events
+          - separate tool and harness-step boundary claims
+          - how an external verifier can consume Intergrax evidence
+          - the distinction between Intergrax host/runtime claims and external client-observed receipts
+          - what is clear or missing for external attestation integrators
+
+          ## Suggested review path
+
+          Please review the BoundaryAttest case study and related attestation demo documentation.
+
+          Useful feedback may focus on:
+
+          - trust model clarity
+          - boundary event shape
+          - receipt mapping clarity
+          - signature / verification explanation
+          - separation between Intergrax host claims and external partner claims
+          - whether the case study gives enough information for an external PoC review
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether the event/receipt boundary is clear
+          - whether the host-attestation role is clear
+          - whether the case study avoids overclaiming
+          - which terms or fields need better explanation
+          - what diagram, example, field table, or verification note would help
+          - whether this pattern fits external attestation, audit, or receipt systems you are familiar with
+
+          ## Important non-claims
+
+          This issue does not imply:
+
+          - production certification
+          - compliance attestation
+          - legal approval
+          - security approval
+          - formal partnership
+          - bundled BoundaryAttest support
+          - commercial or production use rights
+          - guaranteed acceptance of integration work
+
+          BoundaryAttest remains an external project. Intergrax remains independently maintained.
+
+          ## Out of scope
+
+          This issue is not for:
+
+          - security vulnerability disclosure
+          - production deployment requests
+          - commercial licensing requests
+          - compliance certification requests
+          - broad feature requests
+          - requests to bundle or maintain external projects without maintainer approval
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: governed-agent-applications-design-partner
+        order: 5
+        title: "Design partner interest: governed agent applications"
+        template: design_partner_interest.yml
+        labels:
+          - design-partner
+          - triage
+        category: design_partner_interest
+        primary_audience:
+          - AI product teams
+          - platform teams
+          - agent application builders
+          - governance-focused teams
+          - potential design partners
+        goal: >-
+          Create a controlled public entry point for people or teams evaluating governed agent applications where Intergrax may be relevant.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for design-partner interest from people or teams building governed agent applications.
+
+          This track is for evaluating whether Intergrax's Harness AI model fits real product needs where agents require:
+
+          - policy-bound execution
+          - trace and evidence
+          - clear agent/application/runtime boundaries
+          - human-in-the-loop checkpoints
+          - controlled tool use
+          - repeatable proof paths
+          - maintainable multi-agent orchestration
+
+          ## Good fit
+
+          This may be relevant if you are building or evaluating:
+
+          - internal AI workspaces
+          - governed agent tools
+          - agent-backed business applications
+          - compliance-sensitive automation
+          - multi-agent systems that need runtime discipline
+          - products where agents must be observable, constrained, and reviewable
+
+          ## What to share
+
+          Please describe:
+
+          - what kind of agent application you are building or evaluating
+          - which governance, runtime, evidence, or integration problem matters most
+          - what would make a design-partner conversation useful
+          - what kind of proof path or evaluation would validate fit
+          - preferred contact method
+
+          Do not include confidential information, private credentials, customer data, or secrets in this public issue.
+
+          ## Not a commitment
+
+          Submitting interest does not create:
+
+          - a partnership
+          - an implementation commitment
+          - an SLA
+          - a support obligation
+          - production-use permission
+          - commercial-use permission
+          - redistribution rights
+          - derivative-work rights
+          - guaranteed acceptance of proposed work
+
+          Intergrax is source-available/proprietary. Commercial, production, redistribution, derivative-work, or substantial implementation use requires explicit maintainer permission.
+
+  wave_2:
+    description: >-
+      Deferred public issue candidates. These should not be opened together with Wave 1.
+    open_now: false
+    issues:
+      - id: harness-ai-mental-model-docs
+        title: "Documentation clarity: Harness AI mental model"
+        category: documentation_clarity
+        opening_condition: >-
+          Open if Wave 1 feedback shows repeated confusion about Intergrax's architectural boundaries.
+      - id: trace-evidence-export-surfaces
+        title: "Integration feedback: trace and evidence export surfaces"
+        category: integration_feedback
+        opening_condition: >-
+          Open after receiving useful feedback from evidence and trace inspection.
+      - id: local-knowledge-workspace-alpha
+        title: "Design partner interest: Local Knowledge Workspace alpha"
+        category: product_validation_track
+        opening_condition: >-
+          Open after adding or improving a public Local Knowledge Workspace alpha narrative.
+      - id: mcp-controlled-task-surface
+        title: "Integration feedback: MCP as a controlled Intergrax task surface"
+        category: integration_feedback
+        opening_condition: >-
+          Open after first feedback confirms that external readers understand the agent, harness, Nexus, application, and trace/evidence boundaries.
