@@ -5,7 +5,7 @@ REM Use, modification, or distribution without written permission is prohibited.
 
 setlocal EnableExtensions
 
-set "CONFIG=docs/public-adoption/curated_public_discussion_issues.yml"
+set "CONFIG=docs/public-adoption/curated_public_issues.yml"
 set "SCRIPT=scripts/public_adoption/create_curated_issues.py"
 
 pushd "%~dp0\..\.." >nul 2>&1
