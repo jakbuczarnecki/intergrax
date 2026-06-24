@@ -326,6 +326,31 @@ def print_plan(
             )
 
 
+def missing_required_milestones(
+    targets: list[IssueMilestoneTarget],
+    milestones: dict[str, dict[str, Any]],
+) -> list[str]:
+    """Return expected milestone titles that do not exist yet."""
+
+    expected = sorted({target.milestone_title for target in targets})
+    return [title for title in expected if title not in milestones]
+
+
+def require_existing_milestones(
+    targets: list[IssueMilestoneTarget],
+    milestones: dict[str, dict[str, Any]],
+) -> None:
+    """Fail if any expected milestone is missing."""
+
+    missing = missing_required_milestones(targets, milestones)
+    if missing:
+        formatted = ", ".join(missing)
+        raise ConfigError(
+            "Missing required milestone(s): "
+            f"{formatted}. Create them manually in GitHub or run with --apply using a token that can create milestones."
+        )
+
+
 def create_missing_milestones(
     repo: str,
     targets: list[IssueMilestoneTarget],
@@ -384,6 +409,23 @@ def assign_issue(repo: str, target: IssueMilestoneTarget) -> None:
     print(f"ASSIGN issue #{target.number}: {target.milestone_title}")
 
 
+def assign_issues(
+    repo: str,
+    targets: list[IssueMilestoneTarget],
+    issues: dict[int, dict[str, Any]],
+) -> None:
+    """Assign all selected issues to expected milestones."""
+
+    for target in targets:
+        current = issues.get(target.number)
+        if current is None:
+            raise ConfigError(f"Issue #{target.number} not found")
+        if milestone_title(current) == target.milestone_title:
+            print(f"SKIP   issue #{target.number}: already in {target.milestone_title}")
+            continue
+        assign_issue(repo, target)
+
+
 def check_sync(targets: list[IssueMilestoneTarget], issues: dict[int, dict[str, Any]]) -> int:
     """Check milestone assignments."""
 
@@ -423,6 +465,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--repo", default=DEFAULT_REPOSITORY)
     parser.add_argument("--wave", default=None, help="Optional wave key to process. Defaults to all waves.")
     parser.add_argument("--apply", action="store_true", help="Create missing milestones and assign issues.")
+    parser.add_argument(
+        "--assign-only",
+        action="store_true",
+        help="Assign issues to existing milestones only. Never creates milestones.",
+    )
     parser.add_argument("--check-sync", action="store_true", help="Verify milestone assignments. Never mutates GitHub.")
     return parser.parse_args(argv)
 
@@ -432,6 +479,9 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parse_args(sys.argv[1:] if argv is None else argv)
     try:
+        if args.apply and args.assign_only:
+            raise ConfigError("Use either --apply or --assign-only, not both.")
+
         config = load_config(args.config)
         targets = select_targets(config, wave=args.wave)
         milestones = list_milestones(args.repo)
@@ -442,21 +492,22 @@ def main(argv: list[str] | None = None) -> int:
 
         print_plan(targets, milestones, issues)
 
-        if not args.apply:
-            print("\nDry-run only. Pass --apply to create milestones and assign issues.")
+        if not args.apply and not args.assign_only:
+            print("\nDry-run only. Pass --apply to create milestones and assign issues, or --assign-only to assign existing milestones only.")
+            return 0
+
+        if args.assign_only:
+            print("\nApplying issue assignments only:")
+            require_existing_milestones(targets, milestones)
+            assign_issues(args.repo, targets, issues)
             return 0
 
         print("\nApplying milestone changes:")
         create_missing_milestones(args.repo, targets, milestones)
+        refreshed_milestones = list_milestones(args.repo)
+        require_existing_milestones(targets, refreshed_milestones)
         refreshed_issues = list_issues(args.repo)
-        for target in targets:
-            current = refreshed_issues.get(target.number)
-            if current is None:
-                raise ConfigError(f"Issue #{target.number} not found")
-            if milestone_title(current) == target.milestone_title:
-                print(f"SKIP   issue #{target.number}: already in {target.milestone_title}")
-                continue
-            assign_issue(args.repo, target)
+        assign_issues(args.repo, targets, refreshed_issues)
         return 0
     except (ConfigError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
