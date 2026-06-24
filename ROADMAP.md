@@ -34,7 +34,7 @@ Canonical technical architecture and implementation status remain in:
 | Public evaluation entry points available | [README.md](README.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [USE_CASES.md](USE_CASES.md) · [PARTNERS.md](PARTNERS.md) |
 | Curated public issue routing available | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
 | Public issue templates / feedback routing available | Structured entry points for feedback, bug reports, integration proposals, and design-partner interest |
-| Expanded public discussion waves prepared | Architecture, product-validation, and deep technical discussion waves are defined in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) |
+| Expanded public discussion waves prepared | Architecture, product-validation, and deep technical discussion waves are defined in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) and [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) |
 
 ---
 
@@ -43,8 +43,8 @@ Canonical technical architecture and implementation status remain in:
 | Item | Notes |
 |------|-------|
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
-| Maintain curated public issue routing | Active issues in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md); drafts in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) |
-| Open expanded discussion waves selectively | Use [curated_public_discussion_issues.yml](docs/public-adoption/curated_public_discussion_issues.yml) for Wave 3 architecture, Wave 4 product-validation, and Wave 5 deep technical discussion issues |
+| Maintain curated public issue routing | Active and prepared issues are defined in [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml); active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
+| Open expanded discussion waves selectively | Use [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) for Wave 3 architecture, Wave 4 product-validation, and Wave 5 deep technical discussion issues |
 | Refine issue templates based on first external feedback | Feedback, bug reports, integration proposals, and design-partner interest have structured entry points |
 | Optionally add demo media for the attestation case study | Validation-flow diagram is published; optional future work is short demo media for the [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Collect Local Knowledge Workspace alpha feedback from design partners | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) published; structured partner feedback welcome |
@@ -101,6 +101,7 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
 - [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion issue waves
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for proof-path feedback, documentation clarity, selected integration feedback, and design-partner discovery
+- [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active and expanded public issue automation
 - [LICENSE](LICENSE) — proprietary terms
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and requirements
 - [applications/attestation_demo/README.md](applications/attestation_demo/README.md) — attestation integration proof
