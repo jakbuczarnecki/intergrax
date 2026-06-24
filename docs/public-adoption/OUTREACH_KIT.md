@@ -10,7 +10,8 @@ This document contains maintainer-facing outreach drafts for introducing Intergr
 
 These drafts are intentionally conservative. They do not create commitments, license grants, support obligations, certification claims, or partnership terms. Adapt wording as needed, but keep the guardrails below.
 
-Always link readers back to [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLLABORATION.md](../../COLLABORATION.md), and [ROADMAP.md](../../ROADMAP.md) for authoritative repository context, license boundaries, and public adoption paths.
+Always link readers back to [README.md](../../README.md), [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md), [USE_CASES.md](../../USE_CASES.md), [PARTNERS.md](../../PARTNERS.md), [FAQ.md](../../FAQ.md), and [COLLABORATION.md](../../COLLABORATION.md) for authoritative repository context and permission boundaries.
+For near-term public adoption priorities, point to [ROADMAP.md](../../ROADMAP.md).
 
 ---
 
@@ -21,6 +22,9 @@ Always link readers back to [README.md](../../README.md), [FAQ.md](../../FAQ.md)
 - Say **alpha/product-validation direction**, not **finished product**.
 - Say **design-partner discovery**, not **guaranteed partnership**.
 - Say **proof-path feedback**, not **production support**.
+- Route time-boxed technical reviewers to [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md).
+- Route use-case fit questions to [USE_CASES.md](../../USE_CASES.md).
+- Route design-partner or partner-fit discussions to [PARTNERS.md](../../PARTNERS.md).
 - For commercial or production use, point to maintainer contact and [COLLABORATION.md](../../COLLABORATION.md).
 
 ---
@@ -33,7 +37,7 @@ Intergrax is a source-available Harness AI / Agent OS for governed agent applica
 
 ### Short paragraph
 
-Intergrax is built for governed agent applications, not just demo agents. It focuses on runtime boundaries, policy-controlled tools, orchestration, RAG/memory, trace/evidence, and application hosts. Current public goals are technical review, proof-path feedback, selected integration feedback, and design-partner discovery — not a finished SaaS or open-source framework. For start paths, license boundaries, and near-term priorities, see [README.md](../../README.md), [FAQ.md](../../FAQ.md), and [ROADMAP.md](../../ROADMAP.md).
+Intergrax is built for governed agent applications, not just demo agents. It focuses on runtime boundaries, policy-controlled tools, orchestration, RAG/memory, trace/evidence, and application hosts. Current public goals are technical review, proof-path feedback, selected integration feedback, and design-partner discovery — not a finished SaaS or open-source framework. [README.md](../../README.md) is the repository overview; [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) gives a time-boxed reviewer path; [USE_CASES.md](../../USE_CASES.md) maps problem/use-case fit; [PARTNERS.md](../../PARTNERS.md) explains design-partner and partner-fit discussion boundaries.
 
 ---
 
@@ -47,7 +51,7 @@ The README includes a proof path, FAQ, and collaboration boundaries. We also pub
 
 We are looking for technical feedback and qualified design-partner discovery: Does the Harness AI model make sense? Is the first-run path clear? What is confusing about license or collaboration boundaries?
 
-Links: [README](https://github.com/jakbuczarnecki/intergrax#start-here) · [FAQ](https://github.com/jakbuczarnecki/intergrax/blob/main/FAQ.md) · [BoundaryAttest case study](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [Local Knowledge Workspace alpha](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
+Links: [README](https://github.com/jakbuczarnecki/intergrax#start-here) · [Evaluation Guide](https://github.com/jakbuczarnecki/intergrax/blob/main/EVALUATION_GUIDE.md) · [Use Cases](https://github.com/jakbuczarnecki/intergrax/blob/main/USE_CASES.md) · [Partners](https://github.com/jakbuczarnecki/intergrax/blob/main/PARTNERS.md) · [FAQ](https://github.com/jakbuczarnecki/intergrax/blob/main/FAQ.md) · [Collaboration](https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md) · [BoundaryAttest case study](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [Local Knowledge Workspace alpha](https://github.com/jakbuczarnecki/intergrax/blob/main/docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 
 Commercial or production use requires explicit permission — see [COLLABORATION.md](https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md).
 
@@ -61,7 +65,7 @@ Hi [Name],
 
 I maintain Intergrax, a source-available Harness AI / Agent OS for governed agent applications. The public repo is for evaluation and proof-path feedback, not open-source redistribution or production support.
 
-Would you skim the README **Start here** section, the proof path, and the FAQ? I am especially interested in whether the Harness AI separation (agent decides / harness executes / Nexus orchestrates) reads clearly, and whether trace/evidence surfaces are understandable.
+Would you skim the README **Start here** section and follow the time-boxed review flow in [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md)? I am especially interested in whether the Harness AI separation (agent decides / harness executes / Nexus orchestrates) reads clearly, and whether trace/evidence surfaces are understandable.
 
 If attestation is relevant, see the [BoundaryAttest case study](../case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
 
@@ -72,7 +76,7 @@ Questions:
 - Are license and collaboration boundaries clear?
 - What is confusing?
 
-Context: [README](../../README.md) · [FAQ](../../FAQ.md) · [COLLABORATION.md](../../COLLABORATION.md).
+Context: [README](../../README.md) · [EVALUATION_GUIDE](../../EVALUATION_GUIDE.md) · [USE_CASES](../../USE_CASES.md) · [FAQ](../../FAQ.md) · [COLLABORATION](../../COLLABORATION.md).
 
 Thanks — even brief notes help.
 
@@ -121,6 +125,9 @@ Entry points:
 
 - [Local Knowledge Workspace alpha narrative](../product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 - [local_workspace_application architecture](../../applications/local_workspace_application/ARCHITECTURE.md)
+- [USE_CASES.md](../../USE_CASES.md)
+- [PARTNERS.md](../../PARTNERS.md)
+- [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) (optional time-boxed review path)
 
 We are in design-partner discovery: qualified teams willing to describe a local document workflow worth validating and report friction against the alpha narrative. This does not imply partnership terms, support, or production permission.
 
@@ -155,7 +162,7 @@ Questions:
 - Do you need policy, HITL, trace, evidence, or evaluation surfaces?
 - What would make a governed harness worth testing?
 
-Start paths: [README](../../README.md) · [FAQ](../../FAQ.md) · [Public Issue Index](PUBLIC_ISSUE_INDEX.md). Commercial or production use: [COLLABORATION.md](../../COLLABORATION.md).
+Start paths: [README](../../README.md) · [EVALUATION_GUIDE](../../EVALUATION_GUIDE.md) · [USE_CASES](../../USE_CASES.md) · [PARTNERS](../../PARTNERS.md) · [FAQ](../../FAQ.md) · [Public Issue Index](PUBLIC_ISSUE_INDEX.md). Commercial or production use: [COLLABORATION](../../COLLABORATION.md).
 
 Thanks for any concrete feedback.
 
@@ -177,6 +184,9 @@ Thanks for any concrete feedback.
 | finished local knowledge product | Local Knowledge Workspace alpha / product-validation direction |
 | guaranteed partnership | design-partner discovery under [COLLABORATION.md](../../COLLABORATION.md) |
 | we support all use cases | proof-path feedback and selected integration feedback via curated public issues |
+| we are looking for partners | we are doing design-partner discovery under [PARTNERS.md](../../PARTNERS.md) and [COLLABORATION.md](../../COLLABORATION.md) |
+| this solves all agent use cases | [USE_CASES.md](../../USE_CASES.md) maps current validation areas and partner-fit discussions |
+| review the repo whenever you have time | [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) provides a time-boxed 5/15/30/60-minute review path |
 
 ---
 
@@ -185,6 +195,9 @@ Thanks for any concrete feedback.
 | Document | Purpose |
 |----------|---------|
 | [../../README.md](../../README.md) | Repository overview and start paths |
+| [../../EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) | Time-boxed evaluation guide for reviewers |
+| [../../USE_CASES.md](../../USE_CASES.md) | Use-case map and validation paths |
+| [../../PARTNERS.md](../../PARTNERS.md) | Partner and design-partner brief |
 | [../../FAQ.md](../../FAQ.md) | Common external-reader questions |
 | [../../COLLABORATION.md](../../COLLABORATION.md) | Collaboration and permission model |
 | [../../ROADMAP.md](../../ROADMAP.md) | Public adoption roadmap |
