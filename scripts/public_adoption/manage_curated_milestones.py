@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -71,6 +72,23 @@ class ConfigError(ValueError):
     """Raised when configuration or GitHub state is invalid."""
 
 
+def normalize_milestone_title(title: str | None) -> str:
+    """Normalize milestone titles for robust matching.
+
+    GitHub UI copy/paste can easily turn an em dash into an en dash or ASCII
+    dash, and manual creation may add extra spaces. The canonical docs keep the
+    typographic em dash, but matching should be tolerant.
+    """
+
+    if not title:
+        return ""
+    normalized = title.strip()
+    normalized = normalized.replace("—", "-").replace("–", "-").replace("−", "-")
+    normalized = re.sub(r"\s*-\s*", " - ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.casefold()
+
+
 def parse_dotenv_line(line: str) -> tuple[str, str] | None:
     """Parse one simple KEY=VALUE .env line."""
 
@@ -111,11 +129,7 @@ def load_dotenv_values(path: Path) -> dict[str, str]:
 
 
 def load_all_dotenv_values() -> dict[str, str]:
-    """Load repository .env values in deterministic order.
-
-    Later files override earlier files. This makes .env.local able to override
-    .env while keeping the project-local configuration explicit.
-    """
+    """Load repository .env values in deterministic order."""
 
     values: dict[str, str] = {}
     for dotenv_path in DOTENV_CANDIDATES:
@@ -124,12 +138,7 @@ def load_all_dotenv_values() -> dict[str, str]:
 
 
 def github_cli_environment() -> dict[str, str]:
-    """Build subprocess environment for GitHub CLI.
-
-    Project .env/.env.local values are loaded first. For GitHub authentication,
-    the repository-local GH_TOKEN or GITHUB_TOKEN intentionally overrides any
-    stale token inherited from the parent shell. GitHub CLI uses GH_TOKEN.
-    """
+    """Build subprocess environment for GitHub CLI."""
 
     env = os.environ.copy()
     dotenv_values = load_all_dotenv_values()
@@ -233,7 +242,7 @@ def select_targets(config: dict[str, Any], *, wave: str | None) -> list[IssueMil
 
 
 def list_milestones(repo: str) -> dict[str, dict[str, Any]]:
-    """Return existing milestones by title."""
+    """Return existing milestones by normalized title."""
 
     loaded = run_json_command(
         [
@@ -253,7 +262,7 @@ def list_milestones(repo: str) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
     for item in loaded:
         if isinstance(item, dict) and isinstance(item.get("title"), str):
-            result[item["title"]] = item
+            result[normalize_milestone_title(item["title"])] = item
     return result
 
 
@@ -294,6 +303,35 @@ def milestone_title(raw_issue: dict[str, Any]) -> str | None:
     return None
 
 
+def find_milestone(milestones: dict[str, dict[str, Any]], title: str) -> dict[str, Any] | None:
+    """Find a milestone by tolerant title matching."""
+
+    return milestones.get(normalize_milestone_title(title))
+
+
+def resolved_milestone_title(milestones: dict[str, dict[str, Any]], title: str) -> str:
+    """Return the actual GitHub milestone title, falling back to canonical title."""
+
+    milestone = find_milestone(milestones, title)
+    if isinstance(milestone, dict) and isinstance(milestone.get("title"), str):
+        return milestone["title"]
+    return title
+
+
+def print_existing_milestones(milestones: dict[str, dict[str, Any]]) -> None:
+    """Print milestones visible to the GitHub API."""
+
+    print("Milestones visible to GitHub API:")
+    if not milestones:
+        print("  <none>")
+        return
+    for item in sorted(milestones.values(), key=lambda raw: str(raw.get("title", ""))):
+        title = item.get("title", "<missing title>")
+        state = item.get("state", "<unknown state>")
+        number = item.get("number", "<unknown number>")
+        print(f"  #{number}: {title} state={state}")
+
+
 def print_plan(
     targets: list[IssueMilestoneTarget],
     milestones: dict[str, dict[str, Any]],
@@ -306,8 +344,9 @@ def print_plan(
     for wave_name, milestone_config in MILESTONES_BY_WAVE.items():
         if any(target.wave == wave_name for target in targets):
             title = milestone_config["title"]
-            if title in milestones:
-                print(f"  SKIP   milestone: {title} already exists")
+            existing = find_milestone(milestones, title)
+            if existing is not None:
+                print(f"  SKIP   milestone: {existing.get('title', title)} already exists")
             else:
                 print(f"  CREATE milestone: {title}")
 
@@ -317,13 +356,12 @@ def print_plan(
             print(f"  MISSING issue #{target.number}: {target.title}")
             continue
 
+        expected_title = resolved_milestone_title(milestones, target.milestone_title)
         current_milestone = milestone_title(current)
-        if current_milestone == target.milestone_title:
-            print(f"  SKIP   issue #{target.number}: already in {target.milestone_title}")
+        if normalize_milestone_title(current_milestone) == normalize_milestone_title(target.milestone_title):
+            print(f"  SKIP   issue #{target.number}: already in {current_milestone}")
         else:
-            print(
-                f"  ASSIGN issue #{target.number}: {current_milestone or '<none>'} -> {target.milestone_title}"
-            )
+            print(f"  ASSIGN issue #{target.number}: {current_milestone or '<none>'} -> {expected_title}")
 
 
 def missing_required_milestones(
@@ -333,7 +371,7 @@ def missing_required_milestones(
     """Return expected milestone titles that do not exist yet."""
 
     expected = sorted({target.milestone_title for target in targets})
-    return [title for title in expected if title not in milestones]
+    return [title for title in expected if find_milestone(milestones, title) is None]
 
 
 def require_existing_milestones(
@@ -363,8 +401,9 @@ def create_missing_milestones(
         if wave_name not in selected_waves:
             continue
         title = milestone_config["title"]
-        if title in milestones:
-            print(f"SKIP   milestone: {title} already exists")
+        if find_milestone(milestones, title) is not None:
+            existing_title = resolved_milestone_title(milestones, title)
+            print(f"SKIP   milestone: {existing_title} already exists")
             continue
 
         completed = run_command(
@@ -383,10 +422,10 @@ def create_missing_milestones(
         if completed.returncode != 0:
             raise ConfigError(f"Unable to create milestone '{title}': {completed.stderr.strip()}")
         print(f"CREATE milestone: {title}")
-        milestones[title] = {"title": title}
+        milestones[normalize_milestone_title(title)] = {"title": title}
 
 
-def assign_issue(repo: str, target: IssueMilestoneTarget) -> None:
+def assign_issue(repo: str, target: IssueMilestoneTarget, milestone_title_to_use: str) -> None:
     """Assign one issue to its milestone."""
 
     completed = run_command(
@@ -398,20 +437,21 @@ def assign_issue(repo: str, target: IssueMilestoneTarget) -> None:
             "--repo",
             repo,
             "--milestone",
-            target.milestone_title,
+            milestone_title_to_use,
         ]
     )
     if completed.returncode != 0:
         raise ConfigError(
-            f"Unable to assign issue #{target.number} to milestone '{target.milestone_title}': "
+            f"Unable to assign issue #{target.number} to milestone '{milestone_title_to_use}': "
             f"{completed.stderr.strip()}"
         )
-    print(f"ASSIGN issue #{target.number}: {target.milestone_title}")
+    print(f"ASSIGN issue #{target.number}: {milestone_title_to_use}")
 
 
 def assign_issues(
     repo: str,
     targets: list[IssueMilestoneTarget],
+    milestones: dict[str, dict[str, Any]],
     issues: dict[int, dict[str, Any]],
 ) -> None:
     """Assign all selected issues to expected milestones."""
@@ -420,10 +460,11 @@ def assign_issues(
         current = issues.get(target.number)
         if current is None:
             raise ConfigError(f"Issue #{target.number} not found")
-        if milestone_title(current) == target.milestone_title:
-            print(f"SKIP   issue #{target.number}: already in {target.milestone_title}")
+        current_title = milestone_title(current)
+        if normalize_milestone_title(current_title) == normalize_milestone_title(target.milestone_title):
+            print(f"SKIP   issue #{target.number}: already in {current_title}")
             continue
-        assign_issue(repo, target)
+        assign_issue(repo, target, resolved_milestone_title(milestones, target.milestone_title))
 
 
 def check_sync(targets: list[IssueMilestoneTarget], issues: dict[int, dict[str, Any]]) -> int:
@@ -440,14 +481,14 @@ def check_sync(targets: list[IssueMilestoneTarget], issues: dict[int, dict[str, 
             continue
 
         current_milestone = milestone_title(current)
-        if current_milestone != target.milestone_title:
+        if normalize_milestone_title(current_milestone) != normalize_milestone_title(target.milestone_title):
             print(
                 f"  MISMATCH issue #{target.number}: "
                 f"milestone={current_milestone or '<none>'} expected={target.milestone_title}"
             )
             mismatches += 1
         else:
-            print(f"  OK      issue #{target.number}: {target.milestone_title}")
+            print(f"  OK      issue #{target.number}: {current_milestone}")
 
     if mismatches:
         print(f"\nMilestone sync check failed: {mismatches} issue(s) need attention.")
@@ -471,6 +512,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Assign issues to existing milestones only. Never creates milestones.",
     )
     parser.add_argument("--check-sync", action="store_true", help="Verify milestone assignments. Never mutates GitHub.")
+    parser.add_argument(
+        "--list-milestones",
+        action="store_true",
+        help="List milestones visible to GitHub API and exit.",
+    )
     return parser.parse_args(argv)
 
 
@@ -482,9 +528,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.apply and args.assign_only:
             raise ConfigError("Use either --apply or --assign-only, not both.")
 
+        milestones = list_milestones(args.repo)
+        if args.list_milestones:
+            print_existing_milestones(milestones)
+            return 0
+
         config = load_config(args.config)
         targets = select_targets(config, wave=args.wave)
-        milestones = list_milestones(args.repo)
         issues = list_issues(args.repo)
 
         if args.check_sync:
@@ -499,7 +549,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.assign_only:
             print("\nApplying issue assignments only:")
             require_existing_milestones(targets, milestones)
-            assign_issues(args.repo, targets, issues)
+            assign_issues(args.repo, targets, milestones, issues)
             return 0
 
         print("\nApplying milestone changes:")
@@ -507,7 +557,7 @@ def main(argv: list[str] | None = None) -> int:
         refreshed_milestones = list_milestones(args.repo)
         require_existing_milestones(targets, refreshed_milestones)
         refreshed_issues = list_issues(args.repo)
-        assign_issues(args.repo, targets, refreshed_issues)
+        assign_issues(args.repo, targets, refreshed_milestones, refreshed_issues)
         return 0
     except (ConfigError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
