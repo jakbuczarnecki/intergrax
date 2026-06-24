@@ -28,6 +28,8 @@ Intergrax is source-available/proprietary. Public issues are for structured eval
 
 ## Recommended evaluation order
 
+For a time-boxed 5/15/30/60-minute review flow, start with [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md).
+
 For first-time evaluators, the recommended order is:
 
 1. [#186 README quick start feedback](https://github.com/jakbuczarnecki/intergrax/issues/186)
@@ -97,3 +99,4 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [create_curated_issues.py](../../scripts/public_adoption/create_curated_issues.py) — maintainer utility for dry-run and explicit issue creation.
 - [ROADMAP.md](../../ROADMAP.md) — public adoption roadmap and collaboration priorities.
 - [COLLABORATION.md](../../COLLABORATION.md) — collaboration model and permission boundaries.
+- [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) — time-boxed evaluation guide for external reviewers.
