@@ -8,9 +8,9 @@ Use, modification, or distribution without written permission is prohibited.
 
 This document defines the expanded public discussion issue plan for Intergrax.
 
-The active public issue set remains listed in [Public Issue Index](PUBLIC_ISSUE_INDEX.md). This expansion adds additional maintainer-curated architecture, product-validation, and deep technical discussion waves that can be opened through the supplemental YAML source:
+All public-adoption issue waves are defined in the single canonical YAML source:
 
-- [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml)
+- [curated_public_issues.yml](curated_public_issues.yml)
 
 The purpose is to promote discussion around Intergrax as a Harness AI / Agent OS platform without turning the repository into a broad implementation backlog, support channel, open-source task board, or commercial-use permission path.
 
@@ -26,9 +26,7 @@ The expanded model has five waves:
 | Wave 4 | Prepared | Product / application validation issues |
 | Wave 5 | Prepared | Deep technical discussion issues |
 
-Wave 1 and Wave 2 are defined in [curated_public_issues.yml](curated_public_issues.yml).
-
-Wave 3, Wave 4, and Wave 5 are defined in [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml).
+All waves are stored in [curated_public_issues.yml](curated_public_issues.yml).
 
 ## Active issues today
 
@@ -87,36 +85,25 @@ Wave 3, Wave 4, and Wave 5 are defined in [curated_public_discussion_issues.yml]
 Always run dry-run first.
 
 ```bash
-python scripts/public_adoption/create_curated_issues.py \
-  --config docs/public-adoption/curated_public_discussion_issues.yml \
-  --wave wave_3
+python scripts/public_adoption/create_curated_issues.py --wave wave_3
 ```
 
 Create Wave 3:
 
 ```bash
-python scripts/public_adoption/create_curated_issues.py \
-  --config docs/public-adoption/curated_public_discussion_issues.yml \
-  --wave wave_3 \
-  --apply
+python scripts/public_adoption/create_curated_issues.py --wave wave_3 --apply
 ```
 
 Create Wave 4:
 
 ```bash
-python scripts/public_adoption/create_curated_issues.py \
-  --config docs/public-adoption/curated_public_discussion_issues.yml \
-  --wave wave_4 \
-  --apply
+python scripts/public_adoption/create_curated_issues.py --wave wave_4 --apply
 ```
 
 Create Wave 5:
 
 ```bash
-python scripts/public_adoption/create_curated_issues.py \
-  --config docs/public-adoption/curated_public_discussion_issues.yml \
-  --wave wave_5 \
-  --apply
+python scripts/public_adoption/create_curated_issues.py --wave wave_5 --apply
 ```
 
 Create all expanded waves one by one:
@@ -124,10 +111,17 @@ Create all expanded waves one by one:
 ```bash
 for wave in wave_3 wave_4 wave_5; do
   python scripts/public_adoption/create_curated_issues.py \
-    --config docs/public-adoption/curated_public_discussion_issues.yml \
     --wave "$wave" \
     --apply
 done
+```
+
+Windows wrapper:
+
+```bat
+scripts\public_adoption\manage_discussion_issues.bat dry wave_3
+scripts\public_adoption\manage_discussion_issues.bat apply wave_3
+scripts\public_adoption\manage_discussion_issues.bat apply all
 ```
 
 ## Sync checks
@@ -135,12 +129,10 @@ done
 After issues are created, check alignment by title, labels, URL metadata when present, and open state:
 
 ```bash
-python scripts/public_adoption/create_curated_issues.py \
-  --config docs/public-adoption/curated_public_discussion_issues.yml \
-  --check-sync
+python scripts/public_adoption/create_curated_issues.py --check-sync
 ```
 
-The supplemental YAML does not initially contain GitHub issue numbers or URLs. That is intentional. The sync check will still match by exact title and labels.
+The newly prepared Wave 3–5 entries do not initially contain GitHub issue numbers or URLs. That is intentional. The sync check will still match by exact title and labels.
 
 If issue numbers and URLs are later added to the YAML, `--check-sync` will also verify them.
 
