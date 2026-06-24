@@ -72,6 +72,24 @@ Active public feedback paths are listed in the [Public Issue Index](docs/public-
 
 ---
 
+## Public Discussion Map
+
+The open GitHub issues are **not** a generic implementation backlog. They are a maintainer-curated public discussion map for evaluating Intergrax as a **Harness AI / Agent OS** platform.
+
+Use the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) to choose the right entry point.
+
+| Track | Use when you want to discuss |
+|-------|------------------------------|
+| **Proof path feedback** | First-run setup, README quick start, evidence and trace inspection |
+| **Architecture discussion** | Harness AI boundaries, Nexus as Agent OS, policy-first execution, agent contracts |
+| **Integration feedback** | Attestation, trace/evidence export, MCP-style controlled task surfaces |
+| **Product validation** | Legal review, research workflows, local knowledge workspace, lab application, assistant hub |
+| **Deep technical review** | Capability graph, evaluation gates, cost governance, reliability, security, observability, developer experience |
+
+Public discussion issues do **not** create support obligations, roadmap commitments, production-use permission, commercial-use permission, redistribution rights, derivative-work rights, SLA commitments, or security vulnerability handling. For security reports, use [SECURITY.md](SECURITY.md). For commercial licensing, production use, partnerships, redistribution, derivative works, or substantial implementation permission, contact the maintainer directly.
+
+---
+
 ## Who this repository is for
 
 Intergrax is currently most useful for technical readers evaluating how to build governed agent applications with explicit runtime boundaries, policy-controlled tool execution, trace/evidence surfaces, and external verification hooks.
