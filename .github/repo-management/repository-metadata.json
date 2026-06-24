@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "description": "Source-available Harness AI / Agent OS for governed agent applications — Nexus orchestration, policy-controlled tools, RAG, trace/evidence, and boundary-event attestation.",
+  "description": "Source-available Harness AI / Agent OS for building governed agent applications with policy-controlled tools, Nexus orchestration, RAG, trace/evidence, and external attestation hooks.",
   "homepage": "https://github.com/jakbuczarnecki/intergrax#readme",
   "topics": [
     "harness-ai",
