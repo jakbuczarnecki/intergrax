@@ -17,61 +17,69 @@ They do not define an open-source contribution model, production-support channel
 | Step | Document | Purpose |
 |------|----------|---------|
 | 0 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
-| 1 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issues and recommended evaluation paths |
-| 2 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Expanded architecture, product-validation, and deep technical discussion issue waves |
+| 1 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
+| 2 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
 | 3 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
 | 4 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
 | 5 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
-| 6 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for active and expanded public issue automation |
+| 6 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for all curated public issue automation |
 
 ## Operational model
 
-The public-adoption setup has four layers:
+The public-adoption setup has one canonical issue source and one normal maintainer workflow:
 
 ```text
 README.md / ROADMAP.md / COLLABORATION.md
   -> docs/public-adoption/README.md
   -> PUBLIC_ISSUE_INDEX.md
-  -> GitHub Issues #186-#194
-```
-
-Expanded discussion waves are prepared in the same canonical YAML:
-
-```text
-PUBLIC_DISCUSSION_ISSUE_EXPANSION.md
   -> curated_public_issues.yml
-  -> Wave 3 architecture discussion issues
-  -> Wave 4 product / application validation issues
-  -> Wave 5 deep technical discussion issues
+  -> scripts/public_adoption/manage_curated_issues.bat
+  -> GitHub Issues #186-#227
 ```
 
-Automation support:
+The open curated issues are a public discussion map, not a generic implementation backlog.
+
+## Canonical issue automation
+
+Source of truth:
 
 ```text
-curated_public_issues.yml
-  -> scripts/public_adoption/create_curated_issues.py
-  -> --wave wave_1 | wave_2 | wave_3 | wave_4 | wave_5
-  -> --check-sync for YAML <-> GitHub issue alignment
-  -> --apply only for explicit issue creation
+docs/public-adoption/curated_public_issues.yml
 ```
 
-Windows wrapper for expanded waves:
+Normal Windows workflow:
+
+```bat
+scripts\public_adoption\manage_curated_issues.bat dry
+scripts\public_adoption\manage_curated_issues.bat apply
+scripts\public_adoption\manage_curated_issues.bat check
+```
+
+Behavior:
 
 ```text
-scripts/public_adoption/manage_discussion_issues.bat
-  -> dry | apply | check
-  -> wave_3 | wave_4 | wave_5 | all
+dry   -> read the whole YAML and show what would be created
+apply -> read the whole YAML, skip existing issues by exact title, create missing issues
+check -> verify YAML <-> GitHub issue alignment
+```
+
+Optional single-wave mode remains available when needed:
+
+```bat
+scripts\public_adoption\manage_curated_issues.bat dry wave_3
+scripts\public_adoption\manage_curated_issues.bat apply wave_3
+scripts\public_adoption\manage_curated_issues.bat check wave_3
 ```
 
 ## Current curated issue waves
 
-| Wave | Issues | Purpose | Source |
-|------|--------|---------|--------|
-| Wave 1 | #186-#190 | First-run proof path, documentation clarity, trace/evidence inspection, attestation feedback, governed-agent design-partner interest | [curated_public_issues.yml](curated_public_issues.yml) |
-| Wave 2 | #191-#194 | Harness AI mental model, trace/evidence export surfaces, Local Knowledge Workspace alpha, MCP controlled task surface | [curated_public_issues.yml](curated_public_issues.yml) |
-| Wave 3 | prepared | Architecture discussion issues | [curated_public_issues.yml](curated_public_issues.yml) |
-| Wave 4 | prepared | Product / application validation issues | [curated_public_issues.yml](curated_public_issues.yml) |
-| Wave 5 | prepared | Deep technical discussion issues | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave | Issues | Status | Purpose | Source |
+|------|--------|--------|---------|--------|
+| Wave 1 | #186-#190 | Open | First-run proof path, documentation clarity, trace/evidence inspection, attestation feedback, governed-agent design-partner interest | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave 2 | #191-#194 | Open | Harness AI mental model, trace/evidence export surfaces, Local Knowledge Workspace alpha, MCP controlled task surface | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave 3 | #205-#212 | Open | Architecture discussion issues | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave 4 | #213-#218 | Open | Product / application validation issues | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave 5 | #219-#227 | Open | Deep technical discussion issues | [curated_public_issues.yml](curated_public_issues.yml) |
 
 ## Boundaries
 
