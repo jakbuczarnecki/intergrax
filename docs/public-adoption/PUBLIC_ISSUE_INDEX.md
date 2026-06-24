@@ -61,13 +61,13 @@ The remaining issues are useful for more specific reviewers:
 
 ## Expanded discussion waves
 
-Additional architecture, product-validation, and deep technical discussion issues are prepared in [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) and [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml).
+Additional architecture, product-validation, and deep technical discussion issues are prepared in [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md). All waves are defined in the single canonical YAML source: [curated_public_issues.yml](curated_public_issues.yml).
 
 | Wave | Purpose | Source | GitHub state |
 |------|---------|--------|--------------|
-| Wave 3 | Architecture discussion issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Prepared; create explicitly with `--apply` |
-| Wave 4 | Product / application validation issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Prepared; create explicitly with `--apply` |
-| Wave 5 | Deep technical discussion issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Prepared; create explicitly with `--apply` |
+| Wave 3 | Architecture discussion issues | [curated_public_issues.yml](curated_public_issues.yml) | Prepared; create explicitly with `--apply` |
+| Wave 4 | Product / application validation issues | [curated_public_issues.yml](curated_public_issues.yml) | Prepared; create explicitly with `--apply` |
+| Wave 5 | Deep technical discussion issues | [curated_public_issues.yml](curated_public_issues.yml) | Prepared; create explicitly with `--apply` |
 
 These expanded waves are intentionally separated from the active issue list until they are created on GitHub and assigned issue numbers.
 
@@ -108,8 +108,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) — maintainer handling rules, close/keep-open criteria, escalation rules, and response templates.
 - [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion wave plan.
 - [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) — strategy and draft bodies for curated public issues.
-- [curated_public_issues.yml](curated_public_issues.yml) — structured source data for active issue automation.
-- [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) — structured source data for expanded public discussion issue automation.
+- [curated_public_issues.yml](curated_public_issues.yml) — single canonical source data for active and expanded public issue automation.
 - [create_curated_issues.py](../../scripts/public_adoption/create_curated_issues.py) — maintainer utility for dry-run and explicit issue creation.
 - [ROADMAP.md](../../ROADMAP.md) — public adoption roadmap and collaboration priorities.
 - [COLLABORATION.md](../../COLLABORATION.md) — collaboration model and permission boundaries.
