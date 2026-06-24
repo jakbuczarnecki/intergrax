@@ -133,6 +133,36 @@ scripts\public_adoption\manage_curated_issues.bat apply wave_3
 scripts\public_adoption\manage_curated_issues.bat check wave_3
 ```
 
+## Milestone commands
+
+Curated issues should be grouped by wave milestones:
+
+| Wave | Milestone |
+|------|-----------|
+| Wave 1 | Public Adoption — Wave 1 |
+| Wave 2 | Public Adoption — Wave 2 |
+| Wave 3 | Architecture Discussion — Wave 3 |
+| Wave 4 | Product Validation — Wave 4 |
+| Wave 5 | Deep Technical Review — Wave 5 |
+
+Show milestone creation and assignment plan:
+
+```bat
+python scripts\public_adoption\manage_curated_milestones.py
+```
+
+Create missing milestones and assign issues:
+
+```bat
+python scripts\public_adoption\manage_curated_milestones.py --apply
+```
+
+Check milestone assignments:
+
+```bat
+python scripts\public_adoption\manage_curated_milestones.py --check-sync
+```
+
 ## Safety boundaries
 
 These expanded issues are public discussion entry points only.
