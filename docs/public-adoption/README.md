@@ -92,19 +92,32 @@ python scripts\public_adoption\manage_curated_milestones.py --apply
 python scripts\public_adoption\manage_curated_milestones.py --check-sync
 ```
 
+Token-limited fallback workflow when the GitHub token can edit issues but cannot create milestones:
+
+```bat
+python scripts\public_adoption\manage_curated_milestones.py --list-milestones
+python scripts\public_adoption\manage_curated_milestones.py --assign-only
+python scripts\public_adoption\manage_curated_milestones.py --check-sync
+```
+
 Behavior:
 
 ```text
-default      -> dry-run milestone creation and issue assignment plan
---apply      -> create missing milestones and assign issues to expected wave milestones
---check-sync -> verify issue milestone assignments without mutating GitHub
+default           -> dry-run milestone creation and issue assignment plan
+--apply           -> create missing milestones and assign issues to expected wave milestones
+--assign-only     -> assign issues to existing milestones without creating milestones
+--list-milestones -> list milestones visible to GitHub API without mutating GitHub
+--check-sync      -> verify issue milestone assignments without mutating GitHub
 ```
+
+`--assign-only` expects the wave milestones to already exist in GitHub. The script tolerates common manual title differences such as em dash, en dash, ASCII dash, and extra spaces.
 
 Optional single-wave mode remains available:
 
 ```bat
 python scripts\public_adoption\manage_curated_milestones.py --wave wave_3
 python scripts\public_adoption\manage_curated_milestones.py --wave wave_3 --apply
+python scripts\public_adoption\manage_curated_milestones.py --wave wave_3 --assign-only
 python scripts\public_adoption\manage_curated_milestones.py --wave wave_3 --check-sync
 ```
 
