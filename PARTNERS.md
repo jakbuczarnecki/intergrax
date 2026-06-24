@@ -105,7 +105,5 @@ Start with:
 | [COLLABORATION.md](COLLABORATION.md) | Collaboration and permission model. |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap. |
 | [docs/public-adoption/PUBLIC_ISSUE_INDEX.md](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) | Curated feedback paths. |
-| [docs/public-adoption/OUTREACH_KIT.md](docs/public-adoption/OUTREACH_KIT.md) | Outreach drafts and positioning guardrails. |
-| [docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md](docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer launch checklist. |
 | [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) | Attestation case study. |
 | [docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | Local Knowledge Workspace alpha narrative. |

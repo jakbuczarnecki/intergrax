@@ -573,8 +573,6 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 ## Documentation index
 
-<a id="start-here"></a>
-
 > **Doc roles and Cursor workflow:** [DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) — single navigation hub (human · operator · AI agent).
 
 ### Quick doc routing
@@ -587,7 +585,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | AI agent instructions (full) | [AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) |
 | Milestone history | [implementation-journal/README.md](docs/implementation-journal/README.md) |
 
-### Start here
+### Internal documentation routing
 
 | I want to… | Read |
 |------------|------|
@@ -682,21 +680,30 @@ This repository is in active proprietary R&D and source-available evaluation sta
 
 ## Contributing & community
 
+### Public evaluation and collaboration
+
 | Resource | Purpose |
 |----------|---------|
 | [FAQ.md](FAQ.md) | Common external-reader questions |
-| [PARTNERS.md](PARTNERS.md) | Partner and design-partner brief |
-| [USE_CASES.md](USE_CASES.md) | Use-case map for governed agent applications, controlled RAG, trace/evidence, orchestration, and tool governance |
 | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Evaluation path for technical reviewers, design partners, and integration builders |
-| [docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md](docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist for public outreach readiness |
-| [docs/public-adoption/OUTREACH_KIT.md](docs/public-adoption/OUTREACH_KIT.md) | Maintainer-facing outreach drafts for technical reviewers, integration builders and design partners |
+| [USE_CASES.md](USE_CASES.md) | Use-case map for governed agent applications, controlled RAG, trace/evidence, orchestration, and tool governance |
+| [PARTNERS.md](PARTNERS.md) | Partner and design-partner brief |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap, collaboration tracks, and near-term public-facing priorities |
 | [COLLABORATION.md](COLLABORATION.md) | Source-available collaboration model, permitted use, contact |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, work cycle, PR process |
-| [AGENTS.md](AGENTS.md) | Cursor auto-load stub — tiers, boundaries, pointers |
-| [docs/guides/AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) | Full instructions for AI coding agents |
 | [SECURITY.md](SECURITY.md) | Security policy |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [CITATION.cff](CITATION.cff) | Citation metadata |
+
+### Maintainer and operator resources
+
+The following resources are maintainer/operator-facing and do not create public commitments, support obligations, partnership terms, or license grants.
+
+| Resource | Purpose |
+|----------|---------|
+| [docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md](docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist for public outreach readiness |
+| [docs/public-adoption/OUTREACH_KIT.md](docs/public-adoption/OUTREACH_KIT.md) | Maintainer-facing outreach drafts for technical reviewers, integration builders and design partners |
+| [AGENTS.md](AGENTS.md) | Cursor auto-load stub — tiers, boundaries, pointers |
+| [docs/guides/AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) | Full instructions for AI coding agents |
 
 **Maintainer:** Artur Czarnecki · **Repository:** [Intergrax](https://github.com/jakbuczarnecki/intergrax) · **Contact:** jakbu.czarnecki.83@gmail.com

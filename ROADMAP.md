@@ -31,6 +31,9 @@ Canonical technical architecture and implementation status remain in:
 | Boundary events / host attestation flow documented | Attestation demo and related architecture docs |
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/ARCHITECTURE.md) |
+| Public evaluation entry points available | [README.md](README.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [USE_CASES.md](USE_CASES.md) · [PARTNERS.md](PARTNERS.md) |
+| Curated public issue routing available | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
+| Public issue templates / feedback routing available | Structured entry points for feedback, bug reports, integration proposals, and design-partner interest |
 
 ---
 
@@ -39,8 +42,8 @@ Canonical technical architecture and implementation status remain in:
 | Item | Notes |
 |------|-------|
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
-| Add issue templates for feedback, bug reports, integration proposals and design partner interest | Structured entry points for external contributors |
-| Open curated public issues for good-first-feedback, design partner tracks and integration proposals | [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) defines the scoped first-wave public issue set; active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
+| Maintain curated public issue routing | Active issues in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md); drafts in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) |
+| Refine issue templates based on first external feedback | Feedback, bug reports, integration proposals, and design-partner interest have structured entry points |
 | Optionally add demo media for the attestation case study | Validation-flow diagram is published; optional future work is short demo media for the [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Collect Local Knowledge Workspace alpha feedback from design partners | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) published; structured partner feedback welcome |
 | Improve public demo path for trace, evidence and boundary events | Clearer end-to-end evaluation of harness observability |
@@ -63,11 +66,11 @@ Canonical technical architecture and implementation status remain in:
 
 | Track | Focus | Who it is for | Expected first action |
 |-------|-------|---------------|----------------------|
-| Proof path feedback | Run local evaluation paths; report friction, gaps, and unclear steps | Engineers evaluating the harness baseline | Follow the proof path in [README.md](README.md); open an issue with concrete findings |
+| Proof path feedback | Run local evaluation paths; report friction, gaps, and unclear steps | Engineers evaluating the harness baseline | Follow [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) and the [proof path](README.md#proof-of-platform) in [README.md](README.md); open an issue with concrete findings |
 | Attestation / boundary events integration | Host attestation flows, boundary events, external trust integration | Teams building attestation, security, or compliance integrations | Review [Attestation Demo](applications/attestation_demo/README.md); propose scope via issue or maintainer contact |
-| Local Knowledge Workspace alpha feedback | Early capabilities, UX, and fit for local knowledge workflows | Design partners interested in product-validation direction | Read [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) and [LKW architecture](applications/local_workspace_application/ARCHITECTURE.md); share structured alpha feedback |
+| Local Knowledge Workspace alpha feedback | Early capabilities, UX, and fit for local knowledge workflows | Design partners interested in product-validation direction | Read [USE_CASES.md](USE_CASES.md), [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md), and [LKW architecture](applications/local_workspace_application/ARCHITECTURE.md); share structured alpha feedback |
 | Documentation clarity | Corrections, gaps, readability, and navigation improvements | Anyone reading public docs | Open an issue or PR with a specific doc fix; see [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries | Agent architects and product teams | Propose scope before substantial work; align with [COLLABORATION.md](COLLABORATION.md) |
+| Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries | Agent architects and product teams | Review [USE_CASES.md](USE_CASES.md) and [PARTNERS.md](PARTNERS.md); propose scope before substantial work; align with [COLLABORATION.md](COLLABORATION.md) |
 | Governance, observability and evaluation feedback | Trace, evidence, policy, and evaluation workflows | Platform engineers and governance builders | Run proof paths; inspect evidence outputs; report gaps with reproducible steps |
 
 Prior discussion is recommended before substantial work on any track. Maintainer approval applies to production, commercial, and redistribution use.
@@ -88,6 +91,9 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 ## Related documents
 
 - [README.md](README.md) — project overview, proof path, documentation index
+- [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) — focused evaluation path for reviewers and design partners
+- [USE_CASES.md](USE_CASES.md) — use-case map for validation and partner-fit discussions
+- [PARTNERS.md](PARTNERS.md) — partner and design-partner brief
 - [COLLABORATION.md](COLLABORATION.md) — collaboration model, permitted use, contact
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
