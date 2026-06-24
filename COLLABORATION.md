@@ -39,7 +39,7 @@ The following require **explicit written permission** from the copyright holder.
 
 ## Current collaboration tracks
 
-Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md). Active curated public issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Expanded architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md). Maintainer-curated issue drafts are described in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md).
+Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md). Active curated public issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Active and expanded issue waves are defined in the single canonical source [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml). Expanded architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md).
 
 | Track | Focus |
 |-------|-------|
@@ -73,6 +73,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
 - [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion issue waves
+- [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active and expanded public issue automation
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for structured feedback and design-partner discovery
 - [LICENSE](LICENSE) — proprietary terms and permitted use
 - [README.md](README.md) — project overview and documentation index
