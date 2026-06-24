@@ -28,7 +28,7 @@ _GITHUB_REMOTE_RE = re.compile(
 
 def _configure_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
-        reconfigure = attribute_access.optional(stream, "reconfigure", None)
+        reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8", errors="replace")
 

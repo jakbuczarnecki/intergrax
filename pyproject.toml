@@ -8,31 +8,31 @@ packages = ["intergrax"]
 [project]
 name = "Intergrax-ai"
 version = "0.1.0"
-description = "Harness AI & Agent OS for governed multi-agent systems in Python — Nexus orchestration, policy, tools, skills, RAG & multimodal evaluation. Prototype fast, harden agents for production."
+description = "Source-available Harness AI / Agent OS for governed agent applications — Nexus orchestration, policy-controlled tools, RAG, trace/evidence, and boundary-event attestation."
 readme = "README.md"
 license = { text = "Proprietary" }
 requires-python = ">=3.12,<3.13"
 keywords = [
   "harness-ai",
   "agent-os",
-  "multi-agent-systems",
   "ai-agents",
-  "agent-framework",
+  "agentic-ai",
+  "multi-agent-systems",
   "agent-orchestration",
+  "agent-framework",
   "llm",
   "rag",
-  "python",
   "mcp",
   "tool-use",
-  "governance",
-  "human-in-the-loop",
-  "observability",
   "policy-engine",
-  "context-engineering",
-  "multimodal",
-  "orchestration",
-  "production-ai",
-  "evaluation",
+  "human-in-the-loop",
+  "ai-governance",
+  "ai-observability",
+  "observability",
+  "attestation",
+  "traceability",
+  "source-available",
+  "python",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
