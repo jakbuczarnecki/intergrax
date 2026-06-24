@@ -5,12 +5,11 @@
 
 """Create and verify maintainer-curated public GitHub issues.
 
-Default creation mode is a dry-run. Real GitHub Issues are created only when
---apply is provided. The script uses the GitHub CLI (`gh`) and skips issues
-whose exact title already exists.
+The YAML file is the source of truth. The script uses GitHub CLI (`gh`),
+skips issues whose exact title already exists, and creates missing GitHub Issues
+only when --apply is provided.
 
-The --check-sync mode verifies whether YAML entries match existing GitHub
-Issues. It never creates or updates issues.
+When --wave is omitted, all waves in the YAML are processed.
 """
 
 from __future__ import annotations
@@ -33,7 +32,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = REPO_ROOT / "docs" / "public-adoption" / "curated_public_issues.yml"
 DEFAULT_REPOSITORY = "jakbuczarnecki/intergrax"
 DOTENV_CANDIDATES = (REPO_ROOT / ".env", REPO_ROOT / ".env.local")
-GITHUB_TOKEN_ENV_NAMES = ("GH_TOKEN", "GITHUB_TOKEN")
 
 
 @dataclass(frozen=True)
@@ -102,7 +100,6 @@ def github_cli_environment() -> dict[str, str]:
     """
 
     env = os.environ.copy()
-
     for dotenv_path in DOTENV_CANDIDATES:
         for key, value in load_dotenv_values(dotenv_path).items():
             env.setdefault(key, value)
@@ -150,6 +147,15 @@ def validate_safety(config: dict[str, Any]) -> None:
         raise ConfigError("YAML safety flag creates_real_github_issues must remain false")
 
 
+def wave_names(config: dict[str, Any]) -> list[str]:
+    """Return all wave names from the YAML config."""
+
+    waves = config.get("waves")
+    if not isinstance(waves, dict):
+        raise ConfigError("Missing waves section")
+    return [str(key) for key in waves.keys()]
+
+
 def select_issues(
     config: dict[str, Any], *, wave: str, only: set[str], allow_deferred: bool
 ) -> list[CuratedIssue]:
@@ -161,7 +167,7 @@ def select_issues(
 
     wave_config = waves.get(wave)
     if not isinstance(wave_config, dict):
-        available = ", ".join(sorted(str(key) for key in waves))
+        available = ", ".join(wave_names(config))
         raise ConfigError(f"Unknown wave '{wave}'. Available waves: {available}")
 
     if wave_config.get("open_now") is not True and not allow_deferred:
@@ -201,37 +207,37 @@ def select_issues(
             )
         )
 
-    missing = sorted(only - {issue.issue_id for issue in selected})
-    if missing:
-        raise ConfigError(f"Requested issue IDs not found in wave '{wave}': {', '.join(missing)}")
-
     return sorted(selected, key=lambda item: (item.order, item.issue_id))
 
 
-def select_sync_issues(config: dict[str, Any], *, wave: str | None, only: set[str]) -> list[CuratedIssue]:
-    """Select issues for sync checking.
+def select_all_issues(config: dict[str, Any], *, only: set[str]) -> list[CuratedIssue]:
+    """Select all issues from all YAML waves."""
 
-    When wave is None, all waves are checked, including already opened deferred
-    waves. The function does not require open_now to be true because it only
-    reads and reports state.
-    """
-
-    waves = config.get("waves")
-    if not isinstance(waves, dict):
-        raise ConfigError("Missing waves section")
-
-    wave_names = [wave] if wave else sorted(str(key) for key in waves)
     selected: list[CuratedIssue] = []
-    for wave_name in wave_names:
-        selected.extend(
-            select_issues(
-                config,
-                wave=wave_name,
-                only=only,
-                allow_deferred=True,
-            )
-        )
+    for wave in wave_names(config):
+        selected.extend(select_issues(config, wave=wave, only=only, allow_deferred=True))
+
+    if only:
+        selected_ids = {issue.issue_id for issue in selected}
+        missing = sorted(only - selected_ids)
+        if missing:
+            raise ConfigError(f"Requested issue IDs not found: {', '.join(missing)}")
+
     return sorted(selected, key=lambda item: (item.wave, item.order, item.issue_id))
+
+
+def select_requested_issues(config: dict[str, Any], *, wave: str | None, only: set[str]) -> list[CuratedIssue]:
+    """Select either one wave or all waves."""
+
+    if wave:
+        selected = select_issues(config, wave=wave, only=only, allow_deferred=True)
+        if only:
+            selected_ids = {issue.issue_id for issue in selected}
+            missing = sorted(only - selected_ids)
+            if missing:
+                raise ConfigError(f"Requested issue IDs not found in wave '{wave}': {', '.join(missing)}")
+        return selected
+    return select_all_issues(config, only=only)
 
 
 def require_str(raw: dict[str, Any], field: str) -> str:
@@ -320,7 +326,7 @@ def create_issue(repo: str, issue: CuratedIssue) -> None:
     completed = run_command(args)
     if completed.returncode != 0:
         raise ConfigError(f"Unable to create issue '{issue.title}': {completed.stderr.strip()}")
-    print(f"CREATE {issue.issue_id}: {completed.stdout.strip()}")
+    print(f"CREATE {issue.wave}/{issue.issue_id}: {completed.stdout.strip()}")
 
 
 def print_plan(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) -> None:
@@ -329,13 +335,14 @@ def print_plan(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) 
     print("Curated public issue plan:")
     for issue in issues:
         current = existing.get(issue.title)
+        prefix = f"{issue.wave}/{issue.issue_id}"
         if current:
             print(
-                f"  SKIP   {issue.issue_id}: {issue.title} "
+                f"  SKIP   {prefix}: {issue.title} "
                 f"(already exists as #{current.get('number')}, state={current.get('state')})"
             )
         else:
-            print(f"  CREATE {issue.issue_id}: {issue.title} labels={issue.labels}")
+            print(f"  CREATE {prefix}: {issue.title} labels={issue.labels}")
 
 
 def check_sync(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) -> int:
@@ -354,7 +361,7 @@ def check_sync(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) 
         problems: list[str] = []
         current_number = current.get("number")
         current_url = current.get("url")
-        current_state = current.get("state")
+        current_state = str(current.get("state", "")).lower()
         current_labels = label_names(current.get("labels"))
 
         if issue.github_issue_number is not None and current_number != issue.github_issue_number:
@@ -364,7 +371,7 @@ def check_sync(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) 
         if sorted(issue.labels) != sorted(current_labels):
             problems.append(f"labels yaml={sorted(issue.labels)} github={sorted(current_labels)}")
         if current_state != "open":
-            problems.append(f"state={current_state}")
+            problems.append(f"state={current.get('state')}")
 
         if problems:
             print(f"  MISMATCH {issue.wave}/{issue.issue_id}: {issue.title} :: {'; '.join(problems)}")
@@ -404,7 +411,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--wave",
         default=None,
-        help="Wave key to process. Defaults to wave_1 for create/dry-run and all waves for --check-sync.",
+        help="Optional wave key to process. When omitted, all waves in the YAML are processed.",
     )
     parser.add_argument("--only", action="append", default=[])
     parser.add_argument("--allow-deferred", action="store_true")
@@ -427,24 +434,14 @@ def main(argv: list[str] | None = None) -> int:
         only = set(args.only)
 
         existing = load_existing_issue_titles(args.repo)
+        issues = select_requested_issues(config, wave=args.wave, only=only)
 
-        if args.check_sync:
-            issues = select_sync_issues(config, wave=args.wave, only=only)
-            if not issues:
-                print("No issues selected for sync check.")
-                return 0
-            return check_sync(issues, existing)
-
-        wave = args.wave or "wave_1"
-        issues = select_issues(
-            config,
-            wave=wave,
-            only=only,
-            allow_deferred=args.allow_deferred,
-        )
         if not issues:
             print("No issues selected.")
             return 0
+
+        if args.check_sync:
+            return check_sync(issues, existing)
 
         print_plan(issues, existing)
 
@@ -455,9 +452,10 @@ def main(argv: list[str] | None = None) -> int:
         print("\nApplying changes:")
         for issue in issues:
             if issue.title in existing:
-                print(f"SKIP   {issue.issue_id}: already exists")
+                print(f"SKIP   {issue.wave}/{issue.issue_id}: already exists")
                 continue
             create_issue(args.repo, issue)
+            existing[issue.title] = {"title": issue.title, "state": "open"}
         return 0
     except (ConfigError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
