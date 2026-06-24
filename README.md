@@ -92,12 +92,13 @@ Intergrax is not presented as a finished SaaS, a general-purpose open-source fra
 
 | If you are… | Start with |
 |-------------|------------|
-| Evaluating Intergrax for the first time | [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) · [ROADMAP.md](ROADMAP.md) |
+| Evaluating Intergrax for the first time | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
+| Checking use-case fit | [USE_CASES.md](USE_CASES.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | Checking collaboration or license boundaries | [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE) |
 | Reviewing the Harness AI / Agent OS model | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Exploring attestation, boundary events, or external verification | [BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) · [attestation_demo README](applications/attestation_demo/README.md) |
-| Exploring product-validation directions | [LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [local_workspace_application ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) |
-| Interested in feedback, design-partner work, or integration proposals | [ROADMAP.md](ROADMAP.md) · [COLLABORATION.md](COLLABORATION.md) · [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
+| Exploring product-validation directions | [LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [USE_CASES.md](USE_CASES.md) |
+| Interested in feedback, design-partner work, or integration proposals | [PARTNERS.md](PARTNERS.md) · [COLLABORATION.md](COLLABORATION.md) · [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
 
 Looking for common questions? See [FAQ.md](FAQ.md).
 
