@@ -37,9 +37,19 @@ The following require **explicit written permission** from the copyright holder.
 
 ---
 
+## Public Discussion Map
+
+The open curated GitHub issues are a public discussion map for evaluating Intergrax as a **Harness AI / Agent OS** platform. They are structured discussion entry points and evaluation signals, not a generic implementation backlog.
+
+The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). The source data for active curated issues is [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml). Architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md).
+
+Curated public issues do **not** create production-support obligations, SLA commitments, roadmap commitments, commercial-use permission, production-use permission, redistribution permission, derivative-work permission, public security vulnerability handling, or an open-source task board.
+
+---
+
 ## Current collaboration tracks
 
-Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md). Active curated public issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Maintainer-curated issue drafts are described in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md).
+Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md).
 
 | Track | Focus |
 |-------|-------|
@@ -48,6 +58,8 @@ Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-ado
 | Local Knowledge Workspace alpha feedback | Early feedback on LKW alpha capabilities |
 | Documentation clarity | Corrections, gaps, and readability improvements |
 | Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries |
+| Architecture discussion | Feedback on the Harness AI model, tier boundaries, Nexus, policy, context, RAG, memory, and agent contracts |
+| Product / application validation | Feedback on scaffolded or early product directions such as Legal review, Research, DSW, Intergrax Assistant, ProblemRadar, and Lab proof paths |
 
 Prior discussion is recommended before substantial work on any track. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 
@@ -69,8 +81,10 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) — focused evaluation path for technical reviewers and design partners
 - [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
-- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
-- [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for structured feedback and design-partner discovery
+- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issue map and recommended evaluation paths
+- [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active architecture, product-validation, and deep technical discussion issue waves
+- [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active public issue automation
+- [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue rationale for structured feedback and design-partner discovery
 - [LICENSE](LICENSE) — proprietary terms and permitted use
 - [README.md](README.md) — project overview and documentation index
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and requirements
