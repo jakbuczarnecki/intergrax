@@ -8,7 +8,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 This directory contains the public-adoption control documents for Intergrax.
 
-These documents define how the public repository accepts structured evaluation feedback, documentation feedback, selected integration feedback, and qualified design-partner interest while preserving the source-available/proprietary collaboration model.
+These documents define how the public repository accepts structured evaluation feedback, documentation feedback, selected integration feedback, qualified design-partner interest, architecture discussion, product-validation discussion, and deep technical feedback while preserving the source-available/proprietary collaboration model.
 
 They do not define an open-source contribution model, production-support channel, commercial-use permission path, redistribution permission path, derivative-work permission path, SLA, or public product roadmap commitment.
 
@@ -18,10 +18,12 @@ They do not define an open-source contribution model, production-support channel
 |------|----------|---------|
 | 0 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
 | 1 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issues and recommended evaluation paths |
-| 2 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
-| 3 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
-| 4 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
-| 5 | [curated_public_issues.yml](curated_public_issues.yml) | Structured source data for issue automation |
+| 2 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Expanded architecture, product-validation, and deep technical discussion issue waves |
+| 3 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
+| 4 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
+| 5 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
+| 6 | [curated_public_issues.yml](curated_public_issues.yml) | Structured source data for active issue automation |
+| 7 | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Supplemental source data for expanded public discussion issue automation |
 
 ## Operational model
 
@@ -34,6 +36,16 @@ README.md / ROADMAP.md / COLLABORATION.md
   -> GitHub Issues #186-#194
 ```
 
+Expanded discussion waves are prepared separately:
+
+```text
+PUBLIC_DISCUSSION_ISSUE_EXPANSION.md
+  -> curated_public_discussion_issues.yml
+  -> Wave 3 architecture discussion issues
+  -> Wave 4 product / application validation issues
+  -> Wave 5 deep technical discussion issues
+```
+
 Automation support:
 
 ```text
@@ -41,14 +53,22 @@ curated_public_issues.yml
   -> scripts/public_adoption/create_curated_issues.py
   -> --check-sync for YAML <-> GitHub issue alignment
   -> --apply only for explicit issue creation
+
+curated_public_discussion_issues.yml
+  -> scripts/public_adoption/create_curated_issues.py --config docs/public-adoption/curated_public_discussion_issues.yml
+  -> --wave wave_3 | wave_4 | wave_5
+  -> --apply only for explicit issue creation
 ```
 
 ## Current curated issue waves
 
-| Wave | Issues | Purpose |
-|------|--------|---------|
-| Wave 1 | #186-#190 | First-run proof path, documentation clarity, trace/evidence inspection, attestation feedback, governed-agent design-partner interest |
-| Wave 2 | #191-#194 | Harness AI mental model, trace/evidence export surfaces, Local Knowledge Workspace alpha, MCP controlled task surface |
+| Wave | Issues | Purpose | Source |
+|------|--------|---------|--------|
+| Wave 1 | #186-#190 | First-run proof path, documentation clarity, trace/evidence inspection, attestation feedback, governed-agent design-partner interest | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave 2 | #191-#194 | Harness AI mental model, trace/evidence export surfaces, Local Knowledge Workspace alpha, MCP controlled task surface | [curated_public_issues.yml](curated_public_issues.yml) |
+| Wave 3 | prepared | Architecture discussion issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) |
+| Wave 4 | prepared | Product / application validation issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) |
+| Wave 5 | prepared | Deep technical discussion issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) |
 
 ## Boundaries
 
@@ -58,14 +78,17 @@ Public-adoption issues are for:
 - documentation clarity,
 - evidence and trace inspection feedback,
 - selected integration feedback,
-- qualified design-partner discovery.
+- qualified design-partner discovery,
+- architecture discussion,
+- product / application validation,
+- deep technical review.
 
 Public-adoption issues are not for:
 
 - production support,
 - commercial use requests,
 - redistribution or derivative-work permission requests,
-- broad feature requests,
+- broad feature requests detached from architecture or product validation,
 - public security vulnerability disclosure,
 - hosted SaaS or pricing discussions,
 - requests for free implementation work,
