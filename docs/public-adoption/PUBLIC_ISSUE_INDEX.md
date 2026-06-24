@@ -10,7 +10,7 @@ This document lists the currently active maintainer-curated public issues for In
 
 The purpose of this index is to make public feedback entry points easy to discover and easy to use without turning the repository into a broad feature-request backlog, production-support channel, or open-source contribution board.
 
-Intergrax is source-available/proprietary. Public issues are for structured evaluation feedback, documentation clarity, selected integration feedback, and qualified design-partner discovery. They do not grant production, commercial, redistribution, derivative-work, implementation, support, or SLA rights.
+Intergrax is source-available/proprietary. Public issues are for structured evaluation feedback, documentation clarity, selected integration feedback, qualified design-partner discovery, architecture discussion, product-validation discussion, and deep technical review. They do not grant production, commercial, redistribution, derivative-work, implementation, support, or SLA rights.
 
 ## Active curated issues
 
@@ -59,6 +59,18 @@ The remaining issues are useful for more specific reviewers:
 | Discuss Local Knowledge Workspace alpha fit | [#193](https://github.com/jakbuczarnecki/intergrax/issues/193) |
 | Discuss MCP as a controlled task/tool surface | [#194](https://github.com/jakbuczarnecki/intergrax/issues/194) |
 
+## Expanded discussion waves
+
+Additional architecture, product-validation, and deep technical discussion issues are prepared in [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) and [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml).
+
+| Wave | Purpose | Source | GitHub state |
+|------|---------|--------|--------------|
+| Wave 3 | Architecture discussion issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Prepared; create explicitly with `--apply` |
+| Wave 4 | Product / application validation issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Prepared; create explicitly with `--apply` |
+| Wave 5 | Deep technical discussion issues | [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) | Prepared; create explicitly with `--apply` |
+
+These expanded waves are intentionally separated from the active issue list until they are created on GitHub and assigned issue numbers.
+
 ## Maintainer handling rules
 
 Maintainer responses should keep public issues focused and scoped. See [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) for the full public-adoption triage policy and response templates.
@@ -82,7 +94,7 @@ The curated public issues are not for:
 - production support,
 - commercial use requests,
 - redistribution or derivative-work permission requests,
-- broad feature requests,
+- broad feature requests detached from architecture or product validation,
 - license debates,
 - public security vulnerability disclosure,
 - hosted SaaS or pricing discussions,
@@ -94,8 +106,10 @@ For commercial licensing, production use, partnerships, or permission requests, 
 ## Source documents
 
 - [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) — maintainer handling rules, close/keep-open criteria, escalation rules, and response templates.
+- [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion wave plan.
 - [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) — strategy and draft bodies for curated public issues.
-- [curated_public_issues.yml](curated_public_issues.yml) — structured source data for automation.
+- [curated_public_issues.yml](curated_public_issues.yml) — structured source data for active issue automation.
+- [curated_public_discussion_issues.yml](curated_public_discussion_issues.yml) — structured source data for expanded public discussion issue automation.
 - [create_curated_issues.py](../../scripts/public_adoption/create_curated_issues.py) — maintainer utility for dry-run and explicit issue creation.
 - [ROADMAP.md](../../ROADMAP.md) — public adoption roadmap and collaboration priorities.
 - [COLLABORATION.md](../../COLLABORATION.md) — collaboration model and permission boundaries.
