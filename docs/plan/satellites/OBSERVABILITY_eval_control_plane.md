@@ -1,8 +1,8 @@
 # OBSERVABILITY — Eval Control Plane (OECP)
 
 **Parent hub:** [OBSERVABILITY.md](../OBSERVABILITY.md)  
-**Architecture:** [rchitecture/OBSERVABILITY.md](../../architecture/OBSERVABILITY.md#observability--evaluation-control-plane) · [rchitecture/satellites/OBSERVABILITY_extended_depth.md](../../architecture/satellites/OBSERVABILITY_extended_depth.md)  
-**Audit source:** [udit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md](../../audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)  
+**Architecture:** [architecture/OBSERVABILITY.md](../../architecture/OBSERVABILITY.md#observability--evaluation-control-plane) · [architecture/satellites/OBSERVABILITY_extended_depth.md](../../architecture/satellites/OBSERVABILITY_extended_depth.md)  
+**Audit source:** [audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md](../../audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)  
 **Status:** Active implementation register — **2026-06-24**
 
 > Closed phases (OBS, OBS-BUS, EBE, OBS-EVOL-9) remain in [OBSERVABILITY_audit_history.md](OBSERVABILITY_audit_history.md). Do not re-open without operator reprioritization.
@@ -11,9 +11,9 @@
 
 ## Delivery model
 
-`	ext
-HOS run → evidence ledger → eval snapshot → metric results → regression gates → perturbation suites → controlled adaptation
-`
+```text
+HOS run -> evidence ledger -> eval snapshot -> metric results -> regression gates -> perturbation suites -> controlled adaptation
+```
 
 **Rules:** OECP consumes HOS only; no parallel trace system; external vendors are optional sinks; CVL emits verdicts — OECP stores and gates (see [CRITIC_VERIFICATION.md](../../architecture/CRITIC_VERIFICATION.md#boundary-with-observability--evaluation-control-plane-oecp)).
 
@@ -26,7 +26,7 @@ One phase ID (or cohesive sub-ID batch) per PR unless operator reprioritizes.
 | ID | Type | Deliverable | Status | Acceptance criteria |
 |----|------|-------------|--------|---------------------|
 | **OBS-ECP-0** | Docs | OECP architecture canon in hub, extended satellite, CVL cross-ref, Tier-3 profile surfaces, and this plan register | **Open** | Hub states HOS-only spine + OECP scope; extended satellite contains OECP sections; CVL/OECP boundary explicit; Tier-3 §22.1.1 surfaces documented; audit remains separate source at docs/audit/ |
-| **OBS-ECP-1** | Code | Trace Completeness Contract (TraceCompletenessProfile, checker, report, gate) | **Planned** | Required eval-grade evidence dimensions validated per profile; gate modes observe / warn / lock_release / lock_canary_promotion / ail_ci; missing prompt/tool/RAG/critic evidence produces findings with refs |
+| **OBS-ECP-1** | Code | Trace Completeness Contract (TraceCompletenessProfile, checker, report, gate) | **Planned** | Required eval-grade evidence dimensions validated per profile; gate modes observe / warn / block_release / block_canary_promotion / fail_ci; missing prompt/tool/RAG/critic evidence produces findings with refs |
 | **OBS-ECP-2** | Code | Evidence Ledger — eval-ready records derived from HOS/journal | **Planned** | Normalized evidence kinds (prompt, model I/O, tool, RAG, context, policy, critic, custom telemetry) with source_event_id / source_trace_event_id; no full trace duplication; redaction metadata persisted |
 | **OBS-ECP-3** | Code | Eval Registry v2 | **Planned** | EvalCase, EvalDataset, EvalRun, EvalRunSnapshot, EvalMetricResult, EvalObservationV2, EvalRegressionResult, perturbation lineage; observations carry evidence refs and version pins |
 | **OBS-ECP-4** | Code | Metric and Eval Plugin SDK | **Planned** | EvalMetricPlugin protocol + registry; built-in deterministic/trajectory/ops metrics; custom plugins score without core runtime changes |
