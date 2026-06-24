@@ -34,6 +34,7 @@ README.md / ROADMAP.md / COLLABORATION.md
   -> PUBLIC_ISSUE_INDEX.md
   -> curated_public_issues.yml
   -> scripts/public_adoption/manage_curated_issues.bat
+  -> scripts/public_adoption/manage_curated_milestones.py
   -> GitHub Issues #186-#227
 ```
 
@@ -47,7 +48,7 @@ Source of truth:
 docs/public-adoption/curated_public_issues.yml
 ```
 
-Normal Windows workflow:
+Normal Windows workflow for issue creation and sync:
 
 ```bat
 scripts\public_adoption\manage_curated_issues.bat dry
@@ -69,6 +70,42 @@ Optional single-wave mode remains available when needed:
 scripts\public_adoption\manage_curated_issues.bat dry wave_3
 scripts\public_adoption\manage_curated_issues.bat apply wave_3
 scripts\public_adoption\manage_curated_issues.bat check wave_3
+```
+
+## Milestone automation
+
+Curated issues are grouped into wave milestones for GitHub UX:
+
+| Wave | Milestone |
+|------|-----------|
+| Wave 1 | Public Adoption — Wave 1 |
+| Wave 2 | Public Adoption — Wave 2 |
+| Wave 3 | Architecture Discussion — Wave 3 |
+| Wave 4 | Product Validation — Wave 4 |
+| Wave 5 | Deep Technical Review — Wave 5 |
+
+Normal milestone workflow:
+
+```bat
+python scripts\public_adoption\manage_curated_milestones.py
+python scripts\public_adoption\manage_curated_milestones.py --apply
+python scripts\public_adoption\manage_curated_milestones.py --check-sync
+```
+
+Behavior:
+
+```text
+default      -> dry-run milestone creation and issue assignment plan
+--apply      -> create missing milestones and assign issues to expected wave milestones
+--check-sync -> verify issue milestone assignments without mutating GitHub
+```
+
+Optional single-wave mode remains available:
+
+```bat
+python scripts\public_adoption\manage_curated_milestones.py --wave wave_3
+python scripts\public_adoption\manage_curated_milestones.py --wave wave_3 --apply
+python scripts\public_adoption\manage_curated_milestones.py --wave wave_3 --check-sync
 ```
 
 ## Current curated issue waves
