@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -31,6 +32,8 @@ except ImportError as exc:  # pragma: no cover
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = REPO_ROOT / "docs" / "public-adoption" / "curated_public_issues.yml"
 DEFAULT_REPOSITORY = "jakbuczarnecki/intergrax"
+DOTENV_CANDIDATES = (REPO_ROOT / ".env", REPO_ROOT / ".env.local")
+GITHUB_TOKEN_ENV_NAMES = ("GH_TOKEN", "GITHUB_TOKEN")
 
 
 @dataclass(frozen=True)
@@ -51,10 +54,75 @@ class ConfigError(ValueError):
     """Raised when the YAML configuration is invalid."""
 
 
+def parse_dotenv_line(line: str) -> tuple[str, str] | None:
+    """Parse one simple KEY=VALUE .env line."""
+
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#"):
+        return None
+    if stripped.startswith("export "):
+        stripped = stripped[len("export ") :].strip()
+    if "=" not in stripped:
+        return None
+
+    key, value = stripped.split("=", 1)
+    key = key.strip()
+    value = value.strip()
+    if not key:
+        return None
+
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1]
+
+    return key, value
+
+
+def load_dotenv_values(path: Path) -> dict[str, str]:
+    """Load simple .env key/value pairs without requiring python-dotenv."""
+
+    if not path.exists():
+        return {}
+
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        parsed = parse_dotenv_line(line)
+        if parsed is None:
+            continue
+        key, value = parsed
+        values[key] = value
+    return values
+
+
+def github_cli_environment() -> dict[str, str]:
+    """Build subprocess environment for GitHub CLI.
+
+    GitHub CLI accepts GH_TOKEN. Many project .env files use GITHUB_TOKEN.
+    This function loads .env/.env.local and mirrors GITHUB_TOKEN to GH_TOKEN
+    when GH_TOKEN is not already set.
+    """
+
+    env = os.environ.copy()
+
+    for dotenv_path in DOTENV_CANDIDATES:
+        for key, value in load_dotenv_values(dotenv_path).items():
+            env.setdefault(key, value)
+
+    if not env.get("GH_TOKEN") and env.get("GITHUB_TOKEN"):
+        env["GH_TOKEN"] = env["GITHUB_TOKEN"]
+
+    return env
+
+
 def run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
     """Run a subprocess and capture output."""
 
-    return subprocess.run(args, check=False, capture_output=True, text=True)
+    return subprocess.run(
+        args,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=github_cli_environment(),
+    )
 
 
 def load_config(path: Path) -> dict[str, Any]:
