@@ -110,15 +110,38 @@ def load_dotenv_values(path: Path) -> dict[str, str]:
     return values
 
 
+def load_all_dotenv_values() -> dict[str, str]:
+    """Load repository .env values in deterministic order.
+
+    Later files override earlier files. This makes .env.local able to override
+    .env while keeping the project-local configuration explicit.
+    """
+
+    values: dict[str, str] = {}
+    for dotenv_path in DOTENV_CANDIDATES:
+        values.update(load_dotenv_values(dotenv_path))
+    return values
+
+
 def github_cli_environment() -> dict[str, str]:
-    """Build subprocess environment for GitHub CLI."""
+    """Build subprocess environment for GitHub CLI.
+
+    Project .env/.env.local values are loaded first. For GitHub authentication,
+    the repository-local GH_TOKEN or GITHUB_TOKEN intentionally overrides any
+    stale token inherited from the parent shell. GitHub CLI uses GH_TOKEN.
+    """
 
     env = os.environ.copy()
-    for dotenv_path in DOTENV_CANDIDATES:
-        for key, value in load_dotenv_values(dotenv_path).items():
-            env.setdefault(key, value)
+    dotenv_values = load_all_dotenv_values()
 
-    if not env.get("GH_TOKEN") and env.get("GITHUB_TOKEN"):
+    for key, value in dotenv_values.items():
+        env.setdefault(key, value)
+
+    if dotenv_values.get("GH_TOKEN"):
+        env["GH_TOKEN"] = dotenv_values["GH_TOKEN"]
+    elif dotenv_values.get("GITHUB_TOKEN"):
+        env["GH_TOKEN"] = dotenv_values["GITHUB_TOKEN"]
+    elif not env.get("GH_TOKEN") and env.get("GITHUB_TOKEN"):
         env["GH_TOKEN"] = env["GITHUB_TOKEN"]
 
     return env
