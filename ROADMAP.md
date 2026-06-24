@@ -19,6 +19,14 @@ Canonical technical architecture and implementation status remain in:
 
 ---
 
+## Public Discussion Map
+
+The open curated GitHub issues are a public discussion map for evaluating Intergrax as a **Harness AI / Agent OS** platform. They are not a generic implementation backlog, public support queue, roadmap commitment, security vulnerability channel, commercial-use permission path, redistribution permission path, or open-source task board.
+
+The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). The source data for the active issue map is [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml).
+
+---
+
 ## Now
 
 | Item | Notes |
@@ -32,7 +40,10 @@ Canonical technical architecture and implementation status remain in:
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/ARCHITECTURE.md) |
 | Public evaluation entry points available | [README.md](README.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [USE_CASES.md](USE_CASES.md) · [PARTNERS.md](PARTNERS.md) |
+| Public Discussion Map documented in README | [README.md#public-discussion-map](README.md#public-discussion-map) frames curated issues as discussion entry points, not a backlog |
 | Curated public issue map active | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) lists active Wave 1-5 issues (#186-#227) |
+| Curated public issue milestones active | Active issue waves are grouped by milestone for GitHub navigation |
+| Maintainer notes added to selected strategic issues | Strategic issues clarify discussion boundaries and avoid implementation-commitment ambiguity |
 | Public issue templates / feedback routing available | Structured entry points for feedback, bug reports, integration proposals, and design-partner interest |
 | Canonical issue automation available | [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) is the source of truth; [manage_curated_issues.bat](scripts/public_adoption/manage_curated_issues.bat) provides dry/apply/check workflow |
 
@@ -44,7 +55,6 @@ Canonical technical architecture and implementation status remain in:
 |------|-------|
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
 | Maintain curated public issue map | Active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) and defined in [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) |
-| Add maintainer notes to selected strategic issues | Clarify that curated issues are discussion entry points and evaluation signals, not implementation commitments |
 | Refine issue templates based on first external feedback | Feedback, bug reports, integration proposals, and design-partner interest have structured entry points |
 | Optionally add demo media for the attestation case study | Validation-flow diagram is published; optional future work is short demo media for the [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Collect Local Knowledge Workspace alpha feedback from design partners | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) published; structured partner feedback welcome |
