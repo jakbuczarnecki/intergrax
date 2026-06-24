@@ -1,0 +1,883 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+# Use, modification, or distribution without written permission is prohibited.
+
+schema_version: 1
+status: active
+purpose: >-
+  Structured source data for expanded maintainer-curated public GitHub issue drafts.
+  This supplemental file defines architecture, product-validation, and deep technical
+  discussion waves. It does not create GitHub Issues by itself.
+
+safety:
+  creates_real_github_issues: false
+  requires_explicit_apply_flag: true
+  dry_run_should_be_default: true
+  source_available_proprietary_notice_required: true
+  do_not_create:
+    - production_support_issues
+    - sla_or_support_commitment_issues
+    - commercial_use_permission_issues
+    - redistribution_or_derivative_work_permission_issues
+    - public_security_vulnerability_reports
+    - broad_feature_request_issues_without_architecture_or_product_validation_scope
+    - help_wanted_or_good_first_issue_tasks
+    - hosted_saas_or_pricing_issues
+
+waves:
+  wave_3:
+    description: >-
+      Architecture discussion wave for public feedback on the core Intergrax Harness AI /
+      Agent OS model and its most important architectural boundaries.
+    open_now: true
+    labels_policy: use_existing_template_labels_only
+    issues:
+      - id: harness-ai-not-agent-framework
+        order: 1
+        title: "Architecture discussion: Intergrax as Harness AI, not an agent framework"
+        template: documentation_feedback.yml
+        labels:
+          - documentation
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - AI systems architect
+          - agent platform engineer
+          - technical evaluator
+        goal: >-
+          Validate whether the public narrative makes the Harness AI positioning clear.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for architecture feedback on the core Intergrax positioning: Intergrax is intended to be a Harness AI / Agent OS platform, not only another agent framework.
+
+          The goal is to understand whether external readers can see why the harness/runtime is the durable product and why agents should remain replaceable domain decision units.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether the Harness AI positioning is clear,
+          - whether the difference between an agent framework, an Agent OS, and a harness is understandable,
+          - whether the statement "the harness is the product" is supported by the public documentation,
+          - which document, diagram, or phrase made the model clearer,
+          - which part still sounds like a normal agent framework.
+
+          ## Out of scope
+
+          This issue is not for broad feature requests, production support, commercial use requests, license debates, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: four-tier-boundary-model
+        order: 2
+        title: "Architecture discussion: four-tier boundary model"
+        template: documentation_feedback.yml
+        labels:
+          - documentation
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - AI systems architect
+          - platform engineer
+          - technical reviewer
+        goal: >-
+          Validate whether the Tier-0 / Tier-1 / Tier-2 / Tier-3 model is understandable and useful.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the Intergrax four-tier architecture model:
+
+          - Tier-0 Platform,
+          - Tier-1 Nexus Runtime,
+          - Tier-2 Agents,
+          - Tier-3 Applications.
+
+          The goal is to understand whether this boundary model helps external readers reason about where capabilities, policies, tools, agents, and applications belong.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether the four-tier model is clear,
+          - which tier boundary is hardest to understand,
+          - whether the model helps avoid agent god objects,
+          - whether tools, skills, integrations, agents, and applications appear to live in the right places,
+          - what example or diagram would make the boundary model easier to evaluate.
+
+          ## Out of scope
+
+          This issue is not for implementation requests, broad redesign proposals, production support, commercial use requests, or license debates.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: nexus-as-agent-os
+        order: 3
+        title: "Architecture discussion: Nexus as Agent OS"
+        template: documentation_feedback.yml
+        labels:
+          - documentation
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - multi-agent runtime developer
+          - platform engineer
+          - AI systems architect
+        goal: >-
+          Validate whether Nexus is understood as a runtime / Agent OS layer rather than an agent.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the Nexus role in Intergrax.
+
+          The goal is to validate whether external readers understand Nexus as an Agent OS / orchestration runtime, not as a domain agent or a reasoning monolith.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether Nexus is clearly separated from agent cognition,
+          - whether the execution path is understandable,
+          - whether the Agent OS metaphor helps or confuses,
+          - what a public proof path should show to make Nexus credible,
+          - where the current documentation over-explains or under-explains Nexus.
+
+          ## Out of scope
+
+          This issue is not for production support, broad feature requests, implementation tasks, or requests to redesign the runtime without a concrete architecture-clarity concern.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: policy-first-agent-execution
+        order: 4
+        title: "Architecture discussion: policy-first agent execution"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - governance engineer
+          - platform engineer
+          - AI product team
+        goal: >-
+          Validate whether policy-first execution is visible, trustworthy, and understandable.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the policy-first execution model in Intergrax.
+
+          The goal is to understand whether public documentation and proof paths make it clear that agent execution should be constrained by policy, permissions, risk metadata, HITL gates, and traceable decisions.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether policy-first execution is clear,
+          - which policy checkpoints should be visible to evaluators,
+          - whether HITL appears connected to policy decisions,
+          - what would make governed execution trustworthy,
+          - which policy concepts need sharper examples.
+
+          ## Out of scope
+
+          This issue is not for security vulnerability disclosure, production certification requests, commercial use requests, compliance approval, or broad feature requests.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: tool-skill-integration-separation
+        order: 5
+        title: "Architecture discussion: Tool / Skill / Integration separation"
+        template: integration_proposal.yml
+        labels:
+          - integration
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - integration builder
+          - agent platform engineer
+          - MCP reviewer
+        goal: >-
+          Validate whether the Integration -> Tool -> Skill -> Agent separation is clear and useful.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on one of the core Intergrax architecture boundaries: Integration is not Tool, Tool is not Skill, and Skill is not Agent.
+
+          The goal is to understand whether this separation is clear to external reviewers and useful for MCP, function-calling, provider adapters, and governed agent ecosystems.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether the Integration -> Tool -> Skill -> Agent model is understandable,
+          - whether the distinction between a tool and a skill is clear,
+          - whether integration providers appear properly isolated from agents,
+          - how this model should relate to MCP or function schemas,
+          - which examples would make the separation more concrete.
+
+          ## Out of scope
+
+          This issue is not a request to implement a specific integration, MCP server, vendor connector, or tool catalog entry.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: context-engineering-runtime-layer
+        order: 6
+        title: "Architecture discussion: context engineering as a first-class runtime layer"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - context engineering reviewer
+          - RAG engineer
+          - platform engineer
+        goal: >-
+          Validate whether Intergrax presents context assembly as a governed runtime concern, not prompt stuffing.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on context engineering as a first-class Intergrax runtime layer.
+
+          The goal is to understand whether reviewers can see how context should be assembled, budgeted, scored, compressed, traced, and linked to provenance instead of being manually pasted into prompts.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether context engineering is visible enough in public architecture docs,
+          - which context signals matter most: budget, relevance, freshness, confidence, provenance, compression, trimming,
+          - what a public proof path should expose about context assembly,
+          - where RAG, memory, and policy should enter the context pipeline,
+          - what would make context assembly auditable.
+
+          ## Out of scope
+
+          This issue is not for broad prompt-engineering requests, production support, hosted-product roadmap discussions, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: governed-rag-memory-boundaries
+        order: 7
+        title: "Architecture discussion: governed RAG and memory boundaries"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - RAG engineer
+          - knowledge workflow evaluator
+          - governance engineer
+        goal: >-
+          Validate whether the boundaries between RAG, memory, and context are understandable.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on how Intergrax separates governed RAG, memory, and context engineering.
+
+          The goal is to validate whether external reviewers understand retrieval as a full architecture layer, memory as scoped and governed state, and context as a runtime assembly pipeline.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether the boundary between RAG, memory, and context is clear,
+          - what a reviewer should inspect to trust retrieval outputs,
+          - which memory scopes matter most for governed agent applications,
+          - what proof path would validate local/private knowledge workflows,
+          - what citations, provenance, or retention details should be visible.
+
+          ## Out of scope
+
+          This issue is not for requests to ingest private data, production support, commercial use requests, security-sensitive disclosure, or broad feature requests.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: agent-contracts-production-readiness
+        order: 8
+        title: "Architecture discussion: agent contracts and production readiness"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: architecture_discussion
+        primary_audience:
+          - agent platform engineer
+          - AI product team
+          - architecture reviewer
+        goal: >-
+          Validate whether agents are understood as contracted lifecycle-managed components.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on agent contracts and production-readiness boundaries.
+
+          The goal is to understand whether external reviewers see an Intergrax agent as a contracted, registered, lifecycle-managed component rather than a prompt class or standalone script.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether AgentContract is clear enough,
+          - which metadata should be mandatory before an agent becomes production-candidate,
+          - whether lifecycle states such as experimental, certified, deprecated, and retired are useful,
+          - what evidence should support agent readiness,
+          - what would make agent lifecycle governance credible.
+
+          ## Out of scope
+
+          This issue is not a production certification request, not an implementation task, and not a promise to accept external agent implementations.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+  wave_4:
+    description: >-
+      Product and application validation wave for public discussion around scaffolded or early
+      Intergrax applications, agent pipelines, and possible business use cases.
+    open_now: true
+    labels_policy: use_existing_template_labels_only
+    issues:
+      - id: legal-contract-review-application
+        order: 1
+        title: "Design partner interest: Legal contract review application"
+        template: design_partner_interest.yml
+        labels:
+          - design-partner
+          - triage
+        category: product_validation_track
+        primary_audience:
+          - legal operations evaluator
+          - AI product team
+          - design partner
+        goal: >-
+          Validate whether a governed legal contract review application solves a real workflow problem.
+        risk: medium_high
+        body: |
+          ## Purpose
+
+          We are looking for product-validation feedback on a possible Legal contract review application built on Intergrax.
+
+          The goal is not to provide legal advice. The goal is to understand which contract-review workflows could benefit from governed AI assistance, traceability, review artifacts, and human approval points.
+
+          ## Useful feedback
+
+          Please share:
+
+          - what contract review workflow is painful today,
+          - whether useful outputs would include summaries, risk tables, clause maps, negotiation notes, or review checklists,
+          - which steps must remain human-reviewed,
+          - what trace or evidence would make the workflow trustworthy,
+          - what proof path would make this product direction worth evaluating.
+
+          Do not include confidential contracts, private client information, credentials, secrets, or privileged material in this public issue.
+
+          ## Important boundary
+
+          This issue is not legal advice, not a production legal product commitment, and not a compliance or certification claim.
+
+          Intergrax is source-available/proprietary. Commercial, production, redistribution, derivative-work, or substantial implementation use requires explicit maintainer permission.
+
+      - id: research-summarization-pipeline
+        order: 2
+        title: "Design partner interest: Research and summarization pipeline"
+        template: design_partner_interest.yml
+        labels:
+          - design-partner
+          - triage
+        category: product_validation_track
+        primary_audience:
+          - researcher
+          - knowledge worker
+          - AI product team
+          - design partner
+        goal: >-
+          Validate whether traceable research and summarization workflows are valuable beyond a simple chatbot.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for product-validation feedback on a governed research and summarization pipeline.
+
+          The goal is to understand whether traceable research, source handling, summarization, reviewability, and repeatable proof paths create value for real research workflows.
+
+          ## Useful feedback
+
+          Please share:
+
+          - what research workflows are painful today,
+          - whether traceable research plus summary is more useful than a normal chatbot,
+          - what should be cited, logged, reviewed, or rejected,
+          - what output format is most useful: report, memo, briefing, table, or knowledge card,
+          - what evaluation path would prove quality.
+
+          Do not include confidential research data, private credentials, customer data, or secrets in this public issue.
+
+          ## Important boundary
+
+          This issue collects product-fit feedback. It is not a commitment to build a hosted research product or production support channel.
+
+          Intergrax is source-available/proprietary. Commercial, production, redistribution, derivative-work, or substantial implementation use requires explicit maintainer permission.
+
+      - id: dispute-simulation-workspace
+        order: 3
+        title: "Design partner interest: Dispute Simulation Workspace"
+        template: design_partner_interest.yml
+        labels:
+          - design-partner
+          - triage
+        category: product_validation_track
+        primary_audience:
+          - dispute preparation evaluator
+          - legal operations evaluator
+          - AI product team
+          - design partner
+        goal: >-
+          Validate whether a dispute-preparation and scenario-simulation workspace has real business value.
+        risk: high
+        body: |
+          ## Purpose
+
+          We are looking for product-validation feedback on a possible Dispute Simulation Workspace built on Intergrax.
+
+          The goal is not to provide legal advice or predict court outcomes. The goal is to understand whether structured intake, argument analysis, strategy mapping, and scenario review could support dispute preparation workflows.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether a dispute-preparation workspace would be useful,
+          - what intake should extract from documents,
+          - whether outputs such as timeline, argument matrix, risk map, contradiction list, or scenario variants would be useful,
+          - what would make scenario simulation credible instead of speculative,
+          - which parts must remain human-reviewed.
+
+          Do not include confidential case details, privileged material, customer data, credentials, or secrets in this public issue.
+
+          ## Important boundary
+
+          This issue is not legal advice, not court prediction, not a production legal product commitment, and not a compliance or certification claim.
+
+          Intergrax is source-available/proprietary. Commercial, production, redistribution, derivative-work, or substantial implementation use requires explicit maintainer permission.
+
+      - id: intergrax-assistant-harness-chat-hub
+        order: 4
+        title: "Product discussion: Intergrax Assistant as harness chat hub"
+        template: design_partner_interest.yml
+        labels:
+          - feedback
+          - triage
+        category: product_validation_track
+        primary_audience:
+          - AI product team
+          - platform evaluator
+          - conversational UX reviewer
+        goal: >-
+          Validate whether a conversational hub is a useful entry point into a governed Agent OS.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for product and UX feedback on Intergrax Assistant as a conversational hub for the harness.
+
+          The goal is to understand whether a chat interface should act as an entry point into Nexus delegation, policy decisions, traceable specialist agents, and governed tool use.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether a harness platform should expose a conversational hub,
+          - when the hub should answer directly versus delegate to specialists,
+          - what users should see: agent choice, policy decision, trace, confidence, evidence,
+          - whether this should remain a lab interface or become a product shell,
+          - what would make delegation understandable to users.
+
+          ## Out of scope
+
+          This issue is not for production support, broad chatbot feature requests, commercial use requests, hosted-product pricing, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: problem-radar-vendor-discovery
+        order: 5
+        title: "Product discussion: ProblemRadar and VendorDiscovery agents"
+        template: design_partner_interest.yml
+        labels:
+          - feedback
+          - triage
+        category: product_validation_track
+        primary_audience:
+          - founder
+          - product strategist
+          - B2B platform evaluator
+          - design partner
+        goal: >-
+          Validate whether agents for business problem discovery and vendor discovery solve a real founder or platform workflow.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on possible ProblemRadar and VendorDiscovery agents.
+
+          The goal is to understand whether Intergrax can support workflows such as business problem discovery, market pain detection, vendor gap analysis, partner discovery, and outreach preparation with reviewable evidence.
+
+          ## Useful feedback
+
+          Please share:
+
+          - what kind of business problem discovery workflow would be useful,
+          - whether the agent should look for pain points, vendor gaps, procurement signals, market changes, or partner candidates,
+          - what evidence should support a detected business problem,
+          - what would make vendor discovery trustworthy,
+          - what should be reviewed by a human before any outreach.
+
+          Do not include confidential business data, private customer information, credentials, or secrets in this public issue.
+
+          ## Important boundary
+
+          This issue collects product-fit feedback. It is not a commitment to implement prospecting, scraping, outreach automation, or commercial services.
+
+          Intergrax is source-available/proprietary. Commercial, production, redistribution, derivative-work, or substantial implementation use requires explicit maintainer permission.
+
+      - id: lab-application-universal-proof-environment
+        order: 6
+        title: "Product discussion: Lab application as universal proof environment"
+        template: proof_path_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: proof_path_feedback
+        primary_audience:
+          - first-time evaluator
+          - platform engineer
+          - developer experience reviewer
+        goal: >-
+          Validate whether the lab application is useful as a universal public evaluation environment.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the Intergrax lab application as a universal proof environment.
+
+          The goal is to understand whether the lab host, debug endpoints, trace inspection, and mounted sample agents make it easy for external reviewers to evaluate Intergrax without needing a production deployment.
+
+          ## Useful feedback
+
+          Please share:
+
+          - whether the lab application is useful as a public evaluation environment,
+          - which debug endpoints should be most visible,
+          - whether every product application should have a lab-mode proof path,
+          - what a first-time evaluator should inspect first,
+          - what would make the lab feel like a real harness validation surface.
+
+          ## Out of scope
+
+          This issue is not for production support, hosted-lab requests, commercial use requests, or broad feature requests unrelated to public proof-path clarity.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+  wave_5:
+    description: >-
+      Deep technical discussion wave for advanced architecture topics that may become useful
+      once the public proof path and architecture narrative have enough external reviewers.
+    open_now: true
+    labels_policy: use_existing_template_labels_only
+    issues:
+      - id: registry-driven-capability-resolution
+        order: 1
+        title: "Architecture discussion: registry-driven capability resolution"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - platform engineer
+          - plugin ecosystem builder
+          - architecture reviewer
+        goal: >-
+          Validate whether registry-driven resolution is understandable and valuable.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on registry-driven capability resolution in Intergrax.
+
+          The goal is to understand whether registries for agents, tools, skills, prompts, policies, integrations, and evaluations are clear enough to support discovery, lifecycle state, versioning, compatibility, and runtime resolution.
+
+          ## Useful feedback
+
+          Please share which registry concepts are clear, which are missing, and what would make registry-driven capability resolution easier to evaluate.
+
+          ## Out of scope
+
+          This issue is not for implementation tasks, broad feature requests, production support, or commercial use requests.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: capability-graph-blast-radius
+        order: 2
+        title: "Architecture discussion: capability graph and blast-radius analysis"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - release engineer
+          - platform engineer
+          - architecture reviewer
+        goal: >-
+          Validate whether a capability graph could make release risk and dependency impact visible.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on capability graph architecture and blast-radius analysis.
+
+          The goal is to understand whether explicit edges between integrations, tools, skills, policies, prompts, agents, applications, and products would help reviewers evaluate release risk and compatibility.
+
+          ## Useful feedback
+
+          Please share what dependency edges matter, what impact analysis should show, and which changes should require compatibility validation.
+
+          ## Out of scope
+
+          This issue is not for production support, implementation requests, commercial use requests, or broad roadmap commitments.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: evaluation-gates-agent-behavior
+        order: 3
+        title: "Architecture discussion: evaluation gates for agent behavior"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - evaluation engineer
+          - agent platform engineer
+          - AI product team
+        goal: >-
+          Validate which evaluation gates make governed agent behavior credible.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on evaluation gates for agent behavior.
+
+          The goal is to understand which golden datasets, scenario benchmarks, deterministic validators, LLM-as-judge checks, human review samples, and release-blocking gates would make Intergrax agents more trustworthy.
+
+          ## Useful feedback
+
+          Please share which behaviors should be evaluated, what should block release, and what evidence should be public in an evaluation proof path.
+
+          ## Out of scope
+
+          This issue is not for benchmark marketing claims, production certification requests, commercial use requests, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: cost-governance-token-resource-budgets
+        order: 4
+        title: "Architecture discussion: cost governance and token/resource budgets"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - platform operator
+          - cost governance reviewer
+          - AI product team
+        goal: >-
+          Validate whether cost and resource governance should be visible in the public architecture path.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on cost governance and resource budgets in Intergrax.
+
+          The goal is to understand which token, model, tool, run, tenant, and agent cost controls should be visible to evaluators of governed agent platforms.
+
+          ## Useful feedback
+
+          Please share what budgets matter, where cost attribution should appear, and what would make cost-aware model routing trustworthy.
+
+          ## Out of scope
+
+          This issue is not for pricing, hosted SaaS discussions, commercial use requests, production support, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: reliability-retries-idempotency-hitl
+        order: 5
+        title: "Architecture discussion: reliability, retries, idempotency and HITL"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - reliability engineer
+          - platform engineer
+          - governance reviewer
+        goal: >-
+          Validate which reliability mechanisms matter most for governed agent execution.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on Intergrax reliability architecture: retries, idempotency, circuit breakers, partial results, recovery, and human-in-the-loop escalation.
+
+          The goal is to understand what reliability evidence should be visible in public proof paths and what failure handling matters most for agent applications.
+
+          ## Useful feedback
+
+          Please share which failure classes matter, which operations require idempotency, and when failures should escalate to HITL.
+
+          ## Out of scope
+
+          This issue is not for production incident support, SLA requests, commercial use requests, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: tier3-applications-product-hosts
+        order: 6
+        title: "Architecture discussion: Tier-3 applications as product hosts"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - product engineer
+          - AI application builder
+          - platform architect
+        goal: >-
+          Validate whether Tier-3 applications are understood as product hosts, not agents.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on Tier-3 applications as deployable product hosts in Intergrax.
+
+          The goal is to understand whether external readers see applications as environments that compose agents, tools, skills, policies, and integrations without becoming agents themselves.
+
+          ## Useful feedback
+
+          Please share whether the application/agent boundary is clear, what product-specific wiring should be visible, and what makes an application environment independently testable.
+
+          ## Out of scope
+
+          This issue is not for hosted product requests, implementation tasks, production support, commercial use requests, or broad application feature requests.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: security-data-governance-agent-platforms
+        order: 7
+        title: "Architecture discussion: security and data governance for agent platforms"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - security reviewer
+          - data governance engineer
+          - platform architect
+        goal: >-
+          Validate which public security and data-governance concepts should be visible without using public issues for vulnerability disclosure.
+        risk: high
+        body: |
+          ## Purpose
+
+          We are looking for architecture-level feedback on security and data governance for agent platforms.
+
+          The goal is to understand which public concepts should be documented: data classification, prompt injection defense, tool injection defense, retrieval poisoning defense, tenant isolation, retention, and output sanitization.
+
+          ## Useful feedback
+
+          Please share which governance concepts are most important for evaluating an agent platform. Do not include vulnerability details, exploits, credentials, secrets, customer data, or private system information.
+
+          ## Important boundary
+
+          This public issue is not a security vulnerability disclosure channel. Security-sensitive information must be handled outside public issues through the appropriate private disclosure path or direct maintainer contact.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: observability-spine-event-journal
+        order: 8
+        title: "Architecture discussion: observability spine and event journal"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - observability builder
+          - platform engineer
+          - governance reviewer
+        goal: >-
+          Validate whether the observability spine and event journal narrative is clear beyond trace/evidence basics.
+        risk: medium
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the Intergrax observability spine and event journal concept.
+
+          The goal is to understand whether lifecycle events, policy events, tool events, context/memory events, run/step correlation, and historical inspection are clear enough for external platform reviewers.
+
+          ## Useful feedback
+
+          Please share which observability events should be visible first, what event journal views would be useful, and what makes runtime behavior diagnosable.
+
+          ## Out of scope
+
+          This issue is not for production monitoring support, hosted dashboards, commercial use requests, or implementation tasks.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
+
+      - id: developer-experience-scaffold-lab-workflow
+        order: 9
+        title: "Architecture discussion: developer experience, scaffold and lab workflow"
+        template: documentation_feedback.yml
+        labels:
+          - feedback
+          - triage
+        category: deep_technical_discussion
+        primary_audience:
+          - developer experience reviewer
+          - agent builder
+          - platform engineer
+        goal: >-
+          Validate whether the path from idea to first agent run is understandable and useful.
+        risk: low
+        body: |
+          ## Purpose
+
+          We are looking for feedback on the Intergrax developer experience: scaffold, lab workflow, debug APIs, trace inspection, replay concepts, and onboarding documentation.
+
+          The goal is to understand whether a new agent or application can be created and evaluated without modifying the runtime or reading the whole architecture.
+
+          ## Useful feedback
+
+          Please share where the idea-to-first-run path is clear, where scaffold expectations are unclear, and what proof path would make developer onboarding easier.
+
+          ## Out of scope
+
+          This issue is not for broad feature requests, implementation tasks, production support, commercial use requests, or open-source contribution assumptions.
+
+          Intergrax is source-available/proprietary. Feedback does not grant production, redistribution, derivative-work, commercial-use, or support rights.
