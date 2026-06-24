@@ -45,6 +45,19 @@ CVL completes the **Plan → Execute → Verify (PEV)** loop that leading Harnes
 
 ---
 
+## Boundary with Observability & Evaluation Control Plane (OECP)
+
+| Concern | CVL | OECP ([`OBSERVABILITY.md`](OBSERVABILITY.md#observability--evaluation-control-plane)) |
+|---------|-----|------|
+| Scope | Per-run / per-step correctness verification | Continuous measurement, eval datasets, metrics, regression gates, perturbations, long-term measurement |
+| Output | Verdicts and observations (`CriticVerdict`, validation results) | Evidence records, eval snapshots, metric results, regression views |
+| Persistence | Emits through HOS; no private verification stores | Evidence Ledger + Eval Registry v2 (references canonical trace/journal) |
+| Gating | L0/L1/L2 PEV gates within a run | Trace completeness, eval regression, release/canary gates across runs |
+
+**CVL emits** verdicts and observations. **OECP stores** evidence, **compares** results, builds **regression views**, and supplies the basis for **gating** and **adaptation**. CVL does **not** own OECP; OECP does **not** replace critic orchestration. Extended contracts: [`satellites/OBSERVABILITY_extended_depth.md`](satellites/OBSERVABILITY_extended_depth.md).
+
+---
+
 ## 2. Problem statement
 
 Intergrax already had strong **structural validation** (`NexusValidationEngine`), **evaluation infrastructure** (registry, shadow eval, offline runner contracts), and **adaptive verification** (`VerificationLoop` for profile promotion). Before Phase CRIT-V (2026-06-07…2026-06-08), production-grade PEV **Verify** depth was missing:

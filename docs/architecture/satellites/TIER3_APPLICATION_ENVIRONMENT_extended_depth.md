@@ -128,6 +128,23 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `ApplicationFeatures` | Lab vs product surface toggles |
 | `domain_policy_fragments` | Product-specific `RuntimePolicyBundle` slices |
 
+## 22.1.1 OECP opt-in profile surfaces (target · architectural)
+
+Tier-3 declares which Observability & Evaluation Control Plane (OECP) capabilities are enabled per application. These are **profile-level opt-in surfaces** — declarative hooks only until OBS-ECP / OBS-CTP implementation phases land. Tier-3 does **not** define separate observability semantics ([`OBSERVABILITY.md`](../OBSERVABILITY.md#observability--evaluation-control-plane)).
+
+| Surface | Purpose |
+|---------|---------|
+| `custom_telemetry_providers` | Registered `TelemetryProvider` ids/schemas executed at configured lifecycle hooks |
+| `custom_telemetry_enrichers` | `TelemetryEnricher` ids augmenting spine events before persist/export |
+| `custom_event_handlers` | `EventSubscriptionHandler` ids for declarative reactions (extends `ObservabilityProfile.event_subscriptions`) |
+| `custom_eval_metric_plugins` | `EvalMetricPlugin` registrations beyond platform built-ins |
+| `eval_dataset_refs` | Pointers to `EvalDataset` assets (manual, production sample, incident-harvested, …) |
+| `eval_gate_profiles` | Trace completeness + eval regression gate modes (`observe`, `warn`, `block_release`, `block_canary_promotion`, `fail_ci`) |
+| `counterfactual_profiles` | Enabled mutation/interpolation suites and fragility thresholds |
+| `vendor_export_profiles` | Optional external workbench sinks (OTLP, Langfuse, LangSmith, …) with export/redaction policy |
+
+**Rules:** surfaces reference Tier-0/1 contracts only; no private trace DB; mandatory `schema_id`, namespace, versioning, redaction, tenant isolation, retention class, export policy, sampling policy, and high-cardinality safeguards per OECP canon.
+
 **Contract:** `intergrax/applications/contracts/environment_profile.py`
 
 ## 22.2 Unified wiring entrypoints
