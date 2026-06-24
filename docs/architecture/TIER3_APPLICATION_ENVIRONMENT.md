@@ -77,6 +77,12 @@ Load **only** the satellite matching your task or cited §.
 
 ---
 
+## OECP profile surfaces (target)
+
+Tier-3 `ApplicationEnvironmentProfile` declares opt-in surfaces for the Observability & Evaluation Control Plane (OECP): `custom_telemetry_providers`, `custom_telemetry_enrichers`, `custom_event_handlers`, `custom_eval_metric_plugins`, `eval_dataset_refs`, `eval_gate_profiles`, `counterfactual_profiles`, `vendor_export_profiles`. These are **architectural profile hooks** — not separate observability semantics. Full contract: [`satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md`](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) §22.1.1 · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability--evaluation-control-plane).
+
+---
+
 # 45. Checklist For New Application Implementation
 
 Before implementing a new Tier-3 environment, answer:

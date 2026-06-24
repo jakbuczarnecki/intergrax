@@ -491,4 +491,235 @@ Unsigned v2 remains available when signing is disabled. Golden vector: `applicat
 
 ---
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc).*
+---
+
+## Observability & Evaluation Control Plane
+
+**Status:** Target architecture (canonical decision) · **2026-06-24**  
+**Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)  
+**Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../../plan/satellites/OBSERVABILITY_eval_control_plane.md)
+
+OECP sits **above** the Harness Observability Spine (HOS). It **consumes** `RuntimeEvent`, `TraceEvent`, unified journal, and evidence refs. It **must not** introduce a parallel trace system, private eval database, or vendor-owned semantics.
+
+```text
+Developer UX / Debug Workbench
+        |
+Observability & Evaluation Control Plane (OECP)
+        |
+        |-- Trace Completeness Contract
+        |-- Evidence Ledger
+        |-- Eval Registry v2
+        |-- Metric and Eval Plugin SDK
+        |-- Custom Telemetry Extension Plane
+        |-- Counterfactual and Interpolation Engine
+        |-- Regression Gate
+        |-- External Workbench Sync
+        |
+Harness Observability Spine (HOS)
+```
+
+**Lifecycle target:**
+
+```text
+run -> trace -> evidence ledger -> eval snapshot -> metric results -> regression gates -> perturbation suites -> controlled adaptation
+```
+
+| Rule | Requirement |
+|------|-------------|
+| Single spine | HOS remains the only canonical execution record |
+| Evidence before judgment | No metric/regression result without evidence refs |
+| Typed extension | Custom data via `DiagnosticPayload`, `RuntimeEventPayload`, and OECP contracts — not raw dicts |
+| External tools | Langfuse, LangSmith, OTLP, Sentry, Phoenix, Braintrust, Datadog, … are optional sinks/workbenches |
+| CVL boundary | CVL emits verdicts; OECP stores, compares, gates ([`CRITIC_VERIFICATION.md`](../CRITIC_VERIFICATION.md#boundary-with-observability--evaluation-control-plane-oecp)) |
+
+---
+
+## Evidence Ledger
+
+The Evidence Ledger is the **eval-ready layer derived from HOS**. It stores normalized evidence records required to understand and evaluate a run — **without duplicating the full trace**.
+
+Each record points back to canonical spine data via `source_event_id` and/or `source_trace_event_id`.
+
+### Evidence kinds (target vocabulary)
+
+| `evidence_kind` (examples) | Role |
+|----------------------------|------|
+| `intergrax.prompt.assembly.built.v1` | Final assembled prompt |
+| `intergrax.model.input.finalized.v1` / `intergrax.model.output.received.v1` | Model I/O (redacted in prod) |
+| `intergrax.tool.catalog.snapshot.v1` | Tool catalog at decision time |
+| `intergrax.tool.selection.candidates.v1` / `intergrax.tool.selection.decision.v1` | Tool routing evidence |
+| `intergrax.tool.invocation.result.v1` | Tool outcome |
+| `intergrax.rag.query.built.v1` / `intergrax.rag.retrieval.completed.v1` | RAG path |
+| `intergrax.context.pack.built.v1` / `intergrax.memory.context.used.v1` | Context assembly |
+| `intergrax.policy.decision.recorded.v1` | Policy gate |
+| `intergrax.critic.verdict.recorded.v1` | CVL verdict (reference only — CVL owns semantics) |
+| `intergrax.custom.telemetry.recorded.v1` | Typed custom telemetry |
+
+### Evidence record contract
+
+Required fields: `evidence_id`, `evidence_kind`, `schema_id`, `schema_version`, `tenant_id`, `task_id`, `run_id`, optional `agent_id` / `step_id` / `tool_call_id` / `correlation_id`, `source_event_id`, `source_trace_event_id`, `payload`, `redaction_state`, `retention_class`, `created_at`.
+
+**Anti-pattern:** eval pipelines reading private agent logs instead of HOS/journal/evidence refs.
+
+---
+
+## Trace Completeness Contract
+
+Defines what a run must contain to be **eval-grade**. A run may succeed operationally but fail completeness when key evidence is missing.
+
+### Completeness dimensions (profile-configurable)
+
+Input captured · prompt assembly · model input/output (or safe redaction) · tool catalog snapshot · tool selection decision · RAG query/retrieval when RAG used · context pack · policy decision when gates active · critic verdict when critic enabled · custom telemetry providers executed when configured · cost/latency · stop reason · failure/retry path.
+
+### Components (target)
+
+`TraceCompletenessProfile`, `TraceCompletenessChecker`, `TraceCompletenessReport`, `TraceCompletenessFinding`, `TraceCompletenessGate`.
+
+### Gate modes
+
+`observe` · `warn` · `block_release` · `block_canary_promotion` · `fail_ci`
+
+---
+
+## Eval Registry v2
+
+Evolution of early evaluation primitives into a versioned registry for **continuous measurement** — not post-mortem-only eval.
+
+### Core models (target)
+
+`EvalCase`, `EvalDataset`, `EvalRun`, `EvalRunSnapshot`, `EvalMetricSpec`, `EvalMetricResult`, `EvalObservationV2`, `EvalRegressionResult`, `EvalPerturbationSpec`, `EvalEvidenceRef`.
+
+### EvalObservationV2 (summary)
+
+Carries `observation_id`, tenant/run/task/agent/application/scenario/dataset/case lineage, `metric_id` / `metric_family` / `metric_version`, `score`, `passed`, `threshold`, `severity`, baseline comparison (`baseline_score`, `delta`), version pins (`prompt_version`, `agent_profile_version`, `model_profile_version`, `tool_catalog_version`, `rag_collection_version`), `evidence_refs`, `trace_refs`, `failure_taxonomy`, `recommended_action`, `recorded_at`.
+
+### Case origins
+
+`manual` · `production_sample` · `incident_harvested` · `critic_failure` · `regression_failure` · `counterfactual_generated` · `interpolation_generated` · `external_benchmark`
+
+Experiments ([`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)) **use** this registry — they do not duplicate ledger storage.
+
+---
+
+## Metric and Eval Plugin SDK
+
+Developers add metrics without changing core runtime semantics.
+
+```python
+class EvalMetricPlugin(Protocol):
+    metric_id: str
+    family: str
+    version: str
+
+    def supports(self, case: EvalCase, run: EvalRunSnapshot) -> bool: ...
+    def score(self, case: EvalCase, run: EvalRunSnapshot) -> EvalMetricResult: ...
+```
+
+### Metric families
+
+`deterministic` · `lexical` · `embedding` · `llm_judge` · `rag` · `agentic` · `ops` · `custom_business` · `custom_telemetry`
+
+Built-in first wave (platform): `exact_match`, `contains_required_terms`, `json_schema_validity`, trajectory tool-error/duplicate counts, `cost_total`, `latency_total`, RAG stubs, `critic_score`. BLEU/BERTScore/embedding/judge families ship as **plugins**, not hardcoded spine semantics.
+
+Tier-3 selects plugins via `custom_eval_metric_plugins` ([`TIER3_APPLICATION_ENVIRONMENT.md`](../TIER3_APPLICATION_ENVIRONMENT.md)).
+
+---
+
+## Custom Telemetry Extension Plane
+
+Custom observability **extends HOS** — it never bypasses it.
+
+```text
+TelemetryProvider -> DiagnosticPayload/RuntimeEventPayload -> HOS -> Journal -> EvidenceLedger -> EvalRegistry
+```
+
+### Required safeguards (all custom telemetry)
+
+`schema_id` · namespace · versioning · `redact()` · tenant isolation · retention class · export policy · sampling policy · high-cardinality guards · production-mode masking (prefer hashed/bucketed fields over raw PII).
+
+**Anti-pattern:** `CustomTelemetryProvider -> private logger -> private database`.
+
+---
+
+## TelemetryProvider and TelemetryEnricher contracts
+
+```python
+class TelemetryProvider(Protocol):
+    provider_id: str
+    schema_id: str
+    def collect(self, context: TelemetryCollectionContext) -> DiagnosticPayload | RuntimeEventPayload | None: ...
+
+class TelemetryEnricher(Protocol):
+    enricher_id: str
+    def enrich(self, event: RuntimeEvent, context: TelemetryEnrichmentContext) -> RuntimeEvent: ...
+```
+
+`TelemetryCollectionContext` carries `tenant_id`, `task_id`, `run_id`, optional `agent_id` / `application_id` / `step_id`, request/runtime/profile metadata, `trace_scope`, `production_mode`, `redaction_policy`.
+
+Providers emit **new** typed payloads; enrichers augment **existing** bus events before persist/export.
+
+---
+
+## EventSubscriptionHandler reactions
+
+```python
+class EventSubscriptionHandler(Protocol):
+    handler_id: str
+    def handle(self, event: RuntimeEvent, context: EventHandlingContext) -> None: ...
+```
+
+Declarative wiring via `ObservabilityProfile.event_subscriptions` (existing OBS-EVOL-9.11 pattern) plus Tier-3 `custom_event_handlers`.
+
+| Trigger (examples) | Reaction |
+|--------------------|----------|
+| `TOOL_FAILED` | Memory snapshot telemetry |
+| `LLM_CALL` over cost threshold | Cost anomaly record |
+| Low RAG score signal | Retrieval quality diagnostic |
+| `TASK_COMPLETED` + low critic score | Eval case candidate |
+| `GUARDRAIL_BLOCKED` | Optional external sink export |
+
+Handlers **must** emit through HOS typed contracts — not side-channel logs.
+
+---
+
+## Counterfactual and Interpolation Engine
+
+Automatic robustness tests from eval cases and production traces.
+
+**Counterfactual ops:** `replace_word`, `swap_entity`, `negate_constraint`, `remove_constraint`, `add_constraint`, `change_date`, `change_location`, `change_user_role`, `change_tool_availability`, `change_rag_collection_version`.
+
+**Interpolation ops:** merge ambiguous requests, combine success/failure cases, blend intents/constraints.
+
+**Lineage (required):** `parent_case_id`, `mutation_id`, `mutation_type`, `mutation_description`, `original_input_ref`, `expected_behavior_delta`, `created_by`, `created_at`.
+
+Tier-3 enables suites via `counterfactual_profiles`.
+
+---
+
+## External Observability Workbench Sync
+
+Deep integration with external tools while Intergrax retains canonical semantics for run lineage, evidence meaning, eval results, regression decisions, and policy/critic vocabulary.
+
+Target exporters: `HOSJournalToOTLPExporter`, Langfuse/LangSmith journal adapters, eval score/feedback exporters, `VendorDeepLinkStore`, `ExportRetryQueue`, `ExportDeadLetterQueue`.
+
+Requirements: non-blocking export · retry + DLQ · redaction before export · vendor deep links stored back in Intergrax · per-tenant/application/profile export policy · clear canonical vs external copy distinction.
+
+---
+
+## Eval-grade maturity model L5–L7
+
+Complements CVL L0–L2 (per-run verification) and Adaptive L4 (profile promotion). OECP maturity describes **continuous eval-grade observability**:
+
+| Level | Name | Capability |
+|-------|------|------------|
+| **L5** | Eval-grade trace | Trace Completeness Contract enforced; Evidence Ledger populated from HOS with refs |
+| **L6** | Continuous measurement | Eval Registry v2 active; metric plugins; baseline comparison; production sampling and nightly regression |
+| **L7** | Robustness and release gates | Counterfactual/interpolation suites; CI/release/canary gates; external workbench sync with platform-owned semantics |
+
+Applications declare target level via profile surfaces (`eval_gate_profiles`, `counterfactual_profiles`, `vendor_export_profiles`) — Tier-3 wires opt-in; Tier-0/1 owns mechanisms.
+
+---
+
+
+
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc). **OECP:** [Phase register](../../plan/satellites/OBSERVABILITY_eval_control_plane.md).*
