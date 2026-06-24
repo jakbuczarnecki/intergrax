@@ -217,6 +217,8 @@ def list_milestones(repo: str) -> dict[str, dict[str, Any]]:
             "gh",
             "api",
             f"repos/{repo}/milestones",
+            "--method",
+            "GET",
             "--paginate",
             "-f",
             "state=all",
