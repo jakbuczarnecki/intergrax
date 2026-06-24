@@ -82,54 +82,47 @@ All waves are stored in [curated_public_issues.yml](curated_public_issues.yml).
 
 ## Creation commands
 
-Always run dry-run first.
+The source of truth is [curated_public_issues.yml](curated_public_issues.yml).
 
-```bash
-python scripts/public_adoption/create_curated_issues.py --wave wave_3
-```
-
-Create Wave 3:
-
-```bash
-python scripts/public_adoption/create_curated_issues.py --wave wave_3 --apply
-```
-
-Create Wave 4:
-
-```bash
-python scripts/public_adoption/create_curated_issues.py --wave wave_4 --apply
-```
-
-Create Wave 5:
-
-```bash
-python scripts/public_adoption/create_curated_issues.py --wave wave_5 --apply
-```
-
-Create all expanded waves one by one:
-
-```bash
-for wave in wave_3 wave_4 wave_5; do
-  python scripts/public_adoption/create_curated_issues.py \
-    --wave "$wave" \
-    --apply
-done
-```
-
-Windows wrapper:
+Always run dry-run first:
 
 ```bat
-scripts\public_adoption\manage_discussion_issues.bat dry wave_3
-scripts\public_adoption\manage_discussion_issues.bat apply wave_3
-scripts\public_adoption\manage_discussion_issues.bat apply all
+scripts\public_adoption\manage_curated_issues.bat dry
+```
+
+Create every missing issue from the YAML and skip existing issues by exact title:
+
+```bat
+scripts\public_adoption\manage_curated_issues.bat apply
+```
+
+Check YAML-to-GitHub alignment:
+
+```bat
+scripts\public_adoption\manage_curated_issues.bat check
+```
+
+Optional single-wave mode remains available when needed:
+
+```bat
+scripts\public_adoption\manage_curated_issues.bat dry wave_3
+scripts\public_adoption\manage_curated_issues.bat apply wave_3
+scripts\public_adoption\manage_curated_issues.bat check wave_3
+```
+
+Direct Python use is also supported:
+
+```bash
+python scripts/public_adoption/create_curated_issues.py --check-sync
+python scripts/public_adoption/create_curated_issues.py --wave wave_3 --apply
 ```
 
 ## Sync checks
 
 After issues are created, check alignment by title, labels, URL metadata when present, and open state:
 
-```bash
-python scripts/public_adoption/create_curated_issues.py --check-sync
+```bat
+scripts\public_adoption\manage_curated_issues.bat check
 ```
 
 The newly prepared Wave 3–5 entries do not initially contain GitHub issue numbers or URLs. That is intentional. The sync check will still match by exact title and labels.
