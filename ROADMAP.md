@@ -32,9 +32,9 @@ Canonical technical architecture and implementation status remain in:
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/ARCHITECTURE.md) |
 | Public evaluation entry points available | [README.md](README.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [USE_CASES.md](USE_CASES.md) · [PARTNERS.md](PARTNERS.md) |
-| Curated public issue routing available | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
+| Curated public issue map active | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) lists active Wave 1-5 issues (#186-#227) |
 | Public issue templates / feedback routing available | Structured entry points for feedback, bug reports, integration proposals, and design-partner interest |
-| Expanded public discussion waves prepared | Architecture, product-validation, and deep technical discussion waves are defined in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) and [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) |
+| Canonical issue automation available | [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) is the source of truth; [manage_curated_issues.bat](scripts/public_adoption/manage_curated_issues.bat) provides dry/apply/check workflow |
 
 ---
 
@@ -43,8 +43,8 @@ Canonical technical architecture and implementation status remain in:
 | Item | Notes |
 |------|-------|
 | Improve first-run / proof-path clarity | Reduce friction for external evaluators |
-| Maintain curated public issue routing | Active and prepared issues are defined in [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml); active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
-| Open expanded discussion waves selectively | Use [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) for Wave 3 architecture, Wave 4 product-validation, and Wave 5 deep technical discussion issues |
+| Maintain curated public issue map | Active issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) and defined in [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) |
+| Add maintainer notes to selected strategic issues | Clarify that curated issues are discussion entry points and evaluation signals, not implementation commitments |
 | Refine issue templates based on first external feedback | Feedback, bug reports, integration proposals, and design-partner interest have structured entry points |
 | Optionally add demo media for the attestation case study | Validation-flow diagram is published; optional future work is short demo media for the [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Collect Local Knowledge Workspace alpha feedback from design partners | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) published; structured partner feedback welcome |
@@ -98,10 +98,10 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [PARTNERS.md](PARTNERS.md) — partner and design-partner brief
 - [COLLABORATION.md](COLLABORATION.md) — collaboration model, permitted use, contact
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
-- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
-- [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion issue waves
-- [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for proof-path feedback, documentation clarity, selected integration feedback, and design-partner discovery
-- [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active and expanded public issue automation
+- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issue map and recommended evaluation paths
+- [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active architecture, product-validation, and deep technical discussion issue waves
+- [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue rationale for proof-path feedback, documentation clarity, selected integration feedback, and design-partner discovery
+- [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active public issue automation
 - [LICENSE](LICENSE) — proprietary terms
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development workflow and requirements
 - [applications/attestation_demo/README.md](applications/attestation_demo/README.md) — attestation integration proof
