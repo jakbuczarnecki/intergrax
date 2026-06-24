@@ -39,7 +39,7 @@ The following require **explicit written permission** from the copyright holder.
 
 ## Current collaboration tracks
 
-Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md). Active curated public issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Maintainer-curated issue drafts are described in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md).
+Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md). Active curated public issues are listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Expanded architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md). Maintainer-curated issue drafts are described in [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md).
 
 | Track | Focus |
 |-------|-------|
@@ -48,6 +48,8 @@ Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-ado
 | Local Knowledge Workspace alpha feedback | Early feedback on LKW alpha capabilities |
 | Documentation clarity | Corrections, gaps, and readability improvements |
 | Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries |
+| Architecture discussion | Feedback on the Harness AI model, tier boundaries, Nexus, policy, context, RAG, memory, and agent contracts |
+| Product / application validation | Feedback on scaffolded or early product directions such as Legal review, Research, DSW, Intergrax Assistant, ProblemRadar, and Lab proof paths |
 
 Prior discussion is recommended before substantial work on any track. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 
@@ -70,6 +72,7 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
+- [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — expanded architecture, product-validation, and deep technical discussion issue waves
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue drafts for structured feedback and design-partner discovery
 - [LICENSE](LICENSE) — proprietary terms and permitted use
 - [README.md](README.md) — project overview and documentation index
