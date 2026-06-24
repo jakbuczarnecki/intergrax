@@ -8,7 +8,7 @@ packages = ["intergrax"]
 [project]
 name = "Intergrax-ai"
 version = "0.1.0"
-description = "Source-available Harness AI / Agent OS for building governed agent applications with policy-controlled tools, Nexus orchestration, RAG, trace/evidence, and external attestation hooks."
+description = "Source-available Harness AI / Agent OS for teams building governed agent applications - with Nexus orchestration, policy-controlled tools, RAG, memory, trace/evidence, HITL, and runtime boundaries."
 readme = "README.md"
 license = { text = "Proprietary" }
 requires-python = ">=3.12,<3.13"
