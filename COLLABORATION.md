@@ -37,11 +37,19 @@ The following require **explicit written permission** from the copyright holder.
 
 ---
 
+## Public Discussion Map
+
+The open curated GitHub issues are a public discussion map for evaluating Intergrax as a **Harness AI / Agent OS** platform. They are structured discussion entry points and evaluation signals, not a generic implementation backlog.
+
+The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). The source data for active curated issues is [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml). Architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md).
+
+Curated public issues do **not** create production-support obligations, SLA commitments, roadmap commitments, commercial-use permission, production-use permission, redistribution permission, derivative-work permission, public security vulnerability handling, or an open-source task board.
+
+---
+
 ## Current collaboration tracks
 
-Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md). The active curated public issue map is listed in [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). All curated issues are defined in the single canonical source [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml). Architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md).
-
-The curated public issues are structured discussion entry points and evaluation signals. They are not a public implementation backlog, production-support channel, SLA commitment, commercial-use permission path, redistribution permission path, or open-source task board.
+Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md).
 
 | Track | Focus |
 |-------|-------|
