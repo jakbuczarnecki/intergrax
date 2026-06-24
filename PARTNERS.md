@@ -100,6 +100,7 @@ Start with:
 |----------|---------|
 | [README.md](README.md) | Repository overview and start paths. |
 | [USE_CASES.md](USE_CASES.md) | Use-case map for Intergrax validation and partner-fit discussions. |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Focused 5/15/30/60-minute evaluation path for reviewers and design partners. |
 | [FAQ.md](FAQ.md) | Common external-reader questions. |
 | [COLLABORATION.md](COLLABORATION.md) | Collaboration and permission model. |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap. |

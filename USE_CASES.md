@@ -257,6 +257,7 @@ For partner or commercial discussions, start with [PARTNERS.md](PARTNERS.md) and
 | [README.md](README.md) | Repository overview, architecture summary, and proof-of-platform path. |
 | [FAQ.md](FAQ.md) | Common external-reader questions. |
 | [PARTNERS.md](PARTNERS.md) | Partner and design-partner brief. |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Time-boxed evaluation guide for reviewing Intergrax use-case fit and proof paths. |
 | [COLLABORATION.md](COLLABORATION.md) | Collaboration and permission model. |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap and collaboration priorities. |
 | [docs/public-adoption/PUBLIC_ISSUE_INDEX.md](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) | Curated public feedback paths. |
