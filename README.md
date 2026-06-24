@@ -684,6 +684,8 @@ This repository is in active proprietary R&D and source-available evaluation sta
 | Resource | Purpose |
 |----------|---------|
 | [FAQ.md](FAQ.md) | Common external-reader questions |
+| [PARTNERS.md](PARTNERS.md) | Partner and design-partner brief |
+| [USE_CASES.md](USE_CASES.md) | Use-case map for governed agent applications, controlled RAG, trace/evidence, orchestration, and tool governance |
 | [docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md](docs/public-adoption/PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist for public outreach readiness |
 | [docs/public-adoption/OUTREACH_KIT.md](docs/public-adoption/OUTREACH_KIT.md) | Maintainer-facing outreach drafts for technical reviewers, integration builders and design partners |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap, collaboration tracks, and near-term public-facing priorities |

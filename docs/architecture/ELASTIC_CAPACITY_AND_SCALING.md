@@ -292,6 +292,8 @@ ECP-DOC closed the **canon** gap; ECP-DEPTH closed the **contract + scaffold** g
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+The four layers above form the **Harness elastic control loop** (observe → evaluate → govern → provision), targeting **L3** operational elasticity when production adapters are enabled.
+
 | Layer | Phase | Status (as-built 2026-06-12) |
 |-------|-------|------------------------------|
 | **A — Signals** | ECP-DEPTH scaffold | `CapacitySignalCollector` in gate tests; **not** subscribed to live `GRAPH_BACKPRESSURE` / `task_index` on hosts |

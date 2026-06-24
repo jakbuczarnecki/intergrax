@@ -64,6 +64,8 @@ For commercial licensing, production use, partnerships, or permission requests, 
 ## Related documents
 
 - [FAQ.md](FAQ.md) — common external-reader questions
+- [PARTNERS.md](PARTNERS.md) — partner and design-partner brief
+- [USE_CASES.md](USE_CASES.md) — use-case map for governed agent applications and validation paths
 - [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issues and recommended evaluation paths
