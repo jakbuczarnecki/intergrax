@@ -327,6 +327,8 @@ waves:
     issues:
       - id: harness-ai-not-agent-framework
         order: 1
+        github_issue_number: 205
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/205
         title: "Architecture discussion: Intergrax as Harness AI, not an agent framework"
         template: documentation_feedback.yml
         labels: [documentation, triage]
@@ -353,6 +355,8 @@ waves:
 
       - id: four-tier-boundary-model
         order: 2
+        github_issue_number: 206
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/206
         title: "Architecture discussion: four-tier boundary model"
         template: documentation_feedback.yml
         labels: [documentation, triage]
@@ -379,6 +383,8 @@ waves:
 
       - id: nexus-as-agent-os
         order: 3
+        github_issue_number: 207
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/207
         title: "Architecture discussion: Nexus as Agent OS"
         template: documentation_feedback.yml
         labels: [documentation, triage]
@@ -405,6 +411,8 @@ waves:
 
       - id: policy-first-agent-execution
         order: 4
+        github_issue_number: 208
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/208
         title: "Architecture discussion: policy-first agent execution"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -431,6 +439,8 @@ waves:
 
       - id: tool-skill-integration-separation
         order: 5
+        github_issue_number: 209
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/209
         title: "Architecture discussion: Tool / Skill / Integration separation"
         template: integration_proposal.yml
         labels: [integration, triage]
@@ -457,6 +467,8 @@ waves:
 
       - id: context-engineering-runtime-layer
         order: 6
+        github_issue_number: 210
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/210
         title: "Architecture discussion: context engineering as a first-class runtime layer"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -483,6 +495,8 @@ waves:
 
       - id: governed-rag-memory-boundaries
         order: 7
+        github_issue_number: 211
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/211
         title: "Architecture discussion: governed RAG and memory boundaries"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -509,6 +523,8 @@ waves:
 
       - id: agent-contracts-production-readiness
         order: 8
+        github_issue_number: 212
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/212
         title: "Architecture discussion: agent contracts and production readiness"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -542,6 +558,8 @@ waves:
     issues:
       - id: legal-contract-review-application
         order: 1
+        github_issue_number: 213
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/213
         title: "Design partner interest: Legal contract review application"
         template: design_partner_interest.yml
         labels: [design-partner, triage]
@@ -568,6 +586,8 @@ waves:
 
       - id: research-summarization-pipeline
         order: 2
+        github_issue_number: 214
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/214
         title: "Design partner interest: Research and summarization pipeline"
         template: design_partner_interest.yml
         labels: [design-partner, triage]
@@ -592,6 +612,8 @@ waves:
 
       - id: dispute-simulation-workspace
         order: 3
+        github_issue_number: 215
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/215
         title: "Design partner interest: Dispute Simulation Workspace"
         template: design_partner_interest.yml
         labels: [design-partner, triage]
@@ -618,6 +640,8 @@ waves:
 
       - id: intergrax-assistant-harness-chat-hub
         order: 4
+        github_issue_number: 216
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/216
         title: "Product discussion: Intergrax Assistant as harness chat hub"
         template: design_partner_interest.yml
         labels: [feedback, triage]
@@ -644,6 +668,8 @@ waves:
 
       - id: problem-radar-vendor-discovery
         order: 5
+        github_issue_number: 217
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/217
         title: "Product discussion: ProblemRadar and VendorDiscovery agents"
         template: design_partner_interest.yml
         labels: [feedback, triage]
@@ -668,6 +694,8 @@ waves:
 
       - id: lab-application-universal-proof-environment
         order: 6
+        github_issue_number: 218
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/218
         title: "Product discussion: Lab application as universal proof environment"
         template: proof_path_feedback.yml
         labels: [feedback, triage]
@@ -701,6 +729,8 @@ waves:
     issues:
       - id: registry-driven-capability-resolution
         order: 1
+        github_issue_number: 219
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/219
         title: "Architecture discussion: registry-driven capability resolution"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -721,6 +751,8 @@ waves:
 
       - id: capability-graph-blast-radius
         order: 2
+        github_issue_number: 220
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/220
         title: "Architecture discussion: capability graph and blast-radius analysis"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -741,6 +773,8 @@ waves:
 
       - id: evaluation-gates-agent-behavior
         order: 3
+        github_issue_number: 221
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/221
         title: "Architecture discussion: evaluation gates for agent behavior"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -761,6 +795,8 @@ waves:
 
       - id: cost-governance-token-resource-budgets
         order: 4
+        github_issue_number: 222
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/222
         title: "Architecture discussion: cost governance and token/resource budgets"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -781,6 +817,8 @@ waves:
 
       - id: reliability-retries-idempotency-hitl
         order: 5
+        github_issue_number: 223
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/223
         title: "Architecture discussion: reliability, retries, idempotency and HITL"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -801,6 +839,8 @@ waves:
 
       - id: tier3-applications-product-hosts
         order: 6
+        github_issue_number: 224
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/224
         title: "Architecture discussion: Tier-3 applications as product hosts"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -821,6 +861,8 @@ waves:
 
       - id: security-data-governance-agent-platforms
         order: 7
+        github_issue_number: 225
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/225
         title: "Architecture discussion: security and data governance for agent platforms"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -841,6 +883,8 @@ waves:
 
       - id: observability-spine-event-journal
         order: 8
+        github_issue_number: 226
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/226
         title: "Architecture discussion: observability spine and event journal"
         template: documentation_feedback.yml
         labels: [feedback, triage]
@@ -861,6 +905,8 @@ waves:
 
       - id: developer-experience-scaffold-lab-workflow
         order: 9
+        github_issue_number: 227
+        github_issue_url: https://github.com/jakbuczarnecki/intergrax/issues/227
         title: "Architecture discussion: developer experience, scaffold and lab workflow"
         template: documentation_feedback.yml
         labels: [feedback, triage]
