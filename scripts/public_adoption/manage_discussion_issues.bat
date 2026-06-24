@@ -51,13 +51,17 @@ set "RUN_MODE=%~1"
 set "RUN_WAVE=%~2"
 
 if /I "%RUN_WAVE%"=="all" (
-  call :run_one "%RUN_MODE%" "wave_3" || exit /b 1
-  call :run_one "%RUN_MODE%" "wave_4" || exit /b 1
-  call :run_one "%RUN_MODE%" "wave_5" || exit /b 1
+  call :run_one "%RUN_MODE%" "wave_3"
+  if errorlevel 1 exit /b 1
+  call :run_one "%RUN_MODE%" "wave_4"
+  if errorlevel 1 exit /b 1
+  call :run_one "%RUN_MODE%" "wave_5"
+  if errorlevel 1 exit /b 1
   exit /b 0
 )
 
-call :validate_wave "%RUN_WAVE%" || exit /b 1
+call :validate_wave "%RUN_WAVE%"
+if errorlevel 1 exit /b 1
 call :run_one "%RUN_MODE%" "%RUN_WAVE%"
 exit /b %ERRORLEVEL%
 
