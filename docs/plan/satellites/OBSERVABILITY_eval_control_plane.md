@@ -25,7 +25,7 @@ One phase ID (or cohesive sub-ID batch) per PR unless operator reprioritizes.
 
 | ID | Type | Deliverable | Status | Acceptance criteria |
 |----|------|-------------|--------|---------------------|
-| **OBS-ECP-0** | Docs | OECP architecture canon in hub, extended satellite, CVL cross-ref, Tier-3 profile surfaces, and this plan register | **Open** | Hub states HOS-only spine + OECP scope; extended satellite contains OECP sections; CVL/OECP boundary explicit; Tier-3 §22.1.1 surfaces documented; audit remains separate source at docs/audit/ |
+| **OBS-ECP-0** | Docs | OECP architecture canon in hub, extended satellite, CVL cross-ref, Tier-3 profile surfaces, and this plan register | **Done** | Hub states HOS-only spine + OECP scope; extended satellite contains OECP sections; CVL/OECP boundary explicit; Tier-3 §22.1.1 surfaces documented; audit remains separate source at docs/audit/. **Done 2026-06-24** — architecture canon reviewed; implementation phases remain Planned. |
 | **OBS-ECP-1** | Code | Trace Completeness Contract (TraceCompletenessProfile, checker, report, gate) | **Planned** | Required eval-grade evidence dimensions validated per profile; gate modes observe / warn / block_release / block_canary_promotion / fail_ci; missing prompt/tool/RAG/critic evidence produces findings with refs |
 | **OBS-ECP-2** | Code | Evidence Ledger — eval-ready records derived from HOS/journal | **Planned** | Normalized evidence kinds (prompt, model I/O, tool, RAG, context, policy, critic, custom telemetry) with source_event_id / source_trace_event_id; no full trace duplication; redaction metadata persisted |
 | **OBS-ECP-3** | Code | Eval Registry v2 | **Planned** | EvalCase, EvalDataset, EvalRun, EvalRunSnapshot, EvalMetricResult, EvalObservationV2, EvalRegressionResult, perturbation lineage; observations carry evidence refs and version pins |
@@ -45,11 +45,11 @@ One phase ID (or cohesive sub-ID batch) per PR unless operator reprioritizes.
 
 | Sub-ID | Type | Deliverable | Status |
 |--------|------|-------------|--------|
-| OBS-ECP-0.1 | Docs | Hub OECP summary | **Open** |
-| OBS-ECP-0.2 | Docs | Extended satellite OECP sections | **Open** |
-| OBS-ECP-0.3 | Docs | CVL cross-reference | **Open** |
-| OBS-ECP-0.4 | Docs | Tier-3 profile surfaces §22.1.1 | **Open** |
-| OBS-ECP-0.5 | Docs | This plan satellite | **Open** |
+| OBS-ECP-0.1 | Docs | Hub OECP summary | **Done** |
+| OBS-ECP-0.2 | Docs | Extended satellite OECP sections | **Done** |
+| OBS-ECP-0.3 | Docs | CVL cross-reference | **Done** |
+| OBS-ECP-0.4 | Docs | Tier-3 profile surfaces §22.1.1 | **Done** |
+| OBS-ECP-0.5 | Docs | This plan satellite | **Done** |
 
 ---
 

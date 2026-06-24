@@ -722,4 +722,4 @@ Applications declare target level via profile surfaces (`eval_gate_profiles`, `c
 
 
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc). **OECP:** [Phase register](../plan/satellites/OBSERVABILITY_eval_control_plane.md).*
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc). **OECP:** [Phase register](../../plan/satellites/OBSERVABILITY_eval_control_plane.md).*
