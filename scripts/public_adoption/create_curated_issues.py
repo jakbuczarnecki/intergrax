@@ -346,7 +346,11 @@ def print_plan(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) 
 
 
 def check_sync(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) -> int:
-    """Check whether YAML issue metadata matches GitHub issue state."""
+    """Check whether YAML issue metadata matches GitHub issue state.
+
+    YAML labels are treated as the required baseline. GitHub issues may have
+    additional semantic labels used for public navigation and filtering.
+    """
 
     print("Curated public issue sync check:")
     mismatches = 0
@@ -363,13 +367,16 @@ def check_sync(issues: list[CuratedIssue], existing: dict[str, dict[str, Any]]) 
         current_url = current.get("url")
         current_state = str(current.get("state", "")).lower()
         current_labels = label_names(current.get("labels"))
+        missing_labels = sorted(set(issue.labels) - set(current_labels))
 
         if issue.github_issue_number is not None and current_number != issue.github_issue_number:
             problems.append(f"number yaml={issue.github_issue_number} github={current_number}")
         if issue.github_issue_url is not None and current_url != issue.github_issue_url:
             problems.append(f"url yaml={issue.github_issue_url} github={current_url}")
-        if sorted(issue.labels) != sorted(current_labels):
-            problems.append(f"labels yaml={sorted(issue.labels)} github={sorted(current_labels)}")
+        if missing_labels:
+            problems.append(
+                f"missing required labels yaml={missing_labels} github={sorted(current_labels)}"
+            )
         if current_state != "open":
             problems.append(f"state={current.get('state')}")
 
