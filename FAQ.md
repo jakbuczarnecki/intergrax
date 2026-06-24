@@ -33,11 +33,17 @@ See [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md).
 
 ## Where should I start?
 
-Start with the README [Start here](README.md#start-here) section, the [proof path](README.md#proof-of-platform), [ROADMAP.md](ROADMAP.md), and [COLLABORATION.md](COLLABORATION.md). Then choose a relevant path:
+Start with the README [Start here](README.md#start-here) section, then choose the path that matches your goal:
 
-- [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md)
-- [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
-- [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md)
+| Goal | Start with |
+|------|------------|
+| First-time technical review | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
+| Use-case fit | [USE_CASES.md](USE_CASES.md) |
+| Design-partner or partner-fit discussion | [PARTNERS.md](PARTNERS.md) |
+| Permission, commercial, or production boundaries | [COLLABORATION.md](COLLABORATION.md) |
+| Public adoption priorities and feedback tracks | [ROADMAP.md](ROADMAP.md) |
+
+For deeper technical paths after the overview, see the [proof path](README.md#proof-of-platform), [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md), [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md), or [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md).
 
 ## What does the BoundaryAttest case study prove?
 
@@ -64,6 +70,9 @@ Do not open public issues for vulnerabilities. Follow [SECURITY.md](SECURITY.md)
 | Document | Purpose |
 |----------|---------|
 | [README.md](README.md) | Overview and start paths |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Focused evaluation path for reviewers and design partners |
+| [USE_CASES.md](USE_CASES.md) | Use-case map for validation and partner-fit discussions |
+| [PARTNERS.md](PARTNERS.md) | Partner and design-partner brief |
 | [COLLABORATION.md](COLLABORATION.md) | Collaboration and permission model |
 | [LICENSE](LICENSE) | Proprietary license terms |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap |
