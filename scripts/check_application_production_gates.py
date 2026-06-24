@@ -230,7 +230,7 @@ def check_tier3_audit_prompt() -> list[str]:
     import runpy
 
     gen = runpy.run_path(str(REPO_ROOT / "scripts" / "generate_domain_audit_prompts.py"))
-    audit_path = REPO_ROOT / "docs" / "guides" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
+    audit_path = REPO_ROOT / "docs" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
     if not audit_path.is_file():
         return [f"missing audit prompt: {audit_path}"]
     tier3 = next(item for item in gen["DOMAINS"] if item["id"] == "TIER3_APPLICATION_ENVIRONMENT")
