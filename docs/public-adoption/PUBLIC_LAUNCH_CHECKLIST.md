@@ -10,17 +10,21 @@ This checklist is for maintainers preparing public outreach, reviewer requests, 
 
 It does not create a release, license grant, support obligation, partnership term, production claim, certification, or compliance statement.
 
-Use it together with [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLLABORATION.md](../../COLLABORATION.md), [ROADMAP.md](../../ROADMAP.md), and [OUTREACH_KIT.md](OUTREACH_KIT.md).
+Use it together with [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLLABORATION.md](../../COLLABORATION.md), [ROADMAP.md](../../ROADMAP.md), [PARTNERS.md](../../PARTNERS.md), [USE_CASES.md](../../USE_CASES.md), and [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md).
+See [OUTREACH_KIT.md](OUTREACH_KIT.md) for draft messages and positioning guardrails.
 
 ---
 
 ## 1. Repository entry points
 
 - [ ] README has a clear `Start here` path.
-- [ ] README links to FAQ, ROADMAP, COLLABORATION, LICENSE and Public Issue Index.
-- [ ] README links to BoundaryAttest case study and Local Knowledge Workspace alpha narrative.
+- [ ] README links to FAQ, EVALUATION_GUIDE, USE_CASES, PARTNERS, ROADMAP, COLLABORATION, LICENSE and Public Issue Index.
+- [ ] EVALUATION_GUIDE provides a time-boxed 5/15/30/60-minute path for external reviewers.
+- [ ] USE_CASES explains Intergrax through use-case fit and validation paths without duplicating case studies.
+- [ ] PARTNERS explains partner/design-partner fit, non-goals, and permission boundaries.
 - [ ] FAQ answers open source, production use, contribution, security and product-status questions.
 - [ ] COLLABORATION clearly explains permitted evaluation and permission-required use.
+- [ ] README links to BoundaryAttest case study and Local Knowledge Workspace alpha narrative.
 
 ---
 
@@ -47,7 +51,8 @@ Use it together with [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLL
 
 ## 4. Outreach readiness
 
-- [ ] Outreach message links to README, FAQ, COLLABORATION and ROADMAP.
+- [ ] Outreach message links to README, EVALUATION_GUIDE, USE_CASES, PARTNERS, FAQ, COLLABORATION and ROADMAP.
+- [ ] Message routes reviewers to EVALUATION_GUIDE when they need a time-boxed review path.
 - [ ] Message asks for concrete feedback, not broad endorsement.
 - [ ] Message matches the audience:
   - technical reviewer,
@@ -62,6 +67,9 @@ Use it together with [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLL
 ## 5. Proof and validation readiness
 
 - [ ] README proof path is reachable and understandable.
+- [ ] EVALUATION_GUIDE provides a clear 5/15/30/60-minute evaluation flow.
+- [ ] USE_CASES maps validation paths to concrete problem areas.
+- [ ] PARTNERS separates partner-fit discussion from license grants, support, production permission, certification, or compliance claims.
 - [ ] BoundaryAttest case study includes validation-flow diagram.
 - [ ] BoundaryAttest case study keeps Intergrax runtime claim separate from external `client_observed` claim.
 - [ ] Local Knowledge Workspace alpha explains problem, validation goals, non-goals and useful feedback questions.
@@ -86,6 +94,9 @@ Use it together with [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLL
 |----------|---------|
 | [../../README.md](../../README.md) | Repository overview and start paths |
 | [../../FAQ.md](../../FAQ.md) | Common external-reader questions |
+| [../../EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) | Time-boxed evaluation guide for reviewers |
+| [../../USE_CASES.md](../../USE_CASES.md) | Use-case map and validation paths |
+| [../../PARTNERS.md](../../PARTNERS.md) | Partner and design-partner brief |
 | [../../COLLABORATION.md](../../COLLABORATION.md) | Collaboration and permission model |
 | [../../ROADMAP.md](../../ROADMAP.md) | Public adoption roadmap |
 | [../../SECURITY.md](../../SECURITY.md) | Security reporting |
