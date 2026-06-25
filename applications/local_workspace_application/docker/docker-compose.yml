@@ -29,7 +29,7 @@ services:
     volumes:
       - lkw_sqlite:/data/sqlite
       - lkw_shadow:/data/shadow_workspaces
-      - ./sample_docs:/data/user_docs:ro
+      - ../sample_docs:/data/user_docs:ro
     depends_on:
       - qdrant
       - ollama
