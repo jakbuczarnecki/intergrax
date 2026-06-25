@@ -238,7 +238,9 @@ Every important instruction must be written explicitly in the Cursor prompt.
 
 ## 7. Documentation-first rule
 
-Every implementation task should update relevant documentation in the same commit when the task changes behavior, architecture, public usage, roadmap, operator workflow, or project status.
+**Exception — CI/test hotfixes:** when the task is only fixing failing CI, tests, or checkers, use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new Cursor chat**. No documentation, journal, roadmap, or architecture updates unless the failing test is docs-specific.
+
+Every other implementation task should update relevant documentation in the same commit when the task changes behavior, architecture, public usage, roadmap, operator workflow, or project status.
 
 Documentation updates may include:
 
@@ -917,6 +919,16 @@ If an audit finds a small issue:
 - require a hotfix commit,
 - require terse report,
 - audit the hotfix before continuing.
+```
+
+For CI/test/checker failures, the Cursor instruction must start with:
+
+```text
+Use:
+
+@.cursor/rules/intergrax-ci-hotfix.mdc
+
+CI HOTFIX = NEW CHAT
 ```
 
 Do not combine hotfix with new feature work.

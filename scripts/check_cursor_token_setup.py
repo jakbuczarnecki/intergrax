@@ -41,7 +41,8 @@ OUTPUT_BUDGET_MARKER = "OUTPUT_BUDGET"
 O1_MARKER = "O1"
 I1_MARKER = "I1"
 STUB_MARKER = "AGENT_INSTRUCTIONS.md"
-STUB_MAX_LINES = 35
+STUB_MAX_LINES = 45
+CI_HOTFIX_RULE = ROOT / ".cursor" / "rules" / "intergrax-ci-hotfix.mdc"
 FULL_MIN_LINES = 150
 AUDIT_BOOTSTRAPS = (
     "01_audit_all_domains.txt",
@@ -109,6 +110,17 @@ def main() -> int:
             errors.append("intergrax-token-budget.mdc must include I1 input token budget")
         if O1_MARKER not in token_budget or "terse" not in token_budget.lower():
             errors.append("intergrax-token-budget.mdc must include O1 terse output policy")
+        if "intergrax-ci-hotfix" not in token_budget:
+            errors.append("intergrax-token-budget.mdc must reference intergrax-ci-hotfix.mdc")
+
+    if not CI_HOTFIX_RULE.is_file():
+        errors.append("missing .cursor/rules/intergrax-ci-hotfix.mdc (CI hotfix mode)")
+    else:
+        ci_hotfix = CI_HOTFIX_RULE.read_text(encoding="utf-8")
+        if "alwaysApply: false" not in ci_hotfix:
+            errors.append("intergrax-ci-hotfix.mdc must have alwaysApply: false")
+        if "AGENT_INSTRUCTIONS.md" not in ci_hotfix:
+            errors.append("intergrax-ci-hotfix.mdc must forbid AGENT_INSTRUCTIONS.md for hotfixes")
 
     iteration = ITERATION_RULE.read_text(encoding="utf-8")
     if "AGENT_INSTRUCTIONS.md" not in iteration:

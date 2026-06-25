@@ -28,6 +28,7 @@ applications/ MAY import from agents/ and intergrax/
 |----------|------|
 | [`.cursor/rules/intergrax-iteration.mdc`](.cursor/rules/intergrax-iteration.mdc) | New domain session, F3 workflow, iteration closeout |
 | [`.cursor/rules/intergrax-hep-step.mdc`](.cursor/rules/intergrax-hep-step.mdc) | HEP / EVID implementation step |
+| [`.cursor/rules/intergrax-ci-hotfix.mdc`](.cursor/rules/intergrax-ci-hotfix.mdc) | CI/test hotfix — new chat; no docs/arch |
 | [`docs/guides/AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) | Full routing, verification, ADR, Full O1 report |
 | [`docs/bootstrap/hep_step.txt`](docs/bootstrap/hep_step.txt) | HEP step bootstrap (with operator step prompt) |
 

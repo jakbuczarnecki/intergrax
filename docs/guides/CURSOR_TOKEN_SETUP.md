@@ -20,10 +20,21 @@
 
 ---
 
+## CI hotfix mode
+
+| Rule | When |
+|------|------|
+| [`.cursor/rules/intergrax-ci-hotfix.mdc`](../../.cursor/rules/intergrax-ci-hotfix.mdc) | Failing CI/test/checker — **new chat**; no `AGENT_INSTRUCTIONS.md`, no arch/plan |
+
+Allowed verification: failing GitHub command, exact test file, or `scripts/run_ci_smoke_pytest.py`.
+
+---
+
 ## F3 — Session protocol
 
 ```text
 ONE DOMAIN = ONE NEW CHAT
+CI HOTFIX = NEW CHAT
 ```
 
 No Background Agents / Task subagents for layer audits unless operator opts in.

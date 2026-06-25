@@ -19,6 +19,8 @@ If more files are needed than the operator listed → **STOP** and ask. Do not r
 
 Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch hubs, or domain guides unless explicitly requested.
 
+**CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. `AGENT_INSTRUCTIONS.md` is **forbidden** unless operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`. Words like "verification", "GitHub", or "audit" alone do **not** authorize loading it.
+
 ## I1 — input (read / tools)
 
 - **Read:** `offset`/`limit` or `grep` before full file; hub **read-scope block** only unless implementing cited §.
