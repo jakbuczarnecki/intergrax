@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). UER owns runtime policy resolution, shared contract placement, output profile resolution, compression-level selection, and safety bypass enforcement.
+
 ---
 
 ## Cursor read scope (token budget)
@@ -13,6 +15,7 @@
 **Do not read this entire file in one session** (UNIFIED_EXECUTION_RUNTIME plan).
 
 - **Implement / audit default:** §6.1 UAEP maintenance · R-Policy / SEC / COST open rows · phase satellites on demand
+- **Token Optimization:** read feature pair + rows `TOKEN-UER-1` / `TOKEN-UER-2`; do not read unrelated closed UAEP queues.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) read-scope block only.
@@ -46,8 +49,23 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_audit_history.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_audit_history.md) | audit history |
 | [`plan/satellites/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md`](plan/satellites/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md) | embedded detail |
 
-> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** file per session unless RESUME cites more.
 
+---
+
+## Phase TOKEN-UER — Token Optimization runtime policy foundation (Planned)
+
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
+**Priority:** P1 after docs sync; first implementation slice for Token Optimization  
+**Delivery rule:** one `TOKEN-UER-*` row per PR; do not wire CE/TOOLS/MEMORY behavior before shared contracts land.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **TOKEN-UER-1** | Code | P1 | Planned | Shared package `intergrax/runtime/token_optimization/` with contracts, protected-region validator, compression receipts, and contract check script | Contracts import cleanly; no CE/TOOLS/MEMORY hot-path imports; protected regions preserve code/paths/URLs/API names/env vars/enums/hashes/dates/errors; receipts hash original/optimized content and record token savings; `uv run pytest tests/unit/runtime/token_optimization/ -q`; `uv run python scripts/check_token_optimization_contracts.py` |
+| **TOKEN-UER-2** | Code | P1 | Planned | `OutputPolicyResolver` and runtime output profiles (`minimal`, `terse`, `standard`, `full`, `audit`, `machine_receipt`, `debug_verbose`) | Output profile resolved by runtime policy, not prompt-only wording; structured outputs and high-risk contexts can force clarity/full mode; no model-specific prompt hacks; `uv run python scripts/check_output_policy_wiring.py` |
+
+**Explicit exclusions:** no `ToolSchemaOptimizer`, no `ContextPackOptimizer`, no `MemorySummaryCompressor`, no adaptive policy auto-apply, no `docs/plan/TOKEN_OPTIMIZATION.md`.
 
 ---
 
@@ -70,7 +88,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness | P2 | **Done** |
 | UAEP-AUDIT-01 | §8 Runtime | Populate `tenant_id` on all `RuntimeEvent` emitters (UAEP + trace middleware) | P2 | **Done** |
 
-**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+**Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ### 6.1av Harness implementation queue — UAEP audit maintenance
 
