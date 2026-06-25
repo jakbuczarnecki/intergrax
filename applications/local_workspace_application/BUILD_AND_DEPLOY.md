@@ -1,168 +1,210 @@
-        # Build & deploy — Local Workspace
+# Build & deploy — Local Workspace
 
-        Tier-3 application package: ``applications/local_workspace_application/``. This document is the **operational runbook** for local development, verification, and container deployment.
+Tier-3 application package: `applications/local_workspace_application/`. This document is the operational runbook for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+> Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
 
-        ---
+---
 
-        ## Prerequisites
+## Prerequisites
 
-        | Tool | Purpose |
-        |------|---------|
-        | [uv](https://docs.astral.sh/uv/) | Python deps from repo root ``pyproject.toml`` / ``uv.lock`` |
-        | Repo clone | Monorepo; **build context is always repository root** |
-        | Docker (optional) | Image build via ``docker/`` |
-        | Docker Buildx (recommended) | Per-app ``.dockerignore`` via ``--ignorefile`` |
+| Tool | Purpose |
+|------|---------|
+| `uv` | Python deps from repo root `pyproject.toml` / `uv.lock` |
+| Repo clone | Monorepo; build context is always repository root |
+| Docker | Local stack and image build |
+| Docker Compose | LKW backend + Qdrant + Ollama |
 
-        Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** (under ``agents/`` on ``PYTHONPATH``).
+Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** under `agents/` on `PYTHONPATH`.
 
-        ---
+---
 
-        ## 1. Configuration
+## 1. Configuration
 
-        ```bash
-        cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
-        ```
+```bash
+cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
+```
 
-        Edit ``.env`` (gitignored). Variables use the application prefix **`LOCAL_WORKSPACE_`** — do not put app secrets only in the repository-root ``.env``.
+Edit `.env` if needed. Variables use the application prefix `LOCAL_WORKSPACE_` plus Intergrax runtime variables such as `INTERGRAX_QDRANT_URL`, `INTERGRAX_SHADOW_ROOT`, and `INTERGRAX_LLM_MODEL`.
 
-        | Variable | Default | Role |
-        |----------|---------|------|
-        | ``INTERGRAX_ENV`` | ``dev`` | ``prod`` for production-like runs |
-        | ``LOCAL_WORKSPACE_BACKEND_HOST`` | see ``.env.example`` | Bind address |
-        | ``LOCAL_WORKSPACE_BACKEND_PORT`` | ``8020`` | HTTP port |
+Minimum local stack variables are documented in `.env.example`:
 
-        Agent roster and integrations: ``manifest.py``, ``host/wiring.py``, ``host/integration_wiring.py``.
+| Variable | Role |
+|----------|------|
+| `LOCAL_WORKSPACE_BACKEND_PORT` | LKW HTTP port, default `8020` |
+| `INTERGRAX_ALLOWED_READ_ROOTS` | Host paths that LKW may read when indexing local files |
+| `INTERGRAX_SQLITE_DATA_DIR` | Local SQLite/runtime data directory |
+| `INTERGRAX_SHADOW_ROOT` | Shadow workspace root for generated artifacts |
+| `LOCAL_WORKSPACE_VECTOR_STORE` | `qdrant` by default; `inmemory` only for test/dev fallback |
+| `INTERGRAX_QDRANT_URL` | Qdrant endpoint |
+| `INTERGRAX_QDRANT_COLLECTION` | Default local RAG collection |
+| `INTERGRAX_LLM_PROVIDER` | `ollama` by default |
+| `INTERGRAX_LLM_MODEL` / `INTERGRAX_DEFAULT_OLLAMA_MODEL` | Ollama model pulled by local bootstrap scripts |
+| `LOCAL_WORKSPACE_ENABLE_REDIS` | Optional; keep false until background ingest / queue work requires Redis |
 
-        ---
+Agent roster and integrations: `manifest.py`, `host/environment_profile.py`, `host/tool_wiring.py`.
 
-        ## 2. Local run (development)
+---
 
-        From **repository root**:
+## 2. Recommended local Docker bootstrap
 
-        ```bash
-        uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
-        ```
+From `applications/local_workspace_application/`:
 
-        Or use the module CLI (reads ``LOCAL_WORKSPACE_BACKEND_*`` from ``.env``):
+Windows:
 
-        ```bash
-        uv run python -m local_workspace_application.host.main
-        ```
+```bat
+build-local-docker.bat
+```
 
-        ### Smoke check
+Linux/macOS:
 
-        ```bash
-        curl -s http://127.0.0.1:8020/health
-        ```
+```bash
+chmod +x build-local-docker.sh
+./build-local-docker.sh
+```
 
-        ### Product API
+The scripts perform the local bootstrap path:
 
-Routes are mounted under ``/v1/local_workspace``. See ``serving/`` and application README for contract details.
+```text
+.env.example -> .env if missing
+Docker image build
+Ollama service start
+ollama pull <model from .env>
+LKW stack start
+```
 
-        ---
+Model resolution order:
 
-        ## 3. Verify before deploy
+```text
+INTERGRAX_DEFAULT_OLLAMA_MODEL
+INTERGRAX_LLM_MODEL
+llama3.1:latest fallback
+```
 
-        ```bash
-        uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
-        uv run pytest tests/unit/applications/ -q -k "local_workspace" --ignore-glob="*" 2>/dev/null || true
-        ```
+After startup:
 
-        Gate (repo CI):
+```bash
+curl -s http://127.0.0.1:8020/health
+curl -s http://127.0.0.1:8020/v1/local_workspace/agents
+```
 
-        ```bash
-        uv run pytest -m gate -q
-        ```
+---
 
-        ---
+## 3. Local run without Docker
 
-        ## 4. Container image
+From repository root:
 
-        Build context = **monorepo root** (``.``). Dockerfile lives under this application only as a path reference.
+```bash
+uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
+```
 
-        ### Build scripts (recommended)
+Or use the module CLI, which reads `LOCAL_WORKSPACE_BACKEND_*` from `.env`:
 
-        Run from **repository root** or from ``applications/local_workspace_application/docker/`` (scripts ``cd`` to repo root):
+```bash
+uv run python -m local_workspace_application.host.main
+```
 
-        ```bash
-        # Linux / macOS / Git Bash
-        applications/local_workspace_application/docker/build-docker.sh
+Smoke check:
 
-        # Windows (cmd)
-        applications\local_workspace_application\docker\build-docker.bat
-        ```
+```bash
+curl -s http://127.0.0.1:8020/health
+```
 
-        Override image tag: ``IMAGE_TAG=my-registry/local_workspace:1.0.0`` (sh) or ``build-docker.bat my-registry/local_workspace:1.0.0`` (bat).
+Routes are mounted under `/v1/local_workspace`. See `serving/` and application README for contract details.
 
-        ### Manual — BuildKit
+---
 
-        ```bash
-        docker buildx build -f applications/local_workspace_application/docker/Dockerfile \
-          --ignorefile applications/local_workspace_application/docker/.dockerignore \
-          -t local_workspace-application .
-        ```
+## 4. Verify before deploy
 
-        ### Manual — classic Docker
+```bash
+uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+```
 
-        ```bash
-        cp applications/local_workspace_application/docker/.dockerignore .dockerignore
-        docker build -f applications/local_workspace_application/docker/Dockerfile -t local_workspace-application .
-        ```
+Focused agent smoke:
 
-        **Notes:**
+```bash
+uv run pytest agents/local_indexer/tests agents/local_search/tests agents/local_synthesizer/tests -q
+```
 
-        - First build can take several minutes (full ``uv sync`` inside the image).
-        - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
-        - Image ``HEALTHCHECK`` probes ``/health``.
-        - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
+---
 
-        ---
+## 5. Manual container image build
 
-        ## 5. Run container
+Build context = monorepo root. Dockerfile lives under the application as a path reference.
 
-        ```bash
-        docker run --rm \
-          --env-file applications/local_workspace_application/.env \
-          -e INTERGRAX_ENV=prod \
-          -e LOCAL_WORKSPACE_BACKEND_HOST=0.0.0.0 \
-          -e LOCAL_WORKSPACE_BACKEND_PORT=8020 \
-          -p 8020:8020 \
-          local_workspace-application
-        ```
+```bash
+docker buildx build -f applications/local_workspace_application/docker/Dockerfile \
+  --ignorefile applications/local_workspace_application/docker/.dockerignore \
+  -t local_workspace-application .
+```
 
-        ### Docker Compose
+Classic Docker fallback:
 
-        From **repository root**:
+```bash
+cp applications/local_workspace_application/docker/.dockerignore .dockerignore
+docker build -f applications/local_workspace_application/docker/Dockerfile -t local_workspace-application .
+```
 
-        ```bash
-        docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
-        ```
+Notes:
 
-        Ensure ``applications/local_workspace_application/.env`` exists (compose uses ``env_file: ../.env``).
+- First build can take several minutes because `uv sync --no-dev` runs inside the image.
+- `pyproject.toml` already declares disjoint Linux and Windows uv environments; Dockerfile must not rewrite platform markers.
+- Image healthcheck probes `/health`.
 
-        ---
+---
 
-        ## 6. Production checklist
+## 6. Manual Docker Compose run
 
-        - [ ] ``INTERGRAX_ENV=prod`` and application-prefixed secrets in orchestrator / ``.env``, not committed
-        - [ ] ``LOCAL_WORKSPACE_*`` reviewed against ``host/settings.py``
-        - [ ] Image tagged and pushed to your registry: ``docker tag local_workspace-application <registry>/local_workspace-application:<version>``
-        - [ ] Health check wired to ``GET /health`` (or orchestrator equivalent)
-        - [ ] Agent roster in ``manifest.py`` matches agents copied in ``docker/Dockerfile`` / ``.dockerignore``
+From repository root:
 
-        ---
+```bash
+docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
+```
 
-        ## 7. Troubleshooting
+Compose starts:
 
-        | Issue | What to try |
-        |-------|-------------|
-        | ``unknown flag: --ignorefile`` | Use **Buildx** or copy ``docker/.dockerignore`` to repo root |
-        | Import errors for agents | Confirm ``agents/<slug>/`` is listed in ``docker/.dockerignore`` exceptions |
-        | Slow rebuild | Use BuildKit cache; avoid copying whole repo without per-app ``.dockerignore`` |
-        | Wrong agents in registry | Check ``manifest.py`` flags / ``host/wiring.py`` and ``LAB_INCLUDE_*`` (lab) |
+```text
+local_workspace
+qdrant
+ollama
+```
 
-        ---
+Only the LKW API is exposed to the host on port `8020`. Qdrant and Ollama are internal compose services used by `local_workspace` via:
 
-        *Generated for Intergrax Tier-3 scaffold (profile: product).*
+```text
+http://qdrant:6333
+http://ollama:11434
+```
+
+Ensure `applications/local_workspace_application/.env` exists. The bootstrap scripts create it automatically when missing.
+
+---
+
+## 7. Production checklist
+
+- [ ] `INTERGRAX_ENV=prod` and application-prefixed secrets in orchestrator / `.env`, not committed.
+- [ ] `LOCAL_WORKSPACE_*` reviewed against `host/settings.py` and `host/environment_profile.py`.
+- [ ] Image tagged and pushed to your registry.
+- [ ] Health check wired to `GET /health` or orchestrator equivalent.
+- [ ] Agent roster in `manifest.py` matches agents copied in `docker/Dockerfile` / `.dockerignore`.
+- [ ] Qdrant persistence volume configured for the target environment.
+- [ ] Ollama/vLLM model availability is validated before serving real requests.
+
+---
+
+## 8. Troubleshooting
+
+| Issue | What to try |
+|-------|-------------|
+| `unknown flag: --ignorefile` | Use Buildx or copy `docker/.dockerignore` to repo root |
+| `Readme file does not exist: README.md` during image build | Dockerfile must copy root `README.md` before `uv sync` |
+| uv environment marker overlap | Dockerfile must not rewrite `tool.uv.environments` markers |
+| Port `6333` already allocated | Qdrant should remain internal in compose; only expose if debugging manually |
+| Ollama model missing | Run the bootstrap script or `docker compose exec ollama ollama pull <model>` |
+| Import errors for agents | Confirm agents are copied in `docker/Dockerfile` |
+| Slow rebuild | Expected on first build; avoid copying the whole repo without `.dockerignore` |
+| Wrong agents in registry | Check `manifest.py`, `host/environment_profile.py`, and `host/tool_wiring.py` |
+
+---
+
+*Generated for Intergrax Tier-3 scaffold (profile: product).*
