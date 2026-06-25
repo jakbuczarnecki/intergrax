@@ -38,6 +38,7 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
     NexusLifecycleHookCoordinator,
     NexusLifecycleHookError,
+    publish_nexus_lifecycle_hook_failure,
 )
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
@@ -155,6 +156,11 @@ class NexusLoop:
         self._middleware = middleware or MiddlewarePipeline(
             middleware=[TraceEmittingMiddleware(self._event_bus)],
         )
+        if isinstance(self._middleware, MiddlewarePipeline):
+            self._middleware.configure_hook_runtime(
+                hook_timeout_seconds=self._middleware._hook_timeout_seconds,
+                event_bus=self._event_bus,
+            )
         self._human_hooks = HumanApprovalHookCoordinator(self._middleware)
         self._lifecycle_hooks = NexusLifecycleHookCoordinator(self._middleware)
         self._policy_engine = coerce_policy_engine(policy_engine)
@@ -425,6 +431,13 @@ class NexusLoop:
                 extra=_finalization_hook_extra(task, answer=answer),
             )
         except NexusLifecycleHookError as exc:
+            await publish_nexus_lifecycle_hook_failure(
+                self._publish_runtime_event,
+                task=task,
+                point=HookPoint.BEFORE_FINALIZATION,
+                phase=ExecutionPhase.COMPLETION,
+                error=exc,
+            )
             await self._publish_terminal_runtime_event(task)
             return self._build_result(
                 task,
@@ -461,8 +474,15 @@ class NexusLoop:
                 phase=ExecutionPhase.COMPLETION,
                 extra=_finalization_hook_extra(task, answer=answer),
             )
-        except NexusLifecycleHookError:
-            pass
+        except NexusLifecycleHookError as exc:
+            await publish_nexus_lifecycle_hook_failure(
+                self._publish_runtime_event,
+                task=task,
+                point=HookPoint.AFTER_FINALIZATION,
+                phase=ExecutionPhase.COMPLETION,
+                error=exc,
+                non_critical=True,
+            )
         self._maybe_record_adaptive_outcome_signal(task, result)
         self._maybe_record_multi_agent_evaluation(executions, task_id=task.task_id)
         return result

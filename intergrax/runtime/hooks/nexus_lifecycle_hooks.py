@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any, Optional
 
+from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -140,3 +142,64 @@ def _guard(result: HookResult, point: HookPoint) -> None:
         raise NexusLifecycleHookError(
             result.reason or f"hook blocked at {point.value}: {result.action.value}"
         )
+
+
+def _lifecycle_hook_failure_kind(reason: str) -> str:
+    if reason.startswith("hook_error:"):
+        return "platform.hook.hook_error"
+    if reason.startswith("hook_timeout:"):
+        return "platform.hook.hook_timeout"
+    return "platform.hook.hook_blocked"
+
+
+def _lifecycle_hook_name_from_reason(reason: str) -> str:
+    if reason.startswith(("hook_error:", "hook_timeout:")):
+        rest = reason.split(":", 1)[1]
+        return rest.split(":", 1)[0] or "lifecycle_hook"
+    return "lifecycle_hook"
+
+
+def _sanitized_lifecycle_hook_reason(reason: str, *, max_len: int = 500) -> str:
+    text = reason.strip()
+    if len(text) > max_len:
+        return text[: max_len - 3] + "..."
+    return text
+
+
+async def publish_nexus_lifecycle_hook_failure(
+    publish: Callable[..., Awaitable[None]],
+    *,
+    task: Task,
+    point: HookPoint,
+    phase: ExecutionPhase,
+    error: NexusLifecycleHookError,
+    non_critical: bool = False,
+) -> None:
+    """Emit a visible runtime event for lifecycle/finalization hook failures."""
+    from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
+
+    reason = str(error)
+    kind = _lifecycle_hook_failure_kind(reason)
+    severity = (
+        EventSeverity.ERROR
+        if kind.endswith("hook_error") or kind.endswith("hook_timeout")
+        else EventSeverity.WARNING
+    )
+    event = build_platform_signal_event(
+        kind=kind,
+        task_id=task.task_id,
+        run_id=task.task_id,
+        tenant_id=task.tenant_id,
+        agent_id=task.agent_id,
+        phase=phase,
+        severity=severity,
+        correlation_id=task.task_id,
+        payload={
+            "hook_name": _lifecycle_hook_name_from_reason(reason),
+            "point": point.value,
+            "reason": _sanitized_lifecycle_hook_reason(reason),
+            "error_type": type(error).__name__,
+            "non_critical": non_critical,
+        },
+    )
+    await publish(event, task=task)
