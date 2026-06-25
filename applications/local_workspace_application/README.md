@@ -33,6 +33,25 @@ The local-first LKW stack is:
 
 In-memory vector storage is only for tests or temporary development. It is not the real local product default.
 
+## Docker quickstart
+
+From `applications/local_workspace_application/`:
+
+Windows:
+
+```bat
+build-local-docker.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x build-local-docker.sh
+./build-local-docker.sh
+```
+
+The scripts copy `.env.example` to `.env` when needed, build the Docker image, start Ollama, pull the model configured in `.env`, and start the local stack.
+
 ## Quickstart
 
 From repository root:
