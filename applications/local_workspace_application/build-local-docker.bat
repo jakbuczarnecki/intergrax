@@ -51,7 +51,7 @@ docker compose -f "%COMPOSE_FILE%" up -d ollama
 if errorlevel 1 goto fail
 
 echo Pulling Ollama model: %MODEL%
-docker compose -f "%COMPOSE_FILE%" exec ollama ollama pull "%MODEL%"
+call :pull_model
 if errorlevel 1 goto fail
 
 echo Starting LKW local stack...
@@ -65,7 +65,20 @@ echo   curl http://127.0.0.1:8020/v1/local_workspace/agents
 popd >nul
 exit /b 0
 
+:pull_model
+for /l %%I in (1,1,3) do (
+    echo Ollama pull attempt %%I/3...
+    docker compose -f "%COMPOSE_FILE%" exec -T ollama ollama pull "%MODEL%"
+    if not errorlevel 1 exit /b 0
+    echo Ollama pull failed or Docker Desktop interrupted the exec session.
+    echo Waiting before retry; Ollama should resume the partial download.
+    timeout /t 5 /nobreak >nul
+)
+exit /b 1
+
 :fail
 echo LKW local Docker setup failed.
+echo You can retry only the model pull with:
+echo   docker compose -f "%COMPOSE_FILE%" exec -T ollama ollama pull "%MODEL%"
 popd >nul
 exit /b 1
