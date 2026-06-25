@@ -175,6 +175,11 @@ async def run_acp_session(
         max_steps=merged.max_steps,
         checkpoint_every_step=merged.checkpoint_every_step,
         policy_engine=PolicyEngine(),
+        production_mode=(
+            host.app_profile.execution_mode.value == "strict"
+            if host is not None and host.app_profile is not None
+            else False
+        ),
         organizational=merged.organizational,
         side_effect_ledger=persistence.side_effect_ledger,
         declarative_tool_invoker=declarative_invoker,
