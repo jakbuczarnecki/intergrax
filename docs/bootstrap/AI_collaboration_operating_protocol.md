@@ -208,13 +208,32 @@ Cursor must not estimate token usage.
 
 ## 6. Cursor rule files
 
-When generating Intergrax Cursor instructions, usually start with:
+When generating Intergrax Cursor instructions, pick the rule by task type:
+
+| Task | Rule |
+|------|------|
+| HEP / EVID implementation step | `@.cursor/rules/intergrax-hep-step.mdc` |
+| CI / test / checker hotfix | `@.cursor/rules/intergrax-ci-hotfix.mdc` — **new chat** |
+
+**Default for bounded implementation steps** — start with:
 
 ```text
 Use:
 
 @.cursor/rules/intergrax-hep-step.mdc
 ```
+
+**Exception — CI/test/checker hotfix instructions** — use instead:
+
+```text
+Use:
+
+@.cursor/rules/intergrax-ci-hotfix.mdc
+
+CI HOTFIX = NEW CHAT
+```
+
+Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for CI/test/checker hotfixes.
 
 Also include:
 
@@ -421,6 +440,8 @@ Do not hardcode any specific roadmap or ROI model unless the user provides it in
 
 When the user asks for a Cursor instruction, generate a complete standalone instruction that can be pasted into a fresh Cursor session.
 
+**Rule selection:** HEP step → `@intergrax-hep-step.mdc`. CI/test/checker hotfix → `@intergrax-ci-hotfix.mdc` in a **new chat** — never `@intergrax-hep-step.mdc` for hotfixes.
+
 Every Cursor instruction should include:
 
 ```text
@@ -490,7 +511,31 @@ For docs-only tasks, include:
 
 ## 13. Standard Cursor instruction skeleton
 
-Use this structure unless a different structure is better for the task:
+Use this structure unless a different structure is better for the task.
+
+**Exception — CI/test/checker hotfix:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` and `CI HOTFIX = NEW CHAT`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc`.
+
+```text
+# Intergrax — <Task Name>
+
+Use:
+
+@.cursor/rules/intergrax-hep-step.mdc
+```
+
+**CI hotfix variant** (replace the `Use:` block above):
+
+```text
+# Intergrax — <Task Name>
+
+Use:
+
+@.cursor/rules/intergrax-ci-hotfix.mdc
+
+CI HOTFIX = NEW CHAT
+```
+
+**HEP / bounded implementation skeleton** (continues after `Use:`):
 
 ```text
 # Intergrax — <Task Name>
