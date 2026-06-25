@@ -1,6 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Run from repository root: docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
 
+name: intergrax_lkw
+
 services:
   local_workspace:
     build:
