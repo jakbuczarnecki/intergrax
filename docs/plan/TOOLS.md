@@ -8,6 +8,8 @@
 
 **Queue status (2026-06-23):** Phase **TOOL-ENG** **closed** (36/36). Catalog expansion (Phase O / T-EXPAND) **closed** at **200** tools · **49** bundles. Strategic backlog → **Phase TOOL-PRODUCT-ROI** (below). Default harness queue → **gate maintenance** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). TOOLS owns compact LLM-facing tool catalog presentation and schema-preserving `ToolSchemaOptimizer`; canonical `ToolContract` registry, tool call payloads, and tool result JSON must not be mutated by default.
+
 **Layer completion mode (2026-06-12):** [§Layer completion audit](#layer-completion-audit-2026-06-12) · [§Layer completion sprints](#layer-completion-sprints-2026-06-12) · [§Final audit](#layer-completion-final-audit-2026-06-12)
 
 ---
@@ -17,6 +19,7 @@
 **Do not read this entire file in one session** (TOOLS plan).
 
 - **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Token Optimization:** read feature pair + row `TOKEN-TOOLS-1`; inspect only tool schema export / planner input path needed for compact catalog view.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) read-scope block only.
@@ -36,8 +39,20 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
-
 ---
+
+## Phase TOKEN-TOOLS — Tool schema optimization for compact LLM catalog (Planned)
+
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
+**Priority:** P1 after TOKEN-UER-1 shared contracts  
+**Delivery rule:** one `TOKEN-TOOLS-*` row per PR; no schema semantics mutation.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **TOKEN-TOOLS-1** | Code | P1 | Planned | `intergrax/runtime/nexus/tools/tool_schema_optimizer.py` produces compact LLM-facing tool catalog/schema view for `ToolPlanningService` / `CatalogToolPlanner` / schema export path | Canonical `ToolContract` registry unchanged; tool names, parameter names, enum values, required fields, and JSON schema semantics unchanged; tool call payloads/results not compressed by default; compact view enabled only by Token Optimization policy/profile; fixture shows lower token count; `uv run pytest tests/unit/runtime/nexus/tools/ -q`; `uv run python scripts/check_tool_schema_optimizer.py` |
+
+**Explicit exclusions:** no payload compression, no result compression, no permission expansion, no replacement of `ToolAccessPolicy`, no change to tool runtime execution semantics.
 
 ---
 
@@ -55,7 +70,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Follow-on (engine, not AUDIT-IDEAL id):** TOOL-ENG-1–10 — see [Phase TOOL-ENG](#phase-tool-eng--tool-engine-hardening-2026-06-10-audit).
 
-**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+**Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ---
 
