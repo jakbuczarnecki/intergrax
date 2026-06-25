@@ -30,6 +30,37 @@ Current feature pairs:
 
 ---
 
+## Domain pair index (22)
+
+| # | Domain | Architecture | Plan |
+|---|--------|--------------|------|
+| 1 | `PLATFORM_FOUNDATION` | [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) |
+| 2 | `UNIFIED_EXECUTION_RUNTIME` | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) | [`plan/UNIFIED_EXECUTION_RUNTIME.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) |
+| 3 | `ORCHESTRATION` | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) | [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) |
+| 4 | `NEXUS_EXECUTION_FLOW` | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) | [`plan/NEXUS_EXECUTION_FLOW.md`](plan/NEXUS_EXECUTION_FLOW.md) |
+| 5 | `REASONING_AND_COGNITION` | [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) | [`plan/REASONING_AND_COGNITION.md`](plan/REASONING_AND_COGNITION.md) |
+| 6 | `AGENT_CONTRACTS_AND_ASSEMBLY` | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| 7 | `LLM_ADAPTERS` | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) | [`plan/LLM_ADAPTERS.md`](plan/LLM_ADAPTERS.md) |
+| 8 | `TOOLS` | [`architecture/TOOLS.md`](architecture/TOOLS.md) | [`plan/TOOLS.md`](plan/TOOLS.md) |
+| 9 | `CODE_CRAFT` | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) | [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) |
+| 10 | `SKILLS` | [`architecture/SKILLS.md`](architecture/SKILLS.md) | [`plan/SKILLS.md`](plan/SKILLS.md) |
+| 11 | `INTEGRATIONS` | [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | [`plan/INTEGRATIONS.md`](plan/INTEGRATIONS.md) |
+| 12 | `RAG` | [`architecture/RAG.md`](architecture/RAG.md) | [`plan/RAG.md`](plan/RAG.md) |
+| 13 | `MEMORY` | [`architecture/MEMORY.md`](architecture/MEMORY.md) | [`plan/MEMORY.md`](plan/MEMORY.md) |
+| 14 | `CONTEXT_ENGINEERING` | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | [`plan/CONTEXT_ENGINEERING.md`](plan/CONTEXT_ENGINEERING.md) |
+| 15 | `MODALITY` | [`architecture/MODALITY.md`](architecture/MODALITY.md) | [`plan/MODALITY.md`](plan/MODALITY.md) |
+| 16 | `OBSERVABILITY` | [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | [`plan/OBSERVABILITY.md`](plan/OBSERVABILITY.md) |
+| 17 | `RELIABILITY_FAILURE_AND_HITL` | [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | [`plan/RELIABILITY_FAILURE_AND_HITL.md`](plan/RELIABILITY_FAILURE_AND_HITL.md) |
+| 18 | `CRITIC_VERIFICATION` | [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) | [`plan/CRITIC_VERIFICATION.md`](plan/CRITIC_VERIFICATION.md) |
+| 19 | `ADAPTIVE_HARNESS_INTELLIGENCE` | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| 20 | `ELASTIC_CAPACITY_AND_SCALING` | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) | [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) |
+| 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+| 22 | `TIER3_APPLICATION_ENVIRONMENT` | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) |
+
+**Plan-only hubs (no 1:1 architecture basename):** [`plan/HARNESS_EVIDENCE_PACK.md`](plan/HARNESS_EVIDENCE_PACK.md) · [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · [`plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (satellite architecture under `architecture/satellites/`).
+
+---
+
 ## Four tiers
 
 ```text

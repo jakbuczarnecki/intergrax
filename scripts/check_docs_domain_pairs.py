@@ -34,6 +34,13 @@ FORBIDDEN = [
 PLAN_ONLY_HUBS = {
     "IDEAL_HARNESS_L3",
     "AUDIT_IDEAL_2026",
+    "HARNESS_EVIDENCE_PACK",
+    "ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search",
+}
+
+ALLOWED_DOCS_ROOT = {
+    "intergrax_runtime_architecture.md",
+    "DOCUMENTATION_MAP.md",
 }
 
 
@@ -118,7 +125,9 @@ def main() -> int:
     if not HUB.is_file():
         errors.append("missing docs/intergrax_runtime_architecture.md hub")
 
-    extra_docs_root = [p.name for p in DOCS.glob("*.md") if p.name != "intergrax_runtime_architecture.md"]
+    extra_docs_root = [
+        p.name for p in DOCS.glob("*.md") if p.name not in ALLOWED_DOCS_ROOT
+    ]
     if extra_docs_root:
         errors.append(f"unexpected files in docs/ root: {extra_docs_root}")
 
