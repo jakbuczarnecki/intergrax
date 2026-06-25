@@ -4,6 +4,7 @@
 
 **Hub (sole docs/ root file):** docs/intergrax_runtime_architecture.md  
 **Domain pairs (1:1):** docs/architecture/<DOMAIN>.md ↔ docs/plan/<DOMAIN>.md  
+**Multi-layer feature pairs (1:1):** docs/features/architecture/<FEATURE>.md ↔ docs/features/plan/<FEATURE>.md — docs/features/README.md  
 **Guides (strategy, ideal, audit):** docs/guides/
 **System invariants (P2-ARCH-01):** docs/guides/SYSTEM_INVARIANTS.md — cross-domain “never violate” index before domain pairs
 **Layer completion:** docs/guides/LAYER_COMPLETION_MODE.md — full domain layer closeout (audit → maturity)

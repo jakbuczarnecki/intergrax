@@ -18,7 +18,7 @@ Provide a **repeatable, evidence-backed intake audit** when an operator or devel
 
 **One Cursor session** → agent reads the fixed procedure + operator's idea in chat → delivers a structured verdict in chat.
 
-**No idea-audit artifact files** — the durable record after approval is an update to the relevant **`docs/architecture/<DOMAIN>.md`** and **`docs/plan/<DOMAIN>.md`** pair (and ADR when required).
+**No idea-audit artifact files** — the durable record after approval is an update to the relevant **domain-layer pair** (`docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`) or **multi-layer feature pair** (`docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md`), then affected domain pairs when cross-layer (and ADR when required). Do not create `docs/plan/<FEATURE>.md` for multi-layer features.
 
 **No code implementation** in Mode I unless the operator explicitly starts a **new** implement session afterward.
 
@@ -165,8 +165,8 @@ Ask:
 
 When the operator approves:
 
-1. Update `docs/architecture/<DOMAIN>.md` when contracts or capability surface changes
-2. Add or update rows in `docs/plan/<DOMAIN>.md` (English IDs, priority, acceptance criteria)
+1. **Domain-layer work:** update `docs/architecture/<DOMAIN>.md` when contracts or capability surface changes; add or update rows in `docs/plan/<DOMAIN>.md`.
+2. **Multi-layer feature work:** create or update `docs/features/architecture/<FEATURE>.md` and `docs/features/plan/<FEATURE>.md`, then update affected domain pairs. Domain-specific implementation rows still belong in owning `docs/plan/<DOMAIN>.md` files.
 3. Create ADR in the correct domain when significant (`docs/adr/` or agent/app `adr/`)
 4. Record **"no ADR needed"** with rationale when applicable
 5. Add implementation-journal entry when the approved idea changes harness architecture or registers significant plan rows (see [`implementation-journal/README.md`](../implementation-journal/README.md)); otherwise record **"no journal needed"** in chat.

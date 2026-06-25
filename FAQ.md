@@ -43,7 +43,7 @@ Start with the README [Start here](README.md#start-here) section, then choose th
 | Permission, commercial, or production boundaries | [COLLABORATION.md](COLLABORATION.md) |
 | Public adoption priorities and feedback tracks | [ROADMAP.md](ROADMAP.md) |
 
-For deeper technical paths after the overview, see the [proof path](README.md#proof-of-platform), [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md), [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md), or [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md).
+For deeper technical paths after the overview, see the [proof path](README.md#proof-of-platform), [architecture hub](docs/intergrax_runtime_architecture.md), [multi-layer feature docs](docs/features/README.md), [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md), [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md), or [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md).
 
 ## What does the BoundaryAttest case study prove?
 

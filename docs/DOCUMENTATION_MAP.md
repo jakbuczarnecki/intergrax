@@ -14,6 +14,7 @@ This file does **not** duplicate canon content; it routes to the authoritative s
 | Project overview and quick start | [README.md](../README.md) |
 | **This map** (roles and workflows) | `docs/DOCUMENTATION_MAP.md` |
 | Architecture hub + 22 domain pairs | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) |
+| Multi-layer feature docs (cross-layer capabilities) | [features/README.md](features/README.md) |
 | Domain architecture canon | `docs/architecture/<DOMAIN>.md` |
 | Implementation status / backlog | `docs/plan/<DOMAIN>.md` |
 | Strategy, invariants, authoring guides | [guides/README.md](guides/README.md) |
@@ -40,6 +41,8 @@ Domain pair index (22 names): [audit/README.md § Domain index](audit/README.md#
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | Sole `docs/` root file; indexes 22 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
 | `docs/architecture/<DOMAIN>.md` | **What** the harness should do (contracts, design) | Implementation tracker |
 | `docs/plan/<DOMAIN>.md` | **What is done / next** (phases, rows, gates) | Architecture spec |
+| `docs/features/architecture/<FEATURE>.md` | **Cross-layer feature architecture** — coordinates domain pairs | Domain canon replacement |
+| `docs/features/plan/<FEATURE>.md` | **Cross-layer feature plan** — phases across domains; domain rows stay in owning `docs/plan/<DOMAIN>.md` | Standalone domain plan |
 | [guides/](guides/README.md) | Cross-cutting strategy, invariants, authoring, audit methodology | Domain canon |
 | [AGENTS.md](../AGENTS.md) | Cursor auto-load **stub** (~350 tok) | Full agent instructions |
 | [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) | Full AI agent reference (routing, verification, ADR, O1 output) | Human onboarding doc |
@@ -61,9 +64,10 @@ Domain pair index (22 names): [audit/README.md § Domain index](audit/README.md#
 
 1. [README.md](../README.md) — overview, install, verify  
 2. [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) — pick a domain  
-3. Matching pair: `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md`  
-4. [SYSTEM_INVARIANTS.md](guides/SYSTEM_INVARIANTS.md) before changing code  
-5. [CONTRIBUTING.md](../CONTRIBUTING.md) for PR workflow  
+3. Domain-layer pair: `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md`  
+4. Cross-layer features (when relevant): [features/README.md](features/README.md) — `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md`  
+5. [SYSTEM_INVARIANTS.md](guides/SYSTEM_INVARIANTS.md) before changing code  
+6. [CONTRIBUTING.md](../CONTRIBUTING.md) for PR workflow  
 
 Authoring: [AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) · Tier-3: [applications/USAGE.md](../applications/USAGE.md)
 
@@ -122,6 +126,8 @@ AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-itera
          │                  │                  │
          └──────────►  architecture ↔ plan  ◄─┘
                     (22 domain pairs via hub)
+                    features/architecture ↔ features/plan
+                    (multi-layer feature pairs)
 ```
 
 **Update rule:** When adding a new doc class, add one row to *Quick routing* and *Document roles* here — do not duplicate content in README beyond a short pointer.

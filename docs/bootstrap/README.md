@@ -14,7 +14,7 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`04_implement_plan_one_domain.txt`](04_implement_plan_one_domain.txt) | B1 — implement plan | Single domain |
 | [`05_closeout_all_domains.txt`](05_closeout_all_domains.txt) | C — layer completion | All 22 (LCM 1–6) |
 | [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
-| [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update architecture + plan |
+| [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update domain pair or multi-layer feature pair |
 | [`07_ci_preflight.txt`](07_ci_preflight.txt) | **CI — preflight before push/merge** | Run local parity with `.github/workflows/unit-tests.yml` (`--profile all`) |
 | [`hep_step.txt`](hep_step.txt) | **HEP — one plan step** | Phase HEP C13–C16 / EVID-* rows — edit `STEP=` / `SCOPE=` |
 

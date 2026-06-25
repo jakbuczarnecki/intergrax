@@ -76,6 +76,7 @@ Read:
 1. [README.md#the-agent-model--why-architects-choose-intergrax](README.md#the-agent-model--why-architects-choose-intergrax)
 2. [USE_CASES.md](USE_CASES.md)
 3. [PARTNERS.md](PARTNERS.md)
+4. Optional — cross-layer capabilities: [docs/features/README.md](docs/features/README.md) (`docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md`)
 
 Evaluate whether the model is understandable:
 

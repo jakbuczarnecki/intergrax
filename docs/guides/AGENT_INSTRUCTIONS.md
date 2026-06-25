@@ -21,7 +21,7 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.  
 **Source:** [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **22 domain pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (1:1 filenames). Strategy, ideal model, and audit live in `docs/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **22 domain-layer pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` — see [`features/README.md`](../features/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
@@ -111,7 +111,8 @@ applications/    MAY import from agents/ and intergrax/
 - **One source of truth per topic** — `docs/` root = hub only; no parallel guides
 - Strategy / ideal / audit / invariants → `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, `SYSTEM_INVARIANTS.md`
 - Architecture hub → `docs/intergrax_runtime_architecture.md`
-- Domain pairs → `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (**1:1**, same filename)
+- Domain-layer pairs → `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (**1:1**, same filename)
+- Multi-layer feature pairs → `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` (**1:1**; do not create `docs/plan/<FEATURE>.md` for cross-layer features)
 - Global ladder, DoD, product backlog → `docs/plan/PLATFORM_FOUNDATION.md`
 - Agent workflow → `docs/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/architecture/PLATFORM_FOUNDATION.md` §5.3 only
@@ -131,6 +132,7 @@ applications/    MAY import from agents/ and intergrax/
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
 | Audit a new idea before build | Say `Zrób audyt pomysłu: …` in a new chat — rule `.cursor/rules/intergrax-idea-audit.mdc` → [`idea_audit.txt`](../bootstrap/idea_audit.txt) · [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md) |
+| Cross-layer platform feature | [`features/README.md`](../features/README.md) → matching feature architecture + feature plan, then affected domain pairs |
 | Create a new agent | [docs/guides/AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](../architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](../plan/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](../architecture/RAG.md) · [plan/RAG.md](../plan/RAG.md) |
@@ -233,9 +235,10 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 
 | Path | Contents |
 |------|----------|
-| `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 22 domain pairs |
+| `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 22 domain pairs + feature doc index |
 | `docs/architecture/` | Domain architecture canon (22 files) |
 | `docs/plan/` | Domain implementation plans (22 files, 1:1 with architecture) |
+| `docs/features/` | Multi-layer feature architecture + plan pairs (1:1 under `architecture/` and `plan/`) |
 | `docs/guides/` | Strategy, ideal model, audit map, authoring guides |
 | `../../intergrax/runtime/nexus/` | Nexus Agent OS core |
 | `../../intergrax/runtime/nexus/orchestration/` | Intake, planning, graph, HITL runners |
