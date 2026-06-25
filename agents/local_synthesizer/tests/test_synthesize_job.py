@@ -1,0 +1,197 @@
+# © Artur Czarnecki. All rights reserved.
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock
+
+import pytest
+
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
+from local_synthesizer.steps.synthesize_job import run_synthesize_job
+
+
+def _step_ctx(
+    exec_ctx: RuntimeExecutionContext | None,
+    *,
+    run_id: str = "run-test",
+    message: str = "",
+) -> AgentStepContext:
+    metadata: dict[str, object] = {}
+    if exec_ctx is not None:
+        metadata["uaep_exec_ctx"] = exec_ctx
+    return AgentStepContext(
+        run_id=run_id,
+        agent_id="local_synthesizer",
+        contract_id="local_synthesizer",
+        message=message,
+        metadata=metadata,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_rejects_non_shadow_workspace() -> None:
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="prepare report",
+            metadata={"draft": "hello", "shadow_workspace": False},
+        ),
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is False
+    assert summary["reason"] == "shadow_workspace_required"
+    assert summary["shadow_workspace"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_fails_safe_without_content() -> None:
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="",
+            metadata={"shadow_workspace": True},
+        ),
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is False
+    assert summary["reason"] == "content_missing"
+    assert summary["shadow_workspace"] is True
+    assert summary["num_evidence_items"] == 0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_fails_safe_without_tool_gateway() -> None:
+    output = await run_synthesize_job(
+        AgentStepContext(
+            run_id="run-test",
+            agent_id="local_synthesizer",
+            contract_id="local_synthesizer",
+            message="prepare client email",
+            metadata={"shadow_workspace": True, "draft": "email body"},
+        )
+    )
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is False
+    assert summary["reason"] == "tool_gateway_not_available"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_writes_draft_to_shadow_workspace() -> None:
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        assert request.tool_name == WORKSPACE_WRITE_FILE_TOOL_ID
+        assert request.input["path"] == "client-email.md"
+        assert "Project X overview" in request.input["content"]
+        assert request.input["content_type"] == "text/markdown"
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={
+                "artifact_id": "art-1",
+                "relative_path": "client-email.md",
+                "size_bytes": 42,
+                "content_type": "text/markdown",
+                "sha256": "abc",
+                "workspace_id": "shadow-ws-1",
+            },
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="prepare client email",
+            metadata={
+                "shadow_workspace": True,
+                "output_name": "client-email.md",
+                "search_summary": {"query": "project X"},
+                "evidence": [
+                    {
+                        "text": "Project X overview",
+                        "source_path": "/data/report.txt",
+                        "chunk_id": "chunk-1",
+                    }
+                ],
+            },
+        ),
+        tool_gateway=gateway,
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is True
+    assert summary["reason"] == "write_complete"
+    assert summary["output_name"] == "client-email.md"
+    assert summary["artifact_path"] == "client-email.md"
+    assert summary["shadow_workspace"] is True
+    assert summary["num_evidence_items"] == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_fails_safe_on_write_error() -> None:
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(
+        return_value=ToolResponse(
+            request_id="tool-1",
+            status=ToolResponseStatus.FAILED,
+            error="shadow_workspace_not_configured",
+        )
+    )
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="ignored",
+            metadata={"shadow_workspace": True, "draft": "final body"},
+        ),
+        tool_gateway=gateway,
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is False
+    assert summary["reason"] == "write_failed"
+    assert summary["shadow_workspace"] is True
