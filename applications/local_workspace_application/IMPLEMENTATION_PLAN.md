@@ -68,6 +68,8 @@ Every LKW iteration must bound read scope, search scope, and test scope so Curso
   2. a targeted test fails because of a cross-module contract,
   3. the implementation point does not exist in the given scope,
   4. [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) reveals a real need to change scaffold, env, Docker, or CI.
+- **Expansion budget:** at most **3 files** outside **Read scope** per task (exception 1–4). After 3 reads or 3 failed greps → **STOP**, one short question, wait for operator OK. Do not read `uaep.py`, `boundary_demo`, or Nexus internals to discover `invoke_tool` when [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md) or agent **Pattern anchor** is in scope.
+- **Pattern anchor (LKW Tier-2):** canonical tool/allowlist pattern lives in [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md). Each LKW agent implements in `agents/<agent>/steps/<job>.py` (see agent `ARCHITECTURE.md` § Pattern anchor). Prompts **must** cite the step file as **Implementation point**.
 - **Default tests:** new or changed test file + one narrow smoke — not a full Nexus/runtime/agent suite unless the prompt requires it.
 - **Default report:** changed files, tests run, pass/fail, commit SHA, platform propagation yes/no (+ brief reason).
 - **Full report** only when the operator explicitly asks (`pełny raport`, `full report`, `iteration summary`).
@@ -87,7 +89,11 @@ Goal:
 Read scope:
 - `<path>` — section `<id>` only
 - `<path>` — `<function or line range if known>`
+- `agents/lkw_shared/PATTERN.md` — when task invokes catalog tools (LKW Tier-2)
 - existing tests: `<path or glob under one module>`
+
+Implementation point:
+- `<agents/<agent>/steps/<job>.py>` — edit here; do not search runtime for invoke_tool pattern
 
 Code search scope:
 Search only:
@@ -112,9 +118,10 @@ Full report only if operator asks.
 Token guardrails:
 - No whole-repo audit unless this prompt explicitly requires it.
 - No repo-wide Python/Markdown glob search.
-- Stop after first grep hit that locates the implementation point.
+- Stop after first grep hit that locates the **Implementation point** (usually `steps/<job>.py`).
 - Read only cited document sections; do not load full architecture/plan hubs.
-- Expand scope only for the four exceptions in IMPLEMENTATION_PLAN §0b.
+- Expand scope only for the four exceptions in IMPLEMENTATION_PLAN §0b; **max 3 files** outside Read scope.
+- Do not read runtime/Nexus sources for tool invocation when `agents/lkw_shared/PATTERN.md` is cited.
 - Default tests: new/changed test + one narrow smoke.
 - Default report: terse (see Report format). Full report only on operator request.
 

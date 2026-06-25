@@ -1,0 +1,109 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""LKW Tier-2 runtime helpers — canonical invoke_tool + allowlist pattern."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.tools.providers.filesystem.allowlist import (
+    read_allowlist_roots_from_env,
+    require_read_allowlist_roots,
+    resolve_allowed_path,
+)
+
+
+def exec_ctx_from_step(step_ctx: AgentStepContext) -> RuntimeExecutionContext | None:
+    raw = step_ctx.metadata.get("uaep_exec_ctx")
+    if isinstance(raw, RuntimeExecutionContext):
+        return raw
+    return None
+
+
+def request_metadata(exec_ctx: RuntimeExecutionContext | None) -> dict[str, Any]:
+    if exec_ctx is None or exec_ctx.request is None:
+        return {}
+    request = exec_ctx.request
+    if isinstance(request, RuntimeRequest):
+        return dict(request.metadata or {})
+    metadata = getattr(request, "metadata", None)
+    return dict(metadata or {})
+
+
+def allowlist_roots(exec_ctx: RuntimeExecutionContext | None) -> frozenset[str]:
+    if exec_ctx is not None:
+        runtime_state = exec_ctx.metadata.get("runtime_state")
+        if runtime_state is not None:
+            context = getattr(runtime_state, "context", None)
+            config = getattr(context, "config", None) if context is not None else None
+            wiring = getattr(config, "tool_wiring_context", None) if config is not None else None
+            roots = getattr(wiring, "read_allowlist_roots", None) if wiring is not None else None
+            if roots:
+                return frozenset(roots)
+    return read_allowlist_roots_from_env()
+
+
+def parse_metadata_list(metadata: dict[str, Any], key: str) -> list[str]:
+    raw = metadata.get(key)
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        stripped = raw.strip()
+        return [stripped] if stripped else []
+    if isinstance(raw, (list, tuple)):
+        values: list[str] = []
+        for item in raw:
+            if isinstance(item, str) and item.strip():
+                values.append(item.strip())
+        return values
+    return []
+
+
+def validate_allowlisted_files(
+    paths: list[str],
+    roots: frozenset[str],
+) -> tuple[list[Path], list[dict[str, str]]]:
+    allowed_roots = require_read_allowlist_roots(roots if roots else None)
+    validated: list[Path] = []
+    rejected: list[dict[str, str]] = []
+    for raw in paths:
+        try:
+            resolved = resolve_allowed_path(raw, allowed_roots)
+        except RuntimeError as exc:
+            rejected.append({"path": raw, "reason": str(exc)})
+            continue
+        if not resolved.is_file():
+            rejected.append({"path": raw, "reason": "source_not_found"})
+            continue
+        validated.append(resolved)
+    return validated, rejected
+
+
+async def invoke_catalog_tool(
+    exec_ctx: RuntimeExecutionContext,
+    *,
+    tool_name: str,
+    agent_id: str,
+    step_id: str,
+    tool_input: dict[str, Any],
+) -> dict[str, Any]:
+    response = await exec_ctx.invoke_tool(
+        ToolRequest(
+            tool_name=tool_name,
+            agent_id=agent_id,
+            step_id=step_id,
+            input=tool_input,
+        )
+    )
+    entry: dict[str, Any] = {"status": response.status.value}
+    if response.status == ToolResponseStatus.SUCCESS and response.output:
+        entry.update(response.output)
+    elif response.error:
+        entry["reason"] = response.error
+    return entry

@@ -12,8 +12,9 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from lkw_shared.runtime_helpers import validate_allowlisted_files
 from local_indexer.local_indexer_agent import LocalIndexerAgent
-from local_indexer.steps.index_job import run_index_job, validate_source_paths
+from local_indexer.steps.index_job import run_index_job
 
 
 def _step_ctx(
@@ -36,7 +37,7 @@ def test_validate_source_paths_rejects_out_of_scope(tmp_path: Path) -> None:
     outside = tmp_path / "outside.txt"
     outside.write_text("secret", encoding="utf-8")
 
-    _, rejected = validate_source_paths([str(outside)], frozenset({str(allowed_root.resolve())}))
+    _, rejected = validate_allowlisted_files([str(outside)], frozenset({str(allowed_root.resolve())}))
 
     assert rejected == [{"path": str(outside), "reason": "path_not_in_allowlist"}]
 
@@ -48,7 +49,7 @@ def test_validate_source_paths_accepts_allowlisted_file(tmp_path: Path) -> None:
     doc = allowed_root / "report.txt"
     doc.write_text("hello", encoding="utf-8")
 
-    validated, rejected = validate_source_paths(
+    validated, rejected = validate_allowlisted_files(
         [str(doc)],
         frozenset({str(allowed_root.resolve())}),
     )

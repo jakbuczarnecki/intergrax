@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from local_search.capabilities import CAPABILITIES
 from local_search.contract import build_agent_contract
+from local_search.steps.search_job import run_search_job
 from intergrax.agents.authoring.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,
-    prefixed_act_output,
     reason_passthrough,
 )
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
@@ -56,7 +56,8 @@ class LocalSearchAgent(ReflexAgent):
         return reason_passthrough(step_ctx, observation)
 
     async def act(self, step_ctx: AgentStepContext, reasoning):
-        return prefixed_act_output(prefix="local_search", step_ctx=step_ctx, reasoning=reasoning)
+        _ = reasoning
+        return await run_search_job(step_ctx)
 
     def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
         return evaluate_complete(step_ctx, output, reason="local_search_goal_met")

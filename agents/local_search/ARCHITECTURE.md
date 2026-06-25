@@ -57,6 +57,20 @@ Answer user questions by retrieving relevant document fragments from the local R
   4. format_evidence     → StepOutput for synthesizer or user
 ```
 
+Implement domain logic in `steps/` — no Tier-3 imports.
+
+---
+
+## Pattern anchor (Cursor — read instead of runtime grep)
+
+| Item | Location |
+|------|----------|
+| Canonical `invoke_tool` + allowlist pattern | [`agents/lkw_shared/PATTERN.md`](../../lkw_shared/PATTERN.md) |
+| Shared helpers | [`agents/lkw_shared/runtime_helpers.py`](../../lkw_shared/runtime_helpers.py) |
+| **Implementation point** | [`steps/search_job.py`](steps/search_job.py) — `run_search_job` |
+
+Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
+
 ---
 
 ## Integrations, tools, and skills

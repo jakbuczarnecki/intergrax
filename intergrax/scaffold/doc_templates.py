@@ -43,6 +43,7 @@ def render_agent_architecture_doc(
             f"| `{slug}_agent.py` | {agent_base} — cognitive pattern hooks |\n"
             "| `contract.py` | `AgentContract` + `cognitive_pattern` |\n"
             "| `capabilities.py` | Capability ids |\n"
+            "| `steps/domain_job.py` | Domain step entry — **Cursor implementation point** |\n"
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
@@ -76,6 +77,7 @@ def render_agent_architecture_doc(
             f"| `{slug}_agent.py` | {agent_base} — cognitive pattern hooks |\n"
             "| `contract.py` | `AgentContract` + `cognitive_pattern` |\n"
             "| `capabilities.py` | Capability ids |\n"
+            "| `steps/domain_job.py` | Domain step entry — **Cursor implementation point** |\n"
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
@@ -108,6 +110,12 @@ def render_agent_architecture_doc(
         ## Runtime
 
         {runtime_line}
+
+        ## Pattern anchor (Cursor)
+
+        - Tool invocation pattern: [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md)
+        - **Implementation point:** `steps/domain_job.py` — implement `run_domain_job(step_ctx)`; wire from `act()`.
+        - Do **not** grep runtime/Nexus for `invoke_tool` when this section is in read scope.
 
         ## Tier hygiene
 

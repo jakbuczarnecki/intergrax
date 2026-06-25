@@ -24,5 +24,5 @@ async def test_local_synthesizer_agent_runs_through_nexus():
         )
     )
     assert result.state == TaskState.COMPLETED
-    assert "scaffold smoke" in result.answer
+    assert "output_target_missing" in result.answer
     assert result.agent_id == "local_synthesizer"
