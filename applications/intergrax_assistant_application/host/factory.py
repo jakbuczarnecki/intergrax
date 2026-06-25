@@ -9,7 +9,6 @@ from typing import Optional
 
 from fastapi import FastAPI
 
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -32,7 +31,6 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax_assistant_application.host.settings import IntergraxAssistantApplicationSettings
 from intergrax_assistant_application.host.environment_profile import build_intergrax_assistant_environment_profile
 from intergrax_assistant_application.manifest import build_intergrax_assistant_manifest
-from intergrax_assistant_application.mcp.server import build_intergrax_assistant_mcp_server
 from intergrax_assistant_application.serving.fastapi_router import mount_intergrax_assistant_routes
 
 
@@ -119,6 +117,11 @@ def create_intergrax_assistant_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+        couple_fastapi_with_mcp = load_mcp_coupling()
+        from intergrax_assistant_application.mcp.server import build_intergrax_assistant_mcp_server
+
         tool_registry = runtime.env_wiring.tool_wiring.registry
         mcp = build_intergrax_assistant_mcp_server(
             nexus_loop=nexus_loop,

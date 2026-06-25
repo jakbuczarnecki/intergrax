@@ -21,7 +21,7 @@ class PocTemplateApplicationSettings:
     include_scheduler: bool = True
     scheduler_poll_seconds: float | None = None
     interaction_surface: str = "auto"
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     include_task_control: bool = True
     include_queue_worker: bool = False
@@ -48,10 +48,11 @@ class PocTemplateApplicationSettings:
         interaction_surface = (
             os.getenv("POC_TEMPLATE_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
-        include_mcp = (os.getenv("POC_TEMPLATE_INCLUDE_MCP") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
+        include_mcp = (os.getenv("POC_TEMPLATE_INCLUDE_MCP") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
         }
         mcp_mount = (os.getenv("POC_TEMPLATE_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
         include_task_control = (

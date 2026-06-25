@@ -21,7 +21,6 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -41,7 +40,6 @@ from intergrax.runtime.interactions.router import create_interaction_intake_rout
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_environment_profile, build_legal_manifest
-from legal_application.mcp.server import build_legal_mcp_server
 
 
 def create_legal_backend_app(
@@ -178,6 +176,11 @@ def create_legal_backend_app(
 
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+        couple_fastapi_with_mcp = load_mcp_coupling()
+        from legal_application.mcp.server import build_legal_mcp_server
+
         mcp = build_legal_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.legal_route_prefix,

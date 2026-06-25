@@ -10,7 +10,6 @@ from typing import Optional
 from fastapi import FastAPI
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -32,7 +31,6 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 from poc_template_application.host.wiring import build_poc_template_registry
 from poc_template_application.manifest import build_poc_template_manifest
-from poc_template_application.mcp.server import build_poc_template_mcp_server
 from poc_template_application.serving.fastapi_router import mount_poc_template_routes
 
 
@@ -122,6 +120,11 @@ def create_poc_template_application(
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+        couple_fastapi_with_mcp = load_mcp_coupling()
+        from poc_template_application.mcp.server import build_poc_template_mcp_server
+
         mcp = build_poc_template_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,

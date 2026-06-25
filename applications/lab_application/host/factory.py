@@ -18,7 +18,6 @@ from intergrax.runtime.interactions.verification.factory import create_inbound_v
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -26,7 +25,6 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import bootstrap_lab_integration_wiring, build_lab_registry
-from lab_application.mcp.server import build_lab_mcp_server
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
@@ -197,6 +195,11 @@ def create_lab_application(
     )
     factory_schedulers = [s for s in (scheduler, scaling_wiring.scheduler) if s is not None]
     if settings.include_mcp:
+        from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+        couple_fastapi_with_mcp = load_mcp_coupling()
+        from lab_application.mcp.server import build_lab_mcp_server
+
         tool_wiring = wire_lab_tools(
             integration_profile=integrations.profile,
             harness=settings.harness,
