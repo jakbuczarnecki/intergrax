@@ -15,7 +15,10 @@ COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
 COPY applications/__init__.py ./applications/__init__.py
 COPY applications/local_workspace_application/ ./applications/local_workspace_application/
-COPY agents/ ./agents/
+COPY agents/lkw_shared/ ./agents/lkw_shared/
+COPY agents/local_indexer/ ./agents/local_indexer/
+COPY agents/local_search/ ./agents/local_search/
+COPY agents/local_synthesizer/ ./agents/local_synthesizer/
 
 # pyproject.toml already declares disjoint Linux and Windows uv environments.
 # Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.

@@ -1,21 +1,22 @@
-        # Per-application ignore file — monorepo root as context.
-        # BuildKit: docker buildx build -f applications/local_workspace_application/docker/Dockerfile \
-        #   --ignorefile applications/local_workspace_application/docker/.dockerignore -t local_workspace-application .
-        # Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+# Per-application ignore file — monorepo root as context.
+# BuildKit: docker buildx build -f applications/local_workspace_application/docker/Dockerfile \
+#   --ignorefile applications/local_workspace_application/docker/.dockerignore -t local_workspace-application .
+# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
 
-        .git
-        .venv
-        build/
-        **/__pycache__/
-        *.pyc
-        .pytest_cache
-        notebooks/
-        docs/
-        tests/
-        infra/
-        applications/*
-        !applications/local_workspace_application/
-        agents/*
-        !agents/local_indexer/
+.git
+.venv
+build/
+**/__pycache__/
+*.pyc
+.pytest_cache
+notebooks/
+docs/
+tests/
+infra/
+applications/*
+!applications/local_workspace_application/
+agents/*
+!agents/lkw_shared/
+!agents/local_indexer/
 !agents/local_search/
 !agents/local_synthesizer/

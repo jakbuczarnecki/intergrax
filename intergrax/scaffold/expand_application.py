@@ -71,6 +71,9 @@ def expand_application(*, name: str, root: Path, force: bool) -> Path:
         env_prefix=names.env_prefix,
         agent_dirs=agent_dirs,
         health_path=health_path,
+        factory_import=f"from {names.pkg}.host.factory import create_{names.short}_application",
+        factory_call=f"create_{names.short}_application()",
+        route_prefix=names.route_prefix,
         force=force,
     )
     _write(
