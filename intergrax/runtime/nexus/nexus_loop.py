@@ -155,10 +155,11 @@ class NexusLoop:
             event_bus.attach_persistence(self._runtime_event_store)
         self._middleware = middleware or MiddlewarePipeline(
             middleware=[TraceEmittingMiddleware(self._event_bus)],
+            event_bus=self._event_bus,
         )
-        if isinstance(self._middleware, MiddlewarePipeline):
-            self._middleware.configure_hook_runtime(
-                hook_timeout_seconds=self._middleware._hook_timeout_seconds,
+        if middleware is not None and isinstance(middleware, MiddlewarePipeline):
+            middleware.configure_hook_runtime(
+                hook_timeout_seconds=middleware.hook_timeout_seconds,
                 event_bus=self._event_bus,
             )
         self._human_hooks = HumanApprovalHookCoordinator(self._middleware)

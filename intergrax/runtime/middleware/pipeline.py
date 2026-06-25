@@ -41,6 +41,10 @@ class MiddlewarePipeline:
     def hooks(self) -> HookRegistry:
         return self._hooks
 
+    @property
+    def hook_timeout_seconds(self) -> float | None:
+        return self._hook_timeout_seconds
+
     def configure_hook_runtime(
         self,
         *,
