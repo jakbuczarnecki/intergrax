@@ -60,22 +60,31 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
             rejected.append({"path": str(path), "reason": "tool_gateway_not_available"})
     else:
         ingest_metadata: dict[str, Any] = {}
-        if collection_id := metadata.get("collection_id"):
+        collection_id_raw = metadata.get("collection_id")
+        collection_id = (
+            str(collection_id_raw).strip()
+            if collection_id_raw is not None and str(collection_id_raw).strip()
+            else None
+        )
+        if collection_id:
             ingest_metadata["collection_id"] = collection_id
         if chunking := metadata.get("chunking_strategy_id"):
             ingest_metadata["chunking_strategy_id"] = chunking
         for path in validated:
+            tool_input: dict[str, Any] = {
+                "source_path": str(path),
+                "tenant_id": metadata.get("tenant_id"),
+                "user_id": metadata.get("user_id"),
+                "metadata": ingest_metadata,
+            }
+            if collection_id:
+                tool_input["workspace_id"] = collection_id
             entry = await invoke_catalog_tool(
                 exec_ctx,
                 tool_name=RAG_INGEST_TOOL_ID,
                 agent_id=step_ctx.agent_id,
                 step_id=INDEX_STEP_ID,
-                tool_input={
-                    "source_path": str(path),
-                    "tenant_id": metadata.get("tenant_id"),
-                    "user_id": metadata.get("user_id"),
-                    "metadata": ingest_metadata,
-                },
+                tool_input=tool_input,
             )
             entry["source_path"] = str(path)
             ingested.append(entry)
