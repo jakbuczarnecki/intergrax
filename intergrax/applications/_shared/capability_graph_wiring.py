@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.runtime.architecture.capability_graph import (
     CapabilityEdge,
     CapabilityEdgeType,
@@ -24,7 +24,7 @@ from intergrax.runtime.architecture.capability_graph_applications import (
 
 @dataclass(frozen=True, slots=True)
 class EnvironmentCapabilityGraphView:
-    """Environment-scoped slice of the catalog capability graph."""
+    """Environment-scoped slice of a capability graph."""
 
     graph: CapabilityGraph
 
@@ -71,8 +71,80 @@ def _node_type_from_id(node_id: str) -> CapabilityNodeType:
         raise ValueError(f"Unknown capability node prefix in {node_id!r}") from exc
 
 
-def _synthetic_seed_prefixes() -> frozenset[str]:
-    return frozenset({"application", "agent", "policy"})
+def _agent_contract_from_binding(binding: AgentBinding) -> object | None:
+    if binding.agent_type is None and binding.import_path is None:
+        return None
+    return binding.resolved_agent_type()().get_contract()
+
+
+def build_environment_seed_capability_graph(
+    manifest: ApplicationManifest,
+    snapshot: HarnessRegistrySnapshot,
+) -> CapabilityGraph:
+    """Build an environment-local graph without importing unrelated reference agents.
+
+    Product hosts must not import global demo/reference registries while starting. This
+    graph is intentionally seeded from the application manifest and the registries that
+    were actually wired for this environment.
+    """
+    node_by_id: dict[str, CapabilityNode] = {}
+    edges: list[CapabilityEdge] = []
+
+    for node_id in sorted(_seed_node_ids(manifest, snapshot)):
+        node_by_id[node_id] = CapabilityNode(node_id=node_id, node_type=_node_type_from_id(node_id))
+
+    application_node = application_capability_node_id(manifest)
+    policy_node = "policy:runtime_policy_bundle"
+    edges.append(
+        CapabilityEdge(
+            source_node_id=application_node,
+            target_node_id=policy_node,
+            edge_type=CapabilityEdgeType.CONSTRAINED_BY,
+        )
+    )
+
+    for binding in manifest.enabled_agents():
+        contract_id = resolve_binding_agent_contract_id(binding)
+        agent_node = f"agent:{contract_id}"
+        node_by_id.setdefault(agent_node, CapabilityNode(node_id=agent_node, node_type=CapabilityNodeType.AGENT))
+        edges.append(
+            CapabilityEdge(
+                source_node_id=application_node,
+                target_node_id=agent_node,
+                edge_type=CapabilityEdgeType.DEPENDS_ON,
+            )
+        )
+        contract = _agent_contract_from_binding(binding)
+        if contract is None:
+            continue
+        for skill_manifest in getattr(contract, "skills", ()):  # pragma: no cover - defensive for legacy contracts
+            skill_id = getattr(skill_manifest, "skill_id", None)
+            if not skill_id:
+                continue
+            skill_node = f"skill:{skill_id}"
+            node_by_id.setdefault(skill_node, CapabilityNode(node_id=skill_node, node_type=CapabilityNodeType.SKILL))
+            edges.append(
+                CapabilityEdge(
+                    source_node_id=agent_node,
+                    target_node_id=skill_node,
+                    edge_type=CapabilityEdgeType.DEPENDS_ON,
+                )
+            )
+        for tool_id in getattr(contract, "allowed_tools", ()):  # pragma: no cover - defensive for legacy contracts
+            tool_node = f"tool:{tool_id}"
+            node_by_id.setdefault(tool_node, CapabilityNode(node_id=tool_node, node_type=CapabilityNodeType.TOOL))
+            edges.append(
+                CapabilityEdge(
+                    source_node_id=agent_node,
+                    target_node_id=tool_node,
+                    edge_type=CapabilityEdgeType.DEPENDS_ON,
+                )
+            )
+
+    return CapabilityGraph(
+        nodes=sorted(node_by_id.values(), key=lambda item: item.node_id),
+        edges=edges,
+    )
 
 
 def extract_environment_capability_graph(
@@ -85,8 +157,7 @@ def extract_environment_capability_graph(
     included: set[str] = set(seed_node_ids)
 
     for seed in seed_node_ids:
-        prefix = seed.split(":", maxsplit=1)[0]
-        if prefix in _synthetic_seed_prefixes() and seed not in node_by_id:
+        if seed not in node_by_id:
             node_by_id[seed] = CapabilityNode(node_id=seed, node_type=_node_type_from_id(seed))
 
     changed = True
