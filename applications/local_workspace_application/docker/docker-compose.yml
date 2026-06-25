@@ -27,6 +27,7 @@ services:
       INTERGRAX_LLM_PROVIDER: ollama
       INTERGRAX_LLM_MODEL: llama3.1:latest
       INTERGRAX_DEFAULT_OLLAMA_MODEL: llama3.1:latest
+      LOCAL_WORKSPACE_INCLUDE_MCP: "false"
       OLLAMA_HOST: http://ollama:11434
     volumes:
       - lkw_sqlite:/data/sqlite
