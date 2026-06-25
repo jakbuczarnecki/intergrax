@@ -10,10 +10,11 @@ from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnap
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.architecture.capability_graph import (
+    CapabilityEdge,
+    CapabilityEdgeType,
     CapabilityGraph,
     CapabilityNode,
     CapabilityNodeType,
-    build_catalog_capability_graph,
 )
 from intergrax.runtime.architecture.capability_graph_applications import (
     application_capability_node_id,
@@ -109,6 +110,89 @@ def extract_environment_capability_graph(
     return CapabilityGraph(nodes=nodes, edges=edges)
 
 
+def build_environment_capability_graph_from_wiring(
+    manifest: ApplicationManifest,
+    snapshot: HarnessRegistrySnapshot,
+) -> CapabilityGraph:
+    """Build capability graph from manifest roster and environment registry snapshot only."""
+    application_node = application_capability_node_id(manifest)
+    nodes_by_id: dict[str, CapabilityNode] = {}
+    node_ids: set[str] = set()
+    edges: list[CapabilityEdge] = []
+
+    def ensure_node(node_id: str, node_type: CapabilityNodeType, version: str | None = None) -> None:
+        if node_id not in node_ids:
+            node_kwargs: dict[str, object] = {"node_id": node_id, "node_type": node_type}
+            if version is not None:
+                node_kwargs["version"] = version
+            nodes_by_id[node_id] = CapabilityNode(**node_kwargs)  # type: ignore[arg-type]
+            node_ids.add(node_id)
+
+    def add_edge(source: str, target: str, edge_type: CapabilityEdgeType) -> None:
+        if source in node_ids and target in node_ids:
+            edges.append(
+                CapabilityEdge(
+                    source_node_id=source,
+                    target_node_id=target,
+                    edge_type=edge_type,
+                )
+            )
+
+    ensure_node(application_node, CapabilityNodeType.APPLICATION)
+    ensure_node("policy:runtime_policy_bundle", CapabilityNodeType.POLICY)
+    add_edge(application_node, "policy:runtime_policy_bundle", CapabilityEdgeType.CONSTRAINED_BY)
+
+    for tool_id in snapshot.tool_ids():
+        ensure_node(f"tool:{tool_id}", CapabilityNodeType.TOOL)
+    for skill_id in snapshot.skill_ids():
+        ensure_node(f"skill:{skill_id}", CapabilityNodeType.SKILL)
+    for prompt_id in snapshot.prompt_ids():
+        ensure_node(f"prompt:{prompt_id}", CapabilityNodeType.PROMPT)
+
+    if snapshot.skill_registry is not None:
+        for registered in snapshot.skill_registry.list():
+            skill_node = f"skill:{registered.manifest.skill_id}"
+            if skill_node not in node_ids:
+                continue
+            for tool_id in registered.manifest.tool_ids:
+                tool_node = f"tool:{tool_id}"
+                add_edge(skill_node, tool_node, CapabilityEdgeType.DEPENDS_ON)
+
+    agent_registry = snapshot.agent_registry
+    contract_versions: dict[str, str | None] = {}
+    if agent_registry is not None:
+        for contract in agent_registry.list_contracts():
+            contract_versions[contract.id] = contract.version
+
+    for binding in manifest.enabled_agents():
+        contract_id = resolve_binding_agent_contract_id(binding)
+        agent_node = f"agent:{contract_id}"
+        ensure_node(agent_node, CapabilityNodeType.AGENT, version=contract_versions.get(contract_id))
+        add_edge(application_node, agent_node, CapabilityEdgeType.DEPENDS_ON)
+
+    if agent_registry is not None:
+        for contract in agent_registry.list_contracts():
+            agent_node = f"agent:{contract.id}"
+            ensure_node(agent_node, CapabilityNodeType.AGENT, version=contract.version)
+            for skill_manifest in contract.skills:
+                add_edge(agent_node, f"skill:{skill_manifest.skill_id}", CapabilityEdgeType.DEPENDS_ON)
+            for tool_id in contract.allowed_tools:
+                add_edge(agent_node, f"tool:{tool_id}", CapabilityEdgeType.DEPENDS_ON)
+            if contract.prompt_binding_id:
+                add_edge(agent_node, f"prompt:{contract.prompt_binding_id}", CapabilityEdgeType.DEPENDS_ON)
+
+    for eval_id in snapshot.evaluation_registry_ids():
+        ensure_node(eval_id, CapabilityNodeType.EVALUATION)
+        for node_id in sorted(node_ids):
+            if node_id.startswith("agent:"):
+                add_edge(eval_id, node_id, CapabilityEdgeType.EVALUATES)
+
+    return CapabilityGraph(
+        nodes=[nodes_by_id[node_id] for node_id in sorted(nodes_by_id)],
+        edges=edges,
+    )
+
+
 def resolve_environment_capability_graph(
     manifest: ApplicationManifest,
     env: ApplicationEnvironmentProfile,
@@ -116,11 +200,18 @@ def resolve_environment_capability_graph(
     *,
     catalog: CapabilityGraph | None = None,
 ) -> EnvironmentCapabilityGraphView:
-    """Materialize environment capability graph from catalog baseline and wired registries."""
+    """Materialize environment capability graph from wired registries.
+
+    When ``catalog`` is omitted, the graph is built from the application manifest,
+    environment registry snapshot, and roster agents only. Pass ``catalog=...`` to
+    slice an explicit global catalog baseline (governance / reference tooling).
+    """
     _ = env
-    catalog_graph = catalog or build_catalog_capability_graph()
-    seeds = _seed_node_ids(manifest, snapshot)
-    subgraph = extract_environment_capability_graph(catalog_graph, seed_node_ids=seeds)
+    if catalog is not None:
+        seeds = _seed_node_ids(manifest, snapshot)
+        subgraph = extract_environment_capability_graph(catalog, seed_node_ids=seeds)
+    else:
+        subgraph = build_environment_capability_graph_from_wiring(manifest, snapshot)
     return EnvironmentCapabilityGraphView(graph=subgraph)
 
 
