@@ -15,6 +15,7 @@ COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
 COPY applications/__init__.py ./applications/__init__.py
 COPY applications/local_workspace_application/ ./applications/local_workspace_application/
+COPY agents/lkw_shared/ ./agents/lkw_shared/
 COPY agents/local_indexer/ ./agents/local_indexer/
 COPY agents/local_search/ ./agents/local_search/
 COPY agents/local_synthesizer/ ./agents/local_synthesizer/
@@ -22,6 +23,10 @@ COPY agents/local_synthesizer/ ./agents/local_synthesizer/
 # pyproject.toml already declares disjoint Linux and Windows uv environments.
 # Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.
 RUN uv sync --no-dev
+
+# Build-time import smoke catches missing copied packages and eager optional integrations
+# before the container is started by docker compose.
+RUN PYTHONPATH=/app:/app/agents:/app/applications .venv/bin/python -c "import lkw_shared.runtime_helpers; import local_indexer.local_indexer_agent; import local_search.local_search_agent; import local_synthesizer.local_synthesizer_agent; import local_workspace_application.manifest; import local_workspace_application.host.factory"
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
