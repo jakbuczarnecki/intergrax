@@ -1,8 +1,8 @@
+#!/usr/bin/env sh
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-#!/usr/bin/env sh
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
