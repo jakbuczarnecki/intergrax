@@ -1,4 +1,4 @@
-ï»¿# Cursor indexing exclusions â€” reduce noise and token waste.
+# Cursor indexing exclusions — reduce noise and token waste.
 # Agents can still Read/run paths explicitly when needed (tests, RESUME audit runs).
 
 # Python / build artifacts
@@ -61,11 +61,13 @@ agents/**/tests/**/snapshots/
 # LLM crawler maps (hub docs suffice)
 llms-full.txt
 
-# Architecture / plan satellites â€” hub read-scope + explicit Read/@ only (F4 / G1)
+# Architecture / plan satellites — hub read-scope + explicit Read/@ only (F4 / G1)
 docs/architecture/satellites/
 docs/plan/satellites/
+docs/features/architecture/satellites/
+docs/features/plan/satellites/
 
-# Bulky guides â€” load with explicit @ / Read only (H2)
+# Bulky guides — load with explicit @ / Read only (H2)
 docs/guides/AGENT_CREATION_GUIDE.md
 docs/guides/APPLICATION_CREATION_GUIDE.md
 docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md

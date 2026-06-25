@@ -47,7 +47,7 @@ Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_ST
 
 **Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model) · [Maturity Taxonomy](docs/guides/MATURITY_TAXONOMY.md)).
 
-Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summaries in this README. Authoritative readiness claims use the four-axis **A/I/P/E** vocabulary in [MATURITY_TAXONOMY.md](docs/guides/MATURITY_TAXONOMY.md). Per-domain evidence lives in paired `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`.
+Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summaries in this README. Authoritative readiness claims use the four-axis **A/I/P/E** vocabulary in [MATURITY_TAXONOMY.md](docs/guides/MATURITY_TAXONOMY.md). Per-domain evidence lives in **domain-layer pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`. **Cross-layer capabilities** use **multi-layer feature pairs**: `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` — see [Multi-layer feature docs](docs/features/README.md).
 
 | Area | Maturity | Evidence / open gap |
 |------|----------|---------------------|
@@ -611,6 +611,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | **Rules you must not break** | [SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) — `SYS-INV-*` index (P2-ARCH-01) |
 | **Close out a full harness layer** | [LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Understand the platform | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) → pick a domain pair |
+| Exploring multi-layer platform features | [Multi-layer feature docs](docs/features/README.md) |
 | **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) |
 | See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [plan ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) · [Appendix AC](docs/guides/AGENT_CREATION_GUIDE.md#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) |
@@ -640,6 +641,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 |------|-------|
 | **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · [Layer completion](docs/guides/LAYER_COMPLETION_MODE.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | **Domain canon (22 pairs)** | `docs/architecture/{DOMAIN}.md` ↔ `docs/plan/{DOMAIN}.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
+| **Multi-layer features** | `docs/features/architecture/{FEATURE}.md` ↔ `docs/features/plan/{FEATURE}.md` — [features/README.md](docs/features/README.md) |
 | **Execution** | [UAEP / §42](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Nexus flow](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Orchestration](docs/architecture/ORCHESTRATION.md) |
 | **Authoring** | [Agent guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Extension guide](docs/guides/EXTENSION_AUTHOR_GUIDE.md) · [applications/USAGE.md](applications/USAGE.md) |
 | **Operations** | [HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md) · [infra/README.md](infra/README.md) |

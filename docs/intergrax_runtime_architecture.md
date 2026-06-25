@@ -1,14 +1,63 @@
 # Intergrax Runtime Architecture
 
-**Hub only** — domain architecture and implementation are paired 1:1 under `architecture/` and `plan/`.
+**Hub only** — domain architecture and implementation are paired 1:1 under `architecture/` and `plan/`; multi-layer features are paired 1:1 under `features/architecture/` and `features/plan/`.
 **Target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
+**Features:** [`features/README.md`](features/README.md) — cross-layer capability docs that coordinate multiple domain pairs without replacing domain ownership.
 **Invariants:** [`guides/SYSTEM_INVARIANTS.md`](guides/SYSTEM_INVARIANTS.md) — cross-layer MUST/MUST NOT rules + `SYS-INV-*` index (P2-ARCH-01)
 **Maturity:** [`guides/MATURITY_TAXONOMY.md`](guides/MATURITY_TAXONOMY.md) — four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping (P2-ARCH-02). Maturity labels elsewhere in this hub are summaries only; authoritative production readiness claims require four-axis A/I/P/E statements in the owning architecture/plan pair.
 **Layer completion:** [`guides/LAYER_COMPLETION_MODE.md`](guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
 **Doc boundaries (Experimentation/DX):** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) — architecture vs Cursor/workflow rules placement (P2-ARCH-13)
 **Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Idea intake (Mode I):** [`bootstrap/idea_audit.txt`](bootstrap/idea_audit.txt) · **Cursor bootstrap:** [`bootstrap/`](bootstrap/) · **Domain audit prompts:** [`audit/`](audit/) · **Architecture audit results:** [`audit_results/`](audit_results/README.md) · **Implementation journal:** [`implementation-journal/`](implementation-journal/README.md)
 **Authoring:** [`guides/`](guides/)
+
+---
+
+## Documentation topology
+
+```text
+docs/architecture/<DOMAIN>.md       ↔ docs/plan/<DOMAIN>.md
+docs/features/architecture/<FEATURE>.md ↔ docs/features/plan/<FEATURE>.md
+```
+
+Domain pairs own layer architecture and implementation truth. Feature pairs coordinate capabilities that cut across multiple domain pairs. Feature implementation still lands in the owning domain plan rows.
+
+Current feature pairs:
+
+| Feature | Architecture | Plan |
+|---------|--------------|------|
+| `TOKEN_OPTIMIZATION` | [`features/architecture/TOKEN_OPTIMIZATION.md`](features/architecture/TOKEN_OPTIMIZATION.md) | [`features/plan/TOKEN_OPTIMIZATION.md`](features/plan/TOKEN_OPTIMIZATION.md) |
+
+---
+
+## Domain pair index (22)
+
+| # | Domain | Architecture | Plan |
+|---|--------|--------------|------|
+| 1 | `PLATFORM_FOUNDATION` | [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) |
+| 2 | `UNIFIED_EXECUTION_RUNTIME` | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) | [`plan/UNIFIED_EXECUTION_RUNTIME.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) |
+| 3 | `ORCHESTRATION` | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) | [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) |
+| 4 | `NEXUS_EXECUTION_FLOW` | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) | [`plan/NEXUS_EXECUTION_FLOW.md`](plan/NEXUS_EXECUTION_FLOW.md) |
+| 5 | `REASONING_AND_COGNITION` | [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) | [`plan/REASONING_AND_COGNITION.md`](plan/REASONING_AND_COGNITION.md) |
+| 6 | `AGENT_CONTRACTS_AND_ASSEMBLY` | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| 7 | `LLM_ADAPTERS` | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) | [`plan/LLM_ADAPTERS.md`](plan/LLM_ADAPTERS.md) |
+| 8 | `TOOLS` | [`architecture/TOOLS.md`](architecture/TOOLS.md) | [`plan/TOOLS.md`](plan/TOOLS.md) |
+| 9 | `CODE_CRAFT` | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) | [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) |
+| 10 | `SKILLS` | [`architecture/SKILLS.md`](architecture/SKILLS.md) | [`plan/SKILLS.md`](plan/SKILLS.md) |
+| 11 | `INTEGRATIONS` | [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | [`plan/INTEGRATIONS.md`](plan/INTEGRATIONS.md) |
+| 12 | `RAG` | [`architecture/RAG.md`](architecture/RAG.md) | [`plan/RAG.md`](plan/RAG.md) |
+| 13 | `MEMORY` | [`architecture/MEMORY.md`](architecture/MEMORY.md) | [`plan/MEMORY.md`](plan/MEMORY.md) |
+| 14 | `CONTEXT_ENGINEERING` | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | [`plan/CONTEXT_ENGINEERING.md`](plan/CONTEXT_ENGINEERING.md) |
+| 15 | `MODALITY` | [`architecture/MODALITY.md`](architecture/MODALITY.md) | [`plan/MODALITY.md`](plan/MODALITY.md) |
+| 16 | `OBSERVABILITY` | [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | [`plan/OBSERVABILITY.md`](plan/OBSERVABILITY.md) |
+| 17 | `RELIABILITY_FAILURE_AND_HITL` | [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | [`plan/RELIABILITY_FAILURE_AND_HITL.md`](plan/RELIABILITY_FAILURE_AND_HITL.md) |
+| 18 | `CRITIC_VERIFICATION` | [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) | [`plan/CRITIC_VERIFICATION.md`](plan/CRITIC_VERIFICATION.md) |
+| 19 | `ADAPTIVE_HARNESS_INTELLIGENCE` | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| 20 | `ELASTIC_CAPACITY_AND_SCALING` | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) | [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) |
+| 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+| 22 | `TIER3_APPLICATION_ENVIRONMENT` | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) |
+
+**Plan-only hubs (no 1:1 architecture basename):** [`plan/HARNESS_EVIDENCE_PACK.md`](plan/HARNESS_EVIDENCE_PACK.md) · [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · [`plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (satellite architecture under `architecture/satellites/`).
 
 ---
 
@@ -36,9 +85,10 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 | New application host | [`guides/APPLICATION_CREATION_GUIDE.md`](guides/APPLICATION_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-application <name>_application` |
 | Agent + app bundle | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) | `python -m intergrax.scaffold new-stack <name>` |
 | Extension / plugin | [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) | `bootstrap_catalogs()` + entry points `intergrax.tools` / `intergrax.skills` / `intergrax.integrations` |
+| Multi-layer feature | [`features/README.md`](features/README.md) | feature architecture → feature plan → affected domain pairs |
 | Harness health | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | `uv run intergrax doctor --ci` · `uv run pytest -m gate -q` |
 
-**Work cycle:** strategy → architecture pair for your domain → smallest plan item → implement → gate green → update paired docs + journal if significant.
+**Work cycle:** strategy → architecture pair or feature pair → smallest domain-owned plan item → implement → gate green → update paired docs + journal if significant.
 
 ---
 
@@ -128,142 +178,3 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 - **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
 - **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
-- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts; nested bundles (§22.6) group slices under the same root.
-- **Hooks are boundaries, not step loops** — no `Application.on_next_orchestration_step()`.
-
-**Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
-
-**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1–M3 Done** ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity note:** legacy summary only — see [`guides/MATURITY_TAXONOMY.md`](guides/MATURITY_TAXONOMY.md); production/enterprise claims require explicit A/I/P/E statement in [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) / [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md).
-
-**Observability spine evolution:** **OBS-EVOL-9** layered `event_kind` catalog **Done** (2026-06-17; OBS-EVOL-9.9 deferred post-publication) — [ADR-OBS-003](adr/entries/2026-06-17/ADR-OBS-003.md) · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02).
-
----
-
-## Domain documents (architecture ↔ implementation 1:1)
-
-| Architecture | Implementation plan |
-|--------------|---------------------|
-| [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) |
-| [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) | [`plan/UNIFIED_EXECUTION_RUNTIME.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) |
-| [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) | [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) |
-| [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) | [`plan/NEXUS_EXECUTION_FLOW.md`](plan/NEXUS_EXECUTION_FLOW.md) |
-| [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
-| [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | [`plan/INTEGRATIONS.md`](plan/INTEGRATIONS.md) |
-| [`architecture/RAG.md`](architecture/RAG.md) | [`plan/RAG.md`](plan/RAG.md) |
-| [`architecture/TOOLS.md`](architecture/TOOLS.md) | [`plan/TOOLS.md`](plan/TOOLS.md) |
-| [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) | [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) |
-| [`architecture/SKILLS.md`](architecture/SKILLS.md) | [`plan/SKILLS.md`](plan/SKILLS.md) |
-| [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) | [`plan/LLM_ADAPTERS.md`](plan/LLM_ADAPTERS.md) |
-| [`architecture/MEMORY.md`](architecture/MEMORY.md) | [`plan/MEMORY.md`](plan/MEMORY.md) |
-| [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | [`plan/CONTEXT_ENGINEERING.md`](plan/CONTEXT_ENGINEERING.md) |
-| [`architecture/MODALITY.md`](architecture/MODALITY.md) | [`plan/MODALITY.md`](plan/MODALITY.md) |
-| [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | [`plan/OBSERVABILITY.md`](plan/OBSERVABILITY.md) |
-| [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | [`plan/RELIABILITY_FAILURE_AND_HITL.md`](plan/RELIABILITY_FAILURE_AND_HITL.md) |
-| [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) |
-| [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
-| [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
-| [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) | [`plan/CRITIC_VERIFICATION.md`](plan/CRITIC_VERIFICATION.md) |
-| [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) | [`plan/REASONING_AND_COGNITION.md`](plan/REASONING_AND_COGNITION.md) |
-| [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) | [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) |
-
----
-
-## Reading order
-
-1. This hub → [Agent in the harness environment](#agent-in-the-harness-environment) (above)
-2. [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) + [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — **agent model & ACP**
-3. [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) + [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md)
-4. [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) + matching plan
-5. [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) + matching plan
-6. Your other domain pair from the table below
-7. [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) when building agents
-
-**Per-iteration rule:** pick one domain — read only its architecture + plan pair; do not load unrelated domains.
-
-**Audit map routing (32 layers → domain pair):**
-
-| Layers | Domain pair |
-|--------|-------------|
-| 1–2 Strategic + tiers | `PLATFORM_FOUNDATION` |
-| 3 Intake | `ORCHESTRATION` + `TIER3_APPLICATION_ENVIRONMENT` |
-| 4 Identity / trust | `UNIFIED_EXECUTION_RUNTIME` §42.44 |
-| 5 Policy | `UNIFIED_EXECUTION_RUNTIME` §42.11 |
-| 6 LLM | `LLM_ADAPTERS` |
-| 7 Reasoning / planning / cognition | `REASONING_AND_COGNITION` |
-| 8 Execution runtime / Agent OS | `UNIFIED_EXECUTION_RUNTIME` + `NEXUS_EXECUTION_FLOW` (narrative) |
-| 9 Orchestration / graph / scheduler | `ORCHESTRATION` + `NEXUS_EXECUTION_FLOW` |
-| 10 Subagents | `NEXUS_EXECUTION_FLOW` §27 |
-| 11 Tools (catalog) | `TOOLS` |
-| 11b Ephemeral Code Craft | `CODE_CRAFT` |
-| 12–13 Skills / integrations | `SKILLS` · `INTEGRATIONS` |
-| 14 RAG | `RAG` (+ `MEMORY` for Knowledge vs LTM boundary) |
-| 15 Memory | `MEMORY` |
-| 16 Context engineering | `CONTEXT_ENGINEERING` |
-| 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
-| 21 Observability | `OBSERVABILITY` |
-| 22 Reliability / HITL | `RELIABILITY_FAILURE_AND_HITL` + UAEP §42.10 |
-| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45–§42.45.11 · §42.46 · [Phase SEC-PLANES](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-closed) · [Phase SEC-ENT](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-ent--enterprise-production-closed) |
-| 25–27 Eval / CI / DX | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` + `CRITIC_VERIFICATION` |
-| 28 Tier-3 hosts | `TIER3_APPLICATION_ENVIRONMENT` |
-| 29 Modality | `MODALITY` |
-| 30 Ops / SLO / elastic capacity | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` §43 + `OBSERVABILITY` + `ELASTIC_CAPACITY_AND_SCALING` |
-| 31 Agent lifecycle | `AGENT_CONTRACTS_AND_ASSEMBLY` §20 |
-| 32 Doc governance loop | `PLATFORM_FOUNDATION` + `guides/` |
-
-Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **New idea intake (Mode I):** [`bootstrap/idea_audit.txt`](bootstrap/idea_audit.txt) · [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](audit/IDEA_AUDIT_ORCHESTRATOR.md). **Cursor paste files:** [`bootstrap/`](bootstrap/). **Domain audit prompts:** [`audit/`](audit/). **Completed implementation episodes:** [`implementation-journal/INDEX.md`](implementation-journal/INDEX.md).
-
----
-
-## Platform runtime capabilities (cross-domain index)
-
-Essential platform behaviours span multiple domain pairs — use this index before opening unrelated docs.
-
-| Capability | Primary architecture | Plan phase |
-|------------|---------------------|------------|
-| **Agent session loop** (`run`, `on_next_step`, `HarnessKernel`, typed state) | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 | **ACP** (active) |
-| **Agent production readiness scoreboard** | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §40.15 | ACP-PROD-12 |
-| **Fleet migration** (roster → typed runtime) | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Wave 8 | ACP-MIG |
-| Resilience policies (retry, reboot, circuit breaker) | [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) §34 | REL-ADV |
-| Orchestration strategies (parallel, sequence, cooperation, scale, redundancy) | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §50–§53, §58 | ORCH-5, ORCH-6 |
-| MVP → product evolution (eval, KPI, simulation, promotion) | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §44 | MVP-EVOL |
-| Autonomy slider (manual / ask / autonomous) | REL §35 + [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.10.2 | REL-ADV |
-| Sync / async execution postures | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §57 | ORCH-6 |
-| Interrupt anywhere / resume from checkpoint | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §28 + UAEP §42.8–§42.9 | FLOW-CTL |
-| Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.45 (Security & Trust Planes) · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 · SEC-PLANES |
-| RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
-| Context engineering engine | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | CE-EXT Done · CE-ALIGN Done · **CE-PROV-WIRE Planned** |
-| Ephemeral Code Craft (dynamic codegen loop) | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | ECC-0…ECC-6 |
-| LLM adapters (typed envelope + ModelCatalog + routing L5 + enterprise domain) | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) · [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) | M-LLM-R **Done** · routing X-9…X-13 **Done** · **M-LLM-X.8 + X-14 Done** (L4 enterprise) |
-
-Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
-
-### Platform execution audit (2026-06-09, synced)
-
-**Verdict:** Tier-1 Nexus supports all documented launch/interaction scenarios (FLOW §3.1 S1–S7). Harness closeouts **Done**: ORCH-CONFIG, ORCH-5, H-APP-WIRING, MEM/COG/ECP-DEPTH, reference host CFG presets. **Remaining:** product-only items (§6.3) — FLOW-8 Tier-3 demo host, CFG-14 LKW daemon, GOV-PROD.1 dashboard.
-
-| Topic | Canonical register | Status |
-|-------|-------------------|--------|
-| CFG-* configuration cases | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56.7, §59.3 | **18/19 harness Done**; CFG-14 product **Deferred** §6.3 |
-| Host surface parity | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59.2 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7 | Reference hosts **Done**; LKW opt-in flags |
-| FLOW runtime gaps | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23.2 | FLOW-GAP-01–19 **Closed**; FLOW-GAP-20 **Deferred** §6.3 |
-| Depth bands | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §4.0 | MEM/COG/ECP/ORCH-CONFIG **Done** |
-| Default queue | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | Gate maintenance + [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) incremental |
-| Ideal L3 depth (Band 2ax) | [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · §6.1at | **W2 Done** (2026-06-09) — **32/32 L3** |
-| Ideal architecture gaps (Band 2az) | [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · §6.1au | **W1 in progress** (2026-06-09) — **15/78 Done** · **4 Deferred §6.3** |
-
----
-
-## ADRs (harness — selected)
-
-| ADR | Topic |
-|-----|-------|
-| [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
-| [`adr/entries/2026-06-07/ADR-FLOW-002.md`](adr/entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states |
-| [`adr/entries/2026-06-07/ADR-FLOW-003.md`](adr/entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
-| [`adr/entries/2026-06-09/ADR-FLOW-004.md`](adr/entries/2026-06-09/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
-| [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](adr/entries/2026-06-10/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
-| [`adr/entries/2026-06-11/ADR-AGENT-001.md`](adr/entries/2026-06-11/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
-| [`adr/entries/2026-06-11/ADR-AGENT-002.md`](adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
-| [`adr/entries/2026-06-06/ADR-LLM-001.md`](adr/entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope |
-| [`adr/entries/2026-06-14/ADR-LLM-002.md`](adr/entries/2026-06-14/ADR-LLM-002.md) | ModelCatalog + context window resolution |
-| [`adr/entries/2026-06-19/ADR-LLM-003.md`](adr/entries/2026-06-19/ADR-LLM-003.md) | LLM routing rules — Protocol contract + custom rule classes |

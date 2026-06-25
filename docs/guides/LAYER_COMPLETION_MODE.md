@@ -43,6 +43,7 @@ Read **only** documents required for the designated layer — do **not** load al
 | 2 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | `SYS-INV-*` never-violate index (P2-ARCH-01) — mandatory skim |
 | 3 | [intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) | Hub — domain pair picker |
 | 4 | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` | Canon + plan for **this layer only** (1:1 basename) |
+| 4b | [`features/README.md`](../features/README.md) + matching feature pair | When closing a **multi-layer feature** — feature architecture + feature plan, then smallest domain-owned slice |
 | 5 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | Audit layer → `<DOMAIN>` mapping |
 | 6 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Tier imports, scope, verification commands |
 | 7 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | North star for Step 1A strategic review |

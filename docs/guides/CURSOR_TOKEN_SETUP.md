@@ -110,10 +110,12 @@ Plan hubs include **Cursor read scope (token budget)** blocks (~150 tok) — rea
 
 Explicit `@` / `Read` only (reduces accidental index/search noise):
 
-**Satellite directories (F4 / G1):**
+**Satellite directories (F4 / G1 / multi-layer features):**
 
 - `docs/architecture/satellites/`
 - `docs/plan/satellites/`
+- `docs/features/architecture/satellites/`
+- `docs/features/plan/satellites/`
 
 **Bulky guides:**
 

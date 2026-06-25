@@ -6,7 +6,8 @@ Canonical technical architecture and implementation status remain in:
 
 - [`docs/intergrax_runtime_architecture.md`](docs/intergrax_runtime_architecture.md)
 - [`docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
-- Relevant paired documents under [`docs/architecture/`](docs/architecture/) and [`docs/plan/`](docs/plan/)
+- Domain-layer pairs under [`docs/architecture/`](docs/architecture/) and [`docs/plan/`](docs/plan/)
+- Multi-layer feature pairs under [`docs/features/architecture/`](docs/features/architecture/) and [`docs/features/plan/`](docs/features/plan/) — [`docs/features/README.md`](docs/features/README.md)
 
 ---
 

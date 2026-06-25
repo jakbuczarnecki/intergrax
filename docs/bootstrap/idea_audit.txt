@@ -34,7 +34,7 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 - Reuse Tier-0 mechanisms; no parallel universal subsystems.
 - Tier boundaries: AGENTS.md — `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.
 - Safety fuse: plan ↔ architecture ↔ ideal conflict → verdict `blocked`, STOP, report operator.
-- **After operator approval:** update `docs/architecture/<DOMAIN>.md` and `docs/plan/<DOMAIN>.md` — that is the durable record.
+- **After operator approval:** update the relevant domain-layer pair (`docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md`) or multi-layer feature pair (`docs/features/architecture/<FEATURE>.md` + `docs/features/plan/<FEATURE>.md`), then affected domain pairs — that is the durable record. Do not create `docs/plan/<FEATURE>.md` for cross-layer features.
 
 ## Mandatory work cycle
 
@@ -45,7 +45,7 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 4. **Verdict** — one primary: already_implemented | in_plan | partial_overlap | novel | blocked | needs_clarification | deferred_product.
 5. **Propose** — when novel/partial: tier, contracts, reuse, ADR domain, scaffold commands, draft plan rows (English).
 6. **STOP** — operator checkpoint (Polish summary).
-7. **Apply docs (only after explicit operator approval in chat)** — edit architecture + plan domain pair(s); ADR if significant.
+7. **Apply docs (only after explicit operator approval in chat)** — edit the approved domain-layer pair(s) or multi-layer feature pair + affected domain pairs; ADR if significant.
 
 ## Evidence checklist (all applicable)
 
@@ -75,7 +75,7 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 End with explicit questions:
 - Zgadzasz się z werdyktem?
 - Zatwierdzić propozycję architektury i wiersze planu?
-- Zaktualizować teraz `docs/architecture/` i `docs/plan/`?
+- Zaktualizować teraz odpowiednią parę domenową lub parę feature (`docs/features/…`) oraz dotknięte pary domen?
 - Kontynuować implementację w nowej sesji?
 
 ## Language

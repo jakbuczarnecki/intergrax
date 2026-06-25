@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). LLM_ADAPTERS provides tokenizer-consistent token counting, context window metadata, usage accounting, and model/cost signals consumed by Token Optimization. Do not create a parallel tokenizer or duplicate adapter usage accounting.
+
 ---
 
 ## Cursor read scope (token budget)
@@ -13,6 +15,7 @@
 **Do not read this entire file in one session** (LLM_ADAPTERS plan).
 
 - **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Token Optimization:** read feature pair + row `TOKEN-LLM-1`; validate consumption of existing `count_messages_tokens`, `context_window_tokens`, `LLMAdapterResponse.usage`, and ModelCatalog signals only.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) read-scope block only.
@@ -32,6 +35,18 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
+---
+
+## Phase TOKEN-LLM — Token Optimization adapter guardrail (Planned)
+
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
+**Priority:** P1 validation row, not a new adapter feature  
+**Delivery rule:** keep Token Optimization dependent on existing adapter token/cost contracts.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **TOKEN-LLM-1** | Guardrail | P1 | Planned | Verify Token Optimization integrations consume existing `LLMAdapter.count_messages_tokens`, `context_window_tokens`, `LLMAdapterResponse.usage`, and ModelCatalog context metadata | No parallel tokenizer or per-feature cost tracker; CE/context preflight still uses adapter token path; token savings attribution can consume usage envelope; `uv run python scripts/check_context_preflight_uses_adapter_tokens.py`; `uv run python scripts/check_token_optimization_contracts.py` |
 
 ---
 
@@ -51,7 +66,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-6.6 | §6 LLM | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | **Done** — M-LLM-X.5.4 |
 | AUDIT-IDEAL-6.7 | §6 LLM | Developer `USAGE.md` + startup validation | P2 | **Done** — `check_llm_profile_runtime.py` + doctor |
 
-**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+**Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ---
 
@@ -71,7 +86,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - **`LLMProfile.options["context_window_tokens"]`** MUST override catalog for **all** providers (not Ollama-only).
 - **Preflight / history budget** MUST use `adapter.count_messages_tokens` when adapter is in scope.
 - **No** vendor SDK imports in Tier-2 — unchanged tier boundary.
-- One **M-LLM-X.\*** task group per PR → update master table + architecture audit register → gate green.
+- One **M-LLM-X.*** task group per PR → update master table + architecture audit register → gate green.
 - **ADR:** [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) **Done** — prerequisite for M-LLM-X.1 code merge.  
 **ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted** — prerequisite for M-LLM-X.9 code merge.
 

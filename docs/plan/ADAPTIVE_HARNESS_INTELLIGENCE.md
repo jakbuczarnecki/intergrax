@@ -8,6 +8,8 @@
 
 **Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS top-level + satellite implementation plans; **P2-ARCH-10** AHI governance boundary.
 
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). AHI may later consume token optimization telemetry to recommend budgets/profiles, but production auto-apply remains forbidden until governance and quality gates explicitly allow it.
+
 ---
 
 ## Cursor read scope (token budget)
@@ -15,6 +17,7 @@
 **Do not read this entire file in one session** (ADAPTIVE_HARNESS_INTELLIGENCE plan).
 
 - **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. **On demand (one max):** [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_audit_history.md), [`plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Token Optimization:** read feature pair + row `TOKEN-AHI-1`; do not implement adaptive token policy until TOKEN-6 telemetry/regression gates exist.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) read-scope block only.
@@ -45,6 +48,20 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
+---
+
+## Phase TOKEN-AHI — Adaptive token optimization recommendations (Frozen/Planned)
+
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
+**Priority:** P3 / Frozen until TOKEN-6 telemetry and regression gates ship  
+**Delivery rule:** recommendation-only first; no autonomous production auto-apply.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **TOKEN-AHI-1** | Code | P3 | Frozen | AHI consumes Token Optimization telemetry to recommend compact/full profiles, budget adjustments, and escalation rules by task/step/source type | Recommendations are observable and reversible; no automatic compression or budget reduction without policy; quality-drop escalation to fuller context supported; uses existing token telemetry, no duplicate token accounting; `uv run pytest tests/unit/runtime/adaptive/ -q` |
+
+**Explicit exclusions:** no autonomous production auto-apply, no tenant-wide learned compression policy without governance review, no adaptive strategy before token-vs-quality regression gates exist.
 
 ---
 
@@ -64,7 +81,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-AHI.2 | §25 AHI | Bounded policy learning without governance drift | P2 | **Partial** — governance contracts done (`adaptive_governance.py`); runtime `AdaptationExecutor` loop pending |
 | AUDIT-IDEAL-AHI.3 | §25 AHI | Capability marketplace readiness (trust, certification, billing) | P3 | **Planned** — marketplace readiness not productized |
 
-**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+**Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ---
 
@@ -91,6 +108,6 @@ ADAS extends AHI with a governed agent-candidate design loop (scaffold → stati
 | **AHI-ADAS-80** | Optional Tier-3 ADAS Lab application | Planned |
 | **AHI-ADAS-90** | Enterprise hardening (retention, tenant isolation, evidence bundles) | Planned |
 
-**Delivery rule:** One **AHI-ADAS-\*** phase (or sub-phase row) per PR → update this table → link evidence bundle when eval gates apply.
+**Delivery rule:** One **AHI-ADAS-*** phase (or sub-phase row) per PR → update this table → link evidence bundle when eval gates apply.
 
 ---
