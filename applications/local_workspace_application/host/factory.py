@@ -10,7 +10,6 @@ from typing import Optional
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -33,7 +32,6 @@ from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
-from local_workspace_application.mcp.server import build_local_workspace_mcp_server
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
 
 
@@ -138,6 +136,9 @@ def create_local_workspace_backend_app(
 
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+        from local_workspace_application.mcp.server import build_local_workspace_mcp_server
+
         mcp = build_local_workspace_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,
