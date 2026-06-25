@@ -20,6 +20,19 @@ LKW is not only a local document assistant. It is the first product proof that I
 
 A new user should be able to follow [USER_JOURNEY.md](USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
+## Local stack
+
+The local-first LKW stack is:
+
+- **LKW backend:** FastAPI + Nexus + local agents;
+- **Vector store:** Qdrant for persistent local RAG;
+- **Relational/runtime data:** SQLite files under `INTERGRAX_SQLITE_DATA_DIR`;
+- **Shadow artifacts:** `INTERGRAX_SHADOW_ROOT`;
+- **LLM:** Ollama by default, vLLM optionally;
+- **Redis:** optional until background ingest / queue workflows require it.
+
+In-memory vector storage is only for tests or temporary development. It is not the real local product default.
+
 ## Quickstart
 
 From repository root:
@@ -29,6 +42,8 @@ uv run pytest applications/local_workspace_application/local_workspace_applicati
 cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
 ```
+
+Before indexing real files, set `INTERGRAX_ALLOWED_READ_ROOTS` in `.env` to one or more absolute folders that LKW may read.
 
 ## HTTP
 
@@ -58,9 +73,9 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](ARCHITECTURE.md#8-integrations-tools-and-skills)):
 
-- **Integrations:** `IntegrationProfile.legal_product()` (Docling, SQLite, vector store, rerank)
-- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`
-- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2)
+- **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
+- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
+- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2).
 
 ## Docs
 
