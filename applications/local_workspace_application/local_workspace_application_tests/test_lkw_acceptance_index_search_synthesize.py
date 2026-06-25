@@ -117,6 +117,8 @@ async def test_lkw_acceptance_index_search_synthesize_contract_flow(tmp_path: Pa
         if request.tool_name == RAG_INGEST_TOOL_ID:
             ingest_calls.append(request)
             assert request.input["source_path"] == fixture_path
+            assert request.input["workspace_id"] == _COLLECTION_ID
+            assert request.input["metadata"]["collection_id"] == _COLLECTION_ID
             return ToolResponse(
                 request_id=request.request_id,
                 status=ToolResponseStatus.SUCCESS,
