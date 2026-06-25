@@ -33,48 +33,122 @@ Do not create `docs/plan/TOKEN_OPTIMIZATION.md`. This is a multi-layer feature p
 
 This file coordinates cross-layer delivery. Concrete implementation rows must still be added to the owning domain plan files when a phase becomes actionable.
 
-Examples:
-
 | TOKEN phase | Owning plan file |
 |-------------|------------------|
-| `TOKEN-2` OutputPolicy runtime | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` and/or `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
+| `TOKEN-1` shared contracts, receipts, protected regions | feature plan + `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` |
+| `TOKEN-2` OutputPolicy runtime | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` and optional `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 | `TOKEN-3` ToolSchemaOptimizer | `docs/plan/TOOLS.md` |
 | `TOKEN-4` ContextPackOptimizer | `docs/plan/CONTEXT_ENGINEERING.md` |
 | `TOKEN-5` MemorySummaryCompressor | `docs/plan/MEMORY.md` |
-| `TOKEN-6` telemetry and gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
+| `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
 ---
 
-## Phase TOKEN-1 — Feature architecture and domain sync
+## Implementation Blueprint
 
-**Goal:** Establish Token Optimization as a documented multi-layer feature without breaking the domain architecture/plan 1:1 rule.
+### Target runtime component layout
 
-**Owner layer:** `CONTEXT_ENGINEERING` as anchor; documentation structure owned by platform docs.
+```text
+intergrax/runtime/token_optimization/
+  __init__.py
+  contracts.py                 # shared DTOs, enums, policies
+  output_policy.py             # OutputPolicyResolver and output profiles
+  protected_regions.py         # protected region parser + validator
+  receipts.py                  # CompressionReceipt builders/validators
+  optimizer.py                 # TokenOptimizer orchestrator
+  telemetry.py                 # HOS/domain-signal/metric emission helpers
+  regression.py                # token-vs-quality benchmark helpers
 
-**Dependencies:** none.
+intergrax/runtime/nexus/context/
+  context_pack_optimizer.py    # CE integration after rank/budget, before format/preflight
+
+intergrax/runtime/nexus/tools/
+  tool_schema_optimizer.py     # compact LLM-facing tool catalog view
+
+intergrax/memory/
+  summary_compressor.py        # staging + validation + receipt + rollback for memory summaries
+```
+
+### Shared contracts to implement first
+
+The first implementation slice must add contracts only, without wiring behavior into hot paths.
+
+Required contracts:
+
+- `OutputProfile`
+- `CompressionLevel`
+- `TokenOptimizationBypassReason`
+- `TokenOptimizationSourceType`
+- `ProtectedRegionKind`
+- `TokenOptimizationPolicy`
+- `OutputPolicy`
+- `CompressionReceipt`
+- `ProtectedRegion`
+- `ProtectedRegionValidationResult`
+- `TokenOptimizationRequest`
+- `TokenOptimizationResult`
+- `TokenOptimizationTelemetry`
+
+Rules:
+
+- Prefer frozen dataclasses with `slots=True` unless an existing domain requires Pydantic.
+- Every runtime example using `RuntimeState` must explicitly pass `run_id`.
+- Trace event calls must use `TraceLevel` enum where applicable.
+- New Python files must start with the Intergrax copyright header.
+
+### Implementation order
+
+```text
+TOKEN-1A  shared contracts + package skeleton
+TOKEN-1B  protected region parser/validator
+TOKEN-1C  compression receipts + validation helpers
+TOKEN-2   OutputPolicy runtime resolver
+TOKEN-3   ToolSchemaOptimizer compact catalog view
+TOKEN-4   ContextPackOptimizer light/structural compression only
+TOKEN-6A  telemetry payloads/counters for TOKEN-2..4
+TOKEN-5   MemorySummaryCompressor with staging/rollback
+TOKEN-6B  token regression benchmark runner + CI scripts
+TOKEN-7   adaptive recommendations from telemetry, no auto-apply by default
+```
+
+Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist.
+
+---
+
+## Phase TOKEN-1 — Shared contracts, receipts, and protected regions
+
+**Goal:** Establish the safe foundation used by all later Token Optimization slices.
+
+**Owner layer:** `UNIFIED_EXECUTION_RUNTIME` for runtime policy placement; feature plan for shared contracts; `OBSERVABILITY` consulted for receipt/telemetry shape.
+
+**Dependencies:** feature architecture accepted.
 
 **Deliverables:**
 
-- `docs/features/architecture/TOKEN_OPTIMIZATION.md`
-- `docs/features/plan/TOKEN_OPTIMIZATION.md`
-- updated platform documentation navigation,
-- updated Cursor docs-sync instruction,
-- domain architecture sync plan for affected layers,
-- ADR queue.
+- `intergrax/runtime/token_optimization/__init__.py`
+- `intergrax/runtime/token_optimization/contracts.py`
+- `intergrax/runtime/token_optimization/protected_regions.py`
+- `intergrax/runtime/token_optimization/receipts.py`
+- unit tests for contracts, protected-region validation, and receipt hashing,
+- lightweight CI script `scripts/check_token_optimization_contracts.py`.
 
 **Acceptance criteria:**
 
-- no `docs/plan/TOKEN_OPTIMIZATION.md` exists unless a matching `docs/architecture/TOKEN_OPTIMIZATION.md` is intentionally added,
-- feature architecture and feature plan link to each other,
-- affected domain docs know where cross-layer feature coordination lives,
-- docs checks understand feature pairs or explicitly ignore them safely.
+- contract imports do not import CE/TOOLS/MEMORY hot-path modules,
+- protected-region validator detects and preserves code, inline code, paths, URLs, env vars, enum values, hashes, dates, and exact error strings,
+- receipt contains original hash, optimized hash, original tokens, optimized tokens, saved tokens, saved ratio, validation status, fallback flag,
+- failed validation produces a fallback result rather than optimized content,
+- no hot-path runtime behavior changes yet.
 
-**Required checks:**
+**Required tests/checks:**
 
 ```bash
-uv run python scripts/check_docs_domain_pairs.py
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run python scripts/check_token_optimization_contracts.py
 ```
+
+**Domain plan rows:** `TOKEN-UER-1` in `docs/plan/UNIFIED_EXECUTION_RUNTIME.md`.
 
 **Status:** Planned.
 
@@ -84,31 +158,37 @@ uv run python scripts/check_docs_domain_pairs.py
 
 **Goal:** Replace prompt-only verbosity control with runtime output policy.
 
-**Owner layer:** `UNIFIED_EXECUTION_RUNTIME`; possible contract touchpoint in `AGENT_CONTRACTS_AND_ASSEMBLY`.
+**Owner layer:** `UNIFIED_EXECUTION_RUNTIME`; optional contract hints in `AGENT_CONTRACTS_AND_ASSEMBLY` later.
 
-**Dependencies:** TOKEN-1.
+**Dependencies:** TOKEN-1A contracts.
 
 **Deliverables:**
 
-- `OutputPolicy` contract,
+- `intergrax/runtime/token_optimization/output_policy.py`,
 - `OutputPolicyResolver`,
 - output profiles: `minimal`, `terse`, `standard`, `full`, `audit`, `machine_receipt`, `debug_verbose`,
 - runtime safety bypass rules,
-- model call integration where output budget/profile is resolved.
+- integration point where LLM call max-output budget/profile is resolved,
+- lightweight CI script `scripts/check_output_policy_wiring.py`.
 
 **Acceptance criteria:**
 
 - output profile is selected by runtime policy, not ad-hoc prompt wording,
 - high-risk contexts can force standard/full clarity,
 - terse mode is available for operator updates,
-- audit/full mode remains explicit.
+- audit/full mode remains explicit,
+- structured output calls are not shortened unless schema explicitly allows it,
+- no model-specific prompt hack is required.
 
 **Required tests/checks:**
 
 ```bash
+uv run pytest tests/unit/runtime/token_optimization/ -q
 uv run pytest tests/unit/runtime/ -q
 uv run python scripts/check_output_policy_wiring.py
 ```
+
+**Domain plan rows:** `TOKEN-UER-2` in `docs/plan/UNIFIED_EXECUTION_RUNTIME.md`.
 
 **Status:** Planned.
 
@@ -120,28 +200,37 @@ uv run python scripts/check_output_policy_wiring.py
 
 **Owner layer:** `TOOLS`.
 
-**Dependencies:** TOKEN-1; may use TOKEN-2 output/profile contracts if shared.
+**Dependencies:** TOKEN-1 contracts and protected-region validator; TOKEN-6 telemetry can be added after compact catalog works.
 
 **Deliverables:**
 
-- compact tool description presentation,
-- natural-language example compression where safe,
-- protected schema validation,
-- savings telemetry for tool catalog injection.
+- `intergrax/runtime/nexus/tools/tool_schema_optimizer.py`,
+- compact LLM-facing tool catalog view,
+- schema-preservation validator,
+- optional cache key for compact catalog view,
+- savings telemetry hook placeholder,
+- lightweight CI script `scripts/check_tool_schema_optimizer.py`.
+
+**Integration target:** `ToolPlanningService`, `CatalogToolPlanner`, `tool_planner_input`, or the schema export path used before `generate_with_tools`.
 
 **Acceptance criteria:**
 
+- canonical `ToolContract` registry is not mutated,
 - tool names, parameter names, enum values, required fields, and JSON schema semantics are unchanged,
-- tool call payloads are not compressed by default,
+- tool call payloads and tool result JSON are not compressed by default,
 - compact catalog can be enabled by policy/profile,
-- schema preservation tests pass.
+- schema preservation tests pass,
+- token count of LLM-facing catalog decreases on a representative catalog fixture.
 
 **Required tests/checks:**
 
 ```bash
+uv run pytest tests/unit/runtime/nexus/tools/ -q
 uv run pytest tests/unit/tools/ -q
 uv run python scripts/check_tool_schema_optimizer.py
 ```
+
+**Domain plan rows:** `TOKEN-TOOLS-1` in `docs/plan/TOOLS.md`.
 
 **Status:** Planned.
 
@@ -153,16 +242,19 @@ uv run python scripts/check_tool_schema_optimizer.py
 
 **Owner layer:** `CONTEXT_ENGINEERING`.
 
-**Dependencies:** TOKEN-1; consumes LLM adapter token counters.
+**Dependencies:** TOKEN-1 contracts/receipts/protected regions; consumes LLM adapter token counters.
 
 **Deliverables:**
 
-- `ContextPackOptimizer`,
+- `intergrax/runtime/nexus/context/context_pack_optimizer.py`,
 - source-aware compression strategy,
 - protected-region handling,
-- compression receipts attached to context provenance,
+- compression receipts attached to context provenance/metadata,
 - post-compression token recalculation,
-- fallback to original fragments on validation failure.
+- fallback to original fragments on validation failure,
+- light/structural compression only in first slice.
+
+**Integration target:** existing CE pipeline; extend `ContextCompiler` / `DefaultNexusContextEngine` rather than building a second compiler.
 
 **Acceptance criteria:**
 
@@ -170,7 +262,9 @@ uv run python scripts/check_tool_schema_optimizer.py
 - mandatory/policy fragments are preserved,
 - total assembled tokens decrease in benchmark cases,
 - context quality gate remains green,
-- provenance contains compression receipt references where applicable.
+- provenance contains compression receipt references where applicable,
+- hard budget and adapter-token preflight still use the existing adapter token path,
+- semantic compression remains disabled until regression gates exist.
 
 **Required tests/checks:**
 
@@ -179,6 +273,8 @@ uv run pytest tests/unit/runtime/nexus/context/ -q
 uv run python scripts/check_context_preflight_uses_adapter_tokens.py
 uv run python scripts/check_compression_receipts.py
 ```
+
+**Domain plan rows:** `TOKEN-CE-1` and `TOKEN-CE-2` in `docs/plan/CONTEXT_ENGINEERING.md`.
 
 **Status:** Planned.
 
@@ -190,22 +286,26 @@ uv run python scripts/check_compression_receipts.py
 
 **Owner layer:** `MEMORY`.
 
-**Dependencies:** TOKEN-1; may reuse receipt contracts from TOKEN-4.
+**Dependencies:** TOKEN-1 contracts/receipts/protected regions; recommended after TOKEN-4 proves runtime receipts.
 
 **Deliverables:**
 
+- `intergrax/memory/summary_compressor.py`,
 - staging write flow,
-- protected-region validator,
-- semantic validation for lossy summaries,
-- receipt storage,
-- rollback metadata.
+- protected-region validator reuse,
+- semantic validation hook for lossy summaries,
+- receipt storage metadata,
+- rollback metadata,
+- lightweight CI script `scripts/check_memory_compression_receipts.py`.
 
 **Acceptance criteria:**
 
 - live source is never overwritten before validation,
 - failed compression cannot corrupt persistent memory,
 - original and compressed hashes are stored,
-- rollback path is documented and tested.
+- rollback path is documented and tested,
+- memory compression is opt-in by profile/policy,
+- no user facts, dates, IDs, or policy text are silently lost.
 
 **Required tests/checks:**
 
@@ -213,6 +313,8 @@ uv run python scripts/check_compression_receipts.py
 uv run pytest tests/unit/memory/ -q
 uv run python scripts/check_memory_compression_receipts.py
 ```
+
+**Domain plan rows:** `TOKEN-MEM-1` in `docs/plan/MEMORY.md`.
 
 **Status:** Planned.
 
@@ -224,30 +326,37 @@ uv run python scripts/check_memory_compression_receipts.py
 
 **Owner layer:** `OBSERVABILITY`; affected implementation owners per source domain.
 
-**Dependencies:** TOKEN-2, TOKEN-3, TOKEN-4, or TOKEN-5 depending on first telemetry source.
+**Dependencies:** TOKEN-1 contracts; can start with telemetry for TOKEN-2/TOKEN-3 before TOKEN-4/TOKEN-5 exist.
 
 **Deliverables:**
 
-- token optimization events,
-- counters,
-- spans,
+- `intergrax/runtime/token_optimization/telemetry.py`,
+- typed optimization summary payload,
+- receipt payload shape,
+- counters/spans emitted through HOS or approved domain-signal path,
 - savings attribution model,
-- token-vs-quality regression benchmark tasks,
-- CI-safe regression checks.
+- token-vs-quality benchmark fixtures,
+- `scripts/check_compression_receipts.py`,
+- `scripts/check_token_regression_benchmarks.py`.
 
 **Acceptance criteria:**
 
 - optimized model calls report raw/after/saved token counts,
-- savings are attributable by run, step, source, model, provider, and strategy,
-- regressions can fail CI when token growth is uncontrolled or quality drops.
+- savings are attributable by run, step, source, model, provider, strategy, and output profile,
+- regression checks can fail CI when token growth is uncontrolled or quality drops,
+- telemetry does not create a private event bus,
+- event naming respects the Observability event ownership model.
 
 **Required tests/checks:**
 
 ```bash
 uv run pytest tests/unit/runtime/observability/ -q
-uv run python scripts/check_token_optimization_contracts.py
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run python scripts/check_compression_receipts.py
 uv run python scripts/check_token_regression_benchmarks.py
 ```
+
+**Domain plan rows:** `TOKEN-OBS-1` and `TOKEN-OBS-2` in `docs/plan/OBSERVABILITY.md`.
 
 **Status:** Planned.
 
@@ -255,25 +364,27 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ## Phase TOKEN-7 — Adaptive optimization
 
-**Goal:** Use historical telemetry to recommend or select budgets and compression strategies.
+**Goal:** Use historical telemetry to recommend budgets and compression strategies.
 
 **Owner layer:** `ADAPTIVE_HARNESS_INTELLIGENCE`.
 
-**Dependencies:** TOKEN-6.
+**Dependencies:** TOKEN-6 telemetry and regression gates.
 
 **Deliverables:**
 
 - adaptive budget recommendation inputs,
-- compact/full profile recommendation by task/step type,
+- compact/full profile recommendation by task/step/source type,
 - quality-drop escalation rules,
-- operator override support.
+- operator override support,
+- no autonomous production auto-apply until governance permits it.
 
 **Acceptance criteria:**
 
 - adaptive optimization remains policy-governed,
 - runtime can escalate to fuller context when quality drops,
 - recommendations are observable and reversible,
-- no autonomous compression is applied without configured policy.
+- no autonomous compression is applied without configured policy,
+- AHI uses Token Optimization telemetry as input rather than duplicating token accounting.
 
 **Required tests/checks:**
 
@@ -281,7 +392,9 @@ uv run python scripts/check_token_regression_benchmarks.py
 uv run pytest tests/unit/runtime/adaptive/ -q
 ```
 
-**Status:** Planned.
+**Domain plan rows:** `TOKEN-AHI-1` in `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`.
+
+**Status:** Planned / Frozen until TOKEN-6 ships.
 
 ---
 
@@ -289,9 +402,74 @@ uv run pytest tests/unit/runtime/adaptive/ -q
 
 | ADR | Scope | Status |
 |-----|-------|--------|
-| `ADR-TOKEN-001` | Multi-layer feature boundary and ownership | Planned |
-| `ADR-TOKEN-002` | Compression receipts and protected-region validation | Planned |
+| `ADR-TOKEN-001` | Multi-layer feature boundary and runtime component placement | Planned |
+| `ADR-TOKEN-002` | Protected-region validation and compression receipts | Planned |
 | `ADR-TOKEN-003` | Tool schema optimization safety model | Planned |
+| `ADR-TOKEN-004` | Token telemetry and regression gate semantics | Planned |
+
+---
+
+## Domain plan row checklist
+
+Before runtime implementation starts, the following domain plan rows must exist:
+
+| Domain plan | Required rows |
+|-------------|---------------|
+| `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` | `TOKEN-UER-1`, `TOKEN-UER-2` |
+| `docs/plan/TOOLS.md` | `TOKEN-TOOLS-1` |
+| `docs/plan/CONTEXT_ENGINEERING.md` | `TOKEN-CE-1`, `TOKEN-CE-2` |
+| `docs/plan/MEMORY.md` | `TOKEN-MEM-1` |
+| `docs/plan/OBSERVABILITY.md` | `TOKEN-OBS-1`, `TOKEN-OBS-2` |
+| `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` | `TOKEN-AHI-1` |
+| `docs/plan/LLM_ADAPTERS.md` | `TOKEN-LLM-1` reference row only; no duplicate tokenizer |
+
+---
+
+## First implementation prompt
+
+Use this only after the domain plan rows above exist.
+
+```text
+Pracujemy na repozytorium `jakbuczarnecki/intergrax`, branch `development`.
+
+Cel sesji:
+Zaimplementuj TOKEN-1A/TOKEN-1B/TOKEN-1C — shared Token Optimization contracts, protected-region validator, and compression receipts.
+
+Read scope:
+- docs/features/architecture/TOKEN_OPTIMIZATION.md
+- docs/features/plan/TOKEN_OPTIMIZATION.md
+- docs/plan/UNIFIED_EXECUTION_RUNTIME.md rows TOKEN-UER-1/TOKEN-UER-2
+- existing runtime token/cost/context budget modules only as needed
+
+Edit scope:
+- intergrax/runtime/token_optimization/__init__.py
+- intergrax/runtime/token_optimization/contracts.py
+- intergrax/runtime/token_optimization/protected_regions.py
+- intergrax/runtime/token_optimization/receipts.py
+- tests/unit/runtime/token_optimization/
+- scripts/check_token_optimization_contracts.py
+
+Do not wire behavior into LLM call path yet.
+Do not implement ToolSchemaOptimizer yet.
+Do not implement ContextPackOptimizer yet.
+Do not implement MemorySummaryCompressor yet.
+Do not create docs/plan/TOKEN_OPTIMIZATION.md.
+
+Acceptance:
+- contracts import cleanly,
+- protected regions are detected and validated,
+- receipts hash original/optimized content and record token savings,
+- failed protected-region validation forces fallback,
+- tests pass.
+
+Run:
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run python scripts/check_token_optimization_contracts.py
+uv run python scripts/check_docs_domain_pairs.py
+
+Commit:
+feat: add token optimization contracts and receipts
+```
 
 ---
 
@@ -301,6 +479,7 @@ uv run pytest tests/unit/runtime/adaptive/ -q
 - Update feature plan and affected domain plan together when a TOKEN phase becomes active.
 - Do not implement runtime code in docs-sync PRs.
 - Do not duplicate existing Context Engineering budget/preflight mechanisms.
+- Do not duplicate LLM adapter token counting.
 - Do not report token savings without quality/safety validation.
 - Preserve architecture/plan 1:1 domain pairs.
 - Preserve feature architecture/plan 1:1 feature pairs.
