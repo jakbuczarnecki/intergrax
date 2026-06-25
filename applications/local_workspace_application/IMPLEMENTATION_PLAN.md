@@ -52,6 +52,87 @@ Before closing any LKW wave, answer:
 
 ---
 
+## 0b. Cursor token guardrails
+
+Every LKW iteration must bound read scope, search scope, and test scope so Cursor does not burn tokens on repo-wide exploration.
+
+### Rules
+
+- Every implementation prompt must include: **Goal**, **Read scope**, **Code search scope**, **Stop condition**, **Do not touch**, **Test scope**, **Report format**.
+- Cursor must **not** audit the whole repository unless the prompt explicitly requires it.
+- Cursor must **not** run repo-wide glob/search across all Python or Markdown files (for example `**/*.{py,md}`).
+- Cursor must **stop** after the first hit grep/search once the implementation point is located — then implement immediately.
+- Cursor must read **only cited document sections**, not full architecture/plan hubs or domain packs.
+- Cursor may expand scope **only** when:
+  1. a cited file imports a dependency that must change,
+  2. a targeted test fails because of a cross-module contract,
+  3. the implementation point does not exist in the given scope,
+  4. [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) reveals a real need to change scaffold, env, Docker, or CI.
+- **Default tests:** new or changed test file + one narrow smoke — not a full Nexus/runtime/agent suite unless the prompt requires it.
+- **Default report:** changed files, tests run, pass/fail, commit SHA, platform propagation yes/no (+ brief reason).
+- **Full report** only when the operator explicitly asks (`pełny raport`, `full report`, `iteration summary`).
+
+See also: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../docs/features/plan/TOKEN_OPTIMIZATION.md) for cross-repo token policy.
+
+### Prompt template (LKW tasks)
+
+Copy this skeleton for every LKW implementation prompt in Cursor. Fill placeholders; do not omit **Token guardrails**.
+
+```text
+Repo: `jakbuczarnecki/intergrax`, branch `development`.
+
+Goal:
+<one sentence — task ID + outcome>
+
+Read scope:
+- `<path>` — section `<id>` only
+- `<path>` — `<function or line range if known>`
+- existing tests: `<path or glob under one module>`
+
+Code search scope:
+Search only:
+- `<pattern>`
+- `<pattern>`
+Paths: `<tier/module glob>` — not `**/*.{py,md}`
+
+Stop condition:
+Stop reading/searching once `<implementation point>` is located; implement immediately.
+
+Do not touch:
+- <explicit out-of-scope items>
+
+Test scope:
+- new/changed test: `<path>`
+- narrow smoke: `<path>` — not full suite unless this prompt requires it
+
+Report format:
+Terse: changed files, tests run, pass/fail, commit SHA, platform propagation yes/no + brief reason.
+Full report only if operator asks.
+
+Token guardrails:
+- No whole-repo audit unless this prompt explicitly requires it.
+- No repo-wide Python/Markdown glob search.
+- Stop after first grep hit that locates the implementation point.
+- Read only cited document sections; do not load full architecture/plan hubs.
+- Expand scope only for the four exceptions in IMPLEMENTATION_PLAN §0b.
+- Default tests: new/changed test + one narrow smoke.
+- Default report: terse (see Report format). Full report only on operator request.
+
+Acceptance:
+- <task-specific acceptance bullets>
+
+Na końcu podaj:
+- zmienione pliki;
+- uruchomione testy;
+- wynik testów;
+- commit SHA;
+- czy trzeba było aktualizować scaffold/env/Docker/CI, a jeśli nie — dlaczego.
+```
+
+Every task in §2 and later waves should use this template unless the operator supplies an equivalent scoped prompt.
+
+---
+
 ## 1. Wave queue
 
 | ID | Title | Depends | Status | Priority |
@@ -78,7 +159,7 @@ Before closing any LKW wave, answer:
 
 This is not a broad harness refactor wave. These tasks are allowed because they directly improve safety, bounded execution, and diagnosability for LKW.1.
 
-Every task in this wave must also run the platform proof checklist in §0a.
+Every task in this wave must also run the platform proof checklist in §0a and use the scoped prompt template in §0b.
 
 ### Tasks
 
