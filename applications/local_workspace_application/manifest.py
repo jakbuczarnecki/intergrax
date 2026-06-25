@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
+from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from local_indexer.local_indexer_agent import LocalIndexerAgent
@@ -67,4 +68,5 @@ LOCAL_WORKSPACE_APPLICATION_MANIFEST = ApplicationManifest.product(
         "Local Knowledge Workspace (LKW) — multi-agent host for indexing, "
         "semantic search, and synthesis over user-local documents."
     ),
+    ownership=standard_product_operational_ownership("local_workspace"),
 )
