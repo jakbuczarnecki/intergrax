@@ -1,0 +1,207 @@
+# © Artur Czarnecki. All rights reserved.
+
+from __future__ import annotations
+
+from pathlib import Path
+from unittest.mock import AsyncMock
+
+import pytest
+
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from local_indexer.local_indexer_agent import LocalIndexerAgent
+from local_indexer.steps.index_job import run_index_job, validate_source_paths
+
+
+def _step_ctx(
+    exec_ctx: RuntimeExecutionContext,
+    *,
+    run_id: str = "run-test",
+) -> AgentStepContext:
+    return AgentStepContext(
+        run_id=run_id,
+        agent_id="local_indexer",
+        contract_id="local_indexer",
+        metadata={"uaep_exec_ctx": exec_ctx},
+    )
+
+
+@pytest.mark.unit
+def test_validate_source_paths_rejects_out_of_scope(tmp_path: Path) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("secret", encoding="utf-8")
+
+    _, rejected = validate_source_paths([str(outside)], frozenset({str(allowed_root.resolve())}))
+
+    assert rejected == [{"path": str(outside), "reason": "path_not_in_allowlist"}]
+
+
+@pytest.mark.unit
+def test_validate_source_paths_accepts_allowlisted_file(tmp_path: Path) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    doc = allowed_root / "report.txt"
+    doc.write_text("hello", encoding="utf-8")
+
+    validated, rejected = validate_source_paths(
+        [str(doc)],
+        frozenset({str(allowed_root.resolve())}),
+    )
+
+    assert rejected == []
+    assert validated == [doc.resolve()]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_index_job_ingests_valid_paths(tmp_path: Path) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    doc = allowed_root / "report.txt"
+    doc.write_text("hello world", encoding="utf-8")
+    original_mtime = doc.stat().st_mtime
+
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        assert request.tool_name == RAG_INGEST_TOOL_ID
+        assert request.input["source_path"] == str(doc.resolve())
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={
+                "used": True,
+                "num_chunks": 2,
+                "vector_ids": ["vec-1", "vec-2"],
+                "parser_id": "default",
+            },
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        request=RuntimeRequest(
+            agent_id="local_indexer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="index docs",
+            metadata={"source_paths": [str(doc)]},
+        ),
+        tool_gateway=gateway,
+    )
+    exec_ctx.metadata["runtime_state"] = type(
+        "RuntimeStateStub",
+        (),
+        {
+            "context": type(
+                "ContextStub",
+                (),
+                {
+                    "config": type(
+                        "ConfigStub",
+                        (),
+                        {"tool_wiring_context": type("WiringStub", (), {"read_allowlist_roots": frozenset({str(allowed_root.resolve())})})()},
+                    )()
+                },
+            )()
+        },
+    )()
+
+    output = await run_index_job(_step_ctx(exec_ctx))
+
+    assert output["ingest_summary"]["used"] is True
+    assert output["ingest_summary"]["num_chunks"] == 2
+    assert output["ingest_summary"]["vector_ids"] == ["vec-1", "vec-2"]
+    assert output["ingest_summary"]["rejected_paths"] == []
+    assert doc.read_text(encoding="utf-8") == "hello world"
+    assert doc.stat().st_mtime == original_mtime
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_index_job_fails_safe_without_source_paths() -> None:
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        request=RuntimeRequest(
+            agent_id="local_indexer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="index docs",
+            metadata={},
+        ),
+    )
+
+    output = await run_index_job(_step_ctx(exec_ctx))
+
+    assert output["ingest_summary"]["used"] is False
+    assert output["ingest_summary"]["reason"] == "source_paths_missing"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_local_indexer_agent_act_returns_ingest_summary(tmp_path: Path) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    doc = allowed_root / "note.txt"
+    doc.write_text("content", encoding="utf-8")
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(
+        return_value=ToolResponse(
+            request_id="tool-1",
+            status=ToolResponseStatus.SUCCESS,
+            output={"used": True, "num_chunks": 1, "vector_ids": ["vec-1"]},
+        )
+    )
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        request=RuntimeRequest(
+            agent_id="local_indexer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="index",
+            metadata={"source_paths": [str(doc)]},
+        ),
+        tool_gateway=gateway,
+    )
+    exec_ctx.metadata["runtime_state"] = type(
+        "RuntimeStateStub",
+        (),
+        {
+            "context": type(
+                "ContextStub",
+                (),
+                {
+                    "config": type(
+                        "ConfigStub",
+                        (),
+                        {"tool_wiring_context": type("WiringStub", (), {"read_allowlist_roots": frozenset({str(allowed_root.resolve())})})()},
+                    )()
+                },
+            )()
+        },
+    )()
+
+    agent = LocalIndexerAgent()
+    step_ctx = _step_ctx(exec_ctx)
+    observation = await agent.perceive(step_ctx)
+    reasoning = await agent.reason(step_ctx, observation)
+    output = await agent.act(step_ctx, reasoning)
+
+    assert output["ingest_summary"]["used"] is True
+    assert output["ingest_summary"]["num_chunks"] == 1
