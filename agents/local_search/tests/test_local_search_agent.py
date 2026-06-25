@@ -24,5 +24,5 @@ async def test_local_search_agent_runs_through_nexus():
         )
     )
     assert result.state == TaskState.COMPLETED
-    assert "not_implemented" in result.answer
     assert result.agent_id == "local_search"
+    assert "not_implemented" not in result.answer
