@@ -10,17 +10,17 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture:** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Feature plan:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)  
 **Source audit:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
-**Purpose:** ensure every domain architecture participating in the `TOKEN_OPTIMIZATION` multi-layer feature has a visible cross-reference and a precise ownership statement.
+**Purpose:** Ensure every architecture domain participating in the `TOKEN_OPTIMIZATION` multi-layer feature has a visible cross-reference and a precise ownership statement.
 
 ---
 
 ## Why this file exists
 
-`TOKEN_OPTIMIZATION` is a multi-layer feature. Its feature architecture and feature plan coordinate the cross-domain capability, but each participating domain architecture must still know how it participates.
+`TOKEN_OPTIMIZATION` is a multi-layer feature. Its feature architecture and feature plan coordinate the cross-domain capability, but each participating domain architecture must still state how it participates.
 
 This file is the canonical checklist for the remaining domain architecture cross-reference sync.
 
-After direct domain docs are updated, this file remains useful as an audit checklist and review map.
+After direct domain architecture documents are updated, this file remains useful as an audit checklist and review map.
 
 ---
 
@@ -74,7 +74,7 @@ Before declaring `TOKEN_OPTIMIZATION` architecture adoption complete, verify:
 - [ ] `docs/architecture/MEMORY.md` contains the cross-feature reference.
 - [ ] `docs/architecture/OBSERVABILITY.md` contains the cross-feature reference.
 - [ ] `docs/architecture/LLM_ADAPTERS.md` contains the cross-feature reference.
-- [ ] Conditional refs are added before their TOKEN slices begin.
+- [ ] Conditional references are added before their TOKEN slices begin.
 - [ ] `docs/features/plan/TOKEN_OPTIMIZATION.md` domain row checklist remains aligned with domain plan rows.
 - [ ] `uv run python scripts/check_docs_domain_pairs.py` remains green.
 
@@ -82,25 +82,25 @@ Before declaring `TOKEN_OPTIMIZATION` architecture adoption complete, verify:
 
 ## Cursor/local patch instruction
 
-Use this when editing with local checkout or Cursor line-level patching:
+Use this when editing with a local checkout or Cursor line-level patching:
 
 ```text
-Pracujemy na repozytorium `jakbuczarnecki/intergrax`, branch `development`.
+We are working on repository `jakbuczarnecki/intergrax`, branch `development`.
 
-Cel sesji:
-Dopisać brakujące cross-reference wpisy do domenowych dokumentów architektury dla multi-layer feature `TOKEN_OPTIMIZATION`.
+Session goal:
+Add the missing cross-reference entries to domain architecture documents for the multi-layer feature `TOKEN_OPTIMIZATION`.
 
-Nie implementuj kodu.
-Nie zmieniaj planu implementacji.
-Nie twórz `docs/plan/TOKEN_OPTIMIZATION.md`.
-Nie przepisuj całych dokumentów.
+Do not implement code.
+Do not change the implementation plan.
+Do not create `docs/plan/TOKEN_OPTIMIZATION.md`.
+Do not rewrite entire documents.
 
-Źródło:
+Source documents:
 - docs/features/architecture/TOKEN_OPTIMIZATION.md
 - docs/features/plan/TOKEN_OPTIMIZATION.md
 - docs/features/satellites/TOKEN_OPTIMIZATION_DOMAIN_ARCHITECTURE_CROSS_REFERENCES.md
 
-Edytuj minimalnie:
+Minimal edit scope:
 - docs/architecture/CONTEXT_ENGINEERING.md
 - docs/architecture/UNIFIED_EXECUTION_RUNTIME.md
 - docs/architecture/TOOLS.md
@@ -108,16 +108,16 @@ Edytuj minimalnie:
 - docs/architecture/OBSERVABILITY.md
 - docs/architecture/LLM_ADAPTERS.md
 
-Opcjonalnie, tylko jeśli zaczynasz odpowiednie TOKEN slice:
+Optional edit scope, only before starting the corresponding TOKEN slice:
 - docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md
 - docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md
 - docs/architecture/RAG.md
 
-W każdym pliku dodaj jeden krótki wpis `Cross-feature — Token Optimization` w header/read-scope area, z linkami do:
+In each file, add one concise `Cross-feature — Token Optimization` entry in the header/read-scope area, with links to:
 - ../features/architecture/TOKEN_OPTIMIZATION.md
 - ../features/plan/TOKEN_OPTIMIZATION.md
 
-i domenowym ownership sentence z checklisty.
+Use the domain-specific ownership sentence from this checklist.
 
 Run:
 uv run python scripts/check_docs_domain_pairs.py
