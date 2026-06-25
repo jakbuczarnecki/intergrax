@@ -4,9 +4,9 @@ import os
 
 from dotenv import load_dotenv
 
-from local_workspace_application.host.factory import create_local_workspace_backend_app
-
 load_dotenv()
+
+from local_workspace_application.host.factory import create_local_workspace_backend_app
 
 app = create_local_workspace_backend_app()
 
