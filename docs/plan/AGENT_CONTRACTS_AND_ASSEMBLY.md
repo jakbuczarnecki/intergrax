@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). ACP may later expose agent-level output/context compactness hints, but agents must not manually assemble prompts or import token optimization internals.
+
 ---
 
 ## Cursor read scope (token budget)
@@ -13,6 +15,7 @@
 **Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY plan).
 
 - **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/satellites/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand
+- **Token Optimization:** read feature pair + row `TOKEN-ACP-1` only when adding agent-level hints; do not implement until TOKEN-UER-2 runtime output policy exists.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) read-scope block only.
@@ -39,6 +42,19 @@
 
 ---
 
+## Phase TOKEN-ACP — Optional token optimization agent hints (Deferred)
+
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
+**Priority:** P3 / deferred until TOKEN-UER-2 and TOKEN-CE-1 exist  
+**Delivery rule:** agent contracts may declare hints only; runtime resolves effective policy.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **TOKEN-ACP-1** | Contract | P3 | Deferred | Optional agent-level hints for desired output profile, context compactness, non-compressible sources, and citation/evidence sensitivity | Hints are declarative; agents do not manually assemble prompts; runtime/profile policy can override hints; no Tier-2 imports from `runtime/token_optimization`; tests prove existing agents remain compatible |
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
@@ -49,7 +65,6 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) | audit history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
-
 
 ---
 
@@ -74,6 +89,6 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-31.1 | §31 Lifecycle | Owner/on-call mandatory on all certified agents | P1 | **Done** |
 | AUDIT-IDEAL-31.2 | §31 Lifecycle | Evaluation required before production promotion (enforce) | P1 | **Done** |
 
-**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+**Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ---
