@@ -11,17 +11,11 @@ FastAPI routes at ``/``.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
-from typing import Any
-
 from fastapi import FastAPI
 from fastmcp import FastMCP
 
+from intergrax.applications._shared.fastapi_lifespan import LifespanFn, combine_lifespans
 from intergrax.applications._shared.harness_auth import HarnessAuthState, apply_harness_auth_middleware
-from fastmcp.utilities.lifespan import combine_lifespans
-
-LifespanFn = Callable[[FastAPI], AsyncIterator[None]]
 
 
 def _normalize_mount_path(mount_path: str) -> str:
@@ -29,29 +23,6 @@ def _normalize_mount_path(mount_path: str) -> str:
     if not path.startswith("/"):
         path = f"/{path}"
     return path.rstrip("/") or "/mcp"
-
-
-def make_scheduler_lifespan(scheduler: Any) -> LifespanFn:
-    """Lifespan that starts/stops a long-running scheduler (replaces ``on_event``)."""
-
-    @asynccontextmanager
-    async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
-        await scheduler.start()
-        try:
-            yield
-        finally:
-            await scheduler.stop()
-
-    return _lifespan
-
-
-def apply_lifespans(app: FastAPI, *lifespans: LifespanFn) -> FastAPI:
-    """Merge lifespan handlers onto an existing FastAPI app (replaces ``on_event``)."""
-    if not lifespans:
-        return app
-    existing = app.router.lifespan_context
-    app.router.lifespan_context = combine_lifespans(*lifespans, existing)
-    return app
 
 
 def couple_fastapi_with_mcp(
