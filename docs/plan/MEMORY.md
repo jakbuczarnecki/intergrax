@@ -8,6 +8,8 @@
 
 **Cross-plan — Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` — [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
 
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). MEMORY owns persistent summary compression only where staging, validation, compression receipts, and rollback metadata exist.
+
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion + MEM-VEC/MEM-DEPTH closeout).
 
 ---
@@ -17,6 +19,7 @@
 **Do not read this entire file in one session** (MEMORY plan).
 
 - **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. **On demand (one max):** [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) · [`plan/satellites/MEMORY_audit_history.md`](plan/satellites/MEMORY_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Token Optimization:** read feature pair + row `TOKEN-MEM-1`; inspect only memory summary/consolidation/write paths required for staging/rollback.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) read-scope block only.
@@ -37,6 +40,20 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
+---
+
+## Phase TOKEN-MEM — MemorySummaryCompressor (Planned)
+
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
+**Priority:** P2 after TOKEN-UER-1 and preferably after TOKEN-CE-1 receipt path  
+**Delivery rule:** one `TOKEN-MEM-*` row per PR; no live overwrite before validation.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **TOKEN-MEM-1** | Code | P2 | Planned | `intergrax/memory/summary_compressor.py` for persistent natural-language memory/documentation-derived summaries with staging, protected-region validation, compression receipt, and rollback metadata | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; original/compressed hashes stored; rollback path tested; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; `uv run pytest tests/unit/memory/ -q`; `uv run python scripts/check_memory_compression_receipts.py` |
+
+**Explicit exclusions:** no compression of primary memory store records, no vector index mutation without primary-store source of truth, no lossy compression of legal/security/policy text unless explicitly allowed by policy.
 
 ---
 
@@ -56,6 +73,6 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-16.1 | §16 Context | Online context drift monitoring + alerts | P1 | **Done** — owner [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11 |
 | AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | **Done** — owner CE §11 (`semantic_compression_enabled`) |
 
-**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+**Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ---
