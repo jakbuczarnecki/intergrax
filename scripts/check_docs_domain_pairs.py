@@ -28,6 +28,7 @@ FORBIDDEN = [
     PLAN / "README.md",
     PLAN / "phases",
     PLAN / "appendices",
+    FEATURES / "satellites",
 ]
 
 # Cross-domain implementation registers (hub-linked; no 1:1 architecture pair).

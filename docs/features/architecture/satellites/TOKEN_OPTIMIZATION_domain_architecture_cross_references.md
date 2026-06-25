@@ -4,12 +4,12 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Token Optimization — Domain Architecture Cross-reference Map
+# TOKEN_OPTIMIZATION — domain architecture cross-references
 
-**Status:** Required domain architecture sync map  
-**Feature architecture:** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
-**Feature plan:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)  
-**Source audit:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
+**Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
+**Feature plan (1:1):** [`../../plan/TOKEN_OPTIMIZATION.md`](../../plan/TOKEN_OPTIMIZATION.md)  
+**Plan satellite:** [`../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md)  
+**Source audit:** [`../../../audit/TOKEN_OPTIMIZATION.md`](../../../audit/TOKEN_OPTIMIZATION.md)  
 **Purpose:** Ensure every architecture domain participating in the `TOKEN_OPTIMIZATION` multi-layer feature has a visible cross-reference and a precise ownership statement.
 
 ---
@@ -29,7 +29,7 @@ After direct domain architecture documents are updated, this file remains useful
 Each participating domain architecture should contain a concise line or section near the header/read-scope block:
 
 ```markdown
-**Cross-feature — Token Optimization:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). <DOMAIN-SPECIFIC OWNERSHIP SENTENCE>
+**Cross-feature — Token Optimization:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../features/architecture/TOKEN_OPTIMIZATION.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../../features/plan/TOKEN_OPTIMIZATION.md). <DOMAIN-SPECIFIC OWNERSHIP SENTENCE>
 ```
 
 Use relative links appropriate to `docs/architecture/<DOMAIN>.md`:
@@ -75,7 +75,7 @@ Before declaring `TOKEN_OPTIMIZATION` architecture adoption complete, verify:
 - [ ] `docs/architecture/OBSERVABILITY.md` contains the cross-feature reference.
 - [ ] `docs/architecture/LLM_ADAPTERS.md` contains the cross-feature reference.
 - [ ] Conditional references are added before their TOKEN slices begin.
-- [ ] `docs/features/plan/TOKEN_OPTIMIZATION.md` domain row checklist remains aligned with domain plan rows.
+- [ ] [`../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md) domain plan row checklist remains aligned with domain plan rows.
 - [ ] `uv run python scripts/check_docs_domain_pairs.py` remains green.
 
 ---
@@ -98,7 +98,7 @@ Do not rewrite entire documents.
 Source documents:
 - docs/features/architecture/TOKEN_OPTIMIZATION.md
 - docs/features/plan/TOKEN_OPTIMIZATION.md
-- docs/features/satellites/TOKEN_OPTIMIZATION_DOMAIN_ARCHITECTURE_CROSS_REFERENCES.md
+- docs/features/architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md
 
 Minimal edit scope:
 - docs/architecture/CONTEXT_ENGINEERING.md

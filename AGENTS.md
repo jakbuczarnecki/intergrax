@@ -16,7 +16,7 @@ agents/ MUST NOT import from applications/
 applications/ MAY import from agents/ and intergrax/
 ```
 
-**Documentation pairs:** domain-layer `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`; multi-layer feature `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` — hub [`docs/features/README.md`](docs/features/README.md). Feature docs coordinate cross-layer delivery; domain ownership remains authoritative.
+**Documentation pairs:** domain-layer `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (+ `satellites/` per tier, `.cursorignore`); multi-layer feature `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` (+ matching `satellites/` under each tier) — hub [`docs/features/README.md`](docs/features/README.md). Feature docs coordinate cross-layer delivery; domain ownership remains authoritative.
 
 ## Cursor rule loading
 

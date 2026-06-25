@@ -43,6 +43,7 @@ Domain pair index (22 names): [audit/README.md § Domain index](audit/README.md#
 | `docs/plan/<DOMAIN>.md` | **What is done / next** (phases, rows, gates) | Architecture spec |
 | `docs/features/architecture/<FEATURE>.md` | **Cross-layer feature architecture** — coordinates domain pairs | Domain canon replacement |
 | `docs/features/plan/<FEATURE>.md` | **Cross-layer feature plan** — phases across domains; domain rows stay in owning `docs/plan/<DOMAIN>.md` | Standalone domain plan |
+| `docs/features/architecture/satellites/` · `docs/features/plan/satellites/` | Feature satellite registers (`.cursorignore`; explicit `@` / `Read` only) | Feature root `satellites/` |
 | [guides/](guides/README.md) | Cross-cutting strategy, invariants, authoring, audit methodology | Domain canon |
 | [AGENTS.md](../AGENTS.md) | Cursor auto-load **stub** (~350 tok) | Full agent instructions |
 | [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) | Full AI agent reference (routing, verification, ADR, O1 output) | Human onboarding doc |

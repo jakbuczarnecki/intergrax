@@ -14,18 +14,35 @@ Use, modification, or distribution without written permission is prohibited.
 
 ---
 
+## Satellite registers (read on demand)
+
+Large cross-domain sync registers moved out of the hub to reduce Cursor context use.
+Load **only** the satellite matching your task.
+
+| Satellite | Contents |
+|-----------|----------|
+| [`plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md) | domain plan cross-reference map, TOKEN row checklist, phase → plan mapping |
+
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
+
+---
+
 ## Cursor read scope (token budget)
 
 Do not read the whole repository.
 
 Default read scope for Token Optimization work:
 
-1. `docs/features/architecture/TOKEN_OPTIMIZATION.md`
-2. `docs/features/plan/TOKEN_OPTIMIZATION.md`
+1. `docs/features/architecture/TOKEN_OPTIMIZATION.md` (read-scope block only)
+2. `docs/features/plan/TOKEN_OPTIMIZATION.md` (read-scope block + active TOKEN phase only)
 3. The affected domain architecture/plan pair for the current TOKEN slice.
 4. The minimal source files required by that domain plan item.
 
+**On demand (one max):** [`plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md) when syncing domain plan rows or cross-references.
+
 Do not create `docs/plan/TOKEN_OPTIMIZATION.md`. This is a multi-layer feature plan, not a domain-layer plan.
+
+**Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
 
 ---
 
@@ -411,17 +428,7 @@ uv run pytest tests/unit/runtime/adaptive/ -q
 
 ## Domain plan row checklist
 
-Before runtime implementation starts, the following domain plan rows must exist:
-
-| Domain plan | Required rows |
-|-------------|---------------|
-| `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` | `TOKEN-UER-1`, `TOKEN-UER-2` |
-| `docs/plan/TOOLS.md` | `TOKEN-TOOLS-1` |
-| `docs/plan/CONTEXT_ENGINEERING.md` | `TOKEN-CE-1`, `TOKEN-CE-2` |
-| `docs/plan/MEMORY.md` | `TOKEN-MEM-1` |
-| `docs/plan/OBSERVABILITY.md` | `TOKEN-OBS-1`, `TOKEN-OBS-2` |
-| `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` | `TOKEN-AHI-1` |
-| `docs/plan/LLM_ADAPTERS.md` | `TOKEN-LLM-1` reference row only; no duplicate tokenizer |
+See [`plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md) for the canonical domain plan row checklist, TOKEN phase → owning plan mapping, and sync instructions.
 
 ---
 

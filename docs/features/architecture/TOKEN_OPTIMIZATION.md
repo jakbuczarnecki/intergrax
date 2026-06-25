@@ -14,6 +14,29 @@ Use, modification, or distribution without written permission is prohibited.
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (TOKEN_OPTIMIZATION feature architecture).
+
+- **Implement / audit default:** §1–§7 core contracts and boundaries. **On demand (one max):** [`architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md).
+- **Plan hub:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) read-scope block only.
+- **Satellites:** at most **one** `architecture/satellites/` file per session unless RESUME cites more.
+
+---
+
+## Architecture satellites (read on demand)
+
+Large cross-domain sync registers moved out of the hub to reduce Cursor context use.
+Load **only** the satellite matching your task.
+
+| Satellite | Contents |
+|-----------|----------|
+| [`satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md) | domain architecture cross-reference map and sync checklist |
+
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
+
+---
+
 ## 1. Purpose
 
 Token Optimization is a multi-layer Intergrax capability that minimizes unnecessary token usage while preserving correctness, safety, provenance, auditability, and developer control.
@@ -47,8 +70,12 @@ It therefore lives under:
 
 ```text
 docs/features/architecture/TOKEN_OPTIMIZATION.md
+docs/features/architecture/satellites/
 docs/features/plan/TOKEN_OPTIMIZATION.md
+docs/features/plan/satellites/
 ```
+
+Feature hubs are Cursor entry points. Satellites hold bulky cross-domain sync registers and are in `.cursorignore` — load with explicit `Read` or `@` only.
 
 The feature coordinates updates across existing domain pairs:
 
