@@ -83,6 +83,7 @@ Do not create `docs/plan/TOKEN_OPTIMIZATION.md` unless Token Optimization is lat
 ### 4.1 In scope
 
 - input token budgeting,
+- output token budgeting,
 - context assembly efficiency,
 - structural and semantic context compression,
 - memory summary compression,
@@ -113,18 +114,39 @@ Do not create `docs/plan/TOKEN_OPTIMIZATION.md` unless Token Optimization is lat
 | Domain | Responsibility |
 |--------|----------------|
 | `CONTEXT_ENGINEERING` | Owns `ContextPackOptimizer`, source-aware context compression, post-compression token recalculation, provenance links to receipts, and fallback behavior. |
-| `LLM_ADAPTERS` | Provides tokenizer-consistent counting, context window metadata, output budget metadata, and cost/latency signals. |
+| `LLM_ADAPTERS` | Provides tokenizer-consistent counting, context window metadata, output budget metadata, usage accounting, and cost/latency signals. Token Optimization consumes these signals and must not create a parallel tokenizer. |
 | `TOOLS` | Owns `ToolSchemaOptimizer` and compact tool catalog presentation. |
 | `MEMORY` | Owns `MemorySummaryCompressor`, safe persistent compression, rollback metadata, and memory receipt storage. |
 | `RAG` | Allows post-retrieval/post-ranking chunk compression where citations and grounding remain intact. |
-| `OBSERVABILITY` | Owns token optimization events, counters, spans, and savings attribution. |
+| `OBSERVABILITY` | Owns token optimization telemetry, metrics, diagnostic payloads, spans, and savings attribution. |
 | `UNIFIED_EXECUTION_RUNTIME` | Resolves runtime token policy, compression level, output profile, and safety bypass rules. |
 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Allows agent-level hints for output profile and context compactness without manual prompt assembly. |
 | `ADAPTIVE_HARNESS_INTELLIGENCE` | Later learns optimal budgets and compression strategies from telemetry. |
 
 ---
 
-## 6. Core capability model
+## 6. Runtime component placement
+
+Token Optimization uses shared contracts plus domain-owned adapters. The shared package owns policy, receipts, validation, and telemetry contracts; domain packages own the domain-specific integration points.
+
+| Component | Planned module | Owner | Notes |
+|-----------|----------------|-------|-------|
+| `TokenOptimizationPolicy` | `intergrax/runtime/token_optimization/contracts.py` | `UNIFIED_EXECUTION_RUNTIME` + feature | Top-level policy envelope: input budget, output policy, compression level, protected regions, validation, telemetry. |
+| `OutputPolicy` / `OutputPolicyResolver` | `intergrax/runtime/token_optimization/output_policy.py` | `UNIFIED_EXECUTION_RUNTIME` | Runtime-selected output profile; not prompt-only wording. |
+| `CompressionReceipt` | `intergrax/runtime/token_optimization/receipts.py` | feature + `OBSERVABILITY` | Shared receipt contract used by context, tools, memory, and telemetry. |
+| `ProtectedRegionValidator` | `intergrax/runtime/token_optimization/protected_regions.py` | feature | Exact-preservation validator for code, paths, URLs, API names, enum values, hashes, dates, warnings, and schema-sensitive regions. |
+| `TokenOptimizationTelemetryEmitter` | `intergrax/runtime/token_optimization/telemetry.py` | `OBSERVABILITY` | Emits domain signal / diagnostic payload + counters through HOS, not a private telemetry bus. |
+| `TokenOptimizer` | `intergrax/runtime/token_optimization/optimizer.py` | feature | Thin policy-driven orchestrator for safe text optimization; domain integrations call it. |
+| `ContextPackOptimizer` | `intergrax/runtime/nexus/context/context_pack_optimizer.py` | `CONTEXT_ENGINEERING` | Runs after rank/budget and before format/preflight. |
+| `ToolSchemaOptimizer` | `intergrax/runtime/nexus/tools/tool_schema_optimizer.py` | `TOOLS` | Produces compact LLM-facing tool catalog view without mutating schema semantics. |
+| `MemorySummaryCompressor` | `intergrax/memory/summary_compressor.py` | `MEMORY` | Persistent summary compression with staging, validation, receipt, and rollback metadata. |
+| `TokenRegressionBenchmarkRunner` | `intergrax/runtime/token_optimization/regression.py` | `OBSERVABILITY` + feature | Token-vs-quality benchmark helper; CI scripts consume it. |
+
+No Tier-2 agent may import these internals directly for prompt assembly. Agents may declare hints through contracts; runtime/profile layers resolve effective policy.
+
+---
+
+## 7. Core capability model
 
 ```text
 TokenOptimizationPolicy
@@ -138,22 +160,65 @@ TokenOptimizationPolicy
   └─ TelemetryPolicy
 ```
 
-Planned runtime components:
+### 7.1 Planned shared contracts
 
-```text
-TokenOptimizer
-OutputPolicyResolver
-ToolSchemaOptimizer
-MemorySummaryCompressor
-ContextPackOptimizer
-CompressionReceiptValidator
-TokenOptimizationTelemetryEmitter
-TokenRegressionBenchmarkRunner
+```python
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationRequest:
+    run_id: str
+    step_id: str | None
+    source_type: str
+    content: str
+    policy: TokenOptimizationPolicy
+    model_id: str | None = None
+    provider: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationResult:
+    content: str
+    receipt: CompressionReceipt
+    validation: TokenOptimizationValidation
+    telemetry: TokenOptimizationTelemetry
+    fallback_used: bool = False
 ```
+
+```python
+@dataclass(frozen=True, slots=True)
+class OutputPolicy:
+    profile: OutputProfile
+    max_output_tokens: int | None
+    require_sections: tuple[str, ...] = ()
+    forbid_sections: tuple[str, ...] = ()
+    preserve_exact: tuple[str, ...] = ()
+```
+
+```python
+@dataclass(frozen=True, slots=True)
+class CompressionReceipt:
+    receipt_id: str
+    run_id: str | None
+    step_id: str | None
+    source_type: str
+    strategy: str
+    lossy: bool
+    original_hash: str
+    compressed_hash: str
+    original_tokens: int
+    compressed_tokens: int
+    saved_tokens: int
+    saved_ratio: float
+    protected_regions_count: int
+    validation_status: str
+    quality_score: float | None = None
+    fallback_used: bool = False
+```
+
+The first implementation slice must define these as stable contracts before deeper context/tool/memory integrations depend on them.
 
 ---
 
-## 7. Protected region policy
+## 8. Protected region policy
 
 Token Optimization must preserve exact text for:
 
@@ -197,7 +262,7 @@ Use staging output → validate → receipt → atomic replace → rollback meta
 
 ---
 
-## 8. Context Engineering lifecycle extension
+## 9. Context Engineering lifecycle extension
 
 Token Optimization extends the Context Engineering lifecycle after ranking and budgeting, before final formatting/preflight:
 
@@ -221,17 +286,19 @@ Rules:
 - policy checks happen before and after optimization,
 - token estimates are recalculated after optimization,
 - validation can force fallback to original content,
-- provenance records both original source and compression receipt.
+- provenance records both original source and compression receipt,
+- existing `ContextCompiler`, `ContextBudgetPolicy`, `DegradationLadder`, and adapter-token preflight are extended, not duplicated.
 
 ---
 
-## 9. Tool schema optimization rules
+## 10. Tool schema optimization rules
 
 `ToolSchemaOptimizer` may compress:
 
 - tool `description` fields,
 - natural-language examples,
-- repeated prose in tool catalog presentation.
+- repeated prose in tool catalog presentation,
+- LLM-facing planner hints that are not schema semantics.
 
 It must preserve:
 
@@ -249,11 +316,22 @@ It must not compress by default:
 - tool result JSON,
 - strict schema definitions.
 
+The optimizer must produce a compact LLM-facing catalog view, not mutate the canonical `ToolContract` registry.
+
 ---
 
-## 10. Observability requirements
+## 11. Observability requirements
 
-Candidate events:
+Token Optimization emits through the Harness Observability Spine. It must not create a private telemetry channel.
+
+Preferred implementation:
+
+- typed diagnostic payloads for receipts and optimization summaries,
+- domain signal / event-kind style telemetry where possible,
+- metrics derived from the same optimization result data,
+- compatibility with unified run journal.
+
+Candidate event kinds / domain signals:
 
 ```text
 TOKEN_OPTIMIZATION_STARTED
@@ -296,7 +374,20 @@ Savings must be attributable by:
 
 ---
 
-## 11. Architecture adoption rule
+## 12. First-class implementation invariants
+
+1. Do not build a second LLM token counter. Use `LLMAdapter.count_messages_tokens()` when an adapter is in scope.
+2. Do not build a second context compiler. Extend the existing Context Engineering pipeline.
+3. Do not mutate canonical tool contracts for compact schema presentation.
+4. Do not compress tool call payloads by default.
+5. Do not overwrite memory or documentation summaries without staging, validation, receipt, and rollback metadata.
+6. Do not report token savings without quality/safety validation.
+7. Do not treat output terseness as sufficient token optimization.
+8. Do not apply adaptive compression automatically until telemetry and policy governance are in place.
+
+---
+
+## 13. Architecture adoption rule
 
 Feature architecture coordinates cross-layer behavior. Domain architecture remains authoritative for domain-owned implementation details.
 
