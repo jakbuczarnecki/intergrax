@@ -220,7 +220,7 @@ POST /v1/local_workspace/run
 | LKW.1.3 | Synthesizer stub: shadow `workspace.write_file` | `agents/local_synthesizer/` `on_next_step` / cognitive pattern hooks | Tier-2 | Update scaffold guidance for shadow-write outputs if generic |
 | LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | `applications/.../tests/` or `tests/acceptance/` | Tier-3 | Add scaffold/test template if this becomes the canonical app acceptance pattern |
 | LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | Tier-3/platform | Ensure app settings pattern can inform scaffolded app settings |
-| LKW.1.6 | Docker/run parity check | Dockerfile, compose, build/run docs | Tier-3/platform | Keep generated Docker/build docs aligned with real LKW execution |
+| LKW.1.6 | Docker/run parity — **CLOSED** | Dockerfile, compose, build/run docs | Tier-3/platform | Closed after Docker build/start parity, environment-scoped capability graph, MCP opt-in startup, isolated Docker agent closure, and LKW Docker build smoke. |
 
 ### Product acceptance criteria
 
@@ -356,6 +356,16 @@ These items are real architectural pressure points, but they must not block LKW.
 |----|-------|------------------|-------------------|
 | LKW-W1 | `NexusLoop` constructor width | Accept as composition-root pressure | Refactor only if LKW requires repeated custom wiring, makes tests brittle, or forces duplicated bootstrap logic |
 | LKW-W2 | `StepKernelContext` width | Accept as kernel execution-context pressure | Refactor only if unrelated concerns start changing together or test setup becomes excessive |
+
+### LKW.1.6 follow-ups (non-blocking)
+
+Recorded at Docker/run parity closeout; do not block remaining LKW.1 work.
+
+| ID | Topic | Notes |
+|----|-------|-------|
+| LKW.1.6-F1 | Legacy application Dockerfiles | Pre-scaffold application Dockerfiles should receive build-time factory smoke (same closure pattern as generated apps). |
+| LKW.1.6-F2 | `attestation_demo` agent COPY | `attestation_demo` `COPY agents/ ./agents/` must be documented as a demo exception or narrowed to the required agent subset. |
+| LKW.1.6-F3 | `architecture_health_wiring` global catalog | Remains governance-only; must not become default product application startup wiring. |
 
 ### Watchlist rule
 
