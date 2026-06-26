@@ -1,15 +1,48 @@
 # LKW.1 live verification status — 2026-06-26
 
-## Status
+## Current status
 
 ```text
-LKW.1.11 — implementation/unit scope passed, live HTTP smoke not passed
-LKW.1.12 — next: fix RuntimeEventSchemaError for decision_emitted phase mismatch
-LKW.1.13 — final live index/search/synthesize smoke after LKW.1.12
-LKW-H1 — local trace/evidence inspection after live execution blockers
+LKW.1.11 — runtime tool registry parity: PASSED
+LKW.1.12 — decision_emitted event phase mismatch: PASSED
+LKW.1.13 — local_indexer RAG ingest live path: PASSED
+LKW.1.14 — next: final live product smoke index -> search -> synthesize
+LKW-H1 — trace/evidence and observability follow-ups after product smoke
 ```
 
-## LKW.1.11 result
+## Current product proof position
+
+The live `local.workspace.index` path now reaches RAG ingest through the live Docker HTTP stack.
+
+Latest confirmed live index result:
+
+```text
+accepted=1
+rejected=0
+ingested=1
+chunks=1
+```
+
+Qdrant confirmation:
+
+```text
+tenant collection present: intergrax__tenant__lkw-smoke
+ingest collection_id: lkw-ingestfix-20260626162943
+```
+
+The remaining product closeout is not another index-only smoke. The next proof must verify the whole product path:
+
+```text
+index -> search -> synthesize
+```
+
+## LKW.1.11 — runtime registry parity
+
+Status:
+
+```text
+PASSED in implementation/unit scope; later live blockers were separate.
+```
 
 Implementation commit reported by operator:
 
@@ -17,19 +50,14 @@ Implementation commit reported by operator:
 47b8667e48fb834829bcb321b37367789e62e896
 ```
 
-The LKW.1.11 fix addressed the previous registry parity issue where `ApplicationToolWiring.registry` was built in Tier-3 but the live runtime gateway/invoker path used a different registry.
-
-Changed files reported by the implementation:
+Original issue:
 
 ```text
-intergrax/applications/_shared/catalog_runtime_bridge.py
-intergrax/runtime/nexus/config.py
-intergrax/runtime/nexus/config_sections.py
-intergrax/runtime/nexus/engine/runtime_context.py
-tests/unit/applications/test_application_tool_registry_runtime_parity.py
+ApplicationToolWiring.registry was built in Tier-3,
+but the runtime gateway/invoker path used a different registry.
 ```
 
-Focused tests passed:
+Focused tests:
 
 ```text
 uv run pytest tests/unit/applications/test_application_tool_registry_runtime_parity.py -q
@@ -39,74 +67,185 @@ uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py -q
 -> 10 passed
 ```
 
-## Manual live verification
+After LKW.1.11, live HTTP still did not ingest. The next blocker was the runtime event schema issue fixed in LKW.1.12.
 
-Docker stack built and started. `/health` returned `{"status":"ok"}`. `/v1/local_workspace/agents` listed:
+## LKW.1.12 — decision_emitted phase mismatch
 
-```text
-local_indexer       -> local.workspace.index
-local_search        -> local.workspace.search
-local_synthesizer   -> local.workspace.synthesize
-```
-
-The fixture file was visible inside the container at:
+Status:
 
 ```text
-/data/user_docs/lkw-live-smoke.txt
+PASSED
 ```
 
-Live index request returned completed state, but did not ingest:
+Commit reported by operator:
 
 ```text
-accepted=1
-rejected=0
-ingested=0
-chunks=0
-total_tool_calls=0
+47e2ce15
 ```
 
-Qdrant did not show a new live smoke collection for the `lkw-registryfix-*` collection id.
-
-## New blocker
-
-Container logs showed a new runtime event validation issue:
+Root cause:
 
 ```text
-RuntimeEventSchemaError: phase mismatch for decision_emitted: expected step_execution, got planning
+NexusPlanningRunner emitted RuntimeEventType.DECISION_EMITTED with phase=PLANNING,
+while the runtime event catalog requires DECISION_EMITTED to use phase=STEP_EXECUTION.
+The validating runtime event store rejected the event during persistence.
 ```
 
-This means LKW.1.11 should not be marked as live-passed. The registry parity implementation has a passing focused test and is present in the Docker image, but the live run still does not reach a successful RAG ingest.
-
-## Platform classification
+Fix chosen:
 
 ```text
-Platform-reusable
+Removed DECISION_EMITTED emission from the planning phase.
+Moved the planning DecisionRecord into PLAN_CREATED payload as decision_record.
+Kept DECISION_EMITTED as the canonical step-level UAEP decision event.
 ```
 
-Reason: runtime event schema phase correctness affects every product application using the same runtime event bus, task trace, and validating event store.
+Focused tests:
+
+```text
+uv run pytest tests/unit/runtime/events -q
+-> 96 passed
+
+uv run pytest tests/unit/applications/test_application_tool_registry_runtime_parity.py -q
+-> 1 passed
+
+uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py -q
+-> 10 passed
+```
+
+Live result after LKW.1.12:
+
+```text
+health=ok
+agents=local_indexer, local_search, local_synthesizer
+index=completed, accepted=1, ingested=0, chunks=0, total_tool_calls=0
+logs=no RuntimeEventSchemaError / no decision_emitted phase mismatch
+qdrant=no lkw-phasefix-* collection because ingested=0
+```
+
+Interpretation:
+
+```text
+The event phase blocker was fixed.
+The next blocker was local_indexer not reaching successful rag.ingest_document.
+```
+
+## LKW.1.13 — local_indexer RAG ingest execution
+
+Status:
+
+```text
+PASSED
+```
+
+Commit reported by operator:
+
+```text
+4bc407533e991d93636668b7d7cae78e41a5a3c6
+```
+
+Root cause:
+
+```text
+UAEP/ACP ran local_indexer with a stub RuntimeContext that did not carry the application tool registry.
+The ACP path also missed uaep_exec_ctx and proper allowed_tools propagation.
+As a result, the live indexer path produced unknown_capability_tool:rag.ingest_document before the fix.
+```
+
+Fix chosen:
+
+```text
+- apply_host_tool_invoker_to_runtime_context in UAEP
+- attach_acp_catalog_exec_ctx in ACP
+- propagate allowed_tools from request.metadata in acp_run
+- inject declarative invoker outside ACP session flag
+- improve tool error propagation in run_index_job/runtime_helpers
+```
+
+Changed files reported by operator:
+
+```text
+intergrax/agents/authoring/acp_uaep_shim.py
+intergrax/agents/authoring/acp_run.py
+intergrax/agents/uaep.py
+intergrax/agents/persistence/tool_invoker_wiring.py
+agents/lkw_shared/runtime_helpers.py
+agents/local_indexer/steps/index_job.py
+agents/local_indexer/tests/test_index_job.py
+tests/unit/agents/persistence/test_tool_invoker_wiring.py
+```
+
+Focused tests:
+
+```text
+agents/local_indexer/tests
+tests/unit/applications/test_application_tool_registry_runtime_parity.py
+tests/unit/tools/providers/rag/test_rag_scope.py
+tests/unit/agents/persistence/test_tool_invoker_wiring.py
+-> 22 passed
+```
+
+Live result after LKW.1.13:
+
+```text
+health={"status":"ok"}
+agents=local_indexer, local_search, local_synthesizer
+index=accepted=1, rejected=0, ingested=1, chunks=1
+logs=no unknown_capability_tool, no RuntimeEventSchemaError, no ingest_failed
+qdrant=tenant collection intergrax__tenant__lkw-smoke present
+```
+
+Platform propagation:
+
+```text
+Platform-reusable.
+The fix bridges host catalog tool invocation into UAEP/ACP cognitive agent execution.
+Future Tier-3 applications using authored cognitive agents and catalog tools benefit from the same path.
+```
+
+## Known non-blocking follow-up
+
+```text
+total_tool_calls=0 remains an observability/summary accounting bug.
+It is not a product blocker while live index/search/synthesize behavior is verified through actual tool effects and Qdrant evidence.
+```
+
+Recommended follow-up classification:
+
+```text
+LKW-H1 / observability follow-up, not LKW.1 execution blocker.
+```
 
 ## Next task
 
 ```text
-LKW.1.12 — Fix RuntimeEventSchemaError for decision_emitted phase mismatch
+LKW.1.14 — final live product smoke
+```
+
+Scope:
+
+```text
+Run the full live Docker HTTP path:
+index fixture -> search marker/evidence -> synthesize shadow artifact -> verify original source immutability.
 ```
 
 Acceptance:
 
 ```text
-- Focused regression proves decision_emitted phase matches schema.
-- Live index smoke no longer logs the decision_emitted phase mismatch.
-- Live index smoke reaches the RAG tool path or exposes a new non-event-schema blocker.
-- No Qdrant point-id changes.
-- No tenant scope changes.
-- No broad LKW-H1/observability implementation.
+- health endpoint returns ok
+- agents endpoint lists local_indexer/local_search/local_synthesizer
+- index returns ingested=1 and chunks>0
+- search retrieves marker or fixture sentence with evidence
+- synthesize completes and writes only under shadow workspace
+- original source file remains unchanged
+- no RuntimeEventSchemaError
+- no unknown_capability_tool
+- no tool_gateway_not_available
 ```
 
-## Final closeout after LKW.1.12
+## Closeout rule
+
+Do not close LKW.1 until LKW.1.14 verifies the full product path:
 
 ```text
-LKW.1.13 — Re-run final live HTTP smoke:
-index -> ingested>0, chunks>0
-search -> evidence references fixture
-synthesize -> shadow artifact only
+index -> search -> synthesize -> shadow artifact only
 ```
