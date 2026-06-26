@@ -3,9 +3,9 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in the architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **LKW.1.1–LKW.1.6 Closed** · **Active queue: LKW.1.7 → LKW.1.8 → LKW-H1**
+Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **LKW.1.1–LKW.1.6 Closed** · **LKW.1.7 Partial/Open** · **LKW.1.8 Diagnosed** · **Active queue: LKW.1.9 → LKW.1.10 → LKW.1.11 → LKW-H1**
 
-Latest live proof snapshot: **2026-06-26 — LKW.1.7 PARTIAL / OPEN**. Docker, HTTP routing, agent listing, manual-evidence synthesize, shadow write, and source-file immutability work. Live RAG ingest/search is not proven yet: index accepted the fixture path but produced `ingested=0` and `chunks=0`; follow-up search returned `retrieve_failed`.
+Latest live proof snapshot: **2026-06-26 — LKW.1.8 DIAGNOSED**. Docker, HTTP routing, agent listing, manual-evidence synthesize, shadow write, and source-file immutability work. Live RAG ingest/search is not proven yet. Root cause found: Qdrant rejects generated point ids such as `ingest-lkw-live-smoke-0` because point ids must be unsigned integers or UUIDs. Additional diagnosed follow-ups: raw tool reason/error is hidden from the HTTP run surface, and tenant scope consistency must be verified after the point-id fix.
 
 Platform register: [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 
@@ -164,8 +164,8 @@ This track is executed one task at a time.
 | LKW.0 | Scaffold + architecture v2 | — | **Done** | — |
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
-| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Active — LKW.1.7 partial, LKW.1.8 next** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection | LKW.1.7/LKW.1.8 | **Next after live RAG blocker is diagnosable** | High |
+| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Active — LKW.1.8 diagnosed, LKW.1.9 next** | Critical |
+| LKW-H1 | LKW live trace/evidence inspection | LKW.1.9/LKW.1.10/LKW.1.11 | **Queued after live RAG blockers** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
@@ -227,8 +227,11 @@ POST /v1/local_workspace/run
 | LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | `applications/.../tests/` or `tests/acceptance/` | **Closed** | Add scaffold/test template if this becomes the canonical app acceptance pattern |
 | LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | **Closed / configured** | Ensure app settings pattern can inform scaffolded app settings |
 | LKW.1.6 | Docker/run parity | Dockerfile, compose, build/run docs | **Closed** | Closed after Docker build/start parity, environment-scoped capability graph, MCP opt-in startup, isolated Docker agent closure, and LKW Docker build smoke. |
-| LKW.1.7 | Live `local_workspace_application` HTTP smoke | Docker compose + `/health` + `/agents` + `/run` index/search/synthesize | **Partial / open** | Proves whether product application runs outside unit tests; records blockers before LKW.1 closeout. |
-| LKW.1.8 | Diagnose live RAG ingest failure | LKW Docker logs/runtime output + `rag.ingest_document`/retrieve path | **Next** | Determine whether fix belongs to LKW app wiring, RAG provider, tool response surface, env/model setup, or scaffold/runbook. |
+| LKW.1.7 | Live `local_workspace_application` HTTP smoke | Docker compose + `/health` + `/agents` + `/run` index/search/synthesize | **Partial / open** | Product host works, but full RAG-backed flow is blocked until LKW.1.9/LKW.1.10 are completed. |
+| LKW.1.8 | Diagnose live RAG ingest failure | LKW Docker logs/runtime output + `rag.ingest_document`/retrieve path | **Diagnosed** | Platform-reusable: Qdrant point-id contract, hidden raw tool reason, and tenant scope consistency are now queued as explicit tasks. |
+| LKW.1.9 | Fix Qdrant-compatible RAG ingest point ids | `intergrax/integrations/providers/vector_store/qdrant/rag_store.py` or `intergrax/rag/ingest/ingest_pipeline.py` + focused regression tests | **Next** | Platform-reusable: future Qdrant-backed Intergrax apps must not emit invalid point ids. |
+| LKW.1.10 | Verify and fix tenant scope consistency for live RAG ingest/retrieve | Runtime request metadata, RAG ingest/retrieve scope, Qdrant tenant enforcement | **Queued after LKW.1.9** | Platform-reusable: tenant/workspace/user scope must be consistent for generated RAG applications. |
+| LKW.1.11 | Re-run live HTTP smoke and close LKW.1.7 if full flow passes | Docker compose + `/run` index/search/synthesize + shadow verification | **Queued after LKW.1.9/LKW.1.10** | Product closeout plus platform proof checklist before moving to H1/LKW.2. |
 
 ### LKW.1.7 live smoke result — 2026-06-26
 
@@ -257,40 +260,92 @@ Conclusion:
 - Full `index → search → synthesize` is **not proven** because live RAG ingest produces no chunks.
 - Search failure is secondary until ingest produces retrievable chunks.
 
-Primary failure category:
+Primary failure category at LKW.1.7:
 
 ```text
 RAG ingest / retrieve wiring
 ```
 
-Primary blocker:
+### LKW.1.8 diagnostic result — 2026-06-26
+
+Status: **DIAGNOSED**.
+
+Primary diagnosed blocker:
 
 ```text
-rag.ingest_document does not produce used=true / ingested>0 / chunks>0 for the accepted fixture path.
+Qdrant write failure: generated point id `ingest-lkw-live-smoke-0` is not a valid Qdrant point id. Qdrant accepts only unsigned integers or UUIDs.
 ```
 
-### LKW.1.8 diagnostic goal
+Observed details:
 
-Answer one question before implementing any fix:
+- Runtime harness wiring is present enough for `rag.ingest_document` to reach the RAG pipeline.
+- Vectorstore manager and embedding manager are configured.
+- Fixture source file is visible and readable inside the container.
+- Configured Ollama model `llama3.1:latest` is present.
+- Loader, splitter, and embedding path run before the Qdrant upsert failure.
+- Qdrant logs show no successful write for the failing ingest.
+- `index_job` reports `accepted=1` but `ingested=0` because the tool response fails before successful upsert.
 
-```text
-Why does live rag.ingest_document for /data/user_docs/lkw-live-smoke.txt finish without used=true and without chunks?
-```
+Diagnosed findings queued as tasks:
 
-Diagnostic questions:
+| Finding | Classification | Queued task |
+|---------|----------------|-------------|
+| Qdrant rejects generated string point ids | `Platform-reusable` | LKW.1.9 |
+| HTTP `/run` hides raw tool reason/status/error | `Platform-reusable` | LKW-H1.1 / LKW-H1.2 |
+| Tenant metadata can mismatch Qdrant store tenant (`expected 'default', got 'lkw-smoke'`) | `Platform-reusable` | LKW.1.10 |
+| Need final live proof after fixes | Product + platform closeout | LKW.1.11 |
 
-1. Is the raw `rag.ingest_document` tool response available but hidden by the HTTP/final-response surface?
-2. Does the tool response contain `reason`, `parser_trace`, `file_size_bytes`, or provider error details?
-3. Is `vectorstore_manager` configured in the Docker-hosted LKW runtime?
-4. Is `embedding_manager` configured in the Docker-hosted LKW runtime?
-5. Does the default document loader load the `.txt` fixture?
-6. Does the default splitter generate chunks for the loaded fixture?
-7. Does embedding through the configured Ollama/model path work?
-8. Does Qdrant accept the vectors and store documents with `workspace_id`/`collection_id` metadata?
-9. Does retrieve search the same workspace/tenant/user scope that ingest wrote?
-10. Is the defect in app wiring, RAG provider wiring, model/env setup, or missing diagnostic exposure?
+### LKW.1.9 implementation goal
 
-LKW.1.8 is diagnostic first. If it identifies a code defect, the fix must be a separate task unless the operator explicitly approves immediate implementation. Every finding must also be classified through the platform classification gate in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §3.
+Fix Qdrant-compatible point ids so live RAG ingest can store chunks in Qdrant.
+
+Acceptance:
+
+- [ ] Qdrant-backed ingest no longer sends invalid point ids such as `ingest-lkw-live-smoke-0`.
+- [ ] Original/stable logical chunk id remains recoverable in metadata if provider id normalization is used.
+- [ ] Focused regression test proves Qdrant provider receives valid point ids or normalizes invalid ids before upsert.
+- [ ] LKW live index smoke produces `ingested>0` and `chunks>0`, unless another queued blocker is reached.
+- [ ] Finding is reported as `Platform-reusable`, with any scaffold/RAG provider follow-up recorded.
+
+Out of scope:
+
+- Tenant scope refactor.
+- HTTP diagnostic surface.
+- Grafana/Tempo/OpenTelemetry Collector.
+- Full LKW-H1 implementation.
+
+### LKW.1.10 diagnostic/implementation goal
+
+Verify and, if needed, fix tenant/workspace/user scope consistency between request body, request metadata, RAG ingest, RAG retrieve, and Qdrant tenant enforcement.
+
+Acceptance:
+
+- [ ] `tenant_id` source of truth is explicit for LKW live runs.
+- [ ] Ingest and retrieve use compatible tenant/workspace/user filters.
+- [ ] Qdrant tenant enforcement does not reject valid LKW smoke requests.
+- [ ] Focused regression test covers tenant mismatch or confirms intended behavior.
+- [ ] Any scaffold/env/runbook implication is classified and recorded.
+
+Out of scope:
+
+- Qdrant point-id compatibility, unless LKW.1.9 was not completed.
+- Hosted observability stack.
+- Graph pipeline / LKW.2.
+
+### LKW.1.11 closeout goal
+
+Re-run the live LKW HTTP proof after LKW.1.9 and LKW.1.10.
+
+Acceptance:
+
+- [ ] Docker stack healthy.
+- [ ] `/health` succeeds.
+- [ ] `/v1/local_workspace/agents` lists index/search/synthesize.
+- [ ] `local.workspace.index` ingests fixture with `ingested>0` and `chunks>0`.
+- [ ] `local.workspace.search` retrieves evidence referencing the fixture.
+- [ ] `local.workspace.synthesize` writes only to shadow workspace.
+- [ ] Original fixture remains unchanged.
+- [ ] Product and platform acceptance criteria are updated before LKW.1 closeout.
 
 ### Product acceptance criteria
 
@@ -308,8 +363,10 @@ LKW.1.8 is diagnostic first. If it identifies a code defect, the fix must be a s
 ### Platform acceptance criteria
 
 - [ ] Platform proof checklist in §0a is completed.
-- [ ] Every discovered defect/pattern/gap is classified as `LKW-specific`, `Platform-reusable`, or `Platform-reusable deferred`.
+- [x] Every discovered defect/pattern/gap from LKW.1.8 is classified as `Platform-reusable` and queued.
 - [x] Reusable Docker/build/run lessons are reflected in Docker templates/docs or recorded as follow-ups.
+- [ ] Reusable Qdrant/RAG provider id handling is fixed or recorded as a blocking follow-up.
+- [ ] Reusable tenant/workspace/user scope handling is fixed or recorded as a blocking follow-up.
 - [ ] Reusable env/settings lessons are reflected in shared settings/scaffold/docs or recorded as a blocking follow-up.
 - [ ] Reusable agent/application patterns are reflected in scaffold templates/docs or recorded as a blocking follow-up.
 - [ ] Any dependency/profile lesson is reflected in `pyproject.toml` or recorded as a blocking follow-up.
@@ -325,7 +382,7 @@ Reason:
 - LKW-H1 explicitly covers local trace/evidence inspection without requiring an external dashboard.
 - Full observability stack can be introduced later when the product proof path is useful and stable enough to justify operational complexity.
 
-However, the LKW.1.7 result shows that minimal local diagnosability is required before the RAG blocker can be resolved. At minimum, the operator must be able to inspect:
+However, the LKW.1.7/LKW.1.8 results show that minimal local diagnosability is required before the RAG blocker can be resolved. At minimum, the operator must be able to inspect:
 
 - selected agent;
 - step id;
@@ -336,7 +393,7 @@ However, the LKW.1.7 result shows that minimal local diagnosability is required 
 - RAG ingest/retrieve summary;
 - shadow artifact path.
 
-This requirement feeds directly into LKW.1.8 and LKW-H1.
+This requirement feeds directly into LKW-H1.
 
 ### Out of scope (LKW.1)
 
@@ -359,6 +416,10 @@ Make one real LKW run inspectable without reading internal runtime code, and ens
 
 LKW-H1 is **not** the hosted observability stack. It is the minimum local inspection surface needed for a developer/operator to understand a run. Grafana, Tempo, and an OpenTelemetry Collector remain optional future operational infrastructure unless a later task explicitly scopes them.
 
+### Known diagnosed input from LKW.1.8
+
+`LKW.1.8` proved that the platform can hide the exact raw tool failure from the HTTP run response. The operator had to inspect logs/runtime behavior to discover the Qdrant point-id error. This is `Platform-reusable` because every future application needs a minimal way to see tool status and reason/error during local proof runs.
+
 ### Required inspection fields
 
 For every LKW.1 proof run, the operator should be able to inspect:
@@ -377,11 +438,11 @@ For every LKW.1 proof run, the operator should be able to inspect:
 
 ### Tasks
 
-| ID | Task | Module | Owner | Platform propagation |
-|----|------|--------|-------|----------------------|
-| LKW-H1.1 | Define minimal LKW trace/evidence inspection contract | LKW host/debug docs or tests | Tier-3 | Promote reusable inspection contract to platform docs if generic |
-| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | Tier-1/3 | Update event/trace scaffold or docs if reusable |
-| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | `applications/local_workspace_application/...tests` | Tier-3 | Update generated app test pattern if reusable |
+| ID | Task | Module | Status | Platform propagation |
+|----|------|--------|--------|----------------------|
+| LKW-H1.1 | Define minimal LKW trace/evidence inspection contract, including raw tool status and reason/error | LKW host/debug docs or tests | Planned | Promote reusable inspection contract to platform docs if generic |
+| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | Planned | Update event/trace scaffold or docs if reusable |
+| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | `applications/local_workspace_application/...tests` | Planned | Update generated app test pattern if reusable |
 
 ### Acceptance criteria
 
@@ -500,6 +561,9 @@ Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 | E1 | Developer proof: fixture/local doc ingest → search cites source → synthesize writes shadow artifact | LKW.1, LKW-H1 |
 | E1a | Live HTTP smoke: Docker host + `/health` + `/agents` + `/run` direct capabilities | LKW.1.7 |
 | E1b | Live RAG diagnostic: accepted fixture path produces `used=true`, chunks, retrievable evidence, or exposes exact blocker reason | LKW.1.8 |
+| E1c | Qdrant point-id compatibility: live ingest stores chunks with valid Qdrant point ids | LKW.1.9 |
+| E1d | Tenant scope consistency: ingest/retrieve use compatible tenant/workspace/user scope | LKW.1.10 |
+| E1e | LKW.1 closeout: full live `index → search → synthesize → shadow write` passes | LKW.1.11 |
 | E2 | Search at desk via MCP | LKW.1 |
 | E3 | Pipeline report | LKW.2 |
 | E4 | Install → pick folders → persistent index | LKW.5, LKW.6, LKW.8 |
@@ -526,7 +590,7 @@ uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port
 applications/local_workspace_application/docker/build-docker.sh
 docker run --rm --env-file applications/local_workspace_application/.env -p 8020:8020 local_workspace-application
 
-# Current LKW.1.7/LKW.1.8 Docker compose path
+# Current LKW.1.7+ Docker compose path
 docker compose -f applications/local_workspace_application/docker/docker-compose.yml up -d --build
 curl -sS http://127.0.0.1:8020/health
 curl -sS http://127.0.0.1:8020/v1/local_workspace/agents
@@ -552,7 +616,7 @@ Add narrower test commands next to the implementation PR once exact runtime/scaf
 - LKW platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 - One wave per PR unless operator batches explicitly.
 - Every harness/platform/scaffold/build change in this track must cite the LKW acceptance criterion or platform propagation requirement that justifies it.
-- Current LKW.1.7/LKW.1.8 finding: live diagnostic visibility is now a platform pressure point, but full hosted observability is not a prerequisite for LKW.1 closeout.
+- Current LKW.1.8 findings: Qdrant point-id compatibility, tenant scope consistency, and live diagnostic visibility are platform pressure points; full hosted observability is not a prerequisite for LKW.1 closeout.
 
 ---
 
