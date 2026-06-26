@@ -177,10 +177,12 @@ See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Exi
 
 **Single register for Band 3 and AA domain-deferred rows.** Do not duplicate in harness session summaries.
 
+**LKW current platform blocker:** LKW.1 is still open. Qdrant point-id compatibility is fixed and tenant scope consistency is fixed, but live HTTP `/run` now exposes a **Platform-reusable runtime execution blocker**: `RuntimeToolGateway` / `IdempotentToolInvoker` registry parity. Tools declared by `ApplicationToolWiring.registry` must be invokable by the live runtime gateway before LKW.1 can close and before this pattern is reused by future product applications.
+
 | ID | Deliverable | Module | Priority | Depends on |
 |----|-------------|--------|----------|------------|
 | **LKW.0** | Local Knowledge Workspace — scaffold + architecture baseline | `agents/local_{indexer,search,synthesizer}/`, `applications/local_workspace_application/` | **High** | Product reprioritization (2026-06-07) — **Done** |
-| **LKW.1** | Wave 1 — ingest + search smoke on explicit paths | `agents/local_*/steps/` | **High** | LKW.0 |
+| **LKW.1** | Wave 1 — ingest + search live proof on explicit paths; current blocker: runtime gateway registry parity before closeout | `agents/local_*/steps/`, runtime tool gateway / application wiring | **High** | LKW.0 · see LKW.1.11/LKW.1.12 in application plan |
 | **LKW.2** | Multi-agent pipeline (`local.workspace.pipeline` graph) | `local_workspace_application/` + Nexus graph | High | LKW.1 |
 | **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | `intergrax/tools/providers/filesystem/` | Medium | LKW.1 |
 | **LKW.4** | Background ingest queue + incremental index | Tier-0 queue + Tier-3 worker | Medium | LKW.2 |
