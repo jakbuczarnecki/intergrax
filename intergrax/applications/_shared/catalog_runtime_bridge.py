@@ -80,6 +80,8 @@ def apply_catalog_profiles_from_build_context(
         config.tool_profile = build_ctx.tool_profile
     if build_ctx.tool_wiring_context is not None:
         config.tool_wiring_context = build_ctx.tool_wiring_context
+    if build_ctx.tool_registry is not None:
+        config.tool_registry = build_ctx.tool_registry
     if build_ctx.skill_profile is not None:
         config.skill_profile = build_ctx.skill_profile
     return config
