@@ -13,6 +13,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, TypeVar
 
+from intergrax.utils import attribute_access
+
 _F = TypeVar("_F", bound=Callable[..., Any])
 
 _MCP_DEPENDENCY_MESSAGE = (
@@ -48,7 +50,7 @@ def load_mcp_server_builder(import_path: str, *, symbol: str) -> Callable[..., A
     from importlib import import_module
 
     module = import_module(import_path)
-    builder = getattr(module, symbol, None)
+    builder = attribute_access.optional(module, symbol, None)
     if builder is None:
         raise ImportError(f"MCP server builder {symbol!r} not found in {import_path!r}")
     return builder

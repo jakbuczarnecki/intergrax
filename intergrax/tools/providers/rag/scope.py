@@ -10,6 +10,7 @@ from typing import Any
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import create_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.utils import attribute_access
 
 TENANT_ID_METADATA_CONFLICT = "tenant_id_metadata_conflict"
 _TENANT_VECTORSTORE_CACHE_KEY = "tenant_vectorstore_managers"
@@ -38,33 +39,33 @@ def vectorstore_tenant_id(manager: object | None) -> str | None:
     if manager is None:
         return None
 
-    store: object | None = getattr(manager, "_store", manager)
+    store: object | None = attribute_access.optional(manager, "_store", manager)
     seen: set[int] = set()
     while store is not None and id(store) not in seen:
         seen.add(id(store))
 
-        cfg = getattr(store, "cfg", None)
+        cfg = attribute_access.optional(store, "cfg", None)
         if cfg is not None:
-            tenant = getattr(cfg, "tenant_id", None)
+            tenant = attribute_access.optional(cfg, "tenant_id", None)
             if tenant is not None and str(tenant).strip():
                 return str(tenant).strip()
 
-        config = getattr(store, "_config", None)
+        config = attribute_access.optional(store, "_config", None)
         if config is None:
-            config = getattr(store, "config", None)
+            config = attribute_access.optional(store, "config", None)
         if config is not None:
-            tenant = getattr(config, "tenant_id", None)
+            tenant = attribute_access.optional(config, "tenant_id", None)
             if tenant is not None and str(tenant).strip():
                 return str(tenant).strip()
 
-        inner = getattr(store, "_inner", None)
+        inner = attribute_access.optional(store, "_inner", None)
         if inner is None:
-            inner = getattr(store, "rag_store", None)
+            inner = attribute_access.optional(store, "rag_store", None)
         if inner is None or inner is store:
             break
         store = inner
 
-    tenant = getattr(store, "_tenant_id", None)
+    tenant = attribute_access.optional(store, "_tenant_id", None)
     if tenant is not None and str(tenant).strip():
         return str(tenant).strip()
     return None
