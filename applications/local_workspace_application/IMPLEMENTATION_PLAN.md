@@ -3,9 +3,9 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in the architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **LKW.1.1–LKW.1.6 Closed** · **LKW.1.7 Partial/Open** · **LKW.1.8 Diagnosed** · **LKW.1.9 Completed / live HTTP blocked by LKW.1.10** · **Active queue: LKW.1.10 → LKW.1.11 → LKW-H1**
+Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **LKW.1.1–LKW.1.6 Closed** · **LKW.1.7 Partial/Open** · **LKW.1.8 Diagnosed** · **LKW.1.9 Completed** · **LKW.1.10 Completed / live HTTP blocked by LKW.1.11** · **Active queue: LKW.1.11 → LKW.1.12 → LKW-H1**
 
-Latest live proof snapshot: **2026-06-26 — LKW.1.9 COMPLETED IN SCOPE / LIVE HTTP BLOCKED BY LKW.1.10**. Docker, HTTP routing, agent listing, manual-evidence synthesize, shadow write, and source-file immutability work. The Qdrant point-id blocker from LKW.1.8 is fixed: invalid logical ids such as `ingest-lkw-live-smoke-0` are normalized for Qdrant while `logical_id` remains recoverable in payload metadata. Focused tests passed (`7 passed` for point-id normalization, `11 passed` for related Qdrant/vectorstore checks). Direct container ingest with `tenant_id=default` produced `used=True`, `chunks=1`, and Qdrant upsert returned HTTP 200. Live HTTP smoke with `tenant_id=lkw-smoke` still returns `ingested=0` and `chunks=0` because it now reaches the known LKW.1.10 blocker: `Metadata tenant_id mismatch: expected 'default', got 'lkw-smoke'`. Hidden raw tool reason/error remains queued for LKW-H1.
+Latest live proof snapshot: **2026-06-26 — LKW.1.10 COMPLETED IN SCOPE / LIVE HTTP BLOCKED BY LKW.1.11**. Docker, HTTP routing, agent listing, manual-evidence synthesize, shadow write, and source-file immutability work. The Qdrant point-id blocker from LKW.1.8 is fixed. Tenant scope consistency from LKW.1.10 is fixed: `RuntimeRequest.tenant_id` / HTTP body tenant is authoritative, `metadata.tenant_id` cannot conflict, and `collection_id` remains `workspace_id`. Focused tenant/RAG/Qdrant/LKW tests passed (`21 passed`), Qdrant tenant isolation still passes, and direct `perform_rag_ingest` with `tenant_id=lkw-smoke` produced `used=True`, `num_chunks=1`. Live HTTP still returns `ingested=0`, `chunks=0` because `RuntimeToolGateway` uses an `IdempotentToolInvoker` registry that does not contain `rag.ingest_document` even though `ApplicationToolWiring.registry` does. This produces `unknown_capability_tool:rag.ingest_document` and `total_tool_calls=0`. This is a **Platform-reusable execution wiring blocker**, not an observability-only H1 issue. It must be fixed before LKW.1 closeout.
 
 Platform register: [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 
@@ -164,8 +164,8 @@ This track is executed one task at a time.
 | LKW.0 | Scaffold + architecture v2 | — | **Done** | — |
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
-| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Active — LKW.1.9 completed, LKW.1.10 next** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection | LKW.1.10/LKW.1.11 | **Queued after live RAG blockers** | High |
+| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Active — LKW.1.10 completed, LKW.1.11 next** | Critical |
+| LKW-H1 | LKW live trace/evidence inspection | LKW.1.11/LKW.1.12 | **Queued after live execution blockers** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
@@ -227,11 +227,12 @@ POST /v1/local_workspace/run
 | LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | `applications/.../tests/` or `tests/acceptance/` | **Closed** | Add scaffold/test template if this becomes the canonical app acceptance pattern |
 | LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | **Closed / configured** | Ensure app settings pattern can inform scaffolded app settings |
 | LKW.1.6 | Docker/run parity | Dockerfile, compose, build/run docs | **Closed** | Closed after Docker build/start parity, environment-scoped capability graph, MCP opt-in startup, isolated Docker agent closure, and LKW Docker build smoke. |
-| LKW.1.7 | Live `local_workspace_application` HTTP smoke | Docker compose + `/health` + `/agents` + `/run` index/search/synthesize | **Partial / open** | Product host works, but full RAG-backed flow is blocked until LKW.1.10 is completed. |
-| LKW.1.8 | Diagnose live RAG ingest failure | LKW Docker logs/runtime output + `rag.ingest_document`/retrieve path | **Diagnosed** | Platform-reusable: Qdrant point-id contract, hidden raw tool reason, and tenant scope consistency were queued as explicit tasks. |
-| LKW.1.9 | Fix Qdrant-compatible RAG ingest point ids | `intergrax/integrations/providers/vector_store/qdrant/rag_store.py` + `tests/unit/integrations/providers/vector_store/test_qdrant_point_id_normalization.py` | **Completed / live HTTP blocked by LKW.1.10** | Platform-reusable fix committed in `855737a6`; Qdrant point ids are normalized and `logical_id` is preserved. |
-| LKW.1.10 | Verify and fix tenant scope consistency for live RAG ingest/retrieve | Runtime request metadata, RAG ingest/retrieve scope, Qdrant tenant enforcement | **Next** | Platform-reusable: tenant/workspace/user scope must be consistent for generated RAG applications. |
-| LKW.1.11 | Re-run live HTTP smoke and close LKW.1.7 if full flow passes | Docker compose + `/run` index/search/synthesize + shadow verification | **Queued after LKW.1.10** | Product closeout plus platform proof checklist before moving to H1/LKW.2. |
+| LKW.1.7 | Live `local_workspace_application` HTTP smoke | Docker compose + `/health` + `/agents` + `/run` index/search/synthesize | **Partial / open** | Product host works, but full RAG-backed flow is blocked until LKW.1.11 is completed. |
+| LKW.1.8 | Diagnose live RAG ingest failure | LKW Docker logs/runtime output + `rag.ingest_document`/retrieve path | **Diagnosed** | Platform-reusable: Qdrant point-id contract, hidden raw tool reason, tenant scope, and runtime tool registry parity were queued as explicit tasks. |
+| LKW.1.9 | Fix Qdrant-compatible RAG ingest point ids | `intergrax/integrations/providers/vector_store/qdrant/rag_store.py` + `tests/unit/integrations/providers/vector_store/test_qdrant_point_id_normalization.py` | **Completed** | Platform-reusable fix committed in `855737a6`; Qdrant point ids are normalized and `logical_id` is preserved. |
+| LKW.1.10 | Fix tenant scope consistency for live RAG ingest/retrieve | `agents/lkw_shared/runtime_helpers.py`, `intergrax/tools/providers/rag/scope.py`, local index/search steps, RAG services/tests | **Completed / live HTTP blocked by LKW.1.11** | Platform-reusable: tenant source of truth is explicit; direct RAG ingest works with `tenant_id=lkw-smoke`; live path now exposes runtime gateway registry mismatch. |
+| LKW.1.11 | Fix runtime tool gateway registry parity for catalog tools | `RuntimeToolGateway`, `IdempotentToolInvoker`, application tool wiring / catalog bootstrap path | **Next** | Platform-reusable: tools declared by application wiring must be invokable by the live runtime gateway. |
+| LKW.1.12 | Re-run live HTTP smoke and close LKW.1.7 if full flow passes | Docker compose + `/run` index/search/synthesize + shadow verification | **Queued after LKW.1.11** | Product closeout plus platform proof checklist before moving to H1/LKW.2. |
 
 ### LKW.1.7 live smoke result — 2026-06-26
 
@@ -257,13 +258,13 @@ Conclusion:
 
 - Docker/run parity is not the blocker anymore.
 - HTTP route, agent registration/routing, manual-evidence synthesize, shadow write, and source immutability work.
-- Full `index → search → synthesize` is **not proven** because live RAG ingest produces no chunks.
+- Full `index → search → synthesize` is **not proven** because the live runtime path still cannot execute `rag.ingest_document` through the same registry advertised by application wiring.
 - Search failure is secondary until ingest produces retrievable chunks.
 
-Primary failure category at LKW.1.7:
+Primary failure category at LKW.1.7 after LKW.1.10:
 
 ```text
-RAG ingest / retrieve wiring
+Runtime tool gateway / catalog registry parity
 ```
 
 ### LKW.1.8 diagnostic result — 2026-06-26
@@ -278,7 +279,7 @@ Qdrant write failure: generated point id `ingest-lkw-live-smoke-0` is not a vali
 
 Observed details:
 
-- Runtime harness wiring is present enough for `rag.ingest_document` to reach the RAG pipeline.
+- Runtime harness wiring is present enough for `rag.ingest_document` to reach the RAG pipeline in direct execution.
 - Vectorstore manager and embedding manager are configured.
 - Fixture source file is visible and readable inside the container.
 - Configured Ollama model `llama3.1:latest` is present.
@@ -291,13 +292,14 @@ Diagnosed findings queued as tasks:
 | Finding | Classification | Queued task |
 |---------|----------------|-------------|
 | Qdrant rejects generated string point ids | `Platform-reusable` | LKW.1.9 — completed in `855737a6` |
+| Tenant metadata can mismatch Qdrant store tenant (`expected 'default', got 'lkw-smoke'`) | `Platform-reusable` | LKW.1.10 — completed in scope |
+| Runtime gateway registry does not expose `rag.ingest_document` although application wiring has it | `Platform-reusable` | LKW.1.11 |
 | HTTP `/run` hides raw tool reason/status/error | `Platform-reusable` | LKW-H1.1 / LKW-H1.2 |
-| Tenant metadata can mismatch Qdrant store tenant (`expected 'default', got 'lkw-smoke'`) | `Platform-reusable` | LKW.1.10 |
-| Need final live proof after fixes | Product + platform closeout | LKW.1.11 |
+| Need final live proof after execution blockers | Product + platform closeout | LKW.1.12 |
 
 ### LKW.1.9 implementation result — 2026-06-26
 
-Status: **COMPLETED IN SCOPE / LIVE HTTP BLOCKED BY LKW.1.10**.
+Status: **COMPLETED IN SCOPE**.
 
 Commit:
 
@@ -316,7 +318,7 @@ Result:
 - `logical_id` preserves the original logical chunk id in payload metadata.
 - Qdrant upsert succeeds for the previously failing ingest path.
 - Direct container ingest with `tenant_id=default` returns `used=True`, `chunks=1`, and `vector_ids=['ingest-lkw-live-smoke-0']`.
-- Live HTTP smoke with `tenant_id=lkw-smoke` still reports `accepted=1`, `rejected=0`, `ingested=0`, `chunks=0` because it reaches the known LKW.1.10 tenant mismatch blocker.
+- Live HTTP smoke then reached the tenant mismatch blocker, which was handled in LKW.1.10.
 
 Tests:
 
@@ -346,39 +348,121 @@ Out of scope completed as expected:
 - Grafana/Tempo/OpenTelemetry Collector not introduced.
 - Full LKW-H1 not started.
 
-### LKW.1.10 diagnostic/implementation goal
+### LKW.1.10 implementation result — 2026-06-26
 
-Verify and, if needed, fix tenant/workspace/user scope consistency between request body, request metadata, RAG ingest, RAG retrieve, and Qdrant tenant enforcement.
+Status: **COMPLETED IN SCOPE / LIVE HTTP BLOCKED BY LKW.1.11**.
 
-Known blocker from LKW.1.9 live HTTP smoke:
+Changed files reported by implementation:
+
+- `agents/lkw_shared/runtime_helpers.py` — `resolve_request_scope()`
+- `agents/local_indexer/steps/index_job.py`
+- `agents/local_search/steps/search_job.py`
+- `intergrax/tools/providers/rag/scope.py`
+- `intergrax/tools/providers/rag/ingest_service.py`
+- `intergrax/tools/providers/rag/service.py`
+- `tests/unit/tools/providers/rag/test_rag_scope.py`
+- `agents/local_indexer/tests/test_index_job.py`
+- `agents/local_search/tests/test_search_job.py`
+- `applications/local_workspace_application/local_workspace_application_tests/test_lkw_acceptance_index_search_synthesize.py`
+
+Root cause fixed:
+
+- LKW previously allowed `metadata.tenant_id` to drive or conflict with RAG tenant scope.
+- Qdrant store could be configured as `default` while RAG metadata carried `lkw-smoke`, causing tenant enforcement to reject ingest.
+- `RuntimeRequest.tenant_id` / HTTP body tenant is now the authoritative tenant source.
+- `metadata.tenant_id` must not conflict with the authoritative tenant.
+- `collection_id` maps to `workspace_id` and remains a separate dimension.
+
+Verification:
 
 ```text
-Metadata tenant_id mismatch: expected 'default', got 'lkw-smoke'
+uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py \
+  tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py::test_vectorstore_tenant_isolation_contract[qdrant] \
+  agents/local_indexer/tests/test_index_job.py \
+  agents/local_search/tests/test_search_job.py \
+  applications/local_workspace_application/local_workspace_application_tests/test_lkw_acceptance_index_search_synthesize.py -q
+→ 21 passed
+```
+
+Additional verification:
+
+```text
+direct perform_rag_ingest with tenant_id=lkw-smoke → used=True, num_chunks=1
+```
+
+Live HTTP result after tenant fix:
+
+```text
+accepted=1
+rejected=0
+ingested=0
+chunks=0
+blocker=unknown_capability_tool:rag.ingest_document
+```
+
+Interpretation:
+
+- Tenant scope is no longer the blocker.
+- The live path does not reach RAG because `RuntimeToolGateway` dispatches through an `IdempotentToolInvoker` registry that does not contain `rag.ingest_document`.
+- `ApplicationToolWiring.registry` contains the tool, so this is a runtime gateway / application wiring registry parity bug.
+- `total_tool_calls=0` is a symptom of dispatch failure, not proof that no tool was intended.
+
+Acceptance:
+
+- [x] `tenant_id` source of truth is explicit.
+- [x] `metadata.tenant_id` cannot conflict with authoritative request tenant.
+- [x] Ingest and retrieve use compatible tenant/workspace/user scope in direct/unit paths.
+- [x] Qdrant tenant enforcement no longer rejects valid direct LKW/RAG ingest.
+- [x] Focused regression tests pass.
+- [x] Qdrant tenant isolation test still passes.
+- [x] Live index smoke reaches the next queued blocker instead of tenant mismatch.
+- [x] No Qdrant point-id changes included.
+- [x] No HTTP diagnostic/H1 changes included.
+
+### LKW.1.11 implementation goal
+
+Fix live runtime tool gateway / catalog registry parity so tools declared by application wiring are invokable by the runtime gateway.
+
+Known blocker from LKW.1.10 live HTTP smoke:
+
+```text
+unknown_capability_tool:rag.ingest_document
+```
+
+Root question:
+
+```text
+Why does ApplicationToolWiring.registry contain rag.ingest_document while the RuntimeToolGateway / IdempotentToolInvoker registry used by live /run does not?
 ```
 
 Acceptance:
 
-- [ ] `tenant_id` source of truth is explicit for LKW live runs.
-- [ ] Ingest and retrieve use compatible tenant/workspace/user filters.
-- [ ] Qdrant tenant enforcement does not reject valid LKW smoke requests.
-- [ ] Focused regression test covers tenant mismatch or confirms intended behavior.
-- [ ] Any scaffold/env/runbook implication is classified and recorded.
+- [ ] Live `RuntimeToolGateway` and `IdempotentToolInvoker` use the same effective tool registry/catalog as `ApplicationToolWiring.registry` for configured application tools.
+- [ ] `rag.ingest_document` is invokable through the live HTTP `/run` index path.
+- [ ] `unknown_capability_tool:rag.ingest_document` no longer occurs for configured LKW tools.
+- [ ] `total_tool_calls` is non-zero when a configured catalog tool is invoked.
+- [ ] Focused regression test covers application wiring registry → runtime gateway invoker parity.
+- [ ] Fix is classified as `Platform-reusable` and not LKW-only.
+- [ ] Any scaffold/application-host implication is updated or recorded as a blocking follow-up.
 
 Out of scope:
 
+- Tenant scope refactor; completed in LKW.1.10.
 - Qdrant point-id compatibility; completed in LKW.1.9.
+- HTTP diagnostic surface / H1, except minimal assertions needed to prove execution.
 - Hosted observability stack.
 - Graph pipeline / LKW.2.
 
-### LKW.1.11 closeout goal
+### LKW.1.12 closeout goal
 
-Re-run the live LKW HTTP proof after LKW.1.10.
+Re-run the live LKW HTTP proof after LKW.1.11.
 
 Acceptance:
 
 - [ ] Docker stack healthy.
 - [ ] `/health` succeeds.
 - [ ] `/v1/local_workspace/agents` lists index/search/synthesize.
+- [ ] `local.workspace.index` invokes `rag.ingest_document` through the live runtime gateway.
 - [ ] `local.workspace.index` ingests fixture with `ingested>0` and `chunks>0`.
 - [ ] `local.workspace.search` retrieves evidence referencing the fixture.
 - [ ] `local.workspace.synthesize` writes only to shadow workspace.
@@ -391,6 +475,7 @@ Acceptance:
 - [x] `/health` responds successfully.
 - [x] `/v1/local_workspace/agents` lists `local.workspace.index`, `local.workspace.search`, and `local.workspace.synthesize`.
 - [x] `POST /v1/local_workspace/run` reaches the index agent.
+- [ ] `POST /v1/local_workspace/run` with `metadata.source_paths` + `capability=local.workspace.index` invokes `rag.ingest_document` through the live runtime gateway.
 - [ ] `POST /v1/local_workspace/run` with `metadata.source_paths` + `capability=local.workspace.index` ingests at least one chunk from the fixture.
 - [ ] Follow-up search returns answer/evidence referencing ingested content.
 - [x] Synthesize with `shadow_workspace: true` writes artifact under shadow root when evidence is supplied.
@@ -401,10 +486,11 @@ Acceptance:
 ### Platform acceptance criteria
 
 - [ ] Platform proof checklist in §0a is completed.
-- [x] Every discovered defect/pattern/gap from LKW.1.8 is classified as `Platform-reusable` and queued.
+- [x] Every discovered defect/pattern/gap from LKW.1.8–LKW.1.10 is classified as `Platform-reusable` and queued or completed.
 - [x] Reusable Docker/build/run lessons are reflected in Docker templates/docs or recorded as follow-ups.
 - [x] Reusable Qdrant/RAG provider id handling is fixed in LKW.1.9.
-- [ ] Reusable tenant/workspace/user scope handling is fixed or recorded as a blocking follow-up.
+- [x] Reusable tenant/workspace/user scope handling is fixed in LKW.1.10.
+- [ ] Reusable runtime gateway / application tool registry parity is fixed in LKW.1.11.
 - [ ] Reusable env/settings lessons are reflected in shared settings/scaffold/docs or recorded as a blocking follow-up.
 - [ ] Reusable agent/application patterns are reflected in scaffold templates/docs or recorded as a blocking follow-up.
 - [ ] Any dependency/profile lesson is reflected in `pyproject.toml` or recorded as a blocking follow-up.
@@ -420,7 +506,7 @@ Reason:
 - LKW-H1 explicitly covers local trace/evidence inspection without requiring an external dashboard.
 - Full observability stack can be introduced later when the product proof path is useful and stable enough to justify operational complexity.
 
-However, the LKW.1.7/LKW.1.8 results show that minimal local diagnosability is required before the RAG blocker can be resolved. At minimum, the operator must be able to inspect:
+However, the LKW.1.7–LKW.1.10 results show that minimal local diagnosability is required after execution blockers are fixed. At minimum, the operator must be able to inspect:
 
 - selected agent;
 - step id;
@@ -431,7 +517,7 @@ However, the LKW.1.7/LKW.1.8 results show that minimal local diagnosability is r
 - RAG ingest/retrieve summary;
 - shadow artifact path.
 
-This requirement feeds directly into LKW-H1.
+This requirement feeds directly into LKW-H1, but it must not be used to bury execution blockers such as `unknown_capability_tool`.
 
 ### Out of scope (LKW.1)
 
@@ -454,9 +540,9 @@ Make one real LKW run inspectable without reading internal runtime code, and ens
 
 LKW-H1 is **not** the hosted observability stack. It is the minimum local inspection surface needed for a developer/operator to understand a run. Grafana, Tempo, and an OpenTelemetry Collector remain optional future operational infrastructure unless a later task explicitly scopes them.
 
-### Known diagnosed input from LKW.1.8/LKW.1.9
+### Known diagnosed input from LKW.1.8–LKW.1.10
 
-`LKW.1.8` and `LKW.1.9` proved that the platform can hide the exact raw tool failure from the HTTP run response. The operator had to inspect logs/runtime behavior to discover both the Qdrant point-id error and the tenant mismatch. This is `Platform-reusable` because every future application needs a minimal way to see tool status and reason/error during local proof runs.
+`LKW.1.8`, `LKW.1.9`, and `LKW.1.10` proved that the platform can hide exact raw tool failures from the HTTP run response. The operator had to inspect logs/runtime behavior to discover the Qdrant point-id error, the tenant mismatch, and the runtime gateway registry mismatch. This is `Platform-reusable` because every future application needs a minimal way to see tool status and reason/error during local proof runs. H1 must improve visibility, but it must not replace the LKW.1.11 execution wiring fix.
 
 ### Required inspection fields
 
@@ -601,7 +687,8 @@ Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 | E1b | Live RAG diagnostic: accepted fixture path produces `used=true`, chunks, retrievable evidence, or exposes exact blocker reason | LKW.1.8 |
 | E1c | Qdrant point-id compatibility: live ingest stores chunks with valid Qdrant point ids | LKW.1.9 |
 | E1d | Tenant scope consistency: ingest/retrieve use compatible tenant/workspace/user scope | LKW.1.10 |
-| E1e | LKW.1 closeout: full live `index → search → synthesize → shadow write` passes | LKW.1.11 |
+| E1e | Runtime gateway registry parity: configured application catalog tools are invokable by live runtime gateway | LKW.1.11 |
+| E1f | LKW.1 closeout: full live `index → search → synthesize → shadow write` passes | LKW.1.12 |
 | E2 | Search at desk via MCP | LKW.1 |
 | E3 | Pipeline report | LKW.2 |
 | E4 | Install → pick folders → persistent index | LKW.5, LKW.6, LKW.8 |
@@ -654,7 +741,7 @@ Add narrower test commands next to the implementation PR once exact runtime/scaf
 - LKW platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 - One wave per PR unless operator batches explicitly.
 - Every harness/platform/scaffold/build change in this track must cite the LKW acceptance criterion or platform propagation requirement that justifies it.
-- Current LKW.1 findings: Qdrant point-id compatibility is fixed in LKW.1.9; tenant scope consistency and live diagnostic visibility remain platform pressure points; full hosted observability is not a prerequisite for LKW.1 closeout.
+- Current LKW.1 findings: Qdrant point-id compatibility is fixed in LKW.1.9; tenant scope consistency is fixed in LKW.1.10; runtime gateway / application tool registry parity is the next platform execution blocker in LKW.1.11; live diagnostic visibility remains queued for LKW-H1; full hosted observability is not a prerequisite for LKW.1 closeout.
 
 ---
 
