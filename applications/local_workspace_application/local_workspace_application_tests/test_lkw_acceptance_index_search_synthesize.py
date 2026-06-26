@@ -118,6 +118,8 @@ async def test_lkw_acceptance_index_search_synthesize_contract_flow(tmp_path: Pa
             ingest_calls.append(request)
             assert request.input["source_path"] == fixture_path
             assert request.input["workspace_id"] == _COLLECTION_ID
+            assert request.input["tenant_id"] == "t1"
+            assert request.input["user_id"] == "u1"
             assert request.input["metadata"]["collection_id"] == _COLLECTION_ID
             return ToolResponse(
                 request_id=request.request_id,
@@ -134,6 +136,8 @@ async def test_lkw_acceptance_index_search_synthesize_contract_flow(tmp_path: Pa
             retrieve_calls.append(request)
             assert request.input["query"] == _QUERY
             assert request.input["workspace_id"] == _COLLECTION_ID
+            assert request.input["tenant_id"] == "t1"
+            assert request.input["user_id"] == "u1"
             return ToolResponse(
                 request_id=request.request_id,
                 status=ToolResponseStatus.SUCCESS,

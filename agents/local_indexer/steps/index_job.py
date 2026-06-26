@@ -14,6 +14,7 @@ from lkw_shared.runtime_helpers import (
     invoke_catalog_tool,
     parse_metadata_list,
     request_metadata,
+    resolve_request_scope,
     validate_allowlisted_files,
 )
 
@@ -41,6 +42,7 @@ def _failure_output(*, run_id: str, reason: str, rejected_paths: list[dict[str, 
 async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
     exec_ctx = exec_ctx_from_step(step_ctx)
     metadata = request_metadata(exec_ctx)
+    scope = resolve_request_scope(exec_ctx)
     source_paths = parse_metadata_list(metadata, "source_paths")
 
     if not source_paths:
@@ -73,10 +75,12 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
         for path in validated:
             tool_input: dict[str, Any] = {
                 "source_path": str(path),
-                "tenant_id": metadata.get("tenant_id"),
-                "user_id": metadata.get("user_id"),
                 "metadata": ingest_metadata,
             }
+            if scope["tenant_id"]:
+                tool_input["tenant_id"] = scope["tenant_id"]
+            if scope["user_id"]:
+                tool_input["user_id"] = scope["user_id"]
             if collection_id:
                 tool_input["workspace_id"] = collection_id
             entry = await invoke_catalog_tool(

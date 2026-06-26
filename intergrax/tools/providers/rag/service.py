@@ -20,6 +20,10 @@ from intergrax.tools.providers.rag.contracts import (
     RagRetrieveInput,
     RagRetrieveOutput,
 )
+from intergrax.tools.providers.rag.scope import (
+    authoritative_tenant_id,
+    resolve_tenant_scoped_vectorstore,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_TOOL_ID = "rag.retrieve"
@@ -33,14 +37,19 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     """
     Retrieve document chunks via unified :class:`RetrievalService` (hybrid + rerank per profile).
     """
-    if ctx.vectorstore_manager is None:
+    tenant_id, tenant_conflict = authoritative_tenant_id(request_tenant=params.tenant_id)
+    if tenant_conflict:
+        return RagRetrieveOutput(used=False, reason=tenant_conflict)
+
+    vectorstore = resolve_tenant_scoped_vectorstore(ctx, tenant_id)
+    if vectorstore is None:
         return RagRetrieveOutput(used=False, reason="vectorstore_manager_not_configured")
     if ctx.embedding_manager is None:
         return RagRetrieveOutput(used=False, reason="embedding_manager_not_configured")
 
     profile = ctx.rag_profile or RagProfile()
     service = resolve_retrieval_service(
-        vectorstore_manager=ctx.vectorstore_manager,
+        vectorstore_manager=vectorstore,
         embedding_manager=ctx.embedding_manager,
         retriever_manager=ctx.retriever_manager,
         reranker_manager=ctx.reranker_manager,
@@ -50,7 +59,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     if service is None:
         return RagRetrieveOutput(used=False, reason="retrieval_service_not_configured")
 
-    where = _build_metadata_scope(params)
+    where = _build_metadata_scope(params, tenant_id=tenant_id)
     metadata_filter = MetadataFilter(conditions=where) if where else None
 
     result = service.retrieve(
@@ -181,14 +190,15 @@ def _to_rag_citation(citation: Citation) -> RagCitationResult:
     )
 
 
-def _build_metadata_scope(params: RagRetrieveInput) -> dict[str, Any]:
+def _build_metadata_scope(params: RagRetrieveInput, *, tenant_id: str | None = None) -> dict[str, Any]:
     where: dict[str, Any] = {}
     if params.session_id is not None:
         where["session_id"] = params.session_id
     if params.user_id is not None:
         where["user_id"] = params.user_id
-    if params.tenant_id is not None:
-        where["tenant_id"] = params.tenant_id
+    resolved_tenant = tenant_id if tenant_id is not None else params.tenant_id
+    if resolved_tenant is not None:
+        where["tenant_id"] = resolved_tenant
     if params.workspace_id is not None:
         where["workspace_id"] = params.workspace_id
     return where

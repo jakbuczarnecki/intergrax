@@ -74,6 +74,8 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
         assert request.input["query"] == "project X"
         assert request.input["top_k"] == 3
         assert request.input["workspace_id"] == "ws-1"
+        assert request.input["tenant_id"] == "t1"
+        assert request.input["user_id"] == "u1"
         return ToolResponse(
             request_id=request.request_id,
             status=ToolResponseStatus.SUCCESS,

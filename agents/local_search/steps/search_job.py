@@ -8,7 +8,12 @@ from typing import Any
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
-from lkw_shared.runtime_helpers import exec_ctx_from_step, invoke_catalog_tool, request_metadata
+from lkw_shared.runtime_helpers import (
+    exec_ctx_from_step,
+    invoke_catalog_tool,
+    request_metadata,
+    resolve_request_scope,
+)
 
 SEARCH_STEP_ID = "local_search_step"
 
@@ -121,6 +126,7 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     """LKW.1.2 — rag.retrieve via catalog tool; evidence-first search_summary."""
     exec_ctx = exec_ctx_from_step(step_ctx)
     metadata = request_metadata(exec_ctx)
+    scope = resolve_request_scope(exec_ctx)
     query = _resolve_query(step_ctx, metadata)
     collection_id_raw = metadata.get("collection_id")
     collection_id = str(collection_id_raw).strip() if collection_id_raw is not None and str(collection_id_raw).strip() else None
@@ -141,10 +147,10 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     tool_input: dict[str, Any] = {"query": query}
     if top_k is not None:
         tool_input["top_k"] = top_k
-    if tenant_id := metadata.get("tenant_id"):
-        tool_input["tenant_id"] = tenant_id
-    if user_id := metadata.get("user_id"):
-        tool_input["user_id"] = user_id
+    if scope["tenant_id"]:
+        tool_input["tenant_id"] = scope["tenant_id"]
+    if scope["user_id"]:
+        tool_input["user_id"] = scope["user_id"]
     if collection_id:
         tool_input["workspace_id"] = collection_id
 

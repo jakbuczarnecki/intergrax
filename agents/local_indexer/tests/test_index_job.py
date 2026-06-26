@@ -70,6 +70,8 @@ async def test_run_index_job_ingests_valid_paths(tmp_path: Path) -> None:
     async def _invoke_tool(request: ToolRequest) -> ToolResponse:
         assert request.tool_name == RAG_INGEST_TOOL_ID
         assert request.input["source_path"] == str(doc.resolve())
+        assert request.input["tenant_id"] == "t1"
+        assert request.input["user_id"] == "u1"
         return ToolResponse(
             request_id=request.request_id,
             status=ToolResponseStatus.SUCCESS,

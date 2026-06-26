@@ -36,6 +36,37 @@ def request_metadata(exec_ctx: RuntimeExecutionContext | None) -> dict[str, Any]
     return dict(metadata or {})
 
 
+def resolve_request_scope(exec_ctx: RuntimeExecutionContext | None) -> dict[str, str | None]:
+    """Authoritative tenant/user scope for LKW RAG tool calls.
+
+    ``RuntimeRequest.tenant_id`` / ``user_id`` win over ``request.metadata`` fields.
+    Conflicting ``metadata.tenant_id`` values are ignored (not propagated to tools).
+    """
+    if exec_ctx is None or exec_ctx.request is None:
+        return {"tenant_id": None, "user_id": None}
+
+    request = exec_ctx.request
+    metadata = request_metadata(exec_ctx)
+    meta_tenant = metadata.get("tenant_id")
+    meta_user = metadata.get("user_id")
+
+    if isinstance(request, RuntimeRequest):
+        tenant_id = request.tenant_id if request.tenant_id and str(request.tenant_id).strip() else None
+        user_id = request.user_id if request.user_id and str(request.user_id).strip() else None
+    else:
+        tenant_id = getattr(request, "tenant_id", None)
+        user_id = getattr(request, "user_id", None)
+        tenant_id = str(tenant_id).strip() if tenant_id and str(tenant_id).strip() else None
+        user_id = str(user_id).strip() if user_id and str(user_id).strip() else None
+
+    if tenant_id is None and meta_tenant is not None and str(meta_tenant).strip():
+        tenant_id = str(meta_tenant).strip()
+    if user_id is None and meta_user is not None and str(meta_user).strip():
+        user_id = str(meta_user).strip()
+
+    return {"tenant_id": tenant_id, "user_id": user_id}
+
+
 def allowlist_roots(exec_ctx: RuntimeExecutionContext | None) -> frozenset[str]:
     if exec_ctx is not None:
         runtime_state = exec_ctx.metadata.get("runtime_state")
