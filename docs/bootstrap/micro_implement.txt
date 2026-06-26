@@ -1,0 +1,68 @@
+# Intergrax — Micro Implement Bootstrap
+
+Use this bootstrap for one small, bounded implementation task in a fresh Cursor chat.
+
+Before using it, close large or unrelated editor tabs.
+
+```text
+@.cursor/rules/intergrax-micro-implement.mdc
+
+Before reading/editing, perform mandatory preflight from:
+.cursor/rules/intergrax-token-budget.mdc
+
+Print only:
+read scope:
+edit scope:
+tests:
+limits:
+
+Stop before implementation when the effective read scope is wider than the files listed below.
+Use no semantic search, no explore/research subagents, and no repo-wide grep.
+Use at most 8 total file reads and at most 3 path-filtered grep queries.
+When another file seems necessary, stop and ask for exactly one file path.
+
+read scope:
+- path/to/file_a.py (lines 40-120)
+- path/to/test_file_a.py
+
+edit scope:
+- path/to/file_a.py
+- path/to/test_file_a.py
+
+tests:
+- uv run pytest path/to/test_file_a.py -q
+
+Forbidden:
+- docs/ unless explicitly listed above
+- docs/architecture/**
+- docs/plan/**
+- intergrax/runtime/** except files listed above
+- AGENT_INSTRUCTIONS.md unless ALLOW_FULL_AGENT_INSTRUCTIONS is written
+- any file not listed above
+
+Goal:
+[one sentence: implement exactly one small change]
+
+Non-goals:
+- No broad refactor.
+- No unrelated cleanup.
+- No architecture or roadmap updates unless listed in edit scope.
+- No full test suite.
+
+Commit:
+[commit message]
+
+Final report: <=12 lines.
+Include: status, files changed, files read count, grep/search count, tests, forbidden scope respected, commit SHA, token usage if available.
+If token usage is unavailable, write: Token usage: not available.
+Do not estimate token usage.
+```
+
+## Usage rules
+
+- Start a new Cursor chat for every micro-implementation task.
+- Keep read scope and edit scope explicit.
+- Prefer line ranges for large files.
+- Use `@.cursor/rules/intergrax-ci-hotfix.mdc` for CI/test/checker hotfixes.
+- Use `@.cursor/rules/intergrax-hep-step.mdc` for HEP/EVID implementation steps.
+- If Cursor reads outside scope, reject the run and restart with a narrower prompt.
