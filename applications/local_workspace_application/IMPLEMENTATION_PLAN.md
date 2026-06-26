@@ -40,6 +40,7 @@ Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
 Before closing any LKW wave, answer:
 
+- [ ] Did every discovered bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, and CI/runbook gap receive a classification?
 - [ ] Does this change belong only to LKW, or should it move to shared platform code?
 - [ ] Should application scaffold generate this pattern for the next product host?
 - [ ] Should agent scaffold generate this contract, test, or documentation pattern?
@@ -152,6 +153,7 @@ This track is executed one task at a time.
 4. For simple tasks, implement only after explicit operator confirmation.
 5. Do not change repository files, create commits, or update docs unless the operator explicitly asks for it.
 6. If a diagnostic task finds a defect, classify it first; implementation is a separate follow-up unless the operator approves immediate repair.
+7. Before closing a task, classify each discovered bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, or CI/runbook gap as `LKW-specific`, `Platform-reusable`, or `Platform-reusable deferred` according to [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §3.
 
 ---
 
@@ -288,7 +290,7 @@ Diagnostic questions:
 9. Does retrieve search the same workspace/tenant/user scope that ingest wrote?
 10. Is the defect in app wiring, RAG provider wiring, model/env setup, or missing diagnostic exposure?
 
-LKW.1.8 is diagnostic first. If it identifies a code defect, the fix must be a separate task unless the operator explicitly approves immediate implementation.
+LKW.1.8 is diagnostic first. If it identifies a code defect, the fix must be a separate task unless the operator explicitly approves immediate implementation. Every finding must also be classified through the platform classification gate in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §3.
 
 ### Product acceptance criteria
 
@@ -306,6 +308,7 @@ LKW.1.8 is diagnostic first. If it identifies a code defect, the fix must be a s
 ### Platform acceptance criteria
 
 - [ ] Platform proof checklist in §0a is completed.
+- [ ] Every discovered defect/pattern/gap is classified as `LKW-specific`, `Platform-reusable`, or `Platform-reusable deferred`.
 - [x] Reusable Docker/build/run lessons are reflected in Docker templates/docs or recorded as follow-ups.
 - [ ] Reusable env/settings lessons are reflected in shared settings/scaffold/docs or recorded as a blocking follow-up.
 - [ ] Reusable agent/application patterns are reflected in scaffold templates/docs or recorded as a blocking follow-up.
