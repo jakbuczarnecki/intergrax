@@ -1,8 +1,8 @@
 # Local Knowledge Workspace (LKW) — harness hardening addendum
 
 **Status:** Architecture addendum for LKW product proof  
-**Parent architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
-**Derived implementation plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)  
+**Parent architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
+**Derived implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Scope:** LKW-driven harness hardening only — not a separate platform refactor backlog
 
 ---

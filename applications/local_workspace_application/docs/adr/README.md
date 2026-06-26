@@ -4,7 +4,7 @@
 
 Architecture: [`../ARCHITECTURE.md`](ARCHITECTURE.md)  
 Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../docs/adr/README.md`](../../docs/adr/README.md)
+Platform ADRs: [`../../../docs/adr/README.md`](../../../docs/adr/README.md)
 
 ---
 

@@ -103,7 +103,7 @@ Invoke via `ctx.invoke_tool(ToolRequest(...))` in UAEP steps.
 
 Until LKW.2: host `ToolProfile` enables tools; `contract.py` has `skills=[]`.
 
-See [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) · LKW stack: [`applications/local_workspace_application/ARCHITECTURE.md` §5](../../applications/local_workspace_application/ARCHITECTURE.md#5-integrations-tools-and-skills).
+See [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) · LKW stack: [`applications/local_workspace_application/docs/ARCHITECTURE.md` §5](../../applications/local_workspace_application/docs/ARCHITECTURE.md#5-integrations-tools-and-skills).
 
 ---
 
@@ -123,6 +123,6 @@ uv run pytest agents/local_indexer/tests -q
 
 ## References
 
-- LKW application architecture: [`applications/local_workspace_application/ARCHITECTURE.md`](../../applications/local_workspace_application/ARCHITECTURE.md)
+- LKW application architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../applications/local_workspace_application/docs/ARCHITECTURE.md)
 - RAG ingest tool: [`intergrax/tools/providers/rag/USAGE.md`](../../intergrax/tools/providers/rag/USAGE.md)
 - Agent creation: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)

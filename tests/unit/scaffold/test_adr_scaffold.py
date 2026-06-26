@@ -68,10 +68,7 @@ def _application_adr_dir(app_pkg: str) -> Path:
 
 @pytest.mark.parametrize("app_pkg", APPLICATIONS_WITH_ADR)
 def test_application_adr_scaffold_present(app_pkg: str) -> None:
-    if app_pkg == "attestation_demo":
-        adr_dir = REPO / "applications" / app_pkg / "adr"
-    else:
-        adr_dir = _application_adr_dir(app_pkg)
+    adr_dir = _application_adr_dir(app_pkg)
     _assert_adr_scaffold(adr_dir, label=f"applications/{app_pkg}")
 
 

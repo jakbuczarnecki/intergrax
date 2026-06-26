@@ -563,8 +563,8 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 | `docs/architecture/OBSERVABILITY.md` | §18 Execution Boundary Export; unsigned events; non-goal: receipt product |
 | `docs/plan/OBSERVABILITY.md` | Phase EBE register (EBE-1…EBE-9) |
 | `docs/adr/entries/2026-06-13/ADR-OBS-002.md` | Unsigned boundary export vs host attestation |
-| `applications/attestation_demo/IMPLEMENTATION_PLAN.md` | Task checklist |
-| `applications/attestation_demo/adr/` | Application ADRs (ADR-ATTESTATION_DEMO-001) |
+| `applications/attestation_demo/docs/IMPLEMENTATION_PLAN.md` | Task checklist |
+| `applications/attestation_demo/docs/adr/` | Application ADRs (ADR-ATTESTATION_DEMO-001) |
 
 ---
 

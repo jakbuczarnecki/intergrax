@@ -124,7 +124,7 @@ Intergrax includes a Local Knowledge Workspace alpha direction for product-valid
 Entry points:
 
 - [Local Knowledge Workspace alpha narrative](../product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
-- [local_workspace_application architecture](../../applications/local_workspace_application/ARCHITECTURE.md)
+- [local_workspace_application architecture](../../applications/local_workspace_application/docs/ARCHITECTURE.md)
 - [USE_CASES.md](../../USE_CASES.md)
 - [PARTNERS.md](../../PARTNERS.md)
 - [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) (optional time-boxed review path)

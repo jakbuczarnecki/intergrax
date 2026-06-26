@@ -1,6 +1,6 @@
 # Local Knowledge Workspace (LKW) — Implementation Plan
 
-**Derived from:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
+**Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in the architecture documents; this file schedules implementation waves only.
 
 Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **LKW.1.1–LKW.1.6 Closed** · **LKW.1.7 Partial/Open** · **LKW.1.8 Diagnosed** · **LKW.1.9 Completed** · **LKW.1.10 Completed / live HTTP blocked by LKW.1.11** · **Active queue: LKW.1.11 → LKW.1.12 → LKW-H1**
@@ -21,7 +21,7 @@ Principle: **local backend daemon** · **thin frontends** · **Slack optional** 
 | **Contains** | Nexus, agents, RAG, index, policy, trace | UI + HTTP calls only |
 | **Must not** | — | RAG, LLM, direct file index, agent loops |
 
-See [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) §4.
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) §4.
 
 ---
 
@@ -664,7 +664,7 @@ Do not refactor these components because they look wide. Refactor only when LKW 
 
 ## 8. Remaining product waves (summary)
 
-Full task breakdown: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) §15.2.
+Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 
 | ID | Key deliverables |
 |----|------------------|

@@ -16,7 +16,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 |-------|--------|
 | Ingest responsibilities, tools, I/O | **ARCHITECTURE.md** |
 | Wave tasks | **This file** + platform **`docs/plan/PLATFORM_FOUNDATION.md` §6.3a LKW.*** |
-| LKW product architecture | `applications/local_workspace_application/ARCHITECTURE.md` |
+| LKW product architecture | `applications/local_workspace_application/docs/ARCHITECTURE.md` |
 
 ---
 

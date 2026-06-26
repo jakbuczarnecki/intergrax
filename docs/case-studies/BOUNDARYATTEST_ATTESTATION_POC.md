@@ -87,14 +87,14 @@ Start with the application documentation:
 | Document | Purpose |
 |----------|---------|
 | [Attestation Demo README](../../applications/attestation_demo/README.md) | Quickstart, PoC endpoint, trust model |
-| [ARCHITECTURE.md](../../applications/attestation_demo/ARCHITECTURE.md) | Host design, EBE contract, trust model |
+| [ARCHITECTURE.md](../../applications/attestation_demo/docs/ARCHITECTURE.md) | Host design, EBE contract, trust model |
 | [EBE-9_HOST_SIGNING.md](../../applications/attestation_demo/partner_handoff/EBE-9_HOST_SIGNING.md) | Host signing verifier spec |
-| [BUILD_AND_DEPLOY.md](../../applications/attestation_demo/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
+| [BUILD_AND_DEPLOY.md](../../applications/attestation_demo/docs/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
 
 **Suggested path:**
 
 1. Read the [Attestation Demo README](../../applications/attestation_demo/README.md) for scope, disclaimers, and the primary PoC endpoint.
-2. Run the local demo if consistent with [LICENSE](../../LICENSE) and [COLLABORATION.md](../../COLLABORATION.md) (see [BUILD_AND_DEPLOY.md](../../applications/attestation_demo/BUILD_AND_DEPLOY.md)).
+2. Run the local demo if consistent with [LICENSE](../../LICENSE) and [COLLABORATION.md](../../COLLABORATION.md) (see [BUILD_AND_DEPLOY.md](../../applications/attestation_demo/docs/BUILD_AND_DEPLOY.md)).
 3. Inspect `boundary_events[]` and the `trust_model` response from `POST /v1/attestation_demo/poc/run`; compare host attestation envelopes with the EBE-9 golden vector in `partner_handoff/`.
 
 ## Acknowledgement

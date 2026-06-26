@@ -4,7 +4,7 @@
 **Tier:** Tier-3 application (`local_workspace_application`)  
 **Agents:** Tier-2 `local_indexer`, `local_search`, `local_synthesizer`  
 **Canonical plan row:** [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
-**Derived plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere  
+**Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere  
 **Public product-validation narrative:** [`docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md`](../../docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 
 ---
@@ -26,7 +26,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Implementation waves + acceptance | §15 |
 | Env vars and paths on disk | §7.3 · §12 |
 
-**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
 
 ---
 
@@ -800,7 +800,7 @@ Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md` — gate `test_application_deploy
 
 ## 15. Implementation plan derivation (canonical)
 
-Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) when scheduling work. **Depends** = prior waves. **Acceptance** = objective done criteria.
+Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) when scheduling work. **Depends** = prior waves. **Acceptance** = objective done criteria.
 
 ### 15.1 Wave summary
 
@@ -959,7 +959,7 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 | Multi-agent graphs | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix C](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
 | Nexus execution flow | [`docs/architecture/NEXUS_EXECUTION_FLOW.md`](../../docs/architecture/NEXUS_EXECUTION_FLOW.md) |
 | Implementation plan | [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) |
-| Quickstart | [`README.md`](README.md) · [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) |
+| Quickstart | [`README.md`](../README.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) |
 
 ---
 

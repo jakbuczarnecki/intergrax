@@ -7,7 +7,7 @@
 | Environment | URL |
 |-------------|-----|
 | Local dev | `http://127.0.0.1:8097` |
-| Docker | `http://<host>:8097` (see [`BUILD_AND_DEPLOY.md`](../BUILD_AND_DEPLOY.md)) |
+| Docker | `http://<host>:8097` (see [`docs/BUILD_AND_DEPLOY.md`](../docs/BUILD_AND_DEPLOY.md)) |
 
 ## Authentication
 
@@ -109,5 +109,5 @@ See [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json) for the
 - Webhook delivery of boundary events
 - Run-level composite signed receipt (derived summary may come later)
 
-Full design: [`ARCHITECTURE.md`](../ARCHITECTURE.md) · Application ADR: [`adr/ADR-ATTESTATION_DEMO-001.md`](../adr/ADR-ATTESTATION_DEMO-001.md)  
-Operator verify: [`DOCKER_VERIFY_RUNBOOK.md`](../DOCKER_VERIFY_RUNBOOK.md)
+Full design: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) · Application ADR: [`docs/adr/ADR-ATTESTATION_DEMO-001.md`](../docs/adr/ADR-ATTESTATION_DEMO-001.md)
+Operator verify: [`docs/DOCKER_VERIFY_RUNBOOK.md`](../docs/DOCKER_VERIFY_RUNBOOK.md)

@@ -39,7 +39,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | BoundaryAttest / attestation case study available (includes validation flow diagram) | [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Boundary events / host attestation flow documented | Attestation demo and related architecture docs |
 | Agent and application scaffolding available | Scaffold tooling under `scaffold/`; see [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/ARCHITECTURE.md) |
+| Local Knowledge Workspace exists as the first product-validation direction / alpha track | [Alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) · [Architecture](applications/local_workspace_application/docs/ARCHITECTURE.md) |
 | Public evaluation entry points available | [README.md](README.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [USE_CASES.md](USE_CASES.md) · [PARTNERS.md](PARTNERS.md) |
 | Public Discussion Map documented in README | [README.md#public-discussion-map](README.md#public-discussion-map) frames curated issues as discussion entry points, not a backlog |
 | Curated public issue map active | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) lists active Wave 1-5 issues (#186-#227) |
@@ -81,7 +81,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 |-------|-------|---------------|----------------------|
 | Proof path feedback | Run local evaluation paths; report friction, gaps, and unclear steps | Engineers evaluating the harness baseline | Follow [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) and the [proof path](README.md#proof-of-platform) in [README.md](README.md); open an issue with concrete findings |
 | Attestation / boundary events integration | Host attestation flows, boundary events, external trust integration | Teams building attestation, security, or compliance integrations | Review [Attestation Demo](applications/attestation_demo/README.md); propose scope via issue or maintainer contact |
-| Local Knowledge Workspace alpha feedback | Early capabilities, UX, and fit for local knowledge workflows | Design partners interested in product-validation direction | Read [USE_CASES.md](USE_CASES.md), [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md), and [LKW architecture](applications/local_workspace_application/ARCHITECTURE.md); share structured alpha feedback |
+| Local Knowledge Workspace alpha feedback | Early capabilities, UX, and fit for local knowledge workflows | Design partners interested in product-validation direction | Read [USE_CASES.md](USE_CASES.md), [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md), and [LKW architecture](applications/local_workspace_application/docs/ARCHITECTURE.md); share structured alpha feedback |
 | Documentation clarity | Corrections, gaps, readability, and navigation improvements | Anyone reading public docs | Open an issue or PR with a specific doc fix; see [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries | Agent architects and product teams | Review [USE_CASES.md](USE_CASES.md) and [PARTNERS.md](PARTNERS.md); propose scope before substantial work; align with [COLLABORATION.md](COLLABORATION.md) |
 | Governance, observability and evaluation feedback | Trace, evidence, policy, and evaluation workflows | Platform engineers and governance builders | Run proof paths; inspect evidence outputs; report gaps with reproducible steps |
@@ -118,5 +118,5 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [applications/attestation_demo/README.md](applications/attestation_demo/README.md) — attestation integration proof
 - [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — BoundaryAttest external validation case study
 - [docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) — Local Knowledge Workspace alpha / product-validation narrative
-- [applications/local_workspace_application/ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md) — Local Knowledge Workspace architecture
+- [applications/local_workspace_application/docs/ARCHITECTURE.md](applications/local_workspace_application/docs/ARCHITECTURE.md) — Local Knowledge Workspace architecture
 - [docs/guides/INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) — harness narrative for external readers

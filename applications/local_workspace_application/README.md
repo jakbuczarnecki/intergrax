@@ -4,7 +4,7 @@ Tier-3 product host for local document indexing, semantic search, and synthesis.
 
 **Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
 **Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)  
-**User journey:** [USER_JOURNEY.md](USER_JOURNEY.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](PLATFORM_PROOF_LOOP.md)  
+**User journey:** [USER_JOURNEY.md](docs/USER_JOURNEY.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)  
 **Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
@@ -19,7 +19,7 @@ Tier-3 product host for local document indexing, semantic search, and synthesis.
 
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 
-A new user should be able to follow [USER_JOURNEY.md](USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
+A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
 The current LKW.1 execution status is tracked in [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md). LKW.1 is not closed until the full live product smoke proves `index -> search -> synthesize -> shadow artifact only`.
 
@@ -101,11 +101,13 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 
 ## Docs
 
-- Final user journey: [USER_JOURNEY.md](USER_JOURNEY.md)
+See [docs/README.md](docs/README.md) for the full local documentation index.
+
+- Final user journey: [USER_JOURNEY.md](docs/USER_JOURNEY.md)
 - LKW architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - LKW live verification: [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
-- LKW hardening: [ARCHITECTURE_HARDENING.md](ARCHITECTURE_HARDENING.md)
-- Platform proof loop: [PLATFORM_PROOF_LOOP.md](PLATFORM_PROOF_LOOP.md)
+- LKW hardening: [ARCHITECTURE_HARDENING.md](docs/ARCHITECTURE_HARDENING.md)
+- Platform proof loop: [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
 - Plan register: [docs/intergrax_runtime_architecture.md §6.3a](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 - Agent workflow: [docs/guides/AGENT_CREATION_GUIDE.md](../../docs/guides/AGENT_CREATION_GUIDE.md)
 - Application layout: [applications/USAGE.md](../USAGE.md)
