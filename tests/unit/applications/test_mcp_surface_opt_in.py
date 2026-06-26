@@ -13,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from intergrax.applications._shared.mcp_import_guard import MCPDependencyError, ensure_mcp_dependencies
+from intergrax.utils import attribute_access
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -130,7 +131,7 @@ def test_mcp_enabled_factory_mounts_mcp_route_when_available() -> None:
     client = TestClient(app)
     assert client.get("/health").status_code == 200
     assert any(
-        getattr(route, "path", None) in {"/mcp", "/mcp/"}
+        attribute_access.optional(route, "path", None) in {"/mcp", "/mcp/"}
         for route in app.routes
         if hasattr(route, "path")
     )

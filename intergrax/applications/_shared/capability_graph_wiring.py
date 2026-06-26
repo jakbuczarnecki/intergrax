@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.architecture.capability_graph import (
     CapabilityEdge,
     CapabilityEdgeType,
@@ -71,7 +72,7 @@ def _node_type_from_id(node_id: str) -> CapabilityNodeType:
         raise ValueError(f"Unknown capability node prefix in {node_id!r}") from exc
 
 
-def _agent_contract_from_binding(binding: AgentBinding) -> object | None:
+def _agent_contract_from_binding(binding: AgentBinding) -> AgentContract | None:
     if binding.agent_type is None and binding.import_path is None:
         return None
     return binding.resolved_agent_type()().get_contract()
@@ -117,8 +118,8 @@ def build_environment_seed_capability_graph(
         contract = _agent_contract_from_binding(binding)
         if contract is None:
             continue
-        for skill_manifest in getattr(contract, "skills", ()):  # pragma: no cover - defensive for legacy contracts
-            skill_id = getattr(skill_manifest, "skill_id", None)
+        for skill_manifest in contract.skills:
+            skill_id = skill_manifest.skill_id
             if not skill_id:
                 continue
             skill_node = f"skill:{skill_id}"
@@ -130,7 +131,7 @@ def build_environment_seed_capability_graph(
                     edge_type=CapabilityEdgeType.DEPENDS_ON,
                 )
             )
-        for tool_id in getattr(contract, "allowed_tools", ()):  # pragma: no cover - defensive for legacy contracts
+        for tool_id in contract.allowed_tools:
             tool_node = f"tool:{tool_id}"
             node_by_id.setdefault(tool_node, CapabilityNode(node_id=tool_node, node_type=CapabilityNodeType.TOOL))
             edges.append(

@@ -17,6 +17,7 @@ from intergrax.tools.providers.filesystem.allowlist import (
     require_read_allowlist_roots,
     resolve_allowed_path,
 )
+from intergrax.utils import attribute_access
 
 
 _LKW_JOB_METADATA_KEYS = frozenset(
@@ -46,7 +47,7 @@ def request_metadata(
         request = exec_ctx.request
         if isinstance(request, RuntimeRequest):
             return dict(request.metadata or {})
-        metadata = getattr(request, "metadata", None)
+        metadata = attribute_access.optional(request, "metadata", None)
         return dict(metadata or {})
     if step_ctx is not None:
         raw = step_ctx.metadata or {}
@@ -72,8 +73,8 @@ def resolve_request_scope(exec_ctx: RuntimeExecutionContext | None) -> dict[str,
         tenant_id = request.tenant_id if request.tenant_id and str(request.tenant_id).strip() else None
         user_id = request.user_id if request.user_id and str(request.user_id).strip() else None
     else:
-        tenant_id = getattr(request, "tenant_id", None)
-        user_id = getattr(request, "user_id", None)
+        tenant_id = attribute_access.optional(request, "tenant_id", None)
+        user_id = attribute_access.optional(request, "user_id", None)
         tenant_id = str(tenant_id).strip() if tenant_id and str(tenant_id).strip() else None
         user_id = str(user_id).strip() if user_id and str(user_id).strip() else None
 
@@ -89,10 +90,10 @@ def allowlist_roots(exec_ctx: RuntimeExecutionContext | None) -> frozenset[str]:
     if exec_ctx is not None:
         runtime_state = exec_ctx.metadata.get("runtime_state")
         if runtime_state is not None:
-            context = getattr(runtime_state, "context", None)
-            config = getattr(context, "config", None) if context is not None else None
-            wiring = getattr(config, "tool_wiring_context", None) if config is not None else None
-            roots = getattr(wiring, "read_allowlist_roots", None) if wiring is not None else None
+            context = attribute_access.optional(runtime_state, "context", None)
+            config = attribute_access.optional(context, "config", None) if context is not None else None
+            wiring = attribute_access.optional(config, "tool_wiring_context", None) if config is not None else None
+            roots = attribute_access.optional(wiring, "read_allowlist_roots", None) if wiring is not None else None
             if roots:
                 return frozenset(roots)
     return read_allowlist_roots_from_env()
