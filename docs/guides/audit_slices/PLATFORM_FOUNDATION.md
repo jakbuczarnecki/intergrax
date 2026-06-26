@@ -17,7 +17,7 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §1 Strategic frame · §2 Tier model · §32 Documentation governance |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §1–§2 · §32 · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-TIER-* · SYS-INV-DOC-* · P2-ARCH-01 (grep IDs — do not read full file) |
-| `docs/plan/PLATFORM_FOUNDATION.md` | **Read-scope:** §6.1 maintenance · §6.3 deferred · [`plan/satellites/`](../plan/satellites/) on demand |
+| `docs/plan/PLATFORM_FOUNDATION.md` | **Read-scope:** §6.1 maintenance · §6.3 out-of-scope notice · [`plan/satellites/`](../plan/satellites/) on demand |
 | `docs/architecture/PLATFORM_FOUNDATION.md` | §1–§6 hub · [`satellites/`](../architecture/satellites/) on demand |
 
 ## Code entry (grep first — F5-B)
