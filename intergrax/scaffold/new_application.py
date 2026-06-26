@@ -20,7 +20,10 @@ from intergrax.scaffold.doc_templates import (
     render_application_architecture_doc,
     render_application_implementation_plan,
 )
-from intergrax.scaffold.application_layout import write_sample_docs_scaffold
+from intergrax.scaffold.application_layout import (
+    write_application_journal_scaffold,
+    write_sample_docs_scaffold,
+)
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
     app_slug,
@@ -1035,6 +1038,7 @@ def _create_lab_application(
         force=force,
     )
     write_sample_docs_scaffold(target, force=force)
+    write_application_journal_scaffold(target, force=force)
     _write(
         target / ".env.example",
         _env_example(names.env_prefix, names.route_prefix, names.port, specs),
@@ -1160,6 +1164,7 @@ def _create_product_application(
         force=force,
     )
     write_sample_docs_scaffold(target, force=force)
+    write_application_journal_scaffold(target, force=force)
     _write(
         target / ".env.example",
         product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),

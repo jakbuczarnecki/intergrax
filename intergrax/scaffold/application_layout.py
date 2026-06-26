@@ -26,3 +26,13 @@ def write_sample_docs_scaffold(app_dir: Path, *, force: bool = True) -> None:
         if path.exists() and not force:
             raise FileExistsError(f"File already exists: {path}")
         path.write_text(content, encoding="utf-8")
+
+
+def write_application_journal_scaffold(app_dir: Path, *, force: bool = True) -> None:
+    """Create ``docs/journal/`` for application-local implementation history."""
+    journal_dir = application_docs_dir(app_dir) / "journal"
+    journal_dir.mkdir(parents=True, exist_ok=True)
+    gitkeep = journal_dir / ".gitkeep"
+    if gitkeep.exists() and not force:
+        raise FileExistsError(f"File already exists: {gitkeep}")
+    gitkeep.write_text("", encoding="utf-8")

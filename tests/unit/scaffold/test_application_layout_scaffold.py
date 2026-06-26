@@ -34,6 +34,7 @@ def test_scaffolded_application_docs_layout() -> None:
         assert (docs / "IMPLEMENTATION_PLAN.md").is_file()
         assert (docs / "BUILD_AND_DEPLOY.md").is_file()
         assert (docs / "adr" / "README.md").is_file()
+        assert (docs / "journal" / ".gitkeep").is_file()
         assert not (target / "ARCHITECTURE.md").exists()
         assert not (target / "IMPLEMENTATION_PLAN.md").exists()
         assert not (target / "BUILD_AND_DEPLOY.md").exists()
