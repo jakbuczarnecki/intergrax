@@ -3,7 +3,9 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in the architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **Active queue: LKW-H0 → LKW.1**
+Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **LKW.1.1–LKW.1.6 Closed** · **Active queue: LKW.1.7 → LKW.1.8 → LKW-H1**
+
+Latest live proof snapshot: **2026-06-26 — LKW.1.7 PARTIAL / OPEN**. Docker, HTTP routing, agent listing, manual-evidence synthesize, shadow write, and source-file immutability work. Live RAG ingest/search is not proven yet: index accepted the fixture path but produced `ingested=0` and `chunks=0`; follow-up search returned `retrieve_failed`.
 
 Platform register: [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 
@@ -140,18 +142,31 @@ Every task in §2 and later waves should use this template unless the operator s
 
 ---
 
+## 0c. Operator workflow for this track
+
+This track is executed one task at a time.
+
+1. Select exactly one task from this plan.
+2. Describe the goal, known status, implementation/diagnostic scope, acceptance criteria, and explicit out-of-scope items.
+3. For complex tasks, prepare a scoped Cursor instruction first.
+4. For simple tasks, implement only after explicit operator confirmation.
+5. Do not change repository files, create commits, or update docs unless the operator explicitly asks for it.
+6. If a diagnostic task finds a defect, classify it first; implementation is a separate follow-up unless the operator approves immediate repair.
+
+---
+
 ## 1. Wave queue
 
 | ID | Title | Depends | Status | Priority |
 |----|-------|---------|--------|----------|
 | LKW.0 | Scaffold + architecture v2 | — | **Done** | — |
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
-| LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Active** | Critical |
-| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Next active** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection | LKW.1 | Planned | High |
+| LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
+| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Active — LKW.1.7 partial, LKW.1.8 next** | Critical |
+| LKW-H1 | LKW live trace/evidence inspection | LKW.1.7/LKW.1.8 | **Next after live RAG blocker is diagnosable** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
-| LKW.5 | `LKW_DATA_HOME` + Chroma persistence | LKW.1 | Planned | High |
+| LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
@@ -162,28 +177,17 @@ Every task in §2 and later waves should use this template unless the operator s
 
 ---
 
-## 2. Active wave — LKW-H0: minimal runtime hardening for product proof
+## 2. Closed support wave — LKW-H0: minimal runtime hardening for product proof
 
 This is not a broad harness refactor wave. These tasks are allowed because they directly improve safety, bounded execution, and diagnosability for LKW.1.
 
-Every task in this wave must also run the platform proof checklist in §0a and use the scoped prompt template in §0b.
-
 ### Tasks
 
-| ID | Task | Module | Owner | Platform propagation |
-|----|------|--------|-------|----------------------|
-| LKW-H0.1 | Strict/product runtime must not silently default-allow when policy wiring is missing | runtime policy / kernel wiring | Tier-1 | Update shared config/scaffold guidance if unsafe defaults are generic |
-| LKW-H0.2 | Add `max_steps` boundary regression test | runtime kernel or ACP session tests | Tier-1 | Update generated guidance only if step-limit semantics are exposed to app/agent authors |
-| LKW-H0.3 | Emit diagnostic/runtime event for post-finalization hook failure | Nexus lifecycle / runtime events | Tier-1 | Propagate generic diagnostic/event pattern to runtime docs/templates if applicable |
-
-### Acceptance criteria
-
-- [ ] Strict/product configuration fails closed or emits explicit configuration violation when required policy wiring is missing.
-- [ ] Dev/test permissive policy behavior remains available only when explicitly selected and visible.
-- [ ] Regression test proves whether `max_steps=N` permits exactly N steps and rejects step N+1.
-- [ ] Finalization/lifecycle hook failure is visible in trace/diagnostics and is not silently swallowed.
-- [ ] Existing gate and affected runtime tests remain green.
-- [ ] Platform proof checklist in §0a is completed for each task.
+| ID | Task | Module | Status | Platform propagation |
+|----|------|--------|--------|----------------------|
+| LKW-H0.1 | Strict/product runtime must not silently default-allow when policy wiring is missing | runtime policy / kernel wiring | Closed / monitor | Update shared config/scaffold guidance if unsafe defaults are generic |
+| LKW-H0.2 | Add `max_steps` boundary regression test | runtime kernel or ACP session tests | Closed / monitor | Update generated guidance only if step-limit semantics are exposed to app/agent authors |
+| LKW-H0.3 | Emit diagnostic/runtime event for post-finalization hook failure | Nexus lifecycle / runtime events | Closed / monitor | Propagate generic diagnostic/event pattern to runtime docs/templates if applicable |
 
 ### Out of scope (LKW-H0)
 
@@ -195,7 +199,7 @@ Every task in this wave must also run the platform proof checklist in §0a and u
 
 ---
 
-## 3. Next active wave — LKW.1: Domain UAEP proof
+## 3. Active wave — LKW.1: Domain UAEP proof
 
 ### Goal
 
@@ -211,33 +215,125 @@ POST /v1/local_workspace/run
   -> workspace.write_file under shadow root
 ```
 
-### Tasks
+### Current LKW.1 task map
 
-| ID | Task | Module | Owner | Platform propagation |
-|----|------|--------|-------|----------------------|
-| LKW.1.1 | Indexer steps: path validation + `rag.ingest_document` loop | `agents/local_indexer/` `on_next_step` / cognitive pattern hooks | Tier-2 | Update agent scaffold/docs if this becomes the canonical tool-invocation pattern |
-| LKW.1.2 | Search steps: `rag.retrieve` + evidence formatting | `agents/local_search/` `on_next_step` / cognitive pattern hooks | Tier-2 | Update evidence/result patterns if reusable by generated agents |
-| LKW.1.3 | Synthesizer stub: shadow `workspace.write_file` | `agents/local_synthesizer/` `on_next_step` / cognitive pattern hooks | Tier-2 | Update scaffold guidance for shadow-write outputs if generic |
-| LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | `applications/.../tests/` or `tests/acceptance/` | Tier-3 | Add scaffold/test template if this becomes the canonical app acceptance pattern |
-| LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | Tier-3/platform | Ensure app settings pattern can inform scaffolded app settings |
-| LKW.1.6 | Docker/run parity — **CLOSED** | Dockerfile, compose, build/run docs | Tier-3/platform | Closed after Docker build/start parity, environment-scoped capability graph, MCP opt-in startup, isolated Docker agent closure, and LKW Docker build smoke. |
+| ID | Task | Module | Status | Platform propagation |
+|----|------|--------|--------|----------------------|
+| LKW.1.1 | Indexer steps: path validation + `rag.ingest_document` loop | `agents/local_indexer/` `on_next_step` / cognitive pattern hooks | **Closed** | Update agent scaffold/docs if this becomes the canonical tool-invocation pattern |
+| LKW.1.2 | Search steps: `rag.retrieve` + evidence formatting | `agents/local_search/` `on_next_step` / cognitive pattern hooks | **Closed** | Update evidence/result patterns if reusable by generated agents |
+| LKW.1.3 | Synthesizer stub: shadow `workspace.write_file` | `agents/local_synthesizer/` `on_next_step` / cognitive pattern hooks | **Closed** | Update scaffold guidance for shadow-write outputs if generic |
+| LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | `applications/.../tests/` or `tests/acceptance/` | **Closed** | Add scaffold/test template if this becomes the canonical app acceptance pattern |
+| LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | **Closed / configured** | Ensure app settings pattern can inform scaffolded app settings |
+| LKW.1.6 | Docker/run parity | Dockerfile, compose, build/run docs | **Closed** | Closed after Docker build/start parity, environment-scoped capability graph, MCP opt-in startup, isolated Docker agent closure, and LKW Docker build smoke. |
+| LKW.1.7 | Live `local_workspace_application` HTTP smoke | Docker compose + `/health` + `/agents` + `/run` index/search/synthesize | **Partial / open** | Proves whether product application runs outside unit tests; records blockers before LKW.1 closeout. |
+| LKW.1.8 | Diagnose live RAG ingest failure | LKW Docker logs/runtime output + `rag.ingest_document`/retrieve path | **Next** | Determine whether fix belongs to LKW app wiring, RAG provider, tool response surface, env/model setup, or scaffold/runbook. |
+
+### LKW.1.7 live smoke result — 2026-06-26
+
+Status: **PARTIAL / OPEN**.
+
+Observed live stack:
+
+| Area | Result |
+|------|--------|
+| Repository | `development`, latest commit at smoke time: `e77a4fc9` |
+| Docker | `local_workspace` healthy, `qdrant` running, `ollama` running |
+| `/health` | `{"status":"ok"}` |
+| `/v1/local_workspace/agents` | 3 LKW agents visible: index, search, synthesize |
+| Index smoke | HTTP completed; `accepted=1`, `rejected=0`, `ingested=0`, `chunks=0` |
+| Search smoke | HTTP completed; `local_search: search failed — retrieve_failed` |
+| Synthesize smoke | Completed with manual evidence |
+| Shadow write | `lkw-live-smoke-draft.md` written under `/data/shadow_workspaces/...` |
+| Source file immutability | Original fixture unchanged; only untracked smoke fixture existed locally |
+| Files changed by diagnostic | None |
+| Commits created by diagnostic | None |
+
+Conclusion:
+
+- Docker/run parity is not the blocker anymore.
+- HTTP route, agent registration/routing, manual-evidence synthesize, shadow write, and source immutability work.
+- Full `index → search → synthesize` is **not proven** because live RAG ingest produces no chunks.
+- Search failure is secondary until ingest produces retrievable chunks.
+
+Primary failure category:
+
+```text
+RAG ingest / retrieve wiring
+```
+
+Primary blocker:
+
+```text
+rag.ingest_document does not produce used=true / ingested>0 / chunks>0 for the accepted fixture path.
+```
+
+### LKW.1.8 diagnostic goal
+
+Answer one question before implementing any fix:
+
+```text
+Why does live rag.ingest_document for /data/user_docs/lkw-live-smoke.txt finish without used=true and without chunks?
+```
+
+Diagnostic questions:
+
+1. Is the raw `rag.ingest_document` tool response available but hidden by the HTTP/final-response surface?
+2. Does the tool response contain `reason`, `parser_trace`, `file_size_bytes`, or provider error details?
+3. Is `vectorstore_manager` configured in the Docker-hosted LKW runtime?
+4. Is `embedding_manager` configured in the Docker-hosted LKW runtime?
+5. Does the default document loader load the `.txt` fixture?
+6. Does the default splitter generate chunks for the loaded fixture?
+7. Does embedding through the configured Ollama/model path work?
+8. Does Qdrant accept the vectors and store documents with `workspace_id`/`collection_id` metadata?
+9. Does retrieve search the same workspace/tenant/user scope that ingest wrote?
+10. Is the defect in app wiring, RAG provider wiring, model/env setup, or missing diagnostic exposure?
+
+LKW.1.8 is diagnostic first. If it identifies a code defect, the fix must be a separate task unless the operator explicitly approves immediate implementation.
 
 ### Product acceptance criteria
 
-- [ ] `POST /v1/local_workspace/run` with `metadata.source_paths` + `capability=local.workspace.index` completes.
-- [ ] Follow-up search returns answer referencing ingested content.
-- [ ] Synthesize with `shadow_workspace: true` writes artifact under shadow root.
-- [ ] Original user files are not modified.
-- [ ] No Slack, tray, watcher, or OS service required.
-- [ ] `uv run pytest` agent + host smoke green.
+- [x] Docker stack can run the LKW application host.
+- [x] `/health` responds successfully.
+- [x] `/v1/local_workspace/agents` lists `local.workspace.index`, `local.workspace.search`, and `local.workspace.synthesize`.
+- [x] `POST /v1/local_workspace/run` reaches the index agent.
+- [ ] `POST /v1/local_workspace/run` with `metadata.source_paths` + `capability=local.workspace.index` ingests at least one chunk from the fixture.
+- [ ] Follow-up search returns answer/evidence referencing ingested content.
+- [x] Synthesize with `shadow_workspace: true` writes artifact under shadow root when evidence is supplied.
+- [x] Original user files are not modified.
+- [x] No Slack, tray, watcher, or OS service required.
+- [ ] `uv run pytest` agent + host smoke green for final closeout.
 
 ### Platform acceptance criteria
 
 - [ ] Platform proof checklist in §0a is completed.
+- [x] Reusable Docker/build/run lessons are reflected in Docker templates/docs or recorded as follow-ups.
 - [ ] Reusable env/settings lessons are reflected in shared settings/scaffold/docs or recorded as a blocking follow-up.
-- [ ] Reusable Docker/build/run lessons are reflected in Docker templates/docs or recorded as a blocking follow-up.
 - [ ] Reusable agent/application patterns are reflected in scaffold templates/docs or recorded as a blocking follow-up.
 - [ ] Any dependency/profile lesson is reflected in `pyproject.toml` or recorded as a blocking follow-up.
+- [ ] Live diagnostic/inspection lessons are reflected in LKW-H1 or recorded as a blocking follow-up.
+
+### Observability decision for LKW.1
+
+Do **not** add Grafana, Tempo, OpenTelemetry Collector, or a hosted/external observability backend as a prerequisite for LKW.1 closeout.
+
+Reason:
+
+- LKW.1 must first prove the local product path with minimum moving parts.
+- LKW-H1 explicitly covers local trace/evidence inspection without requiring an external dashboard.
+- Full observability stack can be introduced later when the product proof path is useful and stable enough to justify operational complexity.
+
+However, the LKW.1.7 result shows that minimal local diagnosability is required before the RAG blocker can be resolved. At minimum, the operator must be able to inspect:
+
+- selected agent;
+- step id;
+- invoked tool id;
+- tool input summary;
+- raw tool status;
+- raw tool `reason`/error;
+- RAG ingest/retrieve summary;
+- shadow artifact path.
+
+This requirement feeds directly into LKW.1.8 and LKW-H1.
 
 ### Out of scope (LKW.1)
 
@@ -245,7 +341,9 @@ POST /v1/local_workspace/run
 - Slack.
 - File watcher.
 - OS service installer.
-- `local.workspace.*` skill bundle, except any minimal stub explicitly needed for LKW.1 tests.
+- Full `local.workspace.*` skill bundle, except any minimal stub explicitly needed for LKW.1 tests.
+- Hosted observability dashboard.
+- Grafana/Tempo/OpenTelemetry Collector as a blocker for live proof.
 - Broad harness refactor unrelated to LKW acceptance or platform propagation.
 
 ---
@@ -256,6 +354,8 @@ POST /v1/local_workspace/run
 
 Make one real LKW run inspectable without reading internal runtime code, and ensure the trace/evidence pattern is reusable by future applications.
 
+LKW-H1 is **not** the hosted observability stack. It is the minimum local inspection surface needed for a developer/operator to understand a run. Grafana, Tempo, and an OpenTelemetry Collector remain optional future operational infrastructure unless a later task explicitly scopes them.
+
 ### Required inspection fields
 
 For every LKW.1 proof run, the operator should be able to inspect:
@@ -265,6 +365,7 @@ For every LKW.1 proof run, the operator should be able to inspect:
 - selected agent;
 - step sequence;
 - invoked tools and outcomes;
+- raw tool status and reason/error;
 - policy decisions;
 - RAG ingest/retrieve evidence;
 - shadow workspace artifact path;
@@ -282,7 +383,7 @@ For every LKW.1 proof run, the operator should be able to inspect:
 ### Acceptance criteria
 
 - [ ] A reviewer can see what happened in an LKW run from task submission to terminal result.
-- [ ] Tool calls, policy decisions, RAG evidence, and shadow artifact path are visible.
+- [ ] Tool calls, policy decisions, RAG evidence, raw tool reason/error, and shadow artifact path are visible.
 - [ ] No hosted dashboard or external observability backend is required.
 - [ ] Platform proof checklist in §0a is completed.
 
@@ -380,7 +481,7 @@ Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 | ID | Key deliverables |
 |----|------------------|
 | LKW.4 | `message_bus` background ingest queue |
-| LKW.5 | `LKW_DATA_HOME` in settings, Chroma path under `data/chroma/` |
+| LKW.5 | `LKW_DATA_HOME` in settings, persistent vector store path under `data/` |
 | LKW.6 | `scripts/lkw-host`, systemd/launchd/Windows unit, `wire_interaction_intake_service` |
 | LKW.6b | Socket Mode → `/lkw` mapping; HITL notify |
 | LKW.7 | `host/indexer_worker.py`, watcher + queue |
@@ -394,6 +495,8 @@ Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 |----|----------|-------|
 | E0 | Runtime hardening gate: strict policy, max_steps boundary, finalization diagnostics | LKW-H0 |
 | E1 | Developer proof: fixture/local doc ingest → search cites source → synthesize writes shadow artifact | LKW.1, LKW-H1 |
+| E1a | Live HTTP smoke: Docker host + `/health` + `/agents` + `/run` direct capabilities | LKW.1.7 |
+| E1b | Live RAG diagnostic: accepted fixture path produces `used=true`, chunks, retrievable evidence, or exposes exact blocker reason | LKW.1.8 |
 | E2 | Search at desk via MCP | LKW.1 |
 | E3 | Pipeline report | LKW.2 |
 | E4 | Install → pick folders → persistent index | LKW.5, LKW.6, LKW.8 |
@@ -419,6 +522,11 @@ uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port
 # Docker proof path once stable enough for CI
 applications/local_workspace_application/docker/build-docker.sh
 docker run --rm --env-file applications/local_workspace_application/.env -p 8020:8020 local_workspace-application
+
+# Current LKW.1.7/LKW.1.8 Docker compose path
+docker compose -f applications/local_workspace_application/docker/docker-compose.yml up -d --build
+curl -sS http://127.0.0.1:8020/health
+curl -sS http://127.0.0.1:8020/v1/local_workspace/agents
 ```
 
 Add narrower test commands next to the implementation PR once exact runtime/scaffold/Docker test modules are known.
@@ -441,6 +549,7 @@ Add narrower test commands next to the implementation PR once exact runtime/scaf
 - LKW platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 - One wave per PR unless operator batches explicitly.
 - Every harness/platform/scaffold/build change in this track must cite the LKW acceptance criterion or platform propagation requirement that justifies it.
+- Current LKW.1.7/LKW.1.8 finding: live diagnostic visibility is now a platform pressure point, but full hosted observability is not a prerequisite for LKW.1 closeout.
 
 ---
 
