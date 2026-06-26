@@ -41,7 +41,7 @@ def _failure_output(*, run_id: str, reason: str, rejected_paths: list[dict[str, 
 
 async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
     exec_ctx = exec_ctx_from_step(step_ctx)
-    metadata = request_metadata(exec_ctx)
+    metadata = request_metadata(exec_ctx, step_ctx)
     scope = resolve_request_scope(exec_ctx)
     source_paths = parse_metadata_list(metadata, "source_paths")
 
@@ -101,8 +101,14 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
             vector_ids.extend(list(item.get("vector_ids") or []))
 
     used = any(item.get("status") == "success" for item in ingested)
+    failed = [item for item in ingested if item.get("status") != "success"]
+    success_count = sum(1 for item in ingested if item.get("status") == "success")
+    first_tool_reason = next(
+        (str(item.get("reason")).strip() for item in failed if item.get("reason")),
+        None,
+    )
     if ingested and not used:
-        reason = "ingest_failed"
+        reason = first_tool_reason or "ingest_failed"
     elif rejected and not ingested:
         reason = "all_paths_rejected"
     elif used:
@@ -113,9 +119,13 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
     summary_parts = [
         f"accepted={len(accepted_paths)}",
         f"rejected={len(rejected)}",
-        f"ingested={sum(1 for item in ingested if item.get('status') == 'success')}",
+        f"ingested={success_count}",
         f"chunks={num_chunks}",
     ]
+    if failed:
+        summary_parts.append(f"failed={len(failed)}")
+        if first_tool_reason:
+            summary_parts.append(f"tool_error={first_tool_reason}")
     answer = f"local_indexer: index job — {', '.join(summary_parts)}"
     return {
         "summary": answer,

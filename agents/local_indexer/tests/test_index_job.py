@@ -208,3 +208,96 @@ async def test_local_indexer_agent_act_returns_ingest_summary(tmp_path: Path) ->
 
     assert output["ingest_summary"]["used"] is True
     assert output["ingest_summary"]["num_chunks"] == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_index_job_preserves_denied_tool_reason(tmp_path: Path) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    doc = allowed_root / "report.txt"
+    doc.write_text("hello", encoding="utf-8")
+
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.DENIED,
+            error="tool_not_allowed:rag.ingest_document",
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        request=RuntimeRequest(
+            agent_id="local_indexer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="index docs",
+            metadata={"source_paths": [str(doc)]},
+        ),
+        tool_gateway=gateway,
+    )
+    exec_ctx.metadata["runtime_state"] = type(
+        "RuntimeStateStub",
+        (),
+        {
+            "context": type(
+                "ContextStub",
+                (),
+                {
+                    "config": type(
+                        "ConfigStub",
+                        (),
+                        {"tool_wiring_context": type("WiringStub", (), {"read_allowlist_roots": frozenset({str(allowed_root.resolve())})})()},
+                    )()
+                },
+            )()
+        },
+    )()
+
+    output = await run_index_job(_step_ctx(exec_ctx))
+
+    ingested = output["ingest_summary"]["ingested"]
+    assert len(ingested) == 1
+    assert ingested[0]["status"] == "denied"
+    assert ingested[0]["reason"] == "tool_not_allowed:rag.ingest_document"
+    assert output["ingest_summary"]["used"] is False
+    assert "tool_not_allowed:rag.ingest_document" in str(output["ingest_summary"]["reason"])
+    assert "failed=1" in output["answer"]
+    assert "tool_error=tool_not_allowed:rag.ingest_document" in output["answer"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_index_job_reads_source_paths_from_step_metadata_without_exec_ctx(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    doc = allowed_root / "report.txt"
+    doc.write_text("hello", encoding="utf-8")
+    monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(allowed_root.resolve()))
+
+    step_ctx = AgentStepContext(
+        run_id="run-acp",
+        agent_id="local_indexer",
+        contract_id="local_indexer",
+        metadata={
+            "source_paths": [str(doc)],
+            "collection_id": "ws-acp",
+        },
+    )
+
+    output = await run_index_job(step_ctx)
+
+    assert output["ingest_summary"]["accepted_paths"] == [str(doc.resolve())]
+    assert output["ingest_summary"]["rejected_paths"] == [
+        {"path": str(doc.resolve()), "reason": "tool_gateway_not_available"}
+    ]
+    assert output["ingest_summary"]["used"] is False

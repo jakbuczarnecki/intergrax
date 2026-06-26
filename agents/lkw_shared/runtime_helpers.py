@@ -19,6 +19,18 @@ from intergrax.tools.providers.filesystem.allowlist import (
 )
 
 
+_LKW_JOB_METADATA_KEYS = frozenset(
+    {
+        "source_paths",
+        "collection_id",
+        "chunking_strategy_id",
+        "tenant_id",
+        "user_id",
+        "workspace_id",
+    }
+)
+
+
 def exec_ctx_from_step(step_ctx: AgentStepContext) -> RuntimeExecutionContext | None:
     raw = step_ctx.metadata.get("uaep_exec_ctx")
     if isinstance(raw, RuntimeExecutionContext):
@@ -26,14 +38,20 @@ def exec_ctx_from_step(step_ctx: AgentStepContext) -> RuntimeExecutionContext | 
     return None
 
 
-def request_metadata(exec_ctx: RuntimeExecutionContext | None) -> dict[str, Any]:
-    if exec_ctx is None or exec_ctx.request is None:
-        return {}
-    request = exec_ctx.request
-    if isinstance(request, RuntimeRequest):
-        return dict(request.metadata or {})
-    metadata = getattr(request, "metadata", None)
-    return dict(metadata or {})
+def request_metadata(
+    exec_ctx: RuntimeExecutionContext | None,
+    step_ctx: AgentStepContext | None = None,
+) -> dict[str, Any]:
+    if exec_ctx is not None and exec_ctx.request is not None:
+        request = exec_ctx.request
+        if isinstance(request, RuntimeRequest):
+            return dict(request.metadata or {})
+        metadata = getattr(request, "metadata", None)
+        return dict(metadata or {})
+    if step_ctx is not None:
+        raw = step_ctx.metadata or {}
+        return {key: raw[key] for key in _LKW_JOB_METADATA_KEYS if key in raw}
+    return {}
 
 
 def resolve_request_scope(exec_ctx: RuntimeExecutionContext | None) -> dict[str, str | None]:
@@ -137,4 +155,6 @@ async def invoke_catalog_tool(
         entry.update(response.output)
     elif response.error:
         entry["reason"] = response.error
+    elif response.status != ToolResponseStatus.SUCCESS:
+        entry["reason"] = response.status.value
     return entry
