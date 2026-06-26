@@ -236,6 +236,9 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
+        from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
+
+        apply_host_tool_invoker_to_runtime_context(runtime_context, request.metadata)
         from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
 
         apply_boundary_export_to_kernel(kernel_ctx, runtime_context.config)

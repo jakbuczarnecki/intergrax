@@ -8,6 +8,7 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 
 | File | Mode | Scope |
 |------|------|-------|
+| [`micro_implement.txt`](micro_implement.txt) | MICRO — bounded implementation | One small task; explicit read/edit scope; max 8 reads; no semantic search |
 | [`01_audit_all_domains.txt`](01_audit_all_domains.txt) | A — audit-only | All 22 domain pairs |
 | [`02_audit_one_domain.txt`](02_audit_one_domain.txt) | A1 — audit-only | Single domain (`DOMAIN=` line) |
 | [`03_implement_plan_all_domains.txt`](03_implement_plan_all_domains.txt) | B — implement plan | All 22 |
@@ -17,6 +18,8 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update domain pair or multi-layer feature pair |
 | [`07_ci_preflight.txt`](07_ci_preflight.txt) | **CI — preflight before push/merge** | Run local parity with `.github/workflows/unit-tests.yml` (`--profile all`) |
 | [`hep_step.txt`](hep_step.txt) | **HEP — one plan step** | Phase HEP C13–C16 / EVID-* rows — edit `STEP=` / `SCOPE=` |
+
+**Mode MICRO:** Use [`micro_implement.txt`](micro_implement.txt) as the default bootstrap for ordinary small implementation tasks outside HEP/EVID and outside CI/test/checker hotfixes. Use a new Cursor chat, list exact files and line ranges, and reject any run that reads outside scope.
 
 **Mode I (idea audit):** Write the idea in natural language in a **new** chat (e.g. `Zrób audyt pomysłu: …`). Agent loads `.cursor/rules/intergrax-idea-audit.mdc` on trigger → procedure [`idea_audit.txt`](idea_audit.txt). **No** file editing, **no** `init_architecture_audit_run.py`, **no** `audit_results/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
 

@@ -19,13 +19,17 @@ If more files are needed than the operator listed → **STOP** and ask. Do not r
 
 Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch hubs, or domain guides unless explicitly requested.
 
+**CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. `AGENT_INSTRUCTIONS.md` is **forbidden** unless operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`. Words like "verification", "GitHub", or "audit" alone do **not** authorize loading it.
+
 ## I1 — input (read / tools)
 
 - **Read:** `offset`/`limit` or `grep` before full file; hub **read-scope block** only unless implementing cited §.
 - **Docs-only step:** max **2** source files; max **1** file **>300 lines** without offset.
 - **No** parallel full-file reads of plan/arch hubs in one turn.
 - **No** `Task`/explore subagents unless operator asks or `RESUME:` requires it.
-- **Expand context** (full hub, subagent, >3 source files, repo-wide semantic search): **STOP** — one short question; wait for OK.
+- **Expand context** (full hub, subagent, >3 source files outside operator read scope, repo-wide semantic search): **STOP** — one short question; wait for OK.
+- **LKW Tier-2 tasks:** read [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md) for `invoke_tool` + allowlist — **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
+- **Expansion budget:** max **3 files** outside operator **read scope** per task; then STOP and ask.
 - Grep + path filter before semantic search. Respect `.cursorignore`. No `audit_results/` unless `RESUME:`.
 - **Doc topology:** domain-layer `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`; multi-layer feature `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` — [`docs/features/README.md`](../../docs/features/README.md).
 

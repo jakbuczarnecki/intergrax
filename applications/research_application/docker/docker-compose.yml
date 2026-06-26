@@ -1,6 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Run from repository root: docker compose -f applications/research_application/docker/docker-compose.yml up --build
 
+name: intergrax_research
+
 services:
   research:
     build:

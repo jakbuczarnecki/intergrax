@@ -159,7 +159,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
             openapi_enabled_override: Optional[bool] = None
             api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
-            include_mcp: bool = True
+            include_mcp: bool = False
             mcp_mount_path: str = "/mcp"
             include_interaction_routes: bool = True
             interaction_route_prefix: str = "/v1/interactions"
@@ -244,7 +244,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                             "{env_prefix_value}BACKEND_ALLOW_UNAUTHENTICATED=true."
                         )
 
-                include_mcp = _env_bool("{env_prefix_value}INCLUDE_MCP", default=True)
+                include_mcp = _env_bool("{env_prefix_value}INCLUDE_MCP", default=False)
                 mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
                 include_interactions = _env_bool("{env_prefix_value}INCLUDE_INTERACTIONS", default=True)
                 interaction_prefix = (
@@ -528,10 +528,9 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from fastapi import FastAPI
         from starlette.middleware.cors import CORSMiddleware
 
-        from intergrax.applications._shared.fastapi_mcp import (
-            apply_lifespans,
-            couple_fastapi_with_mcp,
-            make_scheduler_lifespan,
+        from intergrax.applications._shared.workspace_cleanup_wiring import (
+            apply_factory_lifespans,
+            build_factory_lifespans,
         )
         from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
         from intergrax.fastapi_core.app_factory import create_app
@@ -551,7 +550,6 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from {pkg}.host.settings import {pascal}BackendSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.manifest import build_{short}_manifest
-        from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
 
 
@@ -654,20 +652,28 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
 
             scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
             if settings.include_mcp:
+                from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+                couple_fastapi_with_mcp = load_mcp_coupling()
+                from {pkg}.mcp.server import build_{short}_mcp_server
+
                 mcp = build_{short}_mcp_server(
                     nexus_loop=nexus_loop,
                     route_prefix=settings.route_prefix,
                     tool_registry=runtime.env_wiring.tool_wiring.registry,
                 )
-                extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+                extra_lifespans = build_factory_lifespans(
+                    runtime,
+                    schedulers=[scheduler] if scheduler else None,
+                )
                 app = couple_fastapi_with_mcp(
                     app,
                     mcp,
                     mount_path=settings.mcp_mount_path,
                     extra_lifespans=extra_lifespans,
                 )
-            elif scheduler is not None:
-                apply_lifespans(app, make_scheduler_lifespan(scheduler))
+            else:
+                apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
 
             attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
@@ -876,7 +882,7 @@ def env_example(
         {env_prefix}ROUTE_PREFIX={route_prefix}
         {env_prefix}DEFAULT_AGENT_ID=echo
         {env_prefix}IDENTITY_SOURCE=body_or_context
-        {env_prefix}INCLUDE_MCP=true
+        {env_prefix}INCLUDE_MCP=false
         {env_prefix}MCP_MOUNT_PATH=/mcp
         {env_prefix}INCLUDE_INTERACTIONS=true
         {env_prefix}INTERACTION_ROUTE_PREFIX=/v1/interactions
@@ -910,9 +916,9 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 
         Scaffolded **product** profile — FastAPI Core (`/health`, `/v1/*`) + ``POST {route_prefix}/run``.
 
-        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
-        **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+        **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
 

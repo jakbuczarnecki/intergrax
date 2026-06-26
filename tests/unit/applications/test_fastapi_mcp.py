@@ -8,11 +8,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastmcp import FastMCP
 
-from intergrax.applications._shared.fastapi_mcp import (
-    apply_lifespans,
-    couple_fastapi_with_mcp,
-    make_scheduler_lifespan,
-)
+from intergrax.applications._shared.fastapi_lifespan import apply_lifespans, make_scheduler_lifespan
+from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 

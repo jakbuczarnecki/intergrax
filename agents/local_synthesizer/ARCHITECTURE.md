@@ -66,6 +66,18 @@ Task(..., metadata={"shadow_workspace": True})
 
 ---
 
+## Pattern anchor (Cursor — read instead of runtime grep)
+
+| Item | Location |
+|------|----------|
+| Canonical `invoke_tool` + allowlist pattern | [`agents/lkw_shared/PATTERN.md`](../../lkw_shared/PATTERN.md) |
+| Shared helpers | [`agents/lkw_shared/runtime_helpers.py`](../../lkw_shared/runtime_helpers.py) |
+| **Implementation point** | [`steps/synthesize_job.py`](steps/synthesize_job.py) — `run_synthesize_job` |
+
+Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
+
+---
+
 ## Integrations, tools, and skills
 
 ### Integrations (indirect)
@@ -113,4 +125,4 @@ uv run pytest agents/local_synthesizer/tests -q
 ## References
 
 - Shadow workspace: [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
-- LKW architecture: [`applications/local_workspace_application/ARCHITECTURE.md`](../../applications/local_workspace_application/ARCHITECTURE.md)
+- LKW architecture: [`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../applications/local_workspace_application/docs/ARCHITECTURE.md)

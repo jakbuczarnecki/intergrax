@@ -28,7 +28,7 @@ class IntergraxAssistantApplicationSettings:
     task_control_route_prefix: str = "/v1/harness/tasks"
     scheduler_poll_seconds: float | None = None
     interaction_surface: str = "auto"
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     llm_env_prefix: str = "INTERGRAX_LLM"
     max_delegation_depth: int = 4
@@ -62,7 +62,7 @@ class IntergraxAssistantApplicationSettings:
         interaction_surface = (
             os.getenv("INTERGRAX_ASSISTANT_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
-        include_mcp = _env_bool("INTERGRAX_ASSISTANT_INCLUDE_MCP", default=True)
+        include_mcp = _env_bool("INTERGRAX_ASSISTANT_INCLUDE_MCP", default=False)
         mcp_mount = (os.getenv("INTERGRAX_ASSISTANT_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
         llm_prefix = (os.getenv("INTERGRAX_ASSISTANT_LLM_ENV_PREFIX") or "INTERGRAX_LLM").strip() or "INTERGRAX_LLM"
         depth_raw = (os.getenv("INTERGRAX_ASSISTANT_MAX_DELEGATION_DEPTH") or "4").strip()

@@ -6,6 +6,7 @@ from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_run_enums import (
     AgentRunErrorCode,
     SideEffectMode,
+    StepNextAction,
     TerminalReason,
 )
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
@@ -77,11 +78,68 @@ async def test_kernel_policy_pre_deny() -> None:
 @pytest.mark.gate
 async def test_kernel_budget_exceeded() -> None:
     step_ctx = AgentStepContext(step_index=2)
-    kernel_ctx = StepKernelContext(agent_id="demo", run_id="run-1", max_steps=2)
+    kernel_ctx = StepKernelContext(agent_id="demo", run_id="run-1", max_steps=2, allow_permissive_missing_policy=True)
     outcome = StepOutcome.continue_with({"phase": "execute"})
     record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
     assert record.budget_exceeded is True
     assert record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_max_steps_boundary_allows_exactly_n_steps() -> None:
+    max_steps = 3
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-max-steps-boundary",
+        max_steps=max_steps,
+        allow_permissive_missing_policy=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "execute"})
+    for step_index in range(max_steps):
+        step_ctx = AgentStepContext(step_index=step_index)
+        record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+        assert record.budget_exceeded is False
+        assert record.error_code is None
+        assert record.outcome_applied is True
+        assert record.step_record is not None
+        assert record.step_record.terminal_reason is None
+        assert record.step_record.next_action != StepNextAction.FAIL
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_max_steps_boundary_rejects_step_n_plus_one() -> None:
+    from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+    max_steps = 3
+    step_ctx = AgentStepContext(step_index=max_steps)
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-max-steps-exceeded",
+        max_steps=max_steps,
+        allow_permissive_missing_policy=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "execute"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+
+    assert record.budget_exceeded is True
+    assert record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED
+    assert record.step_record is not None
+    assert record.step_record.terminal_reason == TerminalReason.MAX_STEPS_EXCEEDED
+    assert record.step_record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED
+    assert record.step_record.next_action == StepNextAction.FAIL
+
+    failed_events = [
+        event
+        for event in kernel_ctx.events
+        if event.event_type == RuntimeEventType.STEP_FAILED
+    ]
+    assert len(failed_events) == 1
+    payload = failed_events[0].payload
+    assert payload.get("step_index") == max_steps
+    assert payload.get("max_steps") == max_steps
+    assert payload.get("reason") == "max_steps_exceeded"
 
 
 @pytest.mark.unit
@@ -109,6 +167,7 @@ async def test_kernel_rejects_mixed_side_effect_mode() -> None:
     kernel_ctx = StepKernelContext(
         agent_id="demo",
         side_effect_mode=SideEffectMode.IMMEDIATE,
+        allow_permissive_missing_policy=True,
     )
     outcome = StepOutcome.continue_with(
         {},
@@ -399,3 +458,55 @@ async def test_kernel_emits_single_step_completed_per_step() -> None:
     ]
     assert len(completed) == 1
     assert completed[0].payload.get("step_index") == 0
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_strict_product_fails_closed_without_policy_engine() -> None:
+    step_ctx = AgentStepContext(step_index=0)
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-strict",
+        production_mode=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "plan"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code == AgentRunErrorCode.POLICY_DENIED
+    assert record.policy_pre is not None
+    assert record.policy_pre.action == PolicyAction.DENY
+    assert record.policy_pre.policy_rule_id == "kernel.missing_policy_engine"
+    assert record.policy_pre.reason == "missing_policy_engine"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_dev_test_explicit_permissive_missing_policy() -> None:
+    step_ctx = AgentStepContext(step_index=0)
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-permissive",
+        allow_permissive_missing_policy=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "plan"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code is None
+    assert record.policy_pre is not None
+    assert record.policy_pre.action == PolicyAction.ALLOW
+    assert record.policy_pre.policy_rule_id == "kernel.permissive_missing_policy"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_strict_product_ignores_permissive_missing_policy_flag() -> None:
+    step_ctx = AgentStepContext(step_index=0)
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-strict-no-override",
+        production_mode=True,
+        allow_permissive_missing_policy=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "plan"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code == AgentRunErrorCode.POLICY_DENIED
+    assert record.policy_pre is not None
+    assert record.policy_pre.policy_rule_id == "kernel.missing_policy_engine"

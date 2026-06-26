@@ -2,8 +2,10 @@
 
 Tier-3 product host for local document indexing, semantic search, and synthesis.
 
-**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
-**Build & deploy:** [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)
+**Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
+**Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)  
+**User journey:** [USER_JOURNEY.md](docs/USER_JOURNEY.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)  
+**Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
 
@@ -12,6 +14,46 @@ Tier-3 product host for local document indexing, semantic search, and synthesis.
 | `LocalIndexerAgent` | `local.workspace.index` |
 | `LocalSearchAgent` | `local.workspace.search` (default) |
 | `LocalSynthesizerAgent` | `local.workspace.synthesize` |
+
+## What LKW proves
+
+LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
+
+A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
+
+The current LKW.1 execution status is tracked in [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md). LKW.1 is not closed until the full live product smoke proves `index -> search -> synthesize -> shadow artifact only`.
+
+## Local stack
+
+The local-first LKW stack is:
+
+- **LKW backend:** FastAPI + Nexus + local agents;
+- **Vector store:** Qdrant for persistent local RAG;
+- **Relational/runtime data:** SQLite files under `INTERGRAX_SQLITE_DATA_DIR`;
+- **Shadow artifacts:** `INTERGRAX_SHADOW_ROOT`;
+- **LLM:** Ollama by default, vLLM optionally;
+- **Redis:** optional until background ingest / queue workflows require it.
+
+In-memory vector storage is only for tests or temporary development. It is not the real local product default.
+
+## Docker quickstart
+
+From `applications/local_workspace_application/`:
+
+Windows:
+
+```bat
+scripts/build-local-docker.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x scripts/build-local-docker.sh
+./scripts/build-local-docker.sh
+```
+
+The scripts copy `.env.example` to `.env` when needed, build the Docker image, start Ollama, pull the model configured in `.env`, and start the local stack.
 
 ## Quickstart
 
@@ -22,6 +64,8 @@ uv run pytest applications/local_workspace_application/local_workspace_applicati
 cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
 ```
+
+Before indexing real files, set `INTERGRAX_ALLOWED_READ_ROOTS` in `.env` to one or more absolute folders that LKW may read.
 
 ## HTTP
 
@@ -39,25 +83,31 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 ## Runtime model
 
-**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](ARCHITECTURE.md#3-product-philosophy).
+**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](docs/ARCHITECTURE.md#3-product-philosophy).
 
-**Install & data paths:** [ARCHITECTURE.md §7](ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
+**Install & data paths:** [ARCHITECTURE.md §7](docs/ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
 
-**Runtime:** [ARCHITECTURE.md §9](ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
+**Runtime:** [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
 
-**Implementation waves:** [ARCHITECTURE.md §15](ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+**Implementation waves:** [ARCHITECTURE.md §15](docs/ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 
 ## Platform stack
 
-LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](ARCHITECTURE.md#8-integrations-tools-and-skills)):
+LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](docs/ARCHITECTURE.md#8-integrations-tools-and-skills)):
 
-- **Integrations:** `IntegrationProfile.legal_product()` (Docling, SQLite, vector store, rerank)
-- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`
-- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2)
+- **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
+- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
+- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2).
 
 ## Docs
 
-- LKW architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+See [docs/README.md](docs/README.md) for the full local documentation index.
+
+- Final user journey: [USER_JOURNEY.md](docs/USER_JOURNEY.md)
+- LKW architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- LKW live verification: [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
+- LKW hardening: [ARCHITECTURE_HARDENING.md](docs/ARCHITECTURE_HARDENING.md)
+- Platform proof loop: [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
 - Plan register: [docs/intergrax_runtime_architecture.md §6.3a](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 - Agent workflow: [docs/guides/AGENT_CREATION_GUIDE.md](../../docs/guides/AGENT_CREATION_GUIDE.md)
 - Application layout: [applications/USAGE.md](../USAGE.md)

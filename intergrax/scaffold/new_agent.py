@@ -77,6 +77,34 @@ def _normalize_pattern(pattern: str | None) -> str | None:
     return normalized
 
 
+def _domain_job_py(slug: str) -> str:
+    step_id = f"{slug}_step"
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        from intergrax.contracts.agent_step_context import AgentStepContext
+        from lkw_shared.runtime_helpers import exec_ctx_from_step, request_metadata
+
+        DOMAIN_STEP_ID = "{step_id}"
+
+
+        async def run_domain_job(step_ctx: AgentStepContext) -> dict[str, object]:
+            """Cursor implementation point — see agents/lkw_shared/PATTERN.md."""
+            _ = exec_ctx_from_step(step_ctx), request_metadata(None), DOMAIN_STEP_ID
+            answer = "{slug}: domain job not implemented"
+            return {{
+                "summary": answer,
+                "answer": answer,
+                "run_id": step_ctx.run_id,
+                "domain_summary": {{"used": False, "reason": "not_implemented"}},
+            }}
+        '''
+    )
+
+
 def _acp_agent_hooks(
     slug: str,
     class_name: str,
@@ -103,8 +131,9 @@ def _acp_agent_hooks(
                 step_ctx: AgentStepContext,
                 reasoning: ReasoningResult,
             ) -> dict[str, object]:
-                _ = step_ctx
-                return {{"summary": reasoning.thought, "capability": "{primary_capability}"}}
+                _ = reasoning
+                from {slug}.steps.domain_job import run_domain_job
+                return await run_domain_job(step_ctx)
 
             def evaluate(
                 self,
@@ -546,6 +575,8 @@ def create_acp_pattern_agent(
         force=force,
     )
     _write(target / "capabilities.py", _capabilities_py(slug, capabilities), force=force)
+    _write(target / "steps" / "__init__.py", "", force=force)
+    _write(target / "steps" / "domain_job.py", _domain_job_py(slug), force=force)
     _write(target / "tests" / "__init__.py", "", force=force)
     _write(
         target / "tests" / f"test_{slug}_agent.py",

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI
 
-from intergrax.applications._shared.fastapi_mcp import LifespanFn, apply_lifespans, make_scheduler_lifespan
+from intergrax.applications._shared.fastapi_lifespan import LifespanFn, apply_lifespans, make_scheduler_lifespan
 from intergrax.applications.contracts.environment_state import (
     ApplicationEnvironmentState,
     SandboxIsolationRef,

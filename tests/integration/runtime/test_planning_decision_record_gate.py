@@ -29,13 +29,15 @@ async def test_planning_emits_decision_record_event() -> None:
     result = await loop.handle_task(task)
     assert result.state == TaskState.COMPLETED
     events = loop._event_bus.history  # noqa: SLF001 — gate inspects published spine
-    decision_events = [e for e in events if e.event_type is RuntimeEventType.DECISION_EMITTED]
-    assert decision_events, "expected DECISION_EMITTED during planning"
-    planning_decision = decision_events[0].payload
+    plan_events = [e for e in events if e.event_type is RuntimeEventType.PLAN_CREATED]
+    assert plan_events, "expected PLAN_CREATED during planning"
+    planning_decision = plan_events[0].payload.get("decision_record", {})
     assert planning_decision.get("decision_type") == "nexus_planning"
     assert planning_decision.get("policy_action") == "allow"
     assert "classification" in planning_decision.get("metadata", {})
     assert "planner_source" in planning_decision.get("metadata", {})
+    decision_events = [e for e in events if e.event_type is RuntimeEventType.DECISION_EMITTED]
+    assert not decision_events, "planning must not emit step-level DECISION_EMITTED"
     advisory = [
         e
         for e in events

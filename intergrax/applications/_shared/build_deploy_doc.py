@@ -50,7 +50,7 @@ def render_build_deploy_doc(
 
             ### MCP (FastMCP + FastAPI)
 
-            When ``{env_prefix}INCLUDE_MCP=true`` (default), FastMCP is mounted at
+            When ``{env_prefix}INCLUDE_MCP=true`` (opt-in; default **false**), FastMCP is mounted at
             ``{env_prefix}MCP_MOUNT_PATH`` (default ``/mcp``) on the **same** uvicorn process.
             Tools ``list_agents`` and ``run_agent`` use the same Nexus loop as HTTP.
 
@@ -72,7 +72,7 @@ def render_build_deploy_doc(
 
         Tier-3 application package: ``applications/{pkg}/``. This document is the **operational runbook** for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
 
         ---
 
@@ -184,6 +184,8 @@ def render_build_deploy_doc(
         - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
         - Image ``HEALTHCHECK`` probes ``{health}``.
         - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
+        - Dockerfile runs a **build-time factory smoke** (MCP/scheduler/interactions disabled) before the runtime stage.
+        - ``docker-compose.yml`` sets an explicit Compose project ``name:`` so Docker Desktop does not label the stack ``docker``.
 
         ---
 
@@ -208,6 +210,28 @@ def render_build_deploy_doc(
         ```
 
         Ensure ``applications/{pkg}/.env`` exists (compose uses ``env_file: ../.env``).
+
+        When the application ships Ollama bootstrap helpers, prefer:
+
+        ```bash
+        applications/{pkg}/scripts/build-local-docker.sh
+        # Windows: applications\\{pkg}\\scripts\\build-local-docker.bat
+        ```
+
+        Those scripts create ``.env`` from ``.env.example`` when missing, build the image, start Ollama,
+        pull the configured model (with retries on Windows via ``docker compose exec -T``), and bring up the stack.
+
+        ---
+
+        ## Platform scaffolding principles (LKW feedback)
+
+        - **Roster isolation:** product application startup must not depend on unrelated reference/demo agents.
+        - **Environment-scoped capability graph:** default runtime builds the graph from manifest + environment
+          registry snapshot; global catalog graphs are opt-in via explicit ``catalog=...``.
+        - **Optional MCP:** HTTP-only startup (``INCLUDE_MCP=false`` default) must not import ``fastmcp``,
+          ``mcp``, or ``fastapi_mcp``; enable MCP explicitly via ``{env_prefix}INCLUDE_MCP=true``.
+        - **Minimal Docker closure:** copy only agent packages required by the application roster (plus shared packages), never ``COPY agents/ ./agents/`` by default.
+        - **Feedback loop:** every LKW runtime/deployment issue should be evaluated as a platform/scaffold feedback signal, not only as an application-local patch.
 
         ---
 

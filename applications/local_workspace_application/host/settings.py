@@ -74,7 +74,7 @@ class LocalWorkspaceBackendSettings:
     allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
     openapi_enabled_override: Optional[bool] = None
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     include_task_control: bool = True
     include_scheduler: bool = False
@@ -170,7 +170,7 @@ class LocalWorkspaceBackendSettings:
                     "LOCAL_WORKSPACE_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
-        include_mcp = _env_bool("LOCAL_WORKSPACE_INCLUDE_MCP", default=True)
+        include_mcp = _env_bool("LOCAL_WORKSPACE_INCLUDE_MCP", default=False)
         mcp_mount = (os.getenv("LOCAL_WORKSPACE_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
         include_task_control = _env_bool("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", default=True)
         include_scheduler = _env_bool("LOCAL_WORKSPACE_INCLUDE_SCHEDULER", default=False)

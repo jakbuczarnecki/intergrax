@@ -295,7 +295,7 @@ def write_application_adr_scaffold(
     display: str,
     force: bool = False,
 ) -> Path:
-    adr_dir = app_dir / "adr"
+    adr_dir = app_dir / "docs" / "adr"
     prefix = adr_prefix(short)
     _write_adr_file(
         adr_dir / ADR_README,

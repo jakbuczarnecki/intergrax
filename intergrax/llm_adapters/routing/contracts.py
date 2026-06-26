@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from intergrax.llm_adapters.registry.profile import LLMProfile
 
@@ -115,7 +116,7 @@ class LLMRoutingProfile(BaseModel):
 
     default_profile: LLMProfile
     allowed_profiles: tuple[LLMProfile, ...] = ()
-    rules: tuple[LLMRoutingRule, ...] = ()
+    rules: SkipJsonSchema[tuple[LLMRoutingRule, ...]] = ()
 
 
 class RoutingEvaluation(BaseModel):

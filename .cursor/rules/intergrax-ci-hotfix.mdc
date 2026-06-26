@@ -1,0 +1,43 @@
+---
+description: CI/test hotfix — ultra scoped; no docs, no architecture, no full verification
+alwaysApply: false
+---
+
+# Intergrax — CI Hotfix Mode
+
+Use **only** for fixing failing CI, tests, or checker output. Operator must `@`-reference this rule or write `CI HOTFIX`.
+
+**CI HOTFIX = NEW CHAT** — do not continue after audit, all-domain workflow, or large reports.
+
+## Scope
+
+- Read only the failing test/checker file and directly related implementation file(s).
+- Do **not** load `AGENT_INSTRUCTIONS.md` (forbidden unless operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`).
+- Do **not** load architecture, plan, `SYSTEM_INVARIANTS.md`, strategy, or journal docs.
+- Do **not** run full test suite or full verification checklist.
+- Do **not** update docs unless the failing test is docs-specific.
+- Do **not** create journal entries.
+- Do **not** inspect unrelated files or perform repo-wide search.
+
+## Mandatory preflight
+
+Before reading/editing, state:
+
+- **read scope:**
+- **edit scope:**
+- **tests:**
+
+If more files are needed than listed → **STOP** and ask.
+
+## Allowed verification
+
+- Exact failing command from GitHub Actions, or
+- Exact failing test file (`uv run pytest <path> -q`), or
+- `uv run python scripts/run_ci_smoke_pytest.py` when PR smoke failed.
+
+## Final report (≤6 lines)
+
+- changed files
+- fixed failure
+- tests run
+- commit SHA or no commit

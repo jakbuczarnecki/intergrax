@@ -55,6 +55,18 @@ from intergrax.rag.vectorstore.sparse.sparse_encoder import SparseEncoder, resol
 
 _DENSE_VECTOR_NAME = "dense"
 _SPARSE_VECTOR_NAME = "sparse"
+_LOGICAL_ID_METADATA_KEY = "logical_id"
+
+
+def _normalize_point_id(raw_id: str) -> str | int:
+    """Map a logical chunk id to a Qdrant-compatible point id (UUID or unsigned int)."""
+    try:
+        return str(uuid.UUID(raw_id))
+    except ValueError:
+        pass
+    if raw_id.isdigit():
+        return int(raw_id)
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, raw_id))
 
 
 
@@ -169,12 +181,16 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._ensure_qdrant_collection()
         points = []
         for i in range(len(ids)):
-            text = str(metadatas[i].get("text", ""))
+            raw_id = str(ids[i])
+            point_id = _normalize_point_id(raw_id)
+            payload = dict(metadatas[i])
+            payload[_LOGICAL_ID_METADATA_KEY] = raw_id
+            text = str(payload.get("text", ""))
             if self._sparse_enabled and QdrantSparseVector is not None:
                 sparse = self._sparse_encoder.encode(text)
                 points.append(
                     PointStruct(
-                        id=ids[i],
+                        id=point_id,
                         vector={
                             _DENSE_VECTOR_NAME: list(map(float, embeddings[i])),
                             _SPARSE_VECTOR_NAME: QdrantSparseVector(
@@ -182,15 +198,15 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                                 values=sparse.values,
                             ),
                         },
-                        payload=metadatas[i],
+                        payload=payload,
                     )
                 )
             else:
                 points.append(
                     PointStruct(
-                        id=ids[i],
+                        id=point_id,
                         vector=list(map(float, embeddings[i])),
-                        payload=metadatas[i],
+                        payload=payload,
                     )
                 )
         self._client.upsert(collection_name=self.collection_name, points=points)
@@ -412,21 +428,22 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         if not ids:
             return
         self._ensure_qdrant_collection()
+        point_ids = [_normalize_point_id(str(point_id)) for point_id in ids]
         try:
             if PointIdsList is not None:
                 self._client.delete(
                     collection_name=self.collection_name,
-                    points_selector=PointIdsList(points=list(ids)),
+                    points_selector=PointIdsList(points=point_ids),
                 )
             else:
                 self._client.delete(
                     self.collection_name,
-                    points_selector={"points": list(ids)},
+                    points_selector={"points": point_ids},
                 )
         except TypeError:
             self._client.delete(
                 self.collection_name,
-                points_selector={"points": list(ids)},
+                points_selector={"points": point_ids},
             )
 
 

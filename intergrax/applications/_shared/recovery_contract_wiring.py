@@ -72,7 +72,7 @@ def check_product_architecture_recovery_docs(
     applications_root: Path,
 ) -> list[str]:
     """Ensure product ARCHITECTURE.md documents recovery posture."""
-    architecture_path = applications_root / package / "ARCHITECTURE.md"
+    architecture_path = applications_root / package / "docs" / "ARCHITECTURE.md"
     if not architecture_path.is_file():
         return [f"{package}: missing ARCHITECTURE.md for recovery documentation"]
 

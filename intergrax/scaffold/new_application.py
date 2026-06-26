@@ -20,6 +20,10 @@ from intergrax.scaffold.doc_templates import (
     render_application_architecture_doc,
     render_application_implementation_plan,
 )
+from intergrax.scaffold.application_layout import (
+    write_application_journal_scaffold,
+    write_sample_docs_scaffold,
+)
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
     app_slug,
@@ -156,7 +160,7 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
             include_scheduler: bool = True
             scheduler_poll_seconds: float | None = None
             interaction_surface: str = "auto"
-            include_mcp: bool = True
+            include_mcp: bool = False
             mcp_mount_path: str = "/mcp"
             include_task_control: bool = True
             include_queue_worker: bool = True
@@ -183,10 +187,11 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
                 interaction_surface = (
                     os.getenv("{env_prefix_value}INTERACTION_SURFACE") or "auto"
                 ).strip().lower() or "auto"
-                include_mcp = (os.getenv("{env_prefix_value}INCLUDE_MCP") or "true").strip().lower() not in {{
-                    "0",
-                    "false",
-                    "no",
+                include_mcp = (os.getenv("{env_prefix_value}INCLUDE_MCP") or "false").strip().lower() in {{
+                    "1",
+                    "true",
+                    "yes",
+                    "on",
                 }}
                 mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
                 include_task_control = (
@@ -493,14 +498,12 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         from {pkg}.host.settings import {pascal}ApplicationSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.manifest import build_{short}_manifest
-        from intergrax.applications._shared.fastapi_mcp import (
-            apply_lifespans,
-            couple_fastapi_with_mcp,
-            make_scheduler_lifespan,
+        from intergrax.applications._shared.workspace_cleanup_wiring import (
+            apply_factory_lifespans,
+            build_factory_lifespans,
         )
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
-        from {pkg}.mcp.server import build_{short}_mcp_server
         from {pkg}.serving.fastapi_router import mount_{short}_routes
 
 
@@ -582,21 +585,29 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 )
             scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
             if settings.include_mcp:
+                from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+                couple_fastapi_with_mcp = load_mcp_coupling()
+                from {pkg}.mcp.server import build_{short}_mcp_server
+
                 tool_registry = runtime.env_wiring.tool_wiring.registry
                 mcp = build_{short}_mcp_server(
                     nexus_loop=nexus_loop,
                     route_prefix=settings.route_prefix,
                     tool_registry=tool_registry,
                 )
-                extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+                extra_lifespans = build_factory_lifespans(
+                    runtime,
+                    schedulers=[scheduler] if scheduler else None,
+                )
                 app = couple_fastapi_with_mcp(
                     app,
                     mcp,
                     mount_path=settings.mcp_mount_path,
                     extra_lifespans=extra_lifespans,
                 )
-            elif scheduler is not None:
-                apply_lifespans(app, make_scheduler_lifespan(scheduler))
+            else:
+                apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
             attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
         '''
@@ -857,7 +868,7 @@ def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[Scaf
         {env_prefix}INCLUDE_INTERACTIONS=true
         {env_prefix}INCLUDE_SCHEDULER=true
         {env_prefix}INTERACTION_SURFACE=auto
-        {env_prefix}INCLUDE_MCP=true
+        {env_prefix}INCLUDE_MCP=false
         {env_prefix}MCP_MOUNT_PATH=/mcp
         {env_prefix}INCLUDE_TASK_CONTROL=true
         {env_prefix}INCLUDE_QUEUE_WORKER=true
@@ -892,9 +903,9 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         Scaffolded lab-profile application — debug API + ``POST {route_prefix}/run``.
 
-        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · **ADRs:** [`adr/README.md`](adr/README.md)
+        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
-        **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+        **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
 
@@ -1004,8 +1015,10 @@ def _create_lab_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", _manifest_py(names, specs), force=force)
     _write(target / "README.md", _readme(names, specs), force=force)
+    docs_dir = target / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
-        target / "ARCHITECTURE.md",
+        docs_dir / "ARCHITECTURE.md",
         render_application_architecture_doc(
             names=names,
             specs=specs,
@@ -1015,7 +1028,7 @@ def _create_lab_application(
         force=force,
     )
     _write(
-        target / "IMPLEMENTATION_PLAN.md",
+        docs_dir / "IMPLEMENTATION_PLAN.md",
         render_application_implementation_plan(
             names=names,
             specs=specs,
@@ -1024,6 +1037,8 @@ def _create_lab_application(
         ),
         force=force,
     )
+    write_sample_docs_scaffold(target, force=force)
+    write_application_journal_scaffold(target, force=force)
     _write(
         target / ".env.example",
         _env_example(names.env_prefix, names.route_prefix, names.port, specs),
@@ -1066,11 +1081,14 @@ def _create_lab_application(
             env_prefix=names.env_prefix,
             agent_dirs=agent_dirs,
             health_path=health_path,
+            factory_import=f"from {names.pkg}.host.factory import create_{names.short}_application",
+            factory_call=f"create_{names.short}_application()",
+            route_prefix=names.route_prefix,
             force=force,
         )
 
         _write(
-            target / "BUILD_AND_DEPLOY.md",
+            docs_dir / "BUILD_AND_DEPLOY.md",
             render_build_deploy_doc(
                 pkg=names.pkg,
                 short=names.short,
@@ -1125,8 +1143,10 @@ def _create_product_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", product_tpl.manifest_py(names, specs), force=force)
     _write(target / "README.md", product_tpl.readme(names, specs), force=force)
+    docs_dir = target / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
-        target / "ARCHITECTURE.md",
+        docs_dir / "ARCHITECTURE.md",
         render_application_architecture_doc(
             names=names,
             specs=specs,
@@ -1135,7 +1155,7 @@ def _create_product_application(
         force=force,
     )
     _write(
-        target / "IMPLEMENTATION_PLAN.md",
+        docs_dir / "IMPLEMENTATION_PLAN.md",
         render_application_implementation_plan(
             names=names,
             specs=specs,
@@ -1143,6 +1163,8 @@ def _create_product_application(
         ),
         force=force,
     )
+    write_sample_docs_scaffold(target, force=force)
+    write_application_journal_scaffold(target, force=force)
     _write(
         target / ".env.example",
         product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),
@@ -1184,11 +1206,14 @@ def _create_product_application(
         env_prefix=names.env_prefix,
         agent_dirs=agent_dirs,
         health_path=health_path,
+        factory_import=f"from {names.pkg}.host.factory import create_{names.short}_backend_app",
+        factory_call=f"create_{names.short}_backend_app()",
+        route_prefix=names.route_prefix,
         force=force,
     )
 
     _write(
-        target / "BUILD_AND_DEPLOY.md",
+        docs_dir / "BUILD_AND_DEPLOY.md",
         render_build_deploy_doc(
             pkg=names.pkg,
             short=names.short,
@@ -1364,6 +1389,6 @@ def run_new_application(args: argparse.Namespace) -> int:
     print(f"  MCP:    http://127.0.0.1:{names.port}/mcp  (FastMCP, coupled to FastAPI)")
     print(f"  Docker: applications/{names.pkg}/docker/build-docker.sh")
     print(f"          applications\\{names.pkg}\\docker\\build-docker.bat  (Windows)")
-    print(f"  Deploy: applications/{names.pkg}/BUILD_AND_DEPLOY.md")
+    print(f"  Deploy: applications/{names.pkg}/docs/BUILD_AND_DEPLOY.md")
     print("  Docs:   intergrax/applications/USAGE.md · applications/USAGE.md")
     return 0

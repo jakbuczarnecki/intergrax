@@ -17,8 +17,10 @@ from intergrax.applications._shared.capability_graph_wiring import (
     resolve_environment_capability_graph,
 )
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.registry_snapshot import resolve_registry_snapshot
+from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.architecture.capability_graph import (
     CapabilityEdge,
     CapabilityEdgeType,
@@ -59,6 +61,32 @@ def _minimal_catalog() -> CapabilityGraph:
             ),
         ],
     )
+
+
+def test_build_environment_capability_graph_from_wiring_uses_roster_only() -> None:
+    from intergrax.applications._shared.capability_graph_wiring import (
+        build_environment_capability_graph_from_wiring,
+    )
+
+    manifest = ApplicationManifest.lab(
+        app_id="cg_wiring_local",
+        name="CG Wiring Local",
+        route_prefix="/v1/cg_wiring_local",
+        env_prefix="CG_WIRING_LOCAL_",
+        agents=[],
+    )
+    snapshot = HarnessRegistrySnapshot(
+        integration_profile=IntegrationProfile(),
+        tool_registry=None,
+        skill_registry=None,
+        prompt_registry=None,
+        policy_bundle=None,
+    )
+    graph = build_environment_capability_graph_from_wiring(manifest, snapshot)
+    node_ids = {node.node_id for node in graph.nodes}
+    assert "application:cg_wiring_local_application" in node_ids
+    assert "policy:runtime_policy_bundle" in node_ids
+    assert not any(node_id == "agent:echo" for node_id in node_ids)
 
 
 def test_extract_environment_capability_graph_includes_neighbors() -> None:

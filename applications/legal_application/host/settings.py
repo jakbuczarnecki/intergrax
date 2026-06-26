@@ -81,7 +81,7 @@ class LegalBackendSettings:
     openapi_enabled_override: Optional[bool]
     session_sqlite_path: Optional[str]
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     include_interaction_routes: bool = True
     interaction_route_prefix: str = "/v1/interactions"
@@ -180,7 +180,7 @@ class LegalBackendSettings:
                     "For local disaster debugging only, set LEGAL_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
-        include_mcp = _env_bool("LEGAL_INCLUDE_MCP", default=True)
+        include_mcp = _env_bool("LEGAL_INCLUDE_MCP", default=False)
         mcp_mount = os.environ.get("LEGAL_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
         include_interactions = _env_bool("LEGAL_INCLUDE_INTERACTIONS", default=True)
         interaction_prefix = (

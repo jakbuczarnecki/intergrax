@@ -62,9 +62,14 @@ def test_agent_adr_scaffold_present(agent_slug: str) -> None:
     _assert_adr_scaffold(REPO / "agents" / agent_slug / "adr", label=f"agents/{agent_slug}")
 
 
+def _application_adr_dir(app_pkg: str) -> Path:
+    return REPO / "applications" / app_pkg / "docs" / "adr"
+
+
 @pytest.mark.parametrize("app_pkg", APPLICATIONS_WITH_ADR)
 def test_application_adr_scaffold_present(app_pkg: str) -> None:
-    _assert_adr_scaffold(REPO / "applications" / app_pkg / "adr", label=f"applications/{app_pkg}")
+    adr_dir = _application_adr_dir(app_pkg)
+    _assert_adr_scaffold(adr_dir, label=f"applications/{app_pkg}")
 
 
 def test_harness_adr_scaffold_present() -> None:
@@ -100,7 +105,7 @@ def test_application_scaffold_emits_adr_directory() -> None:
             force=True,
             minimal=True,
         )
-        _assert_adr_scaffold(target / "adr", label="scaffold application")
+        _assert_adr_scaffold(target / "docs" / "adr", label="scaffold application")
 
 
 def test_adr_template_renderers_idempotent() -> None:
@@ -122,7 +127,7 @@ def test_adr_template_renderers_idempotent() -> None:
             display=names.display,
             force=True,
         )
-        tpl_before = (app_dir / "adr" / ADR_TEMPLATE).read_text(encoding="utf-8")
+        tpl_before = (app_dir / "docs" / "adr" / ADR_TEMPLATE).read_text(encoding="utf-8")
         write_application_adr_scaffold(
             app_dir=app_dir,
             pkg=names.pkg,
@@ -130,5 +135,5 @@ def test_adr_template_renderers_idempotent() -> None:
             display=names.display,
             force=False,
         )
-        tpl_after = (app_dir / "adr" / ADR_TEMPLATE).read_text(encoding="utf-8")
+        tpl_after = (app_dir / "docs" / "adr" / ADR_TEMPLATE).read_text(encoding="utf-8")
         assert tpl_before == tpl_after

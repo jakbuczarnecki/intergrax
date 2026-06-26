@@ -175,6 +175,11 @@ async def run_acp_session(
         max_steps=merged.max_steps,
         checkpoint_every_step=merged.checkpoint_every_step,
         policy_engine=PolicyEngine(),
+        production_mode=(
+            host.app_profile.execution_mode.value == "strict"
+            if host is not None and host.app_profile is not None
+            else False
+        ),
         organizational=merged.organizational,
         side_effect_ledger=persistence.side_effect_ledger,
         declarative_tool_invoker=declarative_invoker,
@@ -293,7 +298,14 @@ async def run_acp_session(
         AcpRunContextKey.TENANT_ID: merged.tenant_id,
         "memory_namespace": merged.memory_namespace,
         "memory_scope": merged.memory_scope.value,
-        "allowed_tools": list(merged.allowed_tools),
+        "allowed_tools": (
+            list(merged.allowed_tools)
+            or [
+                str(tool_id)
+                for tool_id in (request.metadata.get("allowed_tools") or [])
+                if str(tool_id).strip()
+            ]
+        ),
         AcpRunContextKey.ORGANIZATIONAL: (
             merged.organizational.model_dump(mode="json")
             if merged.organizational is not None
@@ -332,7 +344,15 @@ async def run_acp_session(
     last_outcome = None
     last_record = None
 
+    from intergrax.agents.authoring.acp_uaep_shim import attach_acp_catalog_exec_ctx
+
     for _ in range(max_iterations):
+        attach_acp_catalog_exec_ctx(
+            step_ctx,
+            kernel_ctx=kernel_ctx,
+            request=request,
+            contract=contract,
+        )
         outcome, record = await AgentRuntime.advance_step(agent, step_ctx, kernel_ctx)
         last_outcome = outcome
         last_record = record
@@ -368,6 +388,7 @@ async def run_acp_session(
                 "invocation_usage": step_ctx.invocation_usage,
             },
         )
+        step_ctx.metadata.pop("uaep_exec_ctx", None)
         step_ctx_holder[0] = step_ctx
 
     if last_outcome is None or last_record is None:

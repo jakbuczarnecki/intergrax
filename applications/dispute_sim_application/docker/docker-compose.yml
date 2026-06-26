@@ -1,6 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Run from repository root: docker compose -f applications/dispute_sim_application/docker/docker-compose.yml up --build
 
+name: intergrax_dispute_sim
+
 services:
   dispute_sim:
     build:

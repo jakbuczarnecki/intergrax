@@ -84,6 +84,8 @@ class StepKernelContext:
     max_steps: int | None = None
     checkpoint_every_step: bool = True
     policy_engine: PolicyEngine | None = None
+    production_mode: bool = False
+    allow_permissive_missing_policy: bool = False
     organizational: OrganizationalPolicyContext | None = None
     side_effect_ledger: SideEffectLedger | None = None
     declarative_tool_invoker: DeclarativeToolInvoker | None = None
@@ -108,6 +110,24 @@ class StepKernelContext:
     routing_rule_evaluations: list[dict[str, Any]] = field(default_factory=list)
     execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
+
+
+def _missing_policy_engine_decision(kernel_ctx: StepKernelContext) -> PolicyDecision:
+    """Fail closed unless dev/test explicitly opts into permissive missing-policy wiring."""
+    if (
+        not kernel_ctx.production_mode
+        and kernel_ctx.allow_permissive_missing_policy
+    ):
+        return PolicyDecision(
+            action=PolicyAction.ALLOW,
+            reason="permissive_missing_policy_engine",
+            policy_rule_id="kernel.permissive_missing_policy",
+        )
+    return PolicyDecision(
+        action=PolicyAction.DENY,
+        reason="missing_policy_engine",
+        policy_rule_id="kernel.missing_policy_engine",
+    )
 
 
 class HarnessKernel:
@@ -567,11 +587,7 @@ class HarnessKernel:
         kernel_ctx: StepKernelContext,
     ) -> PolicyDecision:
         if kernel_ctx.policy_engine is None:
-            return PolicyDecision(
-                action=PolicyAction.ALLOW,
-                reason="no_policy_engine",
-                policy_rule_id="kernel.default_allow",
-            )
+            return _missing_policy_engine_decision(kernel_ctx)
         if step_ctx.metadata.get("policy_pre_deny"):
             return PolicyDecision(
                 action=PolicyAction.DENY,
@@ -605,11 +621,7 @@ class HarnessKernel:
         kernel_ctx: StepKernelContext,
     ) -> PolicyDecision:
         if kernel_ctx.policy_engine is None:
-            return PolicyDecision(
-                action=PolicyAction.ALLOW,
-                reason="no_policy_engine",
-                policy_rule_id="kernel.default_allow",
-            )
+            return _missing_policy_engine_decision(kernel_ctx)
         if outcome.is_terminal and outcome.output is not None:
             output_text = str(outcome.output)
             return kernel_ctx.policy_engine.evaluate_pre_output(

@@ -322,19 +322,22 @@ class RuntimeContext:
         # --- Runtime Tools ---
         from intergrax.tools.registry.bootstrap import register_default_tools
 
-        register_default_tools()
-        registry = ToolRegistry()
-
         wiring_ctx = config.tool_wiring_context or ToolWiringContext()
         wiring_ctx = _enrich_tool_wiring_context(wiring_ctx, config)
         config.tool_wiring_context = wiring_ctx
 
-        if config.tool_profile is not None:
-            build_registry_from_profile(
-                config.tool_profile,
-                ctx=wiring_ctx,
-                registry=registry,
-            )
+        if config.tool_registry is not None:
+            registry = config.tool_registry
+        else:
+            register_default_tools()
+            registry = ToolRegistry()
+
+            if config.tool_profile is not None:
+                build_registry_from_profile(
+                    config.tool_profile,
+                    ctx=wiring_ctx,
+                    registry=registry,
+                )
 
         executor = RegistryToolExecutor(registry)
         base_invoker = RuntimeToolInvoker(

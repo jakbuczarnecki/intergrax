@@ -13,7 +13,11 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_run_enums import StepNextAction, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.kernel.step_kernel import StepKernelContext
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
     RuntimeRequest,
@@ -22,6 +26,88 @@ from intergrax.runtime.nexus.responses.response_schema import (
 
 if TYPE_CHECKING:
     from intergrax.agents.authoring.patterns.base import CognitiveAgent
+
+
+def apply_host_tool_invoker_to_runtime_context(
+    runtime_context: RuntimeContext,
+    request_metadata: dict[str, Any],
+) -> None:
+    """Overlay Tier-3 host catalog wiring onto agent stub ``RuntimeContext``."""
+    from intergrax.agents.persistence.catalog_declarative_invoker import CatalogDeclarativeToolInvoker
+    from intergrax.agents.persistence.tool_invoker_wiring import (
+        resolve_declarative_tool_invoker_from_metadata,
+    )
+    from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
+
+    invoker = resolve_declarative_tool_invoker_from_metadata(request_metadata)
+    if not isinstance(invoker, CatalogDeclarativeToolInvoker):
+        return
+    tool_invoker = invoker.tool_invoker
+    registry = resolve_tool_registry(tool_invoker)
+    if registry is None:
+        return
+    runtime_context.config.tool_registry = registry
+    runtime_context.config.tool_invoker = tool_invoker
+
+
+def attach_acp_catalog_exec_ctx(
+    step_ctx: AgentStepContext,
+    *,
+    kernel_ctx: StepKernelContext,
+    request: AgentRunRequest,
+    contract: AgentContract,
+) -> None:
+    """Bridge ACP session steps to ``uaep_exec_ctx`` for catalog tool invocation."""
+    if isinstance(step_ctx.metadata.get("uaep_exec_ctx"), RuntimeExecutionContext):
+        return
+    if kernel_ctx.declarative_tool_invoker is None:
+        return
+
+    from intergrax.agents.authoring.acp_stub_reflex import build_agent_runtime_context
+    from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
+
+    run_id = step_ctx.run_id
+    task_id = str(step_ctx.task_id or run_id)
+    runtime_request = RuntimeRequest(
+        agent_id=contract.id,
+        tenant_id=str(request.identity.tenant_id or step_ctx.tenant_id or "default"),
+        user_id=str(request.identity.user_id or ""),
+        session_id=str(request.session_id or run_id),
+        message=str(request.input or step_ctx.message or ""),
+        metadata=dict(request.metadata),
+    )
+    runtime_request.metadata.setdefault("run_id", run_id)
+    runtime_request.metadata.setdefault("task_id", task_id)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id=task_id,
+        run_id=run_id,
+        agent_id=contract.id,
+        contract=contract,
+        request=runtime_request,
+    )
+    runtime_context = build_agent_runtime_context(
+        runtime_request,
+        PrefixStubLLMAdapter(prefix=contract.id),
+    )
+    apply_host_tool_invoker_to_runtime_context(runtime_context, request.metadata)
+    exec_ctx.metadata["runtime_state"] = RuntimeState(
+        context=runtime_context,
+        request=runtime_request,
+        run_id=run_id,
+    )
+    allowed_tools_raw = step_ctx.metadata.get("allowed_tools")
+    if isinstance(allowed_tools_raw, list) and allowed_tools_raw:
+        allowed_tools = [str(tool_id) for tool_id in allowed_tools_raw if str(tool_id).strip()]
+    else:
+        allowed_tools = list(contract.allowed_tools)
+    exec_ctx.tool_gateway = BoundToolGateway(
+        exec_ctx,
+        allowed_tools=allowed_tools,
+    )
+    step_ctx.metadata["uaep_exec_ctx"] = exec_ctx
 
 
 def _run_input_from_request(exec_ctx: RuntimeExecutionContext) -> str | dict[str, Any]:

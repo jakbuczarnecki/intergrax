@@ -40,22 +40,12 @@ def test_wire_acp_run_request_attaches_invoker() -> None:
     assert wired.metadata[AcpMetadataKey.DECLARATIVE_TOOL_INVOKER] is invoker
 
 
-def test_inject_acp_tool_invoker_metadata_requires_session_flag() -> None:
+def test_inject_acp_tool_invoker_metadata_wires_host_invoker() -> None:
     async def _invoke(**kwargs):  # type: ignore[no-untyped-def]
         return DeclarativeToolInvokeResult(status="success")
 
     invoker = CallableDeclarativeToolInvoker(_invoke)
     metadata: dict[str, object] = {}
-    inject_acp_tool_invoker_metadata(
-        metadata,
-        invoker,
-        run_id="run-1",
-        agent_id="agent-1",
-        tenant_id="tenant-1",
-    )
-    assert AcpMetadataKey.DECLARATIVE_TOOL_INVOKER not in metadata
-
-    metadata[AcpMetadataKey.SESSION_ENABLED] = True
     inject_acp_tool_invoker_metadata(
         metadata,
         invoker,

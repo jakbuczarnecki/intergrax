@@ -69,12 +69,32 @@ def build_scaffold_manifest_and_env(
     return manifest, environment
 
 
+def _intergrax_repo_root() -> Path:
+    """Locate monorepo root (``pyproject.toml`` + ``agents/``)."""
+    here = Path(__file__).resolve()
+    for candidate in here.parents:
+        if (candidate / "pyproject.toml").is_file() and (candidate / "agents").is_dir():
+            return candidate
+    raise RuntimeError("Cannot locate Intergrax repository root for scaffold packaging")
+
+
 def _ensure_scaffold_pythonpath(target: Path) -> None:
     """Add generated agent/application roots for roster resolution during packaging."""
-    repo_root = target.parent.parent
-    agents_root = repo_root / "agents"
-    applications_root = repo_root / "applications"
-    for path in (repo_root, agents_root, applications_root):
+    nested_root = target.parent.parent
+    if (nested_root / "pyproject.toml").is_file() and (nested_root / "agents").is_dir():
+        repo_root = nested_root
+    else:
+        repo_root = _intergrax_repo_root()
+    path_candidates = [
+        repo_root,
+        repo_root / "agents",
+        repo_root / "applications",
+    ]
+    if nested_root != repo_root:
+        path_candidates.extend([nested_root, nested_root / "agents"])
+    for path in path_candidates:
+        if not path.is_dir():
+            continue
         text = str(path)
         if text not in sys.path:
             sys.path.insert(0, text)

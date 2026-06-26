@@ -16,7 +16,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 |-------|--------|
 | Ingest responsibilities, tools, I/O | **ARCHITECTURE.md** |
 | Wave tasks | **This file** + platform **`docs/plan/PLATFORM_FOUNDATION.md` §6.3a LKW.*** |
-| LKW product architecture | `applications/local_workspace_application/ARCHITECTURE.md` |
+| LKW product architecture | `applications/local_workspace_application/docs/ARCHITECTURE.md` |
 
 ---
 
@@ -25,9 +25,9 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 | ID | Task | Status | Priority | Notes |
 |----|------|--------|----------|-------|
 | LKW-IDX-0 | UAEP scaffold + smoke | **Done** | High | LKW.0 |
-| LKW-IDX-1 | `validate_source_paths` step | Planned | High | Wave LKW.1 |
-| LKW-IDX-2 | `rag.ingest_document` per path | Planned | High | Explicit `source_paths` metadata |
-| LKW-IDX-3 | Ingest job summary `StepOutput` | Planned | High | Structured stats |
+| LKW-IDX-1 | `validate_source_paths` step | **Done** | High | Wave LKW.1.1 |
+| LKW-IDX-2 | `rag.ingest_document` per path | **Done** | High | Wave LKW.1.1 |
+| LKW-IDX-3 | Ingest job summary `StepOutput` | **Done** | High | `ingest_summary` in `steps/index_job.py` |
 | LKW-IDX-4 | Background ingest queue | Deferred | Medium | LKW.4 — after LKW.2 |
 
 ---

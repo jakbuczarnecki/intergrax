@@ -74,6 +74,10 @@ Include **only**:
 
 ## Before you write code
 
+**CI/test hotfixes:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. Do **not** read README, architecture, plan, `SYSTEM_INVARIANTS.md`, or strategy docs. Read only failing test/checker + directly related implementation files.
+
+**Full onboarding** — only for new domain implementation, architecture-changing work, public behavior changes, ADR/milestone work, or full audit/closeout:
+
 1. Read [README.md — Start here](../../README.md#start-here) for documentation navigation
 2. Read [docs/intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) — pick your domain pair from the table
 3. Skim [docs/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) — cross-domain rules you must not break (P2-ARCH-01)
@@ -178,6 +182,10 @@ uv run intergrax doctor
 ---
 
 ## Verification (required after harness changes)
+
+**CI/test hotfix:** run only the failing command from GitHub, the exact failing test file, or `uv run python scripts/run_ci_smoke_pytest.py`. Do **not** run the full checklist below unless the operator explicitly requests full harness verification.
+
+**Full harness verification** (domain implementation, architecture changes, milestone closeout):
 
 ```bash
 uv run pytest -m "gate and not no_ci" -q

@@ -244,6 +244,8 @@ class RuntimeConfig:
 
     skill_profile: Optional[SkillProfile] = None
 
+    tool_registry: Optional[ToolRegistry] = None
+
     tool_wiring_context: Optional[ToolWiringContext] = None
 
     modality_profile: Optional[ModalityProfile] = None
@@ -396,6 +398,7 @@ class RuntimeConfig:
             idempotency_store=self.idempotency_store,
             tool_providers=tuple(self.tool_providers),
             tool_profile=self.tool_profile,
+            tool_registry=self.tool_registry,
             tool_wiring_context=self.tool_wiring_context,
             tool_scope_policy=self.tool_scope_policy,
             modality_profile=self.modality_profile,

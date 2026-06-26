@@ -10,7 +10,6 @@ from typing import Optional
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -37,7 +36,6 @@ from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecuti
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
 from dispute_sim_application.manifest import build_dispute_sim_manifest
-from dispute_sim_application.mcp.server import build_dispute_sim_mcp_server
 from dispute_sim_application.serving.fastapi_router import mount_dispute_sim_routes
 
 
@@ -156,6 +154,11 @@ def create_dispute_sim_backend_app(
 
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+        couple_fastapi_with_mcp = load_mcp_coupling()
+        from dispute_sim_application.mcp.server import build_dispute_sim_mcp_server
+
         mcp = build_dispute_sim_mcp_server(
             nexus_loop=nexus_loop,
             route_prefix=settings.route_prefix,

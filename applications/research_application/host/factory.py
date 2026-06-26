@@ -10,7 +10,6 @@ from fastapi import FastAPI
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
-from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -30,7 +29,6 @@ from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile, build_research_registry
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
-from research_application.mcp.server import build_research_mcp_server
 from research_application.serving.fastapi_router import mount_research_routes
 
 
@@ -113,6 +111,11 @@ def create_research_backend_app(
 
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
+        from intergrax.applications._shared.mcp_import_guard import load_mcp_coupling
+
+        couple_fastapi_with_mcp = load_mcp_coupling()
+        from research_application.mcp.server import build_research_mcp_server
+
         mcp = build_research_mcp_server(
             nexus_loop=nexus,
             route_prefix=settings.route_prefix,

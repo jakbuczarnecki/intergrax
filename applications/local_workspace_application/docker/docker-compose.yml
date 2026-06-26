@@ -1,6 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Run from repository root: docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
 
+name: intergrax_lkw
+
 services:
   local_workspace:
     build:
@@ -12,6 +14,45 @@ services:
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      LOCAL_WORKSPACE_BACKEND_ENV: dev
       LOCAL_WORKSPACE_BACKEND_HOST: "0.0.0.0"
       LOCAL_WORKSPACE_BACKEND_PORT: "8020"
-      INTERGRAX_ENV: prod
+      LOCAL_WORKSPACE_VECTOR_STORE: qdrant
+      INTERGRAX_QDRANT_URL: http://qdrant:6333
+      INTERGRAX_QDRANT_COLLECTION: local_workspace
+      INTERGRAX_SQLITE_DATA_DIR: /data/sqlite
+      INTERGRAX_SHADOW_ROOT: /data/shadow_workspaces
+      INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
+      INTERGRAX_LLM_PROVIDER: ollama
+      INTERGRAX_LLM_MODEL: llama3.1:latest
+      INTERGRAX_DEFAULT_OLLAMA_MODEL: llama3.1:latest
+      LOCAL_WORKSPACE_INCLUDE_MCP: "false"
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - lkw_sqlite:/data/sqlite
+      - lkw_shadow:/data/shadow_workspaces
+      - ../sample_docs:/data/user_docs:ro
+    depends_on:
+      - qdrant
+      - ollama
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    expose:
+      - "6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  ollama:
+    image: ollama/ollama:latest
+    expose:
+      - "11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  lkw_sqlite:
+  lkw_shadow:
+  qdrant_data:
+  ollama_data:

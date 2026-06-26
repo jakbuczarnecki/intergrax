@@ -9,13 +9,25 @@ from typing import Any, Optional
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput, RagIngestOutput
+from intergrax.tools.providers.rag.scope import (
+    TENANT_ID_METADATA_CONFLICT,
+    authoritative_tenant_id,
+    resolve_tenant_scoped_vectorstore,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_INGEST_TOOL_ID = "rag.ingest_document"
 
 
 def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIngestOutput:
-    vectorstore = ctx.vectorstore_manager
+    tenant_id, tenant_conflict = authoritative_tenant_id(
+        request_tenant=params.tenant_id,
+        metadata_tenant=params.metadata.get("tenant_id"),
+    )
+    if tenant_conflict:
+        return RagIngestOutput(used=False, reason=tenant_conflict)
+
+    vectorstore = resolve_tenant_scoped_vectorstore(ctx, tenant_id)
     embedding_manager = ctx.embedding_manager
     if vectorstore is None or embedding_manager is None:
         return RagIngestOutput(used=False, reason="vectorstore_or_embedding_not_configured")
@@ -55,8 +67,8 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         base_metadata["session_id"] = params.session_id
     if params.user_id is not None:
         base_metadata["user_id"] = params.user_id
-    if params.tenant_id is not None:
-        base_metadata["tenant_id"] = params.tenant_id
+    if tenant_id is not None:
+        base_metadata["tenant_id"] = tenant_id
     if params.workspace_id is not None:
         base_metadata["workspace_id"] = params.workspace_id
 

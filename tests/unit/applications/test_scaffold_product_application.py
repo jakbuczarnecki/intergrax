@@ -44,7 +44,7 @@ def test_scaffold_product_profile_creates_fastapi_core_tree(tmp_path):
     dockerfile = (target / "docker" / "Dockerfile").read_text(encoding="utf-8")
     assert f"{pkg}.host.main:app" in dockerfile
 
-    deploy_doc = (target / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
+    deploy_doc = (target / "docs" / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
     assert "/health" in deploy_doc
 
     smoke = (

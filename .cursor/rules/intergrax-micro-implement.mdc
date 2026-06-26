@@ -1,0 +1,88 @@
+---
+description: Micro implementation — strict scoped changes for small bounded tasks
+alwaysApply: false
+---
+
+# Intergrax — Micro Implement Mode
+
+Use when the operator explicitly asks for a small, bounded implementation task outside HEP/EVID and outside CI/test/checker hotfix mode.
+
+**MICRO IMPLEMENT = NEW CHAT.** Do not continue from an audit, architecture review, long implementation session, or any chat that already loaded broad context.
+
+## Start
+
+Operator prompt should begin with:
+
+```text
+@.cursor/rules/intergrax-micro-implement.mdc
+```
+
+Before any read/edit, perform mandatory preflight from:
+
+```text
+.cursor/rules/intergrax-token-budget.mdc
+```
+
+## Scope contract
+
+The operator instruction is the source of truth.
+
+- Read only files listed in `read scope`.
+- Edit only files listed in `edit scope`.
+- Run only commands listed in `tests`.
+- Respect all `Forbidden` paths and commands from the prompt.
+- If another file is needed, **STOP** and ask for exactly one file path; do not read it first.
+
+## Hard limits
+
+- `MAX_READS`: 8 files total, including tests and docs.
+- `MAX_GREP`: 3 queries total, path-filtered only.
+- No semantic search — ever.
+- No repo-wide grep/search.
+- No `Task`, explore, research, or subagent calls.
+- No full architecture hubs, plan hubs, domain guides, or roadmap documents unless explicitly listed.
+- No `AGENT_INSTRUCTIONS.md` unless the operator writes `ALLOW_FULL_AGENT_INSTRUCTIONS`.
+- No parallel reads of unrelated files.
+- No full test suite unless explicitly listed.
+- No cleanup/refactor outside the stated goal.
+
+## Mandatory preflight
+
+Print only:
+
+```text
+read scope:
+edit scope:
+tests:
+limits:
+```
+
+Do not continue if the effective read scope exceeds the listed files or the hard limits above.
+
+## Allowed verification
+
+Use only the exact test/check command listed by the operator, typically one targeted command such as:
+
+```text
+uv run pytest path/to/test_file.py -q
+```
+
+If no test is listed, do not invent a broad verification command. Report `Tests: not run — no command listed`.
+
+## Final report
+
+Return at most 12 lines:
+
+```text
+Status: done | blocked | incomplete
+Files changed:
+Files read:
+Grep/search used:
+Tests:
+Forbidden scope respected: yes | no
+Commit: <sha> | no commit
+Token usage: <actual if available> | not available
+Blockers:
+```
+
+Do not include diffs, long explanations, architecture summaries, future task proposals, or guesses about token usage.

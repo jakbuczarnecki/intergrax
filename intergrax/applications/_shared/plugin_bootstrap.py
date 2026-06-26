@@ -11,7 +11,7 @@ from typing import List
 
 from fastapi import FastAPI
 
-from intergrax.applications._shared.fastapi_mcp import LifespanFn, apply_lifespans
+from intergrax.applications._shared.fastapi_lifespan import LifespanFn, apply_lifespans
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin

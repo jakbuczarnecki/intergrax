@@ -65,7 +65,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/check_agent_production_readine
 | `local_search` | `local.workspace.search` | Retrieve + answer |
 | `local_synthesizer` | `local.workspace.synthesize` | Shadow artifact drafts |
 
-**Host:** [`applications/local_workspace_application/`](../applications/local_workspace_application/) · **Architecture:** [ARCHITECTURE.md](../applications/local_workspace_application/ARCHITECTURE.md)
+**Host:** [`applications/local_workspace_application/`](../applications/local_workspace_application/) · **Architecture:** [ARCHITECTURE.md](../applications/local_workspace_application/docs/ARCHITECTURE.md)
 
 ### Dispute Simulation Workspace (DSW)
 

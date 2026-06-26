@@ -80,7 +80,7 @@ async def test_workspace_cleanup_lifespan_disposes_active_sessions(tmp_path) -> 
     assert sandbox_manager.active_count == 1
 
     app = FastAPI()
-    from intergrax.applications._shared.fastapi_mcp import apply_lifespans
+    from intergrax.applications._shared.fastapi_lifespan import apply_lifespans
 
     cleanup_lifespan = make_workspace_cleanup_lifespan(shadow_manager, sandbox_manager)
     apply_lifespans(app, cleanup_lifespan)

@@ -9,7 +9,6 @@ from intergrax.applications._shared.budget_wiring import product_agent_budget_sl
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.integrations.registry.profile import IntegrationProfile
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_search.local_search_agent import LocalSearchAgent
 from local_synthesizer.local_synthesizer_agent import LocalSynthesizerAgent
@@ -17,6 +16,10 @@ from local_workspace_application.host.agent_factories import (
     build_local_workspace_local_indexer_from_context,
     build_local_workspace_local_search_from_context,
     build_local_workspace_local_synthesizer_from_context,
+)
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+    build_local_workspace_integration_profile,
 )
 
 
@@ -44,22 +47,8 @@ _LOCAL_WORKSPACE_AGENTS = [
 
 
 def _local_workspace_environment() -> ApplicationEnvironmentProfile:
-    base = (
-        ApplicationEnvironmentProfile.product_defaults(
-            profile_id="local_workspace.product",
-            skill_bundles=["harness"],
-        )
-        .model_copy(
-            update={
-                "integration_profile": IntegrationProfile.legal_product(),
-                "context_profile": ApplicationEnvironmentProfile.product_defaults()
-                .context_profile.model_copy(update={"enable_rag": True, "enable_websearch": False}),
-            }
-        )
-        .with_harness_memory()
-    )
     return apply_roster_agent_governance(
-        base,
+        build_local_workspace_environment_profile(),
         agents=_LOCAL_WORKSPACE_AGENTS,
         app_id="local_workspace",
     )
@@ -72,7 +61,7 @@ LOCAL_WORKSPACE_APPLICATION_MANIFEST = ApplicationManifest.product(
     env_prefix="LOCAL_WORKSPACE_",
     default_port=8020,
     default_capability="local.workspace.search",
-    integration_profile=IntegrationProfile.legal_product(),
+    integration_profile=build_local_workspace_integration_profile(),
     environment=_local_workspace_environment(),
     agents=list(_LOCAL_WORKSPACE_AGENTS),
     description=(

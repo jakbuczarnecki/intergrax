@@ -19,7 +19,7 @@ class ResearchBackendSettings:
     port: int = 8010
     route_prefix: str = "/v1/research"
     use_nexus_loop: bool = True
-    include_mcp: bool = True
+    include_mcp: bool = False
     mcp_mount_path: str = "/mcp"
     include_interaction_routes: bool = True
     interaction_route_prefix: str = "/v1/interactions"
@@ -50,7 +50,7 @@ class ResearchBackendSettings:
     @classmethod
     def from_env(cls) -> ResearchBackendSettings:
         use_nexus_loop = _env_bool("RESEARCH_USE_NEXUS_LOOP", default=True)
-        include_mcp = _env_bool("RESEARCH_INCLUDE_MCP", default=True)
+        include_mcp = _env_bool("RESEARCH_INCLUDE_MCP", default=False)
         mcp_mount = os.environ.get("RESEARCH_MCP_MOUNT_PATH", "/mcp").strip() or "/mcp"
         enable_websearch = _env_bool("RESEARCH_ENABLE_WEBSEARCH", default=True)
         enable_rag = _env_bool("RESEARCH_ENABLE_RAG", default=False)

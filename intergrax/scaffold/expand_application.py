@@ -71,10 +71,15 @@ def expand_application(*, name: str, root: Path, force: bool) -> Path:
         env_prefix=names.env_prefix,
         agent_dirs=agent_dirs,
         health_path=health_path,
+        factory_import=f"from {names.pkg}.host.factory import create_{names.short}_application",
+        factory_call=f"create_{names.short}_application()",
+        route_prefix=names.route_prefix,
         force=force,
     )
+    docs_dir = target / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
-        target / "BUILD_AND_DEPLOY.md",
+        docs_dir / "BUILD_AND_DEPLOY.md",
         render_build_deploy_doc(
             pkg=names.pkg,
             short=names.short,
@@ -100,5 +105,5 @@ def run_expand(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     print(f"Expanded application at {path}")
-    print("  Added: docker/, BUILD_AND_DEPLOY.md, serving/, mcp/, full host/factory.py")
+    print("  Added: docker/, docs/BUILD_AND_DEPLOY.md, serving/, mcp/, full host/factory.py")
     return 0

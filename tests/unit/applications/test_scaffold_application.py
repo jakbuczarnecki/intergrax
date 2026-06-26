@@ -26,8 +26,8 @@ def test_scaffold_creates_application_tree(tmp_path):
     pkg = "concept_lab_application"
     assert target.is_dir()
     assert (target / "manifest.py").exists()
-    assert (target / "ARCHITECTURE.md").exists()
-    assert (target / "IMPLEMENTATION_PLAN.md").exists()
+    assert (target / "docs" / "ARCHITECTURE.md").exists()
+    assert (target / "docs" / "IMPLEMENTATION_PLAN.md").exists()
     assert (target / ".env.example").exists()
     assert (target / "host" / "factory.py").exists()
     assert (target / "host" / "wiring.py").exists()
@@ -46,10 +46,13 @@ def test_scaffold_creates_application_tree(tmp_path):
     assert (target / "docker" / ".dockerignore").exists()
     assert (target / "docker" / "docker-compose.yml").exists()
     assert (target / "docker" / "build-docker.sh").exists()
+    assert (target / "scripts" / "build-local-docker.sh").exists()
+    assert (target / "scripts" / "build-local-docker.bat").exists()
     assert (target / "docker" / "build-docker.bat").exists()
-    assert (target / "BUILD_AND_DEPLOY.md").exists()
+    assert (target / "sample_docs" / ".gitignore").exists()
+    assert (target / "docs" / "BUILD_AND_DEPLOY.md").exists()
 
-    deploy_doc = (target / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
+    deploy_doc = (target / "docs" / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
     assert f"applications/{pkg}/docker/Dockerfile" in deploy_doc
     assert f"applications/{pkg}/docker/build-docker.sh" in deploy_doc
     assert "CONCEPT_LAB_" in deploy_doc

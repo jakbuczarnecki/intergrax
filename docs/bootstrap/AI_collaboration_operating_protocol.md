@@ -208,12 +208,38 @@ Cursor must not estimate token usage.
 
 ## 6. Cursor rule files
 
-When generating Intergrax Cursor instructions, usually start with:
+When generating Intergrax Cursor instructions, pick the rule by task type:
+
+| Task | Rule |
+|------|------|
+| Ordinary small bounded implementation task | `@.cursor/rules/intergrax-micro-implement.mdc` — **new chat** |
+| HEP / EVID implementation step | `@.cursor/rules/intergrax-hep-step.mdc` |
+| CI / test / checker hotfix | `@.cursor/rules/intergrax-ci-hotfix.mdc` — **new chat** |
+
+**Default for bounded implementation steps** — start with:
 
 ```text
 Use:
 
-@.cursor/rules/intergrax-hep-step.mdc
+@.cursor/rules/intergrax-micro-implement.mdc
+```
+
+**Exceptions:**
+
+- Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks.
+- Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for CI/test/checker hotfixes.
+- Use `@.cursor/rules/intergrax-hep-step.mdc` only when the task is explicitly HEP/EVID.
+- Use `@.cursor/rules/intergrax-ci-hotfix.mdc` only for failing CI/tests/checkers.
+- Use `@.cursor/rules/intergrax-micro-implement.mdc` for default bounded micro-implementation tasks.
+
+**CI/test/checker hotfix instructions** — use instead:
+
+```text
+Use:
+
+@.cursor/rules/intergrax-ci-hotfix.mdc
+
+CI HOTFIX = NEW CHAT
 ```
 
 Also include:
@@ -238,7 +264,9 @@ Every important instruction must be written explicitly in the Cursor prompt.
 
 ## 7. Documentation-first rule
 
-Every implementation task should update relevant documentation in the same commit when the task changes behavior, architecture, public usage, roadmap, operator workflow, or project status.
+**Exception — CI/test hotfixes:** when the task is only fixing failing CI, tests, or checkers, use `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new Cursor chat**. No documentation, journal, roadmap, or architecture updates unless the failing test is docs-specific.
+
+Every other implementation task should update relevant documentation in the same commit when the task changes behavior, architecture, public usage, roadmap, operator workflow, or project status.
 
 Documentation updates may include:
 
@@ -419,6 +447,8 @@ Do not hardcode any specific roadmap or ROI model unless the user provides it in
 
 When the user asks for a Cursor instruction, generate a complete standalone instruction that can be pasted into a fresh Cursor session.
 
+**Rule selection:** MICRO / ordinary bounded implementation → `@.cursor/rules/intergrax-micro-implement.mdc`. HEP/EVID → `@.cursor/rules/intergrax-hep-step.mdc`. CI/test/checker hotfix → `@.cursor/rules/intergrax-ci-hotfix.mdc` in a **new chat**. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks or CI/test/checker hotfixes.
+
 Every Cursor instruction should include:
 
 ```text
@@ -488,7 +518,23 @@ For docs-only tasks, include:
 
 ## 13. Standard Cursor instruction skeleton
 
-Use this structure unless a different structure is better for the task:
+Use this structure unless a different structure is better for the task.
+
+**Default — ordinary bounded implementation:** use `@.cursor/rules/intergrax-micro-implement.mdc`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for ordinary small implementation tasks.
+
+**Exception — HEP/EVID step:** use `@.cursor/rules/intergrax-hep-step.mdc` only when the task is explicitly HEP/EVID.
+
+**Exception — CI/test/checker hotfix:** use `@.cursor/rules/intergrax-ci-hotfix.mdc` and `CI HOTFIX = NEW CHAT`. Do **not** use `@.cursor/rules/intergrax-hep-step.mdc` for hotfixes.
+
+```text
+# Intergrax — <Task Name>
+
+Use:
+
+@.cursor/rules/intergrax-micro-implement.mdc
+```
+
+**HEP/EVID variant** (replace the `Use:` block above):
 
 ```text
 # Intergrax — <Task Name>
@@ -496,6 +542,28 @@ Use this structure unless a different structure is better for the task:
 Use:
 
 @.cursor/rules/intergrax-hep-step.mdc
+```
+
+**CI hotfix variant** (replace the `Use:` block above):
+
+```text
+# Intergrax — <Task Name>
+
+Use:
+
+@.cursor/rules/intergrax-ci-hotfix.mdc
+
+CI HOTFIX = NEW CHAT
+```
+
+**MICRO / bounded implementation skeleton** (continues after `Use:`):
+
+```text
+# Intergrax — <Task Name>
+
+Use:
+
+@.cursor/rules/intergrax-micro-implement.mdc
 
 Before reading/editing, perform mandatory preflight from:
 
@@ -917,6 +985,16 @@ If an audit finds a small issue:
 - require a hotfix commit,
 - require terse report,
 - audit the hotfix before continuing.
+```
+
+For CI/test/checker failures, the Cursor instruction must start with:
+
+```text
+Use:
+
+@.cursor/rules/intergrax-ci-hotfix.mdc
+
+CI HOTFIX = NEW CHAT
 ```
 
 Do not combine hotfix with new feature work.

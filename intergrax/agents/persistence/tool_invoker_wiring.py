@@ -41,10 +41,8 @@ def inject_acp_tool_invoker_metadata(
     agent_id: str,
     tenant_id: str,
 ) -> None:
-    """Mutate task/runtime metadata when ACP declarative tools are host-wired."""
+    """Mutate task/runtime metadata with the host catalog tool invoker when wired."""
     if invoker is None:
-        return
-    if not metadata.get(AcpMetadataKey.SESSION_ENABLED):
         return
     if isinstance(invoker, CatalogDeclarativeToolInvoker):
         invoker.bind_run(run_id=run_id, agent_id=agent_id, tenant_id=tenant_id)
