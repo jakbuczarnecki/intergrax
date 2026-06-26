@@ -6,7 +6,7 @@
 
 **Status:** target onboarding narrative for the final LKW experience  
 **Scope:** from GitHub discovery to first useful local workspace run  
-**Related:** [`README.md`](README.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)
+**Related:** [`README.md`](README.md) · [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)
 
 ---
 
@@ -113,7 +113,7 @@ The user should see:
 ```text
 README.md
 .env.example
-BUILD_AND_DEPLOY.md
+docs/BUILD_AND_DEPLOY.md
 ARCHITECTURE.md
 IMPLEMENTATION_PLAN.md
 docker/

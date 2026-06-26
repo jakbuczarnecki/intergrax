@@ -4,7 +4,7 @@
 **Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)  
 **Architecture:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
 
-> **Documentation boundary:** Platform docs in `docs/` (architecture canon, `intergrax_runtime_architecture.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`ARCHITECTURE.md`**, **`IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
+> **Documentation boundary:** Platform docs in `docs/` (architecture canon, `intergrax_runtime_architecture.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`docs/ARCHITECTURE.md`**, **`docs/IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
 
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
@@ -29,9 +29,16 @@ Primary tracker: `docs/intergrax_runtime_architecture.md` Phase V.
 ```text
 applications/my_lab/
     manifest.py              # ApplicationManifest + AgentBinding.mount(...)
-    README.md                  # Quickstart (uvicorn, curl, docker)
-    ARCHITECTURE.md            # Host purpose, manifest, dependencies
-    IMPLEMENTATION_PLAN.md     # Local implementation queue
+    README.md                # Quickstart (uvicorn, curl, docker) — sole top-level doc entry
+    docs/
+        ARCHITECTURE.md        # Host purpose, manifest, dependencies
+        IMPLEMENTATION_PLAN.md # Local implementation queue
+        BUILD_AND_DEPLOY.md    # Operational runbook (when deploy triad present)
+        adr/                   # Application architecture decisions
+    scripts/
+        build-local-docker.sh  # Operator entrypoint → docker/ compose or build
+        build-local-docker.bat
+    sample_docs/               # Local smoke fixtures (.gitignore keeps repo clean)
     .env.example               # App-prefixed env vars (MY_LAB_*)
     host/
         main.py                # ASGI entry, load_dotenv
@@ -57,9 +64,9 @@ Every Tier-3 host under `applications/<app>/` must ship:
 | Piece | Path | Notes |
 |-------|------|--------|
 | **Docker** | `docker/Dockerfile`, `docker-compose.yml`, `build-docker.sh` / `.bat` | Image build from repo root context |
-| **Deploy doc** | `BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
-| **Dependencies** | `ARCHITECTURE.md` § Dependencies | Which `pyproject.toml` extras apply (`harness-author`, `llm-*`, `dev-ci`, …) |
-| **Implementation plan** | `IMPLEMENTATION_PLAN.md` | Local task queue — scaffold emits on create; links to `ARCHITECTURE.md` |
+| **Deploy doc** | `docs/BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
+| **Dependencies** | `docs/ARCHITECTURE.md` § Dependencies | Which `pyproject.toml` extras apply (`harness-author`, `llm-*`, `dev-ci`, …) |
+| **Implementation plan** | `docs/IMPLEMENTATION_PLAN.md` | Local task queue — scaffold emits on create; links to `docs/ARCHITECTURE.md` |
 
 Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `tests/unit/applications/test_agent_app_doc_pair.py`.
 
@@ -248,7 +255,7 @@ applications/my_lab_application/docker/build-docker.sh
 docker run --env-file applications/my_lab_application/.env -p 8091:8091 my-lab-application
 ```
 
-Manual build: see `applications/<app>/BUILD_AND_DEPLOY.md`.
+Manual build: see `applications/<app>/docs/BUILD_AND_DEPLOY.md`.
 
 ### Docker and CI
 
@@ -290,9 +297,9 @@ python -m intergrax.scaffold new-application my_product --profile product --agen
 | `lab_application` | Universal lab + `/debug/*` | `uv run uvicorn lab_application.host.main:app --port 8090` |
 | `legal_application` | Product API + Legal agent | `uv run uvicorn legal_application.host.main:app --port 8000` |
 | `research_application` | Research pipeline host | See `research_application/README.md` |
-| `local_workspace_application` | **Local Knowledge Workspace (LKW)** — local index, search, synthesis | See [`local_workspace_application/ARCHITECTURE.md`](local_workspace_application/ARCHITECTURE.md) |
+| `local_workspace_application` | **Local Knowledge Workspace (LKW)** — local index, search, synthesis | See [`local_workspace_application/docs/ARCHITECTURE.md`](local_workspace_application/docs/ARCHITECTURE.md) |
 
-Per-app details: each application's `README.md` and `ARCHITECTURE.md` where present.
+Per-app details: each application's `README.md` and `docs/ARCHITECTURE.md` where present.
 
 ---
 

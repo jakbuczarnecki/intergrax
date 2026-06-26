@@ -2,7 +2,7 @@
 
 Thin execution environment for the research → summarize multi-agent pipeline.
 
-**Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
 ```bash
 cp applications/research_application/.env.example applications/research_application/.env

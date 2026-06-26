@@ -20,6 +20,7 @@ from intergrax.scaffold.doc_templates import (
     render_application_architecture_doc,
     render_application_implementation_plan,
 )
+from intergrax.scaffold.application_layout import write_sample_docs_scaffold
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
     app_slug,
@@ -899,9 +900,9 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         Scaffolded lab-profile application — debug API + ``POST {route_prefix}/run``.
 
-        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · **ADRs:** [`adr/README.md`](adr/README.md)
+        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
-        **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+        **Build & deploy:** [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
 
@@ -1011,8 +1012,10 @@ def _create_lab_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", _manifest_py(names, specs), force=force)
     _write(target / "README.md", _readme(names, specs), force=force)
+    docs_dir = target / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
-        target / "ARCHITECTURE.md",
+        docs_dir / "ARCHITECTURE.md",
         render_application_architecture_doc(
             names=names,
             specs=specs,
@@ -1022,7 +1025,7 @@ def _create_lab_application(
         force=force,
     )
     _write(
-        target / "IMPLEMENTATION_PLAN.md",
+        docs_dir / "IMPLEMENTATION_PLAN.md",
         render_application_implementation_plan(
             names=names,
             specs=specs,
@@ -1031,6 +1034,7 @@ def _create_lab_application(
         ),
         force=force,
     )
+    write_sample_docs_scaffold(target, force=force)
     _write(
         target / ".env.example",
         _env_example(names.env_prefix, names.route_prefix, names.port, specs),
@@ -1080,7 +1084,7 @@ def _create_lab_application(
         )
 
         _write(
-            target / "BUILD_AND_DEPLOY.md",
+            docs_dir / "BUILD_AND_DEPLOY.md",
             render_build_deploy_doc(
                 pkg=names.pkg,
                 short=names.short,
@@ -1135,8 +1139,10 @@ def _create_product_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", product_tpl.manifest_py(names, specs), force=force)
     _write(target / "README.md", product_tpl.readme(names, specs), force=force)
+    docs_dir = target / "docs"
+    docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
-        target / "ARCHITECTURE.md",
+        docs_dir / "ARCHITECTURE.md",
         render_application_architecture_doc(
             names=names,
             specs=specs,
@@ -1145,7 +1151,7 @@ def _create_product_application(
         force=force,
     )
     _write(
-        target / "IMPLEMENTATION_PLAN.md",
+        docs_dir / "IMPLEMENTATION_PLAN.md",
         render_application_implementation_plan(
             names=names,
             specs=specs,
@@ -1153,6 +1159,7 @@ def _create_product_application(
         ),
         force=force,
     )
+    write_sample_docs_scaffold(target, force=force)
     _write(
         target / ".env.example",
         product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),
@@ -1201,7 +1208,7 @@ def _create_product_application(
     )
 
     _write(
-        target / "BUILD_AND_DEPLOY.md",
+        docs_dir / "BUILD_AND_DEPLOY.md",
         render_build_deploy_doc(
             pkg=names.pkg,
             short=names.short,
@@ -1377,6 +1384,6 @@ def run_new_application(args: argparse.Namespace) -> int:
     print(f"  MCP:    http://127.0.0.1:{names.port}/mcp  (FastMCP, coupled to FastAPI)")
     print(f"  Docker: applications/{names.pkg}/docker/build-docker.sh")
     print(f"          applications\\{names.pkg}\\docker\\build-docker.bat  (Windows)")
-    print(f"  Deploy: applications/{names.pkg}/BUILD_AND_DEPLOY.md")
+    print(f"  Deploy: applications/{names.pkg}/docs/BUILD_AND_DEPLOY.md")
     print("  Docs:   intergrax/applications/USAGE.md · applications/USAGE.md")
     return 0

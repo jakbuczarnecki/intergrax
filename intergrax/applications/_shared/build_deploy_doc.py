@@ -72,7 +72,7 @@ def render_build_deploy_doc(
 
         Tier-3 application package: ``applications/{pkg}/``. This document is the **operational runbook** for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
 
         ---
 
@@ -214,8 +214,8 @@ def render_build_deploy_doc(
         When the application ships Ollama bootstrap helpers, prefer:
 
         ```bash
-        applications/{pkg}/build-local-docker.sh
-        # Windows: applications\\{pkg}\\build-local-docker.bat
+        applications/{pkg}/scripts/build-local-docker.sh
+        # Windows: applications\\{pkg}\\scripts\\build-local-docker.bat
         ```
 
         Those scripts create ``.env`` from ``.env.example`` when missing, build the image, start Ollama,

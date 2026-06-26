@@ -47,10 +47,10 @@ def test_application_scaffold_emits_architecture_and_plan() -> None:
             force=True,
             minimal=True,
         )
-        assert (target / "ARCHITECTURE.md").is_file()
-        assert (target / "IMPLEMENTATION_PLAN.md").is_file()
-        plan = (target / "IMPLEMENTATION_PLAN.md").read_text(encoding="utf-8")
+        assert (target / "docs" / "ARCHITECTURE.md").is_file()
+        assert (target / "docs" / "IMPLEMENTATION_PLAN.md").is_file()
+        plan = (target / "docs" / "IMPLEMENTATION_PLAN.md").read_text(encoding="utf-8")
         assert "DOC_APP-4" in plan
         assert "expand" in plan.lower()
-        assert (target / "adr" / "README.md").is_file()
-        assert (target / "adr" / "TEMPLATE.md").is_file()
+        assert (target / "docs" / "adr" / "README.md").is_file()
+        assert (target / "docs" / "adr" / "TEMPLATE.md").is_file()

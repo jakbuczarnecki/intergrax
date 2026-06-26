@@ -1,2 +1,0 @@
-Intergrax LKW live smoke fixture.
-The Local Knowledge Workspace should index this document, retrieve this sentence, synthesize a draft, and only write to the shadow workspace.

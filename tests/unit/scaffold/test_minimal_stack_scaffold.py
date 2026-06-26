@@ -32,7 +32,7 @@ def test_minimal_stack_omits_docker_and_mcp() -> None:
         app_dir = root / "applications" / names.pkg
         assert not (app_dir / "docker").exists()
         assert not (app_dir / "mcp").exists()
-        assert not (app_dir / "BUILD_AND_DEPLOY.md").is_file()
+        assert not (app_dir / "docs" / "BUILD_AND_DEPLOY.md").is_file()
         assert (app_dir / "host" / "factory.py").is_file()
         assert "create_lab_fastapi_from_runtime" in (app_dir / "host" / "factory.py").read_text(encoding="utf-8")
         assert (app_dir / "package.json").is_file()

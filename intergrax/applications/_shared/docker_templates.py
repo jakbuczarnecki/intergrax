@@ -305,6 +305,61 @@ def render_build_docker_bat(*, pkg: str, short: str, port: int) -> str:
     )
 
 
+def render_local_docker_compose_sh(*, pkg: str, short: str, port: int) -> str:
+    return dedent(
+        f"""\
+        #!/usr/bin/env sh
+        # © Artur Czarnecki. All rights reserved.
+        set -eu
+
+        SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+        APP_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+        REPO_ROOT=$(CDPATH= cd -- "$APP_DIR/../.." && pwd)
+        COMPOSE_FILE="$APP_DIR/docker/docker-compose.yml"
+
+        cd "$REPO_ROOT"
+
+        echo "Building and starting {short.replace('_', ' ')} via Docker Compose..."
+        docker compose -f "$COMPOSE_FILE" up --build -d
+
+        echo "Stack is starting. Verify with:"
+        echo "  curl http://127.0.0.1:{port}/health"
+        """
+    )
+
+
+def render_local_docker_compose_bat(*, pkg: str, short: str, port: int) -> str:
+    return dedent(
+        f"""\
+        @echo off
+        setlocal
+
+        set "SCRIPT_DIR=%~dp0"
+        set "APP_DIR=%SCRIPT_DIR%.."
+        set "COMPOSE_FILE=%APP_DIR%\\docker\\docker-compose.yml"
+
+        pushd "%APP_DIR%\\..\\.." >nul
+        if errorlevel 1 (
+            echo Failed to locate repository root.
+            exit /b 1
+        )
+
+        echo Building and starting {short.replace('_', ' ')} via Docker Compose...
+        docker compose -f "%COMPOSE_FILE%" up --build -d
+        if errorlevel 1 (
+            popd >nul
+            exit /b 1
+        )
+
+        echo Stack is starting. Verify with:
+        echo   curl http://127.0.0.1:{port}/health
+
+        popd >nul
+        endlocal
+        """
+    )
+
+
 def render_local_docker_bootstrap_sh(*, pkg: str, short: str, port: int, route_prefix: str) -> str:
     return dedent(
         f"""\
@@ -313,10 +368,11 @@ def render_local_docker_bootstrap_sh(*, pkg: str, short: str, port: int, route_p
         set -eu
 
         SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-        REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
-        COMPOSE_FILE="$SCRIPT_DIR/docker/docker-compose.yml"
-        ENV_FILE="$SCRIPT_DIR/.env"
-        ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
+        APP_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+        REPO_ROOT=$(CDPATH= cd -- "$APP_DIR/../.." && pwd)
+        COMPOSE_FILE="$APP_DIR/docker/docker-compose.yml"
+        ENV_FILE="$APP_DIR/.env"
+        ENV_EXAMPLE="$APP_DIR/.env.example"
 
         if [ ! -f "$ENV_FILE" ]; then
           if [ ! -f "$ENV_EXAMPLE" ]; then
@@ -382,11 +438,12 @@ def render_local_docker_bootstrap_bat(*, pkg: str, short: str, port: int, route_
         setlocal enabledelayedexpansion
 
         set "SCRIPT_DIR=%~dp0"
-        set "COMPOSE_FILE=%SCRIPT_DIR%docker\\docker-compose.yml"
-        set "ENV_FILE=%SCRIPT_DIR%.env"
-        set "ENV_EXAMPLE=%SCRIPT_DIR%.env.example"
+        set "APP_DIR=%SCRIPT_DIR%.."
+        set "COMPOSE_FILE=%APP_DIR%\\docker\\docker-compose.yml"
+        set "ENV_FILE=%APP_DIR%\\.env"
+        set "ENV_EXAMPLE=%APP_DIR%\\.env.example"
 
-        pushd "%SCRIPT_DIR%\\..\\.." >nul
+        pushd "%APP_DIR%\\..\\.." >nul
 
         if not exist "%ENV_FILE%" (
             if not exist "%ENV_EXAMPLE%" (
@@ -510,18 +567,31 @@ def write_application_docker(
         docker_dir / "build-docker.sh": render_build_docker_sh(pkg=pkg, short=short, port=port),
         docker_dir / "build-docker.bat": render_build_docker_bat(pkg=pkg, short=short, port=port),
     }
+    scripts_dir = target / "scripts"
+    scripts_dir.mkdir(parents=True, exist_ok=True)
     if include_ollama_bootstrap:
-        files[target / "build-local-docker.sh"] = render_local_docker_bootstrap_sh(
+        files[scripts_dir / "build-local-docker.sh"] = render_local_docker_bootstrap_sh(
             pkg=pkg,
             short=short,
             port=port,
             route_prefix=route_prefix,
         )
-        files[target / "build-local-docker.bat"] = render_local_docker_bootstrap_bat(
+        files[scripts_dir / "build-local-docker.bat"] = render_local_docker_bootstrap_bat(
             pkg=pkg,
             short=short,
             port=port,
             route_prefix=route_prefix,
+        )
+    else:
+        files[scripts_dir / "build-local-docker.sh"] = render_local_docker_compose_sh(
+            pkg=pkg,
+            short=short,
+            port=port,
+        )
+        files[scripts_dir / "build-local-docker.bat"] = render_local_docker_compose_bat(
+            pkg=pkg,
+            short=short,
+            port=port,
         )
     for path, content in files.items():
         if path.exists() and not force:

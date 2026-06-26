@@ -48,5 +48,5 @@ def test_product_manifest_without_ownership_fails_gate() -> None:
 def test_standard_product_operational_ownership_matches_app_id() -> None:
     ownership = standard_product_operational_ownership("legal")
     assert ownership.app_id == "legal"
-    assert ownership.architecture_ref.endswith("legal_application/ARCHITECTURE.md")
+    assert ownership.architecture_ref.endswith("legal_application/docs/ARCHITECTURE.md")
     assert ownership.maintainer.repo_path == "applications/legal_application/"

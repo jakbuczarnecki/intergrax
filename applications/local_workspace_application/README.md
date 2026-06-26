@@ -2,9 +2,9 @@
 
 Tier-3 product host for local document indexing, semantic search, and synthesis.
 
-**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
+**Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
 **User journey:** [USER_JOURNEY.md](USER_JOURNEY.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](PLATFORM_PROOF_LOOP.md)  
-**Build & deploy:** [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)
+**Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
 
@@ -40,14 +40,14 @@ From `applications/local_workspace_application/`:
 Windows:
 
 ```bat
-build-local-docker.bat
+scripts/build-local-docker.bat
 ```
 
 Linux/macOS:
 
 ```bash
-chmod +x build-local-docker.sh
-./build-local-docker.sh
+chmod +x scripts/build-local-docker.sh
+./scripts/build-local-docker.sh
 ```
 
 The scripts copy `.env.example` to `.env` when needed, build the Docker image, start Ollama, pull the model configured in `.env`, and start the local stack.
@@ -80,17 +80,17 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 ## Runtime model
 
-**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](ARCHITECTURE.md#3-product-philosophy).
+**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](docs/ARCHITECTURE.md#3-product-philosophy).
 
-**Install & data paths:** [ARCHITECTURE.md §7](ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
+**Install & data paths:** [ARCHITECTURE.md §7](docs/ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
 
-**Runtime:** [ARCHITECTURE.md §9](ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
+**Runtime:** [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
 
-**Implementation waves:** [ARCHITECTURE.md §15](ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+**Implementation waves:** [ARCHITECTURE.md §15](docs/ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 
 ## Platform stack
 
-LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](ARCHITECTURE.md#8-integrations-tools-and-skills)):
+LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](docs/ARCHITECTURE.md#8-integrations-tools-and-skills)):
 
 - **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
@@ -99,7 +99,7 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 ## Docs
 
 - Final user journey: [USER_JOURNEY.md](USER_JOURNEY.md)
-- LKW architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+- LKW architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - LKW hardening: [ARCHITECTURE_HARDENING.md](ARCHITECTURE_HARDENING.md)
 - Platform proof loop: [PLATFORM_PROOF_LOOP.md](PLATFORM_PROOF_LOOP.md)
 - Plan register: [docs/intergrax_runtime_architecture.md §6.3a](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)

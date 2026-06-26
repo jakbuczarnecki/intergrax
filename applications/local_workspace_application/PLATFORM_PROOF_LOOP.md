@@ -1,9 +1,9 @@
 # Local Knowledge Workspace (LKW) — Platform Proof Loop
 
 **Status:** active governance rule for LKW implementation  
-**Parent:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
+**Parent:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
 **Hardening addendum:** [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md)  
-**Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+**Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
 ---
 

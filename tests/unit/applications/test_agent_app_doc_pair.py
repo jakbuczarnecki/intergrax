@@ -32,9 +32,10 @@ APPLICATIONS_WITH_DOC_PAIR = (
 )
 
 
-def _assert_doc_pair(root: Path, label: str) -> None:
-    architecture = root / "ARCHITECTURE.md"
-    plan = root / "IMPLEMENTATION_PLAN.md"
+def _assert_doc_pair(root: Path, label: str, *, docs_subdir: bool = False) -> None:
+    base = root / "docs" if docs_subdir else root
+    architecture = base / "ARCHITECTURE.md"
+    plan = base / "IMPLEMENTATION_PLAN.md"
     assert architecture.is_file(), f"{label}: missing ARCHITECTURE.md"
     assert plan.is_file(), f"{label}: missing IMPLEMENTATION_PLAN.md"
     arch_text = architecture.read_text(encoding="utf-8")
@@ -52,4 +53,9 @@ def test_agent_doc_pair_present(agent_slug: str) -> None:
 @pytest.mark.gate
 @pytest.mark.parametrize("app_pkg", APPLICATIONS_WITH_DOC_PAIR)
 def test_application_doc_pair_present(app_pkg: str) -> None:
-    _assert_doc_pair(REPO / "applications" / app_pkg, f"applications/{app_pkg}")
+    docs_subdir = app_pkg != "attestation_demo"
+    _assert_doc_pair(
+        REPO / "applications" / app_pkg,
+        f"applications/{app_pkg}",
+        docs_subdir=docs_subdir,
+    )

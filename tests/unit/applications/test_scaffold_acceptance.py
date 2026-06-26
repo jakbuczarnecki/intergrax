@@ -87,7 +87,7 @@ def test_scaffold_product_profile_generated_artifacts(tmp_path) -> None:
     factory_src = (target / "host" / "factory.py").read_text(encoding="utf-8")
     assert f"create_{short}_backend_app" in factory_src
 
-    deploy_doc = (target / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
+    deploy_doc = (target / "docs" / "BUILD_AND_DEPLOY.md").read_text(encoding="utf-8")
     assert "/health" in deploy_doc
     assert "/v1/gate_n9_product" in deploy_doc
 
