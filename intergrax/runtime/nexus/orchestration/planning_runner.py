@@ -242,23 +242,6 @@ class NexusPlanningRunner:
             task.metadata[key] = value
         task.sync_metadata()
         lifecycle.transition(task, TaskState.PLANNED)
-        plan_payload: dict[str, object] = {
-            "plan_id": plan.plan_id,
-            "step_count": len(plan.steps),
-            "task_state": task.state.value,
-        }
-        plan_payload.update(plan.plan_metadata)
-        await self.publish(
-            runtime_event_from_task_state(
-                task, run_id=task.task_id, message="plan created"
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.PLAN_CREATED,
-                    "phase": ExecutionPhase.PLANNING,
-                    "payload": plan_payload,
-                }
-            )
-        )
         planner_source = str(plan.plan_metadata.get("planner_source", "default"))
         decision = DecisionRecord(
             trace_id=task.task_id,
@@ -281,14 +264,22 @@ class NexusPlanningRunner:
                 "failure_kind": plan.plan_metadata.get("failure_kind", ""),
             },
         )
+        plan_payload: dict[str, object] = {
+            "plan_id": plan.plan_id,
+            "step_count": len(plan.steps),
+            "task_state": task.state.value,
+            "decision_record": decision.model_dump(mode="json"),
+        }
+        plan_payload.update(plan.plan_metadata)
         await self.publish(
-            RuntimeEvent(
-                event_type=RuntimeEventType.DECISION_EMITTED,
-                tenant_id=task.tenant_id,
-                task_id=task.task_id,
-                run_id=task.task_id,
-                phase=ExecutionPhase.PLANNING,
-                payload=decision.model_dump(mode="json"),
+            runtime_event_from_task_state(
+                task, run_id=task.task_id, message="plan created"
+            ).model_copy(
+                update={
+                    "event_type": RuntimeEventType.PLAN_CREATED,
+                    "phase": ExecutionPhase.PLANNING,
+                    "payload": plan_payload,
+                }
             )
         )
         if self.emit_coordination_advisory:
