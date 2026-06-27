@@ -6,13 +6,14 @@ from __future__ import annotations
 from local_search.capabilities import CAPABILITIES
 from local_search.contract import build_agent_contract
 from local_search.steps.search_job import run_search_job
+from lkw_shared.agent_base import LkwReflexAgent
+from lkw_shared.diagnostics import search_diagnostic_from_output
 from intergrax.agents.authoring.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,
     reason_passthrough,
 )
-from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
@@ -20,9 +21,10 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
-class LocalSearchAgent(ReflexAgent):
+class LocalSearchAgent(LkwReflexAgent):
     """LKW search agent — typed Reflex pattern (ACP-MIG-4)."""
 
     contract_id = "local_search"
@@ -61,3 +63,6 @@ class LocalSearchAgent(ReflexAgent):
 
     def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
         return evaluate_complete(step_ctx, output, reason="local_search_goal_met")
+
+    def build_diagnostic_payloads(self, output: dict[str, object]) -> list[DiagnosticPayload]:
+        return [search_diagnostic_from_output(output)]

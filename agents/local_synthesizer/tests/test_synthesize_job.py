@@ -195,3 +195,23 @@ async def test_run_synthesize_job_fails_safe_on_write_error() -> None:
     assert summary["used"] is False
     assert summary["reason"] == "write_failed"
     assert summary["shadow_workspace"] is True
+
+
+@pytest.mark.unit
+def test_run_synthesize_job_output_attaches_synthesize_summary_diagnostic() -> None:
+    output = {
+        "synthesize_summary": {
+            "used": True,
+            "reason": "write_complete",
+            "shadow_workspace": True,
+            "num_evidence_items": 2,
+            "artifact_path": "draft.md",
+        }
+    }
+    from lkw_shared.diagnostics import synthesize_diagnostic_from_output
+
+    payload = synthesize_diagnostic_from_output(output)
+    assert payload.schema_id() == "lkw.synthesize_summary.v1"
+    assert payload.write_status == "write_complete"
+    assert payload.shadow_write is True
+    assert payload.source_evidence_count == 2

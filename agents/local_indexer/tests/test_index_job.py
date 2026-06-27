@@ -300,3 +300,21 @@ async def test_run_index_job_reads_source_paths_from_step_metadata_without_exec_
         {"path": str(doc.resolve()), "reason": "tool_gateway_not_available"}
     ]
     assert output["ingest_summary"]["used"] is False
+
+
+@pytest.mark.unit
+def test_run_index_job_output_attaches_index_summary_diagnostic() -> None:
+    output = {
+        "ingest_summary": {
+            "accepted_paths": ["a.txt"],
+            "rejected_paths": [],
+            "ingested": [{"status": "success", "num_chunks": 2}],
+            "num_chunks": 2,
+        }
+    }
+    from lkw_shared.diagnostics import index_diagnostic_from_output
+
+    payload = index_diagnostic_from_output(output)
+    assert payload.schema_id() == "lkw.index_summary.v1"
+    assert payload.accepted_count == 1
+    assert payload.chunk_count == 2

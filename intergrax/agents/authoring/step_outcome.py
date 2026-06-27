@@ -4,12 +4,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from intergrax.agents.authoring.diagnostic_serialization import merge_diagnostic_payloads
 from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import StepNextAction, TerminalReason
+from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 StateDelta = dict[str, Any]
 
@@ -42,12 +45,14 @@ class StepOutcome(BaseModel):
         state_delta: StateDelta | None = None,
         *,
         diagnostics: dict[str, Any] | None = None,
+        diagnostic_payloads: Sequence[DiagnosticPayload] | None = None,
     ) -> StepOutcome:
+        merged = merge_diagnostic_payloads(diagnostics, diagnostic_payloads or ())
         return cls(
             is_terminal=False,
             next_action=StepNextAction.CONTINUE,
             state_delta=dict(state_delta or {}),
-            diagnostics=diagnostics,
+            diagnostics=merged or None,
         )
 
     @classmethod
@@ -59,7 +64,10 @@ class StepOutcome(BaseModel):
         state_delta: StateDelta | None = None,
         confidence: float | None = None,
         artifacts: list[dict[str, Any]] | None = None,
+        diagnostics: dict[str, Any] | None = None,
+        diagnostic_payloads: Sequence[DiagnosticPayload] | None = None,
     ) -> StepOutcome:
+        merged = merge_diagnostic_payloads(diagnostics, diagnostic_payloads or ())
         return cls(
             is_terminal=True,
             terminal_reason=terminal_reason,
@@ -67,6 +75,7 @@ class StepOutcome(BaseModel):
             state_delta=dict(state_delta or {}),
             confidence=confidence,
             artifacts=list(artifacts or []),
+            diagnostics=merged or None,
         )
 
     @classmethod
@@ -77,13 +86,17 @@ class StepOutcome(BaseModel):
         terminal_reason: TerminalReason = TerminalReason.ERROR,
         state_delta: StateDelta | None = None,
         is_terminal: bool = True,
+        diagnostics: dict[str, Any] | None = None,
+        diagnostic_payloads: Sequence[DiagnosticPayload] | None = None,
     ) -> StepOutcome:
+        merged = merge_diagnostic_payloads(diagnostics, diagnostic_payloads or ())
         return cls(
             is_terminal=is_terminal,
             terminal_reason=terminal_reason,
             next_action=StepNextAction.FAIL,
             errors=list(errors),
             state_delta=dict(state_delta or {}),
+            diagnostics=merged or None,
         )
 
     @classmethod
@@ -93,14 +106,16 @@ class StepOutcome(BaseModel):
         *,
         governance_snapshot: dict[str, Any] | None = None,
         state_delta: StateDelta | None = None,
+        diagnostic_payloads: Sequence[DiagnosticPayload] | None = None,
     ) -> StepOutcome:
         _ = governance_snapshot
+        merged = merge_diagnostic_payloads({"pause_reason": reason}, diagnostic_payloads or ())
         return cls(
             is_terminal=False,
             terminal_reason=TerminalReason.HUMAN_REQUIRED,
             next_action=StepNextAction.PAUSE_HITL,
             state_delta=dict(state_delta or {}),
-            diagnostics={"pause_reason": reason},
+            diagnostics=merged or None,
         )
 
     @classmethod
@@ -109,11 +124,13 @@ class StepOutcome(BaseModel):
         state_delta: StateDelta | None = None,
         *,
         diagnostics: dict[str, Any] | None = None,
+        diagnostic_payloads: Sequence[DiagnosticPayload] | None = None,
     ) -> StepOutcome:
+        merged = merge_diagnostic_payloads(diagnostics, diagnostic_payloads or ())
         return cls(
             is_terminal=True,
             terminal_reason=TerminalReason.REPLANNED,
             next_action=StepNextAction.REPLAN,
             state_delta=dict(state_delta or {}),
-            diagnostics=diagnostics,
+            diagnostics=merged or None,
         )
