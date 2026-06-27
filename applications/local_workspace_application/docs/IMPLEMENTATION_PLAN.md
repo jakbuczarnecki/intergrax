@@ -3,9 +3,9 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1.1–LKW.1.13 Passed/Closed in scope** · **Active queue: LKW.1.14 → LKW-H1 → LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1.1–LKW.1.15 Passed/Closed in scope** · **Active queue: LKW-H1 → LKW.2**
 
-Latest live proof snapshot: **2026-06-26 — LKW.1.13 PASSED**. The live Docker HTTP `local.workspace.index` path now reaches `rag.ingest_document` and Qdrant: `accepted=1`, `rejected=0`, `ingested=1`, `chunks=1`. The previous Qdrant point-id, tenant scope, runtime event phase, and live catalog tool invocation blockers are fixed. The remaining LKW.1 proof gap is the full product smoke: `index -> search -> synthesize -> shadow artifact only`.
+Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filter; `local.workspace.search` returns marker evidence; synthesize writes shadow artifacts when evidence/draft is supplied. Full product closeout smoke: `index -> search -> synthesize (with evidence) -> shadow artifact only`.
 
 Current status source of truth: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
@@ -199,7 +199,8 @@ POST /v1/local_workspace/run
 | LKW.1.11 | Fix runtime tool gateway registry parity for catalog tools | runtime/app tool wiring | **Completed** | Platform-reusable catalog registry parity path |
 | LKW.1.12 | Fix `decision_emitted` runtime event phase mismatch | runtime events/planning | **Completed** | Platform-reusable event catalog/schema correctness |
 | LKW.1.13 | Restore local_indexer live RAG ingest execution | UAEP/ACP bridge + local indexer | **Completed** | Platform-reusable host catalog tool invocation bridge |
-| LKW.1.14 | Final live product smoke: index → search → synthesize | Docker HTTP live smoke | **Next** | Product closeout plus platform proof checklist before LKW-H1/LKW.2 |
+| LKW.1.14 | Final live product smoke: index → search → synthesize | Docker HTTP live smoke | **Partial — search blocked by tenant retrieve** | Product closeout blocked on tenant-scoped retrieve |
+| LKW.1.15 | Fix tenant-scoped `rag.retrieve` + `local_search` tool allowlist | RAG scope/service + `agents/local_search/contract.py` | **Completed** | Platform-reusable wired-retriever rebinding; LKW search live proof |
 
 ### LKW.1.7–LKW.1.13 blocker history
 
