@@ -19,9 +19,17 @@ Tier-3 product host for local document indexing, semantic search, and synthesis.
 
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 
+LKW.1 product proof is now passed for the live path:
+
+```text
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
+```
+
+The current follow-up is **LKW-H1**: live trace/evidence inspection and observability/accounting cleanup, including the known `total_tool_calls=0` summary gap.
+
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
-The current LKW.1 execution status is tracked in [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md). LKW.1 is not closed until the full live product smoke proves `index -> search -> synthesize -> shadow artifact only`.
+The current LKW execution status is tracked in [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md).
 
 ## Local stack
 
@@ -108,6 +116,6 @@ See [docs/README.md](docs/README.md) for the full local documentation index.
 - LKW live verification: [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)
 - LKW hardening: [ARCHITECTURE_HARDENING.md](docs/ARCHITECTURE_HARDENING.md)
 - Platform proof loop: [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
-- Plan register: [docs/intergrax_runtime_architecture.md §6.3a](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
+- Implementation plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 - Agent workflow: [docs/guides/AGENT_CREATION_GUIDE.md](../../docs/guides/AGENT_CREATION_GUIDE.md)
 - Application layout: [applications/USAGE.md](../USAGE.md)
