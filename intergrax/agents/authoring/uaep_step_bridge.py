@@ -8,6 +8,7 @@ from typing import Any
 
 from intergrax.agents.authoring.diagnostic_serialization import aggregate_step_diagnostics
 from intergrax.agents.authoring.step_outcome import StepOutcome
+from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.agents.uaep_protocol import UAEPAgent, UAEPAgentWithDecide
 from intergrax.contracts.acp_state import ACP_STATE_KEY, ACP_STATE_SCHEMA_VERSION
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -52,6 +53,23 @@ def _state_delta_from_output(output: StepOutput | None) -> dict[str, Any]:
         UaepStateDeltaKey.LAST_STEP_ID: output.step_id,
         UaepStateDeltaKey.LAST_STEP_SUMMARY: output.summary,
     }
+
+
+def merge_last_outcome_diagnostics(
+    outcome: StepOutcome,
+    exec_ctx: RuntimeExecutionContext,
+) -> StepOutcome:
+    """Preserve typed diagnostics captured during cognitive ``run_step``."""
+    raw = exec_ctx.metadata.get(AcpRunContextKey.LAST_OUTCOME)
+    if not isinstance(raw, dict):
+        return outcome
+    last_outcome = StepOutcome.model_validate(raw)
+    if not last_outcome.diagnostics:
+        return outcome
+    merged = dict(last_outcome.diagnostics)
+    if outcome.diagnostics:
+        merged.update(outcome.diagnostics)
+    return outcome.model_copy(update={"diagnostics": merged})
 
 
 def agent_decision_to_step_outcome(
@@ -178,7 +196,10 @@ async def execute_uaep_step_via_kernel(
     """Run one UAEP step through HarnessKernel for policy, merge, and Plane B trace."""
     output = await agent.run_step(step, exec_ctx)
     decision = decide_after_uaep_step(agent, step, output, exec_ctx)
-    outcome = agent_decision_to_step_outcome(decision, output)
+    outcome = merge_last_outcome_diagnostics(
+        agent_decision_to_step_outcome(decision, output),
+        exec_ctx,
+    )
     step_ctx = build_uaep_step_context(step, exec_ctx, kernel_ctx)
     record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
 
