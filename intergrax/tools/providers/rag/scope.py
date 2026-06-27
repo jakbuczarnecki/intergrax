@@ -71,6 +71,21 @@ def vectorstore_tenant_id(manager: object | None) -> str | None:
     return None
 
 
+def use_wired_retrieval_managers(
+    ctx: ToolWiringContext,
+    vectorstore: BaseVectorstoreManager | None,
+) -> bool:
+    """Return True when wired retriever/retrieval service targets the same store tenant."""
+    if vectorstore is None:
+        return True
+    wired = ctx.vectorstore_manager
+    if wired is None or vectorstore is wired:
+        return True
+    wired_tenant = vectorstore_tenant_id(wired)
+    scoped_tenant = vectorstore_tenant_id(vectorstore)
+    return wired_tenant is not None and wired_tenant == scoped_tenant
+
+
 def resolve_tenant_scoped_vectorstore(
     ctx: ToolWiringContext,
     tenant_id: str | None,

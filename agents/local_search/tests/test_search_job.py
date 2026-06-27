@@ -162,3 +162,36 @@ async def test_run_search_job_fails_safe_on_retrieve_error() -> None:
 
     assert output["search_summary"]["used"] is False
     assert output["search_summary"]["reason"] == "retrieve_failed"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_search_job_preserves_raw_tool_reason() -> None:
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(
+        return_value=ToolResponse(
+            request_id="tool-1",
+            status=ToolResponseStatus.SUCCESS,
+            output={"used": False, "reason": "retriever_failed"},
+        )
+    )
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_search",
+        request=RuntimeRequest(
+            agent_id="local_search",
+            tenant_id="lkw-smoke",
+            user_id="u1",
+            session_id="s1",
+            message="find marker",
+            metadata={"query": "marker", "collection_id": "ws-1"},
+        ),
+        tool_gateway=gateway,
+    )
+
+    output = await run_search_job(_step_ctx(exec_ctx, message="find marker"))
+
+    assert output["search_summary"]["reason"] == "retrieve_failed"
+    assert output["search_summary"]["raw_tool_reason"] == "retriever_failed"

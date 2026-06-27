@@ -163,13 +163,19 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     )
 
     if entry.get("status") != "success" or not entry.get("used"):
-        return _output(
+        summary = _output(
             run_id=step_ctx.run_id,
             used=False,
             reason="retrieve_failed",
             query=query,
             collection_id=collection_id,
         )
+        raw_reason = entry.get("reason")
+        if raw_reason:
+            search_summary = dict(summary["search_summary"])
+            search_summary["raw_tool_reason"] = str(raw_reason)
+            summary["search_summary"] = search_summary
+        return summary
 
     chunks = list(entry.get("chunks") or [])
     citations = list(entry.get("citations") or [])
