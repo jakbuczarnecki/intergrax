@@ -10,7 +10,8 @@ LKW.1.13 — local_indexer RAG ingest live path: PASSED
 LKW.1.14 — final live product smoke attempt: PARTIAL (tenant-scoped search retrieve_failed)
 LKW.1.15 — tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
 LKW-H1.1 — live index tool-call accounting: PASSED
-LKW-H1.2 — NEXT: trace/evidence contract and inspection surface
+LKW-H1.2 — trace/evidence contract and inspection surface: PASSED WITH PLATFORM FOLLOW-UPS
+LKW-H1.3 — NEXT: smoke/assertion hardening for inspectable run output
 ```
 
 ## Verified LKW.1 product path
@@ -123,6 +124,59 @@ are not part of H1.1 tool-call accounting and should be tracked separately as
 runtime-events/observability cleanup if they remain reproducible.
 ```
 
+## LKW-H1.2 — trace/evidence contract and inspection surface
+
+Status:
+
+```text
+PASSED WITH PLATFORM FOLLOW-UPS
+```
+
+Delivered:
+
+```text
+POST /v1/local_workspace/run attaches metadata["lkw_evidence.v1"] alongside application_run_summary.v1.
+Curated read model from AgentRunTrace step diagnostics — no full_trace on HTTP response.
+Typed diagnostics: lkw.index_summary.v1, lkw.search_summary.v1, lkw.synthesize_summary.v1.
+Unsafe fields redacted (query_text, content, raw_chunks, documents, …).
+Index smoke verifies total_tool_calls>0; synthesize smoke verifies shadow artifact path/ref.
+```
+
+Changed files:
+
+```text
+applications/local_workspace_application/serving/evidence_slice.py
+applications/local_workspace_application/serving/run_metadata.py
+applications/local_workspace_application/serving/fastapi_router.py
+agents/local_indexer/diagnostics.py
+agents/local_search/diagnostics.py
+agents/local_synthesizer/diagnostics.py
+applications/local_workspace_application/tests/test_evidence_slice.py
+applications/local_workspace_application/tests/test_lkw_evidence_metadata.py
+applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_evidence_slice.py -q
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+
+Result: 9 passed, 12 warnings
+```
+
+Platform follow-ups deferred:
+
+```text
+RuntimeEvent TOOL_* for immediate tools
+RunArtifactBundle / WorkspaceArtifactRef platform wiring
+RAG ingest-specific observability contract
+search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary -> LKW-H1.3
+policy decisions and raw tool reason/error at RuntimeEvent layer
+async runtime plugin coroutine warnings in event_bus/task_trace handlers
+```
+
 ## LKW.1.15 — tenant-scoped retrieve for live search
 
 Status:
@@ -226,20 +280,20 @@ Those blockers were fixed in LKW.1.15.
 | LKW.1.15 | Tenant-scoped retrieve and local_search allowlist fixed; product proof closed. |
 | LKW-H1.1 | UAEP live bridge tool-call accounting fixed for index/app summary. |
 
-## Known follow-ups after LKW.1 / H1.1
+## Known follow-ups after LKW.1 / H1.1 / H1.2
 
 ```text
-Search live accounting verification -> LKW-H1.2/H1.3 follow-up: rag.retrieve should surface in trace/summary.
-Synthesize live accounting verification -> LKW-H1.2/H1.3 follow-up: workspace.write_file should surface in trace/summary.
-Full inspectable trace/evidence contract -> LKW-H1.2.
-Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract.
+Search/synthesize per-tool accounting in trace/summary -> LKW-H1.3
+RuntimeEvent TOOL_*, RunArtifactBundle, RAG ingest observability contract -> platform deferred
+Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
 Classification:
 
 ```text
 index total_tool_calls=0 -> fixed in LKW-H1.1 for live UAEP path
-search/synthesize tool-call visibility -> LKW-H1.2/H1.3 verification and trace/evidence contract
+curated lkw_evidence.v1 inspection surface -> fixed in LKW-H1.2 for index/search/synthesize diagnostics
+search/synthesize per-tool visibility in trace/summary -> LKW-H1.3
 message-only synthesize content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
@@ -254,5 +308,5 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 Next queue item:
 
 ```text
-LKW-H1.2 — trace/evidence contract and inspection surface
+LKW-H1.3 — smoke/assertion hardening for inspectable LKW run output
 ```

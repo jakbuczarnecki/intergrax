@@ -25,7 +25,7 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-The current follow-up is **LKW-H1**: live trace/evidence inspection and observability cleanup. **LKW-H1.1 has fixed live index tool-call accounting** (`total_tool_calls=1` for `rag.ingest_document` on the UAEP live path); remaining H1 work focuses on broader trace/evidence inspection and search/synthesize accounting verification.
+The current follow-up is **LKW-H1**: live trace/evidence inspection and observability cleanup. **LKW-H1.1** fixed live index tool-call accounting (`total_tool_calls=1` for `rag.ingest_document` on the UAEP live path). **LKW-H1.2** added curated `lkw_evidence.v1` on HTTP run responses (typed `lkw.*_summary.v1` diagnostics, redacted). Remaining H1 work: **LKW-H1.3** (search/synthesize per-tool accounting assertions) and platform event-layer observability follow-ups.
 
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 

@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **Active queue: LKW-H1.2 → LKW-H1.3 → LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups** · **Active queue: LKW-H1.3 → LKW.2**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -11,7 +11,7 @@ Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PRO
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest observability snapshot: **2026-06-27 — LKW-H1.1 PASSED for live index tool-call accounting**. Live UAEP/Nexus index runs now report `total_tool_calls=1` for `rag.ingest_document` after forwarding `uaep_exec_ctx` through `build_uaep_step_context()`.
+Latest observability snapshot: **2026-06-27 — LKW-H1.2 PASSED WITH PLATFORM FOLLOW-UPS**. LKW HTTP runs attach curated `lkw_evidence.v1` (typed `lkw.*_summary.v1` diagnostics, redacted) alongside `application_run_summary.v1`; index/search/synthesize API smoke passes. Platform follow-ups deferred: RuntimeEvent `TOOL_*` for immediate tools, `RunArtifactBundle`/`WorkspaceArtifactRef`, RAG ingest observability contract, search/synthesize per-tool accounting in trace/summary, H1.3 smoke assertions.
 
 Current status source of truth: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
@@ -144,7 +144,7 @@ This track is executed one task at a time.
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **In progress — H1.1 passed; H1.2 next** | High |
+| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **In progress — H1.1/H1.2 passed; H1.3 next** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
@@ -280,15 +280,17 @@ qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw
 - [x] UAEP/ACP host catalog tool invocation bridge fixed in LKW.1.13.
 - [x] Tenant-scoped retrieve and local_search allowed-tool declaration fixed in LKW.1.15.
 - [x] Live index tool-call accounting fixed in LKW-H1.1.
-- [ ] Broader trace/evidence inspection lessons are reflected in LKW-H1.2/H1.3.
+- [x] Broader trace/evidence inspection lessons are reflected in LKW-H1.2 (curated `lkw_evidence.v1` slice); H1.3 smoke assertions remain.
 - [ ] Any remaining env/settings/scaffold/Docker/CI implications from LKW.1 are recorded in H1/H3 if they prove reusable.
 
 ### Known follow-ups after LKW.1
 
 | Follow-up | Classification | Target |
 |----------|----------------|--------|
-| Search/synthesize tool-call visibility needs live verification after index accounting fix | Observability/accounting | LKW-H1.2 / LKW-H1.3 |
-| Need inspectable tool status, raw reason/error, RAG evidence, shadow artifact path | Observability/evidence | LKW-H1.2 |
+| Search/synthesize per-tool accounting (`rag.retrieve`, `workspace.write_file`) in trace/summary | Observability/accounting | Platform / LKW-H1.3 |
+| RuntimeEvent `TOOL_*`, policy decisions, raw tool reason/error at event layer | Observability/platform | Platform deferred |
+| `RunArtifactBundle` / `WorkspaceArtifactRef` platform wiring | Observability/platform | Platform deferred |
+| RAG ingest-specific observability contract | Observability/platform | Platform deferred |
 | Standalone synthesize with message-only input returns `content_missing` | Pipeline/orchestration input contract | LKW.2 |
 | Developer first-run/adoption simplification | Packaging/adoption | LKW-H3 |
 
@@ -321,7 +323,7 @@ LKW.1.15 passed product behavior. H1.1 fixed the first accounting gap for live i
 local.workspace.index -> rag.ingest_document -> application_run_summary.v1 total_tool_calls=1
 ```
 
-The remaining H1 work is broader inspection: search/synthesize accounting verification, raw tool status/reason, RAG evidence, policy decisions, and shadow artifact paths.
+The remaining H1 work after H1.2: search/synthesize per-tool accounting in trace/summary, H1.3 smoke assertions, and platform event-layer observability (RuntimeEvent `TOOL_*`, policy decisions, `RunArtifactBundle`).
 
 H1 must improve visibility. It must not replace or reopen product execution blockers that are already fixed in LKW.1.9–LKW.1.15.
 
@@ -370,17 +372,66 @@ Those warnings are tracked separately from H1.1 tool-call accounting unless they
 | ID | Task | Module | Status | Platform propagation |
 |----|------|--------|--------|----------------------|
 | LKW-H1.1 | Fix live run observability and tool-call accounting, including `total_tool_calls=0` | runtime/tool accounting + LKW host evidence | **Completed / index live accounting passed** | Reusable UAEP/ACP RuntimeExecutionContext tool-call accounting covered by platform tests |
-| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | **Next** | Update event/trace scaffold or docs if reusable |
-| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | Planned | Update generated app test pattern if reusable |
+| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | **Completed / PASSED WITH PLATFORM FOLLOW-UPS** | Curated `lkw_evidence.v1` read model reusable by app hosts; platform event wiring deferred |
+| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | **Next** | Update generated app test pattern if reusable |
 
 Acceptance:
 
-- [ ] A reviewer can see what happened in an LKW run from task submission to terminal result.
-- [ ] Tool calls, policy decisions, RAG evidence, raw tool reason/error, and shadow artifact path are visible.
+- [x] A reviewer can see what happened in an LKW run from task submission to terminal result (`application_run_summary.v1` + `lkw_evidence.v1`).
+- [x] RAG evidence counts/source refs and shadow artifact path/ref are visible via typed `lkw.*_summary.v1` diagnostics (redacted).
 - [x] `total_tool_calls=0` is fixed for the live index path (`rag.ingest_document`).
-- [ ] Search/synthesize tool-call visibility is verified for `rag.retrieve` and `workspace.write_file`.
+- [ ] Search/synthesize per-tool accounting is verified for `rag.retrieve` and `workspace.write_file` in trace/summary.
+- [ ] Raw tool status/reason/error and policy decisions at RuntimeEvent layer — platform deferred.
 - [x] No hosted dashboard or external observability backend is required.
-- [ ] Platform proof checklist in §0a is completed.
+- [x] Platform proof checklist in §0a is completed for H1.2 closeout scope.
+
+### H1.2 result
+
+Status:
+
+```text
+PASSED WITH PLATFORM FOLLOW-UPS
+```
+
+Delivered in LKW host:
+
+```text
+- serving/evidence_slice.py — curated lkw_evidence.v1 from AgentRunTrace step diagnostics
+- serving/run_metadata.py — attach_lkw_evidence_metadata() on TaskResult
+- serving/fastapi_router.py — lkw_evidence.v1 on POST /v1/local_workspace/run response metadata
+- typed diagnostics: lkw.index_summary.v1, lkw.search_summary.v1, lkw.synthesize_summary.v1
+- unsafe field redaction (query_text, content, raw_chunks, …)
+- full_trace / agent_run_trace not exposed on HTTP response (by design)
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_evidence_slice.py -q
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+
+Result: 9 passed, 12 warnings
+```
+
+Verified smoke assertions:
+
+```text
+index — lkw.index_summary.v1 fields + total_tool_calls>0 + no raw fixture text in evidence
+search — lkw.search_summary.v1 num_results/evidence_count/source_refs + redaction
+synthesize — lkw.synthesize_summary.v1 shadow_write/artifact_path|artifact_ref + redaction
+```
+
+Platform follow-ups deferred (out of H1.2 scope):
+
+```text
+RuntimeEvent TOOL_* for immediate tools
+RunArtifactBundle / WorkspaceArtifactRef platform wiring
+RAG ingest-specific observability contract
+search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary
+LKW-H1.3 smoke/assertion hardening
+async runtime plugin coroutine warnings in event_bus/task_trace handlers
+```
 
 ---
 
