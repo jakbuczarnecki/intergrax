@@ -136,6 +136,7 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
     kernel_ctx = StepKernelContext(
         agent_id="demo",
         run_id="run-meter-1",
+        allow_permissive_missing_policy=True,
         state_root={
             ACP_STATE_KEY: {
                 "schema_version": "acp.state.v1",
