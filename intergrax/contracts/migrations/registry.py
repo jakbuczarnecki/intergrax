@@ -24,7 +24,7 @@ CONTRACT_SCHEMA_REGISTRY: tuple[ContractSchemaEntry, ...] = (
     ContractSchemaEntry("SideEffectRecord", "intergrax.contracts.side_effect", "side_effect.v1"),
     ContractSchemaEntry(
         "OrganizationalPolicyEnvelope",
-        "intergrax.applications.contracts.org_policy",
+        "intergrax.contracts.org_policy",
         "org_policy_envelope.v1",
     ),
 )
