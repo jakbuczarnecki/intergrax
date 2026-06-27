@@ -145,6 +145,7 @@ def build_uaep_step_context(
             "task_id": exec_ctx.task_id,
             "graph_node_id": exec_ctx.node_id,
             "step_id": step.step_id,
+            "uaep_exec_ctx": exec_ctx,
         },
     )
 
