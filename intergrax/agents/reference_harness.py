@@ -29,6 +29,7 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
+from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -46,18 +47,6 @@ class LabHarnessContext:
 def default_reference_harness() -> LabHarnessContext:
     """Minimal harness defaults when no Tier-3 host injects a bundle."""
     return LabHarnessContext(policy_bundle=RuntimePolicyBundle())
-
-
-def _apply_policy_bundle_to_runtime_config(
-    config: RuntimeConfig,
-    bundle: RuntimePolicyBundle | None,
-) -> RuntimeConfig:
-    if bundle is None:
-        return config
-    config.policy_bundle = bundle
-    if bundle.budget is not None and config.budget_policy is None:
-        config.budget_policy = bundle.budget
-    return config
 
 
 def build_lab_agent_runtime_config_from_merged(
@@ -127,7 +116,7 @@ def build_lab_agent_runtime_config(
         modality_profile=harness.modality_profile,
         tool_wiring_context=harness.tool_wiring_context,
     )
-    return _apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
+    return apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
 
 
 def build_lab_agent_runtime_context(

@@ -10,12 +10,14 @@ import pytest
 
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
+    build_lab_agent_runtime_config,
     build_lab_agent_runtime_context,
     lab_harness_context_from_modality_tooling,
 )
 from intergrax.runtime.modality.modality_profile import lab_default_modality_profile
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
 from intergrax.runtime.wiring.harness_governance import LabAllowGovernanceService
 from testing_support.builder import FakeLLMAdapter
 
@@ -61,6 +63,23 @@ def test_strict_harness_without_trace_db_raises_on_context_build() -> None:
             llm_adapter=FakeLLMAdapter(),
             harness=harness,
         )
+
+
+def test_strict_harness_preserves_policy_bundle_and_tool_scope(tmp_path: Path) -> None:
+    scope = StaticToolScopePolicy(allowed_tools={"websearch.query"})
+    bundle = RuntimePolicyBundle(tool_access=scope)
+    harness = LabHarnessContext(
+        policy_bundle=bundle,
+        strict_harness=True,
+        trace_db_path=tmp_path / "trace.db",
+    )
+    config = build_lab_agent_runtime_config(
+        request=_request(),
+        llm_adapter=FakeLLMAdapter(),
+        harness=harness,
+    )
+    assert config.policy_bundle is bundle
+    assert config.tool_scope_policy is scope
 
 
 def test_lab_harness_context_from_modality_tooling_defaults_modality_when_strict() -> None:
