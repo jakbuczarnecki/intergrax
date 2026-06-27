@@ -20,7 +20,7 @@
 | COG-DOC.2 | **`plan/REASONING_AND_COGNITION.md`** — this file; Phase COG-DEPTH register | **Done** | **Critical** | `docs/plan/` | 1:1 pair check green |
 | COG-DOC.3 | **Hub update** — 18 domain pairs; audit routing §7 → RCL pair | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | COG-DOC.4 | **Cross-ref sync** — `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW` §7–§8, §24; `AGENTS.md`; `INTEGRAX_HARNESS_AUDIT_MAP` §7 | **Done** | High | `docs/*` | No orphan §7 content |
-| COG-DOC.5 | **Gate script** — `python scripts/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
+| COG-DOC.5 | **Gate script** — `python scripts/audit/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
 | COG-DOC.6 | **Routing modes §9.4** — MULTI_AGENT vs pipeline graph vs engine planner | **Done** | High | `architecture/REASONING_AND_COGNITION.md` §9.4–§9.5 | Cross-ref TIER3 §23, ORCH §55 |
 
 ---
@@ -162,7 +162,7 @@ Work **one COG ID per PR** — phase **closed**; historical order below.
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | COG-OBS.1 | **Planner latency + fallback rate metrics** | **Done** | Medium | `planning_metrics.py` | Export hooks on planning path |
-| COG-OBS.2 | **`scripts/check_reasoning_gates.py`** — optional CI: no inline planner prompts | **Done** | Low | `scripts/check_reasoning_gates.py` | Gate script green |
+| COG-OBS.2 | **`scripts/maintenance/check_reasoning_gates.py`** — optional CI: no inline planner prompts | **Done** | Low | `scripts/maintenance/check_reasoning_gates.py` | Gate script green |
 
 ---
 

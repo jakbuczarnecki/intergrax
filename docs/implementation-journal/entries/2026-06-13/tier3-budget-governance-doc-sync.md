@@ -49,8 +49,8 @@ Tier-3 budget governance canon matches harness runtime: mutating STRICT hosts de
 uv run pytest tests/unit/agents/test_acp_token_budget_enforcement.py \
   tests/unit/agents/test_acp_token_budget_reactions.py \
   tests/unit/agents/test_acp_token_usage_metering.py -q
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: 13 passed (ACP-TOK tests); doc pair check OK; journal check OK after section fix.

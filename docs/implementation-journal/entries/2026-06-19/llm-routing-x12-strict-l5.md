@@ -53,15 +53,15 @@ Declarative LLM routing is now **strict L5** on core UAEP/Nexus/ACP paths: budge
 - `intergrax/applications/_shared/routing_evaluating_adapter.py` — Tier-3 evaluating wrapper
 - `intergrax/llm_adapters/routing/metering.py`, `runtime_sync.py` — Tier-0 metering + snapshot refresh
 - `intergrax/runtime/nexus/context/routing_snapshot_sync.py` — graph/CE hooks
-- `scripts/check_llm_routing_tier_boundary.py` — CI tier gate
+- `scripts/maintenance/check_llm_routing_tier_boundary.py` — CI tier gate
 - Tests under `tests/unit/llm_adapters/routing/`, `tests/acceptance/llm_routing/`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/llm_adapters/routing/ tests/acceptance/llm_routing/ -m "gate and not no_ci" -q
-python scripts/check_llm_routing_tier_boundary.py
-python scripts/check_llm_routing_context_wiring.py
+python scripts/maintenance/check_llm_routing_tier_boundary.py
+python scripts/maintenance/check_llm_routing_context_wiring.py
 ```
 
 Result: 36 passed; tier boundary and context wiring gates OK.

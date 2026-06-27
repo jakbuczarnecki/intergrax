@@ -52,7 +52,7 @@ STRICT production tasks now carry an auditable environment fingerprint at intake
 ```bash
 uv run pytest tests/unit/applications/test_environment_snapshot_wiring.py \
   tests/unit/applications/test_application_environment_state_lifecycle.py -q
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

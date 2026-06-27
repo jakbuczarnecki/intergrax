@@ -23,7 +23,7 @@ Continue Tier-3 application architecture sprint queue: APP-EVOL-7 — formal app
 - `package_wiring.py` — collect/build/validate package closure; `package_gate_environment` for CI wiring without vendor drivers.
 - `package_emit.py` — scaffold `package.json` emission from `new-application` / `new-stack`.
 - `wire_application_environment` validates package closure when `conformance_check=True`.
-- `scripts/check_application_package.py` wired into production gates.
+- `scripts/maintenance/check_application_package.py` wired into production gates.
 
 ## Project impact
 
@@ -44,8 +44,8 @@ Tier-3 hosts now declare immutable package artifacts with direct agent/skill/too
 - `intergrax/scaffold/package_emit.py`
 - `intergrax/scaffold/new_application.py`
 - `intergrax/scaffold/new_stack.py`
-- `scripts/check_application_package.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_application_package.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_package_wiring.py`
 - `tests/unit/scripts/test_check_application_package.py`
 - `tests/unit/scaffold/test_minimal_stack_scaffold.py`
@@ -57,8 +57,8 @@ uv run pytest tests/unit/applications/test_package_wiring.py \
   tests/unit/scripts/test_check_application_package.py \
   tests/unit/scaffold/test_minimal_stack_scaffold.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_application_package.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_application_package.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

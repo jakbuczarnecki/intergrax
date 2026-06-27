@@ -67,9 +67,9 @@ Tier-3 hosts can opt into live gateway context windows, custom provider slugs, s
 
 ```bash
 uv run pytest tests/unit/llm_adapters/ tests/acceptance/llm_routing/ -m "gate and not no_ci" -q
-python scripts/check_llm_routing_tier_boundary.py
-python scripts/check_llm_routing_context_wiring.py
-python scripts/check_docs_domain_pairs.py
+python scripts/maintenance/check_llm_routing_tier_boundary.py
+python scripts/maintenance/check_llm_routing_context_wiring.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: 158 passed; LLM routing gates OK.

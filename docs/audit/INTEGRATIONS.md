@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -89,8 +89,8 @@ intergrax/integrations/registry/harness_lab_stack.py · presets.py
 intergrax/integrations/_shared/p2|p3|p4|p5|p6|p7|p8/factories.py
 applications/_shared/integration_wiring.py · integration_runtime_bridge.py
 applications/_shared/guardrail_wiring.py
-scripts/check_integration_vendor_imports.py
-scripts/check_harness_guardrail_wiring.py · scripts/generate_integration_usage_docs.py
+scripts/maintenance/check_integration_vendor_imports.py
+scripts/maintenance/check_harness_guardrail_wiring.py · scripts/docs/generate_integration_usage_docs.py
 ```
 
 Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -186,10 +186,10 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-python scripts/check_integration_vendor_imports.py
-uv run python scripts/check_harness_guardrail_wiring.py
+python scripts/maintenance/check_integration_vendor_imports.py
+uv run python scripts/maintenance/check_harness_guardrail_wiring.py
 uv run pytest tests/unit/integrations/ -q
-uv run python scripts/generate_integration_usage_docs.py
+uv run python scripts/docs/generate_integration_usage_docs.py
 ```
 
 Add any domain-specific scripts you discover. If a command fails, state why.

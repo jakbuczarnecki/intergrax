@@ -53,9 +53,9 @@ Book-scale corpora with `parent_child` chunking can now build a TOC index and re
 ```bash
 uv run pytest tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py tests/unit/rag/ -m gate -q
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
-uv run python scripts/check_docs_domain_pairs.py
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_observability_gates.py
+uv run python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: 3 hierarchical tests passed; full gate green; harness scripts OK.

@@ -3,7 +3,7 @@
 **Architecture target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0–§26  
 **Platform canon (scope):** [`architecture/PLATFORM_FOUNDATION.md`](../architecture/PLATFORM_FOUNDATION.md) · cross-domain register (no 1:1 pair)  
 **Audit map:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8 (32 layers)  
-**Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
+**Baseline:** **32/32 L3** (`scripts/gates/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
 **Status:** **AUDIT-IDEAL complete** (2026-06-18) — **90/90 Done** · **0 Deferred §6.3** · **0 Planned**
@@ -161,7 +161,7 @@ Phase **AUDIT-IDEAL** closes incrementally:
 1. All **P0** rows **Done** with gate evidence.
 2. **P1** rows ≥ **80% Done** or explicitly deferred with §6.3 / debt register entry.
 3. `uv run pytest -m gate -q` green.
-4. `scripts/harness_maturity_report.py` remains **32/32 L3+**.
+4. `scripts/gates/harness_maturity_report.py` remains **32/32 L3+**.
 5. Domain plan rows synced (no orphan AUDIT-IDEAL IDs).
 
 **ADR policy:** New ADR only when contract changes; depth-only gates → **no ADR needed** per row.

@@ -51,7 +51,7 @@ Ephemeral Code Craft layer formally closed for Full Harness LC — orchestrator 
 
 ```bash
 uv run pytest tests/unit/runtime/codecraft/ -q
-uv run python scripts/check_codecraft_layer.py
+uv run python scripts/maintenance/check_codecraft_layer.py
 ```
 
 ## Risks and follow-ups

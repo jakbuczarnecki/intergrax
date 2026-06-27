@@ -20,7 +20,7 @@ Continue ACP-FINISH sprint queue with ACP-TOK-CI: add CI gate that fails when ke
 
 ## Summary
 
-Added `scripts/check_agent_token_budget_contract.py` (CI-18). Static checks verify `HarnessKernel` calls `apply_llm_metering_after_step`, `acp_run` wraps the enforcing LLM router, and `step_loop` uses `handle_hard_budget_violation`. Agents are scanned for forbidden metering imports and budget keys in `state_delta`. Smoke step runs the three ACP-TOK unit test modules. Wired into `check_acp_ci_conformance_matrix.py` and `check_agent_acp_close_ci.py`.
+Added `scripts/maintenance/check_agent_token_budget_contract.py` (CI-18). Static checks verify `HarnessKernel` calls `apply_llm_metering_after_step`, `acp_run` wraps the enforcing LLM router, and `step_loop` uses `handle_hard_budget_violation`. Agents are scanned for forbidden metering imports and budget keys in `state_delta`. Smoke step runs the three ACP-TOK unit test modules. Wired into `check_acp_ci_conformance_matrix.py` and `check_agent_acp_close_ci.py`.
 
 ## Project impact
 
@@ -36,15 +36,15 @@ Token budget contract is now CI-enforced — authors cannot bypass harness-owned
 
 ## Changed artifacts
 
-- `scripts/check_agent_token_budget_contract.py` — CI-18 gate (new)
-- `scripts/check_acp_ci_conformance_matrix.py` — CI-18 row
-- `scripts/check_agent_acp_close_ci.py` — aggregate includes TOK-CI
+- `scripts/maintenance/check_agent_token_budget_contract.py` — CI-18 gate (new)
+- `scripts/gates/check_acp_ci_conformance_matrix.py` — CI-18 row
+- `scripts/gates/check_agent_acp_close_ci.py` — aggregate includes TOK-CI
 - `tests/unit/scripts/test_check_agent_token_budget_contract.py`
 
 ## Verification
 
 ```bash
-uv run python scripts/check_agent_token_budget_contract.py
+uv run python scripts/maintenance/check_agent_token_budget_contract.py
 uv run pytest tests/unit/scripts/test_check_agent_token_budget_contract.py -m gate -q
 ```
 

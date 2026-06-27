@@ -232,7 +232,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 | ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | **Done** | Medium | `apply_long_running_from_profile` · `intergrax/applications/USAGE.md` |
 | ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | **Done** | Medium | `strict_multi_agent_defaults()` · critic + merge bundled |
 | ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Done** | Medium | `swarm_policy.py` · `GraphExecutor` batch guard · CFG-17 sim |
-| ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/check_orchestration_config_docs.py` |
+| ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/maintenance/check_orchestration_config_docs.py` |
 | ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Done** | High | `nexus_plan_bridge.py` · `test_cog_depth_residual_gate.py` |
 | ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | Architecture §59 + hub index 2026-06-09 |
 

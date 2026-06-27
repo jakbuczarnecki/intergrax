@@ -119,7 +119,7 @@ Product hosts must pass mandatory rows P1–P10 (manifest, harness factory, wiri
 Run:
 
 ```bash
-uv run python scripts/check_application_production_gates.py
+uv run python scripts/gates/check_application_production_gates.py
 ```
 
 Capability-specific rows (HITL, multi-agent, budget, virtual org) apply when the host claims that capability — see architecture §46.2.
@@ -145,8 +145,8 @@ Prefer registry artifacts over `applications/README.md` for ops automation.
 ```bash
 uv run pytest applications/<pkg>/tests -q
 uv run pytest tests/unit/applications/ -q
-uv run python scripts/check_application_production_gates.py
-python scripts/check_harness_no_getattr.py
+uv run python scripts/gates/check_application_production_gates.py
+python scripts/maintenance/check_harness_no_getattr.py
 ```
 
 ---
@@ -218,5 +218,5 @@ Keep adapters in `host/` wiring modules, registered at `build_harness_host_runti
 
 ```bash
 uv run pytest tests/unit/runtime/events/ -q
-uv run python scripts/check_event_catalog.py
+uv run python scripts/maintenance/check_event_catalog.py
 ```

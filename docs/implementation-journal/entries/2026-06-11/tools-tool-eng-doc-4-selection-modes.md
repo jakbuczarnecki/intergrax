@@ -50,8 +50,8 @@ Harness operators and implementers have a single canon for scaling tool selectio
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (docs-only iteration).

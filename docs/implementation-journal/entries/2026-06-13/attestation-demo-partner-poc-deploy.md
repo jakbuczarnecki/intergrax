@@ -56,7 +56,7 @@ External partners can trigger governed `records.put` execution, receive unsigned
 uv run pytest applications/attestation_demo/attestation_demo_tests -q
 uv run pytest tests/unit/runtime/attestation/ -q
 uv run pytest tests/unit/applications/ -q -k attestation_demo
-python scripts/check_harness_adr.py
+python scripts/maintenance/check_harness_adr.py
 ```
 
 Result: pass (4 app tests, 4 runtime attestation tests, 3 gate tests).

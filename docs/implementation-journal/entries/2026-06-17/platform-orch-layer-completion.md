@@ -45,8 +45,8 @@ ORCHESTRATION domain pair closed for Full Harness LC with no blocking P0/P1 in O
 
 ```bash
 uv run pytest tests/unit/runtime/architecture/test_faudit_remediation.py::test_task_envelope_round_trip -q
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

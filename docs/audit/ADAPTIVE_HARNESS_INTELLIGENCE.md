@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -87,7 +87,7 @@ intergrax/runtime/adaptive/ (signal_emission.py, SignalCollector, adaptive_gover
 intergrax/runtime/adaptive/cost_optimization.py
 intergrax/runtime/architecture/ (ProcessPatternMiner W-ADAPT-6, ExecutionStrategyEngine)
 runtime_governance_bridge.py
-scripts/phase_w_adapt_report.py · scripts/phase_v_closeout_gate.py
+scripts/release/phase_w_adapt_report.py · scripts/release/phase_v_closeout_gate.py
 ```
 
 Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -181,7 +181,7 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-uv run python scripts/phase_w_adapt_report.py
+uv run python scripts/release/phase_w_adapt_report.py
 uv run pytest tests/unit/runtime/adaptive/ -q
 ```
 

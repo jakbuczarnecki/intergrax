@@ -76,4 +76,4 @@ Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) 
 - Link plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **no** plan table duplication.
 - `plan_ref`: formal IDs only.
 - `project impact` = capability gained, not file dump.
-- Run `python scripts/check_implementation_journal.py` **only when** a new entry was added or INDEX was changed.
+- Run `python scripts/maintenance/check_implementation_journal.py` **only when** a new entry was added or INDEX was changed.

@@ -51,9 +51,9 @@ Tier-3 documentation now matches implementation status: **Architecturally Mature
 
 ```bash
 uv run pytest tests/unit/applications/ -q
-uv run python scripts/check_application_production_gates.py
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+uv run python scripts/gates/check_application_production_gates.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: 453 passed; all gates OK.

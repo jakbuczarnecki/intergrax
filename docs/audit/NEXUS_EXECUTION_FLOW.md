@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -193,7 +193,7 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ```bash
 uv run pytest tests/acceptance/agent_os/ -q
 uv run pytest tests/unit/runtime/nexus/ -q -k 'handoff or graph_spec'
-python scripts/check_harness_no_getattr.py
+python scripts/maintenance/check_harness_no_getattr.py
 ```
 
 Add any domain-specific scripts you discover. If a command fails, state why.

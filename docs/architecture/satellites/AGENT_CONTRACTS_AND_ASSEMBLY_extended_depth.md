@@ -1628,7 +1628,7 @@ Domain narrative belongs in `diagnostics` (typed `StepDiagnostics` model) — op
 | `intergrax/contracts/agent_run.py` | `StepOutcome`, enums, `AgentStepContext` (ACP-DX-1, ACP-STEP-1) |
 | `intergrax/agents/authoring/step_outcome.py` | Factories + validation (ACP-DX-6) |
 | `intergrax/agents/authoring/state_access.py` | `load_session_state`, `session_state_delta` (ACP-DX-6) |
-| `scripts/check_agent_typed_state.py` | CI: forbid raw dict state in `agents/` (ACP-DX-6) |
+| `scripts/maintenance/check_agent_typed_state.py` | CI: forbid raw dict state in `agents/` (ACP-DX-6) |
 
 **Plan rows:** ACP-0, ACP-DX-1, ACP-DX-6, ACP-STEP-1, ACP-CON-1.
 

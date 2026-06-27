@@ -47,11 +47,11 @@ No open P0/P1 in orchestration scope.
 ## Gates executed
 
 ```bash
-python scripts/check_orchestration_config_docs.py  → OK (20 CFG ids, 10 ORCH-CONFIG ids)
+python scripts/maintenance/check_orchestration_config_docs.py  → OK (20 CFG ids, 10 ORCH-CONFIG ids)
 pytest tests/unit/runtime/nexus/orchestration/   → 12 passed
 pytest tests/integration/runtime/test_orchestration_cfg_simulation.py
      + related orchestration wiring slice         → 25 passed
-python scripts/check_docs_domain_pairs.py        → OK
+python scripts/audit/check_docs_domain_pairs.py        → OK
 ```
 
 ---

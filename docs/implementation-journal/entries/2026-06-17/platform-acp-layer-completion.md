@@ -50,7 +50,7 @@ ACP domain formally closed for Full Harness LC orchestration — no open P0/P1; 
 ## Verification
 
 ```bash
-python scripts/check_agent_acp_close_ci.py
+python scripts/gates/check_agent_acp_close_ci.py
 ```
 
 ## Risks and follow-ups

@@ -49,8 +49,8 @@ Tools layer formally closed for Full Harness LC — catalog L3, tool engine orch
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/tools/ -q
-uv run python scripts/check_tool_invocation_patterns.py
-uv run python scripts/check_tool_engine_ahi_hook.py
+uv run python scripts/maintenance/check_tool_invocation_patterns.py
+uv run python scripts/maintenance/check_tool_engine_ahi_hook.py
 ```
 
 ## Risks and follow-ups

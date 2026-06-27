@@ -22,7 +22,7 @@ Execute next Wave 3 step: OTel spans on `RetrievalService.retrieve` and `IngestP
 
 ## Summary
 
-Added `intergrax/rag/tracking/rag_spans.py` with canonical span registry, `rag_span()` context manager (tracer `intergrax.rag`), and env `INTERGRAX_RAG_OTEL_SPANS_ENABLED` (default on). Wired retrieve + ingest hot paths. Registered gate `scripts/check_rag_otel_span_registry.py` in `check_observability_gates.py`.
+Added `intergrax/rag/tracking/rag_spans.py` with canonical span registry, `rag_span()` context manager (tracer `intergrax.rag`), and env `INTERGRAX_RAG_OTEL_SPANS_ENABLED` (default on). Wired retrieve + ingest hot paths. Registered gate `scripts/maintenance/check_rag_otel_span_registry.py` in `check_observability_gates.py`.
 
 Aggregated RAG metrics remain opt-in via `INTERGRAX_RAG_METRICS_ENABLED`; spans are on the default observability spine unless explicitly disabled.
 
@@ -42,14 +42,14 @@ RAG retrieve and ingest hot paths emit canonical OTel spans by default, aligning
 
 - `intergrax/rag/tracking/rag_spans.py` — span registry and `rag_span()` helper
 - `intergrax/rag/retrieval/retrieval_service.py`, `intergrax/rag/ingest/ingest_pipeline.py` — span wiring
-- `scripts/check_rag_otel_span_registry.py` — observability gate registration
+- `scripts/maintenance/check_rag_otel_span_registry.py` — observability gate registration
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/rag/tracking/test_rag_otel_spans.py -m gate -q
-uv run python scripts/check_rag_otel_span_registry.py
-uv run python scripts/check_observability_gates.py
+uv run python scripts/maintenance/check_rag_otel_span_registry.py
+uv run python scripts/maintenance/check_observability_gates.py
 ```
 
 ## Risks and follow-ups

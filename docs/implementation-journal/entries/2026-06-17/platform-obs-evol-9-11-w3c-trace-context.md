@@ -50,7 +50,7 @@ Tier-3 hosts can correlate Harness journal events with external APM via standard
 
 ```bash
 uv run pytest tests/unit/runtime/events/test_w3c_trace_context.py -q
-uv run python scripts/check_event_catalog.py
+uv run python scripts/maintenance/check_event_catalog.py
 ```
 
 ## Risks and follow-ups

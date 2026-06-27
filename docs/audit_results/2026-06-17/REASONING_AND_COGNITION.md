@@ -25,7 +25,7 @@ No open P0/P1 in `REASONING_AND_COGNITION` scope. Prior Layer Completion closeou
 ## Gates executed
 
 ```bash
-uv run python scripts/check_reasoning_gates.py
+uv run python scripts/maintenance/check_reasoning_gates.py
 uv run pytest tests/unit/runtime/nexus/planning/ -q
 ```
 

@@ -24,7 +24,7 @@ Continue Tier-3 application architecture sprint queue: APP-EVOL-3 — capability
 - `capability_alias_wiring.py` — registry build, sunset resolution, manifest canonical check, 14-day window validation.
 - `CapabilityAliasMiddleware` (priority 34) + `apply_capability_alias_wiring` on `build_harness_host_runtime`.
 - `TaskMetadataKey.CAPABILITY_ALIAS_REDIRECT` + intake persist in `nexus_lifecycle_hooks.py`.
-- `scripts/check_capability_alias_registry.py` wired into production gates.
+- `scripts/maintenance/check_capability_alias_registry.py` wired into production gates.
 
 ## Project impact
 
@@ -47,8 +47,8 @@ Tier-3 hosts can declare legacy→canonical capability aliases with bounded suns
 - `intergrax/applications/_shared/harness_host_runtime.py`
 - `intergrax/runtime/task/task_metadata_keys.py`
 - `intergrax/runtime/hooks/nexus_lifecycle_hooks.py`
-- `scripts/check_capability_alias_registry.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_capability_alias_registry.py`
+- `scripts/gates/check_application_production_gates.py`
 
 ## Verification
 
@@ -57,8 +57,8 @@ uv run pytest tests/unit/applications/test_capability_alias_wiring.py \
   tests/unit/applications/test_capability_alias_middleware.py \
   tests/unit/scripts/test_check_capability_alias_registry.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_capability_alias_registry.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_capability_alias_registry.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

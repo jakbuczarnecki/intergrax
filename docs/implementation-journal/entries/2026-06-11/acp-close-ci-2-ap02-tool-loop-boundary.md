@@ -36,9 +36,9 @@ Tool/ReAct loops stay in Plane 3 (`ToolsStep` / `run_bounded_tool_loop`) or Plan
 
 ## Changed artifacts
 
-- `scripts/check_agent_acp_ap02_tool_loop_boundary.py` (new)
-- `scripts/check_agent_acp_close_ci.py`
-- `scripts/check_acp_ci_conformance_matrix.py`
+- `scripts/maintenance/check_agent_acp_ap02_tool_loop_boundary.py` (new)
+- `scripts/gates/check_agent_acp_close_ci.py`
+- `scripts/gates/check_acp_ci_conformance_matrix.py`
 - `tests/unit/scripts/test_check_agent_acp_ap02_tool_loop_boundary.py` (new)
 - `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`
 - `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`
@@ -47,9 +47,9 @@ Tool/ReAct loops stay in Plane 3 (`ToolsStep` / `run_bounded_tool_loop`) or Plan
 
 ```bash
 uv run pytest tests/unit/scripts/test_check_agent_acp_ap02_tool_loop_boundary.py tests/unit/scripts/test_check_agent_acp_close_ci.py -m gate -q
-uv run python scripts/check_agent_acp_ap02_tool_loop_boundary.py
-uv run python scripts/check_acp_ci_conformance_matrix.py --scripts-only
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_agent_acp_ap02_tool_loop_boundary.py
+uv run python scripts/gates/check_acp_ci_conformance_matrix.py --scripts-only
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 ## Risks and follow-ups

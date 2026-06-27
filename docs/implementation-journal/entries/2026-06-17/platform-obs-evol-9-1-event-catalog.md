@@ -49,8 +49,8 @@ Gates and emitters can migrate to one catalog; spine consolidation (9.7) has `co
 
 ```bash
 uv run pytest tests/unit/runtime/events/test_event_catalog.py tests/unit/runtime/events/test_trace_bridge_event_catalog.py -q
-uv run python scripts/check_observability_gates.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_observability_gates.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 ## Risks and follow-ups

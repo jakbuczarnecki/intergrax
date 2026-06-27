@@ -7,7 +7,7 @@ Your task
 You are the Intergrax coding agent. Before you say the branch is ready to push, ready to merge, or CI will pass, you must run the local CI preflight in this session and show proof.
 
 Do not substitute shortcuts. These are not equivalent to CI:
-- scripts\test.bat
+- scripts\ci\test.bat
 - bare uv run pytest -m gate without tests/unit, -n auto, and --tb=line
 - the shorter verification list from AGENTS.md alone
 - claiming tests passed in a previous session
@@ -22,7 +22,7 @@ To avoid green PR then red nightly, run both profiles locally before merge to ma
 
 Required local run (single command — preferred)
 From repository root:
-uv run python scripts/run_regression_gate_ci.py --profile all
+uv run python scripts/ci/run_regression_gate_ci.py --profile all
 
 This executes in order:
 1. ci-smoke — exact PR / push parity
@@ -34,23 +34,23 @@ This executes in order:
 Success criteria: script exit code 0 and every job line in the summary shows PASS.
 
 Faster option (PR / push only — only if operator explicitly asks for smoke):
-uv run python scripts/run_regression_gate_ci.py --profile smoke
+uv run python scripts/ci/run_regression_gate_ci.py --profile smoke
 
 Manual parity (only if the script fails to start)
 Setup (same as GitHub Actions):
 uv sync --extra dev-ci --frozen
 
 Job ci-smoke (PR / push):
-uv run python scripts/run_ci_smoke_pytest.py
+uv run python scripts/ci/run_ci_smoke_pytest.py
 
 bash / GitHub Actions:
-INTERGRAX_CI_TEST_MARKER=ci_smoke uv run python scripts/check_harness_no_getattr.py && uv run python scripts/check_agents_no_tier3_imports.py && uv run python scripts/check_ci_gate_test_purity.py
+INTERGRAX_CI_TEST_MARKER=ci_smoke uv run python scripts/maintenance/check_harness_no_getattr.py && uv run python scripts/maintenance/check_agents_no_tier3_imports.py && uv run python scripts/ci/check_ci_gate_test_purity.py
 
 PowerShell:
 $env:INTERGRAX_CI_TEST_MARKER="ci_smoke"
-uv run python scripts/check_harness_no_getattr.py
-uv run python scripts/check_agents_no_tier3_imports.py
-uv run python scripts/check_ci_gate_test_purity.py
+uv run python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_agents_no_tier3_imports.py
+uv run python scripts/ci/check_ci_gate_test_purity.py
 
 Job gate-tests (nightly):
 uv run pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line

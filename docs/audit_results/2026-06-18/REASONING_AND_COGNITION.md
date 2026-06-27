@@ -41,7 +41,7 @@ No open P0/P1. COG-DEPTH 22/22 · COG-PROD · COG-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_reasoning_gates.py
+uv run python scripts/maintenance/check_reasoning_gates.py
 uv run pytest tests/unit/runtime/nexus/planning/ tests/integration/runtime/test_planning_decision_record_gate.py -q
 ```
 

@@ -78,7 +78,7 @@ Harness audit map layer — see [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HA
 - Link `plan_ref` / GAP / AUDIT-IDEAL IDs — do not copy plan tables.
 - State `adr: none` with rationale when no ADR was required.
 - Set `commit` after the operator commits, or `pending` until then.
-- Run `python scripts/check_implementation_journal.py` — INDEX rows must match entry files and required sections.
+- Run `python scripts/maintenance/check_implementation_journal.py` — INDEX rows must match entry files and required sections.
 
 ### `plan_ref` grammar
 

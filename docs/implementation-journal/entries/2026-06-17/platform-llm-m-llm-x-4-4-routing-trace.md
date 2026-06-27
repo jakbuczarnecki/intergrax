@@ -48,7 +48,7 @@ Operators and replay tooling can see which LLM profile failed before failover wi
 
 ```bash
 uv run pytest tests/unit/llm_adapters/test_failover_adapter.py tests/unit/llm_adapters/test_llm_routing_attempt_trace.py tests/unit/runtime/events/test_trace_bridge.py -q
-uv run python scripts/check_trace_bridge_event_catalog.py
+uv run python scripts/maintenance/check_trace_bridge_event_catalog.py
 ```
 
 Result: 9 passed; trace bridge catalog OK.

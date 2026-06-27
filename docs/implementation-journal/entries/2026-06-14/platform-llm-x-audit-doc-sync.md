@@ -59,9 +59,9 @@ Developers and maintainers have a complete documentation baseline for M-LLM-X im
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_harness_adr.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_harness_adr.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (doc-only iteration).

@@ -25,7 +25,7 @@ Execute Sprint S1 of the Context Engineering implementation plan: ship Tier-0 co
 
 ## Summary
 
-Added `intergrax/context/` package with frozen contracts (`ContextFragment`, `ContextAssemblyRequest`, `AssembledContext`), plugin protocols, `ContextPluginRegistry`, and `register_context_plugin()`. Extended `ContextProfile` with `engine_preset`, `engine_ref`, and `context_plugin_ids`; bridge writes `context_engine_profile.v1` metadata. Added `scripts/check_context_tier0_import_boundary.py` and gate tests.
+Added `intergrax/context/` package with frozen contracts (`ContextFragment`, `ContextAssemblyRequest`, `AssembledContext`), plugin protocols, `ContextPluginRegistry`, and `register_context_plugin()`. Extended `ContextProfile` with `engine_preset`, `engine_ref`, and `context_plugin_ids`; bridge writes `context_engine_profile.v1` metadata. Added `scripts/maintenance/check_context_tier0_import_boundary.py` and gate tests.
 
 ## Project impact
 
@@ -44,7 +44,7 @@ Harness now has a Tier-0 home for the CE plugin catalog and typed assembly contr
 - `intergrax/context/` — contracts, protocols, registry, plugin registration
 - `intergrax/applications/contracts/environment_profile.py` — `ContextProfile` CE-2.6 fields
 - `intergrax/applications/_shared/context_runtime_bridge.py` — engine profile metadata
-- `scripts/check_context_tier0_import_boundary.py` — CE-1.6 gate
+- `scripts/maintenance/check_context_tier0_import_boundary.py` — CE-1.6 gate
 - `tests/unit/context/` — contract, registry, import boundary tests
 - `tests/unit/applications/test_context_runtime_bridge.py` — preset field bridge test
 - `docs/architecture/CONTEXT_ENGINEERING.md`, `docs/plan/CONTEXT_ENGINEERING.md` — status updates
@@ -53,8 +53,8 @@ Harness now has a Tier-0 home for the CE plugin catalog and typed assembly contr
 
 ```bash
 uv run pytest tests/unit/context/ tests/unit/applications/test_context_runtime_bridge.py -m gate -q
-python scripts/check_context_tier0_import_boundary.py
-python scripts/check_docs_domain_pairs.py
+python scripts/maintenance/check_context_tier0_import_boundary.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: 16 passed; boundary script OK; domain pairs OK.

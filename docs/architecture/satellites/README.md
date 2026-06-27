@@ -21,7 +21,7 @@ This folder holds **extended architecture canon** split out of hubs for Cursor c
 **Regenerate splits:**
 
 ```bash
-uv run python scripts/split_domain_architecture.py [DOMAIN ...]
-uv run python scripts/check_arch_hub_size.py
-uv run python scripts/verify_arch_split_content.py
+uv run python scripts/docs/split_domain_architecture.py [DOMAIN ...]
+uv run python scripts/maintenance/check_arch_hub_size.py
+uv run python scripts/docs/verify_arch_split_content.py
 ```

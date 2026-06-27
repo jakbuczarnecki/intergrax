@@ -23,7 +23,7 @@
 ## Code entry (grep first — F5-B)
 
 - `intergrax/scaffold/` — scaffolding CLI
-- `scripts/check_plan_hub_size.py` — plan hub gate
+- `scripts/maintenance/check_plan_hub_size.py` — plan hub gate
 
 ## Do not load unless cited
 

@@ -43,5 +43,5 @@ Operators requested a modular, provider-backed security layer without introducin
 ## Implementation notes
 
 - Code: `intergrax/runtime/security/defense_*.py`, `encryption_*.py`, `intergrax/core/security_bootstrap.py`
-- CI: `scripts/check_harness_security_defense_plugins.py`, `scripts/check_harness_encryption_policy.py`
+- CI: `scripts/maintenance/check_harness_security_defense_plugins.py`, `scripts/maintenance/check_harness_encryption_policy.py`
 - Tests: `tests/unit/runtime/security/test_sec_planes.py`

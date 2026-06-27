@@ -340,17 +340,17 @@ Not every invariant has a dedicated gate — some are architectural review oblig
 
 | Concern | Script |
 |---------|--------|
-| Tier-0 → applications import | `scripts/check_intergrax_no_applications_imports.py` |
-| Tier-2 → applications import | `scripts/check_agents_no_tier3_imports.py` |
-| Agent direct integration/tool bypass | `scripts/check_agent_registry_bypass.py` |
-| Vendor SDK in Tier-2 | `scripts/check_agents_vendor_imports.py` |
-| Capability routing | `scripts/check_capability_routing.py` |
-| Typed step outcomes / state | `scripts/check_agent_typed_state.py` |
-| ACP conformance matrix | `scripts/check_acp_ci_conformance_matrix.py` |
-| Tool loop vs graph boundary | `scripts/check_agent_acp_ap02_tool_loop_boundary.py` |
-| Profile wiring without getattr | `scripts/check_harness_no_getattr.py` |
-| LLM adapter response typing | `scripts/check_agents_llm_adapter_response.py` |
-| Reasoning plane gates | `scripts/check_reasoning_gates.py` |
+| Tier-0 → applications import | `scripts/maintenance/check_intergrax_no_applications_imports.py` |
+| Tier-2 → applications import | `scripts/maintenance/check_agents_no_tier3_imports.py` |
+| Agent direct integration/tool bypass | `scripts/maintenance/check_agent_registry_bypass.py` |
+| Vendor SDK in Tier-2 | `scripts/maintenance/check_agents_vendor_imports.py` |
+| Capability routing | `scripts/maintenance/check_capability_routing.py` |
+| Typed step outcomes / state | `scripts/maintenance/check_agent_typed_state.py` |
+| ACP conformance matrix | `scripts/gates/check_acp_ci_conformance_matrix.py` |
+| Tool loop vs graph boundary | `scripts/maintenance/check_agent_acp_ap02_tool_loop_boundary.py` |
+| Profile wiring without getattr | `scripts/maintenance/check_harness_no_getattr.py` |
+| LLM adapter response typing | `scripts/maintenance/check_agents_llm_adapter_response.py` |
+| Reasoning plane gates | `scripts/maintenance/check_reasoning_gates.py` |
 
 **Regression bundle** (after harness changes): see [`AGENT_INSTRUCTIONS.md`](AGENT_INSTRUCTIONS.md) Verification section.
 

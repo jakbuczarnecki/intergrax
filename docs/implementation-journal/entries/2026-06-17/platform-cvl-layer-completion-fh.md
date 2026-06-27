@@ -49,8 +49,8 @@ Critic Verification layer formally closed for Full Harness LC — CVL graph, eva
 
 ```bash
 uv run pytest tests/unit/runtime/critic/ -q
-uv run python scripts/check_harness_critic_wiring.py
-uv run python scripts/check_critical_action_signing.py
+uv run python scripts/maintenance/check_harness_critic_wiring.py
+uv run python scripts/maintenance/check_critical_action_signing.py
 ```
 
 ## Risks and follow-ups

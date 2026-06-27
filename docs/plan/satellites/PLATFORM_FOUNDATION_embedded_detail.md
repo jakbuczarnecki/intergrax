@@ -118,7 +118,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **608 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **608 passed** | `pytest -m gate`; also `scripts/maintenance/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |

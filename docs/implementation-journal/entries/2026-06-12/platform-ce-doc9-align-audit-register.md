@@ -42,7 +42,7 @@ Operators have a truthful alignment backlog — CE-EXT Done does not imply full 
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: pass.

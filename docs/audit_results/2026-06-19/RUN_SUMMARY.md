@@ -31,7 +31,7 @@
 
 ```bash
 uv run pytest tests/unit/codecraft/ tests/unit/runtime/codecraft/ tests/unit/tools/providers/codecraft/ -q
-uv run python scripts/check_codecraft_layer.py
+uv run python scripts/maintenance/check_codecraft_layer.py
 ```
 
 Code Craft gates OK · 31 unit tests passed (2026-06-19).

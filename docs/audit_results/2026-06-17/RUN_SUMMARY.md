@@ -36,7 +36,7 @@
 ## Verification
 
 ```bash
-uv run python scripts/check_architecture_audit_run.py 2026-06-17 --require-complete
+uv run python scripts/audit/check_architecture_audit_run.py 2026-06-17 --require-complete
 ```
 
 ## Notes

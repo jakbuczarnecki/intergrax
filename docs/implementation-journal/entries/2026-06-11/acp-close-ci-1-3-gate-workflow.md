@@ -37,18 +37,18 @@ Regression gate now blocks Tier-2 `RuntimeEngine` reintroduction and scoreboard 
 
 ## Changed artifacts
 
-- `scripts/check_agent_acp_close_ci.py` — aggregate ACP-CLOSE CI gate (new)
+- `scripts/gates/check_agent_acp_close_ci.py` — aggregate ACP-CLOSE CI gate (new)
 - `.github/workflows/unit-tests.yml` — invoke in fast-gate and gate-governance-tier
-- `scripts/check_agent_release_gates.py` — consume aggregate gate
-- `scripts/check_acp_ci_conformance_matrix.py` — CI-04 + CI-16 rows
-- `scripts/check_agent_threat_model.py` — threat gate reference
+- `scripts/gates/check_agent_release_gates.py` — consume aggregate gate
+- `scripts/gates/check_acp_ci_conformance_matrix.py` — CI-04 + CI-16 rows
+- `scripts/maintenance/check_agent_threat_model.py` — threat gate reference
 - `tests/unit/scripts/test_check_agent_acp_close_ci.py` — gate self-test (new)
 - `AGENTS.md` — verification command
 
 ## Verification
 
 ```bash
-uv run python scripts/check_agent_acp_close_ci.py
+uv run python scripts/gates/check_agent_acp_close_ci.py
 uv run pytest tests/unit/scripts/test_check_agent_acp_close_ci.py -m gate -q
 ```
 

@@ -23,7 +23,7 @@ Continue Tier-3 application architecture sprint queue: APP-EVOL-4 — agent cert
 - `agent_governance_profile` on `ApplicationEnvironmentProfile`.
 - `agent_certification_wiring.py` — roster certification materialization, STRICT validation, product gate helper.
 - Reference STRICT product manifests declare roster certifications via `apply_roster_agent_governance`.
-- `scripts/check_agent_certification_roster.py` wired into `check_application_production_gates.py`.
+- `scripts/maintenance/check_agent_certification_roster.py` wired into `check_application_production_gates.py`.
 
 ## Project impact
 
@@ -42,8 +42,8 @@ STRICT product hosts now require explicit certification records for STAGING/PROD
 - `intergrax/applications/contracts/environment_profile.py`
 - `intergrax/applications/_shared/agent_certification_wiring.py`
 - `applications/*/manifest.py` (×4 product hosts)
-- `scripts/check_agent_certification_roster.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_agent_certification_roster.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_agent_certification_gate.py`
 - `tests/unit/scripts/test_check_agent_certification_roster.py`
 
@@ -53,8 +53,8 @@ STRICT product hosts now require explicit certification records for STAGING/PROD
 uv run pytest tests/unit/applications/test_agent_certification_gate.py \
   tests/unit/scripts/test_check_agent_certification_roster.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_agent_certification_roster.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_agent_certification_roster.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

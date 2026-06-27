@@ -83,7 +83,7 @@ Same layout as audit runs (`results/YYYY-MM-DD/progress.json`) with `"mode": "im
 Initialize:
 
 ```bash
-uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan
+uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan
 ```
 
 Domain `status` values: `pending` · `completed` (item implemented) · `skipped` (no open P0/P1) · `blocked` (safety fuse).
@@ -96,7 +96,7 @@ When every domain in `domain_order` is `completed`, `skipped`, or `blocked`:
 
 1. Write rollup in `results/<run_id>/RUN_SUMMARY.md`.
 2. Set `completed_at` and `current_domain: null` in `progress.json`.
-3. Run `uv run python scripts/check_architecture_audit_run.py <run_id> --require-complete`.
+3. Run `uv run python scripts/audit/check_architecture_audit_run.py <run_id> --require-complete`.
 
 ---
 

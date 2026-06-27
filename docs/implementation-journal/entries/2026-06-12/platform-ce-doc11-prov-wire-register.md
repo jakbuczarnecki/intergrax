@@ -45,8 +45,8 @@ Closes the documentation gap between CE-2.3 (catalog stubs Done) and full §7.1 
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (expected).

@@ -46,13 +46,13 @@ Code Craft layer reaches L3+ production parity for harness operators: full trace
 - `intergrax/runtime/codecraft/orchestrator.py` — trace hooks
 - `intergrax/tools/providers/codecraft/service.py` — `resolve_craft_sandbox_session` on run path
 - `intergrax/tools/providers/health/` — `health.check_codecraft` registration + mode probe fix
-- `scripts/check_codecraft_layer.py` — new CI gate
+- `scripts/maintenance/check_codecraft_layer.py` — new CI gate
 - `tests/unit/` — orchestrator trace test, cloud fallback test, health probe tests
 
 ## Verification
 
 - `uv run pytest tests/unit/codecraft tests/unit/tools/providers/codecraft tests/unit/runtime/codecraft tests/unit/tools/providers/health/test_codecraft_probe.py` — 26 passed
-- `uv run python scripts/check_codecraft_layer.py` — OK
+- `uv run python scripts/maintenance/check_codecraft_layer.py` — OK
 
 ## Risks and follow-ups
 

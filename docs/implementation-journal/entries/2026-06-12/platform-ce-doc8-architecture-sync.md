@@ -44,8 +44,8 @@ Architecture ↔ implementation traceability is restored for FAUDIT layer 16; op
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (both scripts green).

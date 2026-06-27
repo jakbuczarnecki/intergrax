@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -87,8 +87,8 @@ See **Code entry** in `docs/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EX
 intergrax/scaffold/
 intergrax/runtime/architecture/ (eval, maturity gates, online_evaluation_registry.py)
 intergrax/experiments/ · nexus_eval_runner.py
-scripts/check_*.py (harness gates) · scripts/test.bat
-scripts/phase_v_closeout_gate.py · phase_w_ops_evidence.py
+scripts/check_*.py (harness gates) · scripts/ci/test.bat
+scripts/release/phase_v_closeout_gate.py · phase_w_ops_evidence.py
 docs/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md
 ```
 
@@ -185,10 +185,10 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 
 ```bash
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
-uv run python scripts/check_docs_domain_pairs.py
-scripts/test.bat unit
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_observability_gates.py
+uv run python scripts/audit/check_docs_domain_pairs.py
+scripts/ci/test.bat unit
 ```
 
 Add any domain-specific scripts you discover. If a command fails, state why.

@@ -15,15 +15,15 @@ uv run pytest tests/unit/applications/test_context_wiring.py tests/unit/applicat
 uv run pytest tests/acceptance/test_acceptance_context_compiler_long_session.py -q
 
 # Context Tier-0 import boundary (CE-1.6)
-python scripts/check_context_tier0_import_boundary.py
+python scripts/maintenance/check_context_tier0_import_boundary.py
 
 # Builtin provider collect wiring (CE-PROV-GATE)
-uv run python scripts/check_context_builtin_providers.py
+uv run python scripts/maintenance/check_context_builtin_providers.py
 
 # Platform gates
 uv run pytest -m gate -q
-python scripts/check_docs_domain_pairs.py
-uv run python scripts/check_observability_gates.py
+python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/maintenance/check_observability_gates.py
 ```
 
 ---

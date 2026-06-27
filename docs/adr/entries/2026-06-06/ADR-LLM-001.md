@@ -35,7 +35,7 @@ Primary text field: **`content: str`** (alias **`text`**).
 
 - All provider adapters and consumers migrate to `.content` / `.tool_calls`.
 - `make_tool_result` removed; use `build_adapter_response` from `_shared/adapter_response_builders.py`.
-- CI guards: `scripts/check_llm_adapter_typed_returns.py`, `scripts/check_agents_llm_adapter_response.py`.
+- CI guards: `scripts/maintenance/check_llm_adapter_typed_returns.py`, `scripts/maintenance/check_agents_llm_adapter_response.py`.
 - Replay: `CoreLLMCallRecordedDiagV1` trace payload + `trace_replay_bridge.py` → `LLM_CALL` DTOs.
 
 ## References

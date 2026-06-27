@@ -58,4 +58,4 @@ Operator constraint: **remove legacy immediately** — no deprecation phases or 
 - Remove: `intergrax/speech_adapters/contracts/speech_provider.py` enum (replace with slug constant module or delete file).
 - Refactor: `speech_integration_bridge.py`, `registry/profile.py`, `registry/speech_adapter_registry.py`, `applications/_shared/modality_wiring.py`, `applications/_shared/integration_tool_wiring.py`.
 - Tests: `tests/unit/speech_adapters/`, `tests/unit/applications/test_p6_integration_tool_wiring.py`, speech tool provider tests.
-- Verify: `uv run pytest tests/unit/speech_adapters/ tests/unit/applications/test_p6_integration_tool_wiring.py tests/unit/tools/providers/test_modality_tools.py -q` · `python scripts/check_harness_adr.py`.
+- Verify: `uv run pytest tests/unit/speech_adapters/ tests/unit/applications/test_p6_integration_tool_wiring.py tests/unit/tools/providers/test_modality_tools.py -q` · `python scripts/maintenance/check_harness_adr.py`.

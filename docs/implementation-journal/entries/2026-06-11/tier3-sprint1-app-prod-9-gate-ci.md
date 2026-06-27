@@ -42,7 +42,7 @@ Tier-3 host factory/manifest/wiring rules enforced on every gate run and PR CI t
 
 ```bash
 uv run pytest tests/unit/scripts/test_check_application_production_gates.py -q
-python scripts/check_application_production_gates.py
+python scripts/gates/check_application_production_gates.py
 uv run pytest tests/unit/scripts/test_check_application_production_gates.py -m gate -q
 ```
 

@@ -22,10 +22,10 @@ docs/audit_results/
 ## Initialize a run
 
 ```bash
-uv run python scripts/init_architecture_audit_run.py --date 2026-06-17 --mode audit_only
-uv run python scripts/init_architecture_audit_run.py --date 2026-06-17 --mode audit_only --domain MEMORY
-uv run python scripts/init_architecture_audit_run.py --date 2026-06-17 --mode implement_plan
-uv run python scripts/init_architecture_audit_run.py --date 2026-06-17 --mode layer_completion
+uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode audit_only
+uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode audit_only --domain MEMORY
+uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode implement_plan
+uv run python scripts/audit/init_architecture_audit_run.py --date 2026-06-17 --mode layer_completion
 ```
 
 ---
@@ -33,8 +33,8 @@ uv run python scripts/init_architecture_audit_run.py --date 2026-06-17 --mode la
 ## Validate
 
 ```bash
-uv run python scripts/check_architecture_audit_run.py 2026-06-17
-uv run python scripts/check_architecture_audit_run.py 2026-06-17 --require-complete
+uv run python scripts/audit/check_architecture_audit_run.py 2026-06-17
+uv run python scripts/audit/check_architecture_audit_run.py 2026-06-17 --require-complete
 ```
 
 ---

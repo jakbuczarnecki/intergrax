@@ -50,14 +50,14 @@ Full CE-EXT ladder S0–S12 is implementable on default/codebase/explore_child p
 - `intergrax/context/tracking/context_spans.py` — CE OTel span registry
 - `intergrax/runtime/observability/context_counters.py` — opt-in metrics
 - `intergrax/applications/_shared/context_presets.py` — Tier-3 helpers
-- `scripts/check_context_engine_wiring.py` · `check_context_otel_span_registry.py`
+- `scripts/maintenance/check_context_engine_wiring.py` · `check_context_otel_span_registry.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/context/ -m gate -q
-uv run python scripts/check_context_engine_wiring.py
-uv run python scripts/check_context_otel_span_registry.py
+uv run python scripts/maintenance/check_context_engine_wiring.py
+uv run python scripts/maintenance/check_context_otel_span_registry.py
 ```
 
 Result: 26 passed; both CE gate scripts OK.

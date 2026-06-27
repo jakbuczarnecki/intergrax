@@ -41,7 +41,7 @@ No open P0/P1. H-APP + APP-EVOL **Done** · TIER3-LC **Done**. APP-EVOL-8.6 **Do
 
 ```bash
 uv run pytest tests/unit/applications/ -q
-uv run python scripts/check_environment_profile_bundle_schema.py
+uv run python scripts/maintenance/check_environment_profile_bundle_schema.py
 ```
 
 **474 passed**.

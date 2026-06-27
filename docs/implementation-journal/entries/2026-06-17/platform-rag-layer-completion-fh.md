@@ -50,8 +50,8 @@ RAG layer formally closed for Full Harness LC — retrieval engine L3+, GraphRAG
 
 ```bash
 uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applications/test_rag_async_ingest_reference.py -m gate -q
-uv run python scripts/check_tenant_storage_isolation.py
-uv run python scripts/check_rag_otel_span_registry.py
+uv run python scripts/maintenance/check_tenant_storage_isolation.py
+uv run python scripts/maintenance/check_rag_otel_span_registry.py
 ```
 
 ## Risks and follow-ups

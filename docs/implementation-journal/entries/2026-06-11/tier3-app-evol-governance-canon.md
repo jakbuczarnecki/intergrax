@@ -42,8 +42,8 @@ Tier-3 documentation now covers operational lifecycle at scale — the gap betwe
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

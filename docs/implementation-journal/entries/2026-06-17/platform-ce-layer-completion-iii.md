@@ -49,11 +49,11 @@ Context Engineering layer is production-ready as L3+ engine / L3 control plane. 
 ```bash
 uv run pytest tests/unit/context/ tests/unit/runtime/nexus/context/ -m gate -q
 uv run pytest tests/integration/runtime/test_context_provider_wiring.py tests/integration/runtime/test_context_engine_paths.py -m gate -q
-uv run python scripts/check_context_tier0_import_boundary.py
-uv run python scripts/check_context_builtin_providers.py
-uv run python scripts/check_context_preflight_uses_adapter_tokens.py
-uv run python scripts/check_context_engine_wiring.py
-uv run python scripts/check_context_otel_span_registry.py
+uv run python scripts/maintenance/check_context_tier0_import_boundary.py
+uv run python scripts/maintenance/check_context_builtin_providers.py
+uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
+uv run python scripts/maintenance/check_context_engine_wiring.py
+uv run python scripts/maintenance/check_context_otel_span_registry.py
 ```
 
 Result: **73 passed**, **3 passed**, all CE gate scripts **OK**

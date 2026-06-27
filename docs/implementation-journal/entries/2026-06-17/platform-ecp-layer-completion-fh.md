@@ -49,7 +49,7 @@ Elastic Capacity layer formally closed for Full Harness LC — signal bridge, K8
 
 ```bash
 uv run pytest tests/unit/runtime/capacity/ -q
-uv run python scripts/check_production_capacity_adapters.py
+uv run python scripts/maintenance/check_production_capacity_adapters.py
 ```
 
 ## Risks and follow-ups

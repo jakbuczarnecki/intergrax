@@ -32,7 +32,7 @@ jobs:
       - run: uv sync --extra dev-ci --frozen
 
       - name: RAG maturity label gate (RAG-MAINT-01)
-        run: uv run python scripts/check_rag_maturity_labels.py
+        run: uv run python scripts/maintenance/check_rag_maturity_labels.py
 
       - name: RAG unit + golden regression + load/soak SLO
         run: >-

@@ -39,7 +39,7 @@ Tier-3 hosts keep flat `spec_version` 1.x wire shape and existing wiring entry p
 | ADR | `docs/adr/entries/2026-06-17/ADR-APP-003.md` |
 | Root | `intergrax/applications/contracts/environment_profile/root.py` |
 | Normalization | `intergrax/applications/contracts/environment_profile/normalization.py` |
-| Gate | `scripts/check_environment_profile_bundle_schema.py` |
+| Gate | `scripts/maintenance/check_environment_profile_bundle_schema.py` |
 
 ## Changed artifacts
 
@@ -49,14 +49,14 @@ Tier-3 hosts keep flat `spec_version` 1.x wire shape and existing wiring entry p
 - `intergrax/applications/_shared/environment_diff_wiring.py` — bundle_dump diff
 - `intergrax/applications/_shared/environment_conformance.py` — ProfileInvariantValidator
 - `tests/unit/applications/test_environment_profile_bundles.py`
-- `scripts/check_environment_profile_bundle_schema.py`
-- `scripts/generate_domain_audit_prompts.py` · `docs/audit/TIER3_APPLICATION_ENVIRONMENT.md`
+- `scripts/maintenance/check_environment_profile_bundle_schema.py`
+- `scripts/audit/generate_domain_audit_prompts.py` · `docs/audit/TIER3_APPLICATION_ENVIRONMENT.md`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/applications/test_environment_profile.py tests/unit/applications/test_environment_profile_bundles.py -q
-uv run python scripts/check_environment_profile_bundle_schema.py
+uv run python scripts/maintenance/check_environment_profile_bundle_schema.py
 ```
 
 ## Remaining

@@ -126,7 +126,7 @@ Wave V-REM-5 (eval):        V-REM-A.1  — Done (2026-06-05)
 | ID | Layer | Gap | Severity | Module / acceptance |
 |----|-------|-----|----------|-------------------|
 | FAUDIT-TIER.1 | §2 | Tier-0 imports `applications/*` in `capability_graph_applications.py` | **Critical** | Move manifest catalog to Tier-3 injection or static metadata; zero `from applications` under `intergrax/` |
-| FAUDIT-TIER.2 | §2 | No CI gate for `intergrax/` → `applications/` imports | High | `scripts/check_intergrax_no_applications_imports.py` in §6.1 |
+| FAUDIT-TIER.2 | §2 | No CI gate for `intergrax/` → `applications/` imports | High | `scripts/maintenance/check_intergrax_no_applications_imports.py` in §6.1 |
 | FAUDIT-INTAKE.1 | §3 | No canonical `TaskEnvelope`; `Task` + `RuntimeRequest` split | High | Typed envelope alias or consolidation; plan W-OPS.6 naming sync |
 | FAUDIT-INTAKE.2 | §3 | Worker≡HTTP intake parity test matrix incomplete | High | Acceptance test: CLI/worker/HTTP same `Task` shape |
 | FAUDIT-ID.1 | §4 | No user/service/agent identity distinction | High | Identity contracts + propagation to delegation |
@@ -469,7 +469,7 @@ Parallel anytime:          Q-L.2, Q-L.4, Q-L.9, Q-L.10, Q-O.5, Q-O.6, Q-O.11, Q-
 |---|-------------|--------|----------|----------|------------|
 | Q+.0.1 | **Appendix D** — audit topic → Q+ ID matrix (P0–P3) | **Done** | High | This file Appendix D | Every audit section mapped |
 | Q+.0.2 | **Q+ execution order** — Waves 1–5 below | **Done** | High | §4 Priority Order | Team follows wave sequence |
-| Q+.0.3 | **CI grep gate** — fail on new `getattr`/`setattr` in `intergrax/runtime/nexus/`, `intergrax/agents/` | **Done** | High | `scripts/check_harness_no_getattr.py` + gate workflow | Zero grandfathered harness paths (2026-06-01) |
+| Q+.0.3 | **CI grep gate** — fail on new `getattr`/`setattr` in `intergrax/runtime/nexus/`, `intergrax/agents/` | **Done** | High | `scripts/maintenance/check_harness_no_getattr.py` + gate workflow | Zero grandfathered harness paths (2026-06-01) |
 
 ---
 
@@ -668,7 +668,7 @@ Parallel anytime:         Q+-T.6, Q+-T.7, Q+-T.8, Q+-M.2
 2. **OTLP path** documented and wired for lab when env configured (S-Ops.2).
 3. **≥ 3** `harness.*` platform skills + legal/research bundles registered (S-H.1).
 4. **`guides/HARNESS_ENVIRONMENT.md`** complete; lab wiring matches doc (S-H.2, S-Doc.1).
-5. Gate: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py` OK.
+5. Gate: `uv run pytest -m gate -q` green; `python scripts/maintenance/check_harness_no_getattr.py` OK.
 6. §0.5 **Harness environment GA** row **Done** with date; Appendix F updated.
 7. **K.1/K.2 remain Deferred** — not required for Phase S close.
 
@@ -708,7 +708,7 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 1. Lab default wiring uses `lab_harness_preset()` (OTEL on unless env disables).
 2. Echo and signoff_probe declare `harness.tool_smoke` via `skill_ids`.
 3. Gate RAG path is `RetrievalService`-only; legacy `rag.answers` tests excluded from gate.
-4. `python scripts/check_harness_no_getattr.py` passes with `agents/` in scan roots.
+4. `python scripts/maintenance/check_harness_no_getattr.py` passes with `agents/` in scan roots.
 5. `CatalogToolPlanner` does not import `ToolsAgent`.
 6. `postgresql` stable in catalog and harness stack list.
 
@@ -1052,9 +1052,9 @@ L4 readiness requires:
 
 | Date | V ID | Summary |
 |------|------|---------|
-| 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/phase_v_foundations_report.py`) + unit tests |
-| 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
-| 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/phase_v_governance_report.py`) + unit tests |
+| 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/release/phase_v_foundations_report.py`) + unit tests |
+| 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/release/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
+| 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/release/phase_v_governance_report.py`) + unit tests |
 | 2026-06-02 | V-ALG.3, V-ALG.4, V-EVAL.2 | Lifecycle/deprecation governance contracts + production ownership guard + evaluation asset bundle contracts + governance report extensions + unit tests |
 | 2026-06-02 | V-EVAL.3, V-AM.3 | Automated evaluators (`evaluation_automation.py`) + architecture coverage report (`architecture_coverage.py`) + governance report persistence + unit tests |
 | 2026-06-02 | V-AM.4, V-EVAL.4 | Debt governance cadence/policy report (`debt_governance.py`) + release trend/comparison report (`evaluation_registry_trends.py`) + governance script artifacts + unit tests |

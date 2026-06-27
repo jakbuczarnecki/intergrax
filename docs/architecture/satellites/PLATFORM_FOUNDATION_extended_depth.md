@@ -66,7 +66,7 @@ intergrax/integrations/
 
 **Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
 
-**Documentation:** all **167** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md).
+**Documentation:** all **167** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/docs/generate_integration_usage_docs.py`. Catalog index: [`docs/architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md).
 
 **Rules:**
 

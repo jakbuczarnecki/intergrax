@@ -37,7 +37,7 @@ Tier-3 hooks can subscribe by `kind_prefix` without enum lists; debug tooling ca
 
 - `intergrax/runtime/events/event_bus.py`
 - `intergrax/runtime/events/journal_query.py`
-- `scripts/check_event_catalog.py`
+- `scripts/maintenance/check_event_catalog.py`
 - `tests/unit/runtime/events/test_event_bus_taxonomy_subscribe.py`
 
 ## Verification

@@ -317,10 +317,10 @@ uv run pytest tests/integration/<relevant>/ -q
 uv run pytest tests/acceptance/<relevant>/ -q
 
 # Architecture boundary scripts (when relevant)
-python scripts/check_harness_no_getattr.py
-python scripts/check_agents_vendor_imports.py
-python scripts/check_integration_vendor_imports.py
-python scripts/check_scaffold_harness_alignment.py
+python scripts/maintenance/check_harness_no_getattr.py
+python scripts/maintenance/check_agents_vendor_imports.py
+python scripts/maintenance/check_integration_vendor_imports.py
+python scripts/maintenance/check_scaffold_harness_alignment.py
 ```
 
 If a command cannot run, state why and what manual evidence substitutes it.

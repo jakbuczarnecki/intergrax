@@ -35,8 +35,8 @@ STRICT product hosts cannot ship without environment token ceiling, reaction pol
 
 ## Changed artifacts
 
-- `scripts/check_budget_enforcement.py` — APP-PROD-7 CI gate (new)
-- `scripts/check_application_production_gates.py` — aggregate includes budget check
+- `scripts/maintenance/check_budget_enforcement.py` — APP-PROD-7 CI gate (new)
+- `scripts/gates/check_application_production_gates.py` — aggregate includes budget check
 - `intergrax/applications/_shared/budget_wiring.py` — helpers + conformance validator (new)
 - `intergrax/applications/_shared/product_manifest_registry.py` — product manifest index (new)
 - `intergrax/applications/contracts/environment_profile.py` — `budget_reaction` in `product_defaults`
@@ -47,8 +47,8 @@ STRICT product hosts cannot ship without environment token ceiling, reaction pol
 ## Verification
 
 ```bash
-uv run python scripts/check_budget_enforcement.py
-uv run python scripts/check_application_production_gates.py
+uv run python scripts/maintenance/check_budget_enforcement.py
+uv run python scripts/gates/check_application_production_gates.py
 uv run pytest tests/unit/scripts/test_check_budget_enforcement.py tests/unit/applications/test_budget_enforcement_conformance.py -m gate -q
 ```
 

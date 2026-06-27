@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -87,7 +87,7 @@ See **Code entry** in `docs/guides/audit_slices/OBSERVABILITY.md` — then inspe
 intergrax/runtime/events/runtime_event.py · event_catalog.py · signals.py · event_bus.py
 intergrax/runtime/nexus/tracing/ · ObservabilityEmitter · TraceScope
 intergrax/runtime/events/payload_registry.py · persistence_conformance.py
-scripts/check_observability_gates.py · check_event_catalog.py
+scripts/maintenance/check_observability_gates.py · check_event_catalog.py
 ```
 
 Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -184,8 +184,8 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-uv run python scripts/check_observability_gates.py
-uv run python scripts/check_event_catalog.py
+uv run python scripts/maintenance/check_observability_gates.py
+uv run python scripts/maintenance/check_event_catalog.py
 uv run pytest tests/unit/runtime/observability/ -q
 uv run pytest tests/unit/runtime/events/ -q
 ```

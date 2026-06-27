@@ -163,7 +163,7 @@ applications/    MAY import from agents/ and intergrax/
 | Available agents (roster) | [agents/README.md](../../agents/README.md) |
 | Available application environments | [applications/README.md](../../applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](../audit/README.md) · [docs/bootstrap/](../bootstrap/README.md) · `scripts/init_architecture_audit_run.py` |
+| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](../audit/README.md) · [docs/bootstrap/](../bootstrap/README.md) · `scripts/audit/init_architecture_audit_run.py` |
 | System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/implementation-journal/README.md](../implementation-journal/README.md) |
@@ -183,27 +183,27 @@ uv run intergrax doctor
 
 ## Verification (required after harness changes)
 
-**CI/test hotfix:** run only the failing command from GitHub, the exact failing test file, or `uv run python scripts/run_ci_smoke_pytest.py`. Do **not** run the full checklist below unless the operator explicitly requests full harness verification.
+**CI/test hotfix:** run only the failing command from GitHub, the exact failing test file, or `uv run python scripts/ci/run_ci_smoke_pytest.py`. Do **not** run the full checklist below unless the operator explicitly requests full harness verification.
 
 **Full harness verification** (domain implementation, architecture changes, milestone closeout):
 
 ```bash
 uv run pytest -m "gate and not no_ci" -q
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
-python scripts/check_docs_domain_pairs.py
-python scripts/check_idea_audit_bootstrap.py
-python scripts/check_reasoning_gates.py
-python scripts/check_implementation_journal.py
-python scripts/check_harness_adr.py
-python scripts/check_plan_hub_size.py
-python scripts/check_cursor_token_setup.py
-python scripts/check_arch_hub_size.py
-python scripts/check_token_generator_freshness.py
-python scripts/check_audit_token_discipline.py
-uv run python scripts/check_agent_acp_close_ci.py
-python scripts/check_production_capacity_adapters.py
-python scripts/check_harness_resilience_policy.py
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_observability_gates.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/audit/check_idea_audit_bootstrap.py
+python scripts/maintenance/check_reasoning_gates.py
+python scripts/maintenance/check_implementation_journal.py
+python scripts/maintenance/check_harness_adr.py
+python scripts/maintenance/check_plan_hub_size.py
+python scripts/ci/check_cursor_token_setup.py
+python scripts/maintenance/check_arch_hub_size.py
+python scripts/audit/check_token_generator_freshness.py
+python scripts/audit/check_audit_token_discipline.py
+uv run python scripts/gates/check_agent_acp_close_ci.py
+python scripts/maintenance/check_production_capacity_adapters.py
+python scripts/maintenance/check_harness_resilience_policy.py
 ```
 
 For agent-only work:
@@ -212,7 +212,7 @@ For agent-only work:
 uv run pytest agents/<agent>/tests/ -q
 ```
 
-Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest`.
+Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pytest`.
 
 ---
 

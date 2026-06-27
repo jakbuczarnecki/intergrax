@@ -49,8 +49,8 @@ Modality layer formally closed for Full Harness LC — three-plane model, vision
 
 ```bash
 uv run pytest tests/unit/runtime/modality/ tests/unit/model_inference/ -q
-uv run python scripts/check_modality_live_endpoints.py
-uv run python scripts/check_modality_product_worker_pool.py
+uv run python scripts/maintenance/check_modality_live_endpoints.py
+uv run python scripts/maintenance/check_modality_product_worker_pool.py
 ```
 
 ## Risks and follow-ups

@@ -39,7 +39,7 @@ Audit agents and operators now see honest L3+ runtime status. Cumulative sandbox
 
 ## Changed artifacts
 
-- `scripts/generate_domain_audit_prompts.py` — CODE_CRAFT domain Done status
+- `scripts/audit/generate_domain_audit_prompts.py` — CODE_CRAFT domain Done status
 - `docs/audit/CODE_CRAFT.md` — regenerated audit prompt
 - `intergrax/codecraft/profile.py` — exec budget helpers
 - `intergrax/runtime/codecraft/orchestrator.py` — budget deny + timeout cap
@@ -50,7 +50,7 @@ Audit agents and operators now see honest L3+ runtime status. Cumulative sandbox
 ## Verification
 
 ```bash
-uv run python scripts/check_codecraft_layer.py
+uv run python scripts/maintenance/check_codecraft_layer.py
 uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ tests/unit/runtime/codecraft/ -q
 ```
 

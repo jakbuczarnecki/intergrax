@@ -1101,12 +1101,12 @@ A4 Evidence artifact sanity checker / docs checker: **Done**
 
 | File | Change |
 |------|--------|
-| `scripts/check_evidence_artifacts.py` | Local, deterministic, no-network checker for 12 expected proof-path artifacts and README proof-path references |
+| `scripts/maintenance/check_evidence_artifacts.py` | Local, deterministic, no-network checker for 12 expected proof-path artifacts and README proof-path references |
 | `README.md` | Concise checker command under § Proof of platform |
 | `HARNESS_EVIDENCE_PACK.md` | A4 closeout; ROI counters; recommended next wave → A5 |
 | `PLATFORM_FOUNDATION.md` | §6.1aw — A4 Done; next polished/adopter-ready path → A5 |
 
-**Implementation note (A4):** Validates existing local artifacts and docs only. Does not run the proof path, generate evidence, call providers, or import Intergrax runtime modules. Operator command: `python scripts/check_evidence_artifacts.py`.
+**Implementation note (A4):** Validates existing local artifacts and docs only. Does not run the proof path, generate evidence, call providers, or import Intergrax runtime modules. Operator command: `python scripts/maintenance/check_evidence_artifacts.py`.
 
 ---
 

@@ -51,7 +51,7 @@ Extended `legacy_bridge.py` with fragment adapters for RAG, LTM, websearch, tool
 - `intergrax/runtime/nexus/context/provider_handles.py`
 - `intergrax/runtime/nexus/context/context_manager.py`
 - `intergrax/runtime/nexus/context/uaep_assemble.py`
-- `scripts/check_context_builtin_providers.py`
+- `scripts/maintenance/check_context_builtin_providers.py`
 - `tests/unit/context/test_legacy_bridge_providers.py`
 - `tests/integration/runtime/test_context_provider_wiring.py`
 - `docs/architecture/CONTEXT_ENGINEERING.md`
@@ -61,8 +61,8 @@ Extended `legacy_bridge.py` with fragment adapters for RAG, LTM, websearch, tool
 
 ```bash
 uv run pytest tests/unit/context/test_legacy_bridge_providers.py tests/integration/runtime/test_context_provider_wiring.py -m gate -q
-python scripts/check_context_builtin_providers.py
-python scripts/check_context_tier0_import_boundary.py
+python scripts/maintenance/check_context_builtin_providers.py
+python scripts/maintenance/check_context_tier0_import_boundary.py
 ```
 
 ## Risks and follow-ups

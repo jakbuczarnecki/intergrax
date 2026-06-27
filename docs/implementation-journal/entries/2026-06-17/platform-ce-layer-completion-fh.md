@@ -51,9 +51,9 @@ Context Engineering layer formally closed for Full Harness LC — L3+ engine, bu
 
 ```bash
 uv run pytest tests/unit/context/ tests/unit/runtime/nexus/context/ -m gate -q
-uv run python scripts/check_context_golden.py
-uv run python scripts/check_context_builtin_providers.py
-uv run python scripts/check_context_drift_monitoring.py
+uv run python scripts/maintenance/check_context_golden.py
+uv run python scripts/maintenance/check_context_builtin_providers.py
+uv run python scripts/maintenance/check_context_drift_monitoring.py
 ```
 
 ## Risks and follow-ups

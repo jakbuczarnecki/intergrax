@@ -25,9 +25,9 @@ No open P0/P1 in `AGENT_CONTRACTS_AND_ASSEMBLY` scope. Prior Layer Completion cl
 ## Gates executed
 
 ```bash
-uv run python scripts/check_agent_acp_close_ci.py
-uv run python scripts/check_agents_lifecycle_metadata.py
-uv run python scripts/phase_v_capability_graph_guard.py
+uv run python scripts/gates/check_agent_acp_close_ci.py
+uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
+uv run python scripts/release/phase_v_capability_graph_guard.py
 ```
 
 ACP CI gate: OK (17 agents).

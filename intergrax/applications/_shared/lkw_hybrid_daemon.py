@@ -20,7 +20,7 @@ class LkwHybridDaemonSpec(BaseModel):
     include_interactions: bool = True
     include_scheduler: bool = True
     data_home_env: str = "LKW_DATA_HOME"
-    launcher_script: str = "scripts/lkw-host.py"
+    launcher_script: str = "scripts/maintenance/lkw-host.py"
 
 
 def build_lkw_hybrid_daemon_spec(

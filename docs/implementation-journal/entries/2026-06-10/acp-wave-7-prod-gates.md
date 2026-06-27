@@ -41,15 +41,15 @@ Production promotion path now has typed artifacts, privacy redaction baseline, a
 
 - `intergrax/contracts/artifact_ref.py`, `privacy_redaction.py`, `migrations/registry.py`
 - `intergrax/contracts/agent_run.py`, `intergrax/agents/authoring/acp_run.py`
-- `scripts/check_agent_threat_model.py`, `check_agent_release_gates.py`, `check_acp_ci_conformance_matrix.py`, `check_contract_schema_versions.py`
+- `scripts/maintenance/check_agent_threat_model.py`, `check_agent_release_gates.py`, `check_acp_ci_conformance_matrix.py`, `check_contract_schema_versions.py`
 - `tests/unit/contracts/test_acp_prod_artifact_privacy.py`
 
 ## Verification
 
 ```bash
-uv run python scripts/check_contract_schema_versions.py
-uv run python scripts/check_agent_threat_model.py
-uv run python scripts/check_acp_ci_conformance_matrix.py --scripts-only
+uv run python scripts/maintenance/check_contract_schema_versions.py
+uv run python scripts/maintenance/check_agent_threat_model.py
+uv run python scripts/gates/check_acp_ci_conformance_matrix.py --scripts-only
 uv run pytest tests/unit/contracts/test_acp_prod_artifact_privacy.py -q -m gate
 ```
 

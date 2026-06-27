@@ -44,7 +44,7 @@ Harness operators and Tier-3 authors have a single canonical spec for end-to-end
 ## Verification
 
 - Documentation-only iteration; implementation deferred to MEM-VEC-1.* onward.
-- `python scripts/check_docs_domain_pairs.py` — run before merge.
+- `python scripts/audit/check_docs_domain_pairs.py` — run before merge.
 
 ## Risks and follow-ups
 

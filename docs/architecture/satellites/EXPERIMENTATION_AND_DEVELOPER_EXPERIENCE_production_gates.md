@@ -23,14 +23,14 @@ Architecture health MUST be measured, not inferred.
 | `intergrax/scaffold/` | `new-agent`, `new-application`, `new-skill` |
 | `intergrax/cli/doctor.py` | Harness health checks |
 | `docs/bootstrap/idea_audit.txt` | **Mode I** — idea intake procedure (natural language in chat; [`.cursor/rules/intergrax-idea-audit.mdc`](../../.cursor/rules/intergrax-idea-audit.mdc)) |
-| `scripts/test.bat` / `pytest -m gate` | Mandatory merge gates |
+| `scripts/ci/test.bat` / `pytest -m gate` | Mandatory merge gates |
 | `guides/AGENT_CREATION_GUIDE.md` | Author workflow |
 
 **TTFRun** (idea → first Nexus run) is the primary DX metric. **Plan:** Phase DX, AA, W-OPS in [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
 
 ## 43.3 Operational L3 evidence
 
-Release cycles, SLO snapshots, and ops sign-off are tracked via `scripts/phase_w_ops_evidence.py` and release cycle artifacts under `build/architecture_hardening/`.
+Release cycles, SLO snapshots, and ops sign-off are tracked via `scripts/release/phase_w_ops_evidence.py` and release cycle artifacts under `build/architecture_hardening/`.
 
 ## 43.4 Evidence-backed Harness Onboarding Path
 
@@ -123,7 +123,7 @@ Promotion between stages is **evidence-driven** — see §44.5 and [`ADAPTIVE_HA
 | **Replay environment** | Deterministic re-run from trace store | **Partial** — `intergrax mvp replay` CLI (MVP-EVOL.3); no Tier-3 HTTP router |
 | **Agent simulator** | Multi-agent contention and failure injection | **Partial** — `intergrax mvp simulate` CLI + `test_orchestration_cfg_simulation.py`; not wired to product hosts |
 | **Trace Explorer** | Decision / tool / context visibility | **Partial** — lab debug APIs; UI deferred (GOV-PROD.1 §6.3) |
-| **Promotion gates** | MVP → Beta evidence | **Done** — `scripts/check_mvp_promotion_gates.py` (MVP-EVOL.1) |
+| **Promotion gates** | MVP → Beta evidence | **Done** — `scripts/gates/check_mvp_promotion_gates.py` (MVP-EVOL.1) |
 | **Product KPI / satisfaction** | Tenant metrics + CSAT bridge | **Done** — `product_kpi_registry.py`, `user_satisfaction.py` (MVP-EVOL.4–5); export surfaces CLI-only |
 
 **IDEAL reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §22 (Developer Experience Layer).

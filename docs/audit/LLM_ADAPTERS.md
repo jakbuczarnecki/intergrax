@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -87,7 +87,7 @@ intergrax/llm_adapters/ (registry/, providers/*, call_lifecycle.py, tracking/)
 intergrax/llm/messages.py (AttachmentRef)
 intergrax/runtime/replay/trace_replay_bridge.py
 intergrax/runtime/adaptive/llm_call_summary.py
-scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_response.py
+scripts/maintenance/check_llm_adapter_typed_returns.py · scripts/maintenance/check_agents_llm_adapter_response.py
 ```
 
 Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -184,9 +184,9 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-python scripts/check_llm_adapter_typed_returns.py
-python scripts/check_agents_llm_adapter_response.py
-python scripts/check_agents_vendor_imports.py
+python scripts/maintenance/check_llm_adapter_typed_returns.py
+python scripts/maintenance/check_agents_llm_adapter_response.py
+python scripts/maintenance/check_agents_vendor_imports.py
 uv run pytest tests/unit/llm_adapters/ -q
 ```
 

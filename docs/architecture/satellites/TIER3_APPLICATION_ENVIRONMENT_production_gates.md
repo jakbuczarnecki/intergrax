@@ -23,7 +23,7 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 
 | ID | Deliverable | Status | Command / test |
 |----|-------------|--------|----------------|
-| APP-PROD-1 | `check_application_production_gates.py` — no ad-hoc Nexus, harness runtime | **Done** | `python scripts/check_application_production_gates.py` |
+| APP-PROD-1 | `check_application_production_gates.py` — no ad-hoc Nexus, harness runtime | **Done** | `python scripts/gates/check_application_production_gates.py` |
 | APP-PROD-2 | Reference hosts use `build_harness_host_runtime` exclusively | **Done** | H-APP-WIRING |
 | APP-PROD-3 | `ApplicationHost` mounted when provided | **Done** | `test_application_host_wiring` |
 | APP-PROD-4 | Manifest conformance | **Done** | `test_manifest_conformance` |
@@ -238,7 +238,7 @@ Minimum verification before claiming host maturity. Map to §23.5 recipes and §
 **Gate commands:**
 
 ```bash
-python scripts/check_tier3_scenario_matrix.py
+python scripts/maintenance/check_tier3_scenario_matrix.py
 uv run pytest tests/unit/applications/test_tier3_scenario_matrix.py -m tier3_scenario -q
 uv run pytest -m gate -q
 ```

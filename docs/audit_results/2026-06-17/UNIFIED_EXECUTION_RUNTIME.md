@@ -48,13 +48,13 @@ No open P0/P1.
 
 ```bash
 uv run pytest tests/unit/runtime/ -q --tb=no
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_observability_gates.py
 uv run pytest -m "gate and not no_ci" -q --tb=no
-uv run python scripts/check_harness_security_wiring.py
-uv run python scripts/check_harness_cost_wiring.py
-uv run python scripts/check_harness_guardrail_wiring.py
-uv run python scripts/check_harness_reliability_wiring.py
+uv run python scripts/maintenance/check_harness_security_wiring.py
+uv run python scripts/maintenance/check_harness_cost_wiring.py
+uv run python scripts/maintenance/check_harness_guardrail_wiring.py
+uv run python scripts/maintenance/check_harness_reliability_wiring.py
 uv run pytest tests/unit/agents/test_uaep_executor.py tests/integration/agents/test_agent_engine_uaep_echo.py tests/integration/runtime/test_uaep_memory_view.py -q
 ```
 

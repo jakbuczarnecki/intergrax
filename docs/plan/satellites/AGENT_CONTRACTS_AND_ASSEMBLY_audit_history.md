@@ -177,7 +177,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CON-2 | ACP-CON | **`state_delta` merge-patch** + `_version` + checkpoint/resume | **Done** | `intergrax/agents/authoring/state_merge.py` | Unit: merge, delete null, conflict |
 | ACP-CON-3 | ACP-CON | **Side-effect mode** immediate vs declarative enforcement | **Done** | `intergrax/agents/authoring/side_effect_validation.py` | Reject mixed mode per step |
 | ACP-CON-6 | ACP-CON | **Capability routing** — registry query by token not class | **Done** | Nexus selection path + test | Integration: two impls same capability |
-| ACP-CON-7 | ACP-CON | **Security CI guards** — gateway-only I/O, STRICT widen deny | **Done** | `scripts/check_agent_step_security.py` | CI green on roster |
+| ACP-CON-7 | ACP-CON | **Security CI guards** — gateway-only I/O, STRICT widen deny | **Done** | `scripts/maintenance/check_agent_step_security.py` | CI green on roster |
 | ACP-DOC.6 | ACP0 | **Architecture §37** — pre-implementation operational contracts | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Audit gaps A–G closed in canon |
 | ACP-DOC.7 | ACP0 | **Architecture §38** — NexusLoop vs HarnessKernel execution stack | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §38 + ACP-INV-11 |
 | ACP-DOC.8 | ACP0 | **Architecture §39** — organizational policy envelope & virtual workforce | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §39 + UC-11 |
@@ -193,10 +193,10 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-PROD-4 | ACP-PROD | **ReliabilityProfile in HarnessKernel** — retry/CB/timeout | **Done** | `intergrax/runtime/kernel/session_reliability.py` | REL profile wired |
 | ACP-PROD-5 | ACP-PROD | **SharedContextView CAS + conflict policy** | **Done** | `intergrax/contracts/shared_context.py` | Parallel graph conflict test |
 | ACP-PROD-6 | ACP-PROD | **`ArtifactRef` contract** on result/step | **Done** | `intergrax/contracts/artifact_ref.py` | Typed artifacts in test |
-| ACP-PROD-7 | ACP-PROD | **Agent threat model CI** — matrix §40.7 | **Done** | `scripts/check_agent_threat_model.py` | CI-02..03 + threat cases |
+| ACP-PROD-7 | ACP-PROD | **Agent threat model CI** — matrix §40.7 | **Done** | `scripts/maintenance/check_agent_threat_model.py` | CI-02..03 + threat cases |
 | ACP-PROD-8 | ACP-PROD | **Privacy/redaction on trace/memory** | **Done** | `intergrax/contracts/privacy_redaction.py` | PII redaction test |
-| ACP-PROD-9 | ACP-PROD | **Release eval gates** — golden/regression/policy suites | **Done** | `scripts/check_agent_release_gates.py` | Staging gate green |
-| ACP-PROD-10 | ACP-PROD | **CI conformance matrix §40.10** | **Done** | `scripts/check_acp_ci_conformance_matrix.py` | CI-01..16 applicable rows |
+| ACP-PROD-9 | ACP-PROD | **Release eval gates** — golden/regression/policy suites | **Done** | `scripts/gates/check_agent_release_gates.py` | Staging gate green |
+| ACP-PROD-10 | ACP-PROD | **CI conformance matrix §40.10** | **Done** | `scripts/gates/check_acp_ci_conformance_matrix.py` | CI-01..16 applicable rows |
 | ACP-PROD-11 | ACP-PROD | **Schema version registry + migration adapters** | **Done** | `intergrax/contracts/migrations/` | check_contract_schema_versions |
 | ACP-0 | ACP1 | **`AcpSessionState` / `acp.state.v1` schema** — Pydantic envelope + agent subclass pattern §32.0 | **Done** | `intergrax/contracts/acp_state.py` | Unit test round-trip; extra=forbid |
 | ACP-0b | ACP1 | **`cognitive_pattern` on AgentContract** — optional field + validation | **Done** | `agent_contract_meta.py`, `agent_assembly_resolver.py` | `test_cognitive_patterns` validation |
@@ -210,20 +210,20 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-8 | ACP3 | **Scaffold `--pattern`** flag on `new-agent` | **Done** | `scaffold/new_agent.py`, `scaffold/cli.py` | `test_acp_pattern_scaffold` |
 | ACP-9 | ACP4 | **Harness reference probes** — one per pattern | **Done** | `patterns/reference.py` | Pattern probe unit tests |
 | ACP-10 | ACP4 | **Unit test package** `tests/unit/agents/authoring/patterns/` | **Done** | tests | 32 gate tests — one probe run per pattern + contracts + phase machines |
-| ACP-11 | ACP5 | **Gate: ACP pattern scaffold** — no UAEP boilerplate | **Done** | `scripts/check_scaffold_acp_pattern.py` | Scaffold smoke script |
-| ACP-13 | ACP5 | **Pattern conformance** — contract vs class | **Done** | `scripts/check_agent_pattern_conformance.py` | AST check on `agents/*/contract.py` |
+| ACP-11 | ACP5 | **Gate: ACP pattern scaffold** — no UAEP boilerplate | **Done** | `scripts/maintenance/check_scaffold_acp_pattern.py` | Scaffold smoke script |
+| ACP-13 | ACP5 | **Pattern conformance** — contract vs class | **Done** | `scripts/maintenance/check_agent_pattern_conformance.py` | AST check on `agents/*/contract.py` |
 | ACP-12 | ACP5 | **Acceptance: pattern agent in agent_os suite** | **Done** | `tests/acceptance/agent_os/test_acp_pattern_agents.py` | NexusLoop + `acp.session.v1` per pattern (mock LLM) |
 | ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
 | ACP-LEG-1 | ACP-LEG | **Deprecate AgentEngine path** — `DeprecationWarning` in `AgentEngine` fallback | **Done** | `intergrax/agents/agent_engine.py` | `test_agent_engine_legacy_deprecation` |
 | ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | **Done** | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
-| ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | **Done** | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
+| ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | **Done** | `scripts/audit/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
 | ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | **Done** | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
 | ACP-MIG-3 | ACP-MIG | **Pilot batch (3 agents)** — echo, signoff_probe, research → typed `on_next_step` | **Done** | `agents/echo`, `signoff_probe`, `research` | Direct `run()` + agent_os green per agent |
 | ACP-MIG-4 | ACP-MIG | **Product batch** — legal, summary, LKW trio, DSW quartet | **Done** | product `agents/*` | Host wiring tests unchanged; scoreboard Runtime ≥80% each |
 | ACP-MIG-5 | ACP-MIG | **Remaining roster** — org_worker, assistant, K-path agents; lab mocks excluded | **Done** | `agents/*` | Zero UAEP-only new code; bridge allowlist shrinking |
 | ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | **Done** | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
 | ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | **Done** | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
-| ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | **Done** | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
+| ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | **Done** | `intergrax/contracts/agent_readiness.py`, `scripts/gates/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
 | ACP-LEG-3 | ACP-LEG | **Document AgentEngine internal-only** | **Done** | `runtime.py` module docstring + architecture §13 | INTERNAL ONLY banner |
 | ACP-LEG-4 | ACP-LEG | **Remove author UAEP from `--pattern` scaffold** — typed hooks only | **Done** | `scaffold/new_agent.py` | `--pattern` agents have no `get_steps` |
 | ACP-DOC.11 | ACP0 | **Detailed implementation waves §6.1aw** + debt/coupling matrix | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §6.1aw |

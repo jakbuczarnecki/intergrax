@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -91,8 +91,8 @@ intergrax/runtime/nexus/tools/tool_selection.py
 intergrax/runtime/nexus/tools/tool_loop.py
 intergrax/runtime/tools/idempotent_invoker.py · runtime_bound_catalog.py
 applications/_shared/catalog_runtime_bridge.py · tool wiring
-scripts/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
-scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py
+scripts/maintenance/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
+scripts/maintenance/check_tool_injection_defense.py · check_agent_registry_bypass.py
 ```
 
 Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -191,10 +191,10 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-python scripts/check_legacy_tool_plan_booleans.py
-python scripts/check_tool_mcp_schema_export.py
-python scripts/check_tool_injection_defense.py
-python scripts/check_agent_registry_bypass.py
+python scripts/maintenance/check_legacy_tool_plan_booleans.py
+python scripts/maintenance/check_tool_mcp_schema_export.py
+python scripts/maintenance/check_tool_injection_defense.py
+python scripts/maintenance/check_agent_registry_bypass.py
 uv run pytest tests/unit/runtime/nexus/tools/ -q
 ```
 

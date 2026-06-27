@@ -53,13 +53,13 @@ Reasoning plane is honestly production-ready for Full Harness LC: no open P0/P1 
 - `intergrax/runtime/nexus/llm_task_classifier.py`, `nexus_classifier_prompts.py`, `engine_planner_prompts.py`
 - `intergrax/runtime/nexus/execution/graph_executor.py` — engine prompt metadata
 - `prompts/nexus_task_classifier/` — registry asset
-- `scripts/check_reasoning_gates.py`, `scripts/check_audit_ideal_gates.py`, `AGENTS.md`
+- `scripts/maintenance/check_reasoning_gates.py`, `scripts/audit/check_audit_ideal_gates.py`, `AGENTS.md`
 - Tests: `test_planning_metrics.py`, updates to wiring/classifier/catalog bridge tests
 
 ## Verification
 
 ```bash
-python scripts/check_reasoning_gates.py
+python scripts/maintenance/check_reasoning_gates.py
 uv run pytest tests/unit/applications/test_reasoning_wiring.py tests/unit/applications/test_catalog_runtime_bridge.py tests/unit/runtime/nexus/test_llm_task_classifier.py tests/unit/runtime/nexus/observability/test_planning_metrics.py tests/unit/runtime/nexus/planning/ tests/integration/runtime/test_planning_decision_record_gate.py -q
 ```
 

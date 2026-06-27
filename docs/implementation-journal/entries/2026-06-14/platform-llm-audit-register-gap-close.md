@@ -49,9 +49,9 @@ Architecture canon now fully mirrors the audit instruction gap list (15 LLM-AUDI
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_harness_adr.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_harness_adr.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (doc-only iteration).

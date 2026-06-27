@@ -38,7 +38,7 @@ New agents start on the ACP author surface (`perceive` / `reason` / `act` / `eva
 - `intergrax/scaffold/new_agent.py` — `create_uaep_agent`, default reflex in `create_agent`
 - `intergrax/scaffold/cli.py` — `--uaep` flag, updated help/messages
 - `intergrax/scaffold/doc_templates.py` — pattern-aware ARCHITECTURE/PLAN
-- `scripts/check_scaffold_acp_pattern.py` — default scaffold smoke
+- `scripts/maintenance/check_scaffold_acp_pattern.py` — default scaffold smoke
 - `tests/acceptance/agent_os/test_scaffold.py` — typed default + `--uaep` legacy
 - `tests/unit/scaffold/test_acp_pattern_scaffold.py` — default reflex test
 - `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — DEBT-ACP-05 closed
@@ -47,7 +47,7 @@ New agents start on the ACP author surface (`perceive` / `reason` / `act` / `eva
 
 ```bash
 uv run pytest tests/unit/scaffold/test_acp_pattern_scaffold.py tests/acceptance/agent_os/test_scaffold.py tests/unit/scaffold/test_scaffold_doc_templates.py -q
-uv run python scripts/check_scaffold_acp_pattern.py
+uv run python scripts/maintenance/check_scaffold_acp_pattern.py
 ```
 
 Result: pass.

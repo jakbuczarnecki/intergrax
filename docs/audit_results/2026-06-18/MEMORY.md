@@ -41,7 +41,7 @@ No open P0/P1. MEM + MEM-DEPTH + MEM-VEC **Done** · MEMORY-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_entity_graph_memory_wiring.py
+uv run python scripts/maintenance/check_entity_graph_memory_wiring.py
 uv run pytest tests/unit/memory/ -q
 ```
 

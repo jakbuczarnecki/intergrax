@@ -25,7 +25,7 @@ No open P0/P1 in `INTEGRATIONS` scope. Prior Layer Completion closeout revalidat
 ## Gates executed
 
 ```bash
-python scripts/check_integration_vendor_imports.py
+python scripts/maintenance/check_integration_vendor_imports.py
 uv run pytest tests/unit/integrations/ -q
 ```
 

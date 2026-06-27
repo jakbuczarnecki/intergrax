@@ -44,7 +44,7 @@ Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering T
 | Tool/skill **profiles** (which catalog ids are enabled) | Business logic and step graphs |
 | Policy bundle, identity, observability profiles | No direct `intergrax.integrations` / `intergrax.tools` imports |
 
-**Forbidden:** `getattr`/`setattr` on manifests in host wiring; Tier-2 agents importing integration or tool modules (use `scripts/check_agent_registry_bypass.py`).
+**Forbidden:** `getattr`/`setattr` on manifests in host wiring; Tier-2 agents importing integration or tool modules (use `scripts/maintenance/check_agent_registry_bypass.py`).
 
 Scaffold: `python -m intergrax.scaffold new-application <name>` emits `host/environment_profile.py` and unified wiring.
 
@@ -240,7 +240,7 @@ python -m intergrax.scaffold new-skill <skill_id> [--domain <folder>]
 
 ```bash
 set PYTHONPATH=.
-python scripts/check_plugin_catalog.py
+python scripts/maintenance/check_plugin_catalog.py
 pytest tests/unit/core/plugins tests/unit/integrations/test_external_plugin.py -q
 ```
 

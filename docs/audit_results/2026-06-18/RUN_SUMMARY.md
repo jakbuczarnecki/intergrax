@@ -40,8 +40,8 @@
 
 ```bash
 uv run pytest -m "gate and not no_ci" -q
-python scripts/check_audit_ideal_gates.py
-python scripts/check_plan_scorecard_sync.py
+python scripts/audit/check_audit_ideal_gates.py
+python scripts/maintenance/check_plan_scorecard_sync.py
 ```
 
 ## Policy

@@ -36,8 +36,8 @@ Tier-3 hosts and future `ApplicationHost` authors get a preventive gate against 
 ## Changed artifacts
 
 - `intergrax/applications/_shared/environment_state_usage_wiring.py` — lint helpers
-- `scripts/check_environment_state_usage.py` — standalone CI gate
-- `scripts/check_application_production_gates.py` — aggregates APP-PROD-6
+- `scripts/maintenance/check_environment_state_usage.py` — standalone CI gate
+- `scripts/gates/check_application_production_gates.py` — aggregates APP-PROD-6
 - `tests/unit/applications/test_environment_state_usage_wiring.py` — wiring unit tests
 - `tests/unit/scripts/test_check_environment_state_usage.py` — script smoke test
 - `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` — fidelity + phase status sync
@@ -47,8 +47,8 @@ Tier-3 hosts and future `ApplicationHost` authors get a preventive gate against 
 
 ```bash
 uv run pytest tests/unit/applications/test_environment_state_usage_wiring.py tests/unit/scripts/test_check_environment_state_usage.py tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_environment_state_usage.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_environment_state_usage.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (pending run in iteration closeout).

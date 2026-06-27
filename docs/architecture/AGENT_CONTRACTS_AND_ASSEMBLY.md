@@ -382,7 +382,7 @@ Registries are versioned, snapshot-capable catalogs — not mutable globals.
 
 Tier-3 `wire_application_environment()` materializes registries from `ApplicationEnvironmentProfile` tool/skill/integration/prompt profiles → `RuntimeConfig` via `runtime_config_bridge.py` and domain `*_assembly_resolver.py` modules.
 
-Snapshots and conformance CI validate registry shape before release (`scripts/check_agents_lifecycle_metadata.py`, harness registry guards). **Durable cross-host snapshots:** `applications/_shared/registry_snapshot_store.py` (AUDIT-IDEAL-19.1) + `check_registry_snapshot_diff.py`.
+Snapshots and conformance CI validate registry shape before release (`scripts/maintenance/check_agents_lifecycle_metadata.py`, harness registry guards). **Durable cross-host snapshots:** `applications/_shared/registry_snapshot_store.py` (AUDIT-IDEAL-19.1) + `check_registry_snapshot_diff.py`.
 
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase REG.
 
@@ -413,8 +413,8 @@ Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
 | `capability_graph_lineage.py` | Lineage / provenance |
 | `capability_graph_compatibility.py` | Edge compatibility |
 | `capability_graph_applications.py` | Application slice |
-| `scripts/phase_v_capability_graph_guard.py` | CI guard + blast-radius impact (AUDIT-IDEAL-20.1) |
-| `scripts/check_capability_graph_strict_deploy.py` | STRICT deploy gate (APP-OPS-1) |
+| `scripts/release/phase_v_capability_graph_guard.py` | CI guard + blast-radius impact (AUDIT-IDEAL-20.1) |
+| `scripts/gates/check_capability_graph_strict_deploy.py` | STRICT deploy gate (APP-OPS-1) |
 
 Nexus routes to **capabilities** (§16), not hardcoded class names. Graph edges MUST reflect manifest roster per application — not global cross-product shortcuts.
 

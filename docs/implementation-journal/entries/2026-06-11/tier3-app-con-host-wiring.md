@@ -47,7 +47,7 @@ Tier-3 environments can register real dynamic `ApplicationHost` reactions on Nex
 
 ```bash
 uv run pytest tests/unit/applications/test_application_host_wiring.py tests/unit/harness/test_harness_application_minimal.py -q
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

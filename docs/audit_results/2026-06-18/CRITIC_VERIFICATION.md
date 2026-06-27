@@ -41,8 +41,8 @@ No open P0/P1. CRIT-V + CVL-LC **Done**. AUDIT-IDEAL-25.3 gate **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_shadow_eval_automation.py
-uv run python scripts/check_product_release_eval_gate.py
+uv run python scripts/maintenance/check_shadow_eval_automation.py
+uv run python scripts/gates/check_product_release_eval_gate.py
 uv run pytest tests/unit/runtime/critic/ -q
 ```
 

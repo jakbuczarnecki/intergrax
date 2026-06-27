@@ -49,8 +49,8 @@ Integrations layer formally closed for Full Harness LC — catalog L3, marketpla
 
 ```bash
 uv run pytest tests/unit/integrations/ -q
-uv run python scripts/check_integration_marketplace_catalog.py
-uv run python scripts/check_integration_vendor_imports.py
+uv run python scripts/maintenance/check_integration_marketplace_catalog.py
+uv run python scripts/maintenance/check_integration_vendor_imports.py
 ```
 
 ## Risks and follow-ups

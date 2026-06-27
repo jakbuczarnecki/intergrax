@@ -21,7 +21,7 @@
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
 | CVL-AUDIT-01 | P1 | AUDIT-IDEAL-25.3 Context/RAG eval blocking product release CI — Planned | `docs/plan/CRITIC_VERIFICATION.md` | open |
-| CVL-AUDIT-02 | — | AUDIT-IDEAL-25.1 shadow eval automation gate green | `scripts/check_shadow_eval_automation.py` | closed |
+| CVL-AUDIT-02 | — | AUDIT-IDEAL-25.1 shadow eval automation gate green | `scripts/maintenance/check_shadow_eval_automation.py` | closed |
 | CVL-AUDIT-03 | P3 | L4 adaptive critic thresholds — AHI scope | AHI domain | deferred |
 | CVL-AUDIT-04 | P4 | FLOW-8 product host deferred §6.3 | plan cross-ref | deferred |
 
@@ -41,7 +41,7 @@
 ## Gates executed
 
 ```bash
-uv run python scripts/check_shadow_eval_automation.py
+uv run python scripts/maintenance/check_shadow_eval_automation.py
 uv run pytest tests/unit/runtime/critic/ -q
 ```
 

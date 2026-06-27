@@ -40,15 +40,15 @@ Authors and LLM agents have one normative vocabulary entry (§29); appendices ar
 - `docs/guides/AGENT_CREATION_GUIDE.md` — §1 terminology canon; AC.1/AC.2/AC.3 dedupe
 - `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — PAT-3 **Done**
 - `agents/README.md` — §29 terminology link
-- `scripts/check_agent_creation_guide_acp_canon.py` — PAT-3 gate markers
+- `scripts/maintenance/check_agent_creation_guide_acp_canon.py` — PAT-3 gate markers
 
 ## Verification
 
 ```bash
-uv run python scripts/check_agent_creation_guide_acp_canon.py
+uv run python scripts/maintenance/check_agent_creation_guide_acp_canon.py
 uv run pytest tests/unit/scripts/test_check_agent_creation_guide_acp_canon.py -m gate -q
-python scripts/check_docs_domain_pairs.py
-uv run python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/maintenance/check_implementation_journal.py
 ```
 
 ## Risks and follow-ups

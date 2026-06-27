@@ -40,14 +40,14 @@ GAP-ACP-03 closed. Tier-2 `agents/` contains no `RuntimeEngine` references; pipe
 - `intergrax/agents/uaep_pipeline.py` — deleted
 - `agents/*/steps/pipeline.py` — import path
 - `agents/lab/mock_agents.py`, `intergrax/scaffold/new_agent.py`
-- `scripts/check_agent_fleet_migration.py` — LEG-3 regression guard
+- `scripts/maintenance/check_agent_fleet_migration.py` — LEG-3 regression guard
 - `tests/unit/agents/authoring/test_uaep_pipeline_bridge.py` — unit test (new)
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/agents/authoring/test_uaep_pipeline_bridge.py -q
-python scripts/check_agent_fleet_migration.py
+python scripts/maintenance/check_agent_fleet_migration.py
 ```
 
 ## Risks and follow-ups

@@ -59,7 +59,7 @@ LLM layer reaches production-ready routing and token accounting consistency; ACP
 - `intergrax/applications/_shared/llm_routing_wiring.py`
 - `intergrax/agents/authoring/llm_router.py`
 - `intergrax/agents/authoring/acp_run.py`
-- `scripts/check_context_preflight_uses_adapter_tokens.py`
+- `scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`
 - `docs/architecture/LLM_ADAPTERS.md`
 - `docs/plan/LLM_ADAPTERS.md`
 - `docs/audit/LLM_ADAPTERS.md`
@@ -68,8 +68,8 @@ LLM layer reaches production-ready routing and token accounting consistency; ACP
 
 ```bash
 uv run pytest tests/unit/llm_adapters/test_failover_adapter.py tests/unit/llm_adapters/test_model_router.py tests/unit/llm_adapters/test_context_window_wiring.py tests/unit/agents/authoring/test_llm_router.py -q
-python scripts/check_context_preflight_uses_adapter_tokens.py
-python scripts/check_docs_domain_pairs.py
+python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 ## Risks and follow-ups

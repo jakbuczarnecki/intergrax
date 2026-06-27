@@ -47,11 +47,11 @@ AGENT_CONTRACTS_AND_ASSEMBLY layer (§12–§40) is now consistently **Done** ac
 ## Verification
 
 ```bash
-uv run python scripts/check_agent_acp_close_ci.py
-uv run python scripts/check_registry_snapshot_diff.py
-uv run python scripts/check_agents_lifecycle_metadata.py
-uv run python scripts/check_on_call_ownership_model.py
-uv run python scripts/phase_v_capability_graph_guard.py
+uv run python scripts/gates/check_agent_acp_close_ci.py
+uv run python scripts/maintenance/check_registry_snapshot_diff.py
+uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
+uv run python scripts/maintenance/check_on_call_ownership_model.py
+uv run python scripts/release/phase_v_capability_graph_guard.py
 uv run pytest tests/unit/agents/readiness/ -q
 ```
 

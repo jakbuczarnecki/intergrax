@@ -127,7 +127,7 @@ def render_harness_adr_readme() -> str:
         4. Add a row to the **Index** below.
         5. Link from canon (`intergrax_runtime_architecture.md`) and/or the relevant domain plan.
         6. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
-        7. Run `python scripts/check_harness_adr.py`.
+        7. Run `python scripts/maintenance/check_harness_adr.py`.
 
         ## Index
 

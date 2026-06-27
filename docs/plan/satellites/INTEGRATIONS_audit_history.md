@@ -81,7 +81,7 @@
 1. Implement `providers/<category>/<slug>/` (wrap legacy module — no fork).
 2. Register via `register_<slug>_integration()` + `register_default_integrations()`.
 3. Unit tests under `tests/unit/integrations/providers/`.
-4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example). Extend `scripts/generate_integration_usage_docs.py` and run `uv run python scripts/generate_integration_usage_docs.py`.
+4. Add `providers/<slug>/USAGE.md` — English usage guide (factory + `IntegrationProfile` + API invoke example). Extend `scripts/docs/generate_integration_usage_docs.py` and run `uv run python scripts/docs/generate_integration_usage_docs.py`.
 5. Update canon §7.1.3 status + this tracker + migration map row.
 6. Next slug in priority order.
 
@@ -191,7 +191,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 **Source:** Integration harness ROI audit (2026-06-02)  
 **Queue:** [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
 **Priority ladder:** **Band 2aa** (§4.0) — **Done**  
-**Implementation:** `intergrax/integrations/_shared/p5/` + thin shells via `scripts/wire_p5_m6_p4_providers.py` · `register_m6_p4_integrations()` in `bootstrap_extended.py`
+**Implementation:** `intergrax/integrations/_shared/p5/` + thin shells via `scripts/maintenance/wire_p5_m6_p4_providers.py` · `register_m6_p4_integrations()` in `bootstrap_extended.py`
 
 **Hard rules:**
 
@@ -451,7 +451,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 **Source:** Integration audit for Tier-2 agent authors (2026-06-08)  
 **Queue:** [§6.1z](#61z-harness-implementation-queue--agent-developer-expansion-m7-p7-done)  
 **Priority ladder:** **Band 2ad** — runs in parallel with §6.1 maintenance  
-**Implementation:** `intergrax/integrations/_shared/p8/` + thin shells via `scripts/wire_p8_m7_p7_providers.py` · `register_m7_p7_integrations()` in `bootstrap_m7_p7.py`
+**Implementation:** `intergrax/integrations/_shared/p8/` + thin shells via `scripts/maintenance/wire_p8_m7_p7_providers.py` · `register_m7_p7_integrations()` in `bootstrap_m7_p7.py`
 
 **Hard rules:**
 
@@ -887,7 +887,7 @@ Each provider PR is **done** when:
 4. At least one Tier-3 app or lab factory can select it via `IntegrationProfile`.
 5. No new direct vendor imports added under `agents/`.
 
-Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regeneracja po dodaniu providera).
+Szablony utrzymywane przez `scripts/docs/generate_integration_usage_docs.py` (regeneracja po dodaniu providera).
 
 ---
 
@@ -1003,9 +1003,9 @@ L4 readiness requires:
 
 | Date | V ID | Summary |
 |------|------|---------|
-| 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/phase_v_foundations_report.py`) + unit tests |
-| 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
-| 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/phase_v_governance_report.py`) + unit tests |
+| 2026-06-02 | V-CG.1, V-AM.1, V-ALG.1 | Typed baseline contracts added (`intergrax/runtime/architecture/`) + report-only artifacts script (`scripts/release/phase_v_foundations_report.py`) + unit tests |
+| 2026-06-02 | V-CG.2, V-CG.3, V-CG.4 | Lineage/impact/compatibility modules + capability graph guard script (`scripts/release/phase_v_capability_graph_guard.py`) + enforce switch + unit tests |
+| 2026-06-02 | V-AM.2, V-ALG.2, V-EVAL.1 | Metrics pipeline contracts + promotion flow evaluator + unified evaluation mode contracts + governance artifacts script (`scripts/release/phase_v_governance_report.py`) + unit tests |
 | 2026-06-02 | V-ALG.3, V-ALG.4, V-EVAL.2 | Lifecycle/deprecation governance contracts + production ownership guard + evaluation asset bundle contracts + governance report extensions + unit tests |
 | 2026-06-02 | V-EVAL.3, V-AM.3 | Automated evaluators (`evaluation_automation.py`) + architecture coverage report (`architecture_coverage.py`) + governance report persistence + unit tests |
 | 2026-06-02 | V-AM.4, V-EVAL.4 | Debt governance cadence/policy report (`debt_governance.py`) + release trend/comparison report (`evaluation_registry_trends.py`) + governance script artifacts + unit tests |

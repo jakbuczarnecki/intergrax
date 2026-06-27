@@ -1,0 +1,534 @@
+#!/usr/bin/env python3
+# © Artur Czarnecki. All rights reserved.
+
+"""Run local CI profiles from .github/workflows/unit-tests.yml (Regression gate)."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+import time
+from collections.abc import Sequence
+from dataclasses import dataclass
+from pathlib import Path
+
+_REPO = Path(__file__).resolve().parents[2]
+
+_SCRIPT_PATHS = {
+    "architecture_audit_common.py": "audit/architecture_audit_common.py",
+    "audit_agent_fleet_legacy.py": "audit/audit_agent_fleet_legacy.py",
+    "check_architecture_audit_run.py": "audit/check_architecture_audit_run.py",
+    "check_audit_ideal_gates.py": "audit/check_audit_ideal_gates.py",
+    "check_audit_token_discipline.py": "audit/check_audit_token_discipline.py",
+    "check_docs_domain_pairs.py": "audit/check_docs_domain_pairs.py",
+    "check_idea_audit_bootstrap.py": "audit/check_idea_audit_bootstrap.py",
+    "check_tier3_audit_prompt.py": "audit/check_tier3_audit_prompt.py",
+    "check_token_generator_freshness.py": "audit/check_token_generator_freshness.py",
+    "generate_architecture_read_scopes.py": "audit/generate_architecture_read_scopes.py",
+    "generate_audit_read_slices.py": "audit/generate_audit_read_slices.py",
+    "generate_domain_audit_prompts.py": "audit/generate_domain_audit_prompts.py",
+    "generate_plan_read_scopes.py": "audit/generate_plan_read_scopes.py",
+    "init_architecture_audit_run.py": "audit/init_architecture_audit_run.py",
+    "analyze_pytest_durations.py": "ci/analyze_pytest_durations.py",
+    "check_ci_gate_test_purity.py": "ci/check_ci_gate_test_purity.py",
+    "check_cursor_token_setup.py": "ci/check_cursor_token_setup.py",
+    "check_workspace_cleanup.py": "ci/check_workspace_cleanup.py",
+    "run_ci_smoke_pytest.py": "ci/run_ci_smoke_pytest.py",
+    "run_regression_gate_ci.py": "ci/run_regression_gate_ci.py",
+    "codemod_remove_getattr.py": "codemods/codemod_remove_getattr.py",
+    "codemod_remove_getattr_text.py": "codemods/codemod_remove_getattr_text.py",
+    "fix_attribute_access_import_order.py": "codemods/fix_attribute_access_import_order.py",
+    "fix_attribute_access_imports.py": "codemods/fix_attribute_access_imports.py",
+    "migrate_integration_registers.py": "codemods/migrate_integration_registers.py",
+    "patch_lazy_bundle_exports.py": "codemods/patch_lazy_bundle_exports.py",
+    "patch_sk_exp4_plugins.py": "codemods/patch_sk_exp4_plugins.py",
+    "replace_integration_slug_enum.py": "codemods/replace_integration_slug_enum.py",
+    "arch_hub_config.py": "docs/arch_hub_config.py",
+    "arch_hub_lib.py": "docs/arch_hub_lib.py",
+    "generate_integration_usage_docs.py": "docs/generate_integration_usage_docs.py",
+    "generate_sk_exp2_usage.py": "docs/generate_sk_exp2_usage.py",
+    "generate_sk_exp3_usage.py": "docs/generate_sk_exp3_usage.py",
+    "generate_sk_exp4_usage.py": "docs/generate_sk_exp4_usage.py",
+    "generate_sk_exp5_usage.py": "docs/generate_sk_exp5_usage.py",
+    "generate_symbol_index.py": "docs/generate_symbol_index.py",
+    "migrate_plan_1to1.py": "docs/migrate_plan_1to1.py",
+    "normalize_architecture_headers.py": "docs/normalize_architecture_headers.py",
+    "patch_integrations_doc_links.py": "docs/patch_integrations_doc_links.py",
+    "plan_hub_config.py": "docs/plan_hub_config.py",
+    "plan_hub_lib.py": "docs/plan_hub_lib.py",
+    "redistribute_architecture_canon.py": "docs/redistribute_architecture_canon.py",
+    "reorganize_integration_providers_by_category.py": "docs/reorganize_integration_providers_by_category.py",
+    "split_domain_architecture.py": "docs/split_domain_architecture.py",
+    "split_domain_plan.py": "docs/split_domain_plan.py",
+    "split_platform_foundation_plan.py": "docs/split_platform_foundation_plan.py",
+    "sync_pext_plan_status.py": "docs/sync_pext_plan_status.py",
+    "verify_arch_split_content.py": "docs/verify_arch_split_content.py",
+    "check_acp_ci_conformance_matrix.py": "gates/check_acp_ci_conformance_matrix.py",
+    "check_agent_acp_close_ci.py": "gates/check_agent_acp_close_ci.py",
+    "check_agent_production_readiness.py": "gates/check_agent_production_readiness.py",
+    "check_agent_promotion_eval_gate.py": "gates/check_agent_promotion_eval_gate.py",
+    "check_agent_release_gates.py": "gates/check_agent_release_gates.py",
+    "check_application_production_gates.py": "gates/check_application_production_gates.py",
+    "check_capability_graph_strict_deploy.py": "gates/check_capability_graph_strict_deploy.py",
+    "check_harness_security_promote_gate.py": "gates/check_harness_security_promote_gate.py",
+    "check_ideal_harness_l3_gates.py": "gates/check_ideal_harness_l3_gates.py",
+    "check_mvp_promotion_gates.py": "gates/check_mvp_promotion_gates.py",
+    "check_product_release_eval_gate.py": "gates/check_product_release_eval_gate.py",
+    "check_structured_output_gate.py": "gates/check_structured_output_gate.py",
+    "harness_maturity_report.py": "gates/harness_maturity_report.py",
+    "report_agent_production_readiness.py": "gates/report_agent_production_readiness.py",
+    "check_acp_section_40_12_checklist.py": "maintenance/check_acp_section_40_12_checklist.py",
+    "check_agent_acp_ap02_tool_loop_boundary.py": "maintenance/check_agent_acp_ap02_tool_loop_boundary.py",
+    "check_agent_certification_roster.py": "maintenance/check_agent_certification_roster.py",
+    "check_agent_creation_guide_acp_canon.py": "maintenance/check_agent_creation_guide_acp_canon.py",
+    "check_agent_fleet_migration.py": "maintenance/check_agent_fleet_migration.py",
+    "check_agent_pattern_conformance.py": "maintenance/check_agent_pattern_conformance.py",
+    "check_agent_registry_bypass.py": "maintenance/check_agent_registry_bypass.py",
+    "check_agent_simulator_wiring.py": "maintenance/check_agent_simulator_wiring.py",
+    "check_agent_skill_resolution.py": "maintenance/check_agent_skill_resolution.py",
+    "check_agent_step_security.py": "maintenance/check_agent_step_security.py",
+    "check_agent_threat_model.py": "maintenance/check_agent_threat_model.py",
+    "check_agent_token_budget_contract.py": "maintenance/check_agent_token_budget_contract.py",
+    "check_agent_typed_state.py": "maintenance/check_agent_typed_state.py",
+    "check_agents_lifecycle_metadata.py": "maintenance/check_agents_lifecycle_metadata.py",
+    "check_agents_llm_adapter_response.py": "maintenance/check_agents_llm_adapter_response.py",
+    "check_agents_no_inline_prompts.py": "maintenance/check_agents_no_inline_prompts.py",
+    "check_agents_no_tier3_imports.py": "maintenance/check_agents_no_tier3_imports.py",
+    "check_agents_no_vendor_sdk_imports.py": "maintenance/check_agents_no_vendor_sdk_imports.py",
+    "check_agents_vendor_imports.py": "maintenance/check_agents_vendor_imports.py",
+    "check_application_environment_diff.py": "maintenance/check_application_environment_diff.py",
+    "check_application_health_score.py": "maintenance/check_application_health_score.py",
+    "check_application_migrations.py": "maintenance/check_application_migrations.py",
+    "check_application_ownership.py": "maintenance/check_application_ownership.py",
+    "check_application_package.py": "maintenance/check_application_package.py",
+    "check_application_recovery_contract.py": "maintenance/check_application_recovery_contract.py",
+    "check_application_registry.py": "maintenance/check_application_registry.py",
+    "check_arch_hub_size.py": "maintenance/check_arch_hub_size.py",
+    "check_architecture_boundary_chaos.py": "maintenance/check_architecture_boundary_chaos.py",
+    "check_architecture_debt_burn_down.py": "maintenance/check_architecture_debt_burn_down.py",
+    "check_architecture_debt_register.py": "maintenance/check_architecture_debt_register.py",
+    "check_architecture_health_metrics.py": "maintenance/check_architecture_health_metrics.py",
+    "check_bounded_policy_learning.py": "maintenance/check_bounded_policy_learning.py",
+    "check_budget_enforcement.py": "maintenance/check_budget_enforcement.py",
+    "check_business_agent_certification.py": "maintenance/check_business_agent_certification.py",
+    "check_capability_alias_registry.py": "maintenance/check_capability_alias_registry.py",
+    "check_capability_edge_catalog_sync.py": "maintenance/check_capability_edge_catalog_sync.py",
+    "check_capability_marketplace_readiness.py": "maintenance/check_capability_marketplace_readiness.py",
+    "check_capability_negotiation.py": "maintenance/check_capability_negotiation.py",
+    "check_capability_routing.py": "maintenance/check_capability_routing.py",
+    "check_catalog_hot_reload.py": "maintenance/check_catalog_hot_reload.py",
+    "check_causal_diagnostics_wiring.py": "maintenance/check_causal_diagnostics_wiring.py",
+    "check_checkpoint_introspection_api.py": "maintenance/check_checkpoint_introspection_api.py",
+    "check_codecraft_layer.py": "maintenance/check_codecraft_layer.py",
+    "check_compliance_profile_wiring.py": "maintenance/check_compliance_profile_wiring.py",
+    "check_context_builtin_providers.py": "maintenance/check_context_builtin_providers.py",
+    "check_context_drift_monitoring.py": "maintenance/check_context_drift_monitoring.py",
+    "check_context_engine_wiring.py": "maintenance/check_context_engine_wiring.py",
+    "check_context_golden.py": "maintenance/check_context_golden.py",
+    "check_context_otel_span_registry.py": "maintenance/check_context_otel_span_registry.py",
+    "check_context_preflight_uses_adapter_tokens.py": "maintenance/check_context_preflight_uses_adapter_tokens.py",
+    "check_context_tier0_import_boundary.py": "maintenance/check_context_tier0_import_boundary.py",
+    "check_contract_schema_versions.py": "maintenance/check_contract_schema_versions.py",
+    "check_cost_forecast_wiring.py": "maintenance/check_cost_forecast_wiring.py",
+    "check_cost_optimization_wiring.py": "maintenance/check_cost_optimization_wiring.py",
+    "check_critical_action_signing.py": "maintenance/check_critical_action_signing.py",
+    "check_cross_host_agent_certification.py": "maintenance/check_cross_host_agent_certification.py",
+    "check_delegation_budget_enforcement.py": "maintenance/check_delegation_budget_enforcement.py",
+    "check_deploy_slo_evidence.py": "maintenance/check_deploy_slo_evidence.py",
+    "check_entity_graph_memory_wiring.py": "maintenance/check_entity_graph_memory_wiring.py",
+    "check_environment_profile_bundle_schema.py": "maintenance/check_environment_profile_bundle_schema.py",
+    "check_environment_state_usage.py": "maintenance/check_environment_state_usage.py",
+    "check_eval_scenario_library.py": "maintenance/check_eval_scenario_library.py",
+    "check_evaluator_loop_graph_template.py": "maintenance/check_evaluator_loop_graph_template.py",
+    "check_event_catalog.py": "maintenance/check_event_catalog.py",
+    "check_evidence_artifacts.py": "maintenance/check_evidence_artifacts.py",
+    "check_execution_strategy_hook.py": "maintenance/check_execution_strategy_hook.py",
+    "check_governance_health_dashboard.py": "maintenance/check_governance_health_dashboard.py",
+    "check_graph_editor_wiring.py": "maintenance/check_graph_editor_wiring.py",
+    "check_harness_adr.py": "maintenance/check_harness_adr.py",
+    "check_harness_capability_graph_wiring.py": "maintenance/check_harness_capability_graph_wiring.py",
+    "check_harness_cost_wiring.py": "maintenance/check_harness_cost_wiring.py",
+    "check_harness_critic_wiring.py": "maintenance/check_harness_critic_wiring.py",
+    "check_harness_encryption_policy.py": "maintenance/check_harness_encryption_policy.py",
+    "check_harness_evaluation_wiring.py": "maintenance/check_harness_evaluation_wiring.py",
+    "check_harness_guardrail_wiring.py": "maintenance/check_harness_guardrail_wiring.py",
+    "check_harness_no_getattr.py": "maintenance/check_harness_no_getattr.py",
+    "check_harness_observability_wiring.py": "maintenance/check_harness_observability_wiring.py",
+    "check_harness_prompt_golden_catalog.py": "maintenance/check_harness_prompt_golden_catalog.py",
+    "check_harness_registry_resolution.py": "maintenance/check_harness_registry_resolution.py",
+    "check_harness_reliability_wiring.py": "maintenance/check_harness_reliability_wiring.py",
+    "check_harness_resilience_policy.py": "maintenance/check_harness_resilience_policy.py",
+    "check_harness_security_defense_plugins.py": "maintenance/check_harness_security_defense_plugins.py",
+    "check_harness_security_spine_signals.py": "maintenance/check_harness_security_spine_signals.py",
+    "check_harness_security_wiring.py": "maintenance/check_harness_security_wiring.py",
+    "check_health_dashboard_contracts.py": "maintenance/check_health_dashboard_contracts.py",
+    "check_human_review_sample_queue.py": "maintenance/check_human_review_sample_queue.py",
+    "check_immutable_security_audit_trail.py": "maintenance/check_immutable_security_audit_trail.py",
+    "check_implementation_journal.py": "maintenance/check_implementation_journal.py",
+    "check_integration_marketplace_catalog.py": "maintenance/check_integration_marketplace_catalog.py",
+    "check_integration_maturity_labels.py": "maintenance/check_integration_maturity_labels.py",
+    "check_integration_p4_shell_probes.py": "maintenance/check_integration_p4_shell_probes.py",
+    "check_integration_saas_honesty.py": "maintenance/check_integration_saas_honesty.py",
+    "check_integration_vendor_imports.py": "maintenance/check_integration_vendor_imports.py",
+    "check_intergrax_no_applications_imports.py": "maintenance/check_intergrax_no_applications_imports.py",
+    "check_l4_runtime_evidence.py": "maintenance/check_l4_runtime_evidence.py",
+    "check_langgraph_not_required.py": "maintenance/check_langgraph_not_required.py",
+    "check_langgraph_skill_pack_import.py": "maintenance/check_langgraph_skill_pack_import.py",
+    "check_legacy_modules_removed.py": "maintenance/check_legacy_modules_removed.py",
+    "check_legacy_tool_plan_booleans.py": "maintenance/check_legacy_tool_plan_booleans.py",
+    "check_live_model_routing_wiring.py": "maintenance/check_live_model_routing_wiring.py",
+    "check_lkw_hybrid_daemon.py": "maintenance/check_lkw_hybrid_daemon.py",
+    "check_llm_adapter_typed_returns.py": "maintenance/check_llm_adapter_typed_returns.py",
+    "check_llm_catalog_miss_observability.py": "maintenance/check_llm_catalog_miss_observability.py",
+    "check_llm_profile_runtime.py": "maintenance/check_llm_profile_runtime.py",
+    "check_llm_routing_context_wiring.py": "maintenance/check_llm_routing_context_wiring.py",
+    "check_llm_routing_rules.py": "maintenance/check_llm_routing_rules.py",
+    "check_llm_routing_tier_boundary.py": "maintenance/check_llm_routing_tier_boundary.py",
+    "check_modality_live_endpoints.py": "maintenance/check_modality_live_endpoints.py",
+    "check_modality_product_worker_pool.py": "maintenance/check_modality_product_worker_pool.py",
+    "check_model_catalog_coverage.py": "maintenance/check_model_catalog_coverage.py",
+    "check_multi_agent_contention_simulation.py": "maintenance/check_multi_agent_contention_simulation.py",
+    "check_observability_emission_coverage.py": "maintenance/check_observability_emission_coverage.py",
+    "check_observability_gates.py": "maintenance/check_observability_gates.py",
+    "check_observability_persistence_conformance.py": "maintenance/check_observability_persistence_conformance.py",
+    "check_on_call_ownership_model.py": "maintenance/check_on_call_ownership_model.py",
+    "check_orchestration_config_docs.py": "maintenance/check_orchestration_config_docs.py",
+    "check_oversized_tool_lint.py": "maintenance/check_oversized_tool_lint.py",
+    "check_p6_infra_health.py": "maintenance/check_p6_infra_health.py",
+    "check_partial_results_reference_hosts.py": "maintenance/check_partial_results_reference_hosts.py",
+    "check_payload_schema_registry.py": "maintenance/check_payload_schema_registry.py",
+    "check_plan_hub_size.py": "maintenance/check_plan_hub_size.py",
+    "check_plan_scorecard_sync.py": "maintenance/check_plan_scorecard_sync.py",
+    "check_plugin_catalog.py": "maintenance/check_plugin_catalog.py",
+    "check_policy_change_impact_cli.py": "maintenance/check_policy_change_impact_cli.py",
+    "check_pre_context_policy_wiring.py": "maintenance/check_pre_context_policy_wiring.py",
+    "check_product_intake_parity.py": "maintenance/check_product_intake_parity.py",
+    "check_product_long_running_resume.py": "maintenance/check_product_long_running_resume.py",
+    "check_product_observability_dashboard.py": "maintenance/check_product_observability_dashboard.py",
+    "check_product_security_wiring.py": "maintenance/check_product_security_wiring.py",
+    "check_production_capacity_adapters.py": "maintenance/check_production_capacity_adapters.py",
+    "check_production_chat_agent_imports.py": "maintenance/check_production_chat_agent_imports.py",
+    "check_prompt_approval_wiring.py": "maintenance/check_prompt_approval_wiring.py",
+    "check_prompt_compare_api.py": "maintenance/check_prompt_compare_api.py",
+    "check_quarterly_strategy_review.py": "maintenance/check_quarterly_strategy_review.py",
+    "check_rag_catalog_poisoning_defense.py": "maintenance/check_rag_catalog_poisoning_defense.py",
+    "check_rag_hierarchical_bootstrap.py": "maintenance/check_rag_hierarchical_bootstrap.py",
+    "check_rag_maturity_labels.py": "maintenance/check_rag_maturity_labels.py",
+    "check_rag_otel_span_registry.py": "maintenance/check_rag_otel_span_registry.py",
+    "check_reasoning_failure_taxonomy.py": "maintenance/check_reasoning_failure_taxonomy.py",
+    "check_reasoning_gates.py": "maintenance/check_reasoning_gates.py",
+    "check_registry_snapshot_diff.py": "maintenance/check_registry_snapshot_diff.py",
+    "check_replay_environment_wiring.py": "maintenance/check_replay_environment_wiring.py",
+    "check_runtime_event_tenant_propagation.py": "maintenance/check_runtime_event_tenant_propagation.py",
+    "check_sandbox_policy_wiring.py": "maintenance/check_sandbox_policy_wiring.py",
+    "check_scaffold_acp_pattern.py": "maintenance/check_scaffold_acp_pattern.py",
+    "check_scaffold_harness_alignment.py": "maintenance/check_scaffold_harness_alignment.py",
+    "check_semantic_compression_profile.py": "maintenance/check_semantic_compression_profile.py",
+    "check_shadow_eval_automation.py": "maintenance/check_shadow_eval_automation.py",
+    "check_skill_bundle_maturity.py": "maintenance/check_skill_bundle_maturity.py",
+    "check_skill_selection_hook.py": "maintenance/check_skill_selection_hook.py",
+    "check_swarm_coordination_templates.py": "maintenance/check_swarm_coordination_templates.py",
+    "check_tenant_fairness_quotas.py": "maintenance/check_tenant_fairness_quotas.py",
+    "check_tenant_storage_isolation.py": "maintenance/check_tenant_storage_isolation.py",
+    "check_tier3_scenario_matrix.py": "maintenance/check_tier3_scenario_matrix.py",
+    "check_tool_engine_ahi_hook.py": "maintenance/check_tool_engine_ahi_hook.py",
+    "check_tool_injection_defense.py": "maintenance/check_tool_injection_defense.py",
+    "check_tool_invocation_patterns.py": "maintenance/check_tool_invocation_patterns.py",
+    "check_tool_mcp_schema_export.py": "maintenance/check_tool_mcp_schema_export.py",
+    "check_trace_bridge_event_catalog.py": "maintenance/check_trace_bridge_event_catalog.py",
+    "check_trace_explorer_wiring.py": "maintenance/check_trace_explorer_wiring.py",
+    "lkw-host.py": "maintenance/lkw-host.py",
+    "policy_change_impact_cli.py": "maintenance/policy_change_impact_cli.py",
+    "scaffold_sk_exp4.py": "maintenance/scaffold_sk_exp4.py",
+    "scaffold_sk_exp5.py": "maintenance/scaffold_sk_exp5.py",
+    "wire_p2_provider_shells.py": "maintenance/wire_p2_provider_shells.py",
+    "wire_p3_provider_shells.py": "maintenance/wire_p3_provider_shells.py",
+    "wire_p4_harness_providers.py": "maintenance/wire_p4_harness_providers.py",
+    "wire_p5_m6_p4_providers.py": "maintenance/wire_p5_m6_p4_providers.py",
+    "wire_p6_m6_p5_providers.py": "maintenance/wire_p6_m6_p5_providers.py",
+    "wire_p7_m6_p6_providers.py": "maintenance/wire_p7_m6_p6_providers.py",
+    "wire_p8_m7_p7_providers.py": "maintenance/wire_p8_m7_p7_providers.py",
+    "create_curated_issues.py": "public_adoption/create_curated_issues.py",
+    "manage_curated_milestones.py": "public_adoption/manage_curated_milestones.py",
+    "export_capability_catalog_feed.py": "release/export_capability_catalog_feed.py",
+    "export_harness_shadow_eval_trend.py": "release/export_harness_shadow_eval_trend.py",
+    "export_harness_spec_schemas.py": "release/export_harness_spec_schemas.py",
+    "phase_v_capability_graph_guard.py": "release/phase_v_capability_graph_guard.py",
+    "phase_v_closeout_gate.py": "release/phase_v_closeout_gate.py",
+    "phase_v_foundations_report.py": "release/phase_v_foundations_report.py",
+    "phase_v_governance_report.py": "release/phase_v_governance_report.py",
+    "phase_w_adapt_closeout_gate.py": "release/phase_w_adapt_closeout_gate.py",
+    "phase_w_adapt_report.py": "release/phase_w_adapt_report.py",
+    "phase_w_ops_evidence.py": "release/phase_w_ops_evidence.py",
+    "rag_load_soak_report.py": "release/rag_load_soak_report.py",
+    "record_dx_metrics.py": "release/record_dx_metrics.py",
+    "record_harness_release_cycle.py": "release/record_harness_release_cycle.py",
+}
+
+
+@dataclass(frozen=True)
+class Step:
+    name: str
+    command: list[str]
+    env: dict[str, str] | None = None
+
+
+@dataclass(frozen=True)
+class Job:
+    name: str
+    steps: tuple[Step, ...]
+
+
+def _uv_sync() -> Step:
+    return Step("Install dependencies (CI minimal)", ["uv", "sync", "--extra", "dev-ci", "--frozen"])
+
+
+def _ci_smoke_job() -> Job:
+    return Job(
+        "ci-smoke",
+        (
+            _uv_sync(),
+            Step("CI smoke unit tests", ["uv", "run", "python", "scripts/ci/run_ci_smoke_pytest.py"]),
+            Step(
+                "Tier boundary audits (instant)",
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "scripts/maintenance/check_harness_no_getattr.py",
+                    "&&",
+                    "uv",
+                    "run",
+                    "python",
+                    "scripts/maintenance/check_agents_no_tier3_imports.py",
+                    "&&",
+                    "uv",
+                    "run",
+                    "python",
+                    "scripts/ci/check_ci_gate_test_purity.py",
+                ],
+                env={"INTERGRAX_CI_TEST_MARKER": "ci_smoke"},
+            ),
+        ),
+    )
+
+
+def _gate_tests_job() -> Job:
+    return Job(
+        "gate-tests",
+        (
+            _uv_sync(),
+            Step(
+                "Full unit regression gate",
+                [
+                    "uv",
+                    "run",
+                    "pytest",
+                    "tests/unit",
+                    "-m",
+                    "gate and not no_ci",
+                    "-n",
+                    "auto",
+                    "-q",
+                    "--tb=line",
+                ],
+            ),
+        ),
+    )
+
+
+def _gate_governance_tier_job() -> Job:
+    scripts = [
+        "check_agents_vendor_imports.py",
+        "check_capability_routing.py",
+        "check_agent_step_security.py",
+        "check_agent_threat_model.py",
+        "check_agent_acp_close_ci.py",
+        "check_contract_schema_versions.py",
+        "check_acp_ci_conformance_matrix.py --scripts-only",
+        "check_agent_typed_state.py",
+        "check_production_chat_agent_imports.py",
+        "check_integration_vendor_imports.py",
+        "check_harness_no_getattr.py",
+        "check_ci_gate_test_purity.py",
+        "check_application_production_gates.py",
+        "check_legacy_modules_removed.py",
+        "check_agent_skill_resolution.py",
+        "check_harness_registry_resolution.py",
+        "check_agent_registry_bypass.py",
+        "check_langgraph_not_required.py",
+        "check_agents_no_tier3_imports.py",
+        "check_docs_domain_pairs.py",
+        "check_scaffold_harness_alignment.py",
+        "check_plugin_catalog.py",
+        "check_legacy_tool_plan_booleans.py",
+    ]
+    command: list[str] = []
+    for index, script in enumerate(scripts):
+        if index:
+            command.append("&&")
+        parts = script.split()
+        command.extend(["uv", "run", "python", f"scripts/{_SCRIPT_PATHS[parts[0]]}", *parts[1:]])
+    return Job(
+        "gate-governance-tier",
+        (
+            _uv_sync(),
+            Step(
+                "Tier boundary and registry audits",
+                command,
+                env={"INTERGRAX_CI_TEST_MARKER": "gate and not no_ci"},
+            ),
+        ),
+    )
+
+
+def _gate_governance_wiring_job() -> Job:
+    scripts = [
+        "check_harness_capability_graph_wiring.py",
+        "check_harness_observability_wiring.py",
+        "check_observability_gates.py",
+        "check_harness_reliability_wiring.py",
+        "check_harness_security_wiring.py",
+        "check_harness_guardrail_wiring.py",
+        "check_harness_security_promote_gate.py",
+        "check_harness_security_defense_plugins.py",
+        "check_harness_encryption_policy.py",
+        "check_harness_security_spine_signals.py",
+        "check_harness_cost_wiring.py",
+        "check_harness_evaluation_wiring.py",
+    ]
+    command: list[str] = []
+    for index, script in enumerate(scripts):
+        if index:
+            command.append("&&")
+        command.extend(["uv", "run", "python", f"scripts/{_SCRIPT_PATHS[script]}"])
+    command.extend(["&&", "uv", "run", "intergrax", "doctor", "--ci"])
+    return Job(
+        "gate-governance-wiring",
+        (_uv_sync(), Step("Harness wiring and observability audits", command)),
+    )
+
+
+def _gate_closeout_job() -> Job:
+    return Job(
+        "gate-closeout",
+        (
+            _uv_sync(),
+            Step(
+                "Phase V architecture closeout gate",
+                ["uv", "run", "python", "scripts/release/phase_v_closeout_gate.py", "--enforce", "--enforce-l4"],
+            ),
+            Step(
+                "Phase W-ADAPT runtime L4 closeout gate",
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "scripts/release/phase_w_adapt_closeout_gate.py",
+                    "--enforce-l4-runtime",
+                ],
+            ),
+            Step(
+                "Phase W-OPS operational evidence (nightly / full dispatch)",
+                ["uv", "run", "python", "scripts/release/phase_w_ops_evidence.py"],
+            ),
+            Step(
+                "RAG load/soak nightly report (RAG-MAINT-02)",
+                ["uv", "run", "python", "scripts/release/rag_load_soak_report.py"],
+            ),
+            Step(
+                "Export harness spec schemas",
+                ["uv", "run", "python", "scripts/release/export_harness_spec_schemas.py"],
+            ),
+            Step(
+                "Export capability catalog feed",
+                ["uv", "run", "python", "scripts/release/export_capability_catalog_feed.py"],
+            ),
+        ),
+    )
+
+
+def _jobs_for_profile(profile: str) -> list[Job]:
+    if profile == "smoke":
+        return [_ci_smoke_job()]
+    if profile == "full":
+        return [
+            _gate_tests_job(),
+            _gate_governance_tier_job(),
+            _gate_governance_wiring_job(),
+            _gate_closeout_job(),
+        ]
+    if profile == "all":
+        return [_ci_smoke_job(), *_jobs_for_profile("full")]
+    raise ValueError(f"unsupported profile: {profile}")
+
+
+def _run_step(step: Step) -> int:
+    env = os.environ.copy()
+    if step.env:
+        env.update(step.env)
+    shell = sys.platform == "win32"
+    command = step.command
+    if shell and "&&" in command:
+        command_str = " ".join(command)
+        print(f"  $ {command_str}")
+        completed = subprocess.run(command_str, cwd=_REPO, env=env, shell=True, check=False)
+        return completed.returncode
+    print(f"  $ {' '.join(command)}")
+    completed = subprocess.run(command, cwd=_REPO, env=env, check=False)
+    return completed.returncode
+
+
+def _run_job(job: Job) -> tuple[int, float]:
+    started = time.monotonic()
+    print(f"\n=== job: {job.name} ===")
+    for step in job.steps:
+        print(f"\n-- {step.name}")
+        code = _run_step(step)
+        if code != 0:
+            elapsed = time.monotonic() - started
+            print(f"\nFAILED job={job.name} step={step.name} exit={code}")
+            return code, elapsed
+    elapsed = time.monotonic() - started
+    print(f"\nPASSED job={job.name} ({elapsed:.1f}s)")
+    return 0, elapsed
+
+
+def _print_summary(results: Sequence[tuple[str, int, float]]) -> int:
+    print("\n=== summary ===")
+    overall = 0
+    for job_name, code, elapsed in results:
+        status = "PASS" if code == 0 else "FAIL"
+        print(f"{status:4}  {job_name:28}  exit={code}  {elapsed:.1f}s")
+        if code != 0:
+            overall = code
+    return overall
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Run Regression gate CI profiles locally (unit-tests.yml parity)."
+    )
+    parser.add_argument(
+        "--profile",
+        choices=("smoke", "full", "all"),
+        default="all",
+        help="smoke=PR/push CI; full=nightly jobs; all=smoke then full (default).",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    jobs = _jobs_for_profile(args.profile)
+    results: list[tuple[str, int, float]] = []
+    for job in jobs:
+        code, elapsed = _run_job(job)
+        results.append((job.name, code, elapsed))
+        if code != 0:
+            return _print_summary(results)
+
+    return _print_summary(results)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

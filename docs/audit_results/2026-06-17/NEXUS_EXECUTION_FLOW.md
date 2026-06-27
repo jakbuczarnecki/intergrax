@@ -47,7 +47,7 @@ Harness FLOW 18/18 Done. No open P0/P1.
 ```bash
 uv run pytest tests/acceptance/agent_os/ -q
 uv run pytest tests/unit/runtime/nexus/ -q -k "handoff or graph_spec"
-python scripts/check_harness_no_getattr.py
+python scripts/maintenance/check_harness_no_getattr.py
 uv run pytest tests/integration/runtime/test_graph_executor_handoff_retry.py tests/integration/runtime/test_orchestration_cfg_simulation.py tests/integration/runtime/test_planning_decision_record_gate.py -q
 ```
 

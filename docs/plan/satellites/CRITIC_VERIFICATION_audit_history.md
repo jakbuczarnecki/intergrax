@@ -54,7 +54,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | **Scope** | Architecture §2 historical gaps + status; plan audit register; audit prompt regeneration |
 | **Goal** | Honest L3+ layer status — no false “open gap” list at doc open |
 | **DoD** | Architecture/plan/audit prompt aligned; closes GAP-CVL-10, CVL-BACKLOG-04 |
-| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md`, `scripts/generate_domain_audit_prompts.py`, `docs/audit/CRITIC_VERIFICATION.md` |
+| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md`, `scripts/audit/generate_domain_audit_prompts.py`, `docs/audit/CRITIC_VERIFICATION.md` |
 
 ## Sprint CVL-LC-2 — NexusEvalRunner semantic wiring (**Done** 2026-06-13)
 
@@ -589,29 +589,29 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 ```text
 Verify (every harness PR):
   uv run pytest -m gate -q
-  python scripts/check_harness_no_getattr.py
-  python scripts/check_legacy_modules_removed.py
-  python scripts/check_agent_skill_resolution.py
-  python scripts/check_harness_registry_resolution.py
-  python scripts/check_harness_capability_graph_wiring.py
-  python scripts/check_legacy_tool_plan_booleans.py
-  python scripts/check_trace_bridge_event_catalog.py
-  python scripts/check_plugin_catalog.py
-  python scripts/check_llm_adapter_typed_returns.py
-  python scripts/check_agents_llm_adapter_response.py
-  uv run python scripts/phase_w_ops_evidence.py
+  python scripts/maintenance/check_harness_no_getattr.py
+  python scripts/maintenance/check_legacy_modules_removed.py
+  python scripts/maintenance/check_agent_skill_resolution.py
+  python scripts/maintenance/check_harness_registry_resolution.py
+  python scripts/maintenance/check_harness_capability_graph_wiring.py
+  python scripts/maintenance/check_legacy_tool_plan_booleans.py
+  python scripts/maintenance/check_trace_bridge_event_catalog.py
+  python scripts/maintenance/check_plugin_catalog.py
+  python scripts/maintenance/check_llm_adapter_typed_returns.py
+  python scripts/maintenance/check_agents_llm_adapter_response.py
+  uv run python scripts/release/phase_w_ops_evidence.py
   # Per release (ops):
-  uv run python scripts/export_harness_shadow_eval_trend.py --release-id <release-id>
-  uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
-  python scripts/check_scaffold_harness_alignment.py
-  python scripts/check_agents_no_tier3_imports.py
-  python scripts/check_intergrax_no_applications_imports.py
-  uv run python scripts/check_harness_prompt_golden_catalog.py
-  uv run python scripts/check_agents_lifecycle_metadata.py
+  uv run python scripts/release/export_harness_shadow_eval_trend.py --release-id <release-id>
+  uv run python scripts/release/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
+  python scripts/maintenance/check_scaffold_harness_alignment.py
+  python scripts/maintenance/check_agents_no_tier3_imports.py
+  python scripts/maintenance/check_intergrax_no_applications_imports.py
+  uv run python scripts/maintenance/check_harness_prompt_golden_catalog.py
+  uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
   uv run intergrax doctor --ci
-  uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
-  uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
-  uv run python scripts/phase_v_capability_graph_guard.py --enforce
+  uv run python scripts/release/phase_v_closeout_gate.py --enforce --enforce-l4
+  uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+  uv run python scripts/release/phase_v_capability_graph_guard.py --enforce
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
@@ -646,7 +646,7 @@ Wave P3 (orchestration + cognition + memory):
 | ID | Status | Priority | Blocks |
 |----|--------|----------|--------|
 | FAUDIT-TIER.1 | **Done** | **Critical** | `intergrax/applications/reference/harness_manifest_catalog.py` |
-| FAUDIT-TIER.2 | **Done** | High | `scripts/check_intergrax_no_applications_imports.py` |
+| FAUDIT-TIER.2 | **Done** | High | `scripts/maintenance/check_intergrax_no_applications_imports.py` |
 | FAUDIT-INTAKE.1 | **Done** | High | `intergrax/contracts/task_envelope.py` |
 | FAUDIT-INTAKE.2 | **Done** | Medium | `tests/unit/runtime/architecture/test_faudit_remediation.py` |
 | FAUDIT-ID.1 | **Done** | High | `intergrax/contracts/actor_identity.py` |
@@ -678,8 +678,8 @@ Wave P3 (orchestration + cognition + memory):
 
 | ID | Status | Deliverable |
 |----|--------|-------------|
-| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/check_harness_prompt_golden_catalog.py`; gate test |
-| FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/check_agents_lifecycle_metadata.py` |
+| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/maintenance/check_harness_prompt_golden_catalog.py`; gate test |
+| FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/maintenance/check_agents_lifecycle_metadata.py` |
 | FAUDIT-MEM.1+ | **Done** | `should_forget_stm_record` wired in `PolicyScopedMemoryView.read` |
 
 **Explicitly deferred (Band 3 / product):** MEM-9 entity graph memory implementation (RFC only); K.1/K.2 business agents.
@@ -1159,7 +1159,7 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
 
-**Closeout gate:** `scripts/check_llm_adapter_typed_returns.py` + `scripts/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
+**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
 
 ### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
@@ -1178,7 +1178,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 
 **Prerequisites:** Phase V + V-REM + W-OPS + EVAL + COST + CG closeouts **Done**.
 
-**Runtime L4 gate:** `uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
+**Runtime L4 gate:** `uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
 
 ### 6.2 Harness architecture hardening (Band 2 — Phase V) — Done
 

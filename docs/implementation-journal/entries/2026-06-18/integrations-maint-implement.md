@@ -23,15 +23,15 @@ Added `requires_local_container` to integration manifests and catalog entries. P
 
 - `intergrax/integrations/core/manifest.py`, `contracts/base.py`
 - `intergrax/integrations/_shared/saas_only_slugs.py`, `USAGE.md`
-- `scripts/check_integration_p4_shell_probes.py`, `check_integration_saas_honesty.py`
+- `scripts/maintenance/check_integration_p4_shell_probes.py`, `check_integration_saas_honesty.py`
 - `tests/unit/integrations/providers/test_p5_m6_p4_providers.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/integrations/providers/test_p5_m6_p4_providers.py::test_p4_shell_health_probe -q
-uv run python scripts/check_integration_p4_shell_probes.py
-uv run python scripts/check_integration_saas_honesty.py
+uv run python scripts/maintenance/check_integration_p4_shell_probes.py
+uv run python scripts/maintenance/check_integration_saas_honesty.py
 ```
 
 ## Risks

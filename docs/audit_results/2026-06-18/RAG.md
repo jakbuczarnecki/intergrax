@@ -42,8 +42,8 @@ No open P0/P1. M-RAG-DEPTH **Done** · RAG-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_rag_otel_span_registry.py
-uv run python scripts/check_tenant_storage_isolation.py
+uv run python scripts/maintenance/check_rag_otel_span_registry.py
+uv run python scripts/maintenance/check_tenant_storage_isolation.py
 uv run pytest tests/unit/rag/ -q
 ```
 

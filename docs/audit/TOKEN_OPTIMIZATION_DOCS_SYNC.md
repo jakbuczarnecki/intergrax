@@ -279,7 +279,7 @@ Run lightweight doc checks only.
 Required if available:
 
 ```bash
-uv run python scripts/check_docs_domain_pairs.py
+uv run python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Do not run the full test suite.

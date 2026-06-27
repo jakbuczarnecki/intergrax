@@ -22,7 +22,7 @@ Continue Tier-3 application architecture sprint queue: APP-OPS-1 — environment
 - `capability_graph_deploy_gate.py` — `build_environment_capability_deploy_report`, `validate_strict_capability_graph_deploy`, `check_strict_product_capability_graph`.
 - STRICT product hosts: assembly validation + roster agents in graph + impact report + blocked lifecycles (EXPERIMENTAL/DEVELOPMENT/CANDIDATE/DEPRECATED/RETIRED).
 - `wire_environment_capability_graph` alias on `capability_graph_wiring.py`.
-- `scripts/check_capability_graph_strict_deploy.py` wired into `check_application_production_gates.py`.
+- `scripts/gates/check_capability_graph_strict_deploy.py` wired into `check_application_production_gates.py`.
 
 ## Project impact
 
@@ -39,15 +39,15 @@ STRICT product manifests are CI-gated for capability graph completeness and rost
 
 - `intergrax/applications/_shared/capability_graph_deploy_gate.py`
 - `intergrax/applications/_shared/capability_graph_wiring.py`
-- `scripts/check_capability_graph_strict_deploy.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/gates/check_capability_graph_strict_deploy.py`
+- `scripts/gates/check_application_production_gates.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/applications/test_capability_graph_deploy_gate.py \
   tests/unit/scripts/test_check_capability_graph_strict_deploy.py -q
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (8 tests).

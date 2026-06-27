@@ -590,9 +590,9 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/agents/authoring/context_assembly_bridge.py` | 2 | ACP `ContextAssemblyRequest` builder |
 | `intergrax/agents/uaep.py` | 2 bridge | UAEP hooks + `CONTEXT_ASSEMBLED` v2 |
 | `intergrax/runtime/nexus/context/runtime_state_handle_bridge.py` | 1 | RuntimeState → CE provider metadata sync (CE-HANDLE-FILL) |
-| `scripts/check_context_engine_wiring.py` | — | CI preset resolution gate |
-| `scripts/check_context_builtin_providers.py` | — | CI builtin collect wiring gate (CE-PROV-GATE) |
-| `scripts/check_context_otel_span_registry.py` | — | CI span wiring gate |
+| `scripts/maintenance/check_context_engine_wiring.py` | — | CI preset resolution gate |
+| `scripts/maintenance/check_context_builtin_providers.py` | — | CI builtin collect wiring gate (CE-PROV-GATE) |
+| `scripts/maintenance/check_context_otel_span_registry.py` | — | CI span wiring gate |
 
 ---
 

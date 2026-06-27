@@ -53,9 +53,9 @@ Agents and hosts can invoke a harness-owned ephemeral code path with AST/import/
 ```bash
 uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ -q
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
-python scripts/check_docs_domain_pairs.py
-python scripts/check_harness_adr.py
+python scripts/maintenance/check_harness_no_getattr.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_harness_adr.py
 ```
 
 Result: 17 codecraft tests pass; full gate **1980 passed** (739s); harness doc/ADR/getattr checks pass.

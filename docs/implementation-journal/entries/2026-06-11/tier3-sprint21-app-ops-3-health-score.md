@@ -22,7 +22,7 @@ Continue Tier-3 application architecture sprint queue: APP-OPS-3 — continuous 
 - `environment_health_score.py` — `EnvironmentHealthScore`, `HealthDimensionScore`, `ApplicationHealthScore`, `HealthDimension`.
 - `health_score_wiring.py` — rollup from APP-PROD/EVOL/OPS gates across nine dimensions; `check_strict_product_health_scores`.
 - `doctor_health_app.py` — `intergrax doctor health-app` with `--json`, `--write`, `--fail-below`.
-- `scripts/check_application_health_score.py` wired into production gates.
+- `scripts/maintenance/check_application_health_score.py` wired into production gates.
 
 ## Project impact
 
@@ -41,8 +41,8 @@ STRICT product hosts now expose a 0–1 ops health score per environment with di
 - `intergrax/applications/_shared/health_score_wiring.py`
 - `intergrax/cli/doctor_health_app.py`
 - `intergrax/cli/doctor.py`
-- `scripts/check_application_health_score.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_application_health_score.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_health_score_wiring.py`
 - `tests/unit/scripts/test_check_application_health_score.py`
 
@@ -52,8 +52,8 @@ STRICT product hosts now expose a 0–1 ops health score per environment with di
 uv run pytest tests/unit/applications/test_health_score_wiring.py \
   tests/unit/scripts/test_check_application_health_score.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_application_health_score.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_application_health_score.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

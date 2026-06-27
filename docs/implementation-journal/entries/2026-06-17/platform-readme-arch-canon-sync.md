@@ -43,8 +43,8 @@ First-read onboarding now matches domain pairs and shipped `intergrax/codecraft/
 ## Verification
 
 ```bash
-python scripts/check_implementation_journal.py
-python scripts/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: pass.

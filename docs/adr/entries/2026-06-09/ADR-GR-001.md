@@ -43,5 +43,5 @@ Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security
 - `intergrax/integrations/contracts/llm_guardrail.py`
 - `intergrax/integrations/providers/llm_guardrail/_factory.py`, `_adapters.py`, `_vendor_opens.py`
 - `intergrax/applications/_shared/application_guardrail_middleware.py`, `guardrail_wiring.py`, `guardrail_assembly_resolver.py`
-- `scripts/check_harness_guardrail_wiring.py`
+- `scripts/maintenance/check_harness_guardrail_wiring.py`
 - `tests/unit/integrations/test_llm_guardrail_contract.py`, `tests/unit/applications/test_harness_guardrail_wiring.py`

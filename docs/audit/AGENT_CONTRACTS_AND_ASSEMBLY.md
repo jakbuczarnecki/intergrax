@@ -16,7 +16,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -96,7 +96,7 @@ intergrax/prompts/registry/ (YamlPromptRegistry)
 intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
 intergrax/runtime/nexus/tools/tool_loop.py  [ACP tool loop]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
-scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py
+scripts/maintenance/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py
 ```
 
 Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -200,9 +200,9 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-uv run python scripts/check_agents_lifecycle_metadata.py
-uv run python scripts/phase_v_capability_graph_guard.py
-uv run python scripts/check_agents_vendor_imports.py
+uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
+uv run python scripts/release/phase_v_capability_graph_guard.py
+uv run python scripts/maintenance/check_agents_vendor_imports.py
 uv run pytest tests/acceptance/agent_os -m agent_os -q
 uv run pytest tests/unit/agents/ -q
 uv run pytest tests/unit/agents/authoring/patterns/ -q

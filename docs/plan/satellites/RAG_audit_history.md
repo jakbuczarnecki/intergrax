@@ -262,8 +262,8 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **RAG-MAINT-01** | CI/Ops | P2 | **Done** | Beta→stable RagProfile/manifest promotion criteria + gate | `scripts/check_rag_maturity_labels.py` in rag-guard; STABLE slugs ↔ manifest |
-| 2 | **RAG-MAINT-02** | CI | P3 | **Done** | Production SLO soak depth — nightly workflow extension beyond M-RAG.36 gate marker | `scripts/rag_load_soak_report.py` → `build/rag/load_soak_report.json` nightly |
+| 1 | **RAG-MAINT-01** | CI/Ops | P2 | **Done** | Beta→stable RagProfile/manifest promotion criteria + gate | `scripts/maintenance/check_rag_maturity_labels.py` in rag-guard; STABLE slugs ↔ manifest |
+| 2 | **RAG-MAINT-02** | CI | P3 | **Done** | Production SLO soak depth — nightly workflow extension beyond M-RAG.36 gate marker | `scripts/release/rag_load_soak_report.py` → `build/rag/load_soak_report.json` nightly |
 | 3 | **RAG-MAINT-03** | Docs | P3 | **Done** | Audit prompt sync — GAP-RAG register **Closed** in known gaps | `docs/audit/RAG.md` regenerated from LC closeout |
 | 4 | **RAG-MAINT-04** | Cross-ref | P4 | **Done** | M-RAG.58 AHI adaptive routing — document **Frozen** owner (AHI domain) | Owner: [`AHI-MAINT-04`](ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) |
 

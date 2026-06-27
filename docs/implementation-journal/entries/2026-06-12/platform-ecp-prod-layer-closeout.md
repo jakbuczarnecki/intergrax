@@ -59,7 +59,7 @@ cluster/broker configuration (ECP-PROD.6 HITL queue and AUDIT-IDEAL-30.4 live cl
 ## Verification
 
 - `uv run pytest tests/unit/runtime/capacity/ tests/unit/integrations/providers/test_kubernetes_scale_client.py tests/integration/runtime/test_ecp_backpressure_scale.py -m gate -q` — 18 passed
-- `uv run python scripts/check_production_capacity_adapters.py` — OK
+- `uv run python scripts/maintenance/check_production_capacity_adapters.py` — OK
 
 ## Risks and follow-ups
 

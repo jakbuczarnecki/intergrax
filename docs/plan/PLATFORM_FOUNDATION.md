@@ -38,33 +38,33 @@
 ```text
 Verify (every harness PR):
   uv run pytest -m gate -q
-  python scripts/check_harness_no_getattr.py
-  python scripts/check_legacy_modules_removed.py
-  python scripts/check_agent_skill_resolution.py
-  python scripts/check_harness_registry_resolution.py
-  python scripts/check_harness_capability_graph_wiring.py
-  python scripts/check_legacy_tool_plan_booleans.py
-  python scripts/check_trace_bridge_event_catalog.py
-  python scripts/check_plugin_catalog.py
-  python scripts/check_llm_adapter_typed_returns.py
-  python scripts/check_agents_llm_adapter_response.py
-  uv run python scripts/phase_w_ops_evidence.py
+  python scripts/maintenance/check_harness_no_getattr.py
+  python scripts/maintenance/check_legacy_modules_removed.py
+  python scripts/maintenance/check_agent_skill_resolution.py
+  python scripts/maintenance/check_harness_registry_resolution.py
+  python scripts/maintenance/check_harness_capability_graph_wiring.py
+  python scripts/maintenance/check_legacy_tool_plan_booleans.py
+  python scripts/maintenance/check_trace_bridge_event_catalog.py
+  python scripts/maintenance/check_plugin_catalog.py
+  python scripts/maintenance/check_llm_adapter_typed_returns.py
+  python scripts/maintenance/check_agents_llm_adapter_response.py
+  uv run python scripts/release/phase_w_ops_evidence.py
   # Per release (ops):
-  uv run python scripts/export_harness_shadow_eval_trend.py --release-id <release-id>
-  uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
-  python scripts/check_scaffold_harness_alignment.py
-  python scripts/check_agents_no_tier3_imports.py
-  python scripts/check_intergrax_no_applications_imports.py
-  uv run python scripts/check_harness_prompt_golden_catalog.py
-  uv run python scripts/check_agents_lifecycle_metadata.py
+  uv run python scripts/release/export_harness_shadow_eval_trend.py --release-id <release-id>
+  uv run python scripts/release/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
+  python scripts/maintenance/check_scaffold_harness_alignment.py
+  python scripts/maintenance/check_agents_no_tier3_imports.py
+  python scripts/maintenance/check_intergrax_no_applications_imports.py
+  uv run python scripts/maintenance/check_harness_prompt_golden_catalog.py
+  uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
   uv run intergrax doctor --ci
-  uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
-  uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
-  uv run python scripts/phase_v_capability_graph_guard.py --enforce
-  python scripts/check_agents_no_inline_prompts.py
-  python scripts/check_agents_no_vendor_sdk_imports.py
-  uv run python scripts/check_ideal_harness_l3_gates.py
-  uv run python scripts/harness_maturity_report.py --enforce-l3-critical
+  uv run python scripts/release/phase_v_closeout_gate.py --enforce --enforce-l4
+  uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+  uv run python scripts/release/phase_v_capability_graph_guard.py --enforce
+  python scripts/maintenance/check_agents_no_inline_prompts.py
+  python scripts/maintenance/check_agents_no_vendor_sdk_imports.py
+  uv run python scripts/gates/check_ideal_harness_l3_gates.py
+  uv run python scripts/gates/harness_maturity_report.py --enforce-l3-critical
 ```
 
 **Out of scope for §6.1:** product/application implementation work and business backlogs. This document does not track product application roadmaps.
@@ -94,7 +94,7 @@ Verify (every harness PR):
 EVID-EVAL Eval Regression Evidence **Done** — `evidence eval` writes deterministic eval evidence artifacts and optionally enriches `evidence posture` via `EVAL_REGRESSION` when the report exists. It is not a new eval framework and does not run real LLM/provider evaluation.  
 EVID-COST Cost Evidence **Done** — `evidence cost` writes deterministic local cost evidence artifacts and optionally enriches `evidence posture` via `COST_EVIDENCE` when the report exists. It is not a billing engine, provider pricing system, cloud cost estimator, or real LLM usage meter.  
 Evidence platform proof path **Done** — the canonical local proof path is now documented in architecture and README: `certify core` → `trace export` → `evidence live-core` → `evidence eval` → `evidence cost` → `evidence posture` / `posture export`.  
-Evidence smoke audit: **Done** — canonical local proof path verified (see `HARNESS_EVIDENCE_PACK.md` § A2 closeout). README / onboarding update after smoke audit: **Done** — operator-facing proof path in README (see `HARNESS_EVIDENCE_PACK.md` § A3 closeout). Evidence artifact sanity checker / docs checker: **Done** — `scripts/check_evidence_artifacts.py` validates expected artifacts and README proof-path references (see `HARNESS_EVIDENCE_PACK.md` § A4 closeout). External one-page harness narrative: **Done** — `docs/guides/INTERGRAX_HARNESS_NARRATIVE.md` (see `HARNESS_EVIDENCE_PACK.md` § A5 closeout). **Strong ROI and polished/adopter-ready ROI are closed.** No immediate HEP evidence ROI task remains; deferred evidence waves remain deferred until explicitly prioritized. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap. **Boundary:** HEP remains §6.1 harness/platform evidence extension — not product/application work.  
+Evidence smoke audit: **Done** — canonical local proof path verified (see `HARNESS_EVIDENCE_PACK.md` § A2 closeout). README / onboarding update after smoke audit: **Done** — operator-facing proof path in README (see `HARNESS_EVIDENCE_PACK.md` § A3 closeout). Evidence artifact sanity checker / docs checker: **Done** — `scripts/maintenance/check_evidence_artifacts.py` validates expected artifacts and README proof-path references (see `HARNESS_EVIDENCE_PACK.md` § A4 closeout). External one-page harness narrative: **Done** — `docs/guides/INTERGRAX_HARNESS_NARRATIVE.md` (see `HARNESS_EVIDENCE_PACK.md` § A5 closeout). **Strong ROI and polished/adopter-ready ROI are closed.** No immediate HEP evidence ROI task remains; deferred evidence waves remain deferred until explicitly prioritized. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap. **Boundary:** HEP remains §6.1 harness/platform evidence extension — not product/application work.  
 **Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** product/application work  
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 

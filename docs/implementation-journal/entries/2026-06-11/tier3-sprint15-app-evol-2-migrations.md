@@ -22,7 +22,7 @@ Continue Tier-3 application architecture sprint queue: APP-EVOL-2 and APP-EVOL-2
 
 - `application_migration.py` — `ApplicationMigration`, `MigrationStep`, `ProfileMigration`, `GraphSpecMigration`, `OrgEnvelopeMigration`.
 - `migration_wiring.py` — load JSON migrations from `applications/*/migrations/`, typed validators, semver range checks, manifest coverage.
-- `scripts/check_application_migrations.py` wired into `check_application_production_gates.py`.
+- `scripts/maintenance/check_application_migrations.py` wired into `check_application_production_gates.py`.
 - Unit tests for contracts, wiring, and CI script.
 
 ## Project impact
@@ -40,8 +40,8 @@ Tier-3 hosts can declare versioned environment migrations with typed primitive s
 
 - `intergrax/applications/contracts/application_migration.py`
 - `intergrax/applications/_shared/migration_wiring.py`
-- `scripts/check_application_migrations.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_application_migrations.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_application_migration_contracts.py`
 - `tests/unit/applications/test_migration_wiring.py`
 - `tests/unit/scripts/test_check_application_migrations.py`
@@ -53,8 +53,8 @@ uv run pytest tests/unit/applications/test_application_migration_contracts.py \
   tests/unit/applications/test_migration_wiring.py \
   tests/unit/scripts/test_check_application_migrations.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_application_migrations.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_application_migrations.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

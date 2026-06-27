@@ -148,7 +148,7 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 
 **Operator runbook:** [`intergrax/llm_adapters/USAGE.md`](../../intergrax/llm_adapters/USAGE.md) § Catalog miss operator runbook.
 
-**CI gates:** `scripts/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) · registered in `check_observability_gates.py` and `check_audit_ideal_gates.py` (**LLM-MAINT-06**).
+**CI gates:** `scripts/maintenance/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) · registered in `check_observability_gates.py` and `check_audit_ideal_gates.py` (**LLM-MAINT-06**).
 
 ### 7.2 UAEP executor signals
 
@@ -207,7 +207,7 @@ Canonical payload families (canon §42.23.1):
 
 ### Pre-release spine consolidation checklist (OBS-MAINT-04)
 
-1. `uv run python scripts/check_observability_gates.py` green  
+1. `uv run python scripts/maintenance/check_observability_gates.py` green  
 2. Payload registry includes all `RuntimeEventType` mappings  
 3. Tenant propagation on hot-path events (`check_runtime_event_tenant_propagation.py`)  
 4. Product dashboards deferred to [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3a (Phase K) — **OBS-MAINT-02**
@@ -404,7 +404,7 @@ Audit map §21 score: **L4** (OBS-BUS-7 gate evidence).
 | Metrics export | `intergrax/runtime/metrics/export.py` |
 | Debug API | `intergrax/debug/router.py`, `formatters.py` |
 | SQLite stores | `intergrax/runtime/nexus/tracing/sqlite_run_trace_store.py`, `events/store.py` |
-| Gates | `scripts/check_observability_gates.py`, `test_observability_layer_depth_gate.py`, emission/schema/persistence audits |
+| Gates | `scripts/maintenance/check_observability_gates.py`, `test_observability_layer_depth_gate.py`, emission/schema/persistence audits |
 
 ---
 
@@ -414,8 +414,8 @@ After harness observability changes:
 
 ```bash
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_observability_gates.py
 ```
 
 `check_observability_gates.py` runs trace-bridge catalog, emission coverage, payload schema registry, persistence conformance, and L4 depth gate tests (CI: `.github/workflows/unit-tests.yml`).

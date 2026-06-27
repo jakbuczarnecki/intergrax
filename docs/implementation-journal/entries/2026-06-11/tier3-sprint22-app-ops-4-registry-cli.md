@@ -24,7 +24,7 @@ Continue Tier-3 application architecture sprint queue: APP-OPS-4 — typed appli
 - `intergrax/cli/apps.py` — `apps list|show|sync`.
 - `intergrax/cli/envs.py` — `envs list|show`.
 - Artifacts: `build/application_registry.json`, `build/environment_registry.json`.
-- `scripts/check_application_registry.py` wired into production gates.
+- `scripts/maintenance/check_application_registry.py` wired into production gates.
 
 ## Project impact
 
@@ -44,8 +44,8 @@ Platform ops now has a canonical inventory of product applications and STRICT en
 - `intergrax/cli/apps.py`
 - `intergrax/cli/envs.py`
 - `intergrax/cli/main.py`
-- `scripts/check_application_registry.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_application_registry.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_registry_ops_wiring.py`
 - `tests/unit/scripts/test_check_application_registry.py`
 
@@ -55,8 +55,8 @@ Platform ops now has a canonical inventory of product applications and STRICT en
 uv run pytest tests/unit/applications/test_registry_ops_wiring.py \
   tests/unit/scripts/test_check_application_registry.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_application_registry.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_application_registry.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

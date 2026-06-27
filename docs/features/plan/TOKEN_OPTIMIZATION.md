@@ -287,7 +287,7 @@ uv run python scripts/check_tool_schema_optimizer.py
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/context/ -q
-uv run python scripts/check_context_preflight_uses_adapter_tokens.py
+uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
 uv run python scripts/check_compression_receipts.py
 ```
 
@@ -472,7 +472,7 @@ Acceptance:
 Run:
 uv run pytest tests/unit/runtime/token_optimization/ -q
 uv run python scripts/check_token_optimization_contracts.py
-uv run python scripts/check_docs_domain_pairs.py
+uv run python scripts/audit/check_docs_domain_pairs.py
 
 Commit:
 feat: add token optimization contracts and receipts

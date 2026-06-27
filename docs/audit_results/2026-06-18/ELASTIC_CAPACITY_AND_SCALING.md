@@ -41,7 +41,7 @@ No open P0/P1. ECP-PROD **Done** · ECP-LC **Done**. Revalidation: **18/18** cap
 
 ```bash
 uv run pytest tests/unit/runtime/capacity/ -q
-uv run python scripts/check_production_capacity_adapters.py
+uv run python scripts/maintenance/check_production_capacity_adapters.py
 ```
 
 All green.

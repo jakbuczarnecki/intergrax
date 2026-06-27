@@ -7,7 +7,7 @@ Canonical orchestrator: docs/audit/ORCHESTRATOR.md
 Context budget: docs/audit/<DOMAIN>.md §0 (scoped reads — never load full plan files).
 Session: ONE domain = ONE new chat recommended.
 Skim: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
-Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <DOMAIN>).
+Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <DOMAIN>).
 Result: docs/audit_results/YYYY-MM-DD/<DOMAIN>.md from docs/audit/TEMPLATE_DOMAIN_RESULT.md
 Edit DOMAIN= line above to target basename (e.g. MEMORY, ORCHESTRATION).
 Per domain: read docs/audit/<DOMAIN>.md + audit slice + architecture/plan read-scope blocks; inspect code paths listed in audit prompt; run only listed gate scripts; classify P0–P4; write result file; sync P2–P4 to plan; P0/P1 rows only in plan — do not implement; update progress.json; report checkpoint.

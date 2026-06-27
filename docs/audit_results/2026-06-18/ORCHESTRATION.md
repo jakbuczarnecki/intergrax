@@ -20,7 +20,7 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| ORCH-AUDIT-01 | P2 | CFG-14 LKW hybrid daemon E2E incomplete; deferred §6.3 | architecture §59.3; `scripts/lkw-host.py` | deferred |
+| ORCH-AUDIT-01 | P2 | CFG-14 LKW hybrid daemon E2E incomplete; deferred §6.3 | architecture §59.3; `scripts/maintenance/lkw-host.py` | deferred |
 | ORCH-AUDIT-02 | P3 | QueuedNexusExecutionAdapter not scaffold-default | `new_application.py` `include_queue_worker=False` | **planned** (ORCH-MAINT-01) |
 | ORCH-AUDIT-03 | P3 | LKW host scheduler + interactions default off | `local_workspace_application/host/settings.py` | **planned** (ORCH-MAINT-02) |
 | ORCH-AUDIT-04 | P3 | Task priority scheduling not in queueing plane | `intergrax/queueing/` | **planned** (ORCH-MAINT-03) |

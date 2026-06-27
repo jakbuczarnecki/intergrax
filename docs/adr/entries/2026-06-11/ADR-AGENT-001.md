@@ -69,6 +69,6 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 ```bash
 uv run pytest tests/unit/agents/authoring/patterns/ -q
 uv run pytest tests/acceptance/agent_os -m agent_os -q
-python scripts/check_agents_vendor_imports.py
+python scripts/maintenance/check_agents_vendor_imports.py
 uv run pytest -m gate -q
 ```

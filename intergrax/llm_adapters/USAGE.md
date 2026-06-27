@@ -409,7 +409,7 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Lab reference host manifest
 - [x] Acceptance: budget rule switches profile (resolver-level)
 - [x] `DynamicLLMRouter` on ACP when profile set
-- [x] CI gate `python scripts/check_llm_routing_rules.py`
+- [x] CI gate `python scripts/maintenance/check_llm_routing_rules.py`
 
 **Enterprise hardening (M-LLM-X.11 — Done · mid-run Nexus):**
 
@@ -463,7 +463,7 @@ env.llm_routing_profile = LLMRoutingProfile(
 
 **Current maturity label:** **L5** (strict mid-run routing on core UAEP/Nexus/ACP paths).
 
-**Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
+**Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/maintenance/check_llm_routing_rules.py`.
 
 **HF models:** serve weights via **vLLM** or **llama.cpp** — use the model id on the local profile; HF Hub remains object storage only.
 
