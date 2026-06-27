@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphEdge, GraphNode
-from intergrax.runtime.architecture.graph_visualization import build_graph_editor_artifact
+from intergrax.applications._shared.graph_visualization import build_graph_editor_artifact
 
 
 class GraphEditorRequest(BaseModel):

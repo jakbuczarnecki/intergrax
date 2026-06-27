@@ -20,7 +20,7 @@ from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.contracts.orchestration_enums import MergeStrategy, MultiAgentOrder
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.orchestration_capabilities import (
-    orchestration_capabilities_from_graph_spec,
+    orchestration_capabilities_from_triggers,
 )
 from intergrax.runtime.nexus.planning.nexus_llm_plan_builder import build_nexus_plan_from_llm
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
@@ -224,7 +224,9 @@ def resolve_nexus_task_classifier(
     """Map ``OrchestrationProfile.classifier_kind`` to a classifier implementation."""
     kind = _normalize_classifier_kind(env.orchestration_profile.classifier_kind)
     context = wiring_context or OrchestrationWiringContext()
-    orch_triggers = orchestration_capabilities_from_graph_spec(env.graph_spec)
+    orch_triggers = orchestration_capabilities_from_triggers(
+        env.graph_spec.trigger_capabilities if env.graph_spec is not None else None,
+    )
     pipeline_suffix = (
         env.graph_spec.pipeline_capability_suffix
         if env.graph_spec is not None

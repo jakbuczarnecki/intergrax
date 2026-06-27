@@ -17,10 +17,8 @@ from intergrax.runtime.architecture.capability_graph import (
     CapabilityNode,
     CapabilityNodeType,
 )
-from intergrax.runtime.architecture.capability_graph_applications import (
-    application_capability_node_id,
-    resolve_binding_agent_contract_id,
-)
+from intergrax.applications._shared.capability_graph_catalog import resolve_binding_agent_contract_id
+from intergrax.runtime.architecture.capability_graph_applications import application_capability_node_id
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,7 +38,7 @@ def _seed_node_ids(
     manifest: ApplicationManifest,
     snapshot: HarnessRegistrySnapshot,
 ) -> frozenset[str]:
-    seeds: set[str] = {application_capability_node_id(manifest), "policy:runtime_policy_bundle"}
+    seeds: set[str] = {application_capability_node_id(manifest.app_id), "policy:runtime_policy_bundle"}
     for tool_id in snapshot.tool_ids():
         seeds.add(f"tool:{tool_id}")
     for skill_id in snapshot.skill_ids():
@@ -94,7 +92,7 @@ def build_environment_seed_capability_graph(
     for node_id in sorted(_seed_node_ids(manifest, snapshot)):
         node_by_id[node_id] = CapabilityNode(node_id=node_id, node_type=_node_type_from_id(node_id))
 
-    application_node = application_capability_node_id(manifest)
+    application_node = application_capability_node_id(manifest.app_id)
     policy_node = "policy:runtime_policy_bundle"
     edges.append(
         CapabilityEdge(
@@ -187,7 +185,7 @@ def build_environment_capability_graph_from_wiring(
     snapshot: HarnessRegistrySnapshot,
 ) -> CapabilityGraph:
     """Build capability graph from manifest roster and environment registry snapshot only."""
-    application_node = application_capability_node_id(manifest)
+    application_node = application_capability_node_id(manifest.app_id)
     nodes_by_id: dict[str, CapabilityNode] = {}
     node_ids: set[str] = set()
     edges: list[CapabilityEdge] = []
