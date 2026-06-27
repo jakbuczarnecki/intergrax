@@ -138,17 +138,25 @@ def test_mcp_enabled_factory_mounts_mcp_route_when_available() -> None:
 
 
 def test_scaffold_defaults_mcp_to_opt_in(tmp_path: Path) -> None:
-    from intergrax.scaffold.new_application import create_application
+    from tests.unit.applications.scaffold_runtime_helper import (
+        import_scaffold_modules,
+        prepare_scaffold_package,
+        product_settings_class,
+    )
 
-    target = create_application(
+    target, pkg, short = prepare_scaffold_package(
+        tmp_path,
         name="mcp_opt_in_test",
-        agents=["echo"],
         profile="product",
-        root=tmp_path,
         port=8298,
-        force=True,
+        route_prefix="/v1/mcp_opt_in_test",
+        agents=["echo"],
     )
     settings_text = (target / "host" / "settings.py").read_text(encoding="utf-8")
     env_text = (target / ".env.example").read_text(encoding="utf-8")
-    assert "include_mcp: bool = False" in settings_text
+    assert "IntergraxApplicationSettingsBase" in settings_text
     assert "INCLUDE_MCP=false" in env_text
+
+    _, settings_mod = import_scaffold_modules(pkg)
+    settings_cls = product_settings_class(settings_mod, short)
+    assert settings_cls.from_env().include_mcp is False

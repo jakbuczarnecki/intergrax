@@ -56,7 +56,7 @@ class _RoutingTraceAgent(IntergraxAgent):
 @pytest.mark.gate
 async def test_acp_run_records_routing_rule_in_step_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        "intergrax.runtime.wiring.llm_resolver.resolve_llm_adapter",
         lambda _env, **kwargs: FakeLLMAdapter(),
     )
 
@@ -67,7 +67,7 @@ async def test_acp_run_records_routing_rule_in_step_diagnostics(monkeypatch: pyt
         return _provider
 
     monkeypatch.setattr(
-        "intergrax.applications._shared.llm_routing_context_bridge.make_acp_routing_context_provider",
+        "intergrax.runtime.wiring.llm_routing_context_bridge.make_acp_routing_context_provider",
         _simple_provider,
     )
     primary = LLMProfile(provider=LLMProvider.OPENAI, model="premium")
