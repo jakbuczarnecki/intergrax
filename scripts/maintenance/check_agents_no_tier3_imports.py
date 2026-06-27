@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Fail when Tier-2 agents import Tier-3 application composition (Phase AA-S0.1)."""
+"""Fail when Tier-2 agents import Tier-3 application composition."""
 
 from __future__ import annotations
 
@@ -13,11 +13,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCAN_ROOT = REPO_ROOT / "agents"
 
 FORBIDDEN = re.compile(
-    r"^\s*(?:from|import)\s+intergrax\.applications\b",
+    r"^\s*(?:from|import)\s+(?:intergrax\.applications|applications)\b",
     re.MULTILINE,
 )
-
-GRANDFATHER: frozenset[str] = frozenset()
 
 
 def main() -> int:
@@ -29,12 +27,10 @@ def main() -> int:
         if "tests" in path.parts:
             continue
         rel = path.relative_to(REPO_ROOT).as_posix()
-        if rel in GRANDFATHER:
-            continue
         if FORBIDDEN.search(path.read_text(encoding="utf-8")):
             violations.append(rel)
     if violations:
-        print("Tier-2 agents must not import intergrax.applications:")
+        print("Tier-2 agents must not import applications/ or intergrax.applications:")
         for item in sorted(violations):
             print(f"  - {item}")
         return 1

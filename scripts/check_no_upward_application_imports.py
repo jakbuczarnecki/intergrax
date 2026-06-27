@@ -9,12 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-FORBIDDEN = re.compile(
-    r"^\s*(?:from|import)\s+(?:intergrax\.applications|applications)\b",
-    re.MULTILINE,
-)
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 SCAN_ROOTS = (
     REPO_ROOT / "agents",
@@ -25,6 +20,11 @@ SCAN_ROOTS = (
     REPO_ROOT / "intergrax" / "tools",
     REPO_ROOT / "intergrax" / "skills",
     REPO_ROOT / "intergrax" / "llm_adapters",
+)
+
+FORBIDDEN = re.compile(
+    r"^\s*(?:from|import)\s+(?:intergrax\.applications|applications)\b",
+    re.MULTILINE,
 )
 
 
@@ -44,7 +44,7 @@ def main() -> int:
         for item in sorted(set(violations)):
             print(f"  - {item}")
         return 1
-    print("intergrax tier-3 applications import audit: OK")
+    print("no upward application imports: OK")
     return 0
 
 
