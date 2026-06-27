@@ -10,6 +10,7 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from local_workspace_application.serving.run_artifact_metadata import ensure_run_artifact_bundle_metadata
 from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
 from local_workspace_application.serving.schemas import LocalWorkspaceRunRequestV1, LocalWorkspaceRunResponseV1
 
@@ -44,6 +45,7 @@ class LocalWorkspaceRunService:
         )
         result = await self.task_runner.run_task(task)
         metadata = dict(result.metadata)
+        ensure_run_artifact_bundle_metadata(metadata, task_result=result)
         attach_lkw_evidence_metadata(
             metadata,
             task_result=result,

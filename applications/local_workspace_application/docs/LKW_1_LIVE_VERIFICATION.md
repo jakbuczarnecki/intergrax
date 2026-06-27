@@ -169,14 +169,16 @@ Result: 9 passed, 12 warnings
 Platform follow-ups deferred:
 
 ```text
-RunArtifactBundle / WorkspaceArtifactRef platform wiring
 RAG ingest-specific observability contract
 search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary -> LKW-H1.3
 policy decisions and raw tool reason/error at RuntimeEvent layer
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
+ACP shadow_workspace_id propagation into execution structured_data (PF2 follow-up)
 ```
 
 **LKW-PF1:** immediate `TOOL_*` RuntimeEvents — PASSED WITH FOLLOW-UP (see §LKW-PF1).
+
+**LKW-PF2:** RunArtifactBundle / WorkspaceArtifactRef — PASSED WITH FOLLOW-UP (see §LKW-PF2).
 
 ## LKW.1.15 — tenant-scoped retrieve for live search
 
@@ -316,15 +318,76 @@ via runtime event bus but not yet assertable from POST /v1/local_workspace/run r
 Queue:
 
 ```text
-NEXT: LKW-PF2-RUN-ARTIFACT-BUNDLE-SYNTHESIZE
-THEN: LKW.2
+NEXT: LKW.2
+```
+
+## LKW-PF2 — RunArtifactBundle / WorkspaceArtifactRef for synthesize
+
+Status:
+
+```text
+PASSED WITH FOLLOW-UP
+```
+
+Decision:
+
+```text
+Reuse existing platform contracts (no LKW-specific artifact layer):
+- intergrax/contracts/task_artifacts.py — RunArtifactBundle, WorkspaceArtifactRef
+- run_artifact_bundle.v1 metadata key (nexus task finisher rollup)
+LKW application promotes bundle on HTTP metadata and correlates synthesize diagnostics
+to workspace refs by artifact_path / artifact_ref.
+```
+
+Wiring:
+
+```text
+applications/local_workspace_application/serving/run_artifact_metadata.py
+applications/local_workspace_application/serving/fastapi_router.py
+```
+
+Metadata exposed (safe):
+
+```text
+run_artifact_bundle.v1.workspace[].artifact_id
+run_artifact_bundle.v1.workspace[].workspace_id
+run_artifact_bundle.v1.workspace[].relative_path
+run_artifact_bundle.v1.workspace[].uri
+run_artifact_bundle.v1.workspace[].size_bytes / sha256
+lkw.synthesize_summary.v1 (unchanged domain diagnostic)
+```
+
+Not exposed:
+
+```text
+raw synthesized content, raw evidence text, raw prompts, full file bodies
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_run_artifact_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
+```
+
+Follow-up:
+
+```text
+ACP session path should propagate shadow_workspace_id into AgentExecutionResult.structured_data
+so bundle workspace resolution does not rely solely on task-id fallback open_or_create.
+```
+
+Queue:
+
+```text
+NEXT: LKW.2
 ```
 
 ## Known follow-ups after LKW.1 / H1.1 / H1.2
 
 ```text
-Search/synthesize per-tool accounting in trace/summary -> LKW-H1.3
-RunArtifactBundle, RAG ingest observability contract -> LKW-PF2 / platform deferred
+Search/synthesize per-tool accounting in trace/summary -> LKW-H1.3 (closed)
+RAG ingest observability contract -> platform deferred
+ACP shadow_workspace_id on execution structured_data -> PF2 follow-up
 Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 

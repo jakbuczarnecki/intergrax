@@ -434,6 +434,8 @@ async runtime plugin coroutine warnings in event_bus/task_trace handlers
 
 **LKW-PF1 (2026-06-27):** PASSED WITH FOLLOW-UP — immediate `TOOL_*` RuntimeEvents wired in `RuntimeExecutionContext.invoke_tool`; unit coverage in `tests/unit/contracts/test_invoke_tool_runtime_events.py`. Follow-up: expose runtime event log on LKW HTTP responses or a dedicated read API for live smoke assertions.
 
+**LKW-PF2 (2026-06-27):** PASSED WITH FOLLOW-UP — platform contract reused (`intergrax/contracts/task_artifacts.py`: `RunArtifactBundle`, `WorkspaceArtifactRef`; key `run_artifact_bundle.v1`). LKW wires synthesize shadow artifacts through existing nexus task-finisher bundle rollup and promotes bundle on HTTP metadata via `serving/run_artifact_metadata.py`. Domain diagnostic `lkw.synthesize_summary.v1` preserved; bundle exposes refs/paths only (no raw synthesized content). Follow-up: propagate `shadow_workspace_id` on ACP execution structured_data for deterministic workspace resolution.
+
 
 
 
@@ -442,7 +444,7 @@ async runtime plugin coroutine warnings in event_bus/task_trace handlers
 | ID | Title | Narrow scope |
 |----|-------|--------------|
 | **LKW-PF1** | Immediate tool RuntimeEvent emission | **PASSED WITH FOLLOW-UP** — `invoke_tool` emits `TOOL_REQUESTED/COMPLETED/FAILED/DENIED` with generic platform payload (`tool_id`, `status`, `latency_ms`, `args_digest`, `error_code`, spine ids). LKW live smoke has no public runtime-event log endpoint yet. |
-| **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | Platform artifact reference wiring so synthesize `artifact_path`/`artifact_ref` can be surfaced as first-class run artifacts. Runtime must remain app-agnostic; no LKW-specific artifact logic. |
+| **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | **PASSED WITH FOLLOW-UP** — reuses platform `run_artifact_bundle.v1` / `WorkspaceArtifactRef`; LKW HTTP responses expose bundle via `run_artifact_metadata.py`; synthesize diagnostic correlated by `artifact_path` / `artifact_ref`. Follow-up: ACP path should propagate `shadow_workspace_id` into execution structured_data for deterministic bundle resolution before task-id fallback. |
 ### H1.3 result
 
 Status:
