@@ -74,7 +74,7 @@ Every LKW iteration must bound read scope, search scope, and test scope so Curso
 - Cursor must read **only cited document sections**, not full architecture/plan hubs or domain packs.
 - Cursor may expand scope only when a cited file imports a dependency that must change, a targeted test fails because of a cross-module contract, the implementation point does not exist in the given scope, or [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) reveals a real need to change scaffold, env, Docker, or CI.
 - Expansion budget: at most **3 files** outside read scope per task. After 3 reads or 3 failed greps: stop and report.
-- Pattern anchor for LKW Tier-2 catalog-tool work: [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md).
+- Pattern anchor for Tier-2 catalog-tool work: [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../../intergrax/agents/authoring/runtime_tool_helpers.py).
 - Default tests: new/changed test + one narrow smoke, not the full suite.
 - Default report: terse — changed files, tests run, pass/fail, commit SHA, platform propagation yes/no.
 
@@ -89,7 +89,7 @@ Goal:
 Read scope:
 - `<path>` — section `<id>` only
 - `<path>` — `<function or line range if known>`
-- `agents/lkw_shared/PATTERN.md` — when task invokes catalog tools
+- `intergrax/agents/authoring/runtime_tool_helpers.py` — when task invokes catalog tools
 - existing tests: `<path or glob under one module>`
 
 Implementation point:
