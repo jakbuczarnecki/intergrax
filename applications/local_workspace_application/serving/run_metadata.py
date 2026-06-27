@@ -9,7 +9,7 @@ from typing import Any
 from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.runtime.task.task import TaskResult
 from intergrax.runtime.task.task_metadata_keys import TaskResultMetadataKey
-from lkw_shared.evidence_slice import (
+from local_workspace_application.serving.evidence_slice import (
     LKW_EVIDENCE_SCHEMA_VERSION,
     build_lkw_evidence_slice_from_step_diagnostics,
 )

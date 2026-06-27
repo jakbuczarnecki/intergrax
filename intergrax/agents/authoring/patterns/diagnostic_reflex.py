@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Shared LKW Reflex agent wiring for typed domain diagnostics."""
+"""Reflex pattern with typed diagnostic payload propagation."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from intergrax.contracts.agent_run_enums import AgentRunErrorCode, TerminalReaso
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
-class LkwReflexAgent(ReflexAgent):
-    """Reflex agent base that propagates typed LKW domain diagnostics."""
+class DiagnosticReflexAgent(ReflexAgent):
+    """Reflex agent base that propagates typed domain diagnostics into StepOutcome."""
 
     @abstractmethod
     def build_diagnostic_payloads(self, output: dict[str, object]) -> list[DiagnosticPayload]:

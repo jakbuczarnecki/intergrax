@@ -312,7 +312,7 @@ def test_run_index_job_output_attaches_index_summary_diagnostic() -> None:
             "num_chunks": 2,
         }
     }
-    from lkw_shared.diagnostics import index_diagnostic_from_output
+    from local_indexer.diagnostics import index_diagnostic_from_output
 
     payload = index_diagnostic_from_output(output)
     assert payload.schema_id() == "lkw.index_summary.v1"

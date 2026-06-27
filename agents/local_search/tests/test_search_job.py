@@ -207,7 +207,7 @@ def test_run_search_job_output_attaches_search_summary_diagnostic() -> None:
             "raw_tool_reason": "retriever_failed",
         }
     }
-    from lkw_shared.diagnostics import search_diagnostic_from_output
+    from local_search.diagnostics import search_diagnostic_from_output
 
     payload = search_diagnostic_from_output(output)
     assert payload.schema_id() == "lkw.search_summary.v1"

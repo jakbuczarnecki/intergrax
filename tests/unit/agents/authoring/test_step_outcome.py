@@ -9,7 +9,7 @@ from intergrax.contracts.agent_run_enums import (
     StepNextAction,
     TerminalReason,
 )
-from lkw_shared.diagnostics import LkwIndexSummaryDiagnostic
+from local_indexer.diagnostics import IndexSummaryDiagnostic
 
 
 @pytest.mark.unit
@@ -61,7 +61,7 @@ def test_step_outcome_replan_sets_replanned() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_step_outcome_complete_merges_diagnostic_payloads() -> None:
-    payload = LkwIndexSummaryDiagnostic(
+    payload = IndexSummaryDiagnostic(
         accepted_count=1,
         rejected_count=0,
         ingested_count=1,

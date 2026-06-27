@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_run_enums import AgentRunStatus, StepNextAction
 from intergrax.contracts.agent_run_trace import AgentRunTrace, AgentStepRecord, AgentStepStatus
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_metadata_keys import TaskResultMetadataKey
-from lkw_shared.evidence_slice import (
+from local_workspace_application.serving.evidence_slice import (
     LKW_EVIDENCE_SCHEMA_VERSION,
     build_lkw_evidence_slice,
     build_lkw_evidence_slice_from_step_diagnostics,

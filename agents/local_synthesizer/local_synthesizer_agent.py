@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from local_synthesizer.capabilities import CAPABILITIES
 from local_synthesizer.contract import build_agent_contract
+from local_synthesizer.diagnostics import synthesize_diagnostic_from_output
 from local_synthesizer.steps.synthesize_job import run_synthesize_job
-from lkw_shared.agent_base import LkwReflexAgent
-from lkw_shared.diagnostics import synthesize_diagnostic_from_output
+from intergrax.agents.authoring.patterns.diagnostic_reflex import DiagnosticReflexAgent
 from intergrax.agents.authoring.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
@@ -24,7 +24,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
-class LocalSynthesizerAgent(LkwReflexAgent):
+class LocalSynthesizerAgent(DiagnosticReflexAgent):
     """LKW synthesizer agent — typed Reflex pattern (ACP-MIG-4)."""
 
     contract_id = "local_synthesizer"

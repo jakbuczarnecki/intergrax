@@ -208,7 +208,7 @@ def test_run_synthesize_job_output_attaches_synthesize_summary_diagnostic() -> N
             "artifact_path": "draft.md",
         }
     }
-    from lkw_shared.diagnostics import synthesize_diagnostic_from_output
+    from local_synthesizer.diagnostics import synthesize_diagnostic_from_output
 
     payload = synthesize_diagnostic_from_output(output)
     assert payload.schema_id() == "lkw.synthesize_summary.v1"
