@@ -68,8 +68,10 @@ Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) 
 | `intergrax/` (not `runtime/`) | `tier-0` | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` |
 | `intergrax/runtime/` | `tier-1` | Same domain pair |
 | `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md`; `agents/<slug>/adr/` if ADR |
-| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/ARCHITECTURE.md` |
+| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/docs/ARCHITECTURE.md`; `applications/<pkg>/docs/adr/` if ADR |
 | `intergrax/applications/_shared/` | `tier-3` | Link shared module + consuming host(s) |
+
+**Tier-3 doc layout:** Application root contains `README.md` only. All other Markdown documentation belongs under `applications/<pkg>/docs/`.
 
 ## Content rules
 

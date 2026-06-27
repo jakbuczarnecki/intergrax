@@ -531,7 +531,7 @@ applications/my_lab_application/docker/build-docker.sh
 
 Product profile: also `curl http://127.0.0.1:8000/health` before `POST <route_prefix>/run`.
 
-Operational detail: `applications/<pkg>/BUILD_AND_DEPLOY.md`.
+Operational detail: `applications/<pkg>/docs/BUILD_AND_DEPLOY.md`.
 
 #### E.6 — HTTP verification
 
