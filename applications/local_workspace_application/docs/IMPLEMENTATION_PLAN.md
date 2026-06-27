@@ -1,15 +1,17 @@
-﻿# Local Knowledge Workspace (LKW) — Implementation Plan
+# Local Knowledge Workspace (LKW) — Implementation Plan
 
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **Active queue: LKW-H1 → LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **Active queue: LKW-H1.2 → LKW-H1.3 → LKW.2**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
 ```text
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
+
+Latest observability snapshot: **2026-06-27 — LKW-H1.1 PASSED for live index tool-call accounting**. Live UAEP/Nexus index runs now report `total_tool_calls=1` for `rag.ingest_document` after forwarding `uaep_exec_ctx` through `build_uaep_step_context()`.
 
 Current status source of truth: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
@@ -142,7 +144,7 @@ This track is executed one task at a time.
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Next** | High |
+| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **In progress — H1.1 passed; H1.2 next** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
@@ -277,15 +279,16 @@ qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw
 - [x] Runtime event phase contract fixed in LKW.1.12.
 - [x] UAEP/ACP host catalog tool invocation bridge fixed in LKW.1.13.
 - [x] Tenant-scoped retrieve and local_search allowed-tool declaration fixed in LKW.1.15.
-- [ ] Live diagnostic/inspection lessons are reflected in LKW-H1.
+- [x] Live index tool-call accounting fixed in LKW-H1.1.
+- [ ] Broader trace/evidence inspection lessons are reflected in LKW-H1.2/H1.3.
 - [ ] Any remaining env/settings/scaffold/Docker/CI implications from LKW.1 are recorded in H1/H3 if they prove reusable.
 
 ### Known follow-ups after LKW.1
 
 | Follow-up | Classification | Target |
 |----------|----------------|--------|
-| `total_tool_calls=0` despite real tool effects | Observability/accounting | LKW-H1 |
-| Need inspectable tool status, raw reason/error, RAG evidence, shadow artifact path | Observability/evidence | LKW-H1 |
+| Search/synthesize tool-call visibility needs live verification after index accounting fix | Observability/accounting | LKW-H1.2 / LKW-H1.3 |
+| Need inspectable tool status, raw reason/error, RAG evidence, shadow artifact path | Observability/evidence | LKW-H1.2 |
 | Standalone synthesize with message-only input returns `content_missing` | Pipeline/orchestration input contract | LKW.2 |
 | Developer first-run/adoption simplification | Packaging/adoption | LKW-H3 |
 
@@ -312,11 +315,13 @@ LKW-H1 is **not** the hosted observability stack. It is the minimum local inspec
 
 ### Known diagnosed input
 
-LKW.1.15 passed product behavior, but observability still needs cleanup:
+LKW.1.15 passed product behavior. H1.1 fixed the first accounting gap for live index runs:
 
 ```text
-total_tool_calls=0 remains an observability/accounting gap despite real tool effects.
+local.workspace.index -> rag.ingest_document -> application_run_summary.v1 total_tool_calls=1
 ```
+
+The remaining H1 work is broader inspection: search/synthesize accounting verification, raw tool status/reason, RAG evidence, policy decisions, and shadow artifact paths.
 
 H1 must improve visibility. It must not replace or reopen product execution blockers that are already fixed in LKW.1.9–LKW.1.15.
 
@@ -336,20 +341,45 @@ For every LKW proof run, the operator should be able to inspect:
 - terminal outcome;
 - diagnostics from non-fatal lifecycle/finalization failures.
 
+### H1.1 result
+
+Status:
+
+```text
+PASSED for live index tool-call accounting
+```
+
+Summary:
+
+```text
+62621bc1 fixed catalog tool-call recording and kernel harvest for RuntimeExecutionContext.invoke_tool().
+a22222e0 fixed the live UAEP bridge path by forwarding uaep_exec_ctx from build_uaep_step_context().
+Focused tests passed: 11 passed, 4 warnings.
+Live index smoke passed: accepted=1, ingested=1, chunks=1, total_tool_calls=1.
+```
+
+Known non-blocking warnings:
+
+```text
+Application tests emitted async runtime plugin warnings about coroutines not awaited in event_bus/task_trace handlers.
+Those warnings are tracked separately from H1.1 tool-call accounting unless they become reproducible operational failures.
+```
+
 ### Tasks
 
 | ID | Task | Module | Status | Platform propagation |
 |----|------|--------|--------|----------------------|
-| LKW-H1.1 | Fix live run observability and tool-call accounting, including `total_tool_calls=0` | runtime/tool accounting + LKW host evidence | **Next** | Promote reusable inspection/accounting contract to platform docs/tests if generic |
-| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | Planned | Update event/trace scaffold or docs if reusable |
+| LKW-H1.1 | Fix live run observability and tool-call accounting, including `total_tool_calls=0` | runtime/tool accounting + LKW host evidence | **Completed / index live accounting passed** | Reusable UAEP/ACP RuntimeExecutionContext tool-call accounting covered by platform tests |
+| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | **Next** | Update event/trace scaffold or docs if reusable |
 | LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | Planned | Update generated app test pattern if reusable |
 
 Acceptance:
 
 - [ ] A reviewer can see what happened in an LKW run from task submission to terminal result.
 - [ ] Tool calls, policy decisions, RAG evidence, raw tool reason/error, and shadow artifact path are visible.
-- [ ] `total_tool_calls=0` is fixed or replaced by an explicitly equivalent trace/evidence field.
-- [ ] No hosted dashboard or external observability backend is required.
+- [x] `total_tool_calls=0` is fixed for the live index path (`rag.ingest_document`).
+- [ ] Search/synthesize tool-call visibility is verified for `rag.retrieve` and `workspace.write_file`.
+- [x] No hosted dashboard or external observability backend is required.
 - [ ] Platform proof checklist in §0a is completed.
 
 ---
@@ -389,138 +419,3 @@ Acceptance:
 | LKW-H3.1 | Define minimal developer first-run path for LKW and scaffolded apps | README / BUILD_AND_DEPLOY / LKW docs / scaffold docs | New developer can run host, index fixture, search, and synthesize from documented commands |
 | LKW-H3.2 | Decide optional dependency split | `pyproject.toml` / docs | Minimal install story is clear; heavy optional stacks are documented or split |
 | LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits the improved env/build/deploy documentation pattern |
-
-Potential packaging direction:
-
-```text
-intergrax-core
-intergrax-lab
-intergrax-lkw
-intergrax-rag
-intergrax-all
-```
-
-Do not start a full packaging split before H1 records the evidence path, but capture dependency lessons during every wave.
-
----
-
-## 7. Deferred architecture watchlist
-
-These items are real architectural pressure points, but they must not block LKW-H1.
-
-| ID | Topic | Current decision | Trigger for action |
-|----|-------|------------------|-------------------|
-| LKW-W1 | `NexusLoop` constructor width | Accept as composition-root pressure | Refactor only if LKW requires repeated custom wiring, makes tests brittle, or forces duplicated bootstrap logic |
-| LKW-W2 | `StepKernelContext` width | Accept as kernel execution-context pressure | Refactor only if unrelated concerns start changing together or test setup becomes excessive |
-
-### LKW.1.6 follow-ups (non-blocking)
-
-Recorded at Docker/run parity closeout; do not block remaining LKW work.
-
-| ID | Topic | Notes |
-|----|-------|-------|
-| LKW.1.6-F1 | Legacy application Dockerfiles | Pre-scaffold application Dockerfiles should receive build-time factory smoke. |
-| LKW.1.6-F2 | `attestation_demo` agent COPY | `attestation_demo` `COPY agents/ ./agents/` must be documented as a demo exception or narrowed to the required agent subset. |
-| LKW.1.6-F3 | `architecture_health_wiring` global catalog | Remains governance-only; must not become default product application startup wiring. |
-
-Watchlist rule: do not refactor these components because they look wide. Refactor only when LKW exposes a measurable implementation, testing, or maintenance cost.
-
----
-
-## 8. Remaining product waves (summary)
-
-Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
-
-| ID | Key deliverables |
-|----|------------------|
-| LKW.4 | `message_bus` background ingest queue |
-| LKW.5 | `LKW_DATA_HOME` in settings, persistent vector store path under `data/` |
-| LKW.6 | `scripts/lkw-host`, systemd/launchd/Windows unit, `wire_interaction_intake_service` |
-| LKW.6b | Socket Mode → `/lkw` mapping; HITL notify |
-| LKW.7 | `host/indexer_worker.py`, watcher + queue |
-| LKW.8 | `clients/lkw-tray/` — HTTP-only client |
-
----
-
-## 9. End-to-end validation scenarios
-
-| ID | Scenario | Waves |
-|----|----------|-------|
-| E0 | Runtime hardening gate: strict policy, max_steps boundary, finalization diagnostics | LKW-H0 |
-| E1 | Developer proof: fixture/local doc ingest → search cites source → synthesize writes shadow artifact | LKW.1, LKW-H1 |
-| E1a | Live HTTP smoke: Docker host + `/health` + `/agents` + `/run` direct capabilities | LKW.1.7 |
-| E1b | Live RAG diagnostic: accepted fixture path produces `used=true`, chunks, retrievable evidence, or exposes exact blocker reason | LKW.1.8 |
-| E1c | Qdrant point-id compatibility: live ingest stores chunks with valid Qdrant point ids | LKW.1.9 |
-| E1d | Tenant scope consistency: ingest/retrieve use compatible tenant/workspace/user scope | LKW.1.10 |
-| E1e | Runtime gateway registry parity: configured application catalog tools are invokable by live runtime gateway | LKW.1.11 |
-| E1f | Runtime event phase contract: planning does not emit schema-invalid `decision_emitted` | LKW.1.12 |
-| E1g | Live index path: `local_indexer` invokes `rag.ingest_document` and writes chunks to Qdrant | LKW.1.13 |
-| E1h | First full product smoke attempt exposes tenant-scoped retrieve blocker | LKW.1.14 |
-| E1i | Final LKW.1 closeout: tenant-scoped index → search evidence → synthesize → shadow write passes | LKW.1.15 |
-| E1j | Inspectable live run with correct tool-call accounting | LKW-H1 |
-| E2 | Search at desk via MCP | LKW.1 |
-| E3 | Pipeline report | LKW.2 |
-| E4 | Install → pick folders → persistent index | LKW.5, LKW.6, LKW.8 |
-| E5 | Auto-index new file | LKW.7 |
-| E6 | Slack search (optional) | LKW.6b |
-| E7 | Generate a second product app from scaffold and verify it inherits improved env/build/deploy patterns | LKW-H3 / scaffold propagation |
-
----
-
-## 10. Verification commands
-
-```bash
-# Runtime hardening checks touched by LKW-H0
-uv run pytest -m gate -q
-
-# Host + agents, when touching LKW code
-uv run pytest applications/local_workspace_application/tests -q
-uv run pytest agents/local_indexer/tests agents/local_search/tests agents/local_synthesizer/tests -q
-
-# RAG scope/retrieve regressions, when touching RAG scope/service
-uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py -q
-uv run pytest tests/unit/integrations/providers/vector_store -q
-
-# Dev run (backend only)
-uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
-
-# Docker proof path
-docker compose -f applications/local_workspace_application/docker/docker-compose.yml up -d --build
-curl -sS http://127.0.0.1:8020/health
-curl -sS http://127.0.0.1:8020/v1/local_workspace/agents
-```
-
-Add narrower commands next to each implementation task once exact modules are known.
-
----
-
-## 11. Per-agent plans
-
-- [`agents/local_indexer/docs/IMPLEMENTATION_PLAN.md`](../../agents/local_indexer/docs/IMPLEMENTATION_PLAN.md)
-- [`agents/local_search/docs/IMPLEMENTATION_PLAN.md`](../../agents/local_search/docs/IMPLEMENTATION_PLAN.md)
-- [`agents/local_synthesizer/docs/IMPLEMENTATION_PLAN.md`](../../agents/local_synthesizer/docs/IMPLEMENTATION_PLAN.md)
-
----
-
-## 12. Platform alignment
-
-- LKW product status: this application-local plan and [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).
-- LKW hardening decision record: [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md).
-- LKW platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
-- One wave per PR unless operator batches explicitly.
-- Every harness/platform/scaffold/build change in this track must cite the LKW acceptance criterion or platform propagation requirement that justifies it.
-- Current LKW findings: Qdrant point-id compatibility is fixed in LKW.1.9; tenant scope consistency is fixed in LKW.1.10; runtime gateway/application registry parity is fixed in LKW.1.11; event phase mismatch is fixed in LKW.1.12; live RAG ingest execution is fixed in LKW.1.13; tenant-scoped retrieve and local_search allowlist are fixed in LKW.1.15; live diagnostic visibility/tool-call accounting remains queued for LKW-H1.
-
----
-
-## 13. Stop conditions
-
-Stop broad harness work when:
-
-- the change cannot be tied to an LKW acceptance criterion or platform propagation requirement;
-- the change only improves conceptual elegance;
-- the change starts a platform-wide refactor before LKW evidence shows measurable need;
-- the change makes LKW harder to run locally;
-- the change introduces new abstractions without a product proof requirement.
-
-Do not stop platform propagation when LKW reveals a reusable pattern. In that case, update the platform/scaffold/deploy surface in the same iteration or record a blocking follow-up before moving to the next LKW wave.
