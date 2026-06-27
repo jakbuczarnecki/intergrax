@@ -63,7 +63,7 @@ The goal is the same depth as a live pair-programming architecture review: compa
 ## Before the first domain
 
 Optional init:
-  uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <START_DOMAIN>
+  uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <START_DOMAIN>
 
 Skim once per session: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
 

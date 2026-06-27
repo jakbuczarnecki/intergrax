@@ -49,7 +49,7 @@ Observability layer formally closed for Full Harness LC — layered event catalo
 
 ```bash
 uv run pytest tests/unit/runtime/events/ -q
-uv run python scripts/check_observability_gates.py
+uv run python scripts/maintenance/check_observability_gates.py
 ```
 
 ## Risks and follow-ups

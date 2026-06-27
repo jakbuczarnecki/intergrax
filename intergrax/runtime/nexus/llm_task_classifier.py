@@ -9,7 +9,7 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.applications.contracts.intent_route import IntentRoute
+from intergrax.contracts.intent_route import IntentRoute
 from intergrax.contracts.reasoning_failure import ReasoningFailureKind
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter

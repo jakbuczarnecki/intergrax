@@ -36,13 +36,13 @@ Twelve of fifteen roster agents now run typed `on_next_step` while remaining UAE
 - `intergrax/agents/authoring/acp_stub_reflex.py`
 - `agents/legal`, `agents/research/summary_agent.py`, LKW trio, DSW quartet
 - Contract files with `cognitive_pattern` + `pattern_version`
-- `scripts/audit_agent_fleet_legacy.py` migrated set
+- `scripts/audit/audit_agent_fleet_legacy.py` migrated set
 - `tests/unit/agents/fleet/test_product_migration.py`
 
 ## Verification
 
-- `uv run python scripts/audit_agent_fleet_legacy.py`
-- `uv run python scripts/check_agent_fleet_migration.py`
+- `uv run python scripts/audit/audit_agent_fleet_legacy.py`
+- `uv run python scripts/maintenance/check_agent_fleet_migration.py`
 - `uv run pytest tests/unit/agents/fleet/ tests/integration/agents/test_agent_engine_uaep_legal.py tests/integration/agents/test_agent_engine_uaep_research.py -q`
 
 ## Risks and follow-ups

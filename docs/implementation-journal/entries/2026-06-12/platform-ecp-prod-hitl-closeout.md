@@ -49,7 +49,7 @@ is no longer status-only; production hosts can use live K8s REST scale outside C
 ## Verification
 
 - `uv run pytest tests/unit/runtime/capacity/ tests/integration/runtime/test_ecp_backpressure_scale.py -q` — 19 passed
-- `uv run python scripts/check_production_capacity_adapters.py` — OK
+- `uv run python scripts/maintenance/check_production_capacity_adapters.py` — OK
 
 ## Risks and follow-ups
 

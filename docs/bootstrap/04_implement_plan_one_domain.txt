@@ -5,7 +5,7 @@ Harness Architecture Audit — Mode B1 (implement open plan items, one domain).
 DOMAIN=PLATFORM_FOUNDATION
 Canonical orchestrator: docs/audit/IMPLEMENT_ORCHESTRATOR.md
 Skim: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
-Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan --domain <DOMAIN>).
+Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan --domain <DOMAIN>).
 Journal: docs/implementation-journal/ when behavior changes.
 Edit DOMAIN= line above (e.g. TOOLS, MEMORY).
 Open item rule: Status ≠ Done AND Priority column = P0 or P1 in docs/plan/<DOMAIN>.md. Wave headers "(P1)" do not qualify child rows — use the row Priority column only.

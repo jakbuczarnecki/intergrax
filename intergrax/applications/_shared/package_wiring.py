@@ -217,7 +217,7 @@ def validate_application_package_closure(
     violations.extend(_validate_graph_spec_capabilities(manifest, env))
 
     if capability_graph is not None:
-        app_node = application_capability_node_id(manifest)
+        app_node = application_capability_node_id(manifest.app_id)
         if not capability_graph.contains_node(app_node):
             violations.append(f"capability graph missing application node {app_node!r}")
 

@@ -10,10 +10,7 @@ from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
-from intergrax.applications.contracts.environment_state import (
-    APP_ENV_STATE_RUNTIME_KEY,
-    ApplicationEnvironmentState,
-)
+from intergrax.contracts.task_environment_state import APP_ENV_STATE_RUNTIME_KEY
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 
@@ -21,18 +18,14 @@ from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 def clear_isolation_refs_in_task_env_state(task: Task) -> None:
     """Drop shadow/sandbox handles from persisted ``app_env_state.v1`` after task cleanup."""
     raw = task.metadata.get(APP_ENV_STATE_RUNTIME_KEY)
-    if raw is None:
+    if not isinstance(raw, dict):
         return
-    if isinstance(raw, ApplicationEnvironmentState):
-        state = raw
-    elif isinstance(raw, dict):
-        state = ApplicationEnvironmentState.model_validate(raw)
-    else:
+    if raw.get("shadow_workspace") is None and raw.get("sandbox_session") is None:
         return
-    if state.shadow_workspace is None and state.sandbox_session is None:
-        return
-    cleared = state.model_copy(update={"shadow_workspace": None, "sandbox_session": None})
-    task.metadata[APP_ENV_STATE_RUNTIME_KEY] = cleared.model_dump(mode="json")
+    updated = dict(raw)
+    updated["shadow_workspace"] = None
+    updated["sandbox_session"] = None
+    task.metadata[APP_ENV_STATE_RUNTIME_KEY] = updated
     task.sync_metadata()
 
 

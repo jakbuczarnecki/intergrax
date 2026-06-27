@@ -120,7 +120,7 @@
 | OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Done** | `extension_sdk.py`, `tracing_templates.py`, `new_agent.py`, `new_application.py` | `check_payload_schema_registry.py` |
 | OBS-BUS-5 | OBS5 | **Persistence conformance** — Cassandra/ES adapters implement same protocols; profile docs | **Done** | `document_backed_runtime_event_store.py`, `persistence_conformance.py`, profile wiring | `check_observability_persistence_conformance.py` |
 | OBS-BUS-6 | OBS6 | **Export sinks** — OTLP dual-write from unified journal; parser trace link | **Done** | `journal_export.py`, `export_bridge.py`, `task_events.py`, `platform_wiring.py` | `TASK_COMPLETED` carries `journal_ref`; export plugin dual-writes OTLP JSON + parser trace |
-| OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Done** | `scripts/check_observability_gates.py`, emission/schema/persistence audits, CI workflow | Gate suite green; audit map §21 → **L4** |
+| OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Done** | `scripts/maintenance/check_observability_gates.py`, emission/schema/persistence audits, CI workflow | Gate suite green; audit map §21 → **L4** |
 
 ### OBS-BUS — Execution order (recommended)
 
@@ -218,7 +218,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | OBS-EVOL-9.3 | M1 | `EmitContext` + `emit_domain_signal()` (redaction) + `emit_platform_event()` | **Done** | **Critical** | `signals.py` · `emit_context.py` · `test_domain_signals.py` |
 | OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Done** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
 | OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` + `JournalQuery` | **Done** | High | `event_bus.py` · `journal_query.py` · `test_event_bus_taxonomy_subscribe.py` |
-| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Done** | High | CI script · `test_event_bus_sampling.py` · extend `check_observability_gates.py` |
+| OBS-EVOL-9.6 | M2 | `scripts/maintenance/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Done** | High | CI script · `test_event_bus_sampling.py` · extend `check_observability_gates.py` |
 | OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → 56; `DOMAIN_SIGNAL` + read shim | **Done** | **Critical** | `spine_consolidation.py` · emitters · `test_spine_consolidation.py` · `check_event_catalog.py` |
 | OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Done** | Medium | `signal_templates.py` · `test_scaffold_domain_signals.py` |
 | OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Deferred** | Low | Opt-in `schema_version`; v1 indefinite — post-publication backlog |
@@ -233,9 +233,9 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ```bash
 uv run pytest tests/unit/runtime/events/ -q
-uv run python scripts/check_event_catalog.py
-uv run python scripts/check_observability_gates.py
-python scripts/check_harness_adr.py
+uv run python scripts/maintenance/check_event_catalog.py
+uv run python scripts/maintenance/check_observability_gates.py
+python scripts/maintenance/check_harness_adr.py
 ```
 
 ---

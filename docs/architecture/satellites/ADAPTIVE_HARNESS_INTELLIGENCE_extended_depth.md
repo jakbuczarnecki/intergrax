@@ -879,7 +879,7 @@ flowchart LR
 | W-ADAPT-1.1 | `HarnessOutcomeSignal` contract + tests | Schema validated |
 | W-ADAPT-1.2 | `SignalCollector` hooked to task completion | Signals in store per run |
 | W-ADAPT-1.3 | Utility computation | U populated on signal |
-| W-ADAPT-1.4 | `scripts/phase_w_adapt_report.py` | Report lists signals + U trends |
+| W-ADAPT-1.4 | `scripts/release/phase_w_adapt_report.py` | Report lists signals + U trends |
 
 ### 19.3 Wave W-ADAPT-2 — Recommend (L4-R)
 

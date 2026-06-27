@@ -3,22 +3,56 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.filesystem.allowlist import require_read_allowlist_roots
-from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
-from lkw_shared.runtime_helpers import (
+from intergrax.agents.authoring.runtime_tool_helpers import (
     allowlist_roots,
     exec_ctx_from_step,
     invoke_catalog_tool,
     parse_metadata_list,
     request_metadata,
     resolve_request_scope,
-    validate_allowlisted_files,
 )
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.tools.providers.filesystem.allowlist import (
+    require_read_allowlist_roots,
+    resolve_allowed_path,
+)
+from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 
 INDEX_STEP_ID = "local_indexer_step"
+
+_LKW_INDEX_METADATA_KEYS = frozenset(
+    {
+        "source_paths",
+        "collection_id",
+        "chunking_strategy_id",
+        "tenant_id",
+        "user_id",
+        "workspace_id",
+    }
+)
+
+
+def validate_allowlisted_files(
+    paths: list[str],
+    roots: frozenset[str],
+) -> tuple[list[Path], list[dict[str, str]]]:
+    allowed_roots = require_read_allowlist_roots(roots if roots else None)
+    validated: list[Path] = []
+    rejected: list[dict[str, str]] = []
+    for raw in paths:
+        try:
+            resolved = resolve_allowed_path(raw, allowed_roots)
+        except RuntimeError as exc:
+            rejected.append({"path": raw, "reason": str(exc)})
+            continue
+        if not resolved.is_file():
+            rejected.append({"path": raw, "reason": "source_not_found"})
+            continue
+        validated.append(resolved)
+    return validated, rejected
 
 
 def _failure_output(*, run_id: str, reason: str, rejected_paths: list[dict[str, str]] | None = None) -> dict[str, object]:
@@ -41,7 +75,7 @@ def _failure_output(*, run_id: str, reason: str, rejected_paths: list[dict[str, 
 
 async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
     exec_ctx = exec_ctx_from_step(step_ctx)
-    metadata = request_metadata(exec_ctx, step_ctx)
+    metadata = request_metadata(exec_ctx, step_ctx, fallback_keys=_LKW_INDEX_METADATA_KEYS)
     scope = resolve_request_scope(exec_ctx)
     source_paths = parse_metadata_list(metadata, "source_paths")
 

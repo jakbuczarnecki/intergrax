@@ -41,15 +41,15 @@ Domain signals are enforceable at emit time; high-volume spine events sample at 
 - `intergrax/runtime/events/event_bus.py`
 - `intergrax/runtime/events/signals.py`
 - `intergrax/runtime/observability/extension_sdk.py`
-- `scripts/check_event_catalog.py`
-- `scripts/check_observability_gates.py`
+- `scripts/maintenance/check_event_catalog.py`
+- `scripts/maintenance/check_observability_gates.py`
 - `tests/unit/runtime/events/test_event_kind_registry.py`
 - `tests/unit/runtime/events/test_event_bus_sampling.py`
 
 ## Verification
 
 ```bash
-uv run python scripts/check_event_catalog.py
+uv run python scripts/maintenance/check_event_catalog.py
 uv run pytest tests/unit/runtime/events/test_event_kind_registry.py tests/unit/runtime/events/test_event_bus_sampling.py -q
 ```
 

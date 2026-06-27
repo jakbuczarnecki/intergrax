@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -86,11 +86,11 @@ See **Code entry** in `docs/guides/audit_slices/PLATFORM_FOUNDATION.md` — then
 docs/intergrax_runtime_architecture.md (hub)
 docs/architecture/PLATFORM_FOUNDATION.md · docs/plan/PLATFORM_FOUNDATION.md
 AGENTS.md · .cursor/rules/intergrax-iteration.mdc
-scripts/check_intergrax_no_applications_imports.py
-scripts/check_agents_no_tier3_imports.py
-scripts/check_docs_domain_pairs.py
-scripts/check_harness_no_getattr.py
-scripts/phase_v_capability_graph_guard.py
+scripts/maintenance/check_intergrax_no_applications_imports.py
+scripts/maintenance/check_agents_no_tier3_imports.py
+scripts/audit/check_docs_domain_pairs.py
+scripts/maintenance/check_harness_no_getattr.py
+scripts/release/phase_v_capability_graph_guard.py
 intergrax/applications/reference/harness_manifest_catalog.py
 Sample imports across intergrax/, agents/, applications/ for tier violations
 ```
@@ -188,10 +188,10 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-uv run python scripts/check_docs_domain_pairs.py
-uv run python scripts/check_intergrax_no_applications_imports.py
-uv run python scripts/check_agents_no_tier3_imports.py
-python scripts/check_harness_no_getattr.py
+uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/maintenance/check_intergrax_no_applications_imports.py
+uv run python scripts/maintenance/check_agents_no_tier3_imports.py
+python scripts/maintenance/check_harness_no_getattr.py
 uv run pytest -m gate -q
 ```
 

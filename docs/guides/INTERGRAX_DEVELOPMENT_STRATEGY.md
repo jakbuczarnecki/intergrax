@@ -126,6 +126,6 @@ Implementation is not the goal. Correct architecture is not the goal.
 | Agent author workflow | `guides/AGENT_CREATION_GUIDE.md` |
 | Integration / RAG / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/RAG.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
 
-After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py`; sync plan §0.5 gate count.
+After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/maintenance/check_harness_no_getattr.py`; sync plan §0.5 gate count.
 
 ---

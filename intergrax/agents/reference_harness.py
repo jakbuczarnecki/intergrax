@@ -1,6 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Reference-agent harness context and Nexus runtime bridge (Tier-2 safe imports)."""
+"""Reference-agent harness context and Nexus runtime bridge (Tier-2 safe imports).
+
+``strict_harness`` here is a **neutral Tier-2 fallback**: it sets ``production_mode``,
+injects a minimal ``LabAllowGovernanceService``, and optionally wires trace/modality/tool
+slices from ``LabHarnessContext``. It does **not** materialize a full
+``ApplicationEnvironmentProfile`` (memory, security, reliability, LLM routing, etc.).
+
+Full strict application wiring lives in Tier-3:
+``intergrax.applications._shared.runtime_config_bridge.materialize_runtime_config`` /
+``build_runtime_context_from_environment``, and ACP hosts via ``ACPSessionHostContext``.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +19,6 @@ from pathlib import Path
 from typing import cast
 
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_default_modality_profile
@@ -19,6 +28,8 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
+from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -71,10 +82,6 @@ def build_lab_agent_runtime_context_from_merged(
     )
     governance: GovernanceService | None = None
     if harness.strict_harness:
-        from intergrax.applications._shared.harness_governance import (
-            create_lab_allow_governance_service,
-        )
-
         governance = cast(
             GovernanceService,
             create_lab_allow_governance_service(),
@@ -98,22 +105,6 @@ def build_lab_agent_runtime_config(
     trace_path: str | None = None
     if harness.strict_harness and harness.trace_db_path is not None:
         trace_path = str(harness.trace_db_path)
-
-    from intergrax.applications._shared.runtime_config_bridge import (
-        apply_policy_bundle_to_runtime_config,
-        materialize_runtime_config,
-    )
-
-    if harness.strict_harness:
-        env = ApplicationEnvironmentProfile.lab_defaults(profile_id="lab.agent")
-        env.context_profile.enable_rag = enable_rag
-        env.context_profile.enable_websearch = enable_websearch
-        return materialize_runtime_config(
-            request,
-            harness,
-            env,
-            llm_adapter=llm_adapter,
-        )
 
     config = RuntimeConfig(
         llm_adapter=llm_adapter,
@@ -146,10 +137,6 @@ def build_lab_agent_runtime_context(
     )
     governance: GovernanceService | None = None
     if harness.strict_harness:
-        from intergrax.applications._shared.harness_governance import (
-            create_lab_allow_governance_service,
-        )
-
         governance = cast(
             GovernanceService,
             create_lab_allow_governance_service(),

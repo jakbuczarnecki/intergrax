@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import fnmatch
 
-from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
+from intergrax.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 

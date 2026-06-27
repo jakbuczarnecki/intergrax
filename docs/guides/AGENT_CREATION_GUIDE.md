@@ -531,7 +531,7 @@ applications/my_lab_application/docker/build-docker.sh
 
 Product profile: also `curl http://127.0.0.1:8000/health` before `POST <route_prefix>/run`.
 
-Operational detail: `applications/<pkg>/BUILD_AND_DEPLOY.md`.
+Operational detail: `applications/<pkg>/docs/BUILD_AND_DEPLOY.md`.
 
 #### E.6 — HTTP verification
 
@@ -1385,9 +1385,9 @@ Entry point group: `intergrax.policy_rules` (mirror P-Ext pattern).
 | Concern | Command / artifact |
 |---------|-------------------|
 | Policy + memory bridge | `pytest tests/unit/applications/test_reference_hosts_memory_bridge.py -m gate` |
-| W-OPS memory platform | `python scripts/phase_w_ops_evidence.py` |
+| W-OPS memory platform | `python scripts/release/phase_w_ops_evidence.py` |
 | Event catalog completeness | `pytest tests/unit/runtime/events/ -m gate -k ops_filter` |
-| Harness getattr hygiene | `python scripts/check_harness_no_getattr.py` |
+| Harness getattr hygiene | `python scripts/maintenance/check_harness_no_getattr.py` |
 | Operational L3 | `release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer checklists: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -1566,7 +1566,7 @@ Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`ToolPlannerProtoc
 | Delegation memory | `pytest tests/unit/runtime/task_memory/ -m gate -k delegation` |
 | Multi-agent patterns (V-MA) | `pytest tests/unit/runtime/architecture/test_multi_agent_coordination.py -m gate` |
 | Nexus decomposition | `pytest tests/unit/runtime/nexus/ -m gate` |
-| No agent branches in NexusLoop | `python scripts/check_harness_no_getattr.py` + code review |
+| No agent branches in NexusLoop | `python scripts/maintenance/check_harness_no_getattr.py` + code review |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §7–§10: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -1683,8 +1683,8 @@ Wired `ApplicationBuildContext` profiles **override** raw environment defaults (
 | Skill resolver | `pytest tests/unit/skills/test_skill_resolver.py -m gate` |
 | Tool runtime / policy | `pytest tests/unit/runtime/nexus/tools/ -m gate` |
 | Environment conformance | `pytest tests/unit/applications/ -m gate -k conformance` |
-| Plugin catalogs | `python scripts/check_plugin_catalog.py` |
-| Legacy boolean flags | `python scripts/check_legacy_tool_plan_booleans.py` |
+| Plugin catalogs | `python scripts/maintenance/check_plugin_catalog.py` |
+| Legacy boolean flags | `python scripts/maintenance/check_legacy_tool_plan_booleans.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §11–§12: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -1792,7 +1792,7 @@ Wired `ApplicationBuildContext.integration_profile` **overrides** raw environmen
 | RAG runtime bridge | `pytest tests/unit/applications/test_rag_runtime_bridge.py -m gate` |
 | Harness lab health | `pytest tests/unit/integrations/test_harness_lab_health.py -m gate` |
 | RAG tool catalog | `pytest tests/unit/tools/providers/rag/ -m gate` |
-| Vendor import gates | `python scripts/check_agents_vendor_imports.py` |
+| Vendor import gates | `python scripts/maintenance/check_agents_vendor_imports.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §13–§14: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -2033,10 +2033,10 @@ Audit vocabulary maps to the canonical enum in `agent_lifecycle_state.py`:
 |---------|----------------|
 | Assembly resolver | `pytest tests/unit/runtime/registry/test_agent_assembly_resolver.py -m gate` |
 | Skill → allowed_tools | `pytest tests/unit/runtime/registry/test_agent_registry_skills.py -m gate` |
-| Author-time allowed_tools ban | `python scripts/check_agent_skill_resolution.py` |
+| Author-time allowed_tools ban | `python scripts/maintenance/check_agent_skill_resolution.py` |
 | Lifecycle routing | `pytest tests/unit/runtime/architecture/test_agent_routing_policy.py -m gate` |
-| Reference agent lifecycle metadata | `uv run python scripts/check_agents_lifecycle_metadata.py` |
-| Golden prompt regression | `uv run python scripts/check_harness_prompt_golden_catalog.py` |
+| Reference agent lifecycle metadata | `uv run python scripts/maintenance/check_agents_lifecycle_metadata.py` |
+| Golden prompt regression | `uv run python scripts/maintenance/check_harness_prompt_golden_catalog.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §18: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -2113,9 +2113,9 @@ AgentRegistry.register (Tier-1)
 | Concern | Command / test |
 |---------|----------------|
 | Registry snapshot wiring | `pytest tests/unit/applications/test_registry_wiring.py -m gate` |
-| Agent skill resolution | `python scripts/check_agent_skill_resolution.py` |
-| Host registry resolution | `python scripts/check_harness_registry_resolution.py` |
-| Capability graph guard | `uv run python scripts/phase_v_capability_graph_guard.py --enforce` |
+| Agent skill resolution | `python scripts/maintenance/check_agent_skill_resolution.py` |
+| Host registry resolution | `python scripts/maintenance/check_harness_registry_resolution.py` |
+| Capability graph guard | `uv run python scripts/release/phase_v_capability_graph_guard.py --enforce` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §19: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -2176,8 +2176,8 @@ Release / CI
 | Concern | Command / test |
 |---------|----------------|
 | Environment graph wiring | `pytest tests/unit/applications/test_capability_graph_wiring.py -m gate` |
-| Host graph materialization | `python scripts/check_harness_capability_graph_wiring.py` |
-| Catalog compatibility guard | `uv run python scripts/phase_v_capability_graph_guard.py --enforce` |
+| Host graph materialization | `python scripts/maintenance/check_harness_capability_graph_wiring.py` |
+| Catalog compatibility guard | `uv run python scripts/release/phase_v_capability_graph_guard.py --enforce` |
 | Lineage / impact reports | `build/architecture_hardening/capability_*_report.json` |
 | Full gate | `uv run pytest -m gate -q` |
 
@@ -2241,7 +2241,7 @@ Release / CI
 | Concern | Command / test |
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_observability_wiring.py -m gate` |
-| Host observability materialization | `python scripts/check_harness_observability_wiring.py` |
+| Host observability materialization | `python scripts/maintenance/check_harness_observability_wiring.py` |
 | Lab OTLP / debug APIs | [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) |
 | Mandatory vs optional signals | [Appendix H §H.5](#h5-observability--what-is-mandatory-vs-optional) |
 | Full gate | `uv run pytest -m gate -q` |
@@ -2334,7 +2334,7 @@ Release / CI
 | Concern | Command / test |
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_reliability_wiring.py -m gate` |
-| Host reliability materialization | `python scripts/check_harness_reliability_wiring.py` |
+| Host reliability materialization | `python scripts/maintenance/check_harness_reliability_wiring.py` |
 | Long-running via environment | `pytest tests/unit/applications/test_reliability_profile.py -m gate` |
 | Integration circuit breaker | `pytest tests/unit/integrations/test_integration_circuit_breaker.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
@@ -2399,8 +2399,8 @@ Release / CI
 | Concern | Command / test |
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_security_wiring.py -m gate` |
-| Host security materialization | `python scripts/check_harness_security_wiring.py` |
-| V-SEC STABLE promote gate (M.6 P6) | `python scripts/check_harness_security_promote_gate.py` |
+| Host security materialization | `python scripts/maintenance/check_harness_security_wiring.py` |
+| V-SEC STABLE promote gate (M.6 P6) | `python scripts/gates/check_harness_security_promote_gate.py` |
 | Middleware behavior | `pytest tests/unit/applications/test_application_security_wiring.py -m gate` |
 | Integration security path | `pytest tests/integration/runtime/test_nexus_loop_security_wiring.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
@@ -2466,7 +2466,7 @@ Release / CI
 | Concern | Command / test |
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_cost_wiring.py -m gate` |
-| Host cost materialization | `python scripts/check_harness_cost_wiring.py` |
+| Host cost materialization | `python scripts/maintenance/check_harness_cost_wiring.py` |
 | V-COST envelope/quota logic | `pytest tests/unit/runtime/architecture/test_cost_budget.py tests/unit/runtime/architecture/test_cost_quota.py -m gate` |
 | Runtime config bridge | `pytest tests/unit/applications/test_runtime_config_bridge.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
@@ -2534,7 +2534,7 @@ Release / CI
 | Concern | Command / test |
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_evaluation_wiring.py -m gate` |
-| Host evaluation materialization | `python scripts/check_harness_evaluation_wiring.py` |
+| Host evaluation materialization | `python scripts/maintenance/check_harness_evaluation_wiring.py` |
 | V-EVAL shadow/online contracts | `pytest tests/unit/runtime/architecture/test_online_evaluation.py tests/unit/runtime/architecture/test_online_evaluation_registry.py -m gate` |
 | Offline eval runner | `pytest tests/integration/eval/test_nexus_eval_runner.py -m gate` |
 | Runtime config bridge | `pytest tests/unit/applications/test_runtime_config_bridge.py -m gate` |
@@ -2595,7 +2595,7 @@ Release / CI
 | Evaluator-loop graph | `pytest tests/unit/runtime/critic/test_critic_evaluator_loop_graph.py -m gate` |
 | Tier-3 assembly | `pytest tests/unit/applications/test_critic_assembly_resolver.py -m gate` |
 | Semantic offline eval | `pytest tests/unit/eval/test_nexus_eval_runner_semantic.py -m gate` |
-| Harness critic wiring | `python scripts/check_harness_critic_wiring.py` |
+| Harness critic wiring | `python scripts/maintenance/check_harness_critic_wiring.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
 ---
@@ -2638,8 +2638,8 @@ Runtime loop (Tier-1)
   └── SignalCollector → AdaptationEngine → AdaptationExecutor → VerificationLoop
 
 Ops / CI
-  └── scripts/phase_w_adapt_report.py
-  └── scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+  └── scripts/release/phase_w_adapt_report.py
+  └── scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 ```
 
 ### V.3 Core contracts
@@ -2660,8 +2660,8 @@ Ops / CI
 |---------|----------------|
 | Adaptive package contracts | `pytest tests/unit/runtime/adaptive/ -m gate` |
 | Observe→recommend E2E | `pytest tests/acceptance/adaptive/ -m gate` |
-| Runtime L4 closeout | `python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` |
-| Pattern report export | `python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json` |
+| Runtime L4 closeout | `python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` |
+| Pattern report export | `python scripts/release/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md).
@@ -2679,7 +2679,7 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 2. `uv run intergrax doctor`
 3. `uv run intergrax run` or lab `POST /v1/lab/run`
 4. Register offline eval baseline (`EvaluationProfile.offline_eval_runner_enabled`)
-5. Promote when G0–G2 pass: `python scripts/check_mvp_promotion_gates.py`
+5. Promote when G0–G2 pass: `python scripts/gates/check_mvp_promotion_gates.py`
 
 ### X.2 CLI tools
 
@@ -2916,7 +2916,7 @@ See architecture §35: UC-1 chat · UC-2 multi-agent graph · UC-3 super-agent �
 ```bash
 uv run pytest agents/<slug>/tests -q
 uv run pytest tests/acceptance/agent_os -m agent_os -q
-python scripts/check_agents_vendor_imports.py
+python scripts/maintenance/check_agents_vendor_imports.py
 ```
 
 ---
@@ -2940,7 +2940,7 @@ python scripts/check_agents_vendor_imports.py
 | Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
-| Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |
+| Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/maintenance/check_harness_no_getattr.py` |
 | Import legacy `tools_agent` or `chat_router` modules | `CatalogToolPlanner` + `ToolRuntime` + `allowed_tools` on contract |
 | Rely on flat `Task.metadata` keys for options | Typed `Task.options` / `Task.runtime`; opt-in hydrate via `metadata_needs_hydration` |
 | Raw `dict` session state in `on_next_step` (`state["key"]`) | Typed `AcpSessionState` subclass + `load_session_state` §32.0 |
@@ -2989,7 +2989,7 @@ When asked to create a new Intergrax agent:
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
 4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
-5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/check_agents_vendor_imports.py`, `python scripts/check_integration_vendor_imports.py`, and `python scripts/check_production_chat_agent_imports.py` (no `ChatAgent` in production paths).
+5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/maintenance/check_agents_vendor_imports.py`, `python scripts/maintenance/check_integration_vendor_imports.py`, and `python scripts/maintenance/check_production_chat_agent_imports.py` (no `ChatAgent` in production paths).
 6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
 8. For Tier-3 hosts, configure governance via `ApplicationEnvironmentProfile` + `RuntimePolicyBundle` — see [Appendix H](#appendix-h--governance-policy--observability-control-plane).

@@ -9,6 +9,9 @@ import pytest
 from intergrax.applications._shared.acp_session_host_wiring import (
     build_acp_session_host_from_harness,
 )
+from intergrax.applications._shared.runtime_boundary_adapters import (
+    application_profile_to_runtime_profile,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -25,4 +28,4 @@ def test_build_acp_session_host_from_harness_attaches_critic_hooks() -> None:
 
     host_ctx = build_acp_session_host_from_harness(runtime)
     assert host_ctx.critic_graph_hooks is critic_hooks
-    assert host_ctx.app_profile is runtime.environment
+    assert host_ctx.runtime_profile == application_profile_to_runtime_profile(runtime.environment)

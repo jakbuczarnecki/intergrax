@@ -69,9 +69,9 @@ def build_section_40_12_reference_report(
         "tests/acceptance/agent_os/test_acp_nexus_catalog_declarative_resume.py",
     ]
     platform_gates = [
-        "scripts/check_acp_ci_conformance_matrix.py",
-        "scripts/check_contract_schema_versions.py",
-        "scripts/check_agent_fleet_migration.py",
+        "scripts/gates/check_acp_ci_conformance_matrix.py",
+        "scripts/maintenance/check_contract_schema_versions.py",
+        "scripts/maintenance/check_agent_fleet_migration.py",
     ]
     host_wiring = [
         "intergrax/applications/_shared/acp_checkpoint_host_wiring.py",
@@ -84,7 +84,7 @@ def build_section_40_12_reference_report(
             item_id="29-32",
             requirement="Typed run/on_next_step/advance_step/kernel path — not RuntimeEngine-only",
             status=Section4012ItemStatus.PASS if _fleet_legacy_closed() else Section4012ItemStatus.FAIL,
-            evidence=["build/agent_fleet_inventory.json", "scripts/check_agent_fleet_migration.py"],
+            evidence=["build/agent_fleet_inventory.json", "scripts/maintenance/check_agent_fleet_migration.py"],
         ),
         Section4012CheckItem(
             item_id="37",
@@ -133,7 +133,7 @@ def build_section_40_12_reference_report(
             item_id="40.7",
             requirement="Threat mitigations verified for agent data classes",
             status=Section4012ItemStatus.PASS,
-            evidence=["scripts/check_agent_step_security.py", "docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §40.7"],
+            evidence=["scripts/maintenance/check_agent_step_security.py", "docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §40.7"],
         ),
         Section4012CheckItem(
             item_id="40.8",
@@ -149,7 +149,7 @@ def build_section_40_12_reference_report(
             item_id="40.9",
             requirement="Eval suites registered and green on staging",
             status=Section4012ItemStatus.PASS,
-            evidence=[*acceptance, "scripts/check_agent_release_gates.py"],
+            evidence=[*acceptance, "scripts/gates/check_agent_release_gates.py"],
             notes="Harness acceptance suite covers reference mutating profile",
         ),
         Section4012CheckItem(

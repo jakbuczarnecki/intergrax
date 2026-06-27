@@ -87,7 +87,7 @@ Total: 70 deliverables
 | W-ADAPT-1.9 | **`SignalCollector`** — HITL intervention counters from task/HITL runtime | **Done** | Medium | `hitl_interventions` |
 | W-ADAPT-1.10 | **Nexus hook** — emit signal on task completion (`task_finisher` / lifecycle bridge) | **Done** | **Critical** | ≥1 signal per completed Nexus task in integration test |
 | W-ADAPT-1.11 | **AgentEngine hook** — optional signal path for non-Nexus runs (parity with W-OPS shadow) | **Done** | Medium | Lab runtime records signal |
-| W-ADAPT-1.12 | **`scripts/phase_w_adapt_report.py`** — signal trends + utility histograms | **Done** | High | JSON under `build/adaptive_harness/signal_trends.json` |
+| W-ADAPT-1.12 | **`scripts/release/phase_w_adapt_report.py`** — signal trends + utility histograms | **Done** | High | JSON under `build/adaptive_harness/signal_trends.json` |
 
 #### Wave W-ADAPT-2 — Recommend (L4-R)
 
@@ -142,7 +142,7 @@ Total: 70 deliverables
 | W-ADAPT-5.3 | **Eval registry integration** — `evaluation_registry_trends.py` in verify path | **Done** | High | Release comparison report |
 | W-ADAPT-5.4 | **ExecutionGuard regression rate** — verify window threshold | **Done** | High | No spike vs baseline |
 | W-ADAPT-5.5 | **Cost + adversarial checks** in verify — budget + prompt/tool/retrieval suites | **Done** | High | V-SEC suites still green |
-| W-ADAPT-5.6 | **`scripts/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | **Done** | **Critical** | CI optional then required |
+| W-ADAPT-5.6 | **`scripts/release/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | **Done** | **Critical** | CI optional then required |
 | W-ADAPT-5.7 | **`maturity_gate_evidence.py`** — `runtime_l4_closed_loop_passed` input | **Done** | High | Distinct from governance L4 |
 | W-ADAPT-5.8 | **Extend `phase_v_closeout_gate.py`** — label governance-L4 vs runtime-L4 | **Done** | Medium | Docs in AHIA §20.2 |
 | W-ADAPT-5.9 | **Runbooks** — `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` | **Done** | Medium | Linked from HARNESS_ENVIRONMENT |

@@ -46,7 +46,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-LLM-1** | Guardrail | P1 | Planned | Verify Token Optimization integrations consume existing `LLMAdapter.count_messages_tokens`, `context_window_tokens`, `LLMAdapterResponse.usage`, and ModelCatalog context metadata | No parallel tokenizer or per-feature cost tracker; CE/context preflight still uses adapter token path; token savings attribution can consume usage envelope; `uv run python scripts/check_context_preflight_uses_adapter_tokens.py`; `uv run python scripts/check_token_optimization_contracts.py` |
+| **TOKEN-LLM-1** | Guardrail | P1 | Planned | Verify Token Optimization integrations consume existing `LLMAdapter.count_messages_tokens`, `context_window_tokens`, `LLMAdapterResponse.usage`, and ModelCatalog context metadata | No parallel tokenizer or per-feature cost tracker; CE/context preflight still uses adapter token path; token savings attribution can consume usage envelope; `uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`; `uv run python scripts/check_token_optimization_contracts.py` |
 
 ---
 

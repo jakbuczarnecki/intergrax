@@ -1,4 +1,4 @@
-# DisputeIntakeAgent
+﻿# DisputeIntakeAgent
 
 Case material intake for **Dispute Simulation Workspace (DSW)** — classify documents, build chronology, ingest to case-scoped RAG.
 
@@ -7,9 +7,9 @@ Case material intake for **Dispute Simulation Workspace (DSW)** — classify doc
 
 ## Docs
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — purpose, contracts, runtime layout
-- [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — task queue and verification
-- [`adr/README.md`](adr/README.md) — architecture decision records
+- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) — purpose, contracts, runtime layout
+- [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — task queue and verification
+- [`adr/README.md`](docs/adr/README.md) — architecture decision records
 
 ## Quick start
 
@@ -42,4 +42,4 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 - ``schemas/`` — I/O models
 - ``tests/`` — agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``adr/`` — architecture decision records
+- ``docs/`` — architecture, plan, ADRs, journal

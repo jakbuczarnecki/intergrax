@@ -2,31 +2,24 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import ClassVar
 
+from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.config import ApiEnvironment
 
 
-@dataclass(frozen=True)
-class LabApplicationSettings:
+@dataclass(frozen=True, kw_only=True)
+class LabApplicationSettings(IntergraxApplicationSettingsBase):
     """Environment for the universal lab application (Tier-3)."""
 
-    environment: ApiEnvironment = ApiEnvironment.DEV
+    env_prefix: ClassVar[str] = "LAB_"
     route_prefix: str = "/v1/lab"
     include_mock_agents: bool = True
     include_echo: bool = True
     include_signoff_probe: bool = True
     include_research: bool = False
     include_problem_radar: bool = False
-    include_interaction_routes: bool = True
-    interaction_route_prefix: str = "/v1/interactions"
-    include_scheduler: bool = True
-    scheduler_poll_seconds: float | None = None
-    interaction_surface: str = "auto"
-    include_mcp: bool = False
-    mcp_mount_path: str = "/mcp"
     harness: bool = False
     otel_enabled: bool = True
     strict_harness: bool = False
@@ -42,129 +35,29 @@ class LabApplicationSettings:
         """Staging/production and strict harness profiles must configure API key (W-OPS.7)."""
         return self.strict_harness or self.environment != ApiEnvironment.DEV
 
+    # ------------------------------------------------------------------
+    # Application-specific settings
+    # Add your own env-backed fields here.
+    # ------------------------------------------------------------------
+
     @classmethod
-    def from_env(cls) -> LabApplicationSettings:
-        env_raw = (os.getenv("INTERGRAX_ENV") or "dev").strip().lower()
-        if env_raw == "prod":
-            environment = ApiEnvironment.PROD
-        elif env_raw in {"stage", "staging"}:
-            environment = ApiEnvironment.STAGE
-        else:
-            environment = ApiEnvironment.DEV
-        include_mocks = (os.getenv("LAB_INCLUDE_MOCK_AGENTS") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
+    def _load_app_env(cls, env: EnvReader) -> dict[str, object]:
+        feature_flag_raw = env.optional_str("ADAPTIVE_FEATURE_FLAG")
+        secrets_backend = env.optional_str("SECRETS_BACKEND")
+        return {
+            "include_mock_agents": env.bool("INCLUDE_MOCK_AGENTS", default=True),
+            "include_echo": env.bool("INCLUDE_ECHO", default=True),
+            "include_signoff_probe": env.bool("INCLUDE_SIGNOFF_PROBE", default=True),
+            "include_research": env.bool("INCLUDE_RESEARCH", default=False),
+            "include_problem_radar": env.bool("INCLUDE_PROBLEM_RADAR", default=False),
+            "harness": env.bool("HARNESS", default=False),
+            "otel_enabled": env.bool("OTEL_ENABLED", default=True),
+            "strict_harness": env.bool("STRICT_HARNESS", default=False),
+            "adaptive_observe_enabled": env.bool("ADAPTIVE_OBSERVE", default=True),
+            "observability_grafana_stack": env.bool("OBSERVABILITY_GRAFANA_STACK", default=False),
+            "adaptive_feature_flag_slug": feature_flag_raw.lower() if feature_flag_raw else None,
+            "secrets_backend_slug": secrets_backend.lower() if secrets_backend else None,
+            "enable_llm_guardrails": env.bool("ENABLE_LLM_GUARDRAILS", default=False),
+            "tool_invocation_mode": env.str("TOOL_INVOCATION_MODE", default="single_pass").lower()
+            or "single_pass",
         }
-        include_echo = (os.getenv("LAB_INCLUDE_ECHO") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
-        }
-        include_signoff_probe = (
-            os.getenv("LAB_INCLUDE_SIGNOFF_PROBE") or "true"
-        ).strip().lower() not in {
-            "0",
-            "false",
-            "no",
-        }
-        include_research = (os.getenv("LAB_INCLUDE_RESEARCH") or "false").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        include_problem_radar = (
-            os.getenv("LAB_INCLUDE_PROBLEM_RADAR") or "false"
-        ).strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        include_interactions = (
-            os.getenv("LAB_INCLUDE_INTERACTIONS") or "true"
-        ).strip().lower() not in {
-            "0",
-            "false",
-            "no",
-        }
-        prefix = (os.getenv("LAB_ROUTE_PREFIX") or "/v1/lab").strip() or "/v1/lab"
-        interaction_prefix = (
-            os.getenv("LAB_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
-        ).strip() or "/v1/interactions"
-        include_scheduler = (os.getenv("LAB_INCLUDE_SCHEDULER") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
-        }
-        poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
-        scheduler_poll = float(poll_raw) if poll_raw else None
-        interaction_surface = (
-            os.getenv("LAB_INTERACTION_SURFACE") or "auto"
-        ).strip().lower() or "auto"
-        include_mcp = (os.getenv("LAB_INCLUDE_MCP") or "false").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        strict_harness = (os.getenv("LAB_STRICT_HARNESS") or "false").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        mcp_mount = (os.getenv("LAB_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
-        harness = (os.getenv("LAB_HARNESS") or "false").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        otel_enabled = (os.getenv("LAB_OTEL_ENABLED") or "true").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        adaptive_observe = (os.getenv("LAB_ADAPTIVE_OBSERVE") or "true").strip().lower() not in {
-            "0",
-            "false",
-            "no",
-        }
-        grafana_stack = (os.getenv("LAB_OBSERVABILITY_GRAFANA_STACK") or "false").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        feature_flag_raw = (os.getenv("LAB_ADAPTIVE_FEATURE_FLAG") or "").strip().lower()
-        adaptive_feature_flag = feature_flag_raw or None
-        secrets_backend = (os.getenv("LAB_SECRETS_BACKEND") or "").strip().lower() or None
-        enable_llm_guardrails = (os.getenv("LAB_ENABLE_LLM_GUARDRAILS") or "false").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        tool_invocation_mode = (
-            os.getenv("LAB_TOOL_INVOCATION_MODE") or "single_pass"
-        ).strip().lower() or "single_pass"
-        return cls(
-            environment=environment,
-            route_prefix=prefix,
-            include_mock_agents=include_mocks,
-            include_echo=include_echo,
-            include_signoff_probe=include_signoff_probe,
-            include_research=include_research,
-            include_problem_radar=include_problem_radar,
-            include_interaction_routes=include_interactions,
-            interaction_route_prefix=interaction_prefix,
-            include_scheduler=include_scheduler,
-            scheduler_poll_seconds=scheduler_poll,
-            interaction_surface=interaction_surface,
-            include_mcp=include_mcp,
-            mcp_mount_path=mcp_mount,
-            harness=harness,
-            otel_enabled=otel_enabled,
-            strict_harness=strict_harness,
-            adaptive_observe_enabled=adaptive_observe,
-            observability_grafana_stack=grafana_stack,
-            adaptive_feature_flag_slug=adaptive_feature_flag,
-            secrets_backend_slug=secrets_backend,
-            enable_llm_guardrails=enable_llm_guardrails,
-            tool_invocation_mode=tool_invocation_mode,
-        )

@@ -1,75 +1,39 @@
-# LKW.1 live verification status — 2026-06-26
+# LKW.1 live verification status — 2026-06-27
 
 ## Current status
 
 ```text
+LKW.1 — CLOSED IN SCOPE / PRODUCT PROOF PASSED
 LKW.1.11 — runtime tool registry parity: PASSED
 LKW.1.12 — decision_emitted event phase mismatch: PASSED
 LKW.1.13 — local_indexer RAG ingest live path: PASSED
-LKW.1.14 — next: final live product smoke index -> search -> synthesize
-LKW-H1 — trace/evidence and observability follow-ups after product smoke
+LKW.1.14 — final live product smoke attempt: PARTIAL (tenant-scoped search retrieve_failed)
+LKW.1.15 — tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
+LKW-H1 — NEXT: trace/evidence inspection and observability/tool-call accounting
 ```
 
-## Current product proof position
+## Verified LKW.1 product path
 
-The live `local.workspace.index` path now reaches RAG ingest through the live Docker HTTP stack.
-
-Latest confirmed live index result:
+LKW.1 product path verified live:
 
 ```text
-accepted=1
-rejected=0
-ingested=1
-chunks=1
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Qdrant confirmation:
+Latest passing smoke:
 
 ```text
-tenant collection present: intergrax__tenant__lkw-smoke
-ingest collection_id: lkw-ingestfix-20260626162943
+health=ok
+agents=local_indexer, local_search, local_synthesizer
+index=accepted=1, rejected=0, ingested=1, chunks=1
+search=results=1, marker evidence returned for tenant/workspace
+synthesize=shadow artifact written when evidence supplied
+source immutability=original fixture unchanged
+logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed, retriever_failed
+qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw-final-20260627103000
 ```
 
-The remaining product closeout is not another index-only smoke. The next proof must verify the whole product path:
-
-```text
-index -> search -> synthesize
-```
-
-## LKW.1.11 — runtime registry parity
-
-Status:
-
-```text
-PASSED in implementation/unit scope; later live blockers were separate.
-```
-
-Implementation commit reported by operator:
-
-```text
-47b8667e48fb834829bcb321b37367789e62e896
-```
-
-Original issue:
-
-```text
-ApplicationToolWiring.registry was built in Tier-3,
-but the runtime gateway/invoker path used a different registry.
-```
-
-Focused tests:
-
-```text
-uv run pytest tests/unit/applications/test_application_tool_registry_runtime_parity.py -q
--> 1 passed
-
-uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py -q
--> 10 passed
-```
-
-After LKW.1.11, live HTTP still did not ingest. The next blocker was the runtime event schema issue fixed in LKW.1.12.
-
-## LKW.1.12 — decision_emitted phase mismatch
+## LKW.1.15 — tenant-scoped retrieve for live search
 
 Status:
 
@@ -77,175 +41,123 @@ Status:
 PASSED
 ```
 
-Commit reported by operator:
+Commits reported by operator:
 
 ```text
-47e2ce15
+58740470 — fix(rag): restore tenant-scoped retrieve for LKW search
+1af2fd26 — docs(lkw): record final live product smoke
 ```
 
 Root cause:
 
 ```text
-NexusPlanningRunner emitted RuntimeEventType.DECISION_EMITTED with phase=PLANNING,
-while the runtime event catalog requires DECISION_EMITTED to use phase=STEP_EXECUTION.
-The validating runtime event store rejected the event during persistence.
+1. RAG: wired retriever_manager targeted the default vectorstore while tenant-scoped
+   resolve_tenant_scoped_vectorstore selected the lkw-smoke collection — filter mismatch
+   surfaced as retriever_failed.
+2. LKW: local_search contract had empty extra_tools/allowed_tools, so rag.retrieve was
+   denied at the UAEP tool gateway (local_indexer already declared rag.ingest_document).
 ```
 
 Fix chosen:
 
 ```text
-Removed DECISION_EMITTED emission from the planning phase.
-Moved the planning DecisionRecord into PLAN_CREATED payload as decision_record.
-Kept DECISION_EMITTED as the canonical step-level UAEP decision event.
+- use_wired_retrieval_managers(): skip wired retriever when store tenant differs
+- perform_rag_retrieve(): build retriever on scoped vectorstore when wired managers mismatch
+- local_search contract: extra_tools=[rag_retrieve_contract()]
+- search_job: preserve raw_tool_reason on retrieve_failed
+```
+
+Changed files:
+
+```text
+intergrax/tools/providers/rag/scope.py
+intergrax/tools/providers/rag/service.py
+agents/local_search/contract.py
+agents/local_search/steps/search_job.py
+agents/local_search/tests/test_contract.py
+agents/local_search/tests/test_search_job.py
+tests/unit/tools/providers/rag/test_rag_scope.py
 ```
 
 Focused tests:
 
 ```text
-uv run pytest tests/unit/runtime/events -q
--> 96 passed
-
-uv run pytest tests/unit/applications/test_application_tool_registry_runtime_parity.py -q
--> 1 passed
-
-uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py -q
--> 10 passed
+tests/unit/tools/providers/rag/test_rag_scope.py -> 13 passed
+tests/unit/integrations/providers/vector_store -> 29 passed
+agents/local_search/tests -> 7 passed
 ```
 
-Live result after LKW.1.12:
+Tenant-scoped retrieve verification:
+
+```text
+ingest tenant/workspace: lkw-smoke / lkw-final-20260627103000 -> ingested=1, chunks=1
+retrieve same tenant/workspace: used=true, results=1, marker LKW_FINAL_SMOKE_20260627C
+retrieve wrong tenant: regression test preserves isolation
+retrieve wrong workspace: regression test preserves isolation
+```
+
+## LKW.1.14 — partial smoke that exposed the retrieve blocker
+
+Status:
+
+```text
+PARTIAL / superseded by LKW.1.15
+```
+
+Result:
 
 ```text
 health=ok
 agents=local_indexer, local_search, local_synthesizer
-index=completed, accepted=1, ingested=0, chunks=0, total_tool_calls=0
-logs=no RuntimeEventSchemaError / no decision_emitted phase mismatch
-qdrant=no lkw-phasefix-* collection because ingested=0
+index=accepted=1, rejected=0, ingested=1, chunks=1
+search=local_search: search failed — retrieve_failed
+synthesize=shadow_workspace_required / no shadow write because evidence was missing
+source immutability=OK
+logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed
+qdrant=point with marker existed under tenant lkw-smoke and workspace_id lkw-final-20260627072645
 ```
 
 Interpretation:
 
 ```text
-The event phase blocker was fixed.
-The next blocker was local_indexer not reaching successful rag.ingest_document.
+Index was not the blocker. Tenant-scoped retrieve and local_search tool allowlist were the blockers.
+Those blockers were fixed in LKW.1.15.
 ```
 
-## LKW.1.13 — local_indexer RAG ingest execution
+## Earlier LKW.1 live blockers
 
-Status:
+| ID | Result |
+|----|--------|
+| LKW.1.9 | Qdrant point-id compatibility fixed. |
+| LKW.1.10 | Tenant scope consistency fixed. |
+| LKW.1.11 | Runtime tool registry parity fixed. |
+| LKW.1.12 | `decision_emitted` phase mismatch fixed. |
+| LKW.1.13 | UAEP/ACP catalog invocation bridge fixed; live index ingests into Qdrant. |
+
+## Known follow-ups after LKW.1
 
 ```text
-PASSED
+total_tool_calls=0 remains an observability/accounting gap.
+Standalone synthesize with message-only input can return content_missing.
 ```
 
-Commit reported by operator:
+Classification:
 
 ```text
-4bc407533e991d93636668b7d7cae78e41a5a3c6
-```
-
-Root cause:
-
-```text
-UAEP/ACP ran local_indexer with a stub RuntimeContext that did not carry the application tool registry.
-The ACP path also missed uaep_exec_ctx and proper allowed_tools propagation.
-As a result, the live indexer path produced unknown_capability_tool:rag.ingest_document before the fix.
-```
-
-Fix chosen:
-
-```text
-- apply_host_tool_invoker_to_runtime_context in UAEP
-- attach_acp_catalog_exec_ctx in ACP
-- propagate allowed_tools from request.metadata in acp_run
-- inject declarative invoker outside ACP session flag
-- improve tool error propagation in run_index_job/runtime_helpers
-```
-
-Changed files reported by operator:
-
-```text
-intergrax/agents/authoring/acp_uaep_shim.py
-intergrax/agents/authoring/acp_run.py
-intergrax/agents/uaep.py
-intergrax/agents/persistence/tool_invoker_wiring.py
-agents/lkw_shared/runtime_helpers.py
-agents/local_indexer/steps/index_job.py
-agents/local_indexer/tests/test_index_job.py
-tests/unit/agents/persistence/test_tool_invoker_wiring.py
-```
-
-Focused tests:
-
-```text
-agents/local_indexer/tests
-tests/unit/applications/test_application_tool_registry_runtime_parity.py
-tests/unit/tools/providers/rag/test_rag_scope.py
-tests/unit/agents/persistence/test_tool_invoker_wiring.py
--> 22 passed
-```
-
-Live result after LKW.1.13:
-
-```text
-health={"status":"ok"}
-agents=local_indexer, local_search, local_synthesizer
-index=accepted=1, rejected=0, ingested=1, chunks=1
-logs=no unknown_capability_tool, no RuntimeEventSchemaError, no ingest_failed
-qdrant=tenant collection intergrax__tenant__lkw-smoke present
-```
-
-Platform propagation:
-
-```text
-Platform-reusable.
-The fix bridges host catalog tool invocation into UAEP/ACP cognitive agent execution.
-Future Tier-3 applications using authored cognitive agents and catalog tools benefit from the same path.
-```
-
-## Known non-blocking follow-up
-
-```text
-total_tool_calls=0 remains an observability/summary accounting bug.
-It is not a product blocker while live index/search/synthesize behavior is verified through actual tool effects and Qdrant evidence.
-```
-
-Recommended follow-up classification:
-
-```text
-LKW-H1 / observability follow-up, not LKW.1 execution blocker.
-```
-
-## Next task
-
-```text
-LKW.1.14 — final live product smoke
-```
-
-Scope:
-
-```text
-Run the full live Docker HTTP path:
-index fixture -> search marker/evidence -> synthesize shadow artifact -> verify original source immutability.
-```
-
-Acceptance:
-
-```text
-- health endpoint returns ok
-- agents endpoint lists local_indexer/local_search/local_synthesizer
-- index returns ingested=1 and chunks>0
-- search retrieves marker or fixture sentence with evidence
-- synthesize completes and writes only under shadow workspace
-- original source file remains unchanged
-- no RuntimeEventSchemaError
-- no unknown_capability_tool
-- no tool_gateway_not_available
+total_tool_calls=0 -> LKW-H1 / observability and tool-call accounting
+message-only synthesize content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
 ## Closeout rule
 
-Do not close LKW.1 until LKW.1.14 verifies the full product path:
+LKW.1 is closed in scope for the verified live product path:
 
 ```text
-index -> search -> synthesize -> shadow artifact only
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
+```
+
+Next queue item:
+
+```text
+LKW-H1 — live trace/evidence inspection and observability/tool-call accounting
 ```

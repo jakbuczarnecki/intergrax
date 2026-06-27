@@ -104,7 +104,7 @@ def test_lkw_dockerfile_uses_minimal_agent_closure() -> None:
     dockerfile = REPO / "applications" / "local_workspace_application" / "docker" / "Dockerfile"
     text = dockerfile.read_text(encoding="utf-8")
     assert "COPY agents/ ./agents/" not in text
-    for package in ("lkw_shared", "local_indexer", "local_search", "local_synthesizer"):
+    for package in ("local_indexer", "local_search", "local_synthesizer"):
         assert f"agents/{package}" in text
     assert "create_local_workspace_backend_app()" in text
 

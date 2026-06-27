@@ -42,14 +42,14 @@ Hosts can run fixed tool pipelines without LLM between steps, load custom invoca
 - `intergrax/runtime/nexus/tools/tool_chain_spec.py`
 - `intergrax/runtime/nexus/tools/patterns/deterministic_chain.py`
 - `intergrax/runtime/nexus/tools/tool_invocation_registry.py`
-- `scripts/check_tool_invocation_patterns.py`
+- `scripts/maintenance/check_tool_invocation_patterns.py`
 - `applications/lab_application/host/settings.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/tools/ applications/lab_application/lab_application_tests/host/test_lab_tool_invocation_mode.py -q
-uv run python scripts/check_tool_invocation_patterns.py
+uv run python scripts/maintenance/check_tool_invocation_patterns.py
 ```
 
 Result: 59 passed · gate script OK.

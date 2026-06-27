@@ -20,7 +20,7 @@ Close discoverability gaps in the Mode I idea-audit template mechanism (hub, aud
 
 ## Summary
 
-Indexed **Mode I** idea intake in `intergrax_runtime_architecture.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, and `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` architecture §43.2. Registered **DX-IDEA-01** and **DX-IDEA-02** in the DX plan. Clarified `MODE=` semantics in bootstrap and orchestrator (Step 7 always requires explicit operator confirmation). Added illustrative USER CONFIG example (WhatsApp integration). Created `scripts/check_idea_audit_bootstrap.py` and wired it into `AGENTS.md` verification. Updated `.cursor/rules/intergrax-iteration.mdc` documentation model and task routing.
+Indexed **Mode I** idea intake in `intergrax_runtime_architecture.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, and `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` architecture §43.2. Registered **DX-IDEA-01** and **DX-IDEA-02** in the DX plan. Clarified `MODE=` semantics in bootstrap and orchestrator (Step 7 always requires explicit operator confirmation). Added illustrative USER CONFIG example (WhatsApp integration). Created `scripts/audit/check_idea_audit_bootstrap.py` and wired it into `AGENTS.md` verification. Updated `.cursor/rules/intergrax-iteration.mdc` documentation model and task routing.
 
 ## Project impact
 
@@ -44,15 +44,15 @@ Operators can find the idea-intake workflow from hub, audit map, AGENTS, and cur
 - `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — Mode I index
 - `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — DX-IDEA phase register
 - `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — §43.2 surface row
-- `scripts/check_idea_audit_bootstrap.py` — new consistency gate
-- `scripts/architecture_audit_common.py` — `idea_audit` map entries
+- `scripts/audit/check_idea_audit_bootstrap.py` — new consistency gate
+- `scripts/audit/architecture_audit_common.py` — `idea_audit` map entries
 - `AGENTS.md`, `.cursor/rules/intergrax-iteration.mdc` — routing and verification
 
 ## Verification
 
 ```bash
-python scripts/check_idea_audit_bootstrap.py
-python scripts/check_docs_domain_pairs.py
+python scripts/audit/check_idea_audit_bootstrap.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: pass.

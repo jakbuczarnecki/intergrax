@@ -50,7 +50,7 @@ Memory layer formally closed for Full Harness LC — LTM vector recall, episodic
 
 ```bash
 uv run pytest tests/unit/memory/ tests/integration/applications/test_memory_vector_ltm_wiring.py -q
-uv run python scripts/check_entity_graph_memory_wiring.py
+uv run python scripts/maintenance/check_entity_graph_memory_wiring.py
 ```
 
 ## Risks and follow-ups

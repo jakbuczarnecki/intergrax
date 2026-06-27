@@ -51,7 +51,7 @@ ContextCompiler and preflight validation are on the ACP production hot path; Tie
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/context/ tests/unit/context/ tests/unit/applications/test_context_engine_wiring.py -m gate -q
-python scripts/check_context_tier0_import_boundary.py
+python scripts/maintenance/check_context_tier0_import_boundary.py
 ```
 
 Result: 47 passed.

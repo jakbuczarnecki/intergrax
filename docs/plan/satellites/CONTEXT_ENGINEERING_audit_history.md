@@ -141,7 +141,7 @@
 | **CE-PROV-09** | `builtin.shared_context` — `SharedTaskContext` KV reads | P1 | **Done** (2026-06-14) | `shared_context_reads` precomputed on graph path |
 | **CE-PROV-10** | `builtin.attachments` — attachment summaries | P2 | **Done** (2026-06-14) | `attachment_summaries` handle |
 | **CE-PROV-11** | `builtin.policy_overlay` — policy fragment bundles | P2 | **Done** (2026-06-14) | `policy_overlay_fragments` handle |
-| **CE-PROV-GATE** | `scripts/check_context_builtin_providers.py` — no empty stub for wired provider ids | P1 | **Done** (2026-06-14) | CI gate |
+| **CE-PROV-GATE** | `scripts/maintenance/check_context_builtin_providers.py` — no empty stub for wired provider ids | P1 | **Done** (2026-06-14) | CI gate |
 | **CE-PROV-INT** | Integration tests: graph assemble with RAG + graph_prior fragments in LLM window | P1 | **Done** (2026-06-14) | `tests/integration/runtime/test_context_provider_wiring.py` |
 
 **CE-2.3 completion note:** catalog registration is **Done**; **live collect** for all §8.4 rows completes when CE-PROV-WIRE is **Done**.
@@ -206,7 +206,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-1.3** | Protocols: `ContextSourceProvider`, `ContextRanker`, `ContextBudgetAllocator`, `ContextFormatter`, `ContextValidator`, `ContextEngine` | P0 | **Done** | `typing.Protocol` + docstrings; gate import boundary test |
 | **CE-1.4** | `ContextPlugin` dataclass + `ContextPluginRegistry` | P0 | **Done** | Register/list/unregister providers |
 | **CE-1.5** | Move shared scoring types from `context_engineering.py` → `intergrax/context/quality.py` (re-export shim) | P1 | **Done** | Re-export shim in `context_engineering.py` |
-| **CE-1.6** | Architecture gate: `intergrax/context/` MUST NOT import `agents/` or `applications/` | P0 | **Done** | `scripts/check_context_tier0_import_boundary.py` |
+| **CE-1.6** | Architecture gate: `intergrax/context/` MUST NOT import `agents/` or `applications/` | P0 | **Done** | `scripts/maintenance/check_context_tier0_import_boundary.py` |
 | **CE-2.1** | `register_context_plugin()` + `intergrax.context` entry point group in `pyproject.toml` | P0 | **Done** | `pyproject.toml` EP + `register_context_plugin()` |
 | **CE-2.2** | `bootstrap_context_catalog()` in `intergrax/context/bootstrap.py` | P0 | **Done** | `wire_application_environment` calls bootstrap |
 | **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (catalog stubs + live workspace/session) | P0 | **Done** (collect live → **CE-PROV-WIRE**) | 13 builtin provider ids |
@@ -306,7 +306,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-12.1** | `EXTENSION_AUTHOR_GUIDE.md` §4 Context plugin catalog | P2 | Deferred | Use `intergrax/context/plugin.py` canon until guide slice |
 | **CE-12.2** | `AGENT_CREATION_GUIDE.md` Appendix L — link CE canon + custom engine example | P2 | Deferred | Appendix L exists — expand in DX slice |
 | **CE-12.3** | Scaffold `new-application` emits `context_plugin` stub optional flag | P3 | Deferred | Scaffold follow-up |
-| **CE-12.4** | `scripts/check_context_engine_wiring.py` — hosts with CE profile must resolve engine | P2 | **Done** | CI gate + `intergrax doctor` |
+| **CE-12.4** | `scripts/maintenance/check_context_engine_wiring.py` — hosts with CE profile must resolve engine | P2 | **Done** | CI gate + `intergrax doctor` |
 | **CE-12.5** | `intergrax doctor` hint for missing context catalog bootstrap | P3 | **Done** | `check_context_engine_wiring` in doctor |
 | **CE-12.6** | Journal + FAUDIT layer 16 re-run evidence | P2 | **Done** | Journal + audit guide refresh 2026-06-12 |
 
@@ -458,7 +458,7 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 
 **B2 files:** `legacy_bridge.py`, `builtin.py`, `test_legacy_bridge_providers.py`  
 **B3 files:** `legacy_bridge.py`, `builtin.py`, `provider_handles.py`, `context_manager.py`, `uaep_assemble.py`, tests  
-**B4 files:** `legacy_bridge.py`, `builtin.py`, `scripts/check_context_builtin_providers.py`, `tests/integration/runtime/test_context_provider_wiring.py`, architecture §8.4/§16 sync
+**B4 files:** `legacy_bridge.py`, `builtin.py`, `scripts/maintenance/check_context_builtin_providers.py`, `tests/integration/runtime/test_context_provider_wiring.py`, architecture §8.4/§16 sync
 
 **Critical path:** B1 → B2 (unblocks CE-10.3 metadata follow-up).
 

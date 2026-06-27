@@ -92,7 +92,7 @@
 | SEC-EVOL-4 | ENC | Encrypt-via-adapter for RESTRICTED | P2 | **Done** | `encryption_transform.py`, middleware | Transform path when backend configured; deny when not |
 | SEC-EVOL-5 | RES | Defense plugin inspection budget | P3 | **Done** | `PluginSecurityDefenseMiddleware` | Timeout/budget guard; fail-closed on overrun |
 | SEC-EVOL-DOC-1 | DOC | Enterprise maturity author checklist | P2 | **Done** | §42.45.10, Appendix H, EXTENSION §12 | Tenant scope + plugin author checklist documented |
-| SEC-EVOL-6 | CI | Catalog bootstrap + EP discovery smoke | P3 | **Done** | `scripts/check_harness_security_defense_plugins.py` | Smoke after `bootstrap_catalogs()` |
+| SEC-EVOL-6 | CI | Catalog bootstrap + EP discovery smoke | P3 | **Done** | `scripts/maintenance/check_harness_security_defense_plugins.py` | Smoke after `bootstrap_catalogs()` |
 
 ### SEC-PLANES-EVOL — Workstreams
 
@@ -280,7 +280,7 @@
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CLEAN-1–4)
 
-**Audit basis:** Phase U-Leg residual; `scripts/check_legacy_modules_removed.py`; prior `check_tools_agent_*` audits merged.
+**Audit basis:** Phase U-Leg residual; `scripts/maintenance/check_legacy_modules_removed.py`; prior `check_tools_agent_*` audits merged.
 
 **Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS](#phase-as--agent-assembly-control-plane-closeout).
 

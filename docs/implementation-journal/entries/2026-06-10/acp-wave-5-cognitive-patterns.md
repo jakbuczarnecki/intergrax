@@ -50,13 +50,13 @@ Authors can scaffold readable typed agents in one command; harness provides patt
 - `intergrax/contracts/agent_contract_meta.py` — cognitive_pattern fields
 - `intergrax/runtime/registry/agent_assembly_resolver.py` — pattern validation
 - `intergrax/scaffold/new_agent.py`, `cli.py` — `--pattern` flag
-- `scripts/check_scaffold_acp_pattern.py`, `check_agent_pattern_conformance.py`
+- `scripts/maintenance/check_scaffold_acp_pattern.py`, `check_agent_pattern_conformance.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/agents/authoring/patterns tests/unit/scaffold/test_acp_pattern_scaffold.py -q
-uv run python scripts/check_scaffold_acp_pattern.py
+uv run python scripts/maintenance/check_scaffold_acp_pattern.py
 ```
 
 Result: 5 passed; scaffold script OK with `uv run`.

@@ -17,7 +17,7 @@ from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
-from intergrax.runtime.architecture.capability_graph_applications import resolve_binding_agent_contract_id
+from intergrax.applications._shared.capability_graph_catalog import resolve_binding_agent_contract_id
 from intergrax.runtime.architecture.capability_graph_lineage import (
     CapabilityImpactReport,
     CapabilityLineageReport,

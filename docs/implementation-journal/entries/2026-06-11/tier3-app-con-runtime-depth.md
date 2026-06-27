@@ -42,16 +42,16 @@ Tier-3 hosts now have normative contracts for host state, artifacts, hook orderi
 - `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` — H-APP-CON register update
 - `intergrax/applications/contracts/environment_state.py` — v2 models
 - `intergrax/applications/contracts/application_artifacts.py` — artifact refs
-- `scripts/check_application_production_gates.py` — APP-PROD-1
+- `scripts/gates/check_application_production_gates.py` — APP-PROD-1
 - `tests/unit/applications/test_environment_state_and_artifacts.py` — contract tests
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/applications/test_environment_state_and_artifacts.py tests/unit/applications/test_application_host_wiring.py -q
-python scripts/check_application_production_gates.py
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/gates/check_application_production_gates.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (expected).

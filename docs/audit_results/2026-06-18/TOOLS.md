@@ -42,10 +42,10 @@ No open P0/P1. TOOL-ENG **36/36 Closed** · TOOLS-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_legacy_tool_plan_booleans.py
-uv run python scripts/check_tool_mcp_schema_export.py
-uv run python scripts/check_tool_injection_defense.py
-uv run python scripts/check_agent_registry_bypass.py
+uv run python scripts/maintenance/check_legacy_tool_plan_booleans.py
+uv run python scripts/maintenance/check_tool_mcp_schema_export.py
+uv run python scripts/maintenance/check_tool_injection_defense.py
+uv run python scripts/maintenance/check_agent_registry_bypass.py
 uv run pytest tests/unit/runtime/nexus/tools/ -q
 ```
 

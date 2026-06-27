@@ -266,7 +266,7 @@ Optional **collection-level ACL:** `CollectionAccessPolicy` on `VectorstoreManag
 
 Enable metrics: `INTERGRAX_RAG_METRICS_ENABLED=true` or `register_rag_observability_plugin(plugins)` from `tracking/observability_bridge.py`.
 
-OTel span names (tracer `intergrax.rag`): `rag.retrieve`, `rag.retrieve.single_pass`, `rag.ingest`, `rag.ingest.load`, `rag.ingest.chunk`, `rag.ingest.index`, `rag.ingest.graph_index`. Gate: `scripts/check_rag_otel_span_registry.py` (wired in `check_observability_gates.py`).
+OTel span names (tracer `intergrax.rag`): `rag.retrieve`, `rag.retrieve.single_pass`, `rag.ingest`, `rag.ingest.load`, `rag.ingest.chunk`, `rag.ingest.index`, `rag.ingest.graph_index`. Gate: `scripts/maintenance/check_rag_otel_span_registry.py` (wired in `check_observability_gates.py`).
 
 ---
 

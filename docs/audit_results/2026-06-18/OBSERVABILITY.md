@@ -41,8 +41,8 @@ No open P0/P1. OBS-EVOL-9 M0–M3 **Done** · OBS-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_observability_gates.py
-uv run python scripts/check_event_catalog.py
+uv run python scripts/maintenance/check_observability_gates.py
+uv run python scripts/maintenance/check_event_catalog.py
 uv run pytest tests/unit/runtime/observability/ tests/unit/runtime/events/ -q
 ```
 

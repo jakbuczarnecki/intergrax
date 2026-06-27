@@ -1,11 +1,11 @@
-# research_application — Implementation Plan
+﻿# research_application — Implementation Plan
 
 **The implementation map** for this Tier-3 multi-agent host — phases, status, gaps, and verification.
 
 Status: **Harness baseline Done** — graph depth optional
 
 Architecture: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
-Agent plan: [`agents/research/IMPLEMENTATION_PLAN.md`](../../agents/research/IMPLEMENTATION_PLAN.md)  
+Agent plan: [`agents/research/docs/IMPLEMENTATION_PLAN.md`](../../agents/research/docs/IMPLEMENTATION_PLAN.md)  
 Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-RESAPP
 
 ---
@@ -15,7 +15,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 | Topic | Where |
 |-------|--------|
 | Multi-agent HTTP host, settings | **ARCHITECTURE.md** |
-| Host vs agent tasks | **This file** + `agents/research/IMPLEMENTATION_PLAN.md` |
+| Host vs agent tasks | **This file** + `agents/research/docs/IMPLEMENTATION_PLAN.md` |
 | Deploy | `BUILD_AND_DEPLOY.md` |
 
 ---

@@ -1,19 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Orchestration capability tokens — routing labels, not agent registry capabilities (ORCH-CONFIG)."""
+"""Orchestration capability tokens — routing labels, not agent registry capabilities."""
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
+from collections.abc import Sequence
 
 
-def orchestration_capabilities_from_graph_spec(
-    spec: ApplicationGraphSpec | None,
+def orchestration_capabilities_from_triggers(
+    trigger_capabilities: Sequence[str] | None,
 ) -> frozenset[str]:
     """Explicit trigger capabilities declared on a Tier-3 graph spec."""
-    if spec is None:
+    if not trigger_capabilities:
         return frozenset()
-    return frozenset(item.strip() for item in spec.trigger_capabilities if item.strip())
+    return frozenset(item.strip() for item in trigger_capabilities if item.strip())
 
 
 def is_orchestration_capability(
@@ -22,12 +22,7 @@ def is_orchestration_capability(
     trigger_capabilities: frozenset[str],
     pipeline_capability_suffix: str = ".pipeline",
 ) -> bool:
-    """
-    True when ``capability`` is a harness orchestration token (graph seed / rules route).
-
-    Orchestration tokens are **not** required on agent contracts — ``GraphSpecSeedingPlanner``
-    binds explicit ``agent_id`` values from ``ApplicationGraphSpec``.
-    """
+    """True when ``capability`` is a harness orchestration token."""
     normalized = (capability or "").strip()
     if not normalized:
         return False

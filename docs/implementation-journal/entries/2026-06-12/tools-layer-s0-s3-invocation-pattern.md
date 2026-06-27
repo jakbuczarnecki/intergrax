@@ -59,7 +59,7 @@ Hosts can configure tool orchestration mode (`single_pass` / `bounded_react`) vi
 ```bash
 uv run pytest tests/unit/runtime/nexus/tools/ tests/integration/runtime/test_tool_loop_integration.py -q
 uv run pytest -m gate -q
-uv run python scripts/check_harness_adr.py
+uv run python scripts/maintenance/check_harness_adr.py
 ```
 
 ## Risks and follow-ups

@@ -1,4 +1,4 @@
-# Intergrax Assistant (IAA) — architecture
+﻿# Intergrax Assistant (IAA) — architecture
 
 **Status:** Architecture baseline v1 (2026-06-08) — lab profile scaffold + hub-and-spoke design  
 **Tier:** Tier-3 application (`intergrax_assistant_application`)  
@@ -282,7 +282,7 @@ uv run pytest applications/intergrax_assistant_application/intergrax_assistant_a
 
 | Document | Role |
 |----------|------|
-| [`agents/intergrax_assistant/ARCHITECTURE.md`](../../agents/intergrax_assistant/ARCHITECTURE.md) | Hub agent (Tier-2) |
+| [`agents/intergrax_assistant/docs/ARCHITECTURE.md`](../../agents/intergrax_assistant/docs/ARCHITECTURE.md) | Hub agent (Tier-2) |
 | [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) §7.4.11 | Platform canon entry |
 | [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) Appendix F · I · G | Tier-3, orchestration, memory |
 | [`docs/architecture/LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) | Provider swap |

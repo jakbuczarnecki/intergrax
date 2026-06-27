@@ -44,7 +44,7 @@ Local and agent verification matches nightly CI gate profile; accidental full-re
 
 - `intergrax/skills/providers/codecraft/USAGE.md` — bundle index
 - `intergrax/skills/providers/codecraft/codecraft.ephemeral_builder/USAGE.md` — skill guide
-- `scripts/audit_agent_fleet_legacy.py` — `boundary_demo` migrated roster
+- `scripts/audit/audit_agent_fleet_legacy.py` — `boundary_demo` migrated roster
 - `tests/conftest.py` — gate/no_ci deselection + fleet inventory refresh
 - `tests/unit/skills/test_*.py` — catalog count 150 / 42 bundles
 - `AGENTS.md` · `.cursor/rules/intergrax-iteration.mdc` — verification command
@@ -54,7 +54,7 @@ Local and agent verification matches nightly CI gate profile; accidental full-re
 ```bash
 uv run pytest -m gate -q
 uv run pytest -m "gate and not no_ci" -q
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: **1390 passed** in ~49 s (both gate invocations); journal check OK.

@@ -51,14 +51,14 @@ Nexus task cognition is now honestly L3+ production-ready: typed plans, registry
 - `intergrax/runtime/nexus/planning/nexus_plan_bridge.py` — parse retries
 - `intergrax/runtime/nexus/orchestration/planning_runner.py` — enriched DecisionRecord
 - `intergrax/runtime/events/phase_coverage.py` — multi-phase DECISION_EMITTED
-- `scripts/check_reasoning_gates.py` — stronger CI gate
+- `scripts/maintenance/check_reasoning_gates.py` — stronger CI gate
 - Tests: `test_reasoning_wiring.py`, `test_nexus_plan_bridge.py`, `test_planning_decision_record_gate.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/applications/test_reasoning_wiring.py tests/unit/runtime/nexus/planning/ tests/integration/runtime/test_planning_decision_record_gate.py -q
-python scripts/check_reasoning_gates.py
+python scripts/maintenance/check_reasoning_gates.py
 ```
 
 ## Risks and follow-ups

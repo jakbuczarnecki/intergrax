@@ -4,43 +4,27 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from collections.abc import Sequence
+
+from intergrax.contracts.capability_graph_catalog import ApplicationCapabilityCatalogEntry
 from intergrax.runtime.architecture.capability_graph import CapabilityEdge, CapabilityEdgeType
 
 
-def application_capability_node_id(manifest: ApplicationManifest) -> str:
+def application_capability_node_id(app_id: str) -> str:
     """Stable application node id aligned with ``_system_nodes`` naming."""
-    return f"application:{manifest.app_id}_application"
-
-
-def resolve_binding_agent_contract_id(binding: AgentBinding) -> str:
-    """Resolve agent contract id from binding metadata without dynamic imports."""
-    if binding.contract_id:
-        return binding.contract_id
-    agent_type = binding.resolved_agent_type()
-    instance = agent_type()
-    return instance.get_contract().id
-
-
-def catalog_application_manifests() -> tuple[ApplicationManifest, ...]:
-    """Reference manifests for harness capability graph edges (Tier-0 catalog)."""
-    from intergrax.applications.reference.harness_manifest_catalog import (
-        build_harness_reference_manifests,
-    )
-
-    return build_harness_reference_manifests()
+    return f"application:{app_id}_application"
 
 
 def build_application_agent_edges(
     *,
     agent_node_ids: frozenset[str],
+    catalog: Sequence[ApplicationCapabilityCatalogEntry],
 ) -> list[CapabilityEdge]:
     """Map each application host to only its roster agents (not global union)."""
     edges: list[CapabilityEdge] = []
-    for manifest in catalog_application_manifests():
-        application_node = application_capability_node_id(manifest)
-        for binding in manifest.enabled_agents():
-            contract_id = resolve_binding_agent_contract_id(binding)
+    for entry in catalog:
+        application_node = application_capability_node_id(entry.app_id)
+        for contract_id in entry.agent_contract_ids:
             agent_node = f"agent:{contract_id}"
             if agent_node not in agent_node_ids:
                 continue

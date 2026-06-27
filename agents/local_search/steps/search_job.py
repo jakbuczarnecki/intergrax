@@ -5,15 +5,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
-from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.rag.service import RAG_TOOL_ID
-from lkw_shared.runtime_helpers import (
+from intergrax.agents.authoring.runtime_tool_helpers import (
     exec_ctx_from_step,
     invoke_catalog_tool,
     request_metadata,
     resolve_request_scope,
 )
+from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 
 SEARCH_STEP_ID = "local_search_step"
 
@@ -156,20 +156,26 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
 
     entry = await invoke_catalog_tool(
         exec_ctx,
-        tool_name=RAG_TOOL_ID,
+        tool_name=RAG_RETRIEVE_TOOL_ID,
         agent_id=step_ctx.agent_id,
         step_id=SEARCH_STEP_ID,
         tool_input=tool_input,
     )
 
     if entry.get("status") != "success" or not entry.get("used"):
-        return _output(
+        summary = _output(
             run_id=step_ctx.run_id,
             used=False,
             reason="retrieve_failed",
             query=query,
             collection_id=collection_id,
         )
+        raw_reason = entry.get("reason")
+        if raw_reason:
+            search_summary = dict(summary["search_summary"])
+            search_summary["raw_tool_reason"] = str(raw_reason)
+            summary["search_summary"] = search_summary
+        return summary
 
     chunks = list(entry.get("chunks") or [])
     citations = list(entry.get("citations") or [])

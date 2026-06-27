@@ -51,8 +51,8 @@ Skills layer formally closed for Full Harness LC — catalog L3, bridge wiring, 
 
 ```bash
 uv run pytest tests/unit/skills/ -q
-uv run python scripts/check_langgraph_skill_pack_import.py
-uv run python scripts/check_skill_selection_hook.py
+uv run python scripts/maintenance/check_langgraph_skill_pack_import.py
+uv run python scripts/maintenance/check_skill_selection_hook.py
 ```
 
 ## Risks and follow-ups

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
+from intergrax.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_run import AgentEnvironmentOverrides
 

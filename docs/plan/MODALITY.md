@@ -202,7 +202,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 ```bash
 uv run pytest tests/unit/speech_adapters/ tests/unit/applications/test_p6_integration_tool_wiring.py tests/unit/tools/providers/test_modality_tools.py -q
-python scripts/check_harness_adr.py
+python scripts/maintenance/check_harness_adr.py
 ```
 
 ---

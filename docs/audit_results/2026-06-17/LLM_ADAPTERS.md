@@ -25,8 +25,8 @@ No open P0/P1 in `LLM_ADAPTERS` scope. Prior Layer Completion closeout revalidat
 ## Gates executed
 
 ```bash
-python scripts/check_llm_adapter_typed_returns.py
-python scripts/check_agents_llm_adapter_response.py
+python scripts/maintenance/check_llm_adapter_typed_returns.py
+python scripts/maintenance/check_agents_llm_adapter_response.py
 uv run pytest tests/unit/llm_adapters/ -q
 ```
 

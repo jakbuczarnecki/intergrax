@@ -19,25 +19,22 @@ from intergrax.tools.providers.rag.scope import (
     TENANT_ID_METADATA_CONFLICT,
     authoritative_tenant_id,
     resolve_tenant_scoped_vectorstore,
+    use_wired_retrieval_managers,
     vectorstore_tenant_id,
 )
 from intergrax.tools.providers.rag.service import perform_rag_retrieve
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput
+from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
+from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_lkw_resolve_request_scope_uses_runtime_request_tenant_id() -> None:
-    import sys
-    from pathlib import Path
-
-    agents_root = Path(__file__).resolve().parents[5] / "agents"
-    if str(agents_root) not in sys.path:
-        sys.path.insert(0, str(agents_root))
-    from lkw_shared.runtime_helpers import resolve_request_scope
+    from intergrax.agents.authoring.runtime_tool_helpers import resolve_request_scope
 
     exec_ctx = RuntimeExecutionContext(
         task_id="task-1",
@@ -129,6 +126,17 @@ def test_vectorstore_tenant_id_unwraps_integration_adapter() -> None:
     assert vectorstore_tenant_id(VectorstoreManager(_Bridge())) == "default"
 
 
+def test_vectorstore_tenant_id_reads_qdrant_integration_bridge() -> None:
+    from intergrax.integrations.providers.vector_store.qdrant.adapter import QdrantVectorStoreIntegration
+    from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
+
+    bridge = QdrantVectorStoreIntegration(
+        QdrantIntegrationConfig(collection_name="local_workspace", tenant_id="lkw-smoke"),
+        _StoreStub("lkw-smoke"),
+    )
+    assert vectorstore_tenant_id(VectorstoreManager(bridge)) == "lkw-smoke"
+
+
 class _FakeEmbeddingManager:
     class _Result:
         def __init__(self, docs, embeddings):
@@ -137,6 +145,9 @@ class _FakeEmbeddingManager:
 
     def embed_documents(self, docs):
         return self._Result(docs, [[0.1, 0.2] for _ in docs])
+
+    def embed_one(self, text: str):
+        return [0.1, 0.2]
 
 
 class _RecordingVectorstore:
@@ -153,6 +164,13 @@ class _FakeLoader:
     def load_document(self, source: str, *, use_default_metadata=True, call_custom_metadata=None):
         meta = call_custom_metadata(Document(page_content="x", metadata={}), source) if call_custom_metadata else {}
         return [Document(page_content="hello", metadata=dict(meta))]
+
+
+class _FileLoader:
+    def load_document(self, source: str, *, use_default_metadata=True, call_custom_metadata=None):
+        text = Path(source).read_text(encoding="utf-8")
+        meta = call_custom_metadata(Document(page_content=text, metadata={}), source) if call_custom_metadata else {}
+        return [Document(page_content=text, metadata=dict(meta))]
 
 
 class _FakeSplitter:
@@ -279,3 +297,114 @@ def test_rag_retrieve_resolves_tenant_scoped_vectorstore(monkeypatch: pytest.Mon
 
     assert out.used is True
     assert vectorstore_tenant_id(captured["manager"]) == "lkw-smoke"
+
+
+_MARKER = "LKW_TENANT_RETRIEVE_MARKER_20260627"
+_WORKSPACE_ID = "lkw-final-workspace-20260627"
+
+
+def test_use_wired_retrieval_managers_false_when_tenant_differs() -> None:
+    default_manager = VectorstoreManager(_StoreStub("default"))
+    scoped_manager = VectorstoreManager(_StoreStub("lkw-smoke"))
+    ctx = ToolWiringContext(vectorstore_manager=default_manager)
+    assert use_wired_retrieval_managers(ctx, default_manager) is True
+    assert use_wired_retrieval_managers(ctx, scoped_manager) is False
+
+
+def test_tenant_scoped_ingest_and_retrieve_round_trip(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: wired retriever on default store must not break lkw-smoke retrieve."""
+    source = tmp_path / "lkw-final-smoke.txt"
+    source.write_text(
+        f"Intergrax LKW tenant retrieve fixture.\nUnique marker: {_MARKER}.",
+        encoding="utf-8",
+    )
+
+    default_store = InMemoryVectorStore(tenant_id="default")
+    scoped_store = InMemoryVectorStore(tenant_id="lkw-smoke")
+    default_manager = VectorstoreManager(default_store)
+    scoped_manager = VectorstoreManager(scoped_store)
+
+    monkeypatch.setattr(
+        "intergrax.tools.providers.rag.scope.create_vectorstore_manager",
+        lambda *, tenant_id, profile, **_: (
+            scoped_manager if tenant_id == "lkw-smoke" else default_manager
+        ),
+    )
+
+    embedding = _FakeEmbeddingManager()
+    profile = RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity")
+    ctx = ToolWiringContext(
+        vectorstore_manager=default_manager,
+        embedding_manager=embedding,
+        integration_profile=IntegrationProfile(),
+        retriever_manager=create_default_retriever_manager(
+            vector_store=default_manager,
+            embedding_manager=embedding,
+            profile=profile,
+        ),
+        rag_profile=profile,
+        extras={
+            "documents_loader": _FileLoader(),
+            "documents_splitter": _FakeSplitter(),
+        },
+    )
+
+    ingest_out = perform_rag_ingest(
+        ctx,
+        RagIngestInput(
+            source_path=str(source),
+            tenant_id="lkw-smoke",
+            workspace_id=_WORKSPACE_ID,
+            metadata={"collection_id": _WORKSPACE_ID},
+        ),
+    )
+    assert ingest_out.used is True
+    assert ingest_out.num_chunks and ingest_out.num_chunks > 0
+
+    stored = scoped_store._payloads
+    assert stored
+    payload = next(iter(stored.values()))
+    assert payload["tenant_id"] == "lkw-smoke"
+    assert payload["workspace_id"] == _WORKSPACE_ID
+    assert _MARKER in payload["text"]
+
+    retrieve_out = perform_rag_retrieve(
+        ctx,
+        RagRetrieveInput(
+            query=_MARKER,
+            tenant_id="lkw-smoke",
+            workspace_id=_WORKSPACE_ID,
+            top_k=3,
+        ),
+    )
+    assert retrieve_out.used is True
+    assert retrieve_out.reason == "ok"
+    assert retrieve_out.chunks
+    assert any(_MARKER in (chunk.text or "") for chunk in retrieve_out.chunks)
+
+    wrong_tenant = perform_rag_retrieve(
+        ctx,
+        RagRetrieveInput(
+            query=_MARKER,
+            tenant_id="default",
+            workspace_id=_WORKSPACE_ID,
+            top_k=3,
+        ),
+    )
+    assert wrong_tenant.used is False
+    assert not any(_MARKER in (chunk.text or "") for chunk in (wrong_tenant.chunks or []))
+
+    wrong_workspace = perform_rag_retrieve(
+        ctx,
+        RagRetrieveInput(
+            query=_MARKER,
+            tenant_id="lkw-smoke",
+            workspace_id="other-workspace",
+            top_k=3,
+        ),
+    )
+    assert wrong_workspace.used is False
+    assert not wrong_workspace.chunks

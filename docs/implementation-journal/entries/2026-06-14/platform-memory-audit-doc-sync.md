@@ -48,8 +48,8 @@ Auditors and implementers have a single consistent MEMORY canon matching MEM-VEC
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (doc-only iteration).

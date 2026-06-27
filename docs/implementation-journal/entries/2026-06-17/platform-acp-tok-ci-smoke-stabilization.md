@@ -38,7 +38,7 @@ ACP-TOK-CI gate is deterministic on CI runners without Ollama; smoke subprocess 
 
 - `testing_support/builder.py` — `MeteringFakeLLMAdapter` with response `LLMTokenUsage`
 - `tests/unit/agents/conftest.py` — autouse fake LLM + identity `compile_prompt_text` for `test_acp_token_*`
-- `scripts/check_agent_token_budget_contract.py` — smoke failure detail + warning filter
+- `scripts/maintenance/check_agent_token_budget_contract.py` — smoke failure detail + warning filter
 - `pyproject.toml` — `chardet>=5.2,<6`, `filterwarnings` for requests pin warning
 - `uv.lock` — chardet 5.2.0 pin
 
@@ -46,9 +46,9 @@ ACP-TOK-CI gate is deterministic on CI runners without Ollama; smoke subprocess 
 
 ```bash
 uv run pytest tests/unit/agents/test_acp_token_usage_metering.py tests/unit/agents/test_acp_token_budget_enforcement.py tests/unit/agents/test_acp_token_budget_reactions.py -q
-uv run python scripts/check_agent_token_budget_contract.py
-uv run python scripts/check_agent_acp_close_ci.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_agent_token_budget_contract.py
+uv run python scripts/gates/check_agent_acp_close_ci.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (13/13 token budget tests × 10 consecutive runs; ACP-TOK-CI and ACP-CLOSE CI OK).

@@ -44,15 +44,15 @@ Band **2az** AUDIT-IDEAL register is complete; default harness queue returns to 
 
 - `intergrax/llm_adapters/registry/catalog_capabilities.py` — catalog capability overlay
 - `intergrax/runtime/nexus/context/context_preflight.py` — adapter token delegation
-- `scripts/check_llm_profile_runtime.py`, `check_rag_hierarchical_bootstrap.py`, `check_rag_catalog_poisoning_defense.py`
-- `intergrax/cli/doctor.py`, `scripts/check_audit_ideal_gates.py`
+- `scripts/maintenance/check_llm_profile_runtime.py`, `check_rag_hierarchical_bootstrap.py`, `check_rag_catalog_poisoning_defense.py`
+- `intergrax/cli/doctor.py`, `scripts/audit/check_audit_ideal_gates.py`
 - `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`
 
 ## Verification
 
 ```bash
 uv run pytest -m "gate and not no_ci" -q
-uv run python scripts/check_plan_scorecard_sync.py
+uv run python scripts/maintenance/check_plan_scorecard_sync.py
 ```
 
 Result: gate suite green after catalog adapter regression fix.

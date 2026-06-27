@@ -59,9 +59,9 @@ Tier-3 authors get a canonical grouping model (HostMeta, SecurityEnvelope, Capab
 ## Verification
 
 ```bash
-python scripts/check_harness_adr.py
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_harness_adr.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (after journal section fix).

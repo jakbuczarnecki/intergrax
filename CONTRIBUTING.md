@@ -65,7 +65,7 @@ uv sync --extra dev
 
 ```bash
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
+python scripts/maintenance/check_harness_no_getattr.py
 uv run intergrax doctor
 ```
 
@@ -157,13 +157,13 @@ git checkout -b feature/short-description
 uv run pytest -m gate -q
 
 # If harness/runtime touched
-python scripts/check_harness_no_getattr.py
+python scripts/maintenance/check_harness_no_getattr.py
 
 # If agent touched
 uv run pytest agents/<agent>/tests/ -q
 
 # Full local suite (optional)
-scripts\test.bat unit
+scripts\ci\test.bat unit
 ```
 
 ### 5. Open PR

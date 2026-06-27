@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 
@@ -89,7 +89,7 @@ intergrax/applications/contracts/environment_profile/ · application_registry.py
 intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · environment_snapshot_wiring.py
 intergrax/applications/_shared/reference_capability_bundle.py · environment_conformance.py
 intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
-scripts/check_application_production_gates.py · check_environment_profile_bundle_schema.py
+scripts/gates/check_application_production_gates.py · check_environment_profile_bundle_schema.py
 intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/guides/APPLICATION_CREATION_GUIDE.md
 ```
@@ -194,11 +194,11 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 
 ```bash
 uv run pytest tests/unit/applications/ -q
-uv run python scripts/check_application_production_gates.py
-uv run python scripts/check_application_registry.py
-uv run python scripts/check_application_health_score.py
-uv run python scripts/check_environment_profile_bundle_schema.py
-python scripts/check_harness_no_getattr.py
+uv run python scripts/gates/check_application_production_gates.py
+uv run python scripts/maintenance/check_application_registry.py
+uv run python scripts/maintenance/check_application_health_score.py
+uv run python scripts/maintenance/check_environment_profile_bundle_schema.py
+python scripts/maintenance/check_harness_no_getattr.py
 ```
 
 Add any domain-specific scripts you discover. If a command fails, state why.

@@ -41,7 +41,7 @@ Agent architecture canon (§13–§40) is now honestly **implementation-complete
 
 - `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — GAP-ACP-36/37 Closed; §40.13 maturity sync
 - `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — ACP-FINISH phase Done; executive summary
-- `scripts/generate_domain_audit_prompts.py` — AGENT known_gaps + active_phases
+- `scripts/audit/generate_domain_audit_prompts.py` — AGENT known_gaps + active_phases
 - `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` — regenerated
 
 ## Verification
@@ -50,9 +50,9 @@ Agent architecture canon (§13–§40) is now honestly **implementation-complete
 uv run pytest tests/unit/agents/test_acp_token_budget_enforcement.py \
   tests/unit/agents/test_acp_token_budget_reactions.py \
   tests/unit/agents/test_acp_token_usage_metering.py -q
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
-uv run python scripts/generate_domain_audit_prompts.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
+uv run python scripts/audit/generate_domain_audit_prompts.py
 ```
 
 Result: 13 passed (ACP-TOK tests); doc pair OK; journal OK after entry added.

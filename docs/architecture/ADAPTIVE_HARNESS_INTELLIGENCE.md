@@ -289,7 +289,7 @@ intergrax/rag/routing/query_router.py # Tunable RAG tier target
 
 ### 5.4 What Phase V L4 closeout actually validates today
 
-`scripts/phase_v_closeout_gate.py --enforce-l4` confirms:
+`scripts/release/phase_v_closeout_gate.py --enforce-l4` confirms:
 
 - Adaptive **proposal envelopes** pass governance rules (`build_default_adaptive_proposals()`).
 - Maturity gate inputs include `adaptive_governance_passed`.

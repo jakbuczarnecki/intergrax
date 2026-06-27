@@ -23,7 +23,7 @@ Continue Tier-3 application architecture sprint queue: APP-OPS-2 — operational
 - `ApplicationManifest.ownership` optional field; required for PRODUCT profile via gate.
 - `ownership_wiring.py` — `standard_product_operational_ownership`, `evaluate_application_ownership`, `check_manifest_operational_ownership`.
 - Reference product manifests (legal, research, dispute_sim, local_workspace) declare ownership.
-- `scripts/check_application_ownership.py` wired into `check_application_production_gates.py`.
+- `scripts/maintenance/check_application_ownership.py` wired into `check_application_production_gates.py`.
 
 ## Project impact
 
@@ -42,7 +42,7 @@ Product hosts now carry typed ops contacts for incident routing, HITL/budget esc
 - `intergrax/applications/contracts/manifest.py`
 - `intergrax/applications/_shared/ownership_wiring.py`
 - `applications/*/manifest.py` (×4 product hosts)
-- `scripts/check_application_ownership.py`
+- `scripts/maintenance/check_application_ownership.py`
 
 ## Verification
 
@@ -50,7 +50,7 @@ Product hosts now carry typed ops contacts for incident routing, HITL/budget esc
 uv run pytest tests/unit/applications/test_operational_ownership_gate.py \
   tests/unit/scripts/test_check_application_ownership.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

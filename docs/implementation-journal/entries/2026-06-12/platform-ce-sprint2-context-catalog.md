@@ -51,7 +51,7 @@ Hosts bootstrap context plugins alongside integrations/tools/skills; authors can
 
 ```bash
 uv run pytest tests/unit/context/ tests/unit/applications/test_context_plugin_wiring.py -m gate -q
-python scripts/check_context_tier0_import_boundary.py
+python scripts/maintenance/check_context_tier0_import_boundary.py
 ```
 
 Result: 19 passed (context suite).

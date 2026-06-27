@@ -5,26 +5,13 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
-from typing import FrozenSet, Literal, Mapping, Optional
+from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
+from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.config import ApiEnvironment
 
 LocalWorkspaceIdentitySource = Literal["body_or_context", "context_only"]
-
-
-def _env_bool(name: str, default: bool = False) -> bool:
-    raw = os.environ.get(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _env_csv_set(name: str) -> FrozenSet[str]:
-    raw = os.environ.get(name, "").strip()
-    if not raw:
-        return frozenset()
-    return frozenset(x.strip() for x in raw.split(",") if x.strip())
 
 
 def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
@@ -56,14 +43,15 @@ def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
     return out
 
 
-@dataclass(frozen=True)
-class LocalWorkspaceBackendSettings:
+@dataclass(frozen=True, kw_only=True)
+class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     """Environment for local_workspace_application (scaffolded product profile)."""
 
-    environment: ApiEnvironment
+    env_prefix: ClassVar[str] = "LOCAL_WORKSPACE_"
     route_prefix: str = "/v1/local_workspace"
-    backend_host: str = "127.0.0.1"
     backend_port: int = 8020
+    include_scheduler: bool = False
+    include_interaction_routes: bool = False
     default_agent_id: str = "local_search"
     identity_source: LocalWorkspaceIdentitySource = "body_or_context"
     enable_rag: bool = True
@@ -74,16 +62,7 @@ class LocalWorkspaceBackendSettings:
     allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
     openapi_enabled_override: Optional[bool] = None
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
-    include_mcp: bool = False
-    mcp_mount_path: str = "/mcp"
-    include_task_control: bool = True
-    include_scheduler: bool = False
-    include_interaction_routes: bool = False
-    interaction_route_prefix: str = "/v1/interactions"
-    interaction_surface: str = "auto"
     interaction_execute_default: bool = True
-    task_control_route_prefix: str = "/v1/tasks"
-    scheduler_poll_seconds: float | None = None
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -95,42 +74,45 @@ class LocalWorkspaceBackendSettings:
             ids.append("rag.ingest_document")
         return ids
 
+    # ------------------------------------------------------------------
+    # Application-specific settings
+    # Add your own env-backed fields here.
+    # ------------------------------------------------------------------
+
     @classmethod
-    def from_env(cls) -> LocalWorkspaceBackendSettings:
-        env_raw = (os.getenv("LOCAL_WORKSPACE_BACKEND_ENV") or os.getenv("INTERGRAX_ENV") or "dev").strip().lower()
-        try:
-            environment = ApiEnvironment(env_raw)
-        except ValueError as exc:
-            raise ValueError(
-                f"LOCAL_WORKSPACE_BACKEND_ENV must be one of "
-                f"{[e.value for e in ApiEnvironment]}, got {env_raw!r}."
-            ) from exc
+    def _load_app_env(cls, env: EnvReader) -> dict[str, object]:
+        env_raw = (
+            env.optional_str("BACKEND_ENV")
+            or (os.environ.get("INTERGRAX_ENV") or "dev").strip().lower()
+        )
+        if env_raw == "staging":
+            env_raw = "stage"
+        environment = ApiEnvironment(env_raw)
 
-        prefix = (os.getenv("LOCAL_WORKSPACE_ROUTE_PREFIX") or "/v1/local_workspace").strip() or "/v1/local_workspace"
-        host = (os.getenv("LOCAL_WORKSPACE_BACKEND_HOST") or "127.0.0.1").strip()
-        port_raw = (os.getenv("LOCAL_WORKSPACE_BACKEND_PORT") or "8020").strip()
-        agent_id = (os.getenv("LOCAL_WORKSPACE_DEFAULT_AGENT_ID") or "local_search").strip() or "local_search"
-        enable_rag = _env_bool("LOCAL_WORKSPACE_ENABLE_RAG", default=True)
-        enable_rag_ingest = _env_bool("LOCAL_WORKSPACE_ENABLE_RAG_INGEST", default=True)
+        agent_id = env.str("DEFAULT_AGENT_ID", default="local_search") or "local_search"
+        enable_rag = env.bool("ENABLE_RAG", default=True)
+        enable_rag_ingest = env.bool("ENABLE_RAG_INGEST", default=True)
 
-        id_src_env = os.getenv("LOCAL_WORKSPACE_IDENTITY_SOURCE", "").strip().lower()
+        id_src_env = env.optional_str("IDENTITY_SOURCE")
         if id_src_env in {"body_or_context", "context_only"}:
             identity_source = id_src_env
         else:
-            identity_source = "context_only" if environment == ApiEnvironment.PROD else "body_or_context"
+            identity_source = (
+                "context_only" if environment == ApiEnvironment.PROD else "body_or_context"
+            )
 
-        cors = _env_csv_set("LOCAL_WORKSPACE_BACKEND_CORS_ORIGINS")
-        hosts = _env_csv_set("LOCAL_WORKSPACE_BACKEND_ALLOWED_HOSTS")
+        cors = env.csv_set("BACKEND_CORS_ORIGINS")
+        hosts = env.csv_set("BACKEND_ALLOWED_HOSTS")
 
         openapi_override: Optional[bool] = None
-        if os.getenv("LOCAL_WORKSPACE_BACKEND_OPENAPI") is not None:
-            openapi_override = _env_bool("LOCAL_WORKSPACE_BACKEND_OPENAPI")
+        if env.raw("BACKEND_OPENAPI") is not None:
+            openapi_override = env.bool("BACKEND_OPENAPI")
 
         keys: Mapping[str, ApiKeyIdentity] = {}
-        bootstrap_key = os.getenv("LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY", "").strip()
+        bootstrap_key = env.str("BACKEND_BOOTSTRAP_API_KEY", default="")
         if bootstrap_key:
-            tenant = os.getenv("LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_TENANT_ID", "").strip()
-            user = os.getenv("LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_USER_ID", "").strip()
+            tenant = env.str("BACKEND_BOOTSTRAP_TENANT_ID", default="")
+            user = env.str("BACKEND_BOOTSTRAP_USER_ID", default="")
             if not tenant or not user:
                 raise ValueError(
                     "When LOCAL_WORKSPACE_BACKEND_BOOTSTRAP_API_KEY is set, "
@@ -144,7 +126,7 @@ class LocalWorkspaceBackendSettings:
                     scopes=("*",),
                 )
             }
-        json_keys = os.getenv("LOCAL_WORKSPACE_BACKEND_API_KEYS_JSON", "").strip()
+        json_keys = env.str("BACKEND_API_KEYS_JSON", default="")
         if json_keys:
             if keys:
                 raise ValueError(
@@ -158,8 +140,8 @@ class LocalWorkspaceBackendSettings:
                 "LOCAL_WORKSPACE_BACKEND_ENV=prod requires "
                 "LOCAL_WORKSPACE_IDENTITY_SOURCE=context_only (or omit to default)."
             )
-        if environment == ApiEnvironment.PROD and not _env_bool(
-            "LOCAL_WORKSPACE_BACKEND_ALLOW_UNAUTHENTICATED", False
+        if environment == ApiEnvironment.PROD and not env.bool(
+            "BACKEND_ALLOW_UNAUTHENTICATED", default=False
         ):
             if not keys:
                 raise ValueError(
@@ -170,48 +152,23 @@ class LocalWorkspaceBackendSettings:
                     "LOCAL_WORKSPACE_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
-        include_mcp = _env_bool("LOCAL_WORKSPACE_INCLUDE_MCP", default=False)
-        mcp_mount = (os.getenv("LOCAL_WORKSPACE_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
-        include_task_control = _env_bool("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", default=True)
-        include_scheduler = _env_bool("LOCAL_WORKSPACE_INCLUDE_SCHEDULER", default=False)
-        include_interactions = _env_bool("LOCAL_WORKSPACE_INCLUDE_INTERACTIONS", default=False)
-        interaction_prefix = (
-            os.getenv("LOCAL_WORKSPACE_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
-        ).strip() or "/v1/interactions"
-        interaction_surface = (
-            os.getenv("LOCAL_WORKSPACE_INTERACTION_SURFACE") or "auto"
-        ).strip().lower() or "auto"
-        interaction_execute = _env_bool(
-            "LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT", default=True
+        read_roots_raw = (os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS") or "").strip()
+        allowed_read_roots = frozenset(
+            part.strip() for part in read_roots_raw.split(",") if part.strip()
         )
-        task_control_prefix = (
-            os.getenv("LOCAL_WORKSPACE_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
-        ).strip() or "/v1/tasks"
-        poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
-        scheduler_poll = float(poll_raw) if poll_raw else None
 
-        return cls(
-            environment=environment,
-            route_prefix=prefix,
-            backend_host=host,
-            backend_port=int(port_raw),
-            default_agent_id=agent_id,
-            identity_source=identity_source,
-            cors_allow_origins=cors,
-            allowed_hosts=hosts,
-            openapi_enabled_override=openapi_override,
-            api_keys_map=keys,
-            include_mcp=include_mcp,
-            mcp_mount_path=mcp_mount,
-            include_task_control=include_task_control,
-            include_scheduler=include_scheduler,
-            include_interaction_routes=include_interactions,
-            interaction_route_prefix=interaction_prefix,
-            interaction_surface=interaction_surface,
-            interaction_execute_default=interaction_execute,
-            task_control_route_prefix=task_control_prefix,
-            scheduler_poll_seconds=scheduler_poll,
-            enable_rag=enable_rag,
-            enable_rag_ingest=enable_rag_ingest,
-            allowed_read_roots=_env_csv_set("INTERGRAX_ALLOWED_READ_ROOTS"),
-        )
+        return {
+            "default_agent_id": agent_id,
+            "identity_source": identity_source,
+            "enable_rag": enable_rag,
+            "enable_rag_ingest": enable_rag_ingest,
+            "allowed_read_roots": allowed_read_roots,
+            "cors_allow_origins": cors,
+            "allowed_hosts": hosts,
+            "openapi_enabled_override": openapi_override,
+            "api_keys_map": keys,
+            "interaction_execute_default": env.bool(
+                "INTERACTION_EXECUTE_DEFAULT",
+                default=cls._field_default("interaction_execute_default"),  # type: ignore[arg-type]
+            ),
+        }

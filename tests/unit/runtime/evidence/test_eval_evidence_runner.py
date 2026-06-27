@@ -91,7 +91,7 @@ def test_run_eval_scenario_library_evidence_check_includes_required_fields() -> 
     assert result.basis == _REQUIRED_EVIDENCE_BASIS
     assert len(result.artifact_refs) == 1
     assert result.artifact_refs[0].kind is EvalEvidenceArtifactKind.SOURCE_CHECK
-    assert result.artifact_refs[0].path == "scripts/check_eval_scenario_library.py"
+    assert result.artifact_refs[0].path == "scripts/maintenance/check_eval_scenario_library.py"
     assert result.metadata["network"] == "disabled"
     assert result.metadata["provider_calls"] == "disabled"
     assert result.metadata["real_llm_evaluation"] == "disabled"

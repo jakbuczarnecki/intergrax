@@ -45,7 +45,7 @@ Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_ST
 
 ## Current platform maturity
 
-**Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model) · [Maturity Taxonomy](docs/guides/MATURITY_TAXONOMY.md)).
+**Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/gates/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model) · [Maturity Taxonomy](docs/guides/MATURITY_TAXONOMY.md)).
 
 Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summaries in this README. Authoritative readiness claims use the four-axis **A/I/P/E** vocabulary in [MATURITY_TAXONOMY.md](docs/guides/MATURITY_TAXONOMY.md). Per-domain evidence lives in **domain-layer pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`. **Cross-layer capabilities** use **multi-layer feature pairs**: `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` — see [Multi-layer feature docs](docs/features/README.md).
 
@@ -322,7 +322,7 @@ All artifacts land under `build/evidence/`:
 **Verify artifacts and docs** (after running the proof path):
 
 ```bash
-python scripts/check_evidence_artifacts.py
+python scripts/maintenance/check_evidence_artifacts.py
 ```
 
 Confirms expected evidence artifacts exist and README still documents the canonical proof path.

@@ -48,7 +48,7 @@ Adaptive Harness Intelligence layer formally closed for Full Harness LC — L4 c
 
 ```bash
 uv run pytest tests/unit/runtime/adaptive/ -q
-uv run python scripts/phase_w_adapt_closeout_gate.py
+uv run python scripts/release/phase_w_adapt_closeout_gate.py
 ```
 
 ## Risks and follow-ups

@@ -38,8 +38,8 @@ Reference mutating acceptance profile now has a typed §40.12 artifact. Roster m
 
 - `intergrax/agents/readiness/section_40_12_checklist.py` — reference checklist builder (new)
 - `intergrax/agents/readiness/scoreboard.py` — mutating dimensions 100%
-- `scripts/check_acp_section_40_12_checklist.py` — CI gate (new)
-- `scripts/check_agent_production_readiness.py` — PROD-8 flag
+- `scripts/maintenance/check_acp_section_40_12_checklist.py` — CI gate (new)
+- `scripts/gates/check_agent_production_readiness.py` — PROD-8 flag
 - `tests/unit/agents/readiness/test_section_40_12_checklist.py` — unit test (new)
 - `tests/unit/agents/readiness/test_production_readiness_scoreboard.py` — mutating dimension tests
 - `build/acp_section_40_12_reference.json` — generated artifact
@@ -49,8 +49,8 @@ Reference mutating acceptance profile now has a typed §40.12 artifact. Roster m
 
 ```bash
 uv run pytest tests/unit/agents/readiness/ -q
-uv run python scripts/check_acp_section_40_12_checklist.py --write
-uv run python scripts/check_agent_production_readiness.py --regenerate --require-mutating-checkpoint-idempotency-100
+uv run python scripts/maintenance/check_acp_section_40_12_checklist.py --write
+uv run python scripts/gates/check_agent_production_readiness.py --regenerate --require-mutating-checkpoint-idempotency-100
 ```
 
 Result: 6 passed; both scripts OK.

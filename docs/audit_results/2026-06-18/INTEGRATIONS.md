@@ -42,8 +42,8 @@ No open P0/P1. Catalog **185** slugs · M.6/M.7/M.12 **Done** · INTEGRATIONS-LC
 ## Gates executed
 
 ```bash
-uv run python scripts/check_integration_vendor_imports.py
-uv run python scripts/check_harness_guardrail_wiring.py
+uv run python scripts/maintenance/check_integration_vendor_imports.py
+uv run python scripts/maintenance/check_harness_guardrail_wiring.py
 uv run pytest tests/unit/integrations/ -q
 ```
 

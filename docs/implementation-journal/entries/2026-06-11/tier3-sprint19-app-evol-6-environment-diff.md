@@ -23,7 +23,7 @@ Continue Tier-3 application architecture sprint queue: APP-EVOL-6 — typed envi
 - `environment_diff_wiring.py` — `diff_profile`, `diff_graph`, `diff_envelope`, `diff_roster`, `build_application_environment_diff`, `assess_diff_risk`, `format_application_environment_diff`.
 - `doctor_diff_app.py` — `intergrax doctor diff-app` with `--app`, `--left`, `--right`, `--json`, `--fail-on-high`.
 - `doctor.py` — subcommand routing for `diff-app` alongside default harness checks.
-- `scripts/check_application_environment_diff.py` wired into production gates.
+- `scripts/maintenance/check_application_environment_diff.py` wired into production gates.
 
 ## Project impact
 
@@ -42,8 +42,8 @@ STRICT product hosts can be diffed for deploy review: profile/graph/envelope/ros
 - `intergrax/applications/_shared/environment_diff_wiring.py`
 - `intergrax/cli/doctor_diff_app.py`
 - `intergrax/cli/doctor.py`
-- `scripts/check_application_environment_diff.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_application_environment_diff.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_environment_diff_wiring.py`
 - `tests/unit/scripts/test_check_application_environment_diff.py`
 
@@ -53,8 +53,8 @@ STRICT product hosts can be diffed for deploy review: profile/graph/envelope/ros
 uv run pytest tests/unit/applications/test_environment_diff_wiring.py \
   tests/unit/scripts/test_check_application_environment_diff.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_application_environment_diff.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_application_environment_diff.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

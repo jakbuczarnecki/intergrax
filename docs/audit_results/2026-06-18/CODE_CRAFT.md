@@ -42,7 +42,7 @@ No open P0/P1. ECC-0…ECC-6 + S7–S11 **Done** · CODE_CRAFT-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_codecraft_layer.py
+uv run python scripts/maintenance/check_codecraft_layer.py
 uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ tests/unit/runtime/codecraft/ -q
 ```
 

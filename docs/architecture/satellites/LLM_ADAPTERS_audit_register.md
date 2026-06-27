@@ -81,9 +81,9 @@
 
 ```bash
 uv run pytest tests/unit/llm_adapters/ -m gate -q
-python scripts/check_llm_adapter_typed_returns.py
-python scripts/check_agents_llm_adapter_response.py
-python scripts/check_agents_vendor_imports.py
+python scripts/maintenance/check_llm_adapter_typed_returns.py
+python scripts/maintenance/check_agents_llm_adapter_response.py
+python scripts/maintenance/check_agents_vendor_imports.py
 ```
 
 **Target gates (M-LLM-X):** `check_model_catalog_coverage.py`, `check_context_preflight_uses_adapter_tokens.py`, `check_llm_routing_rules.py`, `check_llm_routing_tier_boundary.py`, `check_llm_routing_context_wiring.py`.

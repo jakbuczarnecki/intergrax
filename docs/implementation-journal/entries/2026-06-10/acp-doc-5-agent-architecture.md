@@ -43,14 +43,14 @@ Authors and auditors now have a single normative target: one `run()` per session
 - `docs/adr/README.md`, `docs/intergrax_runtime_architecture.md` — ADR-003 links
 - `docs/guides/AGENT_CREATION_GUIDE.md` — Appendix AC step loop + trace
 - `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` — audit dimensions 28–34
-- `scripts/generate_domain_audit_prompts.py` — generator sync
+- `scripts/audit/generate_domain_audit_prompts.py` — generator sync
 
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-uv run python scripts/generate_domain_audit_prompts.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/audit/generate_domain_audit_prompts.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (docs-only iteration; code implementation ACP-STEP/OBS remains Planned).

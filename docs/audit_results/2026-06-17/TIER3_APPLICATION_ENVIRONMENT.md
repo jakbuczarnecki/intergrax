@@ -31,7 +31,7 @@
 
 ```bash
 uv run pytest tests/unit/applications/ -q
-uv run python scripts/check_application_production_gates.py
+uv run python scripts/gates/check_application_production_gates.py
 ```
 
 ---

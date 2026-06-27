@@ -48,8 +48,8 @@ uv run pytest -m gate -q
 ```
 
 - [ ] Gate tests pass
-- [ ] `python scripts/check_harness_no_getattr.py` (if harness touched)
-- [ ] `python scripts/check_harness_guardrail_wiring.py` (if guardrails / integrations touched)
+- [ ] `python scripts/maintenance/check_harness_no_getattr.py` (if harness touched)
+- [ ] `python scripts/maintenance/check_harness_guardrail_wiring.py` (if guardrails / integrations touched)
 - [ ] Agent tests pass (if agent touched)
 
 ## Phase / task reference

@@ -105,7 +105,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-EVOL-8.4 | M2 | Per-bundle presets (`CapabilityBundle.lab()`, `GovernanceBundle.product()`, …) | **Done** | `bundles.py` · `lab_defaults()` / `product_defaults()` built from bundles |
 | APP-EVOL-8.5 | M2 | Shared capability packs — reusable `CapabilityBundle` across manifests | **Done** | `reference_capability_bundle.py` · reference hosts import shared pack |
 | APP-EVOL-8.6 | M3 | `spec_version: "2.0.0"` — nested JSON canonical; flat top-level deprecated | **Done** | Migration guide · `ProfileMigration` validator extension |
-| APP-EVOL-8.7 | M1 | Gate: `check_environment_profile_bundle_schema.py` — export schema includes bundles | **Done** | `scripts/check_environment_profile_bundle_schema.py` |
+| APP-EVOL-8.7 | M1 | Gate: `check_environment_profile_bundle_schema.py` — export schema includes bundles | **Done** | `scripts/maintenance/check_environment_profile_bundle_schema.py` |
 
 **Explicitly out of scope:** second composition root; Nexus profile fork; moving `AgentBinding` into bundles; marketplace UI.
 
@@ -158,21 +158,21 @@ Run after any Tier-3 PR touching hosts, contracts, or wiring:
 uv run pytest tests/unit/applications/ -q
 
 # APP-PROD-1 (wire to gate via APP-PROD-9)
-python scripts/check_application_production_gates.py
+python scripts/gates/check_application_production_gates.py
 
 # APP-PROD-6 typed env state on hooks
-python scripts/check_environment_state_usage.py
+python scripts/maintenance/check_environment_state_usage.py
 
 # APP-EVOL-8.7 bundle schema (M1)
-python scripts/check_environment_profile_bundle_schema.py
+python scripts/maintenance/check_environment_profile_bundle_schema.py
 
 # Harness tier boundaries
-python scripts/check_harness_no_getattr.py
-python scripts/check_agent_registry_bypass.py
+python scripts/maintenance/check_harness_no_getattr.py
+python scripts/maintenance/check_agent_registry_bypass.py
 
 # Domain pair + journal
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
 
 # Full gate (includes agent + platform)
 uv run pytest -m gate -q

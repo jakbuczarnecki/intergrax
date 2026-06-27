@@ -114,9 +114,9 @@ Optional `LLMCallSummary` on `SignalAssemblyInput.last_llm_call` → `HarnessOut
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/check_llm_adapter_typed_returns.py` | ABC public methods must not return bare `str` / dict |
-| `scripts/check_agents_llm_adapter_response.py` | Tier-2 agents must not annotate adapter returns as `str` |
-| `scripts/check_agents_vendor_imports.py` | Tier-2 agents must not import vendor LLM SDKs directly |
+| `scripts/maintenance/check_llm_adapter_typed_returns.py` | ABC public methods must not return bare `str` / dict |
+| `scripts/maintenance/check_agents_llm_adapter_response.py` | Tier-2 agents must not annotate adapter returns as `str` |
+| `scripts/maintenance/check_agents_vendor_imports.py` | Tier-2 agents must not import vendor LLM SDKs directly |
 
 ### M-LLM-R as-built conformance (audit dimensions)
 

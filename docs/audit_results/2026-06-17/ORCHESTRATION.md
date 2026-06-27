@@ -20,7 +20,7 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| ORCH-AUDIT-01 | P2 | CFG-14 LKW hybrid daemon E2E incomplete; deferred §6.3 | architecture §59.3; `scripts/lkw-host.py` | deferred |
+| ORCH-AUDIT-01 | P2 | CFG-14 LKW hybrid daemon E2E incomplete; deferred §6.3 | architecture §59.3; `scripts/maintenance/lkw-host.py` | deferred |
 | ORCH-AUDIT-02 | P3 | QueuedNexusExecutionAdapter not scaffold-default | `new_application.py` `include_queue_worker=False` | open |
 | ORCH-AUDIT-03 | P3 | LKW host scheduler + interactions default off | `local_workspace_application/host/settings.py` | open |
 | ORCH-AUDIT-04 | P3 | Task priority scheduling not in queueing plane | `intergrax/queueing/` | open |
@@ -46,7 +46,7 @@ No open P0/P1.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_orchestration_config_docs.py
+uv run python scripts/maintenance/check_orchestration_config_docs.py
 uv run pytest tests/unit/runtime/nexus/orchestration/ -q
 uv run pytest tests/integration/runtime/test_orchestration_cfg_simulation.py tests/unit/applications/test_graph_spec_to_plan.py tests/unit/applications/test_orchestration_wiring.py -q
 uv run pytest tests/unit/runtime/execution/test_graph_executor_parallel_cap.py tests/integration/runtime/test_graph_executor_delegation.py -q

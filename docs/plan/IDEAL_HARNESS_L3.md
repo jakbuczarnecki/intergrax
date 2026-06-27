@@ -11,7 +11,7 @@
 
 ## Delivery rule
 
-One **IDEAL-* ID** per PR → update this register + affected domain plan row → `pytest -m gate` + `scripts/check_ideal_harness_l3_gates.py` green.
+One **IDEAL-* ID** per PR → update this register + affected domain plan row → `pytest -m gate` + `scripts/gates/check_ideal_harness_l3_gates.py` green.
 
 ---
 
@@ -31,10 +31,10 @@ One **IDEAL-* ID** per PR → update this register + affected domain plan row �
 
 | ID | Layer | AUDIT § | Priority | Deliverable | Status |
 |----|-------|---------|----------|-------------|--------|
-| IDEAL-1.1 | Strategic Harness Model | 1 | P2 | `scripts/harness_maturity_report.py` — 32-layer scorecard | **Done** |
+| IDEAL-1.1 | Strategic Harness Model | 1 | P2 | `scripts/gates/harness_maturity_report.py` — 32-layer scorecard | **Done** |
 | IDEAL-1.2 | Strategic Harness Model | 1 | P3 | Quarterly strategy review process (docs only) | **Done** |
 | IDEAL-2.1 | Tier boundaries | 2 | P2 | `check_agents_no_tier3_imports.py` (existing) — extend agents→apps gate | **Done** |
-| IDEAL-2.2 | Tier boundaries | 2 | P1 | `scripts/check_agents_no_vendor_sdk_imports.py` | **Done** |
+| IDEAL-2.2 | Tier boundaries | 2 | P1 | `scripts/maintenance/check_agents_no_vendor_sdk_imports.py` | **Done** |
 | IDEAL-3.1 | Task intake | 3 | P1 | Intake parity gate in `test_ideal_harness_l3_depth_gate.py` | **Done** |
 | IDEAL-3.2 | Task intake | 3 | P1 | SLA/risk metadata validation on `TaskEnvelope` | **Done** |
 | IDEAL-3.3 | Task intake | 3 | P2 | Streaming intake contract | **Done** |
@@ -180,7 +180,7 @@ Phase **IDEAL-L3** closes when:
 1. All **P0** rows **Done** with gate evidence.
 2. Critical ideal areas (Policy, Reliability, Observability ops) ≥ **L3** on Appendix M scorecard.
 3. `uv run pytest -m gate -q` green.
-4. `uv run python scripts/check_ideal_harness_l3_gates.py` green.
+4. `uv run python scripts/gates/check_ideal_harness_l3_gates.py` green.
 5. P1 rows tracked as incremental maintenance (not blocking phase close).
 
 **W2 close evidence (2026-06-09):** scorecard **32/32 L3** via `harness_maturity_report.py`; W2 gates in `test_ideal_harness_l3_w2_depth_gate.py` + umbrella script extensions.

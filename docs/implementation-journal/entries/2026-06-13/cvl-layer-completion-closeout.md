@@ -41,7 +41,7 @@ Operators and audit agents see honest L3+ CVL status. Offline harness eval can r
 
 - `docs/architecture/CRITIC_VERIFICATION.md` — §2 historical gaps + L3+ status
 - `docs/plan/CRITIC_VERIFICATION.md` — audit register, removed duplicate CRIT-V section
-- `scripts/generate_domain_audit_prompts.py` — CVL Done status
+- `scripts/audit/generate_domain_audit_prompts.py` — CVL Done status
 - `docs/audit/CRITIC_VERIFICATION.md` — regenerated
 - `intergrax/eval/nexus_eval_runner.py` — semantic auto-wire + fail-closed
 - `intergrax/runtime/critic/l1_gateway.py`, `critic_orchestrator.py` — tool_client accessors

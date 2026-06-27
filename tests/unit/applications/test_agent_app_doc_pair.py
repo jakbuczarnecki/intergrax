@@ -47,15 +47,14 @@ def _assert_doc_pair(root: Path, label: str, *, docs_subdir: bool = False) -> No
 @pytest.mark.gate
 @pytest.mark.parametrize("agent_slug", AGENTS_WITH_DOC_PAIR)
 def test_agent_doc_pair_present(agent_slug: str) -> None:
-    _assert_doc_pair(REPO / "agents" / agent_slug, f"agents/{agent_slug}")
+    _assert_doc_pair(REPO / "agents" / agent_slug, f"agents/{agent_slug}", docs_subdir=True)
 
 
 @pytest.mark.gate
 @pytest.mark.parametrize("app_pkg", APPLICATIONS_WITH_DOC_PAIR)
 def test_application_doc_pair_present(app_pkg: str) -> None:
-    docs_subdir = app_pkg != "attestation_demo"
     _assert_doc_pair(
         REPO / "applications" / app_pkg,
         f"applications/{app_pkg}",
-        docs_subdir=docs_subdir,
+        docs_subdir=True,
     )

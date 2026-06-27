@@ -37,7 +37,7 @@ pip install llm-guard guardrails-ai nemoguardrails
 
 ```bash
 uv run pytest tests/unit/integrations/providers/llm_guardrail/ -m gate -q
-python scripts/check_harness_guardrail_wiring.py
+python scripts/maintenance/check_harness_guardrail_wiring.py
 ```
 
 Canon: `docs/architecture/INTEGRATIONS.md` §47 · ADR-GR-001

@@ -223,7 +223,7 @@ Scaffold a new provider tree: `python -m intergrax.scaffold new-integration <slu
 | **Universal contracts** | Each category (`relational_store`, `vector_store`, `message_bus`, …) defines a small Protocol. Providers implement the contract; agent logic depends on the contract only. |
 | **Modular providers** | One slug = one package under `providers/<category>/<slug>/` (category = contract name). Swap Redis for ElastiCache, SQLite for PostgreSQL, or Chroma for Pinecone by changing `IntegrationProfile` — no agent refactor. |
 | **Environment portability** | Tier-3 applications compose integrations at startup (`IntegrationProfile`, env vars). The same Tier-2 agent runs against lab defaults (`sqlite`, `log`, `lab_json`) or production stacks (`postgresql`, `slack`, `s3`, `qdrant`). |
-| **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, chromadb, redis, …) are imported only in boundary modules: `opens.py`, `rag_store.py`, `web_client.py`, `client.py`, and `_shared/p2|p3|p4/factories.py`. CI enforces this via `scripts/check_integration_vendor_imports.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
+| **Single entry for SDKs** | Vendor SDKs (boto3, PyMongo, chromadb, redis, …) are imported only in boundary modules: `opens.py`, `rag_store.py`, `web_client.py`, `client.py`, and `_shared/p2|p3|p4/factories.py`. CI enforces this via `scripts/maintenance/check_integration_vendor_imports.py`. Tier-2 agents must **not** import provider slugs or vendor libraries. |
 | **Catalog registration** | `register_default_integrations(preset="full")` or `preset="core"` (lab). Resolution: explicit slug → profile field → env → cloud defaults. |
 
 ---
@@ -797,7 +797,7 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 ## Phase M.8 harness gap — Done (beta)
 
-**+14 slugs** via `intergrax/integrations/_shared/p4/factories.py`: `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`. Wire script: `scripts/wire_p4_harness_providers.py`.
+**+14 slugs** via `intergrax/integrations/_shared/p4/factories.py`: `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `pagerduty`, `opsgenie`, `gitlab`, `vespa`. Wire script: `scripts/maintenance/wire_p4_harness_providers.py`.
 
 ---
 
@@ -828,7 +828,7 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 All **194** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
-uv run python scripts/generate_integration_usage_docs.py
+uv run python scripts/docs/generate_integration_usage_docs.py
 ```
 
 ---
@@ -844,7 +844,7 @@ Third-party **guardrail engines** belong in the **Integration Library** — not 
 | Rule | Rationale |
 |------|-----------|
 | **Category `llm_guardrail`** | One contract (`LlmGuardrailBackend`) — swap NeMo / Guardrails AI / LLM Guard / OpenGuardrails without agent changes |
-| **Vendor imports only in `opens.py`** | Same boundary as §Design principles — `scripts/check_integration_vendor_imports.py` |
+| **Vendor imports only in `opens.py`** | Same boundary as §Design principles — `scripts/maintenance/check_integration_vendor_imports.py` |
 | **Middleware invocation only** | Tier-1 `guardrail_runtime_bridge` (planned M.12) calls integration at §42.42 hooks — agents never import slugs |
 | **Policy consequences unified** | Scanner result → `GuardrailScanResult` → `PolicyEngine` / `ValidationResult` — no ad-hoc `raise` in adapters |
 | **Defense in depth** | Fast deterministic scanners first (LLM Guard, native `prompt_security`); orchestration frameworks second (NeMo); semantic validators third (Guardrails AI Hub) |
@@ -953,7 +953,7 @@ profile = harness_guardrail_stack(
 uv run pytest tests/unit/integrations/providers/llm_guardrail/ -m gate -q
 uv run pytest tests/unit/runtime/test_guardrail_runtime_bridge.py -m gate -q
 uv run pytest tests/unit/applications/test_guardrail_output_hooks.py -m gate -q
-python scripts/check_harness_guardrail_wiring.py
+python scripts/maintenance/check_harness_guardrail_wiring.py
 ```
 
 **Implementation tracker:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12** · UAEP doc Phase **GR-DOC**.
@@ -1092,7 +1092,7 @@ Do **not** add under INT-P8: new LLM/vector/observability/browser vendors; PM Sa
 1. Implement `intergrax/integrations/providers/<category>/<slug>/` (config, adapter, opens, bundle, register).
 2. Register in `register_default_integrations()`.
 3. Add unit tests under `tests/unit/integrations/providers/`.
-4. Add an entry to `scripts/generate_integration_usage_docs.py` and run the generator (English `USAGE.md`).
+4. Add an entry to `scripts/docs/generate_integration_usage_docs.py` and run the generator (English `USAGE.md`).
 5. Update this catalog and the implementation plan tracker.
 
 Delivery checklist: [plan/INTEGRATIONS.md) — Phase M.4 workflow.
@@ -1110,7 +1110,7 @@ uv run pytest tests/unit/integrations/ -q
 Vendor SDK boundary (CI + local gate — integrations, rag, agents):
 
 ```bash
-uv run python scripts/check_integration_vendor_imports.py
+uv run python scripts/maintenance/check_integration_vendor_imports.py
 uv run pytest tests/unit/integrations/test_vendor_import_governance.py -q
 ```
 

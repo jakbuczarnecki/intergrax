@@ -23,6 +23,7 @@ from intergrax.tools.providers.rag.contracts import (
 from intergrax.tools.providers.rag.scope import (
     authoritative_tenant_id,
     resolve_tenant_scoped_vectorstore,
+    use_wired_retrieval_managers,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -48,13 +49,14 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         return RagRetrieveOutput(used=False, reason="embedding_manager_not_configured")
 
     profile = ctx.rag_profile or RagProfile()
+    wired_retrieval = use_wired_retrieval_managers(ctx, vectorstore)
     service = resolve_retrieval_service(
         vectorstore_manager=vectorstore,
         embedding_manager=ctx.embedding_manager,
-        retriever_manager=ctx.retriever_manager,
+        retriever_manager=ctx.retriever_manager if wired_retrieval else None,
         reranker_manager=ctx.reranker_manager,
         profile=profile,
-        retrieval_service=ctx.retrieval_service,
+        retrieval_service=ctx.retrieval_service if wired_retrieval else None,
     )
     if service is None:
         return RagRetrieveOutput(used=False, reason="retrieval_service_not_configured")
@@ -72,7 +74,16 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     )
 
     if not result.used:
-        return RagRetrieveOutput(used=False, reason=result.reason)
+        diagnostics: dict[str, Any] = {}
+        if result.trace.retrieval_error_kind:
+            diagnostics["retrieval_error_kind"] = result.trace.retrieval_error_kind
+        if result.trace.attempted_retriever_ids:
+            diagnostics["attempted_retriever_ids"] = list(result.trace.attempted_retriever_ids)
+        return RagRetrieveOutput(
+            used=False,
+            reason=result.reason,
+            diagnostics=diagnostics or None,
+        )
 
     chunks = [_to_rag_chunk(c) for c in result.chunks]
     citations = [_to_rag_citation(c) for c in result.citations]

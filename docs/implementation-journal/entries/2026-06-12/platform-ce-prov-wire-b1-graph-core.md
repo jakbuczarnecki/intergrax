@@ -51,7 +51,7 @@ Graph `DefaultNexusContextEngine.assemble()` now emits provenance-tagged fragmen
 
 - `uv run pytest tests/unit/context/test_legacy_bridge_providers.py -q` — 5 passed
 - `uv run pytest tests/unit/context/ tests/unit/runtime/nexus/context/test_context_manager_engine.py -q` — 36 passed
-- `python scripts/check_context_tier0_import_boundary.py` — OK
+- `python scripts/maintenance/check_context_tier0_import_boundary.py` — OK
 
 ## Risks and follow-ups
 

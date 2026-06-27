@@ -35,15 +35,15 @@ Operators have a single artifact for roster promotion decisions. Fleet migration
 
 - `intergrax/contracts/agent_readiness.py`
 - `intergrax/agents/readiness/scoreboard.py`
-- `scripts/report_agent_production_readiness.py`
-- `scripts/check_agent_production_readiness.py`
+- `scripts/gates/report_agent_production_readiness.py`
+- `scripts/gates/check_agent_production_readiness.py`
 - `tests/unit/agents/readiness/test_production_readiness_scoreboard.py`
 - `agents/README.md`, plan register
 
 ## Verification
 
-- `uv run python scripts/report_agent_production_readiness.py --roster`
-- `uv run python scripts/check_agent_production_readiness.py --require-fleet-migration-closure --regenerate`
+- `uv run python scripts/gates/report_agent_production_readiness.py --roster`
+- `uv run python scripts/gates/check_agent_production_readiness.py --require-fleet-migration-closure --regenerate`
 - `uv run pytest tests/unit/agents/readiness/ -q`
 
 ## Risks and follow-ups

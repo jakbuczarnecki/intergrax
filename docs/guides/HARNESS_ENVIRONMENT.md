@@ -134,15 +134,15 @@ uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 
 Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is wired.
 
-**Tier-3 observability wiring (Phase OBS):** `wire_application_observability()` maps `ObservabilityProfile` to `NexusObservabilityStores`; `build_harness_host_runtime()` validates assembly via `observability_assembly_resolver`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout). CI: `scripts/check_harness_observability_wiring.py`.
+**Tier-3 observability wiring (Phase OBS):** `wire_application_observability()` maps `ObservabilityProfile` to `NexusObservabilityStores`; `build_harness_host_runtime()` validates assembly via `observability_assembly_resolver`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout). CI: `scripts/maintenance/check_harness_observability_wiring.py`.
 
-**Tier-3 reliability wiring (Phase REL):** `wire_application_reliability()` maps `ReliabilityProfile` to `IdempotencyStore` and `IntegrationCircuitBreakerConfig`; `materialize_runtime_config()` applies idempotency to `RuntimeConfig`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout). CI: `scripts/check_harness_reliability_wiring.py`.
+**Tier-3 reliability wiring (Phase REL):** `wire_application_reliability()` maps `ReliabilityProfile` to `IdempotencyStore` and `IntegrationCircuitBreakerConfig`; `materialize_runtime_config()` applies idempotency to `RuntimeConfig`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout). CI: `scripts/maintenance/check_harness_reliability_wiring.py`.
 
-**Tier-3 security wiring (Phase SEC):** `wire_application_security()` maps `ApplicationSecurityProfile` to V-SEC middleware; `build_harness_host_runtime()` validates assembly via `security_assembly_resolver`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout). CI: `scripts/check_harness_security_wiring.py`.
+**Tier-3 security wiring (Phase SEC):** `wire_application_security()` maps `ApplicationSecurityProfile` to V-SEC middleware; `build_harness_host_runtime()` validates assembly via `security_assembly_resolver`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout). CI: `scripts/maintenance/check_harness_security_wiring.py`.
 
-**Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/check_harness_cost_wiring.py`.
+**Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/maintenance/check_harness_cost_wiring.py`.
 
-**Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix U](guides/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/check_harness_evaluation_wiring.py`.
+**Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix U](guides/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/maintenance/check_harness_evaluation_wiring.py`.
 
 **Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
 
@@ -180,9 +180,9 @@ Harness mode (`wire_lab_tools(..., harness=True)`) additionally enables runtime-
 
 **Harness host identity (M.6 P6):** `wire_application_identity()` attaches OIDC bearer validation (`IdentityProviderBackend.verify_token`) alongside optional `INTERGRAX_HARNESS_API_KEY`. Lab and generic harness FastAPI hosts call this after route assembly; MCP wrapper copies `HarnessAuthState` to the outer app.
 
-**V-SEC STABLE promote gate:** `scripts/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute scans. Release tags (`harness-release.yml`) use `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` with Trivy + Semgrep CLIs.
+**V-SEC STABLE promote gate:** `scripts/gates/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute scans. Release tags (`harness-release.yml`) use `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` with Trivy + Semgrep CLIs.
 
-**P6 infra E2E (optional):** start `./manage.sh start p6` (includes `core` for PostgreSQL/Airflow), then `INTERGRAX_P6_INFRA_E2E=true uv run python scripts/check_p6_infra_health.py` or `pytest tests/integration/infra/test_p6_stack_health.py`.
+**P6 infra E2E (optional):** start `./manage.sh start p6` (includes `core` for PostgreSQL/Airflow), then `INTERGRAX_P6_INFRA_E2E=true uv run python scripts/maintenance/check_p6_infra_health.py` or `pytest tests/integration/infra/test_p6_stack_health.py`.
 
 With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
 
@@ -190,7 +190,7 @@ With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `
 
 ## Harness SLO catalog (Phase W-OPS.4)
 
-Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). Use `scripts/phase_w_ops_evidence.py` (CI: non-enforcing) and set `W_OPS_RELEASE_CYCLES` or append cycles to `build/architecture_hardening/release_cycles.json` after release board sign-off.
+Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). Use `scripts/release/phase_w_ops_evidence.py` (CI: non-enforcing) and set `W_OPS_RELEASE_CYCLES` or append cycles to `build/architecture_hardening/release_cycles.json` after release board sign-off.
 
 **Lab stack health (W-OPS.10):** `health_check_harness_lab_stack()` probes every `HARNESS_LAB_STABLE_SLUGS` catalog entry via `health_check_catalog_slugs` with circuit breaker protection.
 
@@ -202,9 +202,9 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|m6_p6|all` (circuit-breaker catalog probes for operators).
 
-**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `AgentEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
+**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `AgentEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/release/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
 
-**Release cycles (W-OPS.5):** after a gate-green harness release, run `uv run python scripts/record_harness_release_cycle.py --cycle-id <id> [--verify-gate]`. Evidence script reads `build/architecture_hardening/release_cycles.json` (or `W_OPS_RELEASE_CYCLES`).
+**Release cycles (W-OPS.5):** after a gate-green harness release, run `uv run python scripts/release/record_harness_release_cycle.py --cycle-id <id> [--verify-gate]`. Evidence script reads `build/architecture_hardening/release_cycles.json` (or `W_OPS_RELEASE_CYCLES`).
 
 | SLI | Target (harness lab) | Measurement |
 |-----|----------------------|-------------|
@@ -323,13 +323,13 @@ Current baseline delivered (Phase V V1):
 - `V-KG.1` Graph-RAG architecture contract (nodes/edges/types)
 - `V-KG.2` hybrid retrieval path (vector + keyword + graph fusion)
 - `V-KG.3` graph-backed explainability trace provenance fields
-- report artifacts script: `scripts/phase_v_foundations_report.py`
-- graph guard script: `scripts/phase_v_capability_graph_guard.py`
-- governance artifacts script: `scripts/phase_v_governance_report.py`
+- report artifacts script: `scripts/release/phase_v_foundations_report.py`
+- graph guard script: `scripts/release/phase_v_capability_graph_guard.py`
+- governance artifacts script: `scripts/release/phase_v_governance_report.py`
 - `V-V6.1` bounded adaptive loop governance (`adaptive_governance.py`)
 - `V-V6.2` L3/L4 maturity gate evidence (`maturity_gate_evidence.py`)
-- `V-V6.3` CI closeout gate: `scripts/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`; prints `l4_governance_passed` vs `l4_runtime_passed`)
-- **W-ADAPT-5** adaptive verify closeout: `scripts/phase_w_adapt_closeout_gate.py` (`--enforce-l4-runtime`)
+- `V-V6.3` CI closeout gate: `scripts/release/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`; prints `l4_governance_passed` vs `l4_runtime_passed`)
+- **W-ADAPT-5** adaptive verify closeout: `scripts/release/phase_w_adapt_closeout_gate.py` (`--enforce-l4-runtime`)
 - **W-ADAPT-5** ops runbooks: [`runbook/adaptive/rollback_profile.md`](../runbook/adaptive/rollback_profile.md), [`approve_policy_learning.md`](../runbook/adaptive/approve_policy_learning.md), [`shadow_failure_triage.md`](../runbook/adaptive/shadow_failure_triage.md)
 - **W-ADAPT-5** evidence artifacts: `build/adaptive_harness/verification_report.json`, `build/adaptive_harness/l4_runtime_evidence.json`
 
@@ -358,8 +358,8 @@ Current baseline delivered (Phase V V1):
 Reports and closeout:
 
 ```bash
-uv run python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json
-uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+uv run python scripts/release/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json
+uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 ```
 
 Authoring guide: [`guides/AGENT_CREATION_GUIDE.md` Appendix V](guides/AGENT_CREATION_GUIDE.md#appendix-v--adaptive-harness-control-plane-closeout).
@@ -381,28 +381,28 @@ Execution references in the implementation plan:
 
 ```bash
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
-python scripts/check_legacy_modules_removed.py
-python scripts/check_agent_skill_resolution.py
-python scripts/check_harness_registry_resolution.py
-python scripts/check_harness_capability_graph_wiring.py
-python scripts/check_legacy_tool_plan_booleans.py
+python scripts/maintenance/check_harness_no_getattr.py
+python scripts/maintenance/check_legacy_modules_removed.py
+python scripts/maintenance/check_agent_skill_resolution.py
+python scripts/maintenance/check_harness_registry_resolution.py
+python scripts/maintenance/check_harness_capability_graph_wiring.py
+python scripts/maintenance/check_legacy_tool_plan_booleans.py
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -q
 uv run pytest tests/unit/skills/test_harness_skill_bundle.py -q
 uv run pytest tests/acceptance/agent_os/test_lab_application.py -m gate -q
-uv run python scripts/phase_v_foundations_report.py
-uv run python scripts/phase_v_capability_graph_guard.py
-uv run python scripts/phase_v_governance_report.py
-uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
-uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
-uv run python scripts/phase_w_ops_evidence.py
+uv run python scripts/release/phase_v_foundations_report.py
+uv run python scripts/release/phase_v_capability_graph_guard.py
+uv run python scripts/release/phase_v_governance_report.py
+uv run python scripts/release/phase_v_closeout_gate.py --enforce --enforce-l4
+uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+uv run python scripts/release/phase_w_ops_evidence.py
 ```
 
 Operational L3 (after two stable release cycles):
 
 ```bash
 set W_OPS_RELEASE_CYCLES=2
-uv run python scripts/phase_w_ops_evidence.py --enforce
+uv run python scripts/release/phase_w_ops_evidence.py --enforce
 ```
 
 Optional strict profile (CI `harness-strict` job):
@@ -452,7 +452,7 @@ Set on `ApplicationEnvironmentProfile.scaling_profile.policy` in a custom lab pr
 | Swarm parallel cap deny | Graph executor / trace | Reduce `max_parallel_nodes` or switch coordination pattern |
 | Citation merge conflicts | `MergeStrategy.CITATION_PRESERVING` | Inspect composer output; fall back to `concat` in profile if needed |
 
-Link W-OPS SLO checks: `scripts/check_observability_gates.py` + `scripts/check_reasoning_gates.py` in CI.
+Link W-OPS SLO checks: `scripts/maintenance/check_observability_gates.py` + `scripts/maintenance/check_reasoning_gates.py` in CI.
 
 ---
 

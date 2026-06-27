@@ -47,8 +47,8 @@ Gate CI and local `-m gate` runs no longer fail on missing budget bounds, missin
 
 ## Verification
 
-- `uv run python scripts/check_plugin_catalog.py` — OK
-- `uv run python scripts/check_agent_acp_close_ci.py` — OK
+- `uv run python scripts/maintenance/check_plugin_catalog.py` — OK
+- `uv run python scripts/gates/check_agent_acp_close_ci.py` — OK
 - `uv run pytest … -m gate -q` (full gate paths, no xdist) — 1753 passed
 
 ## Risks and follow-ups

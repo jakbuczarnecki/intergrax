@@ -57,7 +57,7 @@ Artifacts land under `build/evidence/`. Start with `build/evidence/posture/postu
 After the proof path has been run, a lightweight checker confirms expected artifacts and README proof-path references:
 
 ```bash
-python scripts/check_evidence_artifacts.py
+python scripts/maintenance/check_evidence_artifacts.py
 ```
 
 The checker validates local files and documentation consistency; it does not execute the proof path or import runtime modules.

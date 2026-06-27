@@ -415,7 +415,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **Scope** | Regenerate audit prompt; enforce `max_total_exec_time_s`; register GAP-ECC-23 |
 | **Goal** | Documentation matches shipped runtime; cumulative exec budget fail-closed |
 | **DoD** | Audit prompt shows Done; unit test for budget deny; gate green |
-| **Files** | `docs/audit/CODE_CRAFT.md`, `scripts/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
+| **Files** | `docs/audit/CODE_CRAFT.md`, `scripts/audit/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
 
 ## Sprint S7 — Documentation sync (**Done** in this iteration)
 
@@ -448,10 +448,10 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 
 | Field | Value |
 |-------|-------|
-| **Scope** | Register `health.check_codecraft`; add `scripts/check_codecraft_layer.py` |
+| **Scope** | Register `health.check_codecraft`; add `scripts/maintenance/check_codecraft_layer.py` |
 | **Goal** | Ops probe + gate maintenance for catalog/wiring invariants |
 | **DoD** | Gate green; closes GAP-ECC-18, GAP-ECC-19 |
-| **Files** | `intergrax/tools/providers/health/*`, `scripts/check_codecraft_layer.py` |
+| **Files** | `intergrax/tools/providers/health/*`, `scripts/maintenance/check_codecraft_layer.py` |
 
 ---
 

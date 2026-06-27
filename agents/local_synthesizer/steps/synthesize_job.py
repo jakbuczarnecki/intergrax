@@ -5,9 +5,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.agents.authoring.runtime_tool_helpers import (
+    exec_ctx_from_step,
+    invoke_catalog_tool,
+    request_metadata,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
-from lkw_shared.runtime_helpers import exec_ctx_from_step, invoke_catalog_tool, request_metadata
 
 SYNTHESIZE_STEP_ID = "local_synthesizer_step"
 _DEFAULT_OUTPUT_NAME = "draft.md"
@@ -118,7 +122,7 @@ def _task_metadata(step_ctx: AgentStepContext, exec_ctx) -> dict[str, Any]:
 
 
 async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
-    """LKW.1.3 — minimal shadow draft via workspace.write_file. Pattern: agents/lkw_shared/PATTERN.md"""
+    """LKW.1.3 — minimal shadow draft via workspace.write_file."""
     exec_ctx = exec_ctx_from_step(step_ctx)
     metadata = _task_metadata(step_ctx, exec_ctx)
     shadow_workspace = bool(metadata.get("shadow_workspace"))

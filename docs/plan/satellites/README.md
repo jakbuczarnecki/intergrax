@@ -13,9 +13,9 @@ Load **one** satellite per session when a task or audit gap ID requires it.
 | `<DOMAIN>_appendices.md` | Appendix traceability B–N |
 | `PLATFORM_FOUNDATION_*` | Platform-wide registers (shared canonical source) |
 
-**Regenerate splits:** `uv run python scripts/split_domain_plan.py [DOMAIN ...]`
+**Regenerate splits:** `uv run python scripts/docs/split_domain_plan.py [DOMAIN ...]`
 
-**Architecture satellites:** [`../architecture/satellites/`](../architecture/satellites/) — `uv run python scripts/split_domain_architecture.py [DOMAIN ...]`
+**Architecture satellites:** [`../architecture/satellites/`](../architecture/satellites/) — `uv run python scripts/docs/split_domain_architecture.py [DOMAIN ...]`
 
 **CI gates:** `check_plan_hub_size.py` · `check_arch_hub_size.py` · `check_token_generator_freshness.py`
 

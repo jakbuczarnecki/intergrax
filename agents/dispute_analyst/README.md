@@ -1,4 +1,4 @@
-# DisputeAnalystAgent
+﻿# DisputeAnalystAgent
 
 Argument analysis for **Dispute Simulation Workspace (DSW)** — strength/weakness matrix, evidence gaps, party positions.
 
@@ -6,7 +6,7 @@ Argument analysis for **Dispute Simulation Workspace (DSW)** — strength/weakne
 
 ## Docs
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`adr/README.md`](adr/README.md)
+- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](docs/adr/README.md)
 
 ## Quick start
 
@@ -39,4 +39,4 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 - ``schemas/`` — I/O models
 - ``tests/`` — agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``adr/`` — architecture decision records
+- ``docs/`` — architecture, plan, ADRs, journal

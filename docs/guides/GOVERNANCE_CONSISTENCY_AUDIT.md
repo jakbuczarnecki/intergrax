@@ -183,5 +183,5 @@ Re-run this audit when:
 # Quick consistency smoke (manual)
 rg "CapabilityRegistry" docs/ intergrax/
 rg "GovernanceProfile" docs/architecture/TIER3*.md
-python scripts/check_docs_domain_pairs.py
+python scripts/audit/check_docs_domain_pairs.py
 ```

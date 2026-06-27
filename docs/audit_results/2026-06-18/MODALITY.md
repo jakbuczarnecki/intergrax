@@ -41,8 +41,8 @@ No open P0/P1 on architecture. W-ML **Done** · MODALITY-LC **Done**. **Two unit
 ## Gates executed
 
 ```bash
-uv run python scripts/check_modality_live_endpoints.py
-uv run python scripts/check_modality_product_worker_pool.py
+uv run python scripts/maintenance/check_modality_live_endpoints.py
+uv run python scripts/maintenance/check_modality_product_worker_pool.py
 uv run pytest tests/unit/model_inference/ -q
 ```
 

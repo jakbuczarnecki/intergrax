@@ -36,7 +36,7 @@ OBS-EVOL-9 publication blockers cleared; CI observability umbrella passes withou
 ## Changed artifacts
 
 - `tests/unit/runtime/events/test_observability_layer_depth_gate.py`
-- `scripts/check_event_catalog.py`
+- `scripts/maintenance/check_event_catalog.py`
 - `docs/plan/OBSERVABILITY.md`
 - `docs/architecture/OBSERVABILITY.md`
 
@@ -44,9 +44,9 @@ OBS-EVOL-9 publication blockers cleared; CI observability umbrella passes withou
 
 ```bash
 uv run pytest tests/unit/runtime/events/ -q
-uv run python scripts/check_event_catalog.py
-uv run python scripts/check_observability_gates.py
-python scripts/check_harness_adr.py
+uv run python scripts/maintenance/check_event_catalog.py
+uv run python scripts/maintenance/check_observability_gates.py
+python scripts/maintenance/check_harness_adr.py
 ```
 
 All commands: **OK** (2026-06-17).

@@ -33,13 +33,13 @@ RAG ops promotion criteria and nightly soak depth are CI-enforced; audit prompt 
 | Link | Target |
 |------|--------|
 | Plan | `docs/plan/RAG.md` §6.1av |
-| Gate | `scripts/check_rag_maturity_labels.py` |
-| Nightly | `scripts/rag_load_soak_report.py` |
+| Gate | `scripts/maintenance/check_rag_maturity_labels.py` |
+| Nightly | `scripts/release/rag_load_soak_report.py` |
 
 ## Verification
 
 ```bash
-uv run python scripts/check_rag_maturity_labels.py
-uv run python scripts/rag_load_soak_report.py
-uv run python scripts/generate_domain_audit_prompts.py
+uv run python scripts/maintenance/check_rag_maturity_labels.py
+uv run python scripts/release/rag_load_soak_report.py
+uv run python scripts/audit/generate_domain_audit_prompts.py
 ```

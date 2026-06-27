@@ -57,17 +57,17 @@ No open P0/P1 in PLATFORM_FOUNDATION gate-maintenance scope.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_docs_domain_pairs.py
-uv run python scripts/check_intergrax_no_applications_imports.py
-uv run python scripts/check_agents_no_tier3_imports.py
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_harness_adr.py
-uv run python scripts/phase_v_capability_graph_guard.py
-python scripts/check_agents_no_vendor_sdk_imports.py
-python scripts/check_legacy_tool_plan_booleans.py
-python scripts/check_plugin_catalog.py
+uv run python scripts/audit/check_docs_domain_pairs.py
+uv run python scripts/maintenance/check_intergrax_no_applications_imports.py
+uv run python scripts/maintenance/check_agents_no_tier3_imports.py
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_harness_adr.py
+uv run python scripts/release/phase_v_capability_graph_guard.py
+python scripts/maintenance/check_agents_no_vendor_sdk_imports.py
+python scripts/maintenance/check_legacy_tool_plan_booleans.py
+python scripts/maintenance/check_plugin_catalog.py
 uv run pytest -m gate -q
-uv run python scripts/harness_maturity_report.py
+uv run python scripts/gates/harness_maturity_report.py
 ```
 
 All green (2026-06-19): **1498 passed** gate tests; **197** integration slugs after `bootstrap_catalogs()`.

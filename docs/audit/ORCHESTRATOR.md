@@ -64,7 +64,7 @@ Audit map (32 layers) → domain: [`intergrax_runtime_architecture.md`](../inter
 ## Before the first iteration
 
 ```bash
-uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only
+uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only
 ```
 
 Or let the agent create `docs/audit_results/YYYY-MM-DD/` on first run.
@@ -119,7 +119,7 @@ When all domains in `domain_order` are `completed`:
 
 1. Write rollup in `results/<run_id>/RUN_SUMMARY.md`.
 2. Set `completed_at` and `current_domain: null` in `progress.json`.
-3. Run `uv run python scripts/check_architecture_audit_run.py <run_id> --require-complete`.
+3. Run `uv run python scripts/audit/check_architecture_audit_run.py <run_id> --require-complete`.
 
 ---
 

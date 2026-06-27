@@ -49,9 +49,9 @@ Reliability and HITL layer formally closed for Full Harness LC — ResiliencePol
 
 ```bash
 uv run pytest tests/unit/applications/test_harness_reliability_wiring.py tests/unit/runtime/resilience/ tests/unit/runtime/human/ -q
-uv run python scripts/check_harness_reliability_wiring.py
-uv run python scripts/check_harness_resilience_policy.py
-uv run python scripts/check_partial_results_reference_hosts.py
+uv run python scripts/maintenance/check_harness_reliability_wiring.py
+uv run python scripts/maintenance/check_harness_resilience_policy.py
+uv run python scripts/maintenance/check_partial_results_reference_hosts.py
 ```
 
 ## Risks and follow-ups

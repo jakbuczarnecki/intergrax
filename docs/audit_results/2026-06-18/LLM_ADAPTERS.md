@@ -43,8 +43,8 @@ No open P0/P1. M-LLM-R **Done** · LC-1..3 **Done** · LLM-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_llm_adapter_typed_returns.py
-uv run python scripts/check_agents_llm_adapter_response.py
+uv run python scripts/maintenance/check_llm_adapter_typed_returns.py
+uv run python scripts/maintenance/check_agents_llm_adapter_response.py
 uv run pytest tests/unit/llm_adapters/ -q
 ```
 

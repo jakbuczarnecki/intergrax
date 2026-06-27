@@ -37,4 +37,4 @@ Use this **before** repo-wide semantic search. Grep the path directly.
 | Tier-3 hosts | `applications/` |
 | Tier-2 agents | `agents/` |
 
-Regenerate: `uv run python scripts/generate_symbol_index.py`
+Regenerate: `uv run python scripts/docs/generate_symbol_index.py`

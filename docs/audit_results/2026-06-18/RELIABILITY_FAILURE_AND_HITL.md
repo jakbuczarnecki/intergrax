@@ -41,8 +41,8 @@ No open P0/P1. REL + REL-ADV **Done** · REL-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_harness_reliability_wiring.py
-uv run python scripts/check_harness_resilience_policy.py
+uv run python scripts/maintenance/check_harness_reliability_wiring.py
+uv run python scripts/maintenance/check_harness_resilience_policy.py
 uv run pytest tests/unit/runtime/nexus/retry/ -q
 uv run pytest tests/acceptance/agent_os/ -q -k "hitl or checkpoint"
 ```

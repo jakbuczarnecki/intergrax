@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.applications._shared.reliability_runtime_bridge import ReliabilityWiringOptions
+from intergrax.runtime.wiring.reliability_runtime_bridge import ReliabilityWiringOptions
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode
 from intergrax.contracts.resilience_policy import FailureClass, ResiliencePolicy
 

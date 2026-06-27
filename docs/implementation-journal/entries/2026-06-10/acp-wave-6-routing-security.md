@@ -40,14 +40,14 @@ Nexus enforces capability-token routing at runtime; task payloads cannot smuggle
 - `intergrax/contracts/task_routing.py` — forbidden routing keys contract
 - `intergrax/runtime/registry/capability_routing.py` — capability match selection
 - `intergrax/runtime/nexus/agent_router.py` — validation + best-match wiring
-- `scripts/check_capability_routing.py`, `scripts/check_agent_step_security.py` — CI gates
+- `scripts/maintenance/check_capability_routing.py`, `scripts/maintenance/check_agent_step_security.py` — CI gates
 - `tests/unit/runtime/registry/test_capability_routing_acp_con6.py` — routing tests
 
 ## Verification
 
 ```bash
-uv run python scripts/check_capability_routing.py
-uv run python scripts/check_agent_step_security.py
+uv run python scripts/maintenance/check_capability_routing.py
+uv run python scripts/maintenance/check_agent_step_security.py
 uv run pytest tests/unit/runtime/registry/test_capability_routing_acp_con6.py -q
 ```
 

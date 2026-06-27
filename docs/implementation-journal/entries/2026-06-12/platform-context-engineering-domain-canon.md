@@ -41,14 +41,14 @@ Platform now has a first-class domain for the context compiler engine — clear 
 - `docs/adr/entries/2026-06-12/ADR-CTX-001.md` — domain split decision
 - `docs/architecture/MEMORY.md` — Layer C delegation
 - `docs/intergrax_runtime_architecture.md` — 22nd pair + capability index
-- `scripts/generate_domain_audit_prompts.py` — MEMORY/CE split
+- `scripts/audit/generate_domain_audit_prompts.py` — MEMORY/CE split
 - `AGENTS.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, `EXTENSION_AUTHOR_GUIDE.md`, `AGENT_CREATION_GUIDE.md` Appendix L
 
 ## Verification
 
 ```bash
-uv run python scripts/generate_domain_audit_prompts.py
-uv run python scripts/check_docs_domain_pairs.py
+uv run python scripts/audit/generate_domain_audit_prompts.py
+uv run python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: pass (22 domain pairs).

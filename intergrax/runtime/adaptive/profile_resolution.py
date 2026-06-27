@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.applications.contracts.environment_profile import AdaptiveProfile
+from intergrax.contracts.host_profile_slices import AdaptiveProfile
 from intergrax.runtime.adaptive.canary_traffic import should_route_canary_traffic
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType, ProfileVersionRecord, ProfileVersionStatus
 from intergrax.runtime.adaptive.profile_pointer_store import ProfileActivePointerStore

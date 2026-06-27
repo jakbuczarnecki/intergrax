@@ -1,11 +1,11 @@
-# legal_application — Implementation Plan
+﻿# legal_application — Implementation Plan
 
 **The implementation map** for this Tier-3 product host — phases, status, gaps, and verification.
 
 Status: **Shell Done** — domain steps live in `agents/legal/` (Band 3)
 
 Architecture: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
-Agent plan: [`agents/legal/IMPLEMENTATION_PLAN.md`](../../agents/legal/IMPLEMENTATION_PLAN.md)  
+Agent plan: [`agents/legal/docs/IMPLEMENTATION_PLAN.md`](../../agents/legal/docs/IMPLEMENTATION_PLAN.md)  
 Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-LEGAPP
 
 ---
@@ -15,7 +15,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 | Topic | Where |
 |-------|--------|
 | Product host, auth, serving, deploy | **ARCHITECTURE.md** |
-| Host vs agent task split | **This file** + `agents/legal/IMPLEMENTATION_PLAN.md` |
+| Host vs agent task split | **This file** + `agents/legal/docs/IMPLEMENTATION_PLAN.md` |
 | Deploy | `BUILD_AND_DEPLOY.md` |
 
 ---

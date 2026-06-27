@@ -30,7 +30,7 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 **Initialize run (Modes A / B / C only — not Mode I):**
 
 ```bash
-uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only
+uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only
 ```
 
 **Resume:** paste same file + line `RESUME: docs/audit_results/YYYY-MM-DD/progress.json`

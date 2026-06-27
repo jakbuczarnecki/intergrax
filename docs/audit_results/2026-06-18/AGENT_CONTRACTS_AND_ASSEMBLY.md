@@ -42,12 +42,12 @@ No open P0/P1. GAP-ACP **37/37 Closed** · ACP-FINISH · ACP-LC **Done** · flee
 ## Gates executed
 
 ```bash
-uv run python scripts/check_agent_acp_close_ci.py
-uv run python scripts/check_agent_skill_resolution.py
-uv run python scripts/check_agent_pattern_conformance.py
-uv run python scripts/check_agents_no_vendor_sdk_imports.py
-uv run python scripts/check_agents_lifecycle_metadata.py
-uv run python scripts/phase_v_capability_graph_guard.py
+uv run python scripts/gates/check_agent_acp_close_ci.py
+uv run python scripts/maintenance/check_agent_skill_resolution.py
+uv run python scripts/maintenance/check_agent_pattern_conformance.py
+uv run python scripts/maintenance/check_agents_no_vendor_sdk_imports.py
+uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
+uv run python scripts/release/phase_v_capability_graph_guard.py
 uv run pytest tests/unit/agents/authoring/ tests/unit/agents/test_acp_token_budget_enforcement.py -q
 ```
 

@@ -8,7 +8,7 @@ import hashlib
 import json
 from typing import Any
 
-from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
+from intergrax.runtime.registry.harness_snapshot import HarnessRegistrySnapshot
 
 
 def snapshot_digest_payload(snapshot: HarnessRegistrySnapshot) -> dict[str, Any]:

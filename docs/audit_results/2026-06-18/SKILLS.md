@@ -42,8 +42,8 @@ No open P0/P1. SK-EXP…SK-EXP5 + SK-BRIDGE.1/2 **Done** · SKILLS-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_agent_skill_resolution.py
-uv run python scripts/check_skill_selection_hook.py
+uv run python scripts/maintenance/check_agent_skill_resolution.py
+uv run python scripts/maintenance/check_skill_selection_hook.py
 uv run pytest tests/unit/skills/ -q
 ```
 

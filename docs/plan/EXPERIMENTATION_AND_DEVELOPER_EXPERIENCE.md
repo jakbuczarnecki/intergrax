@@ -52,7 +52,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | ID | Gap | Priority | Status |
 |----|-----|----------|--------|
 | DX-IDEA-01 | Mode I indexed in hub, audit map, bootstrap README; architecture §43.2 surface | P2 | **Done** |
-| DX-IDEA-02 | `scripts/check_idea_audit_bootstrap.py` — bootstrap ↔ orchestrator consistency gate | P3 | **Done** |
+| DX-IDEA-02 | `scripts/audit/check_idea_audit_bootstrap.py` — bootstrap ↔ orchestrator consistency gate | P3 | **Done** |
 | DX-IDEA-03 | Natural-language idea intake via Cursor rule; bootstrap without USER CONFIG placeholders | P2 | **Done** |
 
 **Delivery rule:** One **DX-IDEA-\*** ID per PR → update this table → `check_idea_audit_bootstrap.py` green.
@@ -112,7 +112,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
 | MVP-EVOL-DOC.1 | MVP0 | Canon §44 + hub cross-ref | **Done** | `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` | ORCHE §58 index |
-| MVP-EVOL.1 | MVP1 | **Promotion gate script** — G0–G2 CI checks (runnable, eval baseline, policy) | **Done** | `scripts/check_mvp_promotion_gates.py` | G0–G2 OK |
+| MVP-EVOL.1 | MVP1 | **Promotion gate script** — G0–G2 CI checks (runnable, eval baseline, policy) | **Done** | `scripts/gates/check_mvp_promotion_gates.py` | G0–G2 OK |
 | MVP-EVOL.2 | MVP2 | **Agent simulator CLI** — multi-agent failure/contention scenarios | **Done** | `intergrax/cli/mvp_evolution.py` | `intergrax mvp simulate` |
 | MVP-EVOL.3 | MVP3 | **Trace replay** — reconstruct from trace store | **Done** | `intergrax/cli/mvp_evolution.py` | `intergrax mvp replay` |
 | MVP-EVOL.4 | MVP4 | **Product KPI registry** — tenant-scoped metric definitions + export | **Done** | `product_kpi_registry.py` | unit tests deferred |

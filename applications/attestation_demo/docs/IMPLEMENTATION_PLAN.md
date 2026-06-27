@@ -45,5 +45,5 @@ uv run pytest tests/unit/runtime/attestation/ -q
 uv run pytest tests/unit/applications/test_application_deploy_triad.py -q -k attestation_demo
 uv run pytest tests/unit/applications/test_agent_app_doc_pair.py -q -k attestation_demo
 uv run pytest tests/unit/scaffold/test_adr_scaffold.py -q -k attestation_demo
-python scripts/check_harness_adr.py
+python scripts/maintenance/check_harness_adr.py
 ```

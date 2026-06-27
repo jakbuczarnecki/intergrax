@@ -304,7 +304,7 @@ Third wave after tool-coverage saturation (185/190 tools). Value = **vertical co
 | P1 Ops/platform | 16 | `ops.oncall_runbook`, `ops.postmortem_writer`, `platform.deploy_inspector`, `hitl.escalation_router` |
 | P2 Dev/data/sandbox | 16 | `dev.sprint_planner`, `data.pipeline_probe`, `sandbox.refactor_loop`, `agent.capability_mapper` |
 
-All 50 rows **Done** — full skill_id list in `scripts/scaffold_sk_exp5.py`.
+All 50 rows **Done** — full skill_id list in `scripts/maintenance/scaffold_sk_exp5.py`.
 
 ---
 

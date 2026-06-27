@@ -20,7 +20,7 @@ Continue Tier-3 application architecture sprint queue: APP-CON-7 — scenario ma
 ## Summary
 
 - `tier3_scenario_matrix_wiring.py` — §44 scenario catalog, §35 UC-A* mapping, reference host posture matrix (7 hosts).
-- `scripts/check_tier3_scenario_matrix.py` — CI gate validating evidence test paths and UC-A coverage.
+- `scripts/maintenance/check_tier3_scenario_matrix.py` — CI gate validating evidence test paths and UC-A coverage.
 - `test_tier3_scenario_matrix.py` — pytest `-m tier3_scenario` + gate marker.
 - Wired into `check_application_production_gates.py`; registered `tier3_scenario` pytest marker.
 
@@ -38,8 +38,8 @@ Reference Tier-3 hosts now have a declarative minimum scenario matrix tied to ex
 ## Changed artifacts
 
 - `intergrax/applications/_shared/tier3_scenario_matrix_wiring.py`
-- `scripts/check_tier3_scenario_matrix.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_tier3_scenario_matrix.py`
+- `scripts/gates/check_application_production_gates.py`
 - `tests/unit/applications/test_tier3_scenario_matrix.py`
 - `tests/unit/scripts/test_check_tier3_scenario_matrix.py`
 - `pyproject.toml` (marker)
@@ -52,8 +52,8 @@ Reference Tier-3 hosts now have a declarative minimum scenario matrix tied to ex
 uv run pytest tests/unit/applications/test_tier3_scenario_matrix.py \
   tests/unit/scripts/test_check_tier3_scenario_matrix.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-python scripts/check_tier3_scenario_matrix.py
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_tier3_scenario_matrix.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

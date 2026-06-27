@@ -55,8 +55,10 @@ Write an entry **only** when at least one **milestone trigger** below applies. O
 | `intergrax/` (non-runtime) | `tier-0` | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` |
 | `intergrax/runtime/` | `tier-1` | Same domain pair (ORCHESTRATION, UAEP, NEXUS_EXECUTION_FLOW, …) |
 | `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` if present; `agents/<slug>/adr/` when applicable |
-| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/ARCHITECTURE.md` + local plan |
+| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/docs/ARCHITECTURE.md` + `applications/<pkg>/docs/IMPLEMENTATION_PLAN.md`; `applications/<pkg>/docs/adr/` when applicable |
 | `intergrax/applications/_shared/` | `tier-3` | Shared host wiring — link consuming `applications/<pkg>/` host(s) in Traceability |
+
+**Tier-3 doc layout:** Application root contains `README.md` only. All other Markdown documentation belongs under `applications/<pkg>/docs/`.
 
 Multi-tier episodes (e.g. agent + application in one PR): set `tiers: [tier-2, tier-3]` and list all scopes in `scope` or Traceability.
 
@@ -78,7 +80,7 @@ Harness audit map layer — see [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HA
 - Link `plan_ref` / GAP / AUDIT-IDEAL IDs — do not copy plan tables.
 - State `adr: none` with rationale when no ADR was required.
 - Set `commit` after the operator commits, or `pending` until then.
-- Run `python scripts/check_implementation_journal.py` — INDEX rows must match entry files and required sections.
+- Run `python scripts/maintenance/check_implementation_journal.py` — INDEX rows must match entry files and required sections.
 
 ### `plan_ref` grammar
 

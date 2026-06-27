@@ -42,8 +42,8 @@ No open P0/P1. CE-EXT + CE-PROV-WIRE **Done** · CE-LC **Done**.
 ## Gates executed
 
 ```bash
-uv run python scripts/check_context_engine_wiring.py
-uv run python scripts/check_context_preflight_uses_adapter_tokens.py
+uv run python scripts/maintenance/check_context_engine_wiring.py
+uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
 uv run pytest tests/unit/runtime/nexus/context/ -m gate -q
 ```
 

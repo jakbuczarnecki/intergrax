@@ -204,7 +204,7 @@ class RuntimeState(RuntimeStateContract):
 
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
-            from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
+            from intergrax.runtime.wiring.llm_resolver import consume_routing_evaluation
             from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
             from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
             from intergrax.llm_adapters.routing.metering import resolve_metering_adapter

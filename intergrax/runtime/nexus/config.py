@@ -19,9 +19,9 @@ if TYPE_CHECKING:
     from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
     from intergrax.runtime.events.event_bus import RuntimeEventBus
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
-    from intergrax.applications.contracts.environment_profile import (
-        ApplicationSecurityProfile,
+    from intergrax.contracts.host_profile_slices import (
         AdaptiveProfile,
+        ApplicationSecurityProfile,
         CriticProfile,
         EvaluationProfile,
     )

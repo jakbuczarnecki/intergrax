@@ -155,7 +155,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 | M-LLM-X.3.1 | **`verify_context_preflight`** uses `adapter.count_messages_tokens(messages)` | **Done** | Critical | `context_preflight.py` | Unit: adapter path exercised |
 | M-LLM-X.3.2 | **`count_message_tokens` helper** — delegate to adapter when provided | **Partial** | High | `context_preflight.py` | Adapter default when counter None |
 | M-LLM-X.3.3 | **`ContextBudgetPolicy.from_adapter(adapter)`** factory — derive `max_tokens_estimate` from `resolve_input_budget_tokens` | **Done** | High | `context_budget.py` | Unit test |
-| M-LLM-X.3.4 | **`scripts/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Done** | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-X.3.4 | **`scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Done** | High | `scripts/` | Added to §6.1 maintenance |
 | M-LLM-X.3.5 | **`engine_history_layer`** history token count via `adapter.count_messages_tokens` | **Done** | High | `engine_history_layer.py` | Already delegated; preflight aligned LC-2 |
 
 ---
@@ -200,7 +200,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.7.1 | **`intergrax/llm_adapters/USAGE.md`** — quickstart, env matrix, overrides, failover, catalog | **Done** | High | Tier-0 module root | Linked from architecture |
 | M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Done** | Medium | `profile.py` | `check_llm_profile_runtime.py` + `intergrax doctor` |
-| M-LLM-X.7.3 | **`scripts/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Done** | Medium | CI | LLM-MAINT-02 |
+| M-LLM-X.7.3 | **`scripts/maintenance/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Done** | Medium | CI | LLM-MAINT-02 |
 | M-LLM-X.7.4 | **Scaffold `new-agent` template** — comment block pointing to USAGE + catalog override | **Done** | Low | `scaffold/new_agent.py` | **M-LLM-X.14.8** |
 | M-LLM-X.7.5 | **Cohere slug guidance** — document `cohere` (compat) vs `cohere_native` selection in USAGE | **Done** | Low | `USAGE.md` §Providers | Reduces dual-slug confusion |
 
@@ -233,7 +233,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 | M-LLM-X.9.6 | **Unify `BudgetReactionProfile.degrade_model`** with `BudgetExceededDegradeRule` | **Done** | High | `budget_enforcing_llm_router.py`, `builtin_rules.py` | `cheapest_allowed_model_hint`; ACP-TOK-3 tests green |
 | M-LLM-X.9.7 | **`DynamicLLMRouter` wrapper** — per-step model swap within run (extends budget-enforcing pattern) | **Done** | Medium | `agents/authoring/dynamic_llm_router.py` | `test_dynamic_llm_router.py` |
 | M-LLM-X.9.8 | **USAGE.md cookbook** — built-in vs custom class, testing, allowlist, HF via vLLM | **Done** | High | `intergrax/llm_adapters/USAGE.md` | Linked from architecture §Routing rules |
-| M-LLM-X.9.9 | **`scripts/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Done** | Medium | `scripts/` | `check_audit_ideal_gates.py` umbrella |
+| M-LLM-X.9.9 | **`scripts/maintenance/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Done** | Medium | `scripts/` | `check_audit_ideal_gates.py` umbrella |
 
 **Suggested PR order (X-9):** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
 
@@ -308,7 +308,7 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 | M-LLM-X.11.5 | **True E2E acceptance** — full ACP or Nexus run: seed budget → execute LLM step(s) → budget crosses `BudgetBelowRule` threshold → assert model/profile change in trace or adapter meter | **Done** | High | `tests/acceptance/llm_routing/` | `-m gate` green; evaluating adapter mid-run swap |
 | M-LLM-X.11.6 | **Harness host parity** — when `llm_routing_profile` set, wire evaluating adapter or document ACP-only; minimum: `harness_host_runtime` uses evaluating wrapper on `llm_adapter` passed to `build_nexus_loop_from_environment` | **Done** | Medium | `harness_host_runtime.py`, `runtime_config_bridge.py` | Host integration test |
 | M-LLM-X.11.7 | **Docs maturity re-score** — architecture L4→L5 criteria; USAGE §mid-run routing; clarify X-10 vs X-11 scope; custom + builtin authoring paths | **Done** | Medium | `architecture/LLM_ADAPTERS.md`, `USAGE.md` | Linked from hub |
-| M-LLM-X.11.8 | **CI gate** — `scripts/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Done** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+| M-LLM-X.11.8 | **CI gate** — `scripts/maintenance/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Done** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
 
 **Suggested PR order (X-11):** 11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8.
 
@@ -493,7 +493,7 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
 
-**Closeout gate:** `scripts/check_llm_adapter_typed_returns.py` + `scripts/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
+**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
 **Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](plan/CRITIC_VERIFICATION.md) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
 
@@ -510,7 +510,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 
 **Prerequisites:** Phase V + V-REM + W-OPS + EVAL + COST + CG closeouts **Done**.
 
-**Runtime L4 gate:** `uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
+**Runtime L4 gate:** `uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
 
 ---
 
@@ -657,7 +657,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | M-LLM-R.6.1 | **Agent pipeline mocks** — echo, legal, research, problem_radar, signoff_probe, organization_worker, lab mocks | **Done** | High | `agent cognitive patterns (`on_next_step`)`, `agents/lab/mock_agents.py` | Agent unit tests green |
 | M-LLM-R.6.2 | **`scaffold/new_agent.py` template** — generated stub returns `LLMAdapterResponse` | **Done** | High | `intergrax/scaffold/new_agent.py` | New-agent scaffold test |
 | M-LLM-R.6.3 | **`testing_support/builder.py` fake adapter** | **Done** | Medium | `testing_support/builder.py` | Shared test helper |
-| M-LLM-R.6.4 | **Tier-2 rule check** — agents must not assume `str` from adapter | **Done** | Low | `scripts/check_agents_llm_adapter_response.py` | CI script in §6.1 maintenance list |
+| M-LLM-R.6.4 | **Tier-2 rule check** — agents must not assume `str` from adapter | **Done** | Low | `scripts/maintenance/check_agents_llm_adapter_response.py` | CI script in §6.1 maintenance list |
 
 #### Wave M-LLM-R-7 — Observability, replay, trace bridge
 
@@ -720,10 +720,10 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **LLM-MAINT-01** | DX | P2 | **Done** | Close AUDIT-IDEAL-6.7 — add LLM subset (`check_llm_adapter_typed_returns` + optional catalog smoke) to `intergrax doctor check` | `intergrax doctor --ci` runs LLM checks; 6.7 **Done** |
-| 2 | **LLM-MAINT-02** | CI | P2 | **Done** | M-LLM-X.7.3 — `scripts/check_model_catalog_coverage.py` warns on adapter default models missing from YAML | Gate registered in CI umbrella |
+| 2 | **LLM-MAINT-02** | CI | P2 | **Done** | M-LLM-X.7.3 — `scripts/maintenance/check_model_catalog_coverage.py` warns on adapter default models missing from YAML | Gate registered in CI umbrella |
 | 3 | **LLM-MAINT-03** | Code | P2 | **Done** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | `LLMProfile.fallback_profiles` + `resolve_llm_adapter` |
 | 4 | **LLM-MAINT-04** | Docs | P3 | **Done** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | `intergrax/llm_adapters/USAGE.md` §Distributed rate limiting |
-| 5 | **LLM-MAINT-05** | CI | P2 | **Done** | M-LLM-X.15.4 — `scripts/check_llm_catalog_miss_observability.py` (trace step + metrics + resolver tiers) | Gate green after X-15 |
+| 5 | **LLM-MAINT-05** | CI | P2 | **Done** | M-LLM-X.15.4 — `scripts/maintenance/check_llm_catalog_miss_observability.py` (trace step + metrics + resolver tiers) | Gate green after X-15 |
 | 6 | **LLM-MAINT-06** | CI | P2 | **Done** | M-LLM-X.16.3 — register **LLM-MAINT-05** in platform OBS/audit CI umbrella | `check_observability_gates.py` + `check_audit_ideal_gates.py` |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-18).
@@ -953,7 +953,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 1 | **M-LLM-X.15.1** | Code | **P1** | **Done** | Emit miss on `prefix_rule`, `provider_default`, `fallback_default` (non-exact tiers) with `resolution_tier` field | OpenRouter unknown model emits miss · `test_gateway_metadata.py` |
 | 2 | **M-LLM-X.15.2** | Wire | P2 | **Done** | `wire_catalog_miss_trace_sink` at start of `configure_llm_tracker()` — not gated on `core_adapter` | `test_catalog_miss_trace_e2e.py` |
 | 3 | **M-LLM-X.15.3** | Metrics | P2 | **Done** | `intergrax_llm_catalog_miss_total{tenant_id,provider,model,resolution_tier}` in `LLMMetricsCollector` | `test_catalog_miss_metrics.py` |
-| 4 | **M-LLM-X.15.4** | CI | P2 | **Done** | `scripts/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) | Registered in plan §6.1aw |
+| 4 | **M-LLM-X.15.4** | CI | P2 | **Done** | `scripts/maintenance/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) | Registered in plan §6.1aw |
 | 5 | **M-LLM-X.15.5** | E2E | P2 | **Done** | Acceptance: resolver miss → Plane A trace → `trace_bridge` → `LLM_CALL` | `test_catalog_miss_trace_e2e.py` |
 | 6 | **M-LLM-X.15.6** | Docs | P3 | **Done** | ADR-LLM-002 amendment + USAGE/OBSERVABILITY sync | ADR steps 1–7 aligned with code |
 

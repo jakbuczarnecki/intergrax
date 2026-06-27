@@ -60,8 +60,6 @@ def attach_acp_catalog_exec_ctx(
     """Bridge ACP session steps to ``uaep_exec_ctx`` for catalog tool invocation."""
     if isinstance(step_ctx.metadata.get("uaep_exec_ctx"), RuntimeExecutionContext):
         return
-    if kernel_ctx.declarative_tool_invoker is None:
-        return
 
     from intergrax.agents.authoring.acp_stub_reflex import build_agent_runtime_context
     from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
@@ -103,10 +101,11 @@ def attach_acp_catalog_exec_ctx(
         allowed_tools = [str(tool_id) for tool_id in allowed_tools_raw if str(tool_id).strip()]
     else:
         allowed_tools = list(contract.allowed_tools)
-    exec_ctx.tool_gateway = BoundToolGateway(
-        exec_ctx,
-        allowed_tools=allowed_tools,
-    )
+    if kernel_ctx.declarative_tool_invoker is not None:
+        exec_ctx.tool_gateway = BoundToolGateway(
+            exec_ctx,
+            allowed_tools=allowed_tools,
+        )
     step_ctx.metadata["uaep_exec_ctx"] = exec_ctx
 
 

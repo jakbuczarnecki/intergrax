@@ -42,7 +42,7 @@ Spine enum is publication-ready at 56 members. Adaptive, capacity, and hook obse
 - `intergrax/runtime/adaptive/adaptive_runtime_events.py`
 - `intergrax/runtime/capacity/events.py`
 - `intergrax/runtime/middleware/hook_runtime_guard.py`
-- `scripts/check_event_catalog.py`
+- `scripts/maintenance/check_event_catalog.py`
 - `tests/unit/runtime/events/test_spine_consolidation.py`
 - `tests/unit/runtime/adaptive/test_adaptive_apply_wave4.py`
 - `tests/unit/runtime/capacity/test_capacity_events_gate.py`
@@ -58,7 +58,7 @@ uv run pytest tests/unit/runtime/events/test_spine_consolidation.py \
   tests/unit/runtime/adaptive/test_adaptive_apply_wave4.py \
   tests/unit/runtime/capacity/test_capacity_events_gate.py \
   tests/unit/runtime/middleware/test_hook_runtime_guard.py -q
-uv run python scripts/check_event_catalog.py
+uv run python scripts/maintenance/check_event_catalog.py
 ```
 
 ## Risks and follow-ups

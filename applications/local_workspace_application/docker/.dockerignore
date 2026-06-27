@@ -16,7 +16,6 @@ infra/
 applications/*
 !applications/local_workspace_application/
 agents/*
-!agents/lkw_shared/
 !agents/local_indexer/
 !agents/local_search/
 !agents/local_synthesizer/

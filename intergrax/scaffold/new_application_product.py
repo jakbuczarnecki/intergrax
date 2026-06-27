@@ -94,26 +94,13 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
         import json
         import os
         from dataclasses import dataclass, field
-        from typing import FrozenSet, Literal, Mapping, Optional
+        from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
+        from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
         from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
         from intergrax.fastapi_core.config import ApiEnvironment
 
         {pascal}IdentitySource = Literal["body_or_context", "context_only"]
-
-
-        def _env_bool(name: str, default: bool = False) -> bool:
-            raw = os.environ.get(name)
-            if raw is None:
-                return default
-            return raw.strip().lower() in {{"1", "true", "yes", "on"}}
-
-
-        def _env_csv_set(name: str) -> FrozenSet[str]:
-            raw = os.environ.get(name, "").strip()
-            if not raw:
-                return frozenset()
-            return frozenset(x.strip() for x in raw.split(",") if x.strip())
 
 
         def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
@@ -145,66 +132,58 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             return out
 
 
-        @dataclass(frozen=True)
-        class {pascal}BackendSettings:
+        @dataclass(frozen=True, kw_only=True)
+        class {pascal}BackendSettings(IntergraxApplicationSettingsBase):
             """Environment for {pkg} (scaffolded product profile)."""
 
-            environment: ApiEnvironment
+            env_prefix: ClassVar[str] = "{env_prefix_value}"
             route_prefix: str = "{route_prefix}"
-            backend_host: str = "127.0.0.1"
             backend_port: int = {port}
+            include_scheduler: bool = False
+            include_queue_worker: bool = False
             default_agent_id: str = "echo"
             identity_source: {pascal}IdentitySource = "body_or_context"
             cors_allow_origins: FrozenSet[str] = field(default_factory=frozenset)
             allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
             openapi_enabled_override: Optional[bool] = None
             api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
-            include_mcp: bool = False
-            mcp_mount_path: str = "/mcp"
-            include_interaction_routes: bool = True
-            interaction_route_prefix: str = "/v1/interactions"
-            interaction_surface: str = "auto"
             interaction_execute_default: bool = True
-            include_scheduler: bool = False
-            scheduler_poll_seconds: float | None = None
-            include_task_control: bool = True
-            include_queue_worker: bool = False
-            task_control_route_prefix: str = "/v1/tasks"
+
+            # ------------------------------------------------------------------
+            # Application-specific settings
+            # Add your own env-backed fields here.
+            # ------------------------------------------------------------------
 
             @classmethod
-            def from_env(cls) -> {pascal}BackendSettings:
-                env_raw = (os.getenv("{env_prefix_value}BACKEND_ENV") or os.getenv("INTERGRAX_ENV") or "dev").strip().lower()
-                try:
-                    environment = ApiEnvironment(env_raw)
-                except ValueError as exc:
-                    raise ValueError(
-                        f"{env_prefix_value}BACKEND_ENV must be one of "
-                        f"{{[e.value for e in ApiEnvironment]}}, got {{env_raw!r}}."
-                    ) from exc
+            def _load_app_env(cls, env: EnvReader) -> dict[str, object]:
+                env_raw = (
+                    env.optional_str("BACKEND_ENV")
+                    or (os.environ.get("INTERGRAX_ENV") or "dev").strip().lower()
+                )
+                environment = ApiEnvironment(env_raw)
 
-                prefix = (os.getenv("{env_prefix_value}ROUTE_PREFIX") or "{route_prefix}").strip() or "{route_prefix}"
-                host = (os.getenv("{env_prefix_value}BACKEND_HOST") or "127.0.0.1").strip()
-                port_raw = (os.getenv("{env_prefix_value}BACKEND_PORT") or "{port}").strip()
-                agent_id = (os.getenv("{env_prefix_value}DEFAULT_AGENT_ID") or "echo").strip() or "echo"
+                agent_id = env.str("DEFAULT_AGENT_ID", default="echo") or "echo"
 
-                id_src_env = os.getenv("{env_prefix_value}IDENTITY_SOURCE", "").strip().lower()
+                id_src_env = env.optional_str("IDENTITY_SOURCE")
                 if id_src_env in {{"body_or_context", "context_only"}}:
                     identity_source = id_src_env
                 else:
-                    identity_source = "context_only" if environment == ApiEnvironment.PROD else "body_or_context"
+                    identity_source = (
+                        "context_only" if environment == ApiEnvironment.PROD else "body_or_context"
+                    )
 
-                cors = _env_csv_set("{env_prefix_value}BACKEND_CORS_ORIGINS")
-                hosts = _env_csv_set("{env_prefix_value}BACKEND_ALLOWED_HOSTS")
+                cors = env.csv_set("BACKEND_CORS_ORIGINS")
+                hosts = env.csv_set("BACKEND_ALLOWED_HOSTS")
 
                 openapi_override: Optional[bool] = None
-                if os.getenv("{env_prefix_value}BACKEND_OPENAPI") is not None:
-                    openapi_override = _env_bool("{env_prefix_value}BACKEND_OPENAPI")
+                if env.raw("BACKEND_OPENAPI") is not None:
+                    openapi_override = env.bool("BACKEND_OPENAPI")
 
                 keys: Mapping[str, ApiKeyIdentity] = {{}}
-                bootstrap_key = os.getenv("{env_prefix_value}BACKEND_BOOTSTRAP_API_KEY", "").strip()
+                bootstrap_key = env.str("BACKEND_BOOTSTRAP_API_KEY", default="")
                 if bootstrap_key:
-                    tenant = os.getenv("{env_prefix_value}BACKEND_BOOTSTRAP_TENANT_ID", "").strip()
-                    user = os.getenv("{env_prefix_value}BACKEND_BOOTSTRAP_USER_ID", "").strip()
+                    tenant = env.str("BACKEND_BOOTSTRAP_TENANT_ID", default="")
+                    user = env.str("BACKEND_BOOTSTRAP_USER_ID", default="")
                     if not tenant or not user:
                         raise ValueError(
                             "When {env_prefix_value}BACKEND_BOOTSTRAP_API_KEY is set, "
@@ -218,7 +197,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                             scopes=("*",),
                         )
                     }}
-                json_keys = os.getenv("{env_prefix_value}BACKEND_API_KEYS_JSON", "").strip()
+                json_keys = env.str("BACKEND_API_KEYS_JSON", default="")
                 if json_keys:
                     if keys:
                         raise ValueError(
@@ -232,8 +211,8 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                         "{env_prefix_value}BACKEND_ENV=prod requires "
                         "{env_prefix_value}IDENTITY_SOURCE=context_only (or omit to default)."
                     )
-                if environment == ApiEnvironment.PROD and not _env_bool(
-                    "{env_prefix_value}BACKEND_ALLOW_UNAUTHENTICATED", False
+                if environment == ApiEnvironment.PROD and not env.bool(
+                    "BACKEND_ALLOW_UNAUTHENTICATED", default=False
                 ):
                     if not keys:
                         raise ValueError(
@@ -244,48 +223,18 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                             "{env_prefix_value}BACKEND_ALLOW_UNAUTHENTICATED=true."
                         )
 
-                include_mcp = _env_bool("{env_prefix_value}INCLUDE_MCP", default=False)
-                mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
-                include_interactions = _env_bool("{env_prefix_value}INCLUDE_INTERACTIONS", default=True)
-                interaction_prefix = (
-                    os.getenv("{env_prefix_value}INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
-                ).strip() or "/v1/interactions"
-                interaction_surface = (
-                    os.getenv("{env_prefix_value}INTERACTION_SURFACE") or "auto"
-                ).strip().lower() or "auto"
-                interaction_execute = _env_bool("{env_prefix_value}INTERACTION_EXECUTE_DEFAULT", default=True)
-                include_scheduler = _env_bool("{env_prefix_value}INCLUDE_SCHEDULER", default=False)
-                poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
-                scheduler_poll = float(poll_raw) if poll_raw else None
-                include_task_control = _env_bool("{env_prefix_value}INCLUDE_TASK_CONTROL", default=True)
-                include_queue_worker = _env_bool("{env_prefix_value}INCLUDE_QUEUE_WORKER", default=False)
-                task_control_prefix = (
-                    os.getenv("{env_prefix_value}TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
-                ).strip() or "/v1/tasks"
-
-                return cls(
-                    environment=environment,
-                    route_prefix=prefix,
-                    backend_host=host,
-                    backend_port=int(port_raw),
-                    default_agent_id=agent_id,
-                    identity_source=identity_source,
-                    cors_allow_origins=cors,
-                    allowed_hosts=hosts,
-                    openapi_enabled_override=openapi_override,
-                    api_keys_map=keys,
-                    include_mcp=include_mcp,
-                    mcp_mount_path=mcp_mount,
-                    include_interaction_routes=include_interactions,
-                    interaction_route_prefix=interaction_prefix,
-                    interaction_surface=interaction_surface,
-                    interaction_execute_default=interaction_execute,
-                    include_scheduler=include_scheduler,
-                    scheduler_poll_seconds=scheduler_poll,
-                    include_task_control=include_task_control,
-                    include_queue_worker=include_queue_worker,
-                    task_control_route_prefix=task_control_prefix,
-                )
+                return {{
+                    "default_agent_id": agent_id,
+                    "identity_source": identity_source,
+                    "cors_allow_origins": cors,
+                    "allowed_hosts": hosts,
+                    "openapi_enabled_override": openapi_override,
+                    "api_keys_map": keys,
+                    "interaction_execute_default": env.bool(
+                        "INTERACTION_EXECUTE_DEFAULT",
+                        default=cls._field_default("interaction_execute_default"),  # type: ignore[arg-type]
+                    ),
+                }}
         '''
     )
 

@@ -48,17 +48,17 @@ External developers will extend observability via `emit_domain_signal` and paylo
 - `docs/plan/PLATFORM_FOUNDATION.md` (P1-ARCH-02 row)
 - `docs/adr/README.md`
 - `docs/guides/AGENT_CREATION_GUIDE.md`
-- `scripts/generate_domain_audit_prompts.py`
+- `scripts/audit/generate_domain_audit_prompts.py`
 - `docs/guides/EXTENSION_AUTHOR_GUIDE.md` §11
 - `docs/guides/APPLICATION_CREATION_GUIDE.md` §8
 
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_harness_adr.py
-python scripts/generate_domain_audit_prompts.py
-python scripts/check_implementation_journal.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_harness_adr.py
+python scripts/audit/generate_domain_audit_prompts.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 ## Risks and follow-ups

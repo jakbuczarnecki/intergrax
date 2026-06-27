@@ -402,4 +402,4 @@ Tier-3 wiring (ECC-3):
 
 **Policy:** `codecraft.*` tools added to `SANDBOX_REQUIRED_TOOLS` (same routing as `code.exec`). Fail-closed when `codecraft_profile` missing, `mode=disabled`, or sandbox session absent.
 
-**CI gate:** `scripts/check_codecraft_layer.py` — catalog tools, wiring, trace steps, health probe registration (ECC-9).
+**CI gate:** `scripts/maintenance/check_codecraft_layer.py` — catalog tools, wiring, trace steps, health probe registration (ECC-9).

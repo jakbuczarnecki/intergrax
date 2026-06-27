@@ -1,8 +1,8 @@
-# LocalIndexerAgent
+﻿# LocalIndexerAgent
 
 Indexes user-local files into the Intergrax RAG vector store.
 
-**Architecture:** [ARCHITECTURE.md](ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
+**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.index`
 

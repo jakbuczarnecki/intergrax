@@ -29,7 +29,7 @@ Extended fields per domain (optional): `recommendation`, `scores`, `journal`, `b
 Initialize:
 
 ```bash
-uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode layer_completion
+uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode layer_completion
 ```
 
 ---

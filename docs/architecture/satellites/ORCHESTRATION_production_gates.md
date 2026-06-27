@@ -687,7 +687,7 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 | **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | **Done** | `apply_long_running_from_profile` |
 | **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | **Done** | `strict_multi_agent_defaults()` |
 | **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | **Done** | `GraphExecutor` batch guard · CFG-17 sim |
-| **ORCH-CONFIG.9** | All | `scripts/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | **Done** | CI script |
+| **ORCH-CONFIG.9** | All | `scripts/maintenance/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | **Done** | CI script |
 | **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | **Done** | `nexus_plan_bridge.py` · reference host `planner_kind=engine` |
 
 **Cross-plan ownership:**

@@ -20,8 +20,8 @@
 ## Verification
 
 ```bash
-python scripts/check_agent_skill_resolution.py
-python scripts/check_agent_acp_close_ci.py
+python scripts/maintenance/check_agent_skill_resolution.py
+python scripts/gates/check_agent_acp_close_ci.py
 uv run pytest tests/unit/tools/providers/codecraft/test_codecraft_run.py::test_resolve_codecraft_profile_task_metadata_overrides_mode -q
 uv run pytest tests/unit/model_inference/ -q
 uv run pytest tests/unit/agents/test_uaep_executor.py -q

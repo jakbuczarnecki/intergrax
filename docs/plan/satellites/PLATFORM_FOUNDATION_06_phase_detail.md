@@ -295,7 +295,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | B.25 | **AWS cloud_platform facade** — auth + S3/SQS/DynamoDB/ElastiCache defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | AWS-hosted applications | Tier-0 | `providers/aws/`; infrastructure only |
 | B.26 | **Azure cloud_platform facade** — MI + Blob/Service Bus/Azure SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | Azure-hosted applications | Tier-0 | `providers/azure/`; infrastructure only |
 | B.27 | **GCP cloud_platform facade** — ADC + GCS/Pub/Sub/Cloud SQL defaults | §7.1.3 P1.1 | **Medium** | **Done** (beta) | GCP-hosted applications | Tier-0 | `providers/gcp/`; infrastructure only |
-| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | **Done** | Prevents catalog bypass | Tier-2 | `scripts/check_agents_vendor_imports.py` + gate test `test_vendor_import_guard_b24` (2026-05-27) |
+| B.24 | **Direct vendor SDK in agents** — audit + lint rule | §5.2, §7.1.4 | **Medium** | **Done** | Prevents catalog bypass | Tier-2 | `scripts/maintenance/check_agents_vendor_imports.py` + gate test `test_vendor_import_guard_b24` (2026-05-27) |
 
 ### B.7 Tool Library (§7.1.6)
 
@@ -517,7 +517,7 @@ Execute in order; one PR per ID where possible.
 
 | Step | ID | Action | Exit criteria |
 |------|-----|--------|---------------|
-| **1** | Q+.0.3 | Add `scripts/check_harness_no_getattr.py`; wire to gate (grandfather list for existing hits) | CI enforces on new lines |
+| **1** | Q+.0.3 | Add `scripts/maintenance/check_harness_no_getattr.py`; wire to gate (grandfather list for existing hits) | CI enforces on new lines |
 | **2** | Q+-T.1 | Introduce `UAEPAgent` Protocol; refactor `supports_uaep` + `UAEPExecutor` | Zero getattr on agent in `uaep.py` |
 | **3** | Q+-T.2 | `ToolInvokerProtocol`; fix `catalog_context.py` | Typed registry access |
 | **4** | Q+-T.3 | `RuntimeState.trace_event` typed | `tool_access_policy` clean |

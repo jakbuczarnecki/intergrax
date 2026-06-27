@@ -19,7 +19,7 @@ Partition growing `docs/adr/` harness ADRs into date folders (like the implement
 
 ## Summary
 
-Introduced `docs/adr/entries/YYYY-MM-DD/` for all 21 harness ADRs, rewrote cross-repo links, added `intergrax/scaffold/harness_adr.py` path helpers, `scripts/check_harness_adr.py` gate, and updated scaffold README/TEMPLATE plus iteration rules.
+Introduced `docs/adr/entries/YYYY-MM-DD/` for all 21 harness ADRs, rewrote cross-repo links, added `intergrax/scaffold/harness_adr.py` path helpers, `scripts/maintenance/check_harness_adr.py` gate, and updated scaffold README/TEMPLATE plus iteration rules.
 
 ## Project impact
 
@@ -39,7 +39,7 @@ Harness ADR catalog scales chronologically without a flat root directory; author
 - `docs/adr/entries/**` — relocated harness ADRs by first-commit date
 - `docs/adr/README.md`, `docs/adr/TEMPLATE.md` — layout + index
 - `intergrax/scaffold/harness_adr.py`, `intergrax/scaffold/adr_templates.py` — path helpers and scaffold canon
-- `scripts/check_harness_adr.py` — INDEX ↔ filesystem gate
+- `scripts/maintenance/check_harness_adr.py` — INDEX ↔ filesystem gate
 - `AGENTS.md`, `.cursor/rules/intergrax-iteration.mdc` — process + verification
 - Cross-repo doc links (~47 files) — `entries/<day>/` paths
 
@@ -47,7 +47,7 @@ Harness ADR catalog scales chronologically without a flat root directory; author
 
 ```bash
 uv run pytest tests/unit/scaffold/test_adr_scaffold.py tests/unit/scaffold/test_harness_adr_paths.py -q
-uv run python scripts/check_harness_adr.py
+uv run python scripts/maintenance/check_harness_adr.py
 ```
 
 Result: pass (24 tests; harness ADR check OK).

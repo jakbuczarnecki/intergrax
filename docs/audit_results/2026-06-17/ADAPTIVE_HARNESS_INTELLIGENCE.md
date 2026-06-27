@@ -25,7 +25,7 @@ No open P0/P1 in `ADAPTIVE_HARNESS_INTELLIGENCE` scope. Prior Layer Completion c
 ## Gates executed
 
 ```bash
-uv run python scripts/phase_w_adapt_report.py
+uv run python scripts/release/phase_w_adapt_report.py
 uv run pytest tests/unit/runtime/adaptive/ -q
 ```
 

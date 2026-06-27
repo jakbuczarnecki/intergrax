@@ -52,7 +52,7 @@ Deleted the full RuntimeEngine pipeline stack and migrated surviving utilities (
 
 ```bash
 uv run pytest -m gate -q
-python scripts/check_docs_domain_pairs.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: **1776 passed** (gate); domain pairs OK.

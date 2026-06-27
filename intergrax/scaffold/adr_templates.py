@@ -127,7 +127,7 @@ def render_harness_adr_readme() -> str:
         4. Add a row to the **Index** below.
         5. Link from canon (`intergrax_runtime_architecture.md`) and/or the relevant domain plan.
         6. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
-        7. Run `python scripts/check_harness_adr.py`.
+        7. Run `python scripts/maintenance/check_harness_adr.py`.
 
         ## Index
 
@@ -156,7 +156,7 @@ def render_agent_adr_readme(*, slug: str) -> str:
 
         Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
         Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-        Platform ADRs: [`../../docs/adr/README.md`](../../docs/adr/README.md)
+        Platform ADRs: [`../../../../docs/adr/README.md`](../../../../docs/adr/README.md)
 
         ---
 
@@ -268,7 +268,7 @@ def write_harness_adr_scaffold(*, root: Path, force: bool = False) -> Path:
 
 
 def write_agent_adr_scaffold(*, agent_dir: Path, slug: str, force: bool = False) -> Path:
-    adr_dir = agent_dir / "adr"
+    adr_dir = agent_dir / "docs" / "adr"
     prefix = adr_prefix(slug)
     _write_adr_file(
         adr_dir / ADR_README,

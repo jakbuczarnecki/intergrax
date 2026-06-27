@@ -291,7 +291,7 @@ Formal requirements — enforcement via policy, gateways, CI (§40.10).
 | **SDK bypass** | Direct vendor import in Tier-2 | tier boundary, `check_agents_vendor_imports.py` | CI |
 | **Org rule bypass** | configure_run widen in STRICT | §39.4 STRICT deny | **Closed** — ACP-CLOSE-ORG-1 |
 
-**Plan:** ACP-PROD-7 (**Done** — `scripts/check_agent_threat_model.py`).
+**Plan:** ACP-PROD-7 (**Done** — `scripts/maintenance/check_agent_threat_model.py`).
 
 ---
 
@@ -356,7 +356,7 @@ Register in **Evaluation registry**; wired via Tier-3 host before roster `produc
 dev → eval suites green → staging shadow → certification §20 → production_mode
 ```
 
-**Plan:** ACP-PROD-9 (**Done** — `scripts/check_agent_release_gates.py`).
+**Plan:** ACP-PROD-9 (**Done** — `scripts/gates/check_agent_release_gates.py`).
 
 ---
 
@@ -387,7 +387,7 @@ Normative CI checks before merge to agent roster (extends §45).
 
 **Rule:** new agent PR MUST declare which CI rows apply; all applicable rows green.
 
-**Plan:** ACP-PROD-10 (**Done** — `scripts/check_acp_ci_conformance_matrix.py`).
+**Plan:** ACP-PROD-10 (**Done** — `scripts/gates/check_acp_ci_conformance_matrix.py`).
 
 ---
 

@@ -50,9 +50,9 @@ LLM adapter layer formally closed for Full Harness LC — typed envelope, ModelC
 
 ```bash
 uv run pytest tests/unit/llm_adapters/ -q
-python scripts/check_llm_adapter_typed_returns.py
-python scripts/check_context_preflight_uses_adapter_tokens.py
-python scripts/check_agents_llm_adapter_response.py
+python scripts/maintenance/check_llm_adapter_typed_returns.py
+python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
+python scripts/maintenance/check_agents_llm_adapter_response.py
 ```
 
 ## Risks and follow-ups

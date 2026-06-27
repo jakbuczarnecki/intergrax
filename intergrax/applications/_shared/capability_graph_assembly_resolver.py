@@ -37,7 +37,7 @@ def validate_environment_capability_graph(
 ) -> CapabilityGraphAssemblyValidationResult:
     """Validate wired registry artifacts appear as typed nodes in the environment graph."""
     errors: list[str] = []
-    application_node = application_capability_node_id(manifest)
+    application_node = application_capability_node_id(manifest.app_id)
 
     if not view.contains_node(application_node):
         errors.append(f"missing application node {application_node!r} in capability graph")

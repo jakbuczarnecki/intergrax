@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.applications._shared.capability_graph_catalog import build_harness_capability_catalog
 from intergrax.applications.reference.harness_manifest_catalog import build_harness_reference_manifests
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState, audit_map_lifecycle_label
@@ -17,7 +18,7 @@ from intergrax.contracts.subtask_contract import SubtaskContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.llm_adapters.registry.model_router import ModelRouter
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.runtime.architecture.capability_graph_applications import catalog_application_manifests
+from intergrax.runtime.architecture.capability_graph_applications import build_application_agent_edges
 from intergrax.runtime.interactions.envelope_intake import intake_envelope_to_task, intake_payload_to_envelope
 from intergrax.runtime.nexus.errors.classifier import ErrorClassifier
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
@@ -31,13 +32,13 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_tier0_manifest_catalog_has_no_applications_imports() -> None:
-    manifests = catalog_application_manifests()
-    assert {m.app_id for m in manifests} == {"lab", "legal", "research", "poc_template"}
-    assert build_harness_reference_manifests() == manifests
+    catalog = build_harness_capability_catalog()
+    assert {entry.app_id for entry in catalog} == {"lab", "legal", "research", "poc_template"}
+    assert len(catalog) == len(build_harness_reference_manifests())
 
 
 def test_intergrax_no_applications_import_gate() -> None:
-    script = REPO_ROOT / "scripts" / "check_intergrax_no_applications_imports.py"
+    script = REPO_ROOT / "scripts" / "maintenance" / "check_intergrax_no_applications_imports.py"
     completed = subprocess.run(
         [sys.executable, str(script)],
         cwd=REPO_ROOT,

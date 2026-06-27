@@ -64,7 +64,7 @@ def security_defense_fixture_installed() -> None:
 def _ensure_agent_fleet_inventory() -> None:
     """Regenerate fleet inventory so gate readiness checks see current migration roster."""
     subprocess.check_call(
-        [sys.executable, str(_REPO_ROOT / "scripts" / "audit_agent_fleet_legacy.py")],
+        [sys.executable, str(_REPO_ROOT / "scripts" / "audit" / "audit_agent_fleet_legacy.py")],
         cwd=str(_REPO_ROOT),
     )
 

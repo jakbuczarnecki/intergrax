@@ -39,13 +39,13 @@ HIGH/CRITICAL tool invocations can be blocked pending explicit approval. Product
 - `intergrax/runtime/nexus/tools/adaptive_tool_mode_resolver.py`
 - `intergrax/runtime/adaptive/tool_engine_selection_engine.py`
 - `intergrax/applications/_shared/tool_engine_wiring.py`
-- `scripts/check_tool_engine_ahi_hook.py`
+- `scripts/maintenance/check_tool_engine_ahi_hook.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/tools/ -q
-uv run python scripts/check_tool_engine_ahi_hook.py
+uv run python scripts/maintenance/check_tool_engine_ahi_hook.py
 ```
 
 Result: 58 passed · AHI hook gate OK.

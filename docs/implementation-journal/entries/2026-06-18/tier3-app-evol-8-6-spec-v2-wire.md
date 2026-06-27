@@ -41,13 +41,13 @@ Tier-3 authors can opt into nested canonical profile JSON without Nexus changes;
 - `intergrax/applications/_shared/migration_wiring.py`
 - `tests/unit/applications/test_environment_profile_bundles.py`
 - `tests/unit/applications/test_migration_wiring.py`
-- `scripts/check_environment_profile_bundle_schema.py`
+- `scripts/maintenance/check_environment_profile_bundle_schema.py`
 
 ## Verification
 
 ```bash
 uv run pytest tests/unit/applications/test_environment_profile_bundles.py tests/unit/applications/test_migration_wiring.py -q
-uv run python scripts/check_environment_profile_bundle_schema.py
+uv run python scripts/maintenance/check_environment_profile_bundle_schema.py
 ```
 
 ## Remaining

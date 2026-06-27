@@ -30,7 +30,7 @@ Architects evaluating the repo see auditable L0–L4 maturity per hero domain on
 | Link | Target |
 |------|--------|
 | README | `README.md` §Current platform maturity |
-| Scorecard | `scripts/harness_maturity_report.py` |
+| Scorecard | `scripts/gates/harness_maturity_report.py` |
 | Plan | `docs/plan/PLATFORM_FOUNDATION.md` P2-ARCH-03 |
 | Debt | `docs/guides/ARCHITECTURE_DEBT_REGISTER.md` P2-ARCH-03 |
 
@@ -43,9 +43,9 @@ Architects evaluating the repo see auditable L0–L4 maturity per hero domain on
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
-python scripts/harness_maturity_report.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
+python scripts/gates/harness_maturity_report.py
 ```
 
 Result: pass (expected).

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.intent_route import IntentRoute
+from intergrax.contracts.intent_route import IntentRoute
 from intergrax.runtime.nexus.intent_routing import apply_intent_routes
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry

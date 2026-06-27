@@ -40,10 +40,10 @@ No open P0/P1. DX + W-OPS **Done** · DX-LC **Done**. AUDIT-IDEAL-27.2 replay **
 ## Gates executed
 
 ```bash
-uv run python scripts/check_replay_environment_wiring.py
-uv run python scripts/check_trace_explorer_wiring.py
-uv run python scripts/check_agent_simulator_wiring.py
-uv run python scripts/check_architecture_boundary_chaos.py
+uv run python scripts/maintenance/check_replay_environment_wiring.py
+uv run python scripts/maintenance/check_trace_explorer_wiring.py
+uv run python scripts/maintenance/check_agent_simulator_wiring.py
+uv run python scripts/maintenance/check_architecture_boundary_chaos.py
 ```
 
 All green.

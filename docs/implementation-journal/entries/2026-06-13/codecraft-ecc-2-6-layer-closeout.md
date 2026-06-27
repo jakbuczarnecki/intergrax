@@ -53,8 +53,8 @@ Harness-owned ephemeral code synthesis loop is end-to-end usable from lab hosts 
 
 ```bash
 uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ tests/unit/runtime/codecraft/ tests/unit/applications/test_p6_integration_tool_wiring.py -q
-python scripts/check_harness_no_getattr.py
-python scripts/check_docs_domain_pairs.py
+python scripts/maintenance/check_harness_no_getattr.py
+python scripts/audit/check_docs_domain_pairs.py
 ```
 
 Result: 31 tests pass; harness checks pass.

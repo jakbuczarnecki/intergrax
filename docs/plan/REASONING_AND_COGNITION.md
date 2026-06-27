@@ -80,7 +80,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | COG-PROD.2 | **`planner_parse_retries` wire** + `nexus_task_planner` `user_template` | **Done** | High | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner/` | Retries exercised in unit test |
 | COG-PROD.3 | **Planning `DecisionRecord` enrichment** + `resolve_engine_planner_prompt_config()` | **Done** | High | `planning_runner.py`, `reasoning_wiring.py` | Gate test asserts classification + policy fields |
 | COG-PROD.4 | **Doc reconciliation** — architecture stale gaps removed | **Done** | High | `architecture/REASONING_AND_COGNITION.md` | No §2/§14 contradictions vs §21 |
-| COG-PROD.5 | **`check_reasoning_gates.py` uplift** — registry-only planner prompts | **Done** | Medium | `scripts/check_reasoning_gates.py` | CI script green |
+| COG-PROD.5 | **`check_reasoning_gates.py` uplift** — registry-only planner prompts | **Done** | Medium | `scripts/maintenance/check_reasoning_gates.py` | CI script green |
 
 ### COG-PROD — Sprint execution order
 
@@ -89,6 +89,6 @@ Load **only** the satellite matching your task or cited gap ID.
 | S1 Doc | COG-PROD.4 | `docs/architecture/REASONING_AND_COGNITION.md`, `docs/plan/REASONING_AND_COGNITION.md` |
 | S2 Planner LLM | COG-PROD.1 | `reasoning_wiring.py`, `orchestration_wiring.py`, `nexus_factory.py`, `contracts/reasoning_profile.py` |
 | S3 Parse + prompt | COG-PROD.2 | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner/1.yaml` |
-| S4 Decision + engine prompt | COG-PROD.3, COG-PROD.5 | `planning_runner.py`, `reasoning_wiring.py`, `scripts/check_reasoning_gates.py`, tests |
+| S4 Decision + engine prompt | COG-PROD.3, COG-PROD.5 | `planning_runner.py`, `reasoning_wiring.py`, `scripts/maintenance/check_reasoning_gates.py`, tests |
 
 ---

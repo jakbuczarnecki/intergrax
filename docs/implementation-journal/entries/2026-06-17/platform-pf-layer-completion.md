@@ -47,9 +47,9 @@ PLATFORM_FOUNDATION domain pair is closed for Full Harness LC with no blocking P
 ## Verification
 
 ```bash
-python scripts/check_docs_domain_pairs.py
-python scripts/check_implementation_journal.py
-uv run python scripts/harness_maturity_report.py
+python scripts/audit/check_docs_domain_pairs.py
+python scripts/maintenance/check_implementation_journal.py
+uv run python scripts/gates/harness_maturity_report.py
 ```
 
 Result: pass (doc-only sprint; gate suite not re-run — no code change).

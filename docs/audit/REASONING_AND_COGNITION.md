@@ -15,7 +15,7 @@
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
 5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
-Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
+Regenerate after architecture/plan changes: `uv run python scripts/audit/generate_domain_audit_prompts.py`
 
 ---
 

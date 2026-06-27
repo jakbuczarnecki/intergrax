@@ -12,9 +12,8 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
-from lkw_shared.runtime_helpers import validate_allowlisted_files
 from local_indexer.local_indexer_agent import LocalIndexerAgent
-from local_indexer.steps.index_job import run_index_job
+from local_indexer.steps.index_job import run_index_job, validate_allowlisted_files
 
 
 def _step_ctx(

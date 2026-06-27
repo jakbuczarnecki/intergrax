@@ -24,7 +24,7 @@ Continue Tier-3 application architecture sprint queue: APP-EVOL-5 — typed reco
 - `recovery_contract_wiring.py` — validation, ARCHITECTURE.md markers, task metadata attach.
 - `apply_reliability_task_defaults` wires `application_recovery_contract.v1` on tasks.
 - Product ARCHITECTURE.md recovery sections (legal, research, dispute_sim, local_workspace).
-- `scripts/check_application_recovery_contract.py` wired into production gates.
+- `scripts/maintenance/check_application_recovery_contract.py` wired into production gates.
 
 ## Project impact
 
@@ -44,8 +44,8 @@ STRICT product hosts now declare explicit recovery actions per failure scenario;
 - `intergrax/applications/_shared/recovery_contract_wiring.py`
 - `intergrax/applications/_shared/reliability_wiring.py`
 - `applications/*/ARCHITECTURE.md` (×4 product hosts)
-- `scripts/check_application_recovery_contract.py`
-- `scripts/check_application_production_gates.py`
+- `scripts/maintenance/check_application_recovery_contract.py`
+- `scripts/gates/check_application_production_gates.py`
 
 ## Verification
 
@@ -53,8 +53,8 @@ STRICT product hosts now declare explicit recovery actions per failure scenario;
 uv run pytest tests/unit/applications/test_recovery_contract_wiring.py \
   tests/unit/scripts/test_check_application_recovery_contract.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-uv run python scripts/check_application_recovery_contract.py
-python scripts/check_implementation_journal.py
+uv run python scripts/maintenance/check_application_recovery_contract.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass.

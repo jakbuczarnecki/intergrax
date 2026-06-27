@@ -30,7 +30,7 @@ EVAL_EVIDENCE_OPERATOR_NOTE: Final = (
     "and does not create a new eval framework."
 )
 
-DEFAULT_EVAL_SCENARIO_LIBRARY_CHECK_PATH = Path("scripts/check_eval_scenario_library.py")
+DEFAULT_EVAL_SCENARIO_LIBRARY_CHECK_PATH = Path("scripts/maintenance/check_eval_scenario_library.py")
 
 _DEFAULT_REPORT_TITLE = "Eval regression evidence"
 

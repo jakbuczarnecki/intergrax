@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications._shared.sandbox_host_wiring import resolve_hosted_sandbox_session
+from intergrax.runtime.sandbox.hosted_resolver import resolve_hosted_sandbox_session
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable

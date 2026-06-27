@@ -73,7 +73,7 @@ def test_legal_host_registry_migrated() -> None:
         legal_product_profile="strict_legal",
         legal_llm_provider="ollama",
         legal_default_agent_id="legal-default",
-        legal_route_prefix="/v1/legal",
+        route_prefix="/v1/legal",
         identity_source="body_or_context",
         cors_allow_origins=frozenset(),
         allowed_hosts=frozenset(),

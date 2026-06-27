@@ -65,4 +65,4 @@ Rejected: peer composition roots; bundle-local wiring logic; folding org envelop
 - Verification (when M1 lands):
   - `uv run pytest tests/unit/applications/test_environment_profile_bundles.py -q`
   - `uv run pytest tests/unit/applications/test_environment_profile.py -q`
-  - `python scripts/check_harness_adr.py`
+  - `python scripts/maintenance/check_harness_adr.py`

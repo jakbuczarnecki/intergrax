@@ -382,7 +382,7 @@ Registries are versioned, snapshot-capable catalogs — not mutable globals.
 
 Tier-3 `wire_application_environment()` materializes registries from `ApplicationEnvironmentProfile` tool/skill/integration/prompt profiles → `RuntimeConfig` via `runtime_config_bridge.py` and domain `*_assembly_resolver.py` modules.
 
-Snapshots and conformance CI validate registry shape before release (`scripts/check_agents_lifecycle_metadata.py`, harness registry guards). **Durable cross-host snapshots:** `applications/_shared/registry_snapshot_store.py` (AUDIT-IDEAL-19.1) + `check_registry_snapshot_diff.py`.
+Snapshots and conformance CI validate registry shape before release (`scripts/maintenance/check_agents_lifecycle_metadata.py`, harness registry guards). **Durable cross-host snapshots:** `applications/_shared/registry_snapshot_store.py` (AUDIT-IDEAL-19.1) + `check_registry_snapshot_diff.py`.
 
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase REG.
 
@@ -413,8 +413,8 @@ Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
 | `capability_graph_lineage.py` | Lineage / provenance |
 | `capability_graph_compatibility.py` | Edge compatibility |
 | `capability_graph_applications.py` | Application slice |
-| `scripts/phase_v_capability_graph_guard.py` | CI guard + blast-radius impact (AUDIT-IDEAL-20.1) |
-| `scripts/check_capability_graph_strict_deploy.py` | STRICT deploy gate (APP-OPS-1) |
+| `scripts/release/phase_v_capability_graph_guard.py` | CI guard + blast-radius impact (AUDIT-IDEAL-20.1) |
+| `scripts/gates/check_capability_graph_strict_deploy.py` | STRICT deploy gate (APP-OPS-1) |
 
 Nexus routes to **capabilities** (§16), not hardcoded class names. Graph edges MUST reflect manifest roster per application — not global cross-product shortcuts.
 
@@ -463,7 +463,7 @@ ACP does **not** replace Nexus, redefine tiers, or introduce a second execution 
 |----|-----------|
 | **ACP-INV-01** | Nexus remains Agent OS — global orchestration, policy, HITL, multi-agent graph |
 | **ACP-INV-02** | All agent runs use UAEP step loop (legacy UAEP authoring retired — ACP-CLOSE-LEG-5) |
-| **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications/` |
+| **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications/` or `intergrax.applications` |
 | **ACP-INV-04** | Side effects only through `RuntimeExecutionContext.tool_gateway` → `ToolRuntime` |
 | **ACP-INV-05** | Control flow via `AgentDecision` — never `sleep()` for HITL, never direct Slack/webhooks |
 | **ACP-INV-06** | Configuration: **contract + pattern in agent**; **governance profile in Tier-3** |
@@ -489,5 +489,19 @@ REJECTED: Nexus "run" naming for agent session step executor — blurs Agent OS 
 ```
 
 **Rationale:** Harness-first strategy ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.2) — the runtime is the durable product; agents are replaceable workers.
+
+## 21.4 Application boundary (agent/runtime merge)
+
+Tier-1 agent merge (`merge_environment`, `ACPSessionHostContext`, ACP run loop) consumes **neutral runtime contracts** only — never `ApplicationManifest`, `ApplicationEnvironmentProfile`, or application-layer `AgentBinding`.
+
+| Tier-3 (application host) | Neutral contract (agent/runtime) | Adapter |
+|---------------------------|----------------------------------|---------|
+| `ApplicationEnvironmentProfile` | `RuntimeEnvironmentProfile` (`intergrax/contracts/runtime_environment.py`) | `application_profile_to_runtime_profile()` |
+| `AgentBinding` (manifest roster) | `AgentRunBinding` (`intergrax/contracts/agent_run_binding.py`) | `agent_binding_to_run_binding()` |
+| `ExecutionMode`, org policy envelopes | `intergrax/contracts/execution_mode.py`, `intergrax/contracts/org_policy.py` | Re-exported from `intergrax/applications/contracts/*` for host authoring |
+
+Adapters: `intergrax/applications/_shared/runtime_boundary_adapters.py`. Runtime bridges previously under `intergrax/applications/_shared/*_runtime_bridge.py` that agents/runtime consumed now live under `intergrax/runtime/wiring/`.
+
+CI: `scripts/check_no_upward_application_imports.py` (canonical) plus maintenance guards in `scripts/maintenance/`.
 
 ---

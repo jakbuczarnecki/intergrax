@@ -26,7 +26,7 @@ Continue Tier-3 ACP-FINISH sprint queue: implement APP-CON-8 (isolation refs in 
 - `workspace_cleanup.py` — `clear_isolation_refs_in_task_env_state`; `task_finisher.py` clears refs after per-task cleanup.
 - `ShadowWorkspaceManager` / `SandboxSessionManager` — `dispose_all_active()` for host shutdown.
 - All seven reference host factories use `build_factory_lifespans`.
-- `scripts/check_workspace_cleanup.py` wired into `check_application_production_gates.py` (APP-PROD-8).
+- `scripts/ci/check_workspace_cleanup.py` wired into `check_application_production_gates.py` (APP-PROD-8).
 
 ## Project impact
 
@@ -48,7 +48,7 @@ Product hosts now purge lingering shadow/sandbox sessions on shutdown and expose
 - `intergrax/runtime/nexus/orchestration/task_finisher.py` — invoke clear after cleanup
 - `intergrax/runtime/workspace/manager.py` · `intergrax/runtime/sandbox/manager.py` — `dispose_all_active`
 - `applications/*/host/factory.py` (×7) — `build_factory_lifespans`
-- `scripts/check_workspace_cleanup.py` · `scripts/check_application_production_gates.py`
+- `scripts/ci/check_workspace_cleanup.py` · `scripts/gates/check_application_production_gates.py`
 
 ## Verification
 
@@ -57,7 +57,7 @@ uv run pytest tests/unit/applications/test_workspace_cleanup_wiring.py \
   tests/unit/runtime/nexus/orchestration/test_workspace_cleanup_env_state.py \
   tests/unit/scripts/test_check_workspace_cleanup.py \
   tests/unit/scripts/test_check_application_production_gates.py -q
-python scripts/check_implementation_journal.py
+python scripts/maintenance/check_implementation_journal.py
 ```
 
 Result: pass (9 tests).

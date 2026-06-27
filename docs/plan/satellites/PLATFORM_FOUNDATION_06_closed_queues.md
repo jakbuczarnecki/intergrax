@@ -505,7 +505,7 @@ Wave P3 (orchestration + cognition + memory):
 | ID | Status | Priority | Blocks |
 |----|--------|----------|--------|
 | FAUDIT-TIER.1 | **Done** | **Critical** | `intergrax/applications/reference/harness_manifest_catalog.py` |
-| FAUDIT-TIER.2 | **Done** | High | `scripts/check_intergrax_no_applications_imports.py` |
+| FAUDIT-TIER.2 | **Done** | High | `scripts/maintenance/check_intergrax_no_applications_imports.py` |
 | FAUDIT-INTAKE.1 | **Done** | High | `intergrax/contracts/task_envelope.py` |
 | FAUDIT-INTAKE.2 | **Done** | Medium | `tests/unit/runtime/architecture/test_faudit_remediation.py` |
 | FAUDIT-ID.1 | **Done** | High | `intergrax/contracts/actor_identity.py` |
@@ -537,8 +537,8 @@ Wave P3 (orchestration + cognition + memory):
 
 | ID | Status | Deliverable |
 |----|--------|-------------|
-| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/check_harness_prompt_golden_catalog.py`; gate test |
-| FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/check_agents_lifecycle_metadata.py` |
+| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/maintenance/check_harness_prompt_golden_catalog.py`; gate test |
+| FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/maintenance/check_agents_lifecycle_metadata.py` |
 | FAUDIT-MEM.1+ | **Done** | `should_forget_stm_record` wired in `PolicyScopedMemoryView.read` |
 
 **Explicitly deferred (Band 3 / product):** MEM-9 entity graph memory implementation (RFC only); K.1/K.2 business agents.
@@ -916,7 +916,7 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
 
-**Closeout gate:** `scripts/check_llm_adapter_typed_returns.py` + `scripts/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
+**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
 
 ### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
@@ -935,7 +935,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 
 **Prerequisites:** Phase V + V-REM + W-OPS + EVAL + COST + CG closeouts **Done**.
 
-**Runtime L4 gate:** `uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
+**Runtime L4 gate:** `uv run python scripts/release/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
 
 ### 6.2 Harness architecture hardening (Band 2 — Phase V) — Done
 

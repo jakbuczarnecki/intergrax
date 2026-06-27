@@ -50,7 +50,7 @@ from intergrax.agents.persistence.tool_action_validation import (
     ToolActionValidationError,
     validate_requested_actions,
 )
-from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
+from intergrax.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.tools.tool_execution_profile import ToolExecutionProfile
 from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
