@@ -9,7 +9,8 @@ LKW.1.12 — decision_emitted event phase mismatch: PASSED
 LKW.1.13 — local_indexer RAG ingest live path: PASSED
 LKW.1.14 — final live product smoke attempt: PARTIAL (tenant-scoped search retrieve_failed)
 LKW.1.15 — tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
-LKW-H1 — NEXT: trace/evidence inspection and observability/tool-call accounting
+LKW-H1.1 — live index tool-call accounting: PASSED
+LKW-H1.2 — NEXT: trace/evidence contract and inspection surface
 ```
 
 ## Verified LKW.1 product path
@@ -20,7 +21,7 @@ LKW.1 product path verified live:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest passing smoke:
+Latest passing product smoke:
 
 ```text
 health=ok
@@ -31,6 +32,95 @@ synthesize=shadow artifact written when evidence supplied
 source immutability=original fixture unchanged
 logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed, retriever_failed
 qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw-final-20260627103000
+```
+
+## LKW-H1.1 — live index tool-call accounting
+
+Status:
+
+```text
+PASSED
+```
+
+Commits reported by operator:
+
+```text
+62621bc1 — fix(runtime): account for catalog tool calls in LKW runs
+a22222e0 — fix(runtime): propagate live catalog tool calls into app summary
+```
+
+Root cause:
+
+```text
+1. Catalog tool calls through RuntimeExecutionContext.invoke_tool() executed correctly,
+   but the first H1.1 fix only proved the ACP/kernel harvest path.
+2. Live LKW HTTP runs use the UAEP execute_uaep_step_via_kernel path.
+3. build_uaep_step_context() did not include uaep_exec_ctx in AgentStepContext.metadata,
+   so HarnessKernel could not drain pending ToolCallRecords from the RuntimeExecutionContext
+   used by local_indexer.run_step().
+4. Product behavior still worked (ingested=1), but application_run_summary.v1 reported
+   total_tool_calls=0 because the live UAEP bridge path did not expose those tool calls
+   to the kernel trace/app summary.
+```
+
+Fix chosen:
+
+```text
+- RuntimeExecutionContext.invoke_tool() records pending ToolCallRecord entries.
+- HarnessKernel._build_step_record() drains pending tool calls from step_ctx.metadata["uaep_exec_ctx"].
+- build_uaep_step_context() now forwards uaep_exec_ctx on the UAEP bridge path used by live Nexus runs.
+- Regression coverage proves UAEP bridge tool calls reach trace_summary and application_run_summary.v1.
+```
+
+Changed files:
+
+```text
+intergrax/contracts/runtime_execution_context.py
+intergrax/runtime/kernel/step_kernel.py
+intergrax/agents/authoring/uaep_step_bridge.py
+tests/unit/agents/persistence/test_tool_invoker_wiring.py
+tests/unit/runtime/kernel/test_step_kernel.py
+tests/unit/agents/authoring/test_uaep_step_bridge.py
+```
+
+Focused tests:
+
+```text
+uv run pytest tests/unit/runtime/kernel/test_step_kernel.py::test_kernel_harvests_uaep_catalog_tool_calls -q
+uv run pytest tests/unit/agents/persistence/test_tool_invoker_wiring.py -q
+uv run pytest tests/unit/agents/authoring/test_uaep_step_bridge.py::test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary -q
+uv run pytest applications/local_workspace_application/tests -q
+
+Result: 11 passed, 4 warnings
+```
+
+Live index smoke after H1.1:
+
+```text
+local.workspace.index
+accepted=1
+rejected=0
+ingested=1
+chunks=1
+application_run_summary.v1.agent_invocations[0].total_tool_calls=1
+```
+
+Interpretation:
+
+```text
+The known total_tool_calls=0 gap is fixed for the live LKW index path
+(rag.ingest_document through UAEP/Nexus). Search and synthesize accounting
+verification remains a follow-up under H1 because those live paths should also
+show rag.retrieve and workspace.write_file respectively.
+```
+
+Known non-blocking warning:
+
+```text
+The focused application tests emitted async runtime plugin warnings about
+coroutines not awaited in event_bus/task_trace plugin handlers. Those warnings
+are not part of H1.1 tool-call accounting and should be tracked separately as
+runtime-events/observability cleanup if they remain reproducible.
 ```
 
 ## LKW.1.15 — tenant-scoped retrieve for live search
@@ -133,18 +223,23 @@ Those blockers were fixed in LKW.1.15.
 | LKW.1.11 | Runtime tool registry parity fixed. |
 | LKW.1.12 | `decision_emitted` phase mismatch fixed. |
 | LKW.1.13 | UAEP/ACP catalog invocation bridge fixed; live index ingests into Qdrant. |
+| LKW.1.15 | Tenant-scoped retrieve and local_search allowlist fixed; product proof closed. |
+| LKW-H1.1 | UAEP live bridge tool-call accounting fixed for index/app summary. |
 
-## Known follow-ups after LKW.1
+## Known follow-ups after LKW.1 / H1.1
 
 ```text
-total_tool_calls=0 remains an observability/accounting gap.
-Standalone synthesize with message-only input can return content_missing.
+Search live accounting verification -> LKW-H1.2/H1.3 follow-up: rag.retrieve should surface in trace/summary.
+Synthesize live accounting verification -> LKW-H1.2/H1.3 follow-up: workspace.write_file should surface in trace/summary.
+Full inspectable trace/evidence contract -> LKW-H1.2.
+Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract.
 ```
 
 Classification:
 
 ```text
-total_tool_calls=0 -> LKW-H1 / observability and tool-call accounting
+index total_tool_calls=0 -> fixed in LKW-H1.1 for live UAEP path
+search/synthesize tool-call visibility -> LKW-H1.2/H1.3 verification and trace/evidence contract
 message-only synthesize content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
@@ -159,5 +254,5 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 Next queue item:
 
 ```text
-LKW-H1 — live trace/evidence inspection and observability/tool-call accounting
+LKW-H1.2 — trace/evidence contract and inspection surface
 ```
