@@ -3,13 +3,17 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1.1–LKW.1.15 Passed/Closed in scope** · **Active queue: LKW-H1 → LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **Active queue: LKW-H1 → LKW.2**
 
-Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filter; `local.workspace.search` returns marker evidence; synthesize writes shadow artifacts when evidence/draft is supplied. Full product closeout smoke: `index -> search -> synthesize (with evidence) -> shadow artifact only`.
+Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
+
+```text
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
+```
 
 Current status source of truth: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
-Platform register: [`docs/plan/PLATFORM_FOUNDATION.md` §6.3a LKW.*](../../docs/plan/PLATFORM_FOUNDATION.md#63a-business-backlog-register-consolidated).
+Platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
 Principle: **local backend daemon** · **thin frontends** · **Slack optional** · **shadow writes only** · **LKW proves the platform**.
 
@@ -137,8 +141,8 @@ This track is executed one task at a time.
 | LKW.0 | Scaffold + architecture v2 | — | **Done** | — |
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
-| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Active — LKW.1.14 next** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection | LKW.1.14 | **Queued after final product smoke** | High |
+| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
+| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Next** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
@@ -166,7 +170,7 @@ Out of scope: `NexusLoop` constructor refactor, `StepKernelContext` decompositio
 
 ---
 
-## 3. Active wave — LKW.1: Domain UAEP proof
+## 3. Closed wave — LKW.1: Domain UAEP proof
 
 ### Goal
 
@@ -177,12 +181,30 @@ POST /v1/local_workspace/run
   -> local.workspace.index using metadata.source_paths
   -> rag.ingest_document
   -> local.workspace.search
-  -> rag.retrieve with evidence
-  -> local.workspace.synthesize
+  -> rag.retrieve with tenant-scoped evidence
+  -> local.workspace.synthesize with evidence/draft
   -> workspace.write_file under shadow root
 ```
 
-### Current LKW.1 task map
+### Result
+
+Status: **Closed in scope after LKW.1.15**.
+
+Product proof verified live:
+
+```text
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
+```
+
+Important boundary:
+
+```text
+Standalone synthesize with message-only input can still return content_missing.
+That is not an LKW.1 closeout blocker; it belongs to LKW.2 pipeline/orchestration,
+where search evidence should be passed into synthesize automatically.
+```
+
+### LKW.1 task map
 
 | ID | Task | Module | Status | Platform propagation |
 |----|------|--------|--------|----------------------|
@@ -192,17 +214,17 @@ POST /v1/local_workspace/run
 | LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | application tests | **Closed** | Add scaffold/test template if canonical |
 | LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | **Closed / configured** | Inform scaffolded app settings pattern |
 | LKW.1.6 | Docker/run parity | Dockerfile, compose, build/run docs | **Closed** | Docker build/run lessons propagated or recorded |
-| LKW.1.7 | Live HTTP smoke baseline | Docker compose + `/health` + `/agents` + `/run` | **Partial / superseded by LKW.1.14** | Showed host/routing worked but RAG-backed flow was not proven |
+| LKW.1.7 | Live HTTP smoke baseline | Docker compose + `/health` + `/agents` + `/run` | **Partial / superseded** | Showed host/routing worked but RAG-backed flow was not yet proven |
 | LKW.1.8 | Diagnose live RAG ingest failure | Docker logs/runtime output + RAG path | **Diagnosed** | Queued Qdrant id, tenant scope, gateway registry, and diagnostics follow-ups |
 | LKW.1.9 | Fix Qdrant-compatible RAG ingest point ids | Qdrant provider | **Completed** | Platform-reusable point-id normalization |
 | LKW.1.10 | Fix tenant scope consistency for live RAG ingest/retrieve | RAG scope + LKW shared helpers | **Completed** | Platform-reusable tenant/workspace/user source-of-truth handling |
 | LKW.1.11 | Fix runtime tool gateway registry parity for catalog tools | runtime/app tool wiring | **Completed** | Platform-reusable catalog registry parity path |
 | LKW.1.12 | Fix `decision_emitted` runtime event phase mismatch | runtime events/planning | **Completed** | Platform-reusable event catalog/schema correctness |
 | LKW.1.13 | Restore local_indexer live RAG ingest execution | UAEP/ACP bridge + local indexer | **Completed** | Platform-reusable host catalog tool invocation bridge |
-| LKW.1.14 | Final live product smoke: index → search → synthesize | Docker HTTP live smoke | **Partial — search blocked by tenant retrieve** | Product closeout blocked on tenant-scoped retrieve |
-| LKW.1.15 | Fix tenant-scoped `rag.retrieve` + `local_search` tool allowlist | RAG scope/service + `agents/local_search/contract.py` | **Completed** | Platform-reusable wired-retriever rebinding; LKW search live proof |
+| LKW.1.14 | Final live product smoke attempt | Docker HTTP live smoke | **Partial** | Search failed due tenant-scoped retrieve/local_search allowlist blockers |
+| LKW.1.15 | Fix tenant-scoped `rag.retrieve` + `local_search` tool allowlist; rerun product smoke | RAG scope/service + `agents/local_search/contract.py` | **Completed / closeout passed** | Platform-reusable wired-retriever rebinding; LKW search live proof |
 
-### LKW.1.7–LKW.1.13 blocker history
+### LKW.1.7–LKW.1.15 blocker history
 
 Detailed history lives in:
 
@@ -216,53 +238,24 @@ Summary:
 |----|--------|
 | LKW.1.9 | Qdrant point-id compatibility fixed. |
 | LKW.1.10 | Tenant scope consistency fixed. |
-| LKW.1.11 | Runtime tool registry parity fixed in focused/unit scope. |
-| LKW.1.12 | `decision_emitted` phase mismatch fixed; live index still did not ingest. |
-| LKW.1.13 | UAEP/ACP catalog invocation bridge fixed; live index now ingests into Qdrant. |
+| LKW.1.11 | Runtime tool registry parity fixed. |
+| LKW.1.12 | `decision_emitted` phase mismatch fixed. |
+| LKW.1.13 | UAEP/ACP catalog invocation bridge fixed; live index ingests into Qdrant. |
+| LKW.1.14 | Full smoke exposed tenant-scoped retrieve and local_search allowlist blockers. |
+| LKW.1.15 | Tenant-scoped retrieve fixed; local_search allowlist fixed; live product path passed. |
 
-Current live index proof after LKW.1.13:
+Current live proof after LKW.1.15:
 
 ```text
-health={"status":"ok"}
+health=ok
 agents=local_indexer, local_search, local_synthesizer
 index=accepted=1, rejected=0, ingested=1, chunks=1
-qdrant=tenant collection intergrax__tenant__lkw-smoke present
+search=results=1, tenant-scoped marker evidence returned
+synthesize=shadow artifact written when evidence is supplied
+source immutability=original fixture unchanged
+logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed, retriever_failed
+qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw-final-20260627103000
 ```
-
-Known non-blocking follow-up:
-
-```text
-total_tool_calls=0 remains an observability/summary accounting issue.
-```
-
-Classification:
-
-```text
-LKW-H1 / observability follow-up, not LKW.1 execution blocker.
-```
-
-### LKW.1.14 goal
-
-Run the final full live Docker HTTP product smoke:
-
-```text
-index fixture -> search marker/evidence -> synthesize shadow artifact -> verify source immutability
-```
-
-Acceptance:
-
-- [ ] Docker stack healthy.
-- [ ] `/health` succeeds.
-- [ ] `/v1/local_workspace/agents` lists index/search/synthesize.
-- [ ] `local.workspace.index` invokes `rag.ingest_document` through the live runtime gateway.
-- [ ] `local.workspace.index` ingests fixture with `ingested>0` and `chunks>0`.
-- [ ] `local.workspace.search` retrieves evidence referencing the fixture.
-- [ ] `local.workspace.synthesize` writes only to shadow workspace.
-- [ ] Original fixture remains unchanged.
-- [ ] No `RuntimeEventSchemaError`.
-- [ ] No `unknown_capability_tool`.
-- [ ] No `tool_gateway_not_available`.
-- [ ] Product and platform acceptance criteria are updated before LKW.1 closeout.
 
 ### Product acceptance criteria
 
@@ -271,21 +264,30 @@ Acceptance:
 - [x] `/v1/local_workspace/agents` lists `local.workspace.index`, `local.workspace.search`, and `local.workspace.synthesize`.
 - [x] `POST /v1/local_workspace/run` reaches the index agent.
 - [x] `local.workspace.index` invokes `rag.ingest_document` and ingests at least one chunk in the live path.
-- [ ] Follow-up search returns answer/evidence referencing ingested content.
-- [ ] Synthesize writes a shadow artifact based on retrieved evidence in the live path.
-- [x] Original user files are not modified in previous smoke runs.
+- [x] Follow-up search returns tenant-scoped answer/evidence referencing ingested content.
+- [x] Synthesize writes a shadow artifact based on retrieved/supplied evidence in the live path.
+- [x] Original user files are not modified.
 - [x] No Slack, tray, watcher, or OS service required.
 
 ### Platform acceptance criteria
 
-- [ ] Platform proof checklist in §0a is completed for LKW.1 closeout.
 - [x] Qdrant point-id compatibility fixed in LKW.1.9.
 - [x] Tenant/workspace/user source-of-truth fixed in LKW.1.10.
 - [x] Runtime gateway / application tool registry parity fixed in LKW.1.11.
 - [x] Runtime event phase contract fixed in LKW.1.12.
 - [x] UAEP/ACP host catalog tool invocation bridge fixed in LKW.1.13.
-- [ ] Live diagnostic/inspection lessons are reflected in LKW-H1 or recorded as follow-up.
-- [ ] Any env/settings/scaffold/Docker/CI implications from LKW.1.14 are recorded before closeout.
+- [x] Tenant-scoped retrieve and local_search allowed-tool declaration fixed in LKW.1.15.
+- [ ] Live diagnostic/inspection lessons are reflected in LKW-H1.
+- [ ] Any remaining env/settings/scaffold/Docker/CI implications from LKW.1 are recorded in H1/H3 if they prove reusable.
+
+### Known follow-ups after LKW.1
+
+| Follow-up | Classification | Target |
+|----------|----------------|--------|
+| `total_tool_calls=0` despite real tool effects | Observability/accounting | LKW-H1 |
+| Need inspectable tool status, raw reason/error, RAG evidence, shadow artifact path | Observability/evidence | LKW-H1 |
+| Standalone synthesize with message-only input returns `content_missing` | Pipeline/orchestration input contract | LKW.2 |
+| Developer first-run/adoption simplification | Packaging/adoption | LKW-H3 |
 
 ### Out of scope for LKW.1
 
@@ -304,17 +306,23 @@ Acceptance:
 
 ### Goal
 
-Make one real LKW run inspectable without reading internal runtime code, and ensure the trace/evidence pattern is reusable by future applications.
+Make one real LKW run inspectable without reading internal runtime code, and ensure the trace/evidence/accounting pattern is reusable by future applications.
 
 LKW-H1 is **not** the hosted observability stack. It is the minimum local inspection surface needed for a developer/operator to understand a run. Grafana, Tempo, and an OpenTelemetry Collector remain optional future operational infrastructure unless a later task explicitly scopes them.
 
 ### Known diagnosed input
 
-LKW.1.8–LKW.1.13 showed that platform/tool execution issues can be hidden by summaries. H1 must improve visibility, but it must not replace execution blockers. The current known follow-up is `total_tool_calls=0` despite successful live ingest effects.
+LKW.1.15 passed product behavior, but observability still needs cleanup:
+
+```text
+total_tool_calls=0 remains an observability/accounting gap despite real tool effects.
+```
+
+H1 must improve visibility. It must not replace or reopen product execution blockers that are already fixed in LKW.1.9–LKW.1.15.
 
 ### Required inspection fields
 
-For every LKW.1 proof run, the operator should be able to inspect:
+For every LKW proof run, the operator should be able to inspect:
 
 - submitted task and capability;
 - task id and run id;
@@ -332,7 +340,7 @@ For every LKW.1 proof run, the operator should be able to inspect:
 
 | ID | Task | Module | Status | Platform propagation |
 |----|------|--------|--------|----------------------|
-| LKW-H1.1 | Define minimal LKW trace/evidence inspection contract, including raw tool status and reason/error | LKW host/debug docs or tests | Planned | Promote reusable inspection contract to platform docs if generic |
+| LKW-H1.1 | Fix live run observability and tool-call accounting, including `total_tool_calls=0` | runtime/tool accounting + LKW host evidence | **Next** | Promote reusable inspection/accounting contract to platform docs/tests if generic |
 | LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | Planned | Update event/trace scaffold or docs if reusable |
 | LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | Planned | Update generated app test pattern if reusable |
 
@@ -340,6 +348,7 @@ Acceptance:
 
 - [ ] A reviewer can see what happened in an LKW run from task submission to terminal result.
 - [ ] Tool calls, policy decisions, RAG evidence, raw tool reason/error, and shadow artifact path are visible.
+- [ ] `total_tool_calls=0` is fixed or replaced by an explicitly equivalent trace/evidence field.
 - [ ] No hosted dashboard or external observability backend is required.
 - [ ] Platform proof checklist in §0a is completed.
 
@@ -359,6 +368,7 @@ Acceptance:
 - [ ] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection.
 - [ ] Tool access is resolved through `skill_ids`, not ad-hoc allowlists in agent code.
 - [ ] Existing LKW.1 index/search/synthesize direct capabilities still pass.
+- [ ] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline.
 - [ ] Platform proof checklist in §0a is completed.
 
 ---
@@ -370,7 +380,7 @@ Acceptance:
 | ID | Task | Module | Acceptance |
 |----|------|--------|------------|
 | LKW-H2.1 | Clarify architecture maturity vs live product proof vs production claim | README / product-validation docs / LKW docs | Documentation does not imply deterministic evidence is full production certification |
-| LKW-H2.2 | Add LKW proof status wording | LKW docs | LKW is described as product proof in progress until live acceptance is met |
+| LKW-H2.2 | Add LKW proof status wording | LKW docs | LKW is described as product proof passed for LKW.1, with H1/H2/H3 still tracking maturity/adoption follow-ups |
 
 ### LKW-H3 — packaging/adoption simplification
 
@@ -378,7 +388,7 @@ Acceptance:
 |----|------|--------|------------|
 | LKW-H3.1 | Define minimal developer first-run path for LKW and scaffolded apps | README / BUILD_AND_DEPLOY / LKW docs / scaffold docs | New developer can run host, index fixture, search, and synthesize from documented commands |
 | LKW-H3.2 | Decide optional dependency split | `pyproject.toml` / docs | Minimal install story is clear; heavy optional stacks are documented or split |
-| LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits improved env/build/deploy documentation pattern |
+| LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits the improved env/build/deploy documentation pattern |
 
 Potential packaging direction:
 
@@ -390,13 +400,13 @@ intergrax-rag
 intergrax-all
 ```
 
-Do not start a full packaging split before LKW.1 has a useful proof path, but capture dependency lessons during every wave.
+Do not start a full packaging split before H1 records the evidence path, but capture dependency lessons during every wave.
 
 ---
 
 ## 7. Deferred architecture watchlist
 
-These items are real architectural pressure points, but they must not block LKW.1.
+These items are real architectural pressure points, but they must not block LKW-H1.
 
 | ID | Topic | Current decision | Trigger for action |
 |----|-------|------------------|-------------------|
@@ -405,7 +415,7 @@ These items are real architectural pressure points, but they must not block LKW.
 
 ### LKW.1.6 follow-ups (non-blocking)
 
-Recorded at Docker/run parity closeout; do not block remaining LKW.1 work.
+Recorded at Docker/run parity closeout; do not block remaining LKW work.
 
 | ID | Topic | Notes |
 |----|-------|-------|
@@ -445,7 +455,9 @@ Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 | E1e | Runtime gateway registry parity: configured application catalog tools are invokable by live runtime gateway | LKW.1.11 |
 | E1f | Runtime event phase contract: planning does not emit schema-invalid `decision_emitted` | LKW.1.12 |
 | E1g | Live index path: `local_indexer` invokes `rag.ingest_document` and writes chunks to Qdrant | LKW.1.13 |
-| E1h | LKW.1 closeout: full live `index -> search -> synthesize -> shadow write` passes | LKW.1.14 |
+| E1h | First full product smoke attempt exposes tenant-scoped retrieve blocker | LKW.1.14 |
+| E1i | Final LKW.1 closeout: tenant-scoped index → search evidence → synthesize → shadow write passes | LKW.1.15 |
+| E1j | Inspectable live run with correct tool-call accounting | LKW-H1 |
 | E2 | Search at desk via MCP | LKW.1 |
 | E3 | Pipeline report | LKW.2 |
 | E4 | Install → pick folders → persistent index | LKW.5, LKW.6, LKW.8 |
@@ -464,6 +476,10 @@ uv run pytest -m gate -q
 # Host + agents, when touching LKW code
 uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
 uv run pytest agents/local_indexer/tests agents/local_search/tests agents/local_synthesizer/tests -q
+
+# RAG scope/retrieve regressions, when touching RAG scope/service
+uv run pytest tests/unit/tools/providers/rag/test_rag_scope.py -q
+uv run pytest tests/unit/integrations/providers/vector_store -q
 
 # Dev run (backend only)
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
@@ -488,13 +504,12 @@ Add narrower commands next to each implementation task once exact modules are kn
 
 ## 12. Platform alignment
 
-- Harness maintenance: platform **§6.1** only.
-- LKW product: platform **`docs/plan/PLATFORM_FOUNDATION.md` §6.3a** — update when wave scope changes.
+- LKW product status: this application-local plan and [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).
 - LKW hardening decision record: [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md).
 - LKW platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 - One wave per PR unless operator batches explicitly.
 - Every harness/platform/scaffold/build change in this track must cite the LKW acceptance criterion or platform propagation requirement that justifies it.
-- Current LKW.1 findings: Qdrant point-id compatibility is fixed in LKW.1.9; tenant scope consistency is fixed in LKW.1.10; runtime gateway/application registry parity is fixed in LKW.1.11; event phase mismatch is fixed in LKW.1.12; live RAG ingest execution is fixed in LKW.1.13; full live product smoke remains LKW.1.14; live diagnostic visibility remains queued for LKW-H1.
+- Current LKW findings: Qdrant point-id compatibility is fixed in LKW.1.9; tenant scope consistency is fixed in LKW.1.10; runtime gateway/application registry parity is fixed in LKW.1.11; event phase mismatch is fixed in LKW.1.12; live RAG ingest execution is fixed in LKW.1.13; tenant-scoped retrieve and local_search allowlist are fixed in LKW.1.15; live diagnostic visibility/tool-call accounting remains queued for LKW-H1.
 
 ---
 
@@ -504,7 +519,7 @@ Stop broad harness work when:
 
 - the change cannot be tied to an LKW acceptance criterion or platform propagation requirement;
 - the change only improves conceptual elegance;
-- the change starts a platform-wide refactor before LKW.1 is demonstrable;
+- the change starts a platform-wide refactor before LKW evidence shows measurable need;
 - the change makes LKW harder to run locally;
 - the change introduces new abstractions without a product proof requirement.
 
