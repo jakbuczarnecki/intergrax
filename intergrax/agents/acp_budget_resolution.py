@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.contracts.agent_run_binding import AgentRunBinding
+from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.contracts.acp_token_metering import tokens_remaining as _tokens_remaining
 from intergrax.contracts.agent_budget import BudgetLimitEnforcement, ResolvedBudgetLimits
 from intergrax.contracts.agent_run import AgentExecutionOptions
@@ -15,8 +15,8 @@ from intergrax.contracts.agent_run import AgentExecutionOptions
 
 def resolve_budget_limits(
     *,
-    app_profile: ApplicationEnvironmentProfile | None,
-    binding: AgentBinding | None,
+    app_profile: RuntimeEnvironmentProfile | None,
+    binding: AgentRunBinding | None,
     execution_options: AgentExecutionOptions | None,
 ) -> ResolvedBudgetLimits:
     """Materialize read-only limits during ``merge_environment``."""

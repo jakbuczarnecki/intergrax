@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.applications.contracts.manifest import AgentBinding
-from intergrax.applications.contracts.org_policy import (
+from intergrax.contracts.agent_run_binding import AgentRunBinding
+from intergrax.contracts.org_policy import (
     OrganizationalPolicyContext,
     OrganizationalPolicyEnvelope,
     ScenarioBinding,
@@ -53,7 +53,7 @@ def _playbook_ids_for_scenario(
 def merge_organizational_policy_context(
     *,
     envelope: OrganizationalPolicyEnvelope | None,
-    binding: AgentBinding | None = None,
+    binding: AgentRunBinding | None = None,
     metadata: dict[str, Any] | None = None,
     capability: str | None = None,
 ) -> OrganizationalPolicyContext | None:

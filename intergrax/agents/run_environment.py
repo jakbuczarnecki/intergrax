@@ -14,9 +14,9 @@ from intergrax.agents.configure_run_strict import (
     resolve_effective_execution_mode,
 )
 from intergrax.agents.org_policy_merge import merge_organizational_policy_context
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import AgentBinding
-from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
+from intergrax.contracts.agent_run_binding import AgentRunBinding
+from intergrax.contracts.org_policy import OrganizationalPolicyContext
+from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import (
     AgentEnvironmentOverrides,
@@ -95,8 +95,8 @@ def resolve_memory_scope(
     *,
     contract: AgentContract,
     request: AgentRunRequest,
-    binding: AgentBinding | None,
-    app_profile: ApplicationEnvironmentProfile | None,
+    binding: AgentRunBinding | None,
+    app_profile: RuntimeEnvironmentProfile | None,
 ) -> MemoryScope:
     overrides = request.environment_overrides
     if overrides is not None and overrides.memory_scope is not None:
@@ -117,7 +117,7 @@ def resolve_memory_namespace(
     contract: AgentContract,
     identity: RequestIdentity,
     request: AgentRunRequest,
-    binding: AgentBinding | None,
+    binding: AgentRunBinding | None,
 ) -> str:
     overrides = request.environment_overrides
     if overrides is not None and overrides.memory_namespace:
@@ -150,7 +150,7 @@ def resolve_memory_namespace(
 def merge_allowed_tools(
     *,
     contract: AgentContract,
-    binding: AgentBinding | None,
+    binding: AgentRunBinding | None,
     overrides: AgentEnvironmentOverrides | None,
 ) -> list[str]:
     tools = {tool_id for tool_id in contract.allowed_tools if tool_id}
@@ -166,7 +166,7 @@ def merge_allowed_tools(
 def merge_rag_collections(
     *,
     contract: AgentContract,
-    binding: AgentBinding | None,
+    binding: AgentRunBinding | None,
     overrides: AgentEnvironmentOverrides | None,
 ) -> list[str]:
     if overrides is not None and overrides.rag_collection_ids:
@@ -184,8 +184,8 @@ def merge_environment(
     *,
     contract: AgentContract,
     request: AgentRunRequest,
-    app_profile: ApplicationEnvironmentProfile | None = None,
-    binding: AgentBinding | None = None,
+    app_profile: RuntimeEnvironmentProfile | None = None,
+    binding: AgentRunBinding | None = None,
     configure_run_overlay: dict[str, Any] | None = None,
 ) -> EffectiveAgentRunEnvironment:
     """
