@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.agents.authoring.diagnostic_serialization import aggregate_step_diagnostics
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.agents.uaep_protocol import UAEPAgent, UAEPAgentWithDecide
 from intergrax.contracts.acp_state import ACP_STATE_KEY, ACP_STATE_SCHEMA_VERSION
@@ -217,5 +218,6 @@ def trace_summary_from_kernel(kernel_ctx: StepKernelContext) -> dict[str, object
         "total_llm_tokens": trace.total_llm_tokens,
         "total_tool_calls": trace.total_tool_calls,
         "total_rag_calls": trace.total_rag_calls,
+        "step_diagnostics": aggregate_step_diagnostics(trace),
         "bridge": "uaep",
     }

@@ -7,6 +7,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from intergrax.contracts.agent_run_trace import AgentRunTrace
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
@@ -31,3 +32,13 @@ def merge_diagnostic_payloads(
     for payload in payloads:
         merged[payload.schema_id()] = serialize_diagnostic_payload(payload, redact=redact)
     return merged
+
+
+def aggregate_step_diagnostics(trace: AgentRunTrace) -> dict[str, dict[str, Any]]:
+    """Merge step diagnostics keyed by schema_id (last step wins per schema)."""
+    aggregated: dict[str, dict[str, Any]] = {}
+    for step in trace.steps:
+        for schema_id, payload in (step.diagnostics or {}).items():
+            if isinstance(payload, dict):
+                aggregated[schema_id] = dict(payload)
+    return aggregated
