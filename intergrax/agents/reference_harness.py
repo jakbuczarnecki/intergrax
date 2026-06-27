@@ -1,6 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Reference-agent harness context and Nexus runtime bridge (Tier-2 safe imports)."""
+"""Reference-agent harness context and Nexus runtime bridge (Tier-2 safe imports).
+
+``strict_harness`` here is a **neutral Tier-2 fallback**: it sets ``production_mode``,
+injects a minimal ``LabAllowGovernanceService``, and optionally wires trace/modality/tool
+slices from ``LabHarnessContext``. It does **not** materialize a full
+``ApplicationEnvironmentProfile`` (memory, security, reliability, LLM routing, etc.).
+
+Full strict application wiring lives in Tier-3:
+``intergrax.applications._shared.runtime_config_bridge.materialize_runtime_config`` /
+``build_runtime_context_from_environment``, and ACP hosts via ``ACPSessionHostContext``.
+"""
 
 from __future__ import annotations
 
