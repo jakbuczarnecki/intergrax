@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import cast
 
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_default_modality_profile
@@ -19,6 +18,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -36,6 +36,18 @@ class LabHarnessContext:
 def default_reference_harness() -> LabHarnessContext:
     """Minimal harness defaults when no Tier-3 host injects a bundle."""
     return LabHarnessContext(policy_bundle=RuntimePolicyBundle())
+
+
+def _apply_policy_bundle_to_runtime_config(
+    config: RuntimeConfig,
+    bundle: RuntimePolicyBundle | None,
+) -> RuntimeConfig:
+    if bundle is None:
+        return config
+    config.policy_bundle = bundle
+    if bundle.budget is not None and config.budget_policy is None:
+        config.budget_policy = bundle.budget
+    return config
 
 
 def build_lab_agent_runtime_config_from_merged(
@@ -71,10 +83,6 @@ def build_lab_agent_runtime_context_from_merged(
     )
     governance: GovernanceService | None = None
     if harness.strict_harness:
-        from intergrax.applications._shared.harness_governance import (
-            create_lab_allow_governance_service,
-        )
-
         governance = cast(
             GovernanceService,
             create_lab_allow_governance_service(),
@@ -99,22 +107,6 @@ def build_lab_agent_runtime_config(
     if harness.strict_harness and harness.trace_db_path is not None:
         trace_path = str(harness.trace_db_path)
 
-    from intergrax.applications._shared.runtime_config_bridge import (
-        apply_policy_bundle_to_runtime_config,
-        materialize_runtime_config,
-    )
-
-    if harness.strict_harness:
-        env = ApplicationEnvironmentProfile.lab_defaults(profile_id="lab.agent")
-        env.context_profile.enable_rag = enable_rag
-        env.context_profile.enable_websearch = enable_websearch
-        return materialize_runtime_config(
-            request,
-            harness,
-            env,
-            llm_adapter=llm_adapter,
-        )
-
     config = RuntimeConfig(
         llm_adapter=llm_adapter,
         enable_rag=enable_rag,
@@ -125,7 +117,7 @@ def build_lab_agent_runtime_config(
         modality_profile=harness.modality_profile,
         tool_wiring_context=harness.tool_wiring_context,
     )
-    return apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
+    return _apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
 
 
 def build_lab_agent_runtime_context(
@@ -146,10 +138,6 @@ def build_lab_agent_runtime_context(
     )
     governance: GovernanceService | None = None
     if harness.strict_harness:
-        from intergrax.applications._shared.harness_governance import (
-            create_lab_allow_governance_service,
-        )
-
         governance = cast(
             GovernanceService,
             create_lab_allow_governance_service(),

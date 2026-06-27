@@ -16,7 +16,7 @@ from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_e
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
-from intergrax.applications._shared.reliability_runtime_bridge import resolve_reliability_wiring_options
+from intergrax.runtime.wiring.reliability_runtime_bridge import resolve_reliability_wiring_options
 from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
 from intergrax.agents.compliance_summary import build_compliance_summary
 from intergrax.agents.persistence.catalog_declarative_invoker import (
@@ -95,7 +95,7 @@ async def run_acp_session(
     base_merged = merge_environment(
         contract=contract,
         request=request,
-        app_profile=host.app_profile if host else None,
+        app_profile=host.runtime_profile if host else None,
         binding=host.binding if host else None,
     )
     overlay = agent.configure_run(base_merged)
@@ -103,7 +103,7 @@ async def run_acp_session(
         merged = merge_environment(
             contract=contract,
             request=request,
-            app_profile=host.app_profile if host else None,
+            app_profile=host.runtime_profile if host else None,
             binding=host.binding if host else None,
             configure_run_overlay=overlay,
         )
@@ -147,9 +147,9 @@ async def run_acp_session(
     task_id = str(request.metadata.get("task_id") or run_id)
     run_trace = AgentRunTrace(run_id=run_id)
     reliability: AgentSessionReliability | None = None
-    if host is not None and host.app_profile is not None:
+    if host is not None and host.runtime_profile is not None:
         reliability = AgentSessionReliability.from_wiring_options(
-            resolve_reliability_wiring_options(host.app_profile.reliability_profile)
+            resolve_reliability_wiring_options(host.runtime_profile.reliability_profile)
         )
     declarative_invoker = None
     if host is not None and host.declarative_tool_invoker is not None:
@@ -176,8 +176,8 @@ async def run_acp_session(
         checkpoint_every_step=merged.checkpoint_every_step,
         policy_engine=PolicyEngine(),
         production_mode=(
-            host.app_profile.execution_mode.value == "strict"
-            if host is not None and host.app_profile is not None
+            host.runtime_profile.execution_mode.value == "strict"
+            if host is not None and host.runtime_profile is not None
             else False
         ),
         organizational=merged.organizational,
@@ -204,11 +204,11 @@ async def run_acp_session(
     )
 
     router_runtime_config = None
-    if host is not None and host.app_profile is not None:
-        from intergrax.applications._shared.context_runtime_bridge import (
+    if host is not None and host.runtime_profile is not None:
+        from intergrax.runtime.wiring.context_runtime_bridge import (
             apply_context_profile_to_runtime_config,
         )
-        from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+        from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
         from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
         from intergrax.runtime.nexus.config import RuntimeConfig
 
@@ -220,24 +220,24 @@ async def run_acp_session(
         )
         router_runtime_config = RuntimeConfig(
             llm_adapter=resolve_llm_adapter(
-                host.app_profile,
+                host.runtime_profile,
                 routing_context=acp_routing_context,
             ),
-            production_mode=host.app_profile.execution_mode.value == "strict",
+            production_mode=host.runtime_profile.execution_mode.value == "strict",
             llm_routing_context=acp_routing_context,
         )
         apply_context_profile_to_runtime_config(
             router_runtime_config,
-            host.app_profile.context_profile,
+            host.runtime_profile.context_profile,
         )
-        from intergrax.applications._shared.attestation_runtime_bridge import (
+        from intergrax.runtime.wiring.attestation_runtime_bridge import (
             apply_attestation_profile_to_runtime_config,
         )
         from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
 
         apply_attestation_profile_to_runtime_config(
             router_runtime_config,
-            host.app_profile,
+            host.runtime_profile,
         )
         apply_boundary_export_to_kernel(kernel_ctx_holder[0], router_runtime_config)
 
@@ -247,8 +247,8 @@ async def run_acp_session(
         runtime_config=router_runtime_config,
         llm_adapter=router_runtime_config.llm_adapter if router_runtime_config is not None else None,
         require_real_llm=(
-            host.app_profile.execution_mode.value == "strict"
-            if host is not None and host.app_profile is not None
+            host.runtime_profile.execution_mode.value == "strict"
+            if host is not None and host.runtime_profile is not None
             else False
         ),
     )
@@ -261,12 +261,12 @@ async def run_acp_session(
         ),
         degrade_provider=lambda: kernel_ctx_holder[0].budget_degrade_active,
     )
-    if host is not None and host.app_profile is not None and host.app_profile.llm_routing_profile is not None:
+    if host is not None and host.runtime_profile is not None and host.runtime_profile.llm_routing_profile is not None:
         from intergrax.agents.authoring.dynamic_llm_router import wrap_dynamic_llm_router
         from intergrax.agents.authoring.acp_routing_trace_bridge import (
             record_acp_routing_rule_evaluation,
         )
-        from intergrax.applications._shared.llm_routing_context_bridge import (
+        from intergrax.runtime.wiring.llm_routing_context_bridge import (
             make_acp_routing_context_provider,
         )
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
@@ -276,7 +276,7 @@ async def run_acp_session(
 
         llm_router = wrap_dynamic_llm_router(
             llm_router,
-            routing_profile=host.app_profile.llm_routing_profile,
+            routing_profile=host.runtime_profile.llm_routing_profile,
             context_provider=make_acp_routing_context_provider(
                 kernel_ctx_holder=kernel_ctx_holder,
                 step_ctx_holder=step_ctx_holder,

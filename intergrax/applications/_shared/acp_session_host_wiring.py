@@ -12,6 +12,10 @@ from intergrax.applications._shared.declarative_tool_wiring import (
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.applications._shared.runtime_boundary_adapters import (
+    agent_binding_to_run_binding,
+    application_profile_to_runtime_profile,
+)
 
 
 def build_acp_session_host_context(
@@ -22,8 +26,8 @@ def build_acp_session_host_context(
     critic_graph_hooks: Any = None,
 ) -> ACPSessionHostContext:
     return ACPSessionHostContext(
-        app_profile=app_profile,
-        binding=binding,
+        runtime_profile=application_profile_to_runtime_profile(app_profile),
+        binding=agent_binding_to_run_binding(binding),
         declarative_tool_invoker=declarative_tool_invoker,
         critic_graph_hooks=critic_graph_hooks,
     )

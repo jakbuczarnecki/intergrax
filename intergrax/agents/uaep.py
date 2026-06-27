@@ -271,7 +271,7 @@ class UAEPExecutor:
             request=request,
             run_id=run_id,
         )
-        from intergrax.applications._shared.llm_routing_runtime_bridge import (
+        from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
             sync_llm_routing_snapshot_for_state,
             wire_llm_routing_observability_on_state,
         )
@@ -328,7 +328,7 @@ class UAEPExecutor:
 
             runtime_state = exec_ctx.metadata.get("runtime_state")
             if isinstance(runtime_state, RuntimeState):
-                from intergrax.applications._shared.llm_routing_runtime_bridge import (
+                from intergrax.runtime.wiring.llm_routing_runtime_bridge import (
                     sync_llm_routing_snapshot_for_state,
                 )
 
