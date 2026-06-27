@@ -140,7 +140,7 @@ def create_legal_backend_app(
         app,
         registry=registry,
         default_agent_id=settings.legal_default_agent_id,
-        prefix=settings.legal_route_prefix,
+        prefix=settings.route_prefix,
         identity_source=settings.identity_source,
         trace_store=observability.trace_store,
         task_runner=task_runner,
@@ -183,7 +183,7 @@ def create_legal_backend_app(
 
         mcp = build_legal_mcp_server(
             nexus_loop=nexus_loop,
-            route_prefix=settings.legal_route_prefix,
+            route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )
         extra_lifespans = build_factory_lifespans(

@@ -97,6 +97,8 @@ class IntergraxApplicationSettingsBase:
             env.optional_str("BACKEND_ENV")
             or (os.environ.get("INTERGRAX_ENV") or "dev").strip().lower()
         )
+        if env_raw == "staging":
+            env_raw = "stage"
         try:
             environment = ApiEnvironment(env_raw)
         except ValueError as exc:
