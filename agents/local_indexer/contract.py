@@ -5,7 +5,7 @@ from intergrax.agents.authoring.patterns.base import PATTERN_VERSION
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
-from lkw_shared.tool_catalog import RAG_INGEST_TOOL_ID
+from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from local_indexer.capabilities import CAPABILITIES
 
 # Register skill packs on the contract — see docs/architecture/SKILLS.md

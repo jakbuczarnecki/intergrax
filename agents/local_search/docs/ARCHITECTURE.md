@@ -65,8 +65,8 @@ Implement domain logic in `steps/` — no Tier-3 imports.
 
 | Item | Location |
 |------|----------|
-| Canonical `invoke_tool` + allowlist pattern | [`agents/lkw_shared/PATTERN.md`](../../lkw_shared/PATTERN.md) |
-| Shared helpers | [`agents/lkw_shared/runtime_helpers.py`](../../lkw_shared/runtime_helpers.py) |
+| Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
+| RAG retrieve tool id | [`intergrax/tools/unified/constants.py`](../../../intergrax/tools/unified/constants.py) |
 | **Implementation point** | [`steps/search_job.py`](steps/search_job.py) — `run_search_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.

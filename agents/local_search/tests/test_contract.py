@@ -3,7 +3,7 @@
 import pytest
 
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from lkw_shared.tool_catalog import RAG_RETRIEVE_TOOL_ID
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 from local_search.local_search_agent import LocalSearchAgent
 
 

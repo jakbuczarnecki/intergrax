@@ -10,7 +10,7 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from lkw_shared.tool_catalog import RAG_RETRIEVE_TOOL_ID
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 from local_search.steps.search_job import run_search_job
 
 

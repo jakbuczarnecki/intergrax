@@ -70,8 +70,8 @@ Task(..., metadata={"shadow_workspace": True})
 
 | Item | Location |
 |------|----------|
-| Canonical `invoke_tool` + allowlist pattern | [`agents/lkw_shared/PATTERN.md`](../../lkw_shared/PATTERN.md) |
-| Shared helpers | [`agents/lkw_shared/runtime_helpers.py`](../../lkw_shared/runtime_helpers.py) |
+| Generic `invoke_tool` helpers | [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../../intergrax/agents/authoring/runtime_tool_helpers.py) |
+| Workspace write tool id | [`intergrax/tools/providers/workspace/service.py`](../../../intergrax/tools/providers/workspace/service.py) |
 | **Implementation point** | [`steps/synthesize_job.py`](steps/synthesize_job.py) — `run_synthesize_job` |
 
 Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for this agent.
