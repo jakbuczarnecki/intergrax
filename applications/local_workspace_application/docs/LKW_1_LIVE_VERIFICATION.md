@@ -11,7 +11,7 @@ LKW.1.14 — final live product smoke attempt: PARTIAL (tenant-scoped search ret
 LKW.1.15 — tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
 LKW-H1.1 — live index tool-call accounting: PASSED
 LKW-H1.2 — trace/evidence contract and inspection surface: PASSED WITH PLATFORM FOLLOW-UPS
-LKW-H1.3 — NEXT: smoke/assertion hardening for inspectable run output
+LKW-H1.3 — PASSED WITH PLATFORM FOLLOW-UPS
 ```
 
 ## Verified LKW.1 product path

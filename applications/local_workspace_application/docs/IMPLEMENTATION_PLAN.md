@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups** · **Active queue: LKW-H1.3 → LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **Active queue: LKW.2**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -373,14 +373,14 @@ Those warnings are tracked separately from H1.1 tool-call accounting unless they
 |----|------|--------|--------|----------------------|
 | LKW-H1.1 | Fix live run observability and tool-call accounting, including `total_tool_calls=0` | runtime/tool accounting + LKW host evidence | **Completed / index live accounting passed** | Reusable UAEP/ACP RuntimeExecutionContext tool-call accounting covered by platform tests |
 | LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | **Completed / PASSED WITH PLATFORM FOLLOW-UPS** | Curated `lkw_evidence.v1` read model reusable by app hosts; platform event wiring deferred |
-| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | **Next** | Update generated app test pattern if reusable |
+| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | **Passed with platform follow-ups** | Update generated app test pattern if reusable |
 
 Acceptance:
 
 - [x] A reviewer can see what happened in an LKW run from task submission to terminal result (`application_run_summary.v1` + `lkw_evidence.v1`).
 - [x] RAG evidence counts/source refs and shadow artifact path/ref are visible via typed `lkw.*_summary.v1` diagnostics (redacted).
 - [x] `total_tool_calls=0` is fixed for the live index path (`rag.ingest_document`).
-- [ ] Search/synthesize per-tool accounting is verified for `rag.retrieve` and `workspace.write_file` in trace/summary.
+- [x] Search/synthesize per-tool accounting is verified for `rag.retrieve` and `workspace.write_file` in trace/summary.
 - [ ] Raw tool status/reason/error and policy decisions at RuntimeEvent layer — platform deferred.
 - [x] No hosted dashboard or external observability backend is required.
 - [x] Platform proof checklist in §0a is completed for H1.2 closeout scope.
@@ -433,6 +433,43 @@ LKW-H1.3 smoke/assertion hardening
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
 ```
 
+
+### H1.3 result
+
+Status:
+
+```text
+PASSED WITH PLATFORM FOLLOW-UPS
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_evidence_slice.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py tests/unit/agents/authoring/test_runtime_rag_call_recording.py tests/unit/runtime/kernel/test_step_kernel.py tests/unit/agents/authoring/test_uaep_step_bridge.py -q
+
+Result: 38 passed, 12 warnings
+```
+
+Verified:
+
+```text
+index -> rag.ingest_document as ToolCallRecord, application_run_summary.v1 total_tool_calls>0
+search -> rag.retrieve as ToolCallRecord + RagCallRecord, total_rag_calls propagated, hit_count/collection_id populated safely
+synthesize -> workspace.write_file visible in safe metadata, raw content not exposed
+runtime remains application-agnostic
+typed diagnostics/evidence slice pattern is reusable across Tier-3 apps
+developer ergonomics acceptable; helper/template/docs follow-up recommended
+```
+
+Platform follow-ups remain outside H1.3:
+
+```text
+RuntimeEvent TOOL_* for immediate tools
+RunArtifactBundle / WorkspaceArtifactRef platform wiring
+optional ingest-specific RAG observability
+async runtime plugin coroutine warnings in event_bus/task_trace handlers
+developer ergonomics helper/template/docs
+```
 ---
 
 ## 5. LKW.2: graph pipeline + local workspace skills
@@ -470,3 +507,4 @@ Acceptance:
 | LKW-H3.1 | Define minimal developer first-run path for LKW and scaffolded apps | README / BUILD_AND_DEPLOY / LKW docs / scaffold docs | New developer can run host, index fixture, search, and synthesize from documented commands |
 | LKW-H3.2 | Decide optional dependency split | `pyproject.toml` / docs | Minimal install story is clear; heavy optional stacks are documented or split |
 | LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits the improved env/build/deploy documentation pattern |
+
