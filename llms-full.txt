@@ -99,8 +99,8 @@ applications/    MAY import from agents/ and intergrax/
 
 ```bash
 uv run pytest -m gate -q
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
+python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_observability_gates.py
 ```
 
 ---
