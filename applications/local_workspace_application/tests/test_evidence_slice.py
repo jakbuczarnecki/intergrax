@@ -56,6 +56,8 @@ def test_collect_lkw_diagnostics_extracts_typed_schemas() -> None:
                         "write_status": "write_complete",
                         "shadow_write": True,
                         "source_evidence_count": 3,
+                        "artifact_path": "synthesis-draft.md",
+                        "artifact_ref": "shadow-ws-1/art-1",
                     }
                 }
             ),
@@ -68,6 +70,9 @@ def test_collect_lkw_diagnostics_extracts_typed_schemas() -> None:
         "lkw.synthesize_summary.v1",
     }
     assert diagnostics["lkw.search_summary.v1"]["num_results"] == 3
+    synth = diagnostics["lkw.synthesize_summary.v1"]
+    assert synth["artifact_path"] == "synthesis-draft.md"
+    assert synth["artifact_ref"] == "shadow-ws-1/art-1"
 
 
 @pytest.mark.unit

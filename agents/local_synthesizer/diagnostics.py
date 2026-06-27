@@ -53,6 +53,13 @@ class SynthesizeSummaryDiagnostic(DiagnosticPayload):
         return payload
 
 
+def _optional_str(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 def synthesize_diagnostic_from_output(output: dict[str, object]) -> SynthesizeSummaryDiagnostic:
     summary = _as_dict(output.get("synthesize_summary"))
     reason = str(summary.get("reason") or "unknown")
@@ -60,10 +67,9 @@ def synthesize_diagnostic_from_output(output: dict[str, object]) -> SynthesizeSu
     write_status = reason if reason else ("write_complete" if used else "write_failed")
     shadow_write = bool(summary.get("shadow_workspace"))
     num_evidence_items = int(summary.get("num_evidence_items") or 0)
-    artifact_path_raw = summary.get("artifact_path")
-    artifact_path = str(artifact_path_raw) if artifact_path_raw else None
-    output_name = summary.get("output_name")
-    artifact_ref = str(output_name).strip() if output_name else artifact_path
+    artifact_path = _optional_str(summary.get("artifact_path"))
+    artifact_ref = _optional_str(summary.get("artifact_ref"))
+    raw_tool_reason = _optional_str(summary.get("raw_tool_reason"))
     content_missing = reason == "content_missing"
     return SynthesizeSummaryDiagnostic(
         write_status=write_status,
@@ -73,4 +79,5 @@ def synthesize_diagnostic_from_output(output: dict[str, object]) -> SynthesizeSu
         artifact_ref=artifact_ref,
         reason=reason,
         content_missing=content_missing if reason == "content_missing" else None,
+        raw_tool_reason=raw_tool_reason,
     )

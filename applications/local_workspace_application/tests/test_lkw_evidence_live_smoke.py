@@ -283,6 +283,9 @@ def test_lkw_evidence_live_smoke_synthesize(
     assert isinstance(synth_diag, dict), evidence["diagnostics"]
     for field in ("write_status", "shadow_write", "source_evidence_count"):
         assert field in synth_diag, synth_diag
+    assert synth_diag["shadow_write"] is True
+    assert isinstance(synth_diag["write_status"], str) and synth_diag["write_status"]
+    assert synth_diag.get("artifact_path") or synth_diag.get("artifact_ref"), synth_diag
     if synth_diag.get("artifact_path") is not None:
         assert isinstance(synth_diag["artifact_path"], str)
     if synth_diag.get("artifact_ref") is not None:

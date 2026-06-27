@@ -158,6 +158,7 @@ async def test_run_synthesize_job_writes_draft_to_shadow_workspace() -> None:
     assert summary["reason"] == "write_complete"
     assert summary["output_name"] == "client-email.md"
     assert summary["artifact_path"] == "client-email.md"
+    assert summary["artifact_ref"] == "shadow-ws-1/art-1"
     assert summary["shadow_workspace"] is True
     assert summary["num_evidence_items"] == 1
 
@@ -195,6 +196,7 @@ async def test_run_synthesize_job_fails_safe_on_write_error() -> None:
     assert summary["used"] is False
     assert summary["reason"] == "write_failed"
     assert summary["shadow_workspace"] is True
+    assert summary["raw_tool_reason"] == "shadow_workspace_not_configured"
 
 
 @pytest.mark.unit
@@ -206,6 +208,7 @@ def test_run_synthesize_job_output_attaches_synthesize_summary_diagnostic() -> N
             "shadow_workspace": True,
             "num_evidence_items": 2,
             "artifact_path": "draft.md",
+            "artifact_ref": "shadow-ws-1/art-1",
         }
     }
     from local_synthesizer.diagnostics import synthesize_diagnostic_from_output
@@ -215,3 +218,9 @@ def test_run_synthesize_job_output_attaches_synthesize_summary_diagnostic() -> N
     assert payload.write_status == "write_complete"
     assert payload.shadow_write is True
     assert payload.source_evidence_count == 2
+    assert payload.artifact_path == "draft.md"
+    assert payload.artifact_ref == "shadow-ws-1/art-1"
+    redacted = payload.redact().to_dict()
+    assert "content" not in redacted
+    assert "draft" not in redacted
+    assert "Project X overview" not in str(redacted)

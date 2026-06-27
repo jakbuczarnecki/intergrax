@@ -82,6 +82,16 @@ def _content_type_for_path(path: str) -> str:
     return "text/plain"
 
 
+def _artifact_ref_from_tool_entry(entry: dict[str, Any]) -> str | None:
+    artifact_id = entry.get("artifact_id")
+    workspace_id = entry.get("workspace_id")
+    if artifact_id and workspace_id:
+        return f"{workspace_id}/{artifact_id}"
+    if artifact_id:
+        return str(artifact_id)
+    return None
+
+
 def _output(
     *,
     run_id: str,
@@ -89,25 +99,31 @@ def _output(
     reason: str,
     output_name: str | None = None,
     artifact_path: str | None = None,
+    artifact_ref: str | None = None,
     shadow_workspace: bool = False,
     num_evidence_items: int = 0,
+    raw_tool_reason: str | None = None,
 ) -> dict[str, object]:
     if used:
         answer = f"local_synthesizer: synthesize complete — {output_name or _DEFAULT_OUTPUT_NAME}"
     else:
         answer = f"local_synthesizer: synthesize failed — {reason}"
+    summary: dict[str, object] = {
+        "used": used,
+        "reason": reason,
+        "output_name": output_name,
+        "artifact_path": artifact_path,
+        "artifact_ref": artifact_ref,
+        "shadow_workspace": shadow_workspace,
+        "num_evidence_items": num_evidence_items,
+    }
+    if raw_tool_reason:
+        summary["raw_tool_reason"] = raw_tool_reason
     return {
         "summary": answer,
         "answer": answer,
         "run_id": run_id,
-        "synthesize_summary": {
-            "used": used,
-            "reason": reason,
-            "output_name": output_name,
-            "artifact_path": artifact_path,
-            "shadow_workspace": shadow_workspace,
-            "num_evidence_items": num_evidence_items,
-        },
+        "synthesize_summary": summary,
     }
 
 
@@ -173,6 +189,7 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
     )
 
     if entry.get("status") != "success":
+        tool_reason = entry.get("reason")
         return _output(
             run_id=step_ctx.run_id,
             used=False,
@@ -180,6 +197,7 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
             output_name=output_name,
             shadow_workspace=True,
             num_evidence_items=num_evidence_items,
+            raw_tool_reason=str(tool_reason) if tool_reason else None,
         )
 
     artifact_path = entry.get("relative_path") or output_name
@@ -189,6 +207,7 @@ async def run_synthesize_job(step_ctx: AgentStepContext) -> dict[str, object]:
         reason="write_complete",
         output_name=output_name,
         artifact_path=str(artifact_path),
+        artifact_ref=_artifact_ref_from_tool_entry(entry),
         shadow_workspace=True,
         num_evidence_items=num_evidence_items,
     )
