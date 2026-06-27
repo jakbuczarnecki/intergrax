@@ -11,7 +11,7 @@ Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PRO
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest observability snapshot: **2026-06-27 — LKW-H1.2 PASSED WITH PLATFORM FOLLOW-UPS**. LKW HTTP runs attach curated `lkw_evidence.v1` (typed `lkw.*_summary.v1` diagnostics, redacted) alongside `application_run_summary.v1`; index/search/synthesize API smoke passes. Platform follow-ups deferred: RuntimeEvent `TOOL_*` for immediate tools, `RunArtifactBundle`/`WorkspaceArtifactRef`, RAG ingest observability contract, search/synthesize per-tool accounting in trace/summary, H1.3 smoke assertions.
+Latest observability snapshot: **2026-06-27 — LKW-PF1 PASSED WITH FOLLOW-UP**. Immediate catalog tool calls on the UAEP path emit generic `RuntimeEventType.TOOL_*` from `RuntimeExecutionContext.invoke_tool` (platform payload only; no raw args). LKW HTTP runs attach curated `lkw_evidence.v1` alongside `application_run_summary.v1`. **Next:** LKW-PF2 (RunArtifactBundle/`WorkspaceArtifactRef`), then LKW.2.
 
 Current status source of truth: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
@@ -425,13 +425,14 @@ synthesize — lkw.synthesize_summary.v1 shadow_write/artifact_path|artifact_ref
 Platform follow-ups deferred (out of H1.2 scope):
 
 ```text
-RuntimeEvent TOOL_* for immediate tools
 RunArtifactBundle / WorkspaceArtifactRef platform wiring
 RAG ingest-specific observability contract
 search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary
 LKW-H1.3 smoke/assertion hardening
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
 ```
+
+**LKW-PF1 (2026-06-27):** PASSED WITH FOLLOW-UP — immediate `TOOL_*` RuntimeEvents wired in `RuntimeExecutionContext.invoke_tool`; unit coverage in `tests/unit/contracts/test_invoke_tool_runtime_events.py`. Follow-up: expose runtime event log on LKW HTTP responses or a dedicated read API for live smoke assertions.
 
 
 
@@ -440,7 +441,7 @@ async runtime plugin coroutine warnings in event_bus/task_trace handlers
 
 | ID | Title | Narrow scope |
 |----|-------|--------------|
-| **LKW-PF1** | Immediate tool RuntimeEvent emission | Emit `RuntimeEventType.TOOL_REQUESTED/COMPLETED/FAILED/DENIED` for catalog tool calls in the live UAEP path. Runtime must remain app-agnostic; no LKW-specific schema semantics. |
+| **LKW-PF1** | Immediate tool RuntimeEvent emission | **PASSED WITH FOLLOW-UP** — `invoke_tool` emits `TOOL_REQUESTED/COMPLETED/FAILED/DENIED` with generic platform payload (`tool_id`, `status`, `latency_ms`, `args_digest`, `error_code`, spine ids). LKW live smoke has no public runtime-event log endpoint yet. |
 | **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | Platform artifact reference wiring so synthesize `artifact_path`/`artifact_ref` can be surfaced as first-class run artifacts. Runtime must remain app-agnostic; no LKW-specific artifact logic. |
 ### H1.3 result
 
@@ -472,12 +473,13 @@ developer ergonomics acceptable; helper/template/docs follow-up recommended
 Platform follow-ups remain outside H1.3:
 
 ```text
-RuntimeEvent TOOL_* for immediate tools
 RunArtifactBundle / WorkspaceArtifactRef platform wiring
 optional ingest-specific RAG observability
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
 developer ergonomics helper/template/docs
 ```
+
+**LKW-PF1:** PASSED WITH FOLLOW-UP — see IMPLEMENTATION_PLAN §Platform follow-ups before LKW.2.
 ---
 
 ## 5. LKW.2: graph pipeline + local workspace skills

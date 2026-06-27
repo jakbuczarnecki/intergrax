@@ -92,6 +92,14 @@ class RuntimeExecutionContext(BaseModel):
             await self.event_emitter.emit(event)
 
     async def invoke_tool(self, request: ToolRequest) -> ToolResponse:
+        tool_input = dict(request.input or {})
+        args_digest = _tool_input_digest(tool_input)
+        await self._emit_immediate_tool_event(
+            _tool_requested_event_type(),
+            request=request,
+            args_digest=args_digest,
+            status="requested",
+        )
         started = time.perf_counter()
         if self.tool_gateway is None:
             response = ToolResponse(
@@ -107,7 +115,53 @@ class RuntimeExecutionContext(BaseModel):
             else int((time.perf_counter() - started) * 1000)
         )
         self._record_tool_call(request, response, latency_ms=latency_ms)
+        await self._emit_immediate_tool_event(
+            _immediate_tool_outcome_event_type(response.status),
+            request=request,
+            args_digest=args_digest,
+            status=_immediate_tool_outcome_status(response.status),
+            latency_ms=latency_ms,
+            error_code=response.error if response.status != ToolResponseStatus.SUCCESS else None,
+        )
         return response
+
+    async def _emit_immediate_tool_event(
+        self,
+        event_type: Any,
+        *,
+        request: ToolRequest,
+        args_digest: str,
+        status: str,
+        latency_ms: int | None = None,
+        error_code: str | None = None,
+    ) -> None:
+        from intergrax.runtime.events.runtime_event import RuntimeEvent
+
+        payload: dict[str, Any] = {
+            "tool_id": request.tool_name,
+            "status": status,
+            "args_digest": args_digest,
+            "agent_id": self.agent_id,
+            "task_id": self.task_id,
+            "run_id": self.run_id,
+            "phase": self.phase.value,
+        }
+        if latency_ms is not None:
+            payload["latency_ms"] = latency_ms
+        if error_code:
+            payload["error_code"] = error_code
+        event = RuntimeEvent(
+            event_type=event_type,
+            phase=self.phase,
+            payload=payload,
+            agent_id=self.agent_id,
+            task_id=self.task_id,
+            run_id=self.run_id,
+            node_id=self.node_id,
+            correlation_id=self.correlation_id,
+            step_id=request.step_id or None,
+        )
+        await self.emit_event(event)
 
     def drain_pending_tool_calls(self) -> list[ToolCallRecord]:
         raw = self.metadata.pop(_PENDING_TOOL_CALLS_KEY, None)
@@ -175,6 +229,30 @@ class RuntimeExecutionContext(BaseModel):
 def _tool_input_digest(payload: dict[str, Any]) -> str:
     raw = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def _tool_requested_event_type() -> Any:
+    from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+    return RuntimeEventType.TOOL_REQUESTED
+
+
+def _immediate_tool_outcome_event_type(status: ToolResponseStatus) -> Any:
+    from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+    if status == ToolResponseStatus.SUCCESS:
+        return RuntimeEventType.TOOL_COMPLETED
+    if status == ToolResponseStatus.DENIED:
+        return RuntimeEventType.TOOL_DENIED
+    return RuntimeEventType.TOOL_FAILED
+
+
+def _immediate_tool_outcome_status(status: ToolResponseStatus) -> str:
+    if status == ToolResponseStatus.SUCCESS:
+        return "completed"
+    if status == ToolResponseStatus.DENIED:
+        return "denied"
+    return "failed"
 
 
 def is_rag_retrieve_tool(tool_id: str) -> bool:

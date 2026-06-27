@@ -169,13 +169,14 @@ Result: 9 passed, 12 warnings
 Platform follow-ups deferred:
 
 ```text
-RuntimeEvent TOOL_* for immediate tools
 RunArtifactBundle / WorkspaceArtifactRef platform wiring
 RAG ingest-specific observability contract
 search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary -> LKW-H1.3
 policy decisions and raw tool reason/error at RuntimeEvent layer
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
 ```
+
+**LKW-PF1:** immediate `TOOL_*` RuntimeEvents — PASSED WITH FOLLOW-UP (see §LKW-PF1).
 
 ## LKW.1.15 — tenant-scoped retrieve for live search
 
@@ -280,11 +281,50 @@ Those blockers were fixed in LKW.1.15.
 | LKW.1.15 | Tenant-scoped retrieve and local_search allowlist fixed; product proof closed. |
 | LKW-H1.1 | UAEP live bridge tool-call accounting fixed for index/app summary. |
 
+## LKW-PF1 — immediate tool RuntimeEvents
+
+Status:
+
+```text
+PASSED WITH FOLLOW-UP
+```
+
+Scope:
+
+```text
+RuntimeExecutionContext.invoke_tool emits TOOL_REQUESTED before gateway invocation and
+TOOL_COMPLETED / TOOL_DENIED / TOOL_FAILED after, using generic platform payload only
+(tool_id, status, latency_ms, args_digest, error_code, agent_id, task_id, run_id, phase).
+No raw tool args or LKW-specific schemas in core runtime.
+```
+
+Focused tests:
+
+```text
+uv run pytest tests/unit/contracts/test_invoke_tool_runtime_events.py tests/unit/agents/authoring/test_runtime_rag_call_recording.py -q
+
+Result: 10 passed
+```
+
+Follow-up (visibility gap):
+
+```text
+LKW live HTTP smoke has no public runtime-event log surface; TOOL_* events are persisted
+via runtime event bus but not yet assertable from POST /v1/local_workspace/run responses.
+```
+
+Queue:
+
+```text
+NEXT: LKW-PF2-RUN-ARTIFACT-BUNDLE-SYNTHESIZE
+THEN: LKW.2
+```
+
 ## Known follow-ups after LKW.1 / H1.1 / H1.2
 
 ```text
 Search/synthesize per-tool accounting in trace/summary -> LKW-H1.3
-RuntimeEvent TOOL_*, RunArtifactBundle, RAG ingest observability contract -> platform deferred
+RunArtifactBundle, RAG ingest observability contract -> LKW-PF2 / platform deferred
 Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
