@@ -11,6 +11,10 @@ import sys
 from pathlib import Path
 from textwrap import dedent
 
+from intergrax.scaffold.agent_layout import (
+    agent_docs_dir,
+    write_agent_journal_scaffold,
+)
 from intergrax.scaffold.adr_templates import write_agent_adr_scaffold
 from intergrax.scaffold.signal_templates import write_agent_signal_scaffold
 from intergrax.scaffold.tracing_templates import write_agent_tracing_scaffold
@@ -476,25 +480,27 @@ def _notebook_stub(slug: str, primary_capability: str) -> str:
     )
 
 
-def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
+def _readme(slug: str, class_name: str, capabilities: list[str], *, pattern: str) -> str:
     caps = ", ".join(f"`{c}`" for c in capabilities)
     return dedent(
         f"""\
         # {slug} agent
 
-        UAEP-first scaffold. Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) (single canonical guide).
+        Typed **{pattern}** cognitive agent — standalone smoke tests under ``agents/{slug}/tests/``.
 
-        ## Docs
+        **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
-        - [`ARCHITECTURE.md`](ARCHITECTURE.md) — purpose, contracts, runtime layout
-        - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — task queue and verification
-        - [`adr/README.md`](adr/README.md) — architecture decision records
+        Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 
-        ## Quick start
+        ## Standalone verification
 
-        1. Implement domain logic in `steps/`
-        2. Run smoke test: `uv run pytest agents/{slug}/tests -q`
-        3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
+        From repository root:
+
+        ```bash
+        uv run pytest agents/{slug}/tests -q
+        ```
+
+        Stub LLM in ``{slug}_agent.py`` keeps tests offline — no Tier-3 host required.
 
         ## Register (programmatic)
 
@@ -506,7 +512,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         registry.register({class_name}())
         ```
 
-        See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
+        See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring.
 
         ## Capabilities
 
@@ -514,16 +520,16 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
 
         ## Layout
 
-        - ``{slug}_agent.py`` — Agent class (UAEP)
+        - ``{slug}_agent.py`` — Agent class (ACP hooks)
         - ``contract.py`` / ``capabilities.py`` — AgentContract
         - ``steps/`` — domain execution
         - ``prompts/`` — prompt assets
         - ``schemas/`` — I/O models
-        - ``tracing/`` — DiagnosticPayload extensions (OBS extension SDK)
-        - ``signals/`` — ``emit_domain_signal`` payloads and registry (OBS-EVOL-9)
-        - ``tests/`` — agent smoke tests
+        - ``tracing/`` — DiagnosticPayload extensions
+        - ``signals/`` — domain signal payloads
+        - ``tests/`` — standalone agent smoke tests
         - ``notebooks/`` — interactive experiments
-        - ``adr/`` — architecture decision records
+        - ``docs/`` — architecture, plan, ADRs, journal
         """
     )
 
@@ -585,8 +591,10 @@ def create_acp_pattern_agent(
     )
     _write(target / "prompts" / "system.md", _prompts_system_md(slug), force=force)
     _write(target / "schemas" / "__init__.py", _schemas_init(), force=force)
+    docs_dir = agent_docs_dir(target)
+    docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
-        target / "ARCHITECTURE.md",
+        docs_dir / "ARCHITECTURE.md",
         render_agent_architecture_doc(
             slug=slug,
             class_name=class_name,
@@ -597,7 +605,7 @@ def create_acp_pattern_agent(
         force=force,
     )
     _write(
-        target / "IMPLEMENTATION_PLAN.md",
+        docs_dir / "IMPLEMENTATION_PLAN.md",
         render_agent_implementation_plan(
             slug=slug,
             class_name=class_name,
@@ -607,19 +615,12 @@ def create_acp_pattern_agent(
         ),
         force=force,
     )
-    if not minimal:
-        _write(
-            target / "README.md",
-            dedent(
-                f"""\
-                # {slug} agent ({normalized})
-
-                Typed **{normalized}** cognitive pattern — ``on_next_step`` via ``CognitiveAgent``.
-                See ``docs/guides/AGENT_CREATION_GUIDE.md`` § cognitive patterns.
-                """
-            ),
-            force=force,
-        )
+    write_agent_journal_scaffold(target, force=force)
+    _write(
+        target / "README.md",
+        _readme(slug, class_name, capabilities, pattern=normalized),
+        force=force,
+    )
     _write(
         target / "__init__.py",
         dedent(

@@ -1,8 +1,8 @@
-# LocalSearchAgent
+﻿# LocalSearchAgent
 
 Semantic search over locally indexed documents.
 
-**Architecture:** [ARCHITECTURE.md](ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
+**Architecture:** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.search` (default agent on LKW host)
 

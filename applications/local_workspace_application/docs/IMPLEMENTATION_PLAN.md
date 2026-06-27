@@ -1,4 +1,4 @@
-# Local Knowledge Workspace (LKW) — Implementation Plan
+﻿# Local Knowledge Workspace (LKW) — Implementation Plan
 
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
@@ -496,9 +496,9 @@ Add narrower commands next to each implementation task once exact modules are kn
 
 ## 11. Per-agent plans
 
-- [`agents/local_indexer/IMPLEMENTATION_PLAN.md`](../../agents/local_indexer/IMPLEMENTATION_PLAN.md)
-- [`agents/local_search/IMPLEMENTATION_PLAN.md`](../../agents/local_search/IMPLEMENTATION_PLAN.md)
-- [`agents/local_synthesizer/IMPLEMENTATION_PLAN.md`](../../agents/local_synthesizer/IMPLEMENTATION_PLAN.md)
+- [`agents/local_indexer/docs/IMPLEMENTATION_PLAN.md`](../../agents/local_indexer/docs/IMPLEMENTATION_PLAN.md)
+- [`agents/local_search/docs/IMPLEMENTATION_PLAN.md`](../../agents/local_search/docs/IMPLEMENTATION_PLAN.md)
+- [`agents/local_synthesizer/docs/IMPLEMENTATION_PLAN.md`](../../agents/local_synthesizer/docs/IMPLEMENTATION_PLAN.md)
 
 ---
 

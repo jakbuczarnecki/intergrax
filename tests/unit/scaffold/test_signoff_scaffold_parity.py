@@ -14,10 +14,10 @@ REQUIRED = (
     "contract.py",
     "capabilities.py",
     "tests/test_signoff_probe_agent.py",
-    "ARCHITECTURE.md",
-    "IMPLEMENTATION_PLAN.md",
-    "adr/README.md",
-    "adr/TEMPLATE.md",
+    "docs/ARCHITECTURE.md",
+    "docs/IMPLEMENTATION_PLAN.md",
+    "docs/adr/README.md",
+    "docs/adr/TEMPLATE.md",
 )
 
 

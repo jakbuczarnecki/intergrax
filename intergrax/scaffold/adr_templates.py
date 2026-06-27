@@ -156,7 +156,7 @@ def render_agent_adr_readme(*, slug: str) -> str:
 
         Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
         Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-        Platform ADRs: [`../../docs/adr/README.md`](../../docs/adr/README.md)
+        Platform ADRs: [`../../../../docs/adr/README.md`](../../../../docs/adr/README.md)
 
         ---
 
@@ -268,7 +268,7 @@ def write_harness_adr_scaffold(*, root: Path, force: bool = False) -> Path:
 
 
 def write_agent_adr_scaffold(*, agent_dir: Path, slug: str, force: bool = False) -> Path:
-    adr_dir = agent_dir / "adr"
+    adr_dir = agent_dir / "docs" / "adr"
     prefix = adr_prefix(slug)
     _write_adr_file(
         adr_dir / ADR_README,

@@ -47,7 +47,7 @@ def render_agent_architecture_doc(
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
-            "| `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |"
+            "| `docs/adr/` | Architecture decision records — [`docs/adr/README.md`](adr/README.md) |"
         )
     elif reference:
         runtime_line = (
@@ -62,7 +62,7 @@ def render_agent_architecture_doc(
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
-            "| `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |"
+            "| `docs/adr/` | Architecture decision records — [`docs/adr/README.md`](adr/README.md) |"
         )
     else:
         runtime_line = (
@@ -81,7 +81,7 @@ def render_agent_architecture_doc(
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
-            "| `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |"
+            "| `docs/adr/` | Architecture decision records — [`docs/adr/README.md`](adr/README.md) |"
         )
     return dedent(
         f"""\
@@ -180,7 +180,7 @@ def render_agent_implementation_plan(
         |-------|--------|
         | Purpose, contracts, I/O, runtime layout | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
-        | Significant agent architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
+        | Significant agent architecture decisions | **`docs/adr/`** — [`adr/README.md`](adr/README.md) |
         | Platform harness work | `docs/intergrax_runtime_architecture.md` §6.1 |
         | UAEP / Nexus workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
 

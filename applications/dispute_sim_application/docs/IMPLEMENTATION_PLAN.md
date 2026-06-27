@@ -1,4 +1,4 @@
-# Dispute Simulation Workspace (DSW) — Implementation Plan
+﻿# Dispute Simulation Workspace (DSW) — Implementation Plan
 
 **Derived from:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) §15 (do not diverge without updating architecture first)
 
@@ -63,10 +63,10 @@ See architecture §3–§4.
 
 | Agent | Plan file |
 |-------|-----------|
-| `dispute_intake` | [`agents/dispute_intake/IMPLEMENTATION_PLAN.md`](../../agents/dispute_intake/IMPLEMENTATION_PLAN.md) |
-| `dispute_analyst` | [`agents/dispute_analyst/IMPLEMENTATION_PLAN.md`](../../agents/dispute_analyst/IMPLEMENTATION_PLAN.md) |
-| `dispute_strategist` | [`agents/dispute_strategist/IMPLEMENTATION_PLAN.md`](../../agents/dispute_strategist/IMPLEMENTATION_PLAN.md) |
-| `dispute_scenario` | [`agents/dispute_scenario/IMPLEMENTATION_PLAN.md`](../../agents/dispute_scenario/IMPLEMENTATION_PLAN.md) |
+| `dispute_intake` | [`agents/dispute_intake/docs/IMPLEMENTATION_PLAN.md`](../../agents/dispute_intake/docs/IMPLEMENTATION_PLAN.md) |
+| `dispute_analyst` | [`agents/dispute_analyst/docs/IMPLEMENTATION_PLAN.md`](../../agents/dispute_analyst/docs/IMPLEMENTATION_PLAN.md) |
+| `dispute_strategist` | [`agents/dispute_strategist/docs/IMPLEMENTATION_PLAN.md`](../../agents/dispute_strategist/docs/IMPLEMENTATION_PLAN.md) |
+| `dispute_scenario` | [`agents/dispute_scenario/docs/IMPLEMENTATION_PLAN.md`](../../agents/dispute_scenario/docs/IMPLEMENTATION_PLAN.md) |
 
 ---
 

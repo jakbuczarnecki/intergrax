@@ -23,6 +23,7 @@ from intergrax.scaffold.new_application import create_application
 REPO = Path(__file__).resolve().parents[3]
 
 AGENTS_WITH_ADR = (
+    "boundary_demo",
     "echo",
     "research",
     "signoff_probe",
@@ -59,7 +60,7 @@ def _assert_adr_scaffold(adr_dir: Path, *, label: str) -> None:
 
 @pytest.mark.parametrize("agent_slug", AGENTS_WITH_ADR)
 def test_agent_adr_scaffold_present(agent_slug: str) -> None:
-    _assert_adr_scaffold(REPO / "agents" / agent_slug / "adr", label=f"agents/{agent_slug}")
+    _assert_adr_scaffold(REPO / "agents" / agent_slug / "docs" / "adr", label=f"agents/{agent_slug}")
 
 
 def _application_adr_dir(app_pkg: str) -> Path:
@@ -90,7 +91,7 @@ def test_agent_scaffold_emits_adr_directory() -> None:
             force=True,
             minimal=True,
         )
-        _assert_adr_scaffold(target / "adr", label="scaffold agent")
+        _assert_adr_scaffold(target / "docs" / "adr", label="scaffold agent")
 
 
 def test_application_scaffold_emits_adr_directory() -> None:

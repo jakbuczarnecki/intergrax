@@ -1,4 +1,4 @@
-# Local Knowledge Workspace (LKW) — architecture
+﻿# Local Knowledge Workspace (LKW) — architecture
 
 **Status:** Architecture baseline v2 (2026-06-07) — implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
@@ -268,9 +268,9 @@ AgentContract (Tier-2)
 
 Agent architecture docs:
 
-- [`agents/local_indexer/ARCHITECTURE.md`](../../agents/local_indexer/ARCHITECTURE.md)
-- [`agents/local_search/ARCHITECTURE.md`](../../agents/local_search/ARCHITECTURE.md)
-- [`agents/local_synthesizer/ARCHITECTURE.md`](../../agents/local_synthesizer/ARCHITECTURE.md)
+- [`agents/local_indexer/docs/ARCHITECTURE.md`](../../agents/local_indexer/docs/ARCHITECTURE.md)
+- [`agents/local_search/docs/ARCHITECTURE.md`](../../agents/local_search/docs/ARCHITECTURE.md)
+- [`agents/local_synthesizer/docs/ARCHITECTURE.md`](../../agents/local_synthesizer/docs/ARCHITECTURE.md)
 
 ---
 
