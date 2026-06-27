@@ -13,12 +13,14 @@ from typing import Any, Dict, List, Optional, Protocol, TYPE_CHECKING, runtime_c
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_run_trace import GatewayCallStatus, ToolCallRecord
+from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
 
 _PENDING_TOOL_CALLS_KEY = "_pending_tool_call_records"
+_PENDING_RAG_CALLS_KEY = "_pending_rag_call_records"
+RAG_RETRIEVE_TOOL_ID = "rag.retrieve"
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.runtime_event import RuntimeEvent
@@ -113,6 +115,12 @@ class RuntimeExecutionContext(BaseModel):
             return []
         return list(raw)
 
+    def drain_pending_rag_calls(self) -> list[RagCallRecord]:
+        raw = self.metadata.pop(_PENDING_RAG_CALLS_KEY, None)
+        if not raw:
+            return []
+        return list(raw)
+
     def _record_tool_call(
         self,
         request: ToolRequest,
@@ -127,18 +135,33 @@ class RuntimeExecutionContext(BaseModel):
         else:
             status = GatewayCallStatus.FAILED
 
+        call_id = response.request_id or request.request_id
+        tool_input = dict(request.input or {})
         pending: list[ToolCallRecord] = list(self.metadata.get(_PENDING_TOOL_CALLS_KEY) or [])
         pending.append(
             ToolCallRecord(
-                call_id=response.request_id or request.request_id,
+                call_id=call_id,
                 tool_id=request.tool_name,
                 status=status,
                 latency_ms=latency_ms,
-                args_digest=_tool_input_digest(dict(request.input or {})),
+                args_digest=_tool_input_digest(tool_input),
                 error_code=response.error if status != GatewayCallStatus.SUCCEEDED else None,
             )
         )
         self.metadata[_PENDING_TOOL_CALLS_KEY] = pending
+
+        rag_record = build_rag_call_record(
+            call_id=call_id,
+            tool_id=request.tool_name,
+            tool_input=tool_input,
+            status=status,
+            latency_ms=latency_ms,
+            output=response.output,
+        )
+        if rag_record is not None:
+            pending_rag: list[RagCallRecord] = list(self.metadata.get(_PENDING_RAG_CALLS_KEY) or [])
+            pending_rag.append(rag_record)
+            self.metadata[_PENDING_RAG_CALLS_KEY] = pending_rag
 
     def should_cancel(self) -> bool:
         from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
@@ -152,3 +175,52 @@ class RuntimeExecutionContext(BaseModel):
 def _tool_input_digest(payload: dict[str, Any]) -> str:
     raw = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def is_rag_retrieve_tool(tool_id: str) -> bool:
+    return tool_id == RAG_RETRIEVE_TOOL_ID
+
+
+def build_rag_call_record(
+    *,
+    call_id: str,
+    tool_id: str,
+    tool_input: dict[str, Any],
+    status: GatewayCallStatus,
+    latency_ms: int,
+    output: dict[str, Any] | None,
+    policy_rule_id: str | None = None,
+) -> RagCallRecord | None:
+    if not is_rag_retrieve_tool(tool_id):
+        return None
+    return RagCallRecord(
+        call_id=call_id,
+        collection_id=_resolve_rag_collection_id(tool_input),
+        status=status,
+        latency_ms=latency_ms,
+        hit_count=_resolve_rag_retrieve_hit_count(output),
+        policy_rule_id=policy_rule_id,
+    )
+
+
+def _resolve_rag_collection_id(tool_input: dict[str, Any]) -> str:
+    for key in ("collection_id", "workspace_id"):
+        raw = tool_input.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return ""
+
+
+def _resolve_rag_retrieve_hit_count(output: dict[str, Any] | None) -> int:
+    if not output:
+        return 0
+    for key in ("hit_count", "num_results"):
+        if key in output:
+            try:
+                return max(0, int(output[key]))
+            except (TypeError, ValueError):
+                return 0
+    chunks = output.get("chunks")
+    if isinstance(chunks, list):
+        return len(chunks)
+    return 0

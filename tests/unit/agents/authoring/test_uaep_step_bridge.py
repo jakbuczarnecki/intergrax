@@ -130,6 +130,8 @@ async def test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary() 
 
     trace_summary = trace_summary_from_kernel(kernel_ctx)
     assert trace_summary["total_tool_calls"] >= 1
+    assert trace_summary["total_rag_calls"] == 0
+    assert kernel_ctx.run_trace.steps[-1].rag_calls == []
 
     execution = AgentExecutionResult(
         agent_id="local_indexer",
