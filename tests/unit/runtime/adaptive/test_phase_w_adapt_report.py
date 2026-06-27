@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.runtime.adaptive.contracts import HarnessOutcomeSignal
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore
-from scripts.phase_w_adapt_report import build_signal_trend_report
+from scripts.release.phase_w_adapt_report import build_signal_trend_report
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -66,7 +66,7 @@ def test_phase_w_adapt_report_cli_writes_json(tmp_path) -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            str(REPO_ROOT / "scripts" / "phase_w_adapt_report.py"),
+            str(REPO_ROOT / "scripts" / "release" / "phase_w_adapt_report.py"),
             "--db-path",
             str(db_path),
             "--output",

@@ -47,7 +47,7 @@ from intergrax.runtime.architecture.evaluation_registry_trends import (
     EvaluationComparisonSummary,
     EvaluationRegistryTrendReport,
 )
-from scripts.phase_w_adapt_report import build_proposal_report
+from scripts.release.phase_w_adapt_report import build_proposal_report
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -335,7 +335,7 @@ def test_phase_w_adapt_report_cli_writes_proposals_json(tmp_path) -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            str(REPO_ROOT / "scripts" / "phase_w_adapt_report.py"),
+            str(REPO_ROOT / "scripts" / "release" / "phase_w_adapt_report.py"),
             "--proposals-db-path",
             str(proposals_db),
             "--proposals-output",

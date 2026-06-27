@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from scripts.check_p6_infra_health import collect_p6_infra_health
+from scripts.maintenance.check_p6_infra_health import collect_p6_infra_health
 
 pytestmark = pytest.mark.integration
 
