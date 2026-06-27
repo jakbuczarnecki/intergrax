@@ -149,10 +149,8 @@ class _WidenConfigureRunAgent(IntergraxAgent):
 @pytest.mark.asyncio
 async def test_acp_run_fails_fast_on_configure_run_widen_in_strict() -> None:
     agent = _WidenConfigureRunAgent()
-    from intergrax.agents.authoring.acp_session_host import (
-        ACP_HOST_CONTEXT_KEY,
-        ACPSessionHostContext,
-    )
+    from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+    from tests.unit.agents.conftest import make_acp_host_context
 
     request = AgentRunRequest(
         input="strict-deny",
@@ -162,7 +160,7 @@ async def test_acp_run_fails_fast_on_configure_run_widen_in_strict() -> None:
             principal_type=PrincipalType.USER,
         ),
         metadata={
-            ACP_HOST_CONTEXT_KEY: ACPSessionHostContext(app_profile=_strict_profile()),
+            ACP_HOST_CONTEXT_KEY: make_acp_host_context(_strict_profile()),
         },
     )
     result = await agent.run(request)

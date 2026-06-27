@@ -9,7 +9,7 @@ import pytest
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
 from intergrax.runtime.nexus.orchestration_capabilities import (
     is_orchestration_capability,
-    orchestration_capabilities_from_graph_spec,
+    orchestration_capabilities_from_triggers,
 )
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -24,7 +24,7 @@ def test_orchestration_capability_from_trigger_list() -> None:
         nodes=[GraphNode(agent_id="a")],
         trigger_capabilities=["product.pipeline"],
     )
-    triggers = orchestration_capabilities_from_graph_spec(spec)
+    triggers = orchestration_capabilities_from_triggers(spec.trigger_capabilities)
     assert is_orchestration_capability(
         "product.pipeline",
         trigger_capabilities=triggers,

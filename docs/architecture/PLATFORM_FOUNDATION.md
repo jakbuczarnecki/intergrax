@@ -151,7 +151,13 @@ Tier-3 Applications  →  Tier-2 Agents  →  Tier-1 Nexus  →  Tier-0 Platform
 
 **Cross-layer invariants (canonical):** [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md#cross-layer-system-invariants) (P2-ARCH-01) — MUST/MUST NOT rules across all tiers; `SYS-INV-*` index links to this §5 and domain pairs.
 
-**Enforcement (FAUDIT-TIER, 2026-06-06):** Tier-3 application manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py` (static reference data, not `from applications.*` under `intergrax/`). CI: `scripts/maintenance/check_intergrax_no_applications_imports.py` and `scripts/maintenance/check_agents_no_tier3_imports.py`.
+**Enforcement (FAUDIT-TIER, 2026-06-06 · extended 2026-06-27):** Lower layers (`intergrax/agents/`, `intergrax/runtime/`, `intergrax/contracts/`, `agents/`, …) MUST NOT import `intergrax.applications` or `applications`. Tier-3 manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py`; runtime uses neutral `ApplicationCapabilityCatalogEntry` (`intergrax/contracts/capability_graph_catalog.py`) via `intergrax/runtime/architecture/harness_capability_catalog.py`. Application hosts map Tier-3 profiles/bindings to neutral contracts in `intergrax/applications/_shared/runtime_boundary_adapters.py`.
+
+CI guards (no grandfather exceptions):
+
+- `scripts/check_no_upward_application_imports.py` — full lower-layer scan
+- `scripts/maintenance/check_intergrax_no_applications_imports.py`
+- `scripts/maintenance/check_agents_no_tier3_imports.py`
 
 ## Relationship To “Layer 1 / 2 / 3” Naming
 

@@ -8,10 +8,8 @@ import pytest
 
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.agents.authoring.acp_session_host import (
-    ACP_HOST_CONTEXT_KEY,
-    ACPSessionHostContext,
-)
+from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+from tests.unit.agents.conftest import make_acp_host_context
 from intergrax.agents.run_environment import merge_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -193,10 +191,7 @@ async def test_acp_run_persists_usage_metadata_and_budget_state() -> None:
         capabilities=["demo.llm_meter"],
         budget_slice=AgentBudgetSlice(max_total_tokens=100),
     )
-    host_ctx = ACPSessionHostContext(
-        app_profile=environment,
-        binding=binding,
-    )
+    host_ctx = make_acp_host_context(environment, binding=binding)
     request = AgentRunRequest(
         input="meter",
         identity=RequestIdentity(tenant_id="tenant-1", user_id="user-1"),
@@ -231,7 +226,7 @@ async def test_second_step_sees_invocation_usage_from_prior_llm_call() -> None:
         contract_id="llm-meter",
         capabilities=["demo.llm_meter"],
     )
-    host_ctx = ACPSessionHostContext(app_profile=environment, binding=binding)
+    host_ctx = make_acp_host_context(environment, binding=binding)
     request = AgentRunRequest(
         input="observe",
         identity=RequestIdentity(tenant_id="tenant-1", user_id="user-1"),

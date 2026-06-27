@@ -55,6 +55,7 @@ Verify (every harness PR):
   python scripts/maintenance/check_scaffold_harness_alignment.py
   python scripts/maintenance/check_agents_no_tier3_imports.py
   python scripts/maintenance/check_intergrax_no_applications_imports.py
+  python scripts/check_no_upward_application_imports.py
   uv run python scripts/maintenance/check_harness_prompt_golden_catalog.py
   uv run python scripts/maintenance/check_agents_lifecycle_metadata.py
   uv run intergrax doctor --ci

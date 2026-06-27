@@ -10,10 +10,8 @@ import pytest
 
 from intergrax.agents.acp_budget_reactions import maybe_emit_budget_threshold
 from intergrax.agents.authoring.base import IntergraxAgent
-from intergrax.agents.authoring.acp_session_host import (
-    ACP_HOST_CONTEXT_KEY,
-    ACPSessionHostContext,
-)
+from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+from tests.unit.agents.conftest import make_acp_host_context
 from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_enforcing_router
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.step_outcome import StepOutcome
@@ -127,8 +125,8 @@ def _host_with_reaction(
             enforcement=BudgetLimitEnforcement.HARD,
         ),
     )
-    return ACPSessionHostContext(
-        app_profile=environment,
+    return make_acp_host_context(
+        environment,
         binding=binding,
         notification_adapter=notification_adapter,
         budget_reaction_hook=budget_hook,

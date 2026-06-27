@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY, ACPSessionHostContext
+from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+from tests.unit.agents.conftest import make_acp_host_context
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -86,7 +87,7 @@ async def test_acp_run_records_routing_rule_in_step_diagnostics(monkeypatch: pyt
         contract_id="routing-trace-agent",
         capabilities=["demo.routing_trace"],
     )
-    host_ctx = ACPSessionHostContext(app_profile=environment, binding=binding)
+    host_ctx = make_acp_host_context(environment, binding=binding)
     request = AgentRunRequest(
         input="route",
         identity=RequestIdentity(tenant_id="tenant-1", user_id="user-1"),
