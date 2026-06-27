@@ -10,7 +10,7 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
+from lkw_shared.tool_catalog import WORKSPACE_WRITE_FILE_TOOL_ID
 from local_synthesizer.steps.synthesize_job import run_synthesize_job
 
 

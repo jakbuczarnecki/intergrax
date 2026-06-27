@@ -27,7 +27,7 @@ agents/<agent>/<agent>_agent.py → act() calls run_*_job(step_ctx)
 
 ```python
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from lkw_shared.tool_catalog import RAG_INGEST_TOOL_ID
 from lkw_shared.runtime_helpers import (
     allowlist_roots,
     exec_ctx_from_step,
@@ -36,7 +36,7 @@ from lkw_shared.runtime_helpers import (
     request_metadata,
     validate_allowlisted_files,
 )
-from intergrax.tools.providers.filesystem.allowlist import require_read_allowlist_roots
+from lkw_shared.read_allowlist import require_read_allowlist_roots
 
 STEP_ID = "local_indexer_step"
 

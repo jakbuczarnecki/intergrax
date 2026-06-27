@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.filesystem.allowlist import require_read_allowlist_roots
-from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from lkw_shared.read_allowlist import require_read_allowlist_roots
+from lkw_shared.tool_catalog import RAG_INGEST_TOOL_ID
 from lkw_shared.runtime_helpers import (
     allowlist_roots,
     exec_ctx_from_step,

@@ -7,7 +7,7 @@ from typing import Any
 
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.rag.service import RAG_TOOL_ID
+from lkw_shared.tool_catalog import RAG_RETRIEVE_TOOL_ID
 from lkw_shared.runtime_helpers import (
     exec_ctx_from_step,
     invoke_catalog_tool,
@@ -156,7 +156,7 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
 
     entry = await invoke_catalog_tool(
         exec_ctx,
-        tool_name=RAG_TOOL_ID,
+        tool_name=RAG_RETRIEVE_TOOL_ID,
         agent_id=step_ctx.agent_id,
         step_id=SEARCH_STEP_ID,
         tool_input=tool_input,

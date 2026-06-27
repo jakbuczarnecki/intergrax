@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
+from lkw_shared.tool_catalog import WORKSPACE_WRITE_FILE_TOOL_ID
 from lkw_shared.runtime_helpers import exec_ctx_from_step, invoke_catalog_tool, request_metadata
 
 SYNTHESIZE_STEP_ID = "local_synthesizer_step"

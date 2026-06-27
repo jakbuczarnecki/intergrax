@@ -12,7 +12,7 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.tools.providers.filesystem.allowlist import (
+from lkw_shared.read_allowlist import (
     read_allowlist_roots_from_env,
     require_read_allowlist_roots,
     resolve_allowed_path,
