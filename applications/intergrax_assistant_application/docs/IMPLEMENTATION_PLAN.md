@@ -32,7 +32,7 @@
 | IAA-0 | Architecture + ADR-001 hub-and-spoke | **Done** | Critical | This iteration |
 | IAA-1 | Environment profile — harness lab + engine planner + LLM from env | **Done** | Critical | `host/environment_profile.py` |
 | IAA-2 | Dynamic manifest — specialist roster flags | **Done** | High | `manifest.py` + `settings.py` |
-| IAA-3 | Host smoke tests green | **Done** | High | `intergrax_assistant_application_tests/host/` |
+| IAA-3 | Host smoke tests green | **Done** | High | `tests/host/` |
 | IAA-4 | Deploy triad present | **Done** | High | `docker/`, `BUILD_AND_DEPLOY.md` |
 | IAA-5 | Dedicated `/chat` route + session contract | Planned | High | Mirror `legal_application` serving |
 | IAA-6 | Hub UAEP — conversational tool loop + file attachments | Planned | High | `agents/intergrax_assistant/steps/` |
@@ -45,7 +45,7 @@
 ## 2. Verification
 
 ```bash
-uv run pytest applications/intergrax_assistant_application/intergrax_assistant_application_tests -q
+uv run pytest applications/intergrax_assistant_application/tests -q
 uv run pytest agents/intergrax_assistant/tests -q
 ```
 

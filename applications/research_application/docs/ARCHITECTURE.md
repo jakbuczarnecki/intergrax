@@ -30,7 +30,7 @@ Multi-agent HTTP host for **ResearchAgent** + **SummaryAgent** with Nexus loop e
 
 ## Tests
 
-- `research_application_tests/` host smoke + `test_research_manifest_wiring`
+- `tests/` host smoke + `test_research_manifest_wiring`
 
 ## Runtime recovery (APP-EVOL-5)
 

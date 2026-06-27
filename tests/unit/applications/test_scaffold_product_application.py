@@ -48,7 +48,7 @@ def test_scaffold_product_profile_creates_fastapi_core_tree(tmp_path):
     assert "/health" in deploy_doc
 
     smoke = (
-        target / "demo_product_application_tests" / "host" / "test_demo_product_host_smoke.py"
+        target / "tests" / "host" / "test_demo_product_host_smoke.py"
     ).read_text(encoding="utf-8")
     assert "test_demo_product_backend_health" in smoke
     assert 'create_demo_product_backend_app' in smoke

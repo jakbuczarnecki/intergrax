@@ -47,7 +47,7 @@ See architecture §3–§4.
 | DSW.1.2 | Document type classifier stub (rule + LLM) | `agents/dispute_intake/steps/` | Tier-2 |
 | DSW.1.3 | Chronology builder → `case_timeline.json` shadow artifact | `agents/dispute_intake/steps/` | Tier-2 |
 | DSW.1.4 | RAG ingest loop scoped by `case_id` collection | Tier-3 tool profile + intake agent | Tier-2/3 |
-| DSW.1.5 | Acceptance: fixture corpus → timeline + retrievable chunks | `dispute_sim_application_tests/` | Tier-3 |
+| DSW.1.5 | Acceptance: fixture corpus → timeline + retrievable chunks | `tests/` | Tier-3 |
 
 ### Acceptance criteria
 
@@ -74,5 +74,5 @@ See architecture §3–§4.
 
 ```bash
 uv run pytest agents/dispute_intake/tests agents/dispute_analyst/tests agents/dispute_strategist/tests agents/dispute_scenario/tests -q
-uv run pytest applications/dispute_sim_application/dispute_sim_application_tests -q
+uv run pytest applications/dispute_sim_application/tests -q
 ```

@@ -66,7 +66,7 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving/`` and application R
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/dispute_sim_application/dispute_sim_application_tests -q
+        uv run pytest applications/dispute_sim_application/tests -q
         uv run pytest tests/unit/applications/ -q -k "dispute_sim" --ignore-glob="*" 2>/dev/null || true
         ```
 

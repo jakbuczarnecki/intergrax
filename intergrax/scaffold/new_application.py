@@ -855,7 +855,7 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
         From **repository root**:
 
         ```bash
-        uv run pytest applications/{pkg}/{pkg}_tests -q
+        uv run pytest applications/{pkg}/tests -q
         cp applications/{pkg}/.env.example applications/{pkg}/.env
         uv run uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
         applications/{pkg}/docker/build-docker.sh

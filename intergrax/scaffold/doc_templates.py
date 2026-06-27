@@ -219,7 +219,7 @@ def render_agent_implementation_plan(
         After host wiring:
 
         ```bash
-        uv run pytest applications/<app>_application/<app>_application_tests -q
+        uv run pytest applications/<app>_application/tests -q
         ```
         {reference_note}
 

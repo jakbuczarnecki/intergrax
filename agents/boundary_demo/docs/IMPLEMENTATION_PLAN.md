@@ -48,5 +48,5 @@ Principle: **stable PoC agent** · **no receipt logic in Tier-2** · **no Tier-3
 ```bash
 uv run pytest agents/boundary_demo/tests -q
 uv run pytest tests/unit/agents/test_boundary_demo_skill_resolution.py -q
-uv run pytest applications/attestation_demo/attestation_demo_tests -q
+uv run pytest applications/attestation_demo/tests -q
 ```

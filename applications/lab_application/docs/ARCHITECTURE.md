@@ -29,4 +29,4 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 
 - Full monorepo `uv sync` (torch, integrations catalog)
 - `INTERGRAX_HARNESS_API_KEY` when strict/stage/prod
-- Optional `[dev-ci]` for gate tests under `lab_application_tests/`
+- Optional `[dev-ci]` for gate tests under `tests/`

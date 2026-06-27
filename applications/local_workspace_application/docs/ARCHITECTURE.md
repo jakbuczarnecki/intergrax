@@ -785,7 +785,7 @@ Task(
 
 ```bash
 # Host smoke
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 
 # Agent smoke
 uv run pytest agents/local_indexer/tests agents/local_search/tests agents/local_synthesizer/tests -q

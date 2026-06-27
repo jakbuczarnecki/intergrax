@@ -117,7 +117,7 @@ Routes are mounted under `/v1/local_workspace`. See `serving/` and application R
 ## 4. Verify before deploy
 
 ```bash
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 ```
 
 Focused agent smoke:

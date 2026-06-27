@@ -79,7 +79,7 @@ Routes are mounted under ``/v1/research``. See ``serving/`` and application READ
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/research_application/research_application_tests -q
+        uv run pytest applications/research_application/tests -q
         uv run pytest tests/unit/applications/ -q -k "research" --ignore-glob="*" 2>/dev/null || true
         ```
 

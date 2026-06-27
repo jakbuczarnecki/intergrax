@@ -35,6 +35,6 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 ## 2. Verification
 
 ```bash
-uv run pytest applications/research_application/research_application_tests -q
+uv run pytest applications/research_application/tests -q
 uv run pytest tests/unit/applications/test_research_manifest_wiring.py -q
 ```

@@ -52,7 +52,7 @@ applications/my_lab/
     serving/
         fastapi_router.py      # HTTP routes → NexusLoop / UnifiedTaskRunner
     docker/                    # Dockerfile (Phase N scaffold)
-    my_lab_tests/              # Host smoke tests
+    tests/              # Host smoke tests
 ```
 
 **Python path:** `applications/` is on `pythonpath` (`pyproject.toml`). Import as `my_lab.host.main`, not `applications.my_lab`.
@@ -241,7 +241,7 @@ uv run uvicorn my_lab.host.main:app --host 127.0.0.1 --port 8091
 ### Tests
 
 ```bash
-uv run pytest applications/my_lab/my_lab_tests -q
+uv run pytest applications/my_lab/tests -q
 uv run pytest tests/unit/applications/ -q
 ```
 

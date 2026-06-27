@@ -106,7 +106,7 @@ def test_scaffold_product_profile_generated_artifacts(tmp_path) -> None:
 
 @pytest.mark.no_ci
 def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
-    """Generated ``<pkg>_tests/host/test_*_smoke.py`` matches factory entrypoints."""
+    """Generated ``tests/host/test_*_smoke.py`` matches factory entrypoints."""
     _, pkg, short = prepare_scaffold_package(
         tmp_path,
         name="gate_n9_smoke",
@@ -119,7 +119,7 @@ def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
         / "repo"
         / "applications"
         / pkg
-        / f"{pkg}_tests"
+        / "tests"
         / "host"
         / f"test_{short}_host_smoke.py"
     )
@@ -140,7 +140,7 @@ def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
         / "repo"
         / "applications"
         / pkg2
-        / f"{pkg2}_tests"
+        / "tests"
         / "host"
         / f"test_{short2}_host_smoke.py"
     )

@@ -474,7 +474,7 @@ Full task breakdown: [`ARCHITECTURE.md`](ARCHITECTURE.md) §15.2.
 uv run pytest -m gate -q
 
 # Host + agents, when touching LKW code
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 uv run pytest agents/local_indexer/tests agents/local_search/tests agents/local_synthesizer/tests -q
 
 # RAG scope/retrieve regressions, when touching RAG scope/service

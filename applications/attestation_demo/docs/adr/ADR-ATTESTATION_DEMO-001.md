@@ -55,4 +55,4 @@ Rejected for PoC v1:
 - Platform: `intergrax/runtime/attestation/`, hook in `RuntimeToolInvoker`
 - Host: `applications/attestation_demo/`
 - Agent: `agents/boundary_demo/`
-- Verify: `uv run pytest applications/attestation_demo/attestation_demo_tests -q`
+- Verify: `uv run pytest applications/attestation_demo/tests -q`

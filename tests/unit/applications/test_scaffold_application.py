@@ -41,7 +41,7 @@ def test_scaffold_creates_application_tree(tmp_path):
     factory_src = (target / "host" / "factory.py").read_text(encoding="utf-8")
     assert "couple_fastapi_with_mcp" in factory_src
     assert "build_concept_lab_mcp_server" in factory_src
-    assert (target / f"{pkg}_tests" / "host" / "test_concept_lab_host_smoke.py").exists()
+    assert (target / "tests" / "host" / "test_concept_lab_host_smoke.py").exists()
     assert (target / "docker" / "Dockerfile").exists()
     assert (target / "docker" / ".dockerignore").exists()
     assert (target / "docker" / "docker-compose.yml").exists()

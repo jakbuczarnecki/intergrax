@@ -31,13 +31,13 @@ See [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.
 | Implementation plan | `IMPLEMENTATION_PLAN.md` — local task queue (scaffold emits on create) |
 | HTTP + MCP | `host/factory.py`, `mcp/server.py` |
 | Env + deploy | `.env.example`, `BUILD_AND_DEPLOY.md`, `docker/build-docker.*` |
-| Smoke tests | `<pkg>_tests/host/` |
+| Smoke tests | `tests/host/` |
 
 ## Verify locally
 
 ```bash
 uv run pytest tests/unit/applications/ -q
-uv run pytest applications/poc_template_application/poc_template_application_tests -q
+uv run pytest applications/poc_template_application/tests -q
 ```
 
 Gate (CI): `uv run pytest -m gate -q`

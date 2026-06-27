@@ -68,7 +68,7 @@ The scripts copy `.env.example` to `.env` when needed, build the Docker image, s
 From repository root:
 
 ```bash
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
 ```

@@ -41,5 +41,5 @@ uv run pytest agents/local_indexer/tests -q
 Integration with host:
 
 ```bash
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 ```
