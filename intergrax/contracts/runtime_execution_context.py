@@ -5,14 +5,20 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import time
 from typing import Any, Dict, List, Optional, Protocol, TYPE_CHECKING, runtime_checkable
 
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run_trace import GatewayCallStatus, ToolCallRecord
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
-from intergrax.contracts.tool_request import ToolRequest, ToolResponse
+from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
+
+_PENDING_TOOL_CALLS_KEY = "_pending_tool_call_records"
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.runtime_event import RuntimeEvent
@@ -84,15 +90,55 @@ class RuntimeExecutionContext(BaseModel):
             await self.event_emitter.emit(event)
 
     async def invoke_tool(self, request: ToolRequest) -> ToolResponse:
+        started = time.perf_counter()
         if self.tool_gateway is None:
-            from intergrax.contracts.tool_request import ToolResponseStatus
-
-            return ToolResponse(
+            response = ToolResponse(
                 request_id=request.request_id,
                 status=ToolResponseStatus.DENIED,
                 error="tool_gateway_not_configured",
             )
-        return await self.tool_gateway.invoke(request)
+        else:
+            response = await self.tool_gateway.invoke(request)
+        latency_ms = (
+            response.duration_ms
+            if response.duration_ms > 0
+            else int((time.perf_counter() - started) * 1000)
+        )
+        self._record_tool_call(request, response, latency_ms=latency_ms)
+        return response
+
+    def drain_pending_tool_calls(self) -> list[ToolCallRecord]:
+        raw = self.metadata.pop(_PENDING_TOOL_CALLS_KEY, None)
+        if not raw:
+            return []
+        return list(raw)
+
+    def _record_tool_call(
+        self,
+        request: ToolRequest,
+        response: ToolResponse,
+        *,
+        latency_ms: int,
+    ) -> None:
+        if response.status == ToolResponseStatus.SUCCESS:
+            status = GatewayCallStatus.SUCCEEDED
+        elif response.status == ToolResponseStatus.DENIED:
+            status = GatewayCallStatus.DENIED
+        else:
+            status = GatewayCallStatus.FAILED
+
+        pending: list[ToolCallRecord] = list(self.metadata.get(_PENDING_TOOL_CALLS_KEY) or [])
+        pending.append(
+            ToolCallRecord(
+                call_id=response.request_id or request.request_id,
+                tool_id=request.tool_name,
+                status=status,
+                latency_ms=latency_ms,
+                args_digest=_tool_input_digest(dict(request.input or {})),
+                error_code=response.error if status != GatewayCallStatus.SUCCEEDED else None,
+            )
+        )
+        self.metadata[_PENDING_TOOL_CALLS_KEY] = pending
 
     def should_cancel(self) -> bool:
         from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
@@ -101,3 +147,8 @@ class RuntimeExecutionContext(BaseModel):
             if CancellationCoordinator.is_requested(self.request.metadata):
                 return True
         return CancellationCoordinator.is_requested(self.metadata)
+
+
+def _tool_input_digest(payload: dict[str, Any]) -> str:
+    raw = json.dumps(payload, sort_keys=True, default=str)
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]

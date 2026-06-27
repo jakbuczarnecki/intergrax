@@ -510,3 +510,40 @@ async def test_kernel_strict_product_ignores_permissive_missing_policy_flag() ->
     assert record.error_code == AgentRunErrorCode.POLICY_DENIED
     assert record.policy_pre is not None
     assert record.policy_pre.policy_rule_id == "kernel.missing_policy_engine"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_harvests_uaep_catalog_tool_calls() -> None:
+    from intergrax.contracts.agent_run_trace import GatewayCallStatus, ToolCallRecord
+    from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_search",
+    )
+    exec_ctx.metadata["_pending_tool_call_records"] = [
+        ToolCallRecord(
+            call_id="tool-abc",
+            tool_id="rag.retrieve",
+            status=GatewayCallStatus.SUCCEEDED,
+            latency_ms=12,
+        )
+    ]
+    step_ctx = AgentStepContext(
+        step_index=0,
+        metadata={"uaep_exec_ctx": exec_ctx},
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="local_search",
+        run_id="run-1",
+        allow_permissive_missing_policy=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "search"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.step_record is not None
+    assert len(record.step_record.tool_calls) == 1
+    assert record.step_record.tool_calls[0].tool_id == "rag.retrieve"
+    assert kernel_ctx.run_trace.total_tool_calls == 1
+    assert exec_ctx.drain_pending_tool_calls() == []
