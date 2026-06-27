@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import OrchestrationProfile
+from intergrax.contracts.host_profile_slices import OrchestrationProfile
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType, ProfileVersionRecord
 
 

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.intent_route import IntentRoute
+from intergrax.contracts.intent_route import IntentRoute
 from intergrax.runtime.task.task import Task, TaskContext
 
 

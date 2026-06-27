@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence
 
-from intergrax.applications.contracts.environment_profile import ContextDecisionProfile
+from intergrax.contracts.host_profile_slices import ContextDecisionProfile
 from intergrax.llm.messages import ChatMessage
 
 from intergrax.runtime.nexus.context.context_budget import estimate_tokens, resolve_input_budget_tokens

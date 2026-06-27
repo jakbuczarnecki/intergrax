@@ -10,9 +10,7 @@ from typing import TYPE_CHECKING
 from intergrax.runtime.attestation.attestation_policy import AttestationCaptureMode
 
 if TYPE_CHECKING:
-    from intergrax.applications.contracts.environment_profile import (
-        ExecutionBoundaryExportProfile,
-    )
+    from intergrax.contracts.host_profile_slices import ExecutionBoundaryExportProfile
 
 
 @dataclass(frozen=True, slots=True)

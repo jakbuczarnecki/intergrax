@@ -13,8 +13,8 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
-from intergrax.applications._shared.run_artifact_bundle_builder import build_run_artifact_bundle
-from intergrax.applications.contracts.application_artifacts import RUN_ARTIFACT_BUNDLE_METADATA_KEY
+from intergrax.runtime.nexus.orchestration.run_artifact_bundle_builder import build_run_artifact_bundle
+from intergrax.contracts.run_artifact_bundle import RUN_ARTIFACT_BUNDLE_METADATA_KEY
 from intergrax.runtime.nexus.orchestration.application_run_summary_builder import (
     build_application_run_summary,
 )

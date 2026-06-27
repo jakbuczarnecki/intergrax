@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.autonomy_level import AutonomyLevel
 
