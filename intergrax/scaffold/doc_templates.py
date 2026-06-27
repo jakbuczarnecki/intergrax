@@ -113,7 +113,7 @@ def render_agent_architecture_doc(
 
         ## Pattern anchor (Cursor)
 
-        - Tool invocation pattern: [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md)
+        - Tool invocation pattern: [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../intergrax/agents/authoring/runtime_tool_helpers.py)
         - **Implementation point:** `steps/domain_job.py` — implement `run_domain_job(step_ctx)`; wire from `act()`.
         - Do **not** grep runtime/Nexus for `invoke_tool` when this section is in read scope.
 

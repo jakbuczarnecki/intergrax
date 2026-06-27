@@ -34,13 +34,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_lkw_resolve_request_scope_uses_runtime_request_tenant_id() -> None:
-    import sys
-    from pathlib import Path
-
-    agents_root = Path(__file__).resolve().parents[5] / "agents"
-    if str(agents_root) not in sys.path:
-        sys.path.insert(0, str(agents_root))
-    from lkw_shared.runtime_helpers import resolve_request_scope
+    from intergrax.agents.authoring.runtime_tool_helpers import resolve_request_scope
 
     exec_ctx = RuntimeExecutionContext(
         task_id="task-1",

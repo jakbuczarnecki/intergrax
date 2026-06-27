@@ -90,13 +90,13 @@ def _domain_job_py(slug: str) -> str:
         from __future__ import annotations
 
         from intergrax.contracts.agent_step_context import AgentStepContext
-        from lkw_shared.runtime_helpers import exec_ctx_from_step, request_metadata
+        from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 
         DOMAIN_STEP_ID = "{step_id}"
 
 
         async def run_domain_job(step_ctx: AgentStepContext) -> dict[str, object]:
-            """Cursor implementation point — see agents/lkw_shared/PATTERN.md."""
+            """Cursor implementation point — see intergrax/agents/authoring/runtime_tool_helpers.py."""
             _ = exec_ctx_from_step(step_ctx), request_metadata(None), DOMAIN_STEP_ID
             answer = "{slug}: domain job not implemented"
             return {{
