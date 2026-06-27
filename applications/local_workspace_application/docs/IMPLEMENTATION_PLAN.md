@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **Active queue: LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **Active queue: LKW-PF1, LKW-PF2, LKW.2**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -434,6 +434,14 @@ async runtime plugin coroutine warnings in event_bus/task_trace handlers
 ```
 
 
+
+
+### Platform follow-ups before LKW.2
+
+| ID | Title | Narrow scope |
+|----|-------|--------------|
+| **LKW-PF1** | Immediate tool RuntimeEvent emission | Emit `RuntimeEventType.TOOL_REQUESTED/COMPLETED/FAILED/DENIED` for catalog tool calls in the live UAEP path. Runtime must remain app-agnostic; no LKW-specific schema semantics. |
+| **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | Platform artifact reference wiring so synthesize `artifact_path`/`artifact_ref` can be surfaced as first-class run artifacts. Runtime must remain app-agnostic; no LKW-specific artifact logic. |
 ### H1.3 result
 
 Status:
