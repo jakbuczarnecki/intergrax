@@ -67,7 +67,7 @@ def build_local_workspace_environment_profile(
     profile = (
         ApplicationEnvironmentProfile.product_defaults(
             profile_id="local_workspace.product",
-            skill_bundles=["harness"],
+            skill_bundles=["harness", "local"],
         )
         .model_copy(
             update={
