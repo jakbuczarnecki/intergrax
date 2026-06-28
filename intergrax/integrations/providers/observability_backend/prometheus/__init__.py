@@ -11,6 +11,12 @@ from intergrax.integrations.providers.observability_backend.prometheus.config im
 )
 
 __all__ = [
+
+    "PROMETHEUS_OBSERVABILITY_PROVIDER_ID",
+    "PrometheusObservabilityIntegration",
+    "PrometheusObservabilityIntegrationConfig",
+    "PrometheusObservabilityTransport",
+
     "ENV_PROMETHEUS_BASE_URL",
     "ENV_PROMETHEUS_BEARER_TOKEN",
     "PrometheusIntegrationBundle",
@@ -18,9 +24,20 @@ __all__ = [
     "PrometheusObservabilityBackend",
     "create_prometheus_integration",
     "create_prometheus_observability_backend",
+    "create_prometheus_observability_integration",
     "register_prometheus_integration",
     "resolve_prometheus_config",
 ]
+
+
+_INTEGRATION_EXPORTS = frozenset(
+    {
+        "PROMETHEUS_OBSERVABILITY_PROVIDER_ID",
+        "PrometheusObservabilityIntegration",
+        "PrometheusObservabilityIntegrationConfig",
+        "PrometheusObservabilityTransport",
+    }
+)
 
 _LAZY_EXPORTS = frozenset(
     {
@@ -28,6 +45,7 @@ _LAZY_EXPORTS = frozenset(
         "PrometheusObservabilityBackend",
         "create_prometheus_integration",
         "create_prometheus_observability_backend",
+        "create_prometheus_observability_integration",
         "register_prometheus_integration",
         "resolve_prometheus_config",
     }
@@ -47,4 +65,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
 
         return PrometheusObservabilityBackend
+
+    if name in _INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.observability_backend.prometheus import integration as _integration
+
+        return export_from_bundle(_integration, name, _INTEGRATION_EXPORTS)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

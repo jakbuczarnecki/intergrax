@@ -99,6 +99,32 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+## Phase INTEGRATIONS-2C — observability_backend provider contract migration (Done)
+
+**Purpose:** Migrate all existing `observability_backend` provider packages to **`ObservabilityVendorIntegrationContract`** using the Langfuse reference pattern.  
+**Architecture:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up)
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **INTEGRATIONS-2C-WAVE1** | Code | P1 | **Done** | LLM/agent observability providers | Arize, Phoenix, Langsmith, Helicone, Braintrust, W&B — `integration.py` + contract factory; legacy facade unchanged |
+| **INTEGRATIONS-2C-WAVE2** | Code | P1 | **Done** | Telemetry/APM/log vendors | Datadog, Sentry, SigNoz, Honeycomb, New Relic, Splunk, PostHog — same pattern |
+| **INTEGRATIONS-2C-WAVE3** | Code | P1 | **Done** | OpenTelemetry/storage/query backends | Prometheus, Elasticsearch, OpenSearch, OTel, OpenTelemetry Collector, Grafana, Loki, Tempo, InfluxDB, ClickHouse, MLflow — same pattern |
+| **INTEGRATIONS-2C-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_observability_provider_contract_migration.py` — shared tests for all migrated slugs |
+
+**INTEGRATIONS-2C status (2026-06-28):**
+
+- **All 26** `observability_backend` slugs in `layout.py` migrated (Langfuse pilot + 25 batch waves)
+- Each migrated provider: `integration.py` (contract class), `create_<slug>_observability_integration` in `bundle.py`, lazy `__init__.py` exports, USAGE.md contract section
+- Legacy **`create_<slug>_observability_backend`** / **`register_<slug>_integration`** remain backward-compatible; **`register.py`** still registers legacy facade only
+- **`enabled=True`** without transport raises **`IntegrationConfigurationError`**; no vendor SDK imports in `integration.py`; no network I/O in tests
+- **Registry v2 / contract registry wiring remains deferred**
+- **Deferred providers:** none — full `observability_backend` category complete
+- No LKW change; no global bootstrap registration
+
+**Migrated slugs (26):** `langfuse`, `arize`, `phoenix`, `langsmith`, `helicone`, `braintrust`, `wandb`, `datadog`, `sentry`, `signoz`, `honeycomb`, `newrelic`, `splunk`, `posthog`, `prometheus`, `elasticsearch`, `opensearch`, `otel`, `opentelemetry_collector`, `grafana`, `loki`, `tempo`, `influxdb`, `clickhouse`, `mlflow`
+
+---
+
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7 · baseline **32/32 L3**  

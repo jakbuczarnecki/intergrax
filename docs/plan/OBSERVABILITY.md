@@ -205,6 +205,18 @@ Load **only** the satellite matching your task or cited gap ID.
 - **Registry v2 / contract registry wiring deferred** — `register_langfuse_integration()` still registers legacy query facade only
 - **OBS-EXPORT-5** remains **not complete** until remaining observability_backend providers (Arize, Phoenix, …) are adapted
 
+**INTEGRATIONS-2C status (observability_backend provider migration — 2026-06-28):**
+
+- All existing **`observability_backend`** provider packages adapted to **`ObservabilityVendorIntegrationContract`** (Langfuse reference + 25 batch slugs)
+- Each provider: contract-based `integration.py`, `create_<slug>_observability_integration` factory, lazy public API; legacy **`ObservabilityBackend`** query facade unchanged
+- Sanitized **`ObservabilityExportEnvelope`** only; raw **`application_attributes`** rejected; no raw content export
+- Injectable transport protocol only — **no real vendor network transports** in this task; no vendor SDK imports in `integration.py`
+- **`enabled=True`** without transport fails at construction (**`IntegrationConfigurationError`**)
+- Parametrized conformance tests in **`test_observability_provider_contract_migration.py`**
+- **Registry v2 / contract registry wiring deferred** — `register_<slug>_integration()` still legacy-only
+- **OBS-EXPORT-5 progress:** contract adapters exist for all catalog observability_backend slugs; production vendor transport wiring and operator bootstrap remain follow-up (not this task)
+- No LKW change
+
 **Required decisions:**
 
 - External sinks are optional subscribers/export targets, not semantic owners of Intergrax observability.
@@ -227,7 +239,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **OBS-EXPORT-4** | Code | P2 | **Done** | First remote backend adapter: OTLP | **`OtlpObservabilityExporter`** + **`OtlpObservabilityExporterConfig`** + injectable **`OtlpTransport`**; maps policy-sanitized envelopes (including **`sanitized_application_attributes`**) to OTLP-safe log payloads; no vendor SDK; explicit opt-in; no global bootstrap registration. Elasticsearch deferred. |
 | **OBS-EXPORT-4B** | Code | P2 | **Done** | OTLP HTTP transport | **`OtlpHttpTransport`** POSTs OTLP JSON to configured endpoint; explicit opt-in; platform observability only; policy-sanitized payloads only; failure isolation via **`try_export_observability_envelope`**; no vendor SDK; no global bootstrap registration. Operator wiring deferred. |
 | **OBS-EXPORT-4C** | Code | P2 | **Done** | Explicit OTLP operator wiring | **`ObservabilityExportOperatorConfig`** + **`OtlpExportOperatorConfig`** + **`build_otlp_observability_exporter`** + **`build_otlp_observability_export_runtime_plugin`**; disabled by default; **`export_content=false`** enforced; composes policy + OTLP exporter + HTTP transport + runtime plugin; no global registration; no LKW wiring; no raw content or raw **`application_attributes`** export. |
-| **OBS-EXPORT-5** | Code | P3 | **Paused** | Langfuse / Arize / Phoenix adapter | **Paused** — OTLP aligned in **INTEGRATIONS-1C** (Done). Langfuse/Arize/Phoenix remain deferred. Concrete adapters must derive from **`ObservabilityVendorIntegrationContract`**. Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. JSONL remains local file sink — not vendor integration. |
+| **OBS-EXPORT-5** | Code | P3 | **In progress** | Observability vendor contract adapters | Contract classes exist for all **`observability_backend`** slugs (**INTEGRATIONS-2C** Done). Production vendor transports, operator wiring, and registry v2 remain follow-up. Adapters derive from **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; no raw content by default. JSONL remains local file sink. |
 
 ---
 

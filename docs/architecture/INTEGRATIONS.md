@@ -163,6 +163,8 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
 - `enabled=True` without required transport/client must fail at construction time (`IntegrationConfigurationError`), not during export.
 - Langfuse pilot (`observability_backend/langfuse/`) is the reference implementation.
 
+**INTEGRATIONS-2C (batch migration — Done):** all existing `observability_backend` provider packages migrated using the Langfuse pattern — no duplicate provider adapters or parallel packages. `integration.py` holds contract-based provider logic; `register.py` remains legacy catalog hook until registry v2; `manifest.py` metadata-only. Legacy **`ObservabilityBackend`** factories and **`register_<slug>_integration`** hooks remain backward-compatible. Injectable transport only in contract path; no vendor SDK imports in `integration.py`; no production network transports in the migration task.
+
 ### Default safety and opt-in rules
 
 - Integrations are **explicit opt-in** — disabled unless operator/config enables them.

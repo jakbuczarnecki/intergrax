@@ -45,3 +45,49 @@ range_result = obs.query_range('status:500', start=1710000000, end=1710003600, s
 ## Notes
 
 ``promql`` in the API maps to Lucene ``query_string``. httpx only in ``opens.py``.
+## Contract-based observability integration (INTEGRATIONS-2C)
+
+
+
+Elasticsearch hosts a contract-based observability vendor integration alongside the legacy query facade.
+
+
+
+```python
+
+from intergrax.integrations.providers.observability_backend.elasticsearch import (
+
+    create_elasticsearch_observability_integration,
+
+)
+
+
+
+integration = create_elasticsearch_observability_integration(transport=my_transport, enabled=True)
+
+await integration.export(sanitized_envelope)
+
+```
+
+
+
+- **``ElasticsearchObservabilityIntegration``** derives from **`ObservabilityVendorIntegrationContract`**
+
+- **Legacy query facade** — ``create_elasticsearch_observability_backend()`` / ``ObservabilityBackend`` — remains backward-compatible
+
+- **Sanitized envelope only** — accepts policy-sanitized ``ObservabilityExportEnvelope``; rejects raw ``application_attributes``
+
+- **Raw content is not exported** — prompts, documents, RAG chunks, tool args, secrets, PII, and full local paths are excluded
+
+- **Disabled by default** — ``enabled=False`` unless operator opts in
+
+- **Transport required when enabled** — ``enabled=True`` without ``ElasticsearchObservabilityTransport`` raises ``IntegrationConfigurationError`` immediately (no silent broken export)
+
+
+
+Supported signals: ``events``, ``logs``, ``traces``, ``metrics``.
+
+
+
+``register_elasticsearch_integration()`` still registers the legacy query facade only; registry v2 / contract registry wiring is deferred.
+

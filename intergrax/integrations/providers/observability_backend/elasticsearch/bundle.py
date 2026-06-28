@@ -78,3 +78,38 @@ def create_elasticsearch_observability_backend(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).observability_backend
+
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+    ELASTICSEARCH_SUPPORTED_SIGNALS,
+    ElasticsearchObservabilityIntegration,
+    ElasticsearchObservabilityIntegrationConfig,
+    ElasticsearchObservabilityTransport,
+)
+
+
+def create_elasticsearch_observability_integration(
+    *,
+    transport: ElasticsearchObservabilityTransport | None = None,
+    enabled: bool = False,
+) -> ElasticsearchObservabilityIntegration:
+    """
+    Build a contract-based Elasticsearch observability vendor integration.
+
+    The legacy query facade (create_elasticsearch_observability_backend) is unchanged.
+    Transport must be injected explicitly for enabled export; disabled by default.
+    """
+    if enabled and transport is None:
+        raise IntegrationConfigurationError(
+            "Elasticsearch observability integration requires an injected transport when enabled=True",
+        )
+    if transport is not None:
+        return ElasticsearchObservabilityIntegration.from_transport(transport, enabled=enabled)
+    return ElasticsearchObservabilityIntegration.for_provider(
+        provider_id=ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+        supported_signals=ELASTICSEARCH_SUPPORTED_SIGNALS,
+        display_name="Elasticsearch",
+        config=ElasticsearchObservabilityIntegrationConfig(enabled=enabled),
+    )

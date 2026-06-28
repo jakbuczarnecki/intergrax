@@ -78,3 +78,38 @@ def create_prometheus_observability_backend(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).observability_backend
+
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.observability_backend.prometheus.integration import (
+    PROMETHEUS_OBSERVABILITY_PROVIDER_ID,
+    PROMETHEUS_SUPPORTED_SIGNALS,
+    PrometheusObservabilityIntegration,
+    PrometheusObservabilityIntegrationConfig,
+    PrometheusObservabilityTransport,
+)
+
+
+def create_prometheus_observability_integration(
+    *,
+    transport: PrometheusObservabilityTransport | None = None,
+    enabled: bool = False,
+) -> PrometheusObservabilityIntegration:
+    """
+    Build a contract-based Prometheus observability vendor integration.
+
+    The legacy query facade (create_prometheus_observability_backend) is unchanged.
+    Transport must be injected explicitly for enabled export; disabled by default.
+    """
+    if enabled and transport is None:
+        raise IntegrationConfigurationError(
+            "Prometheus observability integration requires an injected transport when enabled=True",
+        )
+    if transport is not None:
+        return PrometheusObservabilityIntegration.from_transport(transport, enabled=enabled)
+    return PrometheusObservabilityIntegration.for_provider(
+        provider_id=PROMETHEUS_OBSERVABILITY_PROVIDER_ID,
+        supported_signals=PROMETHEUS_SUPPORTED_SIGNALS,
+        display_name="Prometheus",
+        config=PrometheusObservabilityIntegrationConfig(enabled=enabled),
+    )
