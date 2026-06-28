@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **Active queue: LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 In progress (LKW.2.1–LKW.2.4B done; next LKW.2.4C)**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -11,9 +11,9 @@ Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PRO
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest observability snapshot: **2026-06-28 — LKW-PF1A CLOSED**. Immediate catalog tool calls on the UAEP path emit generic `RuntimeEventType.TOOL_*` from `RuntimeExecutionContext.invoke_tool` (platform payload only; no raw args). LKW HTTP runs attach curated `lkw_evidence.v1` alongside `application_run_summary.v1` and redacted `runtime_event_summary.v1`. **Next:** LKW.2.
+Latest observability snapshot: **2026-06-28 — LKW-PF1A CLOSED** · **LKW-DF1 CLOSED** (async runtime plugin coroutine warnings). Immediate catalog tool calls on the UAEP path emit generic `RuntimeEventType.TOOL_*` from `RuntimeExecutionContext.invoke_tool` (platform payload only; no raw args). LKW HTTP runs attach curated `lkw_evidence.v1` alongside `application_run_summary.v1` and redacted `runtime_event_summary.v1`. **Next:** LKW.2.4C live pipeline proof and metadata preservation.
 
-Current status source of truth: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
+Current LKW.2 execution status: §5 below. LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
 Platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
@@ -145,7 +145,7 @@ This track is executed one task at a time.
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
 | LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
-| LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
+| LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **In progress** (LKW.2.1–LKW.2.4B done; next LKW.2.4C) | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
@@ -501,20 +501,26 @@ Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifac
 
 ## 5. LKW.2: graph pipeline + local workspace skills
 
-| ID | Task | Module | Owner | Platform propagation |
-|----|------|--------|-------|----------------------|
-| LKW.2.1 | Add `intergrax/skills/providers/local/` bundle | Tier-0 skills | Tier-0 | Update skill scaffold/catalog docs if pattern is reusable |
-| LKW.2.2 | Add `skill_ids` to local agent contracts | `agents/local_*` contracts | Tier-2 | Update agent scaffold to generate correct `skill_ids` pattern if needed |
-| LKW.2.3 | Enable `skill_bundles=["harness", "local"]` | `host/environment_profile.py` | Tier-3 | Update app scaffold/environment templates if bundle pattern is generic |
-| LKW.2.4 | Add graph/pipeline capability `local.workspace.pipeline` | manifest / graph spec | Tier-1/3 | Update app scaffold or graph docs if this becomes canonical multi-agent pipeline pattern |
+**Progress:** LKW.2.1–LKW.2.4B **done**; **next:** LKW.2.4C live pipeline proof and metadata preservation. LKW.2 is not closed until LKW.2.4C passes and closeout docs land. `local.workspace.pipeline` has **not** passed live proof yet.
+
+| ID | Task | Module | Owner | Status | Platform propagation |
+|----|------|--------|-------|--------|----------------------|
+| LKW.2.1 | Add `intergrax/skills/providers/local/` bundle | Tier-0 skills | Tier-0 | **Done** | Update skill scaffold/catalog docs if pattern is reusable |
+| LKW.2.2 | Add `skill_ids` to local agent contracts | `agents/local_*` contracts | Tier-2 | **Done** | Update agent scaffold to generate correct `skill_ids` pattern if needed |
+| LKW.2.3 | Enable `skill_bundles=["harness", "local"]` | `host/environment_profile.py` | Tier-3 | **Done** | Update app scaffold/environment templates if bundle pattern is generic |
+| LKW.2.4A | Register graph/pipeline capability `local.workspace.pipeline` | manifest / graph spec | Tier-1/3 | **Done** — graph spec registered | Update app scaffold or graph docs if this becomes canonical multi-agent pipeline pattern |
+| LKW.2.4A1 | Allow graph trigger capabilities in package closure | applications packaging | Tier-3 | **Done** — graph trigger package closure | — |
+| LKW.2.4A2 | Align pipeline graph nodes with agent roster | graph spec | Tier-1/3 | **Done** — graph node roster identity | — |
+| LKW.2.4B | Pass search evidence into pipeline synthesize | pipeline graph | Tier-1/3 | **Done** — search evidence handoff into synthesize | — |
+| LKW.2.4C | Live pipeline proof and metadata preservation | live verification | Tier-3 | **Next** | — |
 
 Acceptance:
 
-- [ ] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection.
-- [ ] Tool access is resolved through `skill_ids`, not ad-hoc allowlists in agent code.
-- [ ] Existing LKW.1 index/search/synthesize direct capabilities still pass.
-- [ ] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline.
-- [ ] Platform proof checklist in §0a is completed.
+- [ ] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection *(LKW.2.4C)*.
+- [x] Tool access is resolved through `skill_ids`, not ad-hoc allowlists in agent code *(LKW.2.1–LKW.2.2)*.
+- [ ] Existing LKW.1 index/search/synthesize direct capabilities still pass *(LKW.2 closeout smoke)*.
+- [x] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline *(LKW.2.4B)*.
+- [ ] Platform proof checklist in §0a is completed *(LKW.2 closeout)*.
 
 **Observability boundary (OBS-EXPORT):**
 

@@ -25,11 +25,11 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-The current follow-up is **LKW-H1**: live trace/evidence inspection and observability cleanup. **LKW-H1.1** fixed live index tool-call accounting (`total_tool_calls=1` for `rag.ingest_document` on the UAEP live path). **LKW-H1.2** added curated `lkw_evidence.v1` on HTTP run responses (typed `lkw.*_summary.v1` diagnostics, redacted). H1.x work is complete. **LKW-H1.3** verified: PASSED WITH PLATFORM FOLLOW-UPS. **LKW-PF1** verified: PASSED WITH FOLLOW-UP (immediate `TOOL_*` RuntimeEvents on `invoke_tool`). **LKW-PF2** verified: PASSED WITH FOLLOW-UP (platform `run_artifact_bundle.v1` / `WorkspaceArtifactRef` for synthesize shadow artifacts). **LKW-PF2A** closed (`shadow_workspace_id` propagates via ACP/UAEP `AgentExecutionResult.structured_data` → `RunArtifactBundle`). **LKW-CI1** closed (live smoke standalone import cleanup). **LKW-PF1A** closed (`runtime_event_summary.v1` on POST `/v1/local_workspace/run`). **Next:** **LKW.2** (graph pipeline + local workspace skills).
+**LKW.2** (graph pipeline + local workspace skills) is **in progress**. **LKW.2.1–LKW.2.4B** are complete (local skill bundle, agent `skill_ids`, environment profile, pipeline graph spec, search evidence handoff). **Next:** **LKW.2.4C** — live pipeline proof and metadata preservation for `local.workspace.pipeline`. LKW.2 is not closed; live pipeline proof has not passed yet.
 
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
-The current LKW execution status is tracked in [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md).
+Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](docs/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
 
 ## Local stack
 
@@ -105,7 +105,7 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 
 - **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
-- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2).
+- **Skills:** `harness` + `local` bundles (LKW.0, LKW.2.1–LKW.2.3); pipeline capability `local.workspace.pipeline` registered (LKW.2.4A–LKW.2.4B), live proof pending (LKW.2.4C).
 
 ## Docs
 
