@@ -59,6 +59,187 @@ async def test_run_synthesize_job_rejects_non_shadow_workspace() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_run_synthesize_job_consumes_prior_search_handoff() -> None:
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        assert request.tool_name == WORKSPACE_WRITE_FILE_TOOL_ID
+        assert "Pipeline evidence paragraph" in request.input["content"]
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={
+                "artifact_id": "art-pipeline",
+                "relative_path": "pipeline-draft.md",
+                "workspace_id": "shadow-ws-pipeline",
+            },
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-pipeline",
+        run_id="run-pipeline",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="synthesize pipeline draft",
+            metadata={
+                "shadow_workspace": True,
+                "output_name": "pipeline-draft.md",
+                "prior_agent_outputs": {
+                    "node_local_search": {
+                        "agent_id": "local_search",
+                        "summary": "local_search: search job — query='pipeline', results=1",
+                        "structured_data": {
+                            "search_summary": {
+                                "used": True,
+                                "reason": "retrieve_complete",
+                                "query": "pipeline",
+                                "num_results": 1,
+                                "evidence": [
+                                    {
+                                        "text": "Pipeline evidence paragraph",
+                                        "source_path": "/data/fixture.txt",
+                                        "chunk_id": "chunk-pipeline-1",
+                                    }
+                                ],
+                            }
+                        },
+                    }
+                },
+            },
+        ),
+        tool_gateway=gateway,
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is True
+    assert summary["reason"] == "write_complete"
+    assert summary["num_evidence_items"] == 1
+    assert summary["artifact_path"] == "pipeline-draft.md"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_prefers_explicit_evidence_over_prior_handoff() -> None:
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        assert "Explicit evidence wins" in request.input["content"]
+        assert "Prior evidence ignored" not in request.input["content"]
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={
+                "artifact_id": "art-explicit",
+                "relative_path": "explicit-draft.md",
+                "workspace_id": "shadow-ws-explicit",
+            },
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-explicit",
+        run_id="run-explicit",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="synthesize",
+            metadata={
+                "shadow_workspace": True,
+                "output_name": "explicit-draft.md",
+                "evidence": [{"text": "Explicit evidence wins", "source_path": "/explicit.txt"}],
+                "prior_agent_outputs": {
+                    "node_local_search": {
+                        "agent_id": "local_search",
+                        "structured_data": {
+                            "search_summary": {
+                                "evidence": [{"text": "Prior evidence ignored"}],
+                            }
+                        },
+                    }
+                },
+            },
+        ),
+        tool_gateway=gateway,
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is True
+    assert summary["num_evidence_items"] == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_synthesize_job_reads_shared_context_reads_handoff() -> None:
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        assert "Shared context evidence" in request.input["content"]
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={
+                "artifact_id": "art-shared",
+                "relative_path": "shared-draft.md",
+                "workspace_id": "shadow-ws-shared",
+            },
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-shared",
+        run_id="run-shared",
+        agent_id="local_synthesizer",
+        request=RuntimeRequest(
+            agent_id="local_synthesizer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="synthesize",
+            metadata={
+                "shadow_workspace": True,
+                "shared_context_reads": {
+                    "node_local_search": {
+                        "agent_id": "local_search",
+                        "structured_data": {
+                            "search_summary": {
+                                "query": "shared query",
+                                "evidence": [
+                                    {
+                                        "text": "Shared context evidence",
+                                        "source_path": "/shared.txt",
+                                    }
+                                ],
+                            }
+                        },
+                    }
+                },
+            },
+        ),
+        tool_gateway=gateway,
+    )
+
+    output = await run_synthesize_job(_step_ctx(exec_ctx))
+
+    summary = output["synthesize_summary"]
+    assert summary["used"] is True
+    assert summary["reason"] == "write_complete"
+    assert summary["num_evidence_items"] == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_run_synthesize_job_fails_safe_without_content() -> None:
     exec_ctx = RuntimeExecutionContext(
         task_id="task-1",

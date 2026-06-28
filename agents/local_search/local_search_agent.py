@@ -15,6 +15,7 @@ from intergrax.agents.authoring.acp_stub_reflex import (
     reason_passthrough,
 )
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+from intergrax.contracts.agent_run import AgentRunResult
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -66,3 +67,16 @@ class LocalSearchAgent(DiagnosticReflexAgent):
 
     def build_diagnostic_payloads(self, output: dict[str, object]) -> list[DiagnosticPayload]:
         return [search_diagnostic_from_output(output)]
+
+    async def on_run_end(self, result: AgentRunResult) -> None:
+        """Export search_summary for graph prior-output / structured-data handoff."""
+        output = result.output
+        if not isinstance(output, dict):
+            return
+        search_summary = output.get("search_summary")
+        if not isinstance(search_summary, dict) or not search_summary:
+            return
+        evidence = search_summary.get("evidence")
+        has_evidence = isinstance(evidence, list) and any(isinstance(item, dict) for item in evidence)
+        if has_evidence or bool(search_summary.get("used")):
+            result.structured_data["search_summary"] = dict(search_summary)
