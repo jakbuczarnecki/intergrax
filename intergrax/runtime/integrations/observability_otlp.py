@@ -12,7 +12,6 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationContract,
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
-    require_policy_sanitized_envelope,
 )
 from intergrax.runtime.observability.export_boundary import (
     ExportRecordKind,
@@ -93,15 +92,6 @@ class OtlpObservabilityIntegration(ObservabilityVendorIntegrationContract):
     @property
     def exporter(self) -> OtlpObservabilityExporter:
         return self._exporter
-
-    async def export(self, envelope: ObservabilityExportEnvelope) -> None:
-        if not self.config.enabled:
-            return None
-        safe_envelope = require_policy_sanitized_envelope(envelope)
-        mapping = self.map_envelope(safe_envelope)
-        if mapping.signal not in self.supported_signals:
-            return None
-        await self._exporter.export(safe_envelope)
 
     async def deliver_payload(self, payload: ObservabilityVendorPayload) -> None:
         envelope = vendor_payload_to_export_envelope(payload)

@@ -47,6 +47,7 @@ class ObservabilityVendorKind(StrEnum):
     ARIZE = "arize"
     PHOENIX = "phoenix"
     ELASTICSEARCH = "elasticsearch"
+    OTLP = "otlp"
     CUSTOM = "custom"
 
 
