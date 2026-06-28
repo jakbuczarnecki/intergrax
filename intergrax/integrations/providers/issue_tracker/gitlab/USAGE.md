@@ -1,44 +1,20 @@
-# `gitlab` integration — usage
+# Gitlab (gitlab)
 
-**Category:** ``issue_tracker``  
-**Catalog factory:** ``create_gitlab_issue_tracker()``
+Category: `issue_tracker`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_gitlab_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(issue_tracker="gitlab")
-backend = profile.resolve(IntegrationCategory.ISSUE_TRACKER)
-```
+- `GitlabIssueTrackerIntegration` derives from the category-specific contract.
+- Factory: `create_gitlab_issue_tracker_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.issue_tracker.gitlab.bundle import create_gitlab_issue_tracker
-
-backend = create_gitlab_issue_tracker(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_GITLAB_URL`, `INTERGRAX_GITLAB_TOKEN`, `INTERGRAX_GITLAB_REPO` (project id/path)
-
-## Example
-
-```python
-from intergrax.integrations.providers.issue_tracker.gitlab.bundle import create_gitlab_issue_tracker
-
-tracker = create_gitlab_issue_tracker(base_url="https://gitlab.com/api/v4", repo="group/project")
-```
-
-## Notes
-
-GitLab REST issue tracker.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

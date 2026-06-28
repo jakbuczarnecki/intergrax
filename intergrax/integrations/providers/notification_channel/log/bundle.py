@@ -43,3 +43,35 @@ def create_log_notification_channel(
         notification_adapter=notification_adapter,
         **config_overrides,
     ).notification_channel
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.notification_channel.log.integration import (
+    LOG_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    LogNotificationChannelIntegration,
+    LogNotificationChannelIntegrationConfig,
+    LogNotificationChannelClient,
+)
+
+
+def create_log_notification_channel_integration(
+    *,
+    client: LogNotificationChannelClient | None = None,
+    enabled: bool = False,
+) -> LogNotificationChannelIntegration:
+    """
+    Build a contract-based Log notification channel integration.
+
+    The legacy facade (create_log_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Log notification channel integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return LogNotificationChannelIntegration.from_client(client, enabled=enabled)
+    return LogNotificationChannelIntegration.for_provider(
+        provider_id=LOG_NOTIFICATION_CHANNEL_PROVIDER_ID,
+        display_name="Log",
+        config=LogNotificationChannelIntegrationConfig(enabled=enabled),
+    )

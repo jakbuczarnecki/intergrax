@@ -24,6 +24,7 @@ __all__ = [
     "create_ms365_graph_integration",
     "register_ms365_graph_integration",
     "resolve_ms365_graph_config",
+    "create_ms365_graph_collaboration_suite_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -34,9 +35,19 @@ _LAZY_EXPORTS = frozenset(
         "create_ms365_graph_collaboration_suite",
         "register_ms365_graph_integration",
         "resolve_ms365_graph_config",
+        "create_ms365_graph_collaboration_suite_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID",
+        "Ms365GraphCollaborationSuiteIntegration",
+        "Ms365GraphCollaborationSuiteIntegrationConfig",
+        "Ms365GraphCollaborationSuiteClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_ms365_graph_integration":
@@ -51,4 +62,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
 
         return Ms365GraphCollaborationSuite
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.ms365_graph import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

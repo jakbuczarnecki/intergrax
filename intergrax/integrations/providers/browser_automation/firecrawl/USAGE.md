@@ -1,45 +1,20 @@
-# `firecrawl` integration — usage
+# Firecrawl (firecrawl)
 
-**Category:** ``browser_automation``  
-**Catalog factory:** ``create_firecrawl_browser_automation()``
+Category: `browser_automation`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_firecrawl_browser_automation()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(browser_automation="firecrawl")
-backend = profile.resolve(IntegrationCategory.BROWSER_AUTOMATION)
-```
+- `FirecrawlBrowserAutomationIntegration` derives from the category-specific contract.
+- Factory: `create_firecrawl_browser_automation_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.browser_automation.firecrawl.bundle import create_firecrawl_browser_automation
-
-backend = create_firecrawl_browser_automation(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_FIRECRAWL_API_KEY`
-
-## Example
-
-```python
-from intergrax.integrations.providers.browser_automation.firecrawl.bundle import create_firecrawl_browser_automation
-
-crawl = create_firecrawl_browser_automation(api_key="fc-...")
-page = crawl.fetch_page("https://docs.example.com")
-```
-
-## Notes
-
-Structured crawl API — alternative to raw Playwright.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

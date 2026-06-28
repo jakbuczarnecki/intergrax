@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Zendesk (zendesk)
 
-# `zendesk` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_zendesk_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_ZENDESK_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.issue_tracker.zendesk.bundle import create_zendesk_issue_tracker
+- `create_zendesk_issue_tracker()` remains backward-compatible.
 
-backend = create_zendesk_issue_tracker()
-```
+## Contract-based integration
+
+- `ZendeskIssueTrackerIntegration` derives from the category-specific contract.
+- Factory: `create_zendesk_issue_tracker_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

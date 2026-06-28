@@ -63,3 +63,35 @@ def create_lab_json_interaction_surface(
         interaction_adapter=interaction_adapter,
         **config_overrides,
     ).interaction_surface
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.interaction_surface.lab_json.integration import (
+    LAB_JSON_INTERACTION_SURFACE_PROVIDER_ID,
+    LabJsonInteractionSurfaceIntegration,
+    LabJsonInteractionSurfaceIntegrationConfig,
+    LabJsonInteractionSurfaceClient,
+)
+
+
+def create_lab_json_interaction_surface_integration(
+    *,
+    client: LabJsonInteractionSurfaceClient | None = None,
+    enabled: bool = False,
+) -> LabJsonInteractionSurfaceIntegration:
+    """
+    Build a contract-based Lab Json interaction surface integration.
+
+    The legacy facade (create_lab_json_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Lab Json interaction surface integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return LabJsonInteractionSurfaceIntegration.from_client(client, enabled=enabled)
+    return LabJsonInteractionSurfaceIntegration.for_provider(
+        provider_id=LAB_JSON_INTERACTION_SURFACE_PROVIDER_ID,
+        display_name="Lab Json",
+        config=LabJsonInteractionSurfaceIntegrationConfig(enabled=enabled),
+    )

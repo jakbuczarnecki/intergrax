@@ -1,45 +1,20 @@
-# `webhook` integration — usage
+# Webhook (webhook)
 
-**Category:** ``notification_channel``  
-**Catalog factory:** ``create_webhook_notification_channel()``
+Category: `notification_channel`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_webhook_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(notification_channel="webhook")
-backend = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
-```
+- `WebhookNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_webhook_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.notification_channel.webhook.bundle import create_webhook_notification_channel
-
-backend = create_webhook_notification_channel(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_WEBHOOK_URL`
-
-## Example
-
-```python
-from intergrax.integrations.providers.notification_channel.webhook.bundle import create_webhook_notification_channel
-
-notifier = create_webhook_notification_channel(url="https://example.com/hooks/intergrax")
-notifier.notify({"event": "task.completed", "task_id": "t-1"})
-```
-
-## Notes
-
-Generic HTTP POST; JSON formatting via ``GenericJsonPayloadFormatter``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

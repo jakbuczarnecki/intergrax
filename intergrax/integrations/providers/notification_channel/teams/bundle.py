@@ -130,3 +130,35 @@ def create_teams_signature_verifier(
         security_token=resolve_teams_security_token(security_token),
         enabled=enabled,
     )
+
+
+from intergrax.integrations.providers.notification_channel.teams.integration import (
+    TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    TeamsNotificationChannelClient,
+    TeamsNotificationChannelIntegration,
+    TeamsNotificationChannelIntegrationConfig,
+)
+
+
+def create_teams_notification_channel_integration(
+    *,
+    client: TeamsNotificationChannelClient | None = None,
+    enabled: bool = False,
+) -> TeamsNotificationChannelIntegration:
+    """
+    Build a contract-based Teams notification channel integration.
+
+    The legacy facade (create_teams_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Teams notification channel integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return TeamsNotificationChannelIntegration.from_client(client, enabled=enabled)
+    return TeamsNotificationChannelIntegration.for_provider(
+        provider_id=TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID,
+        display_name="Teams",
+        config=TeamsNotificationChannelIntegrationConfig(enabled=enabled),
+    )

@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Telegram (telegram)
 
-# `telegram` integration — usage
+Category: `notification_channel`
 
-**Category:** `notification_channel`  
-**Catalog factory:** ``create_telegram_catalog_factory()``  
-**Env prefix:** ``INTERGRAX_TELEGRAM_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.notification_channel.telegram.bundle import create_telegram_catalog_factory
+- `create_telegram_catalog_factory()` remains backward-compatible.
 
-backend = create_telegram_catalog_factory()
-```
+## Contract-based integration
+
+- `TelegramNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_telegram_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

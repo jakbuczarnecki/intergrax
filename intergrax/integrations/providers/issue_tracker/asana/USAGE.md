@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Asana (asana)
 
-# `asana` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_asana_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_ASANA_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.issue_tracker.asana.bundle import create_asana_issue_tracker
+- `create_asana_issue_tracker()` remains backward-compatible.
 
-backend = create_asana_issue_tracker()
-```
+## Contract-based integration
+
+- `AsanaIssueTrackerIntegration` derives from the category-specific contract.
+- Factory: `create_asana_issue_tracker_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -1,61 +1,20 @@
-# `email_smtp` integration — usage
+# Email Smtp (email_smtp)
 
-**Category:** ``notification_channel``  
-**Catalog factory:** ``create_email_smtp_notification_channel()``
+Category: `notification_channel`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_email_smtp_notification_channel()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(notification_channel="email_smtp")
-backend = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
-```
+- `EmailSmtpNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_email_smtp_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.notification_channel.email_smtp.bundle import create_email_smtp_notification_channel
-
-backend = create_email_smtp_notification_channel(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_EMAIL_SMTP_HOST`, `INTERGRAX_EMAIL_SMTP_PORT` (default `587`); optional `USER`, `PASSWORD`, `FROM`
-
-## Example
-
-```python
-from intergrax.integrations.providers.notification_channel.email_smtp.bundle import create_email_smtp_notification_channel
-
-import asyncio
-from intergrax.runtime.notifications.models import NotificationMessage
-
-channel = create_email_smtp_notification_channel(
-    smtp_host="smtp.example.com",
-    smtp_port=587,
-    user="bot@example.com",
-    password="...",
-    from_address="noreply@example.com",
-)
-asyncio.run(channel.notify(NotificationMessage(
-    tenant_id="t1",
-    channel="#alerts",
-    task_id="task-1",
-    subject="HITL approval required",
-    body="Please review run r-42.",
-    metadata={"to": "ops@example.com"},
-)))
-```
-
-## Notes
-
-stdlib ``smtplib`` in factory open path. Implements ``NotificationAdapter`` (async ``notify``).
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -61,3 +61,35 @@ def create_gitlab_issue_tracker(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).issue_tracker
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.issue_tracker.gitlab.integration import (
+    GITLAB_ISSUE_TRACKER_PROVIDER_ID,
+    GitlabIssueTrackerIntegration,
+    GitlabIssueTrackerIntegrationConfig,
+    GitlabIssueTrackerClient,
+)
+
+
+def create_gitlab_issue_tracker_integration(
+    *,
+    client: GitlabIssueTrackerClient | None = None,
+    enabled: bool = False,
+) -> GitlabIssueTrackerIntegration:
+    """
+    Build a contract-based Gitlab issue tracker integration.
+
+    The legacy facade (create_gitlab_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Gitlab issue tracker integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return GitlabIssueTrackerIntegration.from_client(client, enabled=enabled)
+    return GitlabIssueTrackerIntegration.for_provider(
+        provider_id=GITLAB_ISSUE_TRACKER_PROVIDER_ID,
+        display_name="Gitlab",
+        config=GitlabIssueTrackerIntegrationConfig(enabled=enabled),
+    )

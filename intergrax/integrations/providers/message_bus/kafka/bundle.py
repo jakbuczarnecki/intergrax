@@ -182,3 +182,35 @@ def build_kafka_transport(
         consumer=bundle.consumer,
     )
     return TransportBundle(task_queue=bundle.message_bus, worker=worker)
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.message_bus.kafka.integration import (
+    KAFKA_MESSAGE_BUS_PROVIDER_ID,
+    KafkaMessageBusIntegration,
+    KafkaMessageBusIntegrationConfig,
+    KafkaMessageBusClient,
+)
+
+
+def create_kafka_message_bus_integration(
+    *,
+    client: KafkaMessageBusClient | None = None,
+    enabled: bool = False,
+) -> KafkaMessageBusIntegration:
+    """
+    Build a contract-based Kafka message bus integration.
+
+    The legacy facade (create_kafka_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Kafka message bus integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return KafkaMessageBusIntegration.from_client(client, enabled=enabled)
+    return KafkaMessageBusIntegration.for_provider(
+        provider_id=KAFKA_MESSAGE_BUS_PROVIDER_ID,
+        display_name="Kafka",
+        config=KafkaMessageBusIntegrationConfig(enabled=enabled),
+    )

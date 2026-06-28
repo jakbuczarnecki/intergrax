@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Ollama (ollama)
 
-# `ollama` integration — usage
+Category: `interaction_surface`
 
-**Category:** `interaction_surface`  
-**Catalog factory:** ``create_ollama_interaction_surface()``  
-**Env prefix:** ``INTERGRAX_OLLAMA_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.interaction_surface.ollama.bundle import create_ollama_interaction_surface
+- `create_ollama_interaction_surface()` remains backward-compatible.
 
-backend = create_ollama_interaction_surface()
-```
+## Contract-based integration
+
+- `OllamaInteractionSurfaceIntegration` derives from the category-specific contract.
+- Factory: `create_ollama_interaction_surface_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

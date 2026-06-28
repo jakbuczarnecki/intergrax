@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Sendgrid (sendgrid)
 
-# `sendgrid` integration — usage
+Category: `notification_channel`
 
-**Category:** `notification_channel`  
-**Catalog factory:** ``create_sendgrid_notification_channel()``  
-**Env prefix:** ``INTERGRAX_SENDGRID_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.notification_channel.sendgrid.bundle import create_sendgrid_notification_channel
+- `create_sendgrid_notification_channel()` remains backward-compatible.
 
-backend = create_sendgrid_notification_channel()
-```
+## Contract-based integration
+
+- `SendgridNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_sendgrid_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

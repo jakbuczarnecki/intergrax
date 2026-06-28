@@ -1,48 +1,20 @@
-# `sqs` integration — usage
+# Sqs (sqs)
 
-**Category:** ``message_bus``  
-**Catalog factory:** ``create_sqs_message_bus()``
+Category: `message_bus`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_sqs_message_bus()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(message_bus="sqs")
-backend = profile.resolve(IntegrationCategory.MESSAGE_BUS)
-```
+- `SqsMessageBusIntegration` derives from the category-specific contract.
+- Factory: `create_sqs_message_bus_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.message_bus.sqs.bundle import create_sqs_message_bus
-
-backend = create_sqs_message_bus(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_SQS_QUEUE`; optional `INTERGRAX_SQS_REGION`; AWS credential vars
-
-## Example
-
-```python
-from intergrax.integrations.providers.message_bus.sqs.bundle import create_sqs_message_bus
-
-from intergrax.queueing.contracts.task_queue import TaskRequest
-
-bus = create_sqs_message_bus(queue_name="intergrax-tasks", region="eu-central-1")
-handle = bus.enqueue(TaskRequest(tenant_id="t1", run_id="r1", task_name="echo", payload=b"{}", idempotency_key=None))
-status = bus.get_status(handle)
-```
-
-## Notes
-
-``CloudTaskQueue`` over boto3 SQS. Default ``message_bus`` when ``cloud_platform=aws``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

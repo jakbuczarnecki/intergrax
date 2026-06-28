@@ -1,45 +1,20 @@
-# `log` integration — usage
+# Log (log)
 
-**Category:** ``notification_channel``  
-**Catalog factory:** ``create_log_notification_channel()``
+Category: `notification_channel`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_log_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(notification_channel="log")
-backend = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
-```
+- `LogNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_log_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.notification_channel.log.bundle import create_log_notification_channel
-
-backend = create_log_notification_channel(**config_overrides)
-```
-
-
-## Environment variables
-
-None — uses the application logger
-
-## Example
-
-```python
-from intergrax.integrations.providers.notification_channel.log.bundle import create_log_notification_channel
-
-notifier = create_log_notification_channel()
-notifier.notify("HITL: approval required for task t-1")
-```
-
-## Notes
-
-Default channel in ``IntegrationProfile.lab()`` — no network.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -67,3 +67,35 @@ def create_jira_issue_tracker(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).issue_tracker
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.issue_tracker.jira.integration import (
+    JIRA_ISSUE_TRACKER_PROVIDER_ID,
+    JiraIssueTrackerIntegration,
+    JiraIssueTrackerIntegrationConfig,
+    JiraIssueTrackerClient,
+)
+
+
+def create_jira_issue_tracker_integration(
+    *,
+    client: JiraIssueTrackerClient | None = None,
+    enabled: bool = False,
+) -> JiraIssueTrackerIntegration:
+    """
+    Build a contract-based Jira issue tracker integration.
+
+    The legacy facade (create_jira_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Jira issue tracker integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return JiraIssueTrackerIntegration.from_client(client, enabled=enabled)
+    return JiraIssueTrackerIntegration.for_provider(
+        provider_id=JIRA_ISSUE_TRACKER_PROVIDER_ID,
+        display_name="Jira",
+        config=JiraIssueTrackerIntegrationConfig(enabled=enabled),
+    )

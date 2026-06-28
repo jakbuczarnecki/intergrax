@@ -82,3 +82,35 @@ def create_ms365_graph_collaboration_suite(
         access_token=access_token,
         **config_overrides,
     ).collaboration_suite
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+    Ms365GraphCollaborationSuiteIntegration,
+    Ms365GraphCollaborationSuiteIntegrationConfig,
+    Ms365GraphCollaborationSuiteClient,
+)
+
+
+def create_ms365_graph_collaboration_suite_integration(
+    *,
+    client: Ms365GraphCollaborationSuiteClient | None = None,
+    enabled: bool = False,
+) -> Ms365GraphCollaborationSuiteIntegration:
+    """
+    Build a contract-based Ms365 Graph collaboration suite integration.
+
+    The legacy facade (create_ms365_graph_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Ms365 Graph collaboration suite integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return Ms365GraphCollaborationSuiteIntegration.from_client(client, enabled=enabled)
+    return Ms365GraphCollaborationSuiteIntegration.for_provider(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        display_name="Ms365 Graph",
+        config=Ms365GraphCollaborationSuiteIntegrationConfig(enabled=enabled),
+    )

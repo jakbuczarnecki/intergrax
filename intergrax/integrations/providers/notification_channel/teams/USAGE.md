@@ -1,48 +1,20 @@
-# `teams` integration — usage
+# Teams (teams)
 
-**Category:** ``notification_channel + interaction_surface``  
-**Catalog factory:** ``create_teams_notification_channel()``
+Category: `notification_channel`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_teams_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(notification_channel="teams")
-backend = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
-```
+- `TeamsNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_teams_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_notification_channel
-
-backend = create_teams_notification_channel(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_TEAMS_WEBHOOK_URL`; optional `INTERGRAX_TEAMS_SECURITY_TOKEN`
-
-## Example
-
-```python
-from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_notification_channel
-
-notifier = create_teams_notification_channel(webhook_url="https://outlook.office.com/webhook/...")
-notifier.notify("Nexus run completed")
-
-# Inbound: create_teams_interaction_surface(security_token="...")
-# profile.resolve(IntegrationCategory.INTERACTION_SURFACE) when interaction_surface=TEAMS
-```
-
-## Notes
-
-Same dual-category pattern as Slack — separate factory for ``INTERACTION_SURFACE``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Grafana Oncall (grafana_oncall)
 
-# `grafana_oncall` integration — usage
+Category: `notification_channel`
 
-**Category:** `notification_channel`  
-**Catalog factory:** ``create_grafana_oncall_notification_channel()``  
-**Env prefix:** ``INTERGRAX_GRAFANA_ONCALL_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.notification_channel.grafana_oncall.bundle import create_grafana_oncall_notification_channel
+- `create_grafana_oncall_notification_channel()` remains backward-compatible.
 
-backend = create_grafana_oncall_notification_channel()
-```
+## Contract-based integration
+
+- `GrafanaOncallNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_grafana_oncall_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

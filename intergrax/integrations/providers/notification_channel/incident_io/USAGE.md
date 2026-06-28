@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Incident Io (incident_io)
 
-# `incident_io` integration — usage
+Category: `notification_channel`
 
-**Category:** `notification_channel`  
-**Catalog factory:** ``create_incident_io_notification_channel()``  
-**Env prefix:** ``INTERGRAX_INCIDENT_IO_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.notification_channel.incident_io.bundle import create_incident_io_notification_channel
+- `create_incident_io_notification_channel()` remains backward-compatible.
 
-backend = create_incident_io_notification_channel()
-```
+## Contract-based integration
+
+- `IncidentIoNotificationChannelIntegration` derives from the category-specific contract.
+- Factory: `create_incident_io_notification_channel_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

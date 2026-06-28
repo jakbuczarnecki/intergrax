@@ -39,3 +39,35 @@ def create_slash_command_interaction_surface(
         interaction_adapter=interaction_adapter,
         **config_overrides,
     ).interaction_surface
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.interaction_surface.slash_command.integration import (
+    SLASH_COMMAND_INTERACTION_SURFACE_PROVIDER_ID,
+    SlashCommandInteractionSurfaceIntegration,
+    SlashCommandInteractionSurfaceIntegrationConfig,
+    SlashCommandInteractionSurfaceClient,
+)
+
+
+def create_slash_command_interaction_surface_integration(
+    *,
+    client: SlashCommandInteractionSurfaceClient | None = None,
+    enabled: bool = False,
+) -> SlashCommandInteractionSurfaceIntegration:
+    """
+    Build a contract-based Slash Command interaction surface integration.
+
+    The legacy facade (create_slash_command_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Slash Command interaction surface integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return SlashCommandInteractionSurfaceIntegration.from_client(client, enabled=enabled)
+    return SlashCommandInteractionSurfaceIntegration.for_provider(
+        provider_id=SLASH_COMMAND_INTERACTION_SURFACE_PROVIDER_ID,
+        display_name="Slash Command",
+        config=SlashCommandInteractionSurfaceIntegrationConfig(enabled=enabled),
+    )

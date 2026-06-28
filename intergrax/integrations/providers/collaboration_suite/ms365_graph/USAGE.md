@@ -1,47 +1,20 @@
-# `ms365_graph` integration — usage
+# Ms365 Graph (ms365_graph)
 
-**Category:** ``collaboration_suite``  
-**Catalog factory:** ``create_ms365_graph_collaboration_suite()``
+Category: `collaboration_suite`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_ms365_graph_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(collaboration_suite="ms365_graph")
-backend = profile.resolve(IntegrationCategory.COLLABORATION_SUITE)
-```
+- `Ms365GraphCollaborationSuiteIntegration` derives from the category-specific contract.
+- Factory: `create_ms365_graph_collaboration_suite_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.bundle import create_ms365_graph_collaboration_suite
-
-backend = create_ms365_graph_collaboration_suite(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_MS365_TENANT_ID`, `INTERGRAX_MS365_CLIENT_ID`, `INTERGRAX_MS365_CLIENT_SECRET`
-
-## Example
-
-```python
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.bundle import create_ms365_graph_collaboration_suite
-
-suite = create_ms365_graph_collaboration_suite(tenant_id="...", client_id="...", client_secret="...")
-user = suite.get_user("user@contoso.com")
-events = suite.list_calendar_events(user_id=user.id, start="2026-05-01", end="2026-05-31")
-suite.send_mail(to=["user@contoso.com"], subject="Report", body="...")
-```
-
-## Notes
-
-OAuth client credentials in ``opens.py``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

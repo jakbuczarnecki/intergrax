@@ -30,6 +30,7 @@ __all__ = [
     "create_teams_signature_verifier",
     "register_teams_integration",
     "resolve_teams_config",
+    "create_teams_notification_channel_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -41,9 +42,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_teams_notification_channel",
         "create_teams_signature_verifier",
         "resolve_teams_config",
+        "create_teams_notification_channel_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID",
+        "TeamsNotificationChannelIntegration",
+        "TeamsNotificationChannelIntegrationConfig",
+        "TeamsNotificationChannelClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_teams_integration":
@@ -58,4 +69,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.notification_channel.teams import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.notification_channel.teams import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

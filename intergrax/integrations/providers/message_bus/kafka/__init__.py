@@ -34,6 +34,7 @@ __all__ = [
     "create_kafka_worker",
     "register_kafka_integration",
     "resolve_kafka_config",
+    "create_kafka_message_bus_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -44,9 +45,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_kafka_message_bus",
         "create_kafka_worker",
         "resolve_kafka_config",
+        "create_kafka_message_bus_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "KAFKA_MESSAGE_BUS_PROVIDER_ID",
+        "KafkaMessageBusIntegration",
+        "KafkaMessageBusIntegrationConfig",
+        "KafkaMessageBusClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_kafka_integration":
@@ -57,4 +68,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.message_bus.kafka import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.message_bus.kafka import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

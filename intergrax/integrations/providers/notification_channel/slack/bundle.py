@@ -130,3 +130,35 @@ def create_slack_signature_verifier(
         signing_secret=resolve_slack_signing_secret(signing_secret),
         enabled=enabled,
     )
+
+
+from intergrax.integrations.providers.notification_channel.slack.integration import (
+    SLACK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    SlackNotificationChannelClient,
+    SlackNotificationChannelIntegration,
+    SlackNotificationChannelIntegrationConfig,
+)
+
+
+def create_slack_notification_channel_integration(
+    *,
+    client: SlackNotificationChannelClient | None = None,
+    enabled: bool = False,
+) -> SlackNotificationChannelIntegration:
+    """
+    Build a contract-based Slack notification channel integration.
+
+    The legacy facade (create_slack_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Slack notification channel integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return SlackNotificationChannelIntegration.from_client(client, enabled=enabled)
+    return SlackNotificationChannelIntegration.for_provider(
+        provider_id=SLACK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+        display_name="Slack",
+        config=SlackNotificationChannelIntegrationConfig(enabled=enabled),
+    )

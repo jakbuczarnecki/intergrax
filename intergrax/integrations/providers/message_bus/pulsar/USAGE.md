@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Pulsar (pulsar)
 
-# `pulsar` integration — usage
+Category: `message_bus`
 
-**Category:** `message_bus`  
-**Catalog factory:** ``create_pulsar_message_bus()``  
-**Env prefix:** ``INTERGRAX_PULSAR_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.message_bus.pulsar.bundle import create_pulsar_message_bus
+- `create_pulsar_message_bus()` remains backward-compatible.
 
-backend = create_pulsar_message_bus()
-```
+## Contract-based integration
+
+- `PulsarMessageBusIntegration` derives from the category-specific contract.
+- Factory: `create_pulsar_message_bus_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

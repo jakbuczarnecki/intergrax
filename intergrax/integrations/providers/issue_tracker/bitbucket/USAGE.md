@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Bitbucket (bitbucket)
 
-# `bitbucket` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_bitbucket_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_BITBUCKET_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.issue_tracker.bitbucket.bundle import create_bitbucket_issue_tracker
+- `create_bitbucket_issue_tracker()` remains backward-compatible.
 
-backend = create_bitbucket_issue_tracker()
-```
+## Contract-based integration
+
+- `BitbucketIssueTrackerIntegration` derives from the category-specific contract.
+- Factory: `create_bitbucket_issue_tracker_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

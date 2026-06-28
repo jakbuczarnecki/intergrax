@@ -68,3 +68,35 @@ def create_pagerduty_notification_channel(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).notification_channel
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.notification_channel.pagerduty.integration import (
+    PAGERDUTY_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    PagerdutyNotificationChannelIntegration,
+    PagerdutyNotificationChannelIntegrationConfig,
+    PagerdutyNotificationChannelClient,
+)
+
+
+def create_pagerduty_notification_channel_integration(
+    *,
+    client: PagerdutyNotificationChannelClient | None = None,
+    enabled: bool = False,
+) -> PagerdutyNotificationChannelIntegration:
+    """
+    Build a contract-based Pagerduty notification channel integration.
+
+    The legacy facade (create_pagerduty_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Pagerduty notification channel integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return PagerdutyNotificationChannelIntegration.from_client(client, enabled=enabled)
+    return PagerdutyNotificationChannelIntegration.for_provider(
+        provider_id=PAGERDUTY_NOTIFICATION_CHANNEL_PROVIDER_ID,
+        display_name="Pagerduty",
+        config=PagerdutyNotificationChannelIntegrationConfig(enabled=enabled),
+    )

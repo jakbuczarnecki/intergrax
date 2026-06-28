@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Browserbase (browserbase)
 
-# `browserbase` integration — usage
+Category: `browser_automation`
 
-**Category:** `browser_automation`  
-**Catalog factory:** ``create_browserbase_browser_automation()``  
-**Env prefix:** ``INTERGRAX_BROWSERBASE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.browser_automation.browserbase.bundle import create_browserbase_browser_automation
+- `create_browserbase_browser_automation()` remains backward-compatible.
 
-backend = create_browserbase_browser_automation()
-```
+## Contract-based integration
+
+- `BrowserbaseBrowserAutomationIntegration` derives from the category-specific contract.
+- Factory: `create_browserbase_browser_automation_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

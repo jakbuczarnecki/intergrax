@@ -25,6 +25,7 @@ __all__ = [
     "create_lab_json_interaction_surface",
     "register_lab_json_integration",
     "resolve_lab_json_config",
+    "create_lab_json_interaction_surface_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -33,9 +34,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_lab_json_integration",
         "create_lab_json_interaction_surface",
         "resolve_lab_json_config",
+        "create_lab_json_interaction_surface_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "LAB_JSON_INTERACTION_SURFACE_PROVIDER_ID",
+        "LabJsonInteractionSurfaceIntegration",
+        "LabJsonInteractionSurfaceIntegrationConfig",
+        "LabJsonInteractionSurfaceClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_lab_json_integration":
@@ -50,4 +61,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.interaction_surface.lab_json import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.interaction_surface.lab_json import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

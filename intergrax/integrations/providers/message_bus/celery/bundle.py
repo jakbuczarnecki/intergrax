@@ -134,3 +134,35 @@ def create_nexus_celery_worker_app(**kwargs: object) -> object:
     from intergrax.runtime.task.worker_bootstrap import create_nexus_celery_worker_app as _create
 
     return _create(**kwargs)
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.message_bus.celery.integration import (
+    CELERY_MESSAGE_BUS_PROVIDER_ID,
+    CeleryMessageBusIntegration,
+    CeleryMessageBusIntegrationConfig,
+    CeleryMessageBusClient,
+)
+
+
+def create_celery_message_bus_integration(
+    *,
+    client: CeleryMessageBusClient | None = None,
+    enabled: bool = False,
+) -> CeleryMessageBusIntegration:
+    """
+    Build a contract-based Celery message bus integration.
+
+    The legacy facade (create_celery_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Celery message bus integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return CeleryMessageBusIntegration.from_client(client, enabled=enabled)
+    return CeleryMessageBusIntegration.for_provider(
+        provider_id=CELERY_MESSAGE_BUS_PROVIDER_ID,
+        display_name="Celery",
+        config=CeleryMessageBusIntegrationConfig(enabled=enabled),
+    )

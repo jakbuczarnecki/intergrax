@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Mailgun (mailgun)
 
-# `mailgun` integration — usage
+Category: `interaction_surface`
 
-**Category:** `interaction_surface`  
-**Catalog factory:** ``create_mailgun_interaction_surface()``  
-**Env prefix:** ``INTERGRAX_MAILGUN_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.interaction_surface.mailgun.bundle import create_mailgun_interaction_surface
+- `create_mailgun_interaction_surface()` remains backward-compatible.
 
-backend = create_mailgun_interaction_surface()
-```
+## Contract-based integration
+
+- `MailgunInteractionSurfaceIntegration` derives from the category-specific contract.
+- Factory: `create_mailgun_interaction_surface_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.
