@@ -1,6 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Live/API smoke: typed LKW evidence visibility through POST /v1/local_workspace/run."""
+"""Live/API smoke: typed LKW evidence visibility through POST /v1/local_workspace/run.
+
+LKW.2 closeout regression coverage:
+- ``test_lkw_evidence_live_smoke_index`` — ``local.workspace.index``
+- ``test_lkw_evidence_live_smoke_search`` — ``local.workspace.search``
+- ``test_lkw_evidence_live_smoke_synthesize`` — ``local.workspace.synthesize``
+- ``test_lkw_evidence_live_smoke_pipeline`` — ``local.workspace.pipeline`` (index → search → synthesize → shadow artifact)
+"""
 
 from __future__ import annotations
 

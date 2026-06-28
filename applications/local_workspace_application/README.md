@@ -25,7 +25,7 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-**LKW.2** (graph pipeline + local workspace skills) is **in progress**. **LKW.2.1–LKW.2.4C** are complete (local skill bundle, agent `skill_ids`, environment profile, pipeline graph spec, search evidence handoff, live pipeline proof). **Next:** **LKW.2 closeout docs** — direct-capability smoke + platform proof checklist. LKW.2 is not fully closed until closeout lands.
+**LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-1** — external observability export boundary (vendor integrations remain out of LKW scope).
 
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 

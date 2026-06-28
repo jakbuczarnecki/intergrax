@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 In progress (LKW.2.1–LKW.2.4B done; next LKW.2.4C)**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -11,7 +11,7 @@ Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PRO
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest observability snapshot: **2026-06-28 — LKW-PF1A CLOSED** · **LKW-DF1 CLOSED** (async runtime plugin coroutine warnings). Immediate catalog tool calls on the UAEP path emit generic `RuntimeEventType.TOOL_*` from `RuntimeExecutionContext.invoke_tool` (platform payload only; no raw args). LKW HTTP runs attach curated `lkw_evidence.v1` alongside `application_run_summary.v1` and redacted `runtime_event_summary.v1`. **Next:** LKW.2.4C live pipeline proof and metadata preservation.
+Latest observability snapshot: **2026-06-28 — LKW-PF1A CLOSED** · **LKW-DF1 CLOSED** (async runtime plugin coroutine warnings). Immediate catalog tool calls on the UAEP path emit generic `RuntimeEventType.TOOL_*` from `RuntimeExecutionContext.invoke_tool` (platform payload only; no raw args). LKW HTTP runs attach curated `lkw_evidence.v1` alongside `application_run_summary.v1` and redacted `runtime_event_summary.v1`. **Next platform phase:** **OBS-EXPORT-1** — external observability export boundary (LKW remains proof workload; vendor integrations out of scope).
 
 Current LKW.2 execution status: §5 below. LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
@@ -145,7 +145,7 @@ This track is executed one task at a time.
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
 | LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
-| LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **In progress** (LKW.2.1–LKW.2.4B done; next LKW.2.4C) | High |
+| LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
@@ -501,7 +501,7 @@ Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifac
 
 ## 5. LKW.2: graph pipeline + local workspace skills
 
-**Progress:** LKW.2.1–LKW.2.4C **done**; **next:** LKW.2 closeout docs (direct-capability smoke + platform proof checklist). Live pipeline proof for `local.workspace.pipeline` **passed** (LKW.2.4C).
+**Progress:** LKW.2.1–LKW.2.4C **done**; **LKW.2 closeout passed (2026-06-28)**. Live pipeline proof for `local.workspace.pipeline` **passed** (LKW.2.4C). Direct-capability regression smoke passed. **Next platform phase:** OBS-EXPORT-1.
 
 | ID | Task | Module | Owner | Status | Platform propagation |
 |----|------|--------|-------|--------|----------------------|
@@ -518,10 +518,10 @@ Acceptance:
 
 - [x] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection *(LKW.2.4C)*.
 - [x] Tool access is resolved through `skill_ids`, not ad-hoc allowlists in agent code *(LKW.2.1–LKW.2.2)*.
-- [ ] Existing LKW.1 index/search/synthesize direct capabilities still pass *(LKW.2 closeout smoke)*.
+- [x] Existing LKW.1 index/search/synthesize direct capabilities still pass *(LKW.2 closeout smoke — `test_lkw_evidence_live_smoke_index/search/synthesize`)*.
 - [x] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline *(LKW.2.4B)*.
 - [x] Metadata preservation on pipeline run: `application_run_summary.v1`, redacted `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1` *(LKW.2.4C)*.
-- [ ] Platform proof checklist in §0a is completed *(LKW.2 closeout)*.
+- [x] Platform proof checklist in §0a is completed *(LKW.2 closeout — see below)*.
 
 **Observability boundary (OBS-EXPORT):**
 
@@ -529,6 +529,54 @@ Acceptance:
 - Vendor observability integrations (Langfuse, Arize/Phoenix, Elasticsearch, OTLP backends, etc.) are **out of scope** for LKW.2.
 - LKW must continue to use platform observability contracts only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`, RuntimeEvent `TOOL_*`, ToolCallRecord/RagCallRecord, WorkspaceArtifactRef.
 - Do not add LKW-specific exporters, telemetry buses, vendor SDK calls, trace stores, or observability workarounds.
+- **OBS-EXPORT has not started** — LKW.2 closeout records it as the next platform phase only.
+
+### LKW.2 closeout result
+
+Status:
+
+```text
+CLOSED — PIPELINE PROOF PASSED
+```
+
+Focused closeout smoke:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py \
+  applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py -q -W default
+
+Result: 13 passed (2026-06-28); no coroutine-never-awaited warnings on focused path
+```
+
+Verified:
+
+```text
+direct — local.workspace.index / search / synthesize still pass after pipeline graph work
+pipeline — local.workspace.pipeline runs local_indexer -> local_search -> local_synthesizer -> shadow artifact
+metadata — application_run_summary.v1, lkw_evidence.v1, runtime_event_summary.v1, run_artifact_bundle.v1 preserved on pipeline run
+```
+
+### LKW.2 closeout — §0a platform proof checklist
+
+- [x] Did every discovered bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, and CI/runbook gap receive a classification? — Yes; see deferred queue below.
+- [x] Does this change belong only to LKW, or should it move to shared platform code? — Product pipeline/graph spec is LKW; local skill bundle + graph trigger closure patterns flagged for future scaffold propagation (§5 task table).
+- [ ] Should application scaffold generate this pattern for the next product host? — Deferred to LKW-H3 (not an LKW.2 closeout blocker).
+- [ ] Should agent scaffold generate this contract, test, or documentation pattern? — LKW.2.2 `skill_ids` pattern recorded; scaffold propagation deferred to LKW-H3.
+- [x] Does `.env.example` match `host/settings.py` and production validation? — Unchanged by LKW.2; LKW.1 parity still holds.
+- [x] Does `pyproject.toml` need a dependency split or optional dependency group? — No LKW.2 closeout change required.
+- [x] Does Docker still build and run with the correct files, env profile, port, and healthcheck? — Unchanged by LKW.2; LKW.1 Docker path still valid.
+- [x] Does CI need a new application smoke test or Docker build check? — Live smoke in `test_lkw_evidence_live_smoke.py` covers direct capabilities + pipeline; environment profile tests cover graph spec closure.
+- [x] Does the deploy/runbook still describe the real execution path? — README and USER_JOURNEY unchanged; pipeline capability documented.
+- [x] Does the implementation plan identify both the LKW work and the platform propagation work? — Yes (§5 task table + deferred queue).
+
+Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
+
+| Follow-up | Classification | Notes |
+|----------|----------------|-------|
+| RuntimeEvent `TOOL_*` on ACP graph path | Platform-reusable deferred | Tool visibility via `application_run_summary.total_tool_calls` works; event-bus `TOOL_*` on graph path incomplete |
+| RAG ingest-specific observability contract | Platform deferred (optional) | — |
+| Policy/raw tool reason at RuntimeEvent layer | Platform deferred | — |
+| Developer first-run/adoption simplification | LKW-H3 | Helper/template/docs ergonomics |
 
 ---
 
