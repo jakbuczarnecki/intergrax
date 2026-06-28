@@ -132,6 +132,19 @@ Load **only** the satellite matching your task or cited gap ID.
 - Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
 - Global bootstrap registration remains **deferred** unless explicitly planned later
 
+**OBS-EXPORT-4B status (2026-06-28):**
+
+- **OBS-EXPORT-4B-OTLP-HTTP-TRANSPORT** — **Done**
+- **`OtlpHttpTransport`** added — concrete HTTP POST transport implementing **`OtlpTransport`**
+- Transport belongs to platform observability only (not applications, not LKW-specific)
+- Transport is explicit opt-in — **not** globally registered in platform bootstrap
+- Transport sends only OTLP-safe JSON payloads produced by **`OtlpObservabilityExporter`** from policy-sanitized envelopes
+- Redaction and failure isolation remain upstream — **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
+- Transport does **not** read or export raw **`application_attributes`**; no raw content export
+- No vendor SDK coupling — lightweight **`httpx`** client only; injectable client for tests (no real network in unit tests)
+- Operator/bootstrap wiring remains **deferred** unless explicitly planned later
+- Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
+
 **Required decisions:**
 
 - External sinks are optional subscribers/export targets, not semantic owners of Intergrax observability.
@@ -152,6 +165,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **OBS-EXPORT-3** | Code | P2 | **Done** | Safe JSONL/file exporter | **`JsonlObservabilityExporter`** writes policy-sanitized **`ObservabilityExportEnvelope`** JSONL records; local-first explicit opt-in; no global bootstrap registration; no vendor SDK; raw content export disabled by default. |
 | **OBS-EXPORT-4A** | Code | P2 | **Done** | Typed application observability attributes contract | **`ApplicationObservabilityAttributes`** base + subclass extension; namespaced safe metadata; policy sanitization before export; envelope integration; no arbitrary public dict boundary; no vendor SDK. |
 | **OBS-EXPORT-4** | Code | P2 | **Done** | First remote backend adapter: OTLP | **`OtlpObservabilityExporter`** + **`OtlpObservabilityExporterConfig`** + injectable **`OtlpTransport`**; maps policy-sanitized envelopes (including **`sanitized_application_attributes`**) to OTLP-safe log payloads; no vendor SDK; explicit opt-in; no global bootstrap registration. Elasticsearch deferred. |
+| **OBS-EXPORT-4B** | Code | P2 | **Done** | OTLP HTTP transport | **`OtlpHttpTransport`** POSTs OTLP JSON to configured endpoint; explicit opt-in; platform observability only; policy-sanitized payloads only; failure isolation via **`try_export_observability_envelope`**; no vendor SDK; no global bootstrap registration. Operator wiring deferred. |
 | **OBS-EXPORT-5** | Code | P3 | Planned | Langfuse / Arize / Phoenix adapter | Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. |
 
 ---

@@ -57,6 +57,7 @@ from intergrax.runtime.observability.otlp_exporter import (
     OtlpObservabilityExporterConfig,
     OtlpTransport,
 )
+from intergrax.runtime.observability.otlp_http_transport import OtlpHttpTransport
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
 from intergrax.runtime.observability.journal_export import (
     JournalExportSnapshot,
@@ -103,6 +104,7 @@ __all__ = [
     "NoOpObservabilityExporter",
     "OtlpObservabilityExporter",
     "OtlpObservabilityExporterConfig",
+    "OtlpHttpTransport",
     "OtlpTransport",
     "OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA",
     "ObservabilityAttributeValue",
