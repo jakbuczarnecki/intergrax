@@ -173,12 +173,14 @@ RAG ingest-specific observability contract
 search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary -> LKW-H1.3
 policy decisions and raw tool reason/error at RuntimeEvent layer
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
-ACP shadow_workspace_id propagation into execution structured_data (PF2 follow-up)
+ACP shadow_workspace_id propagation into execution structured_data -> closed in LKW-PF2A
 ```
 
 **LKW-PF1:** immediate `TOOL_*` RuntimeEvents — PASSED WITH FOLLOW-UP (see §LKW-PF1).
 
 **LKW-PF2:** RunArtifactBundle / WorkspaceArtifactRef — PASSED WITH FOLLOW-UP (see §LKW-PF2).
+
+**LKW-PF2A:** ACP shadow_workspace_id propagation — CLOSED (see §LKW-PF2A).
 
 ## LKW.1.15 — tenant-scoped retrieve for live search
 
@@ -413,11 +415,54 @@ Focused tests:
 uv run pytest applications/local_workspace_application/tests/test_run_artifact_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
 ```
 
-Follow-up:
+Follow-up closed in **LKW-PF2A** (see §LKW-PF2A).
+
+Queue:
 
 ```text
-ACP session path should propagate shadow_workspace_id into AgentExecutionResult.structured_data
-so bundle workspace resolution does not rely solely on task-id fallback open_or_create.
+NEXT: LKW.2
+```
+
+## LKW-PF2A — ACP shadow_workspace_id propagation
+
+Status:
+
+```text
+CLOSED
+```
+
+Commit:
+
+```text
+10e40bf7 — LKW-PF2A-ACP-SHADOW-WORKSPACE-ID-PROPAGATION
+```
+
+Propagation path verified:
+
+```text
+shadow workspace attach (exec_ctx_isolation.py)
+  -> ACP session structured_data (acp_run.py) / UAEP route.extra (uaep.py)
+  -> AgentExecutionResult.structured_data (agent_engine.py / runtime_mapping.py)
+  -> TaskResult isolation + run_artifact_bundle.v1 (task_finisher.py / run_artifact_bundle_builder.py)
+  -> LKW HTTP metadata (run_artifact_metadata.py)
+```
+
+Typed keys reused (no LKW-only artifact layer):
+
+```text
+SHADOW_WORKSPACE_ID_KEY (shadow_workspace_id)
+RunArtifactBundle / WorkspaceArtifactRef
+run_artifact_bundle.v1
+lkw.synthesize_summary.v1 (unchanged)
+runtime_event_summary.v1 (unchanged)
+application_run_summary.v1 (unchanged)
+lkw_evidence.v1 (unchanged)
+```
+
+Focused tests:
+
+```text
+uv run pytest tests/unit/agents/test_acp_shadow_workspace_propagation.py applications/local_workspace_application/tests/test_run_artifact_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
 ```
 
 Queue:
@@ -431,7 +476,7 @@ NEXT: LKW.2
 ```text
 Search/synthesize per-tool accounting in trace/summary -> LKW-H1.3 (closed)
 RAG ingest observability contract -> platform deferred
-ACP shadow_workspace_id on execution structured_data -> PF2 follow-up
+ACP shadow_workspace_id on execution structured_data -> closed in LKW-PF2A
 Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 

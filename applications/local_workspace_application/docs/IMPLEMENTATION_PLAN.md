@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **Active queue: LKW-PF1, LKW-PF2, LKW.2**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **Active queue: LKW.2**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -438,7 +438,9 @@ async runtime plugin coroutine warnings in event_bus/task_trace handlers
 
 **LKW-CI1 (2026-06-28):** CLOSED — live smoke test avoids circular `intergrax.runtime.task` package import; `AgentEngine` exposes `shadow_manager`/`sandbox_manager` for graph executor isolation wiring.
 
-**LKW-PF2 (2026-06-27):** PASSED WITH FOLLOW-UP — platform contract reused (`intergrax/contracts/task_artifacts.py`: `RunArtifactBundle`, `WorkspaceArtifactRef`; key `run_artifact_bundle.v1`). LKW wires synthesize shadow artifacts through existing nexus task-finisher bundle rollup and promotes bundle on HTTP metadata via `serving/run_artifact_metadata.py`. Domain diagnostic `lkw.synthesize_summary.v1` preserved; bundle exposes refs/paths only (no raw synthesized content). Follow-up: propagate `shadow_workspace_id` on ACP execution structured_data for deterministic workspace resolution.
+**LKW-PF2 (2026-06-27):** PASSED WITH FOLLOW-UP — platform contract reused (`intergrax/contracts/task_artifacts.py`: `RunArtifactBundle`, `WorkspaceArtifactRef`; key `run_artifact_bundle.v1`). LKW wires synthesize shadow artifacts through existing nexus task-finisher bundle rollup and promotes bundle on HTTP metadata via `serving/run_artifact_metadata.py`. Domain diagnostic `lkw.synthesize_summary.v1` preserved; bundle exposes refs/paths only (no raw synthesized content). Follow-up closed in **LKW-PF2A**.
+
+**LKW-PF2A (2026-06-28):** CLOSED — `shadow_workspace_id` propagates through ACP session (`acp_run.py` + `exec_ctx_isolation.py`) and UAEP path (`route.extra` → `runtime_answer_to_agent_result`) into `AgentExecutionResult.structured_data`; `run_artifact_bundle_builder.py` resolves workspace refs deterministically. Unit coverage: `tests/unit/agents/test_acp_shadow_workspace_propagation.py`.
 
 
 
@@ -450,7 +452,8 @@ async runtime plugin coroutine warnings in event_bus/task_trace handlers
 | **LKW-PF1** | Immediate tool RuntimeEvent emission | **PASSED WITH FOLLOW-UP** — `invoke_tool` emits `TOOL_REQUESTED/COMPLETED/FAILED/DENIED` with generic platform payload (`tool_id`, `status`, `latency_ms`, `args_digest`, `error_code`, spine ids). HTTP visibility closed in **LKW-PF1A**. |
 | **LKW-PF1A** | Safe runtime event HTTP read surface | **CLOSED** — `runtime_event_summary.v1` on POST `/v1/local_workspace/run` metadata; redacted TOOL_* counts by tool_id. |
 | **LKW-CI1** | Live smoke standalone import cleanup | **CLOSED** — test avoids circular task package import; graph isolation wiring unblocked for standalone smoke. |
-| **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | **PASSED WITH FOLLOW-UP** — reuses platform `run_artifact_bundle.v1` / `WorkspaceArtifactRef`; LKW HTTP responses expose bundle via `run_artifact_metadata.py`; synthesize diagnostic correlated by `artifact_path` / `artifact_ref`. Follow-up: ACP path should propagate `shadow_workspace_id` into execution structured_data for deterministic bundle resolution before task-id fallback. |
+| **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | **PASSED WITH FOLLOW-UP** — reuses platform `run_artifact_bundle.v1` / `WorkspaceArtifactRef`; LKW HTTP responses expose bundle via `run_artifact_metadata.py`; synthesize diagnostic correlated by `artifact_path` / `artifact_ref`. Follow-up closed in **LKW-PF2A**. |
+| **LKW-PF2A** | ACP shadow_workspace_id propagation | **CLOSED** — `isolation_structured_data_from_exec_ctx` exports typed `shadow_workspace_id` into ACP/UAEP execution structured_data; bundle builder correlates synthesize workspace refs without LKW-only workaround. |
 ### H1.3 result
 
 Status:
