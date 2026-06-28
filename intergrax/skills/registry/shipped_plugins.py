@@ -31,6 +31,7 @@ from intergrax.skills.providers.interaction.plugin import InteractionSkillPlugin
 from intergrax.skills.providers.jira.plugin import JiraSkillPlugin
 from intergrax.skills.providers.knowledge.plugin import KnowledgeSkillPlugin
 from intergrax.skills.providers.legal.plugin import LegalSkillPlugin
+from intergrax.skills.providers.local.plugin import LocalSkillPlugin
 from intergrax.skills.providers.memory.plugin import MemorySkillPlugin
 from intergrax.skills.providers.message_bus.plugin import MessageBusSkillPlugin
 from intergrax.skills.providers.metrics.plugin import MetricsSkillPlugin
@@ -75,6 +76,7 @@ SHIPPED_SKILL_PLUGINS: tuple[type, ...] = (
     JiraSkillPlugin,
     KnowledgeSkillPlugin,
     LegalSkillPlugin,
+    LocalSkillPlugin,
     MemorySkillPlugin,
     MessageBusSkillPlugin,
     MetricsSkillPlugin,
