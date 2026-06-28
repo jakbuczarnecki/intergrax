@@ -3,6 +3,17 @@
 
 """Harness observability spine helpers (OBS-BUS-2+)."""
 
+from intergrax.runtime.observability.export_attributes import (
+    APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA,
+    ApplicationObservabilityAttributePolicyResult,
+    ApplicationObservabilityAttributes,
+    SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA,
+    SanitizedApplicationObservabilityAttributes,
+    ObservabilityAttributeValue,
+    observability_attribute_key,
+    sanitize_application_observability_attributes,
+    sanitized_application_attributes_are_content_safe,
+)
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
     ExportRecordKind,
@@ -75,6 +86,9 @@ from intergrax.runtime.observability.trace_scope import (
 )
 
 __all__ = [
+    "APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
+    "ApplicationObservabilityAttributePolicyResult",
+    "ApplicationObservabilityAttributes",
     "ExportRecordKind",
     "ExportStatus",
     "FORBIDDEN_EXPORT_CONTENT_FIELDS",
@@ -83,10 +97,12 @@ __all__ = [
     "JsonlObservabilityExporter",
     "NoOpObservabilityExporter",
     "OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA",
+    "ObservabilityAttributeValue",
     "ObservabilityExportEnvelope",
     "ObservabilityExporter",
     "RuntimeEventExportSource",
-    "TestObservabilityExporter",
+    "SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
+    "SanitizedApplicationObservabilityAttributes",
     "assert_runtime_event_persistence_conformance",
     "build_journal_export_snapshot",
     "build_journal_ref",
@@ -126,6 +142,10 @@ __all__ = [
     "register_journal_export_plugin",
     "render_journal_otlp_json",
     "try_export_observability_envelope",
+    "TestObservabilityExporter",
+    "observability_attribute_key",
+    "sanitize_application_observability_attributes",
+    "sanitized_application_attributes_are_content_safe",
     "sample_runtime_event",
     "serialize_runtime_event",
     "TraceScopeState",

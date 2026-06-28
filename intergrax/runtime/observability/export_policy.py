@@ -10,6 +10,10 @@ import logging
 from dataclasses import dataclass
 from enum import StrEnum
 
+from intergrax.runtime.observability.export_attributes import (
+    sanitize_application_observability_attributes,
+    sanitized_application_attributes_are_content_safe,
+)
 from intergrax.runtime.observability.export_boundary import (
     NoOpObservabilityExporter,
     ObservabilityExportEnvelope,
@@ -116,12 +120,23 @@ def apply_observability_export_policy(
     safe_relative_path = _path_field_action(envelope.safe_relative_path, policy=active)
     artifact_ref = _path_field_action(envelope.artifact_ref, policy=active)
 
+    sanitized_application_attributes = None
+    if envelope.application_attributes is not None:
+        attribute_result = sanitize_application_observability_attributes(
+            envelope.application_attributes,
+            strict_redaction=active.strict_redaction,
+            hash_sensitive_paths=active.hash_sensitive_paths,
+        )
+        sanitized_application_attributes = attribute_result.sanitized
+
     sanitized = envelope.model_copy(
         update={
             "tenant_id": tenant_id,
             "workspace_id": workspace_id,
             "safe_relative_path": safe_relative_path,
             "artifact_ref": artifact_ref,
+            "application_attributes": None,
+            "sanitized_application_attributes": sanitized_application_attributes,
         }
     )
 
@@ -131,6 +146,16 @@ def apply_observability_export_policy(
             envelope=None,
             decision=ObservabilityExportMode.METADATA_ONLY,
             reason="forbidden_content_fields",
+        )
+
+    if active.strict_redaction and not sanitized_application_attributes_are_content_safe(
+        sanitized.sanitized_application_attributes
+    ):
+        return ExportPolicyResult(
+            exported=False,
+            envelope=None,
+            decision=ObservabilityExportMode.METADATA_ONLY,
+            reason="forbidden_application_attribute_fields",
         )
 
     return ExportPolicyResult(

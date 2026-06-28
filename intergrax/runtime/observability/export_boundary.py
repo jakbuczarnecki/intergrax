@@ -13,6 +13,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.observability.export_attributes import (
+    ApplicationObservabilityAttributes,
+    SanitizedApplicationObservabilityAttributes,
+)
 from intergrax.runtime.observability.journal_export import JournalRef
 
 OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA = "observability_export_envelope.v1"
@@ -117,6 +121,9 @@ class ObservabilityExportEnvelope(BaseModel):
     source_schema_id: str = ""
     correlation_id: str = ""
     event_id: str = ""
+
+    application_attributes: ApplicationObservabilityAttributes | None = None
+    sanitized_application_attributes: SanitizedApplicationObservabilityAttributes | None = None
 
 
 class RuntimeEventExportSource(BaseModel):
