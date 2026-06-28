@@ -12,13 +12,12 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from intergrax.runtime.task.task_metadata_keys import TaskResultMetadataKey
 from local_workspace_application.host.factory import create_local_workspace_backend_app
 
 pytestmark = [pytest.mark.unit]
 
 _PREFIX = "/v1/local_workspace"
-_APP_SUMMARY_KEY = TaskResultMetadataKey.APPLICATION_RUN_SUMMARY
+_APP_SUMMARY_KEY = "application_run_summary.v1"
 _EVIDENCE_KEY = "lkw_evidence.v1"
 
 _FIXTURE_TEXT = "Intergrax LKW evidence smoke fixture — searchable paragraph."

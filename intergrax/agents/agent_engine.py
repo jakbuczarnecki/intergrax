@@ -80,6 +80,14 @@ class AgentEngine:
     def uaep_executor(self) -> UAEPExecutor:
         return self._uaep
 
+    @property
+    def shadow_manager(self) -> ShadowWorkspaceManager:
+        return self._uaep.shadow_manager
+
+    @property
+    def sandbox_manager(self) -> SandboxSessionManager:
+        return self._uaep.sandbox_manager
+
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         agent = self._resolve_agent(request)
         return await self._execute_agent_impl(agent, request, self._uaep, registry=self._registry)

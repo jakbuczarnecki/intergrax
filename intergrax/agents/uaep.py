@@ -180,6 +180,14 @@ class UAEPExecutor:
     def interrupt_handler(self) -> ExecutionInterruptHandler:
         return self._interrupt_handler
 
+    @property
+    def shadow_manager(self) -> ShadowWorkspaceManager:
+        return self._shadow_manager
+
+    @property
+    def sandbox_manager(self) -> SandboxSessionManager:
+        return self._sandbox_manager
+
     async def execute(
         self,
         agent: Agent,
