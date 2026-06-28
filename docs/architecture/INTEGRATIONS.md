@@ -34,7 +34,8 @@ Load **only** the satellite matching your task or cited §.
 ## Platform integration contract (Tier-1 runtime)
 
 **Code:** `intergrax/runtime/integrations/contracts.py` · **Task:** INTEGRATIONS-1A  
-**Observability vendor category:** `intergrax/runtime/integrations/observability.py` · **Task:** INTEGRATIONS-1B
+**Observability vendor category:** `intergrax/runtime/integrations/observability.py` · **Task:** INTEGRATIONS-1B  
+**Provider category contracts:** `intergrax/runtime/integrations/categories/` · **Task:** INTEGRATIONS-2A
 
 All future integration categories derive from or align with the generic **`PlatformIntegrationContract`**. Vendor adapters (Langfuse, Arize, Phoenix, Elasticsearch, OTLP backends, and future custom backends) are **integrations**, not isolated ad-hoc exporters or one-off SDK wrappers.
 
@@ -105,6 +106,38 @@ Explicit operator wiring (**`build_otlp_observability_integration`**, **`build_o
 | `ElasticsearchObservabilityIntegration` | `elasticsearch` | `observability_vendor` |
 | `ElasticsearchVectorStoreIntegration` | `elasticsearch` | `vector_store` |
 | `ElasticsearchSearchIntegration` | `elasticsearch` | `search` |
+
+### Provider category contract layer (INTEGRATIONS-2A)
+
+**Code:** `intergrax/runtime/integrations/categories/` · **Registry:** `PROVIDER_CATEGORY_CONTRACT_REGISTRY`  
+**Taxonomy source:** `intergrax/integrations/providers/layout.py` (`SLUG_CATEGORY`)
+
+Each provider folder under `intergrax/integrations/providers/<category>/` maps to a **category-specific integration contract** in Tier-1 runtime. Contracts derive from **`PlatformIntegrationContract`** and declare category-appropriate default capabilities. Config remains **disabled by default**; **`public_view()`** must not expose secrets.
+
+| Module | Categories covered |
+|--------|-------------------|
+| `categories/data.py` | `relational_store`, `document_store`, `key_value_cache`, `graph_store` |
+| `categories/messaging.py` | `message_bus`, `notification_channel` |
+| `categories/search.py` | `search_provider`, `rerank_provider` |
+| `categories/storage.py` | `object_storage`, `vector_store` |
+| `categories/devops.py` | `ci_cd`, `security_scanner`, `sandbox_host`, `workflow_orchestrator`, `cloud_platform` |
+| `categories/collaboration.py` | `collaboration_suite`, `issue_tracker`, `wiki_knowledge`, `interaction_surface` |
+| `categories/ai.py` | `document_parser`, `vision_serving`, `ml_inference_host`, `llm_guardrail`, `speech_provider` |
+| `categories/security.py` | `secrets_store`, `identity_provider`, `feature_flag` |
+| `categories/automation.py` | `browser_automation`, `billing_meter`, `crm` |
+
+**Provider identity vs integration kind (mandatory):**
+
+- **`provider_id`** — catalog slug (for example `elasticsearch`, `pinecone`).
+- **`integration_kind`** — provider category string (for example `vector_store`, `observability_vendor`).
+- **`integration_id`** — `{provider_id}:{integration_kind}` via `derive_platform_integration_id`.
+- One provider may appear in **multiple categories** through **separate integration classes** — never one multi-category “monster” class.
+
+**Observability backend alias:** provider folder `observability_backend` aligns with existing **`ObservabilityVendorIntegrationContract`** (INTEGRATIONS-1B). No duplicate observability backend contract. Registry maps `observability_backend` → **`ObservabilityVendorIntegrationContract`**; **`integration_kind`** remains `observability_vendor`. **`PlatformIntegrationKind.OBSERVABILITY_BACKEND`** documents the folder taxonomy; **`OBSERVABILITY_VENDOR`** remains the runtime integration kind.
+
+**`PlatformIntegrationKind`:** extended with all `SLUG_CATEGORY` folder names. Legacy shorthand values (`search`, `storage`, `notification`) remain for backward compatibility.
+
+**Scope boundary (INTEGRATIONS-2A):** category contracts only — no concrete provider migration, no vendor SDK imports, no registry/bootstrap wiring.
 
 ### Default safety and opt-in rules
 

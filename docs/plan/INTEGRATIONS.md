@@ -8,7 +8,7 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-06-23 — Phase **INT-P8** architecture & backlog (planned); **Full Harness LC** unchanged; shipped catalog **194** slugs (`layout.py` · `SLUG_CATEGORY` — source of truth).
+**Last updated:** 2026-06-28 — **INTEGRATIONS-2A** provider category contracts implemented.
 
 ---
 
@@ -54,6 +54,25 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
+
+---
+
+## Phase INTEGRATIONS-2A — provider category contracts (Done)
+
+**Purpose:** Category-specific base contracts aligned with `layout.py` `SLUG_CATEGORY` taxonomy before concrete provider migration.  
+**Architecture:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-category-contract-layer-integrations-2a)  
+**Detail plan:** [`PROVIDER_CATEGORY_CONTRACTS.md`](PROVIDER_CATEGORY_CONTRACTS.md)
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **INTEGRATIONS-2A** | Code | P1 | **Done** | `intergrax/runtime/integrations/categories/` + `PROVIDER_CATEGORY_CONTRACT_REGISTRY` | All 31 `SLUG_CATEGORY` folders covered; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; `PlatformIntegrationKind` extended; focused tests green |
+
+**INTEGRATIONS-2A status (2026-06-28):**
+
+- Category-specific contracts for all provider folders in `layout.py`
+- `observability_backend` → **`ObservabilityVendorIntegrationContract`** (no duplicate contract)
+- Concrete provider migration **deferred** (INTEGRATIONS-2B)
+- No LKW change; no registry/bootstrap wiring; no vendor SDK imports
 
 ---
 

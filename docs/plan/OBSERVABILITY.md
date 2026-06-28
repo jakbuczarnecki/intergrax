@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine.
 
-**Last updated:** 2026-06-28 — **OBS-EXPORT-3** safe JSONL/file exporter implemented.
+**Last updated:** 2026-06-28 — **INTEGRATIONS-2A** observability_backend category alignment documented.
 
 ---
 
@@ -189,6 +189,13 @@ Load **only** the satellite matching your task or cited gap ID.
 - Concrete Langfuse / Arize / Phoenix adapters remain **deferred** — must subclass **`ObservabilityVendorIntegrationContract`**, not ad-hoc exporter classes
 - JSONL remains a local file export sink — not migrated to observability vendor integration contract in INTEGRATIONS-1C
 - **No LKW change** in INTEGRATIONS-1C
+
+**INTEGRATIONS-2A status (provider category contracts):**
+
+- **`observability_backend`** provider folder aligns with existing **`ObservabilityVendorIntegrationContract`** — no duplicate observability backend contract
+- Runtime **`integration_kind`** for observability vendor integrations remains **`observability_vendor`**; folder name **`observability_backend`** is documented via **`PlatformIntegrationKind.OBSERVABILITY_BACKEND`**
+- Existing **`observability_backend`** catalog providers (Langfuse, Arize, Phoenix, Elasticsearch, Datadog, …) are **still awaiting migration/adaptation** to category contracts
+- **OBS-EXPORT-5** remains **deferred** until those providers are adapted as concrete **`ObservabilityVendorIntegrationContract`** subclasses
 
 **Required decisions:**
 

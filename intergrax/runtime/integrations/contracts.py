@@ -30,8 +30,17 @@ _SECRET_CONFIG_FIELD_NAMES: frozenset[str] = frozenset(
 
 
 class PlatformIntegrationKind(StrEnum):
-    """Well-known integration categories — one provider may appear in many kinds."""
+    """
+    Well-known integration categories — one provider may appear in many kinds.
 
+    Provider folder taxonomy (`layout.py` SLUG_CATEGORY) uses snake_case category
+    strings (for example ``observability_backend``, ``search_provider``). Legacy
+  shorthand values (``search``, ``storage``, ``notification``) remain for backward
+    compatibility. Observability vendor integrations use ``observability_vendor`` as
+    ``integration_kind`` even when the provider folder is ``observability_backend``.
+    """
+
+    # Legacy shorthand values (backward compatible — do not remove)
     OBSERVABILITY_VENDOR = "observability_vendor"
     LLM_PROVIDER = "llm_provider"
     VECTOR_STORE = "vector_store"
@@ -39,6 +48,38 @@ class PlatformIntegrationKind(StrEnum):
     STORAGE = "storage"
     NOTIFICATION = "notification"
     TOOL_PROVIDER = "tool_provider"
+
+    # Provider category taxonomy (layout.py SLUG_CATEGORY)
+    RELATIONAL_STORE = "relational_store"
+    DOCUMENT_STORE = "document_store"
+    KEY_VALUE_CACHE = "key_value_cache"
+    MESSAGE_BUS = "message_bus"
+    OBJECT_STORAGE = "object_storage"
+    SEARCH_PROVIDER = "search_provider"
+    NOTIFICATION_CHANNEL = "notification_channel"
+    INTERACTION_SURFACE = "interaction_surface"
+    COLLABORATION_SUITE = "collaboration_suite"
+    ISSUE_TRACKER = "issue_tracker"
+    WIKI_KNOWLEDGE = "wiki_knowledge"
+    OBSERVABILITY_BACKEND = "observability_backend"
+    BROWSER_AUTOMATION = "browser_automation"
+    CLOUD_PLATFORM = "cloud_platform"
+    SECRETS_STORE = "secrets_store"
+    GRAPH_STORE = "graph_store"
+    DOCUMENT_PARSER = "document_parser"
+    RERANK_PROVIDER = "rerank_provider"
+    FEATURE_FLAG = "feature_flag"
+    CI_CD = "ci_cd"
+    SECURITY_SCANNER = "security_scanner"
+    SANDBOX_HOST = "sandbox_host"
+    IDENTITY_PROVIDER = "identity_provider"
+    SPEECH_PROVIDER = "speech_provider"
+    WORKFLOW_ORCHESTRATOR = "workflow_orchestrator"
+    BILLING_METER = "billing_meter"
+    CRM = "crm"
+    VISION_SERVING = "vision_serving"
+    ML_INFERENCE_HOST = "ml_inference_host"
+    LLM_GUARDRAIL = "llm_guardrail"
 
 
 class PlatformIntegrationCapability(StrEnum):
