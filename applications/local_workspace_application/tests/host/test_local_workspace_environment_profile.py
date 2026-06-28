@@ -5,7 +5,11 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
-from intergrax.applications._shared.graph_spec_to_plan import should_seed_plan_from_graph_spec
+from intergrax.applications._shared.graph_spec_to_plan import (
+    application_graph_spec_to_nexus_plan,
+    should_seed_plan_from_graph_spec,
+)
+from intergrax.applications._shared.package_wiring import _validate_graph_spec_capabilities
 from intergrax.applications._shared.package_wiring import (
     build_application_package,
     validate_application_package_closure,
@@ -64,8 +68,10 @@ def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
         wiring.registry_snapshot,
         capability_graph=wiring.capability_graph,
     )
-    trigger_violations = [v for v in violations if "graph trigger capability" in v]
-    assert trigger_violations == []
+    roster_violations = [
+        v for v in violations if "not found on manifest roster" in v or "graph trigger capability" in v
+    ]
+    assert roster_violations == [], f"unexpected roster/graph violations: {violations}"
     roster_caps = {
         capability
         for binding in manifest.enabled_agents()
@@ -84,11 +90,58 @@ def test_lkw_environment_profile_registers_pipeline_graph_spec() -> None:
         "local_search",
         "local_synthesizer",
     }
+    assert {node.contract_id for node in spec.nodes} == {
+        "LocalIndexerAgent",
+        "LocalSearchAgent",
+        "LocalSynthesizerAgent",
+    }
     edges = [(edge.source_agent_id, edge.target_agent_id) for edge in spec.edges]
     assert edges == [
         ("local_indexer", "local_search"),
         ("local_search", "local_synthesizer"),
     ]
+
+
+def test_lkw_graph_spec_validates_against_manifest_roster() -> None:
+    manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
+    env = manifest.resolved_environment()
+    spec = env.graph_spec
+    assert spec is not None
+    spec.validate_against_roster(manifest.enabled_agents())
+    assert _validate_graph_spec_capabilities(manifest, env) == []
+
+
+def test_lkw_graph_plan_preserves_routing_agent_ids() -> None:
+    env = build_local_workspace_environment_profile()
+    spec = env.graph_spec
+    assert spec is not None
+    task = Task(
+        tenant_id="tenant-lkw",
+        user_id="user-lkw",
+        message="pipeline",
+        context=TaskContext(capability="local.workspace.pipeline"),
+    )
+    plan = application_graph_spec_to_nexus_plan(spec, task, classification="multi_agent_default")
+    assert [step.agent_id for step in plan.steps] == [
+        "local_indexer",
+        "local_search",
+        "local_synthesizer",
+    ]
+
+
+def test_lkw_invalid_graph_node_fails_package_closure() -> None:
+    manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
+    env = manifest.resolved_environment()
+    assert env.graph_spec is not None
+    invalid_node = env.graph_spec.nodes[0].model_copy(
+        update={"agent_id": "missing_agent", "contract_id": None},
+    )
+    invalid_spec = env.graph_spec.model_copy(
+        update={"nodes": list(env.graph_spec.nodes) + [invalid_node]},
+    )
+    invalid_env = env.model_copy(update={"graph_spec": invalid_spec})
+    violations = _validate_graph_spec_capabilities(manifest, invalid_env)
+    assert any("not found on manifest roster" in violation for violation in violations)
 
 
 def test_lkw_pipeline_is_orchestration_trigger_capability() -> None:

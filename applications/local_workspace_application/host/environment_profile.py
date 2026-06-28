@@ -43,9 +43,9 @@ def build_local_workspace_pipeline_graph_spec() -> ApplicationGraphSpec:
     """Index → search → synthesize orchestration graph for ``local.workspace.pipeline``."""
     return ApplicationGraphSpec(
         nodes=[
-            GraphNode(agent_id="local_indexer"),
-            GraphNode(agent_id="local_search"),
-            GraphNode(agent_id="local_synthesizer"),
+            GraphNode(agent_id="local_indexer", contract_id="LocalIndexerAgent"),
+            GraphNode(agent_id="local_search", contract_id="LocalSearchAgent"),
+            GraphNode(agent_id="local_synthesizer", contract_id="LocalSynthesizerAgent"),
         ],
         edges=[
             GraphEdge(source_agent_id="local_indexer", target_agent_id="local_search"),
