@@ -33,7 +33,8 @@ Load **only** the satellite matching your task or cited §.
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Platform integration contract (Tier-1 runtime)
 
-**Code:** `intergrax/runtime/integrations/contracts.py` · **Task:** INTEGRATIONS-1A
+**Code:** `intergrax/runtime/integrations/contracts.py` · **Task:** INTEGRATIONS-1A  
+**Observability vendor category:** `intergrax/runtime/integrations/observability.py` · **Task:** INTEGRATIONS-1B
 
 All future integration categories derive from or align with the generic **`PlatformIntegrationContract`**. Vendor adapters (Langfuse, Arize, Phoenix, Elasticsearch, OTLP backends, and future custom backends) are **integrations**, not isolated ad-hoc exporters or one-off SDK wrappers.
 
@@ -65,6 +66,32 @@ All future integration categories derive from or align with the generic **`Platf
 | `ElasticsearchSearchIntegration` | `elasticsearch` | `search` |
 
 Category-specific contracts (for example **`ObservabilityVendorIntegrationContract`**, **`VectorStoreIntegrationContract`**) **derive from** **`PlatformIntegrationContract`** — they do not replace it.
+
+### Observability vendor integration category (INTEGRATIONS-1B)
+
+**Code:** `intergrax/runtime/integrations/observability.py`
+
+Observability backends (Langfuse, Arize, Phoenix, Elasticsearch, OTLP-oriented vendors, custom sinks) are **observability vendor integrations** — not ad-hoc exporters or one-off SDK wrappers. Concrete adapters must subclass **`ObservabilityVendorIntegrationContract`**, which **derives from** **`PlatformIntegrationContract`**.
+
+| Type | Role |
+|------|------|
+| **`ObservabilityVendorIntegrationContract`** | Category base contract; satisfies **`ObservabilityExporter`** via `export()` |
+| **`ObservabilityVendorIntegrationConfig`** | Typed opt-in config (`enabled=false` by default) |
+| **`ObservabilityVendorSignal`** | Declared signal families (`events`, `logs`, `traces`, `metrics`, `llm_events`) |
+| **`ObservabilityVendorPayload`** | Vendor-neutral payload mapped from policy-sanitized envelopes |
+| **`ObservabilityVendorMappingResult`** | Envelope → payload mapping result |
+
+**Input boundary:** vendor integrations accept only **`ObservabilityExportEnvelope`** records that have already passed **`ObservabilityExportPolicy`** / **`try_export_observability_envelope`**. They consume **`sanitized_application_attributes`** only — never raw **`application_attributes`**, never **`RuntimeEvent`** raw payloads, and never bypass export policy.
+
+**Why not ad-hoc exporters:** OTLP/JSONL helpers remain transport-oriented exporters until aligned; future Langfuse/Arize/Phoenix/Elasticsearch adapters share identity, capabilities, health, failure isolation, and mapping through this contract — one integration class per category, not scattered SDK calls from runtime hot paths.
+
+**Provider vs category (unchanged rule):** the same **`provider_id`** (for example `elasticsearch`) may appear in multiple categories through **separate** integration classes — never one multi-category class or multiple inheritance across unrelated categories:
+
+| Integration class (future) | `provider_id` | `integration_kind` |
+|---------------------------|---------------|-------------------|
+| `ElasticsearchObservabilityIntegration` | `elasticsearch` | `observability_vendor` |
+| `ElasticsearchVectorStoreIntegration` | `elasticsearch` | `vector_store` |
+| `ElasticsearchSearchIntegration` | `elasticsearch` | `search` |
 
 ### Default safety and opt-in rules
 
