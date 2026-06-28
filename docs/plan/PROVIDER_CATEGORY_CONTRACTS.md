@@ -5,7 +5,7 @@
 **Code:** `intergrax/runtime/integrations/categories/`  
 **Task:** INTEGRATIONS-2A
 
-**Last updated:** 2026-06-28 — INTEGRATIONS-2A provider category contracts implemented.
+**Last updated:** 2026-06-28 — INTEGRATIONS-2D non-observability provider migration complete.
 
 ---
 
@@ -16,14 +16,18 @@
 | **INTEGRATIONS-2A** | Code | P1 | **Done** | Category-specific base contracts for all `SLUG_CATEGORY` folders |
 | **INTEGRATIONS-2B** | Code | P1 | **Done (Langfuse reference pilot)** | Concrete provider migration to category contracts (per slug) |
 | **INTEGRATIONS-2B-FOLLOWUP** | Code | P1 | **Done** | Provider package pattern + scaffold hardening |
+| **INTEGRATIONS-2C** | Code | P1 | **Done** | All `observability_backend` slugs migrated |
+| **INTEGRATIONS-2D** | Code | P1 | **Done** | All remaining non-observability slugs migrated (160) or explicitly deferred (9 `llm_guardrail`) |
 
-**INTEGRATIONS-2A acceptance:** every `SLUG_CATEGORY` folder has a category contract or explicit alias; all derive from **`PlatformIntegrationContract`**; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; no concrete provider migration; no LKW change; focused tests green.
+**INTEGRATIONS-2A acceptance:** every `SLUG_CATEGORY` folder has a category contract or explicit alias; all derive from **`PlatformIntegrationContract`**; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; no LKW change; focused tests green.
 
-**Provider package pattern (INTEGRATIONS-2B-FOLLOWUP):** category contracts define the **base**; each concrete provider class in `integration.py` **derives from the category-specific contract** for its folder. The provider package layout (`integration.py`, `bundle.py`, `manifest.py`, `register.py`, `__init__.py`, `USAGE.md`) is the **implementation convention** — see [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up). Langfuse is the reference pilot; batch migration of remaining slugs remains deferred.
+**Provider package pattern (INTEGRATIONS-2B-FOLLOWUP / 2D):** category contracts define the **base**; each concrete provider class in `integration.py` **derives from the category-specific contract** for its folder. The provider package layout (`integration.py`, `bundle.py`, `manifest.py`, `register.py`, `__init__.py`, `USAGE.md`) is the **implementation convention** — see [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up). Langfuse is the observability reference pilot; **INTEGRATIONS-2D** applied the same package pattern across all non-observability categories.
 
-**Scaffold hardening (INTEGRATIONS-SCAFFOLD-P5-P7-CONTRACT-AWARE):** maintenance provider shell generators (`wire_p2` through `wire_p7`) preserve contract-aware packages when `integration.py` exists. Provider category migration can proceed in waves after scaffold validation; full batch migration remains deferred.
+**Completeness guard (INTEGRATIONS-2D):** `test_provider_category_contract_migration.py` derives expected slugs from `SLUG_CATEGORY` (excluding `observability_backend`) and compares against discovered `integration.py` packages; deferred slugs documented in test + plan.
 
-**Deferred:** batch provider migration, registry v2 / contract registry wiring, vendor SDK adapters, LKW wiring.
+**Scaffold hardening (INTEGRATIONS-SCAFFOLD-P5-P7-CONTRACT-AWARE):** maintenance provider shell generators (`wire_p2` through `wire_p7`) preserve contract-aware packages when `integration.py` exists.
+
+**Deferred:** `llm_guardrail` per-slug packages (shared bundles layout), registry v2 / contract registry wiring, vendor SDK adapters, LKW wiring.
 
 ---
 

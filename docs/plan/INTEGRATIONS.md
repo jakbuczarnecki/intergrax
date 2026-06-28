@@ -8,7 +8,7 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-06-28 — **INTEGRATIONS-2A** provider category contracts implemented.
+**Last updated:** 2026-06-28 — **INTEGRATIONS-2D** remaining provider category contract migration complete.
 
 ---
 
@@ -123,6 +123,32 @@ Load **only** the satellite matching your task or cited gap ID.
 - No LKW change; no global bootstrap registration
 
 **Migrated slugs (26):** `langfuse`, `arize`, `phoenix`, `langsmith`, `helicone`, `braintrust`, `wandb`, `datadog`, `sentry`, `signoz`, `honeycomb`, `newrelic`, `splunk`, `posthog`, `prometheus`, `elasticsearch`, `opensearch`, `otel`, `opentelemetry_collector`, `grafana`, `loki`, `tempo`, `influxdb`, `clickhouse`, `mlflow`
+
+---
+
+## Phase INTEGRATIONS-2D — remaining provider category contract migration (Done)
+
+**Purpose:** Migrate all non-`observability_backend` provider slugs in `SLUG_CATEGORY` to category-specific **`PlatformIntegrationContract`** subclasses using the Langfuse package pattern (not observability semantics).
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **INTEGRATIONS-2D-WAVE1** | Code | P1 | **Done** | Retrieval/data access | `vector_store`, `search_provider`, `document_parser`, `rerank_provider`, `wiki_knowledge` |
+| **INTEGRATIONS-2D-WAVE2** | Code | P1 | **Done** | Storage/databases | `relational_store`, `document_store`, `key_value_cache`, `graph_store`, `object_storage` |
+| **INTEGRATIONS-2D-WAVE3** | Code | P1 | **Done** | Communication/workflow | `message_bus`, `notification_channel`, `interaction_surface`, `collaboration_suite`, `issue_tracker`, `browser_automation` |
+| **INTEGRATIONS-2D-WAVE4** | Code | P1 | **Done** | Platform/security/ops | `cloud_platform`, `secrets_store`, `feature_flag`, `ci_cd`, `security_scanner`, `sandbox_host`, `identity_provider`, `workflow_orchestrator` |
+| **INTEGRATIONS-2D-WAVE5** | Code | P1 | **Done** | AI/service/business | `speech_provider`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm` |
+| **INTEGRATIONS-2D-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_provider_category_contract_migration.py` — completeness derived from `SLUG_CATEGORY` |
+
+**INTEGRATIONS-2D status (2026-06-28):**
+
+- **160** non-observability slugs migrated (`integration.py` + `create_<slug>_<category>_integration` in `bundle.py`, lazy `__init__.py`, USAGE.md)
+- Legacy catalog factories unchanged; **`register.py`** remains legacy-compatible (no contract factory registration)
+- **`enabled=True`** without injectable client raises **`IntegrationConfigurationError`**; no vendor SDK imports in `integration.py`
+- **Registry v2 / contract registry wiring remains deferred**
+- **Deferred slugs (9):** `llm_guardrail` catalog slugs (`llm_guard`, `guardrails_ai`, `nemo_guardrails`, `openguardrails`, `presidio`, `llama_guard`, `lakera`, `azure_content_safety`, `bedrock_guardrails`) — shared `llm_guardrail/bundles/` layout without per-slug provider packages
+- No LKW change; no global bootstrap registration
+
+**Migrated categories (30):** all `SLUG_CATEGORY` folders except deferred `llm_guardrail` slugs (category contract exists; per-slug packages deferred).
 
 ---
 

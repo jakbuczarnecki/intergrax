@@ -165,6 +165,8 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
 
 **INTEGRATIONS-2C (batch migration — Done):** all existing `observability_backend` provider packages migrated using the Langfuse pattern — no duplicate provider adapters or parallel packages. `integration.py` holds contract-based provider logic; `register.py` remains legacy catalog hook until registry v2; `manifest.py` metadata-only. Legacy **`ObservabilityBackend`** factories and **`register_<slug>_integration`** hooks remain backward-compatible. Injectable transport only in contract path; no vendor SDK imports in `integration.py`; no production network transports in the migration task.
 
+**INTEGRATIONS-2D (remaining categories — Done):** all non-`observability_backend` slugs with per-slug provider packages now follow the same layout — existing provider package + contract-based integration class in `integration.py`; legacy catalog factory preserved in `bundle.py`; **`register.py`** remains legacy until registry v2. No duplicate provider adapters. Nine `llm_guardrail` slugs deferred (shared `bundles/` layout). Completeness tests derive expected slugs from `SLUG_CATEGORY`.
+
 ### Default safety and opt-in rules
 
 - Integrations are **explicit opt-in** — disabled unless operator/config enables them.
