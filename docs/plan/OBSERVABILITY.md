@@ -116,8 +116,21 @@ Load **only** the satellite matching your task or cited gap ID.
 - **`ObservabilityExportEnvelope`** integrates optional `application_attributes` (pre-policy input) and `sanitized_application_attributes` (post-policy export)
 - **`JsonlObservabilityExporter`** consumes already-normalized sanitized attributes via envelope JSON serialization
 - Vendor adapters **not implemented** (Langfuse, Arize, Phoenix remain OBS-EXPORT-5)
-- OTLP adapter remains **OBS-EXPORT-4** (next step — maps sanitized application attributes to OTLP attributes)
 - LKW remains **unchanged**
+
+**OBS-EXPORT-4 status (2026-06-28):**
+
+- **OBS-EXPORT-4-OTLP-ADAPTER** — **Done**
+- **`OtlpObservabilityExporter`** added as first remote backend adapter — platform observability package only (not applications, not LKW-specific)
+- Adapter consumes normalized **`ObservabilityExportEnvelope`** only; expects policy-approved envelopes from **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
+- Adapter consumes **`sanitized_application_attributes`** only — does **not** read or export raw **`application_attributes`**
+- Adapter maps sanitized application attributes into OTLP-safe attribute keys (namespaced keys preserved)
+- Adapter does **not** export raw content; **`export_content=false`** posture unchanged
+- Injectable **`OtlpTransport`** protocol — no vendor SDK coupling; no network in unit tests
+- Explicit opt-in — adapter is **not** globally registered in platform bootstrap
+- Elasticsearch remains **deferred** unless separately planned
+- Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
+- Global bootstrap registration remains **deferred** unless explicitly planned later
 
 **Required decisions:**
 
@@ -138,7 +151,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **OBS-EXPORT-2** | Code | P2 | **Done** | Redaction/export policy and failure isolation | Explicit allow/drop/hash policy for exported fields. Export timeout/failure does not fail the run. Tests prove raw content is not exported. Minimal runtime plugin wiring via `make_observability_export_runtime_plugin`. |
 | **OBS-EXPORT-3** | Code | P2 | **Done** | Safe JSONL/file exporter | **`JsonlObservabilityExporter`** writes policy-sanitized **`ObservabilityExportEnvelope`** JSONL records; local-first explicit opt-in; no global bootstrap registration; no vendor SDK; raw content export disabled by default. |
 | **OBS-EXPORT-4A** | Code | P2 | **Done** | Typed application observability attributes contract | **`ApplicationObservabilityAttributes`** base + subclass extension; namespaced safe metadata; policy sanitization before export; envelope integration; no arbitrary public dict boundary; no vendor SDK. |
-| **OBS-EXPORT-4** | Code | P2 | Planned | First real backend adapter: OTLP or Elasticsearch | Adapter maps normalized export records (including sanitized application attributes) to backend format without changing Intergrax event semantics. |
+| **OBS-EXPORT-4** | Code | P2 | **Done** | First remote backend adapter: OTLP | **`OtlpObservabilityExporter`** + **`OtlpObservabilityExporterConfig`** + injectable **`OtlpTransport`**; maps policy-sanitized envelopes (including **`sanitized_application_attributes`**) to OTLP-safe log payloads; no vendor SDK; explicit opt-in; no global bootstrap registration. Elasticsearch deferred. |
 | **OBS-EXPORT-5** | Code | P3 | Planned | Langfuse / Arize / Phoenix adapter | Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. |
 
 ---

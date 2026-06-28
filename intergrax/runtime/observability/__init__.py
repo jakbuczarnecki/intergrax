@@ -52,6 +52,11 @@ from intergrax.runtime.observability.export_policy import (
 )
 from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
 from intergrax.runtime.observability.jsonl_exporter import JsonlObservabilityExporter
+from intergrax.runtime.observability.otlp_exporter import (
+    OtlpObservabilityExporter,
+    OtlpObservabilityExporterConfig,
+    OtlpTransport,
+)
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
 from intergrax.runtime.observability.journal_export import (
     JournalExportSnapshot,
@@ -96,6 +101,9 @@ __all__ = [
     "InMemoryObservabilityExporter",
     "JsonlObservabilityExporter",
     "NoOpObservabilityExporter",
+    "OtlpObservabilityExporter",
+    "OtlpObservabilityExporterConfig",
+    "OtlpTransport",
     "OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA",
     "ObservabilityAttributeValue",
     "ObservabilityExportEnvelope",
