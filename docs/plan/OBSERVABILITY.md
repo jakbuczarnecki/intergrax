@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine.
 
-**Last updated:** 2026-06-24 — **OECP** plan satellite register.
+**Last updated:** 2026-06-28 — **OBS-EXPORT-1** export boundary implemented.
 
 ---
 
@@ -70,9 +70,19 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase OBS-EXPORT — External observability export boundary (Planned)
+## Phase OBS-EXPORT — External observability export boundary (In progress)
 
 **Purpose:** Define the platform-level export boundary for external observability sinks such as JSONL/file, OTLP, Elasticsearch, Langfuse, Arize/Phoenix.
+
+**OBS-EXPORT-1 status (2026-06-28):**
+
+- **OBS-EXPORT-1-EXPORT-BOUNDARY** — **Done**
+- Normalized **`ObservabilityExportEnvelope`** added (`observability_export_envelope.v1`)
+- **`ObservabilityExporter`** async protocol + **`NoOpObservabilityExporter`** + **`InMemoryObservabilityExporter`** / **`TestObservabilityExporter`**
+- Typed source models (`RuntimeEventExportSource`, `GatewayCallExportSource`) and safe mapping helpers from `RuntimeEvent`, `ToolCallRecord`, `RagCallRecord`, and `JournalRef`
+- Vendor adapters **not implemented** (Langfuse, Arize, Phoenix, Elasticsearch, OTLP deferred to OBS-EXPORT-4/5)
+- Lifecycle wiring and failure isolation **deferred to OBS-EXPORT-2**
+- Default local-first posture preserved — export disabled unless explicitly wired; raw content export remains disabled by default
 
 **Required decisions:**
 
@@ -89,7 +99,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **OBS-EXPORT-1** | Code | P2 | Planned | Normalized export envelope and exporter interface | Defines stable export envelope, exporter interface, no-op exporter, and test exporter. Uses existing spine/journal/runtime metadata as source. No vendor SDK. |
+| **OBS-EXPORT-1** | Code | P2 | **Done** | Normalized export envelope and exporter interface | Defines stable export envelope, exporter interface, no-op exporter, and test exporter. Uses existing spine/journal/runtime metadata as source. No vendor SDK. |
 | **OBS-EXPORT-2** | Code | P2 | Planned | Redaction/export policy and failure isolation | Explicit allow/drop/hash policy for exported fields. Export timeout/failure does not fail the run. Tests prove raw content is not exported. |
 | **OBS-EXPORT-3** | Code | P2 | Planned | Safe JSONL/file exporter | Writes redacted export records for representative runs. Useful as reference output before vendor adapters. |
 | **OBS-EXPORT-4** | Code | P2 | Planned | First real backend adapter: OTLP or Elasticsearch | Adapter maps normalized export records to backend format without changing Intergrax event semantics. |
