@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
@@ -22,6 +24,28 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 logger = logging.getLogger(__name__)
 
 EventHandler = Callable[[RuntimeEvent], Union[None, Awaitable[None]]]
+
+
+def _dispatch_handler_result_sync(result: Awaitable[None]) -> None:
+    """Run or schedule an async handler result from synchronous ``record`` dispatch."""
+    if inspect.iscoroutine(result):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(result)
+            return
+        loop.create_task(result)
+        return
+
+    async def _await_result() -> None:
+        await result
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(_await_result())
+        return
+    loop.create_task(_await_result())
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,11 +189,7 @@ class RuntimeEventBus:
             try:
                 result = handler(event)
                 if result is not None:
-                    logger.warning(
-                        "RuntimeEventBus async handler %s skipped on sync record for %s",
-                        sid,
-                        event.event_type,
-                    )
+                    _dispatch_handler_result_sync(result)
             except Exception:
                 logger.exception(
                     "RuntimeEventBus handler %s failed on record for %s",

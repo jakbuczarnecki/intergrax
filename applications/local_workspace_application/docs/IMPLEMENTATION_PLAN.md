@@ -292,7 +292,7 @@ qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw
 | `RunArtifactBundle` / `WorkspaceArtifactRef` platform wiring | Observability/platform | **Closed** — LKW-PF2 / **LKW-PF2A** (`shadow_workspace_id` propagation) |
 | Policy decisions, raw tool reason/error at RuntimeEvent layer | Observability/platform | Platform deferred |
 | RAG ingest-specific observability contract | Observability/platform | Platform deferred (optional) |
-| Async runtime plugin coroutine warnings | Observability/platform | Platform deferred |
+| Async runtime plugin coroutine warnings | Observability/platform | **Closed** — LKW-DF1 (platform `RuntimeEventBus.record` async handler dispatch before LKW.2.4C) |
 | Standalone synthesize with message-only input returns `content_missing` | Pipeline/orchestration input contract | LKW.2 |
 | Developer first-run/adoption simplification | Packaging/adoption | LKW-H3 |
 
@@ -325,7 +325,7 @@ LKW.1.15 passed product behavior. H1.1 fixed the first accounting gap for live i
 local.workspace.index -> rag.ingest_document -> application_run_summary.v1 total_tool_calls=1
 ```
 
-H1.1–H1.3 are closed for LKW.2 entry. Platform event-layer topics originally tracked here were closed in **LKW-PF1** / **LKW-PF1A** (RuntimeEvent `TOOL_*`), **LKW-PF2** / **LKW-PF2A** (`RunArtifactBundle` / `WorkspaceArtifactRef`, `shadow_workspace_id`). Remaining deferred platform topics: async runtime plugin coroutine warnings; optional RAG ingest observability contract; policy/raw tool reason decisions at RuntimeEvent layer.
+H1.1–H1.3 are closed for LKW.2 entry. Platform event-layer topics originally tracked here were closed in **LKW-PF1** / **LKW-PF1A** (RuntimeEvent `TOOL_*`), **LKW-PF2** / **LKW-PF2A** (`RunArtifactBundle` / `WorkspaceArtifactRef`, `shadow_workspace_id`). Remaining deferred platform topics: optional RAG ingest observability contract; policy/raw tool reason decisions at RuntimeEvent layer. Async runtime plugin coroutine warnings closed in **LKW-DF1**.
 
 H1 must improve visibility. It must not replace or reopen product execution blockers that are already fixed in LKW.1.9–LKW.1.15.
 
@@ -362,11 +362,11 @@ Focused tests passed: 11 passed, 4 warnings.
 Live index smoke passed: accepted=1, ingested=1, chunks=1, total_tool_calls=1.
 ```
 
-Known non-blocking warnings:
+Known non-blocking warnings *(historical — closed LKW-DF1)*:
 
 ```text
 Application tests emitted async runtime plugin warnings about coroutines not awaited in event_bus/task_trace handlers.
-Those warnings are tracked separately from H1.1 tool-call accounting unless they become reproducible operational failures.
+Closed in LKW-DF1: RuntimeEventBus.record now runs or schedules async handler results on the sync dispatch path.
 ```
 
 ### Tasks
@@ -431,7 +431,8 @@ RunArtifactBundle / WorkspaceArtifactRef platform wiring -> closed LKW-PF2 / LKW
 RuntimeEvent TOOL_* HTTP visibility -> closed LKW-PF1 / LKW-PF1A
 search/synthesize per-tool accounting + LKW-H1.3 smoke/assertion hardening -> closed LKW-H1.3
 ACP shadow_workspace_id propagation -> closed LKW-PF2A
-Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer; async runtime plugin coroutine warnings
+Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer
+Async runtime plugin coroutine warnings -> closed LKW-DF1
 ```
 
 **LKW-PF1 (2026-06-27):** PASSED WITH FOLLOW-UP — immediate `TOOL_*` RuntimeEvents wired in `RuntimeExecutionContext.invoke_tool`; unit coverage in `tests/unit/contracts/test_invoke_tool_runtime_events.py`. Follow-up closed in **LKW-PF1A** (`runtime_event_summary.v1` on HTTP run metadata).
@@ -488,9 +489,10 @@ Platform follow-ups remain outside H1.3 *(current deferred queue)*:
 ```text
 optional RAG ingest observability contract
 policy/raw tool reason decisions at RuntimeEvent layer
-async runtime plugin coroutine warnings in event_bus/task_trace handlers
 developer ergonomics helper/template/docs
 ```
+
+Async runtime plugin coroutine warnings in event_bus/task_trace handlers -> closed LKW-DF1.
 
 Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifactBundle / WorkspaceArtifactRef + ACP shadow_workspace_id (LKW-PF2 / LKW-PF2A).
 
