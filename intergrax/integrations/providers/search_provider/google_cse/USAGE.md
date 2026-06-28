@@ -1,47 +1,20 @@
-# `google_cse` integration — usage
+# Google Cse (google_cse)
 
-**Category:** ``search_provider``  
-**Catalog factory:** ``create_google_cse_search_provider()``
+Category: `search_provider`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_google_cse_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(search_provider="google_cse")
-backend = profile.resolve(IntegrationCategory.SEARCH_PROVIDER)
-```
+- `GoogleCseSearchProviderIntegration` derives from the category-specific contract.
+- Factory: `create_google_cse_search_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.search_provider.google_cse.bundle import create_google_cse_search_provider
-
-backend = create_google_cse_search_provider(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_GOOGLE_CSE_API_KEY`, `INTERGRAX_GOOGLE_CSE_CX`
-
-## Example
-
-```python
-from intergrax.integrations.providers.search_provider.google_cse.bundle import create_google_cse_search_provider
-
-search = create_google_cse_search_provider(api_key="...", cx="...")
-hits = search.search("Intergrax agent orchestration", limit=5)
-for hit in hits:
-    print(hit.title, hit.url)
-```
-
-## Notes
-
-Compatible with ``WebSearchExecutor`` via ``search.web_search_provider``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

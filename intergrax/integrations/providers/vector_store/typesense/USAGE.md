@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Typesense (typesense)
 
-# `typesense` integration — usage
+Category: `vector_store`
 
-**Category:** `vector_store`  
-**Catalog factory:** ``create_typesense_vector_store()``  
-**Env prefix:** ``INTERGRAX_TYPESENSE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.vector_store.typesense.bundle import create_typesense_vector_store
+- `create_typesense_vector_store()` remains backward-compatible.
 
-backend = create_typesense_vector_store()
-```
+## Contract-based integration
+
+- `TypesenseVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_typesense_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

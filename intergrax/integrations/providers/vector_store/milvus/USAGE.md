@@ -1,44 +1,20 @@
-# `milvus` integration — usage
+# Milvus (milvus)
 
-**Category:** ``vector_store``  
-**Catalog factory:** ``create_milvus_vector_store()``
+Category: `vector_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_milvus_vector_store()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(vector_store="milvus")
-backend = profile.resolve(IntegrationCategory.VECTOR_STORE)
-```
+- `MilvusVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_milvus_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.vector_store.milvus.bundle import create_milvus_vector_store
-
-backend = create_milvus_vector_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_MILVUS_URL`, optional `INTERGRAX_MILVUS_API_KEY`
-
-## Example
-
-```python
-from intergrax.integrations.providers.vector_store.milvus.bundle import create_milvus_vector_store
-
-store = create_milvus_vector_store(url="http://localhost:19530")
-```
-
-## Notes
-
-Requires ``pymilvus`` at runtime.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Wikipedia (wikipedia)
 
-# `wikipedia` integration — usage
+Category: `wiki_knowledge`
 
-**Category:** `wiki_knowledge`  
-**Catalog factory:** ``create_wikipedia_wiki_knowledge()``  
-**Env prefix:** ``INTERGRAX_WIKIPEDIA_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.wiki_knowledge.wikipedia.bundle import create_wikipedia_wiki_knowledge
+- `create_wikipedia_wiki_knowledge()` remains backward-compatible.
 
-backend = create_wikipedia_wiki_knowledge()
-```
+## Contract-based integration
+
+- `WikipediaWikiKnowledgeIntegration` derives from the category-specific contract.
+- Factory: `create_wikipedia_wiki_knowledge_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

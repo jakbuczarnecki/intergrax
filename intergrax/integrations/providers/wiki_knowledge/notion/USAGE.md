@@ -1,46 +1,20 @@
-# `notion` integration — usage
+# Notion (notion)
 
-**Category:** ``wiki_knowledge``  
-**Catalog factory:** ``create_notion_wiki_knowledge()``
+Category: `wiki_knowledge`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_notion_wiki_knowledge()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(wiki_knowledge="notion")
-backend = profile.resolve(IntegrationCategory.WIKI_KNOWLEDGE)
-```
+- `NotionWikiKnowledgeIntegration` derives from the category-specific contract.
+- Factory: `create_notion_wiki_knowledge_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.wiki_knowledge.notion.bundle import create_notion_wiki_knowledge
-
-backend = create_notion_wiki_knowledge(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_NOTION_API_KEY` (Bearer token); optional `INTERGRAX_NOTION_URL`
-
-## Example
-
-```python
-from intergrax.integrations.providers.wiki_knowledge.notion.bundle import create_notion_wiki_knowledge
-
-wiki = create_notion_wiki_knowledge(api_key="secret_...")
-page = wiki.get_page("page-uuid")
-results = wiki.search_pages("deployment runbook", limit=10)
-```
-
-## Notes
-
-Notion REST API via httpx. Complements ``confluence`` for mixed knowledge bases.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

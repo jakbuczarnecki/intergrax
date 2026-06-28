@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Lancedb (lancedb)
 
-# `lancedb` integration — usage
+Category: `vector_store`
 
-**Category:** `vector_store`  
-**Catalog factory:** ``create_lancedb_vector_store()``  
-**Env prefix:** ``INTERGRAX_LANCEDB_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.vector_store.lancedb.bundle import create_lancedb_vector_store
+- `create_lancedb_vector_store()` remains backward-compatible.
 
-backend = create_lancedb_vector_store()
-```
+## Contract-based integration
+
+- `LancedbVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_lancedb_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

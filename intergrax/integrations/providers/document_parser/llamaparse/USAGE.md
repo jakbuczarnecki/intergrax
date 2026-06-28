@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Llamaparse (llamaparse)
 
-# `llamaparse` integration — usage
+Category: `document_parser`
 
-**Category:** `document_parser`  
-**Catalog factory:** ``create_llamaparse_document_parser()``  
-**Env prefix:** ``INTERGRAX_LLAMAPARSE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.document_parser.llamaparse.bundle import create_llamaparse_document_parser
+- `create_llamaparse_document_parser()` remains backward-compatible.
 
-backend = create_llamaparse_document_parser()
-```
+## Contract-based integration
+
+- `LlamaparseDocumentParserIntegration` derives from the category-specific contract.
+- Factory: `create_llamaparse_document_parser_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

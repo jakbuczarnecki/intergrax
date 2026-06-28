@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Algolia (algolia)
 
-# `algolia` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_algolia_search_provider()``  
-**Env prefix:** ``INTERGRAX_ALGOLIA_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.search_provider.algolia.bundle import create_algolia_search_provider
+- `create_algolia_search_provider()` remains backward-compatible.
 
-backend = create_algolia_search_provider()
-```
+## Contract-based integration
+
+- `AlgoliaSearchProviderIntegration` derives from the category-specific contract.
+- Factory: `create_algolia_search_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

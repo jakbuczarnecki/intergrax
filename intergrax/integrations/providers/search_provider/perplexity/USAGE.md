@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Perplexity (perplexity)
 
-# `perplexity` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_perplexity_search_provider()``  
-**Env prefix:** ``INTERGRAX_PERPLEXITY_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.search_provider.perplexity.bundle import create_perplexity_search_provider
+- `create_perplexity_search_provider()` remains backward-compatible.
 
-backend = create_perplexity_search_provider()
-```
+## Contract-based integration
+
+- `PerplexitySearchProviderIntegration` derives from the category-specific contract.
+- Factory: `create_perplexity_search_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

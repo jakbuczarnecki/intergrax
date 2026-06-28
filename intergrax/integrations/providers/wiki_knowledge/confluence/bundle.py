@@ -74,3 +74,35 @@ def create_confluence_wiki_knowledge(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).wiki_knowledge
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
+    CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+    ConfluenceWikiKnowledgeIntegration,
+    ConfluenceWikiKnowledgeIntegrationConfig,
+    ConfluenceWikiKnowledgeClient,
+)
+
+
+def create_confluence_wiki_knowledge_integration(
+    *,
+    client: ConfluenceWikiKnowledgeClient | None = None,
+    enabled: bool = False,
+) -> ConfluenceWikiKnowledgeIntegration:
+    """
+    Build a contract-based Confluence wiki knowledge integration.
+
+    The legacy facade (create_confluence_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Confluence wiki knowledge integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return ConfluenceWikiKnowledgeIntegration.from_client(client, enabled=enabled)
+    return ConfluenceWikiKnowledgeIntegration.for_provider(
+        provider_id=CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+        display_name="Confluence",
+        config=ConfluenceWikiKnowledgeIntegrationConfig(enabled=enabled),
+    )

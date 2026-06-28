@@ -1,44 +1,20 @@
-# `inmemory` integration — usage
+# Inmemory (inmemory)
 
-**Category:** ``vector_store``  
-**Catalog factory:** ``create_inmemory_vector_store()``
+Category: `vector_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_inmemory_vector_store()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(vector_store="inmemory")
-backend = profile.resolve(IntegrationCategory.VECTOR_STORE)
-```
+- `InmemoryVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_inmemory_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.vector_store.inmemory.bundle import create_inmemory_vector_store
-
-backend = create_inmemory_vector_store(**config_overrides)
-```
-
-
-## Environment variables
-
-Optional `INTERGRAX_INMEMORY_TENANT_ID` (default ``default``)
-
-## Example
-
-```python
-from intergrax.integrations.providers.vector_store.inmemory.bundle import create_inmemory_vector_store
-
-store = create_inmemory_vector_store(tenant_id="lab")
-```
-
-## Notes
-
-Delegates to ``intergrax.rag.vectorstore.providers.inmemory_vectorstore`` — lab / unit tests.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

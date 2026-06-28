@@ -56,3 +56,35 @@ def create_qdrant_vector_store(
         store_factory=store_factory,
         **config_overrides,
     ).vector_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.vector_store.qdrant.integration import (
+    QDRANT_VECTOR_STORE_PROVIDER_ID,
+    QdrantVectorStoreIntegration,
+    QdrantVectorStoreIntegrationConfig,
+    QdrantVectorStoreClient,
+)
+
+
+def create_qdrant_vector_store_integration(
+    *,
+    client: QdrantVectorStoreClient | None = None,
+    enabled: bool = False,
+) -> QdrantVectorStoreIntegration:
+    """
+    Build a contract-based Qdrant vector store integration.
+
+    The legacy facade (create_qdrant_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Qdrant vector store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return QdrantVectorStoreIntegration.from_client(client, enabled=enabled)
+    return QdrantVectorStoreIntegration.for_provider(
+        provider_id=QDRANT_VECTOR_STORE_PROVIDER_ID,
+        display_name="Qdrant",
+        config=QdrantVectorStoreIntegrationConfig(enabled=enabled),
+    )

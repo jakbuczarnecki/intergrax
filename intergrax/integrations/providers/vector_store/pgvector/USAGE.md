@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# pgvector (pgvector)
 
-# `pgvector` integration — usage
+Category: `vector_store`
 
-**Category:** `vector_store`  
-**Catalog factory:** ``create_pgvector_vector_store()``  
-**Env prefix:** ``INTERGRAX_PGVECTOR_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
+- `create_pgvector_vector_store()` remains backward-compatible.
 
-backend = create_pgvector_vector_store()
-```
+## Contract-based integration
+
+- `PgvectorVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_pgvector_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

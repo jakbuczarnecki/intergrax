@@ -56,3 +56,35 @@ def create_vespa_vector_store(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).vector_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.vector_store.vespa.integration import (
+    VESPA_VECTOR_STORE_PROVIDER_ID,
+    VespaVectorStoreIntegration,
+    VespaVectorStoreIntegrationConfig,
+    VespaVectorStoreClient,
+)
+
+
+def create_vespa_vector_store_integration(
+    *,
+    client: VespaVectorStoreClient | None = None,
+    enabled: bool = False,
+) -> VespaVectorStoreIntegration:
+    """
+    Build a contract-based Vespa vector store integration.
+
+    The legacy facade (create_vespa_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Vespa vector store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return VespaVectorStoreIntegration.from_client(client, enabled=enabled)
+    return VespaVectorStoreIntegration.for_provider(
+        provider_id=VESPA_VECTOR_STORE_PROVIDER_ID,
+        display_name="Vespa",
+        config=VespaVectorStoreIntegrationConfig(enabled=enabled),
+    )

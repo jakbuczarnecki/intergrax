@@ -77,3 +77,35 @@ def create_google_cse_search_provider(
         session=session,
         **config_overrides,
     ).search_provider
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.search_provider.google_cse.integration import (
+    GOOGLE_CSE_SEARCH_PROVIDER_PROVIDER_ID,
+    GoogleCseSearchProviderIntegration,
+    GoogleCseSearchProviderIntegrationConfig,
+    GoogleCseSearchProviderClient,
+)
+
+
+def create_google_cse_search_provider_integration(
+    *,
+    client: GoogleCseSearchProviderClient | None = None,
+    enabled: bool = False,
+) -> GoogleCseSearchProviderIntegration:
+    """
+    Build a contract-based Google Cse search provider integration.
+
+    The legacy facade (create_google_cse_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Google Cse search provider integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return GoogleCseSearchProviderIntegration.from_client(client, enabled=enabled)
+    return GoogleCseSearchProviderIntegration.for_provider(
+        provider_id=GOOGLE_CSE_SEARCH_PROVIDER_PROVIDER_ID,
+        display_name="Google Cse",
+        config=GoogleCseSearchProviderIntegrationConfig(enabled=enabled),
+    )

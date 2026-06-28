@@ -56,3 +56,35 @@ def create_chroma_vector_store(
         store_factory=store_factory,
         **config_overrides,
     ).vector_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.vector_store.chroma.integration import (
+    CHROMA_VECTOR_STORE_PROVIDER_ID,
+    ChromaVectorStoreIntegration,
+    ChromaVectorStoreIntegrationConfig,
+    ChromaVectorStoreClient,
+)
+
+
+def create_chroma_vector_store_integration(
+    *,
+    client: ChromaVectorStoreClient | None = None,
+    enabled: bool = False,
+) -> ChromaVectorStoreIntegration:
+    """
+    Build a contract-based Chroma vector store integration.
+
+    The legacy facade (create_chroma_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Chroma vector store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return ChromaVectorStoreIntegration.from_client(client, enabled=enabled)
+    return ChromaVectorStoreIntegration.for_provider(
+        provider_id=CHROMA_VECTOR_STORE_PROVIDER_ID,
+        display_name="Chroma",
+        config=ChromaVectorStoreIntegrationConfig(enabled=enabled),
+    )

@@ -10,3 +10,35 @@ from intergrax.integrations.providers.document_parser.whisper.config import Whis
 
 def create_whisper_document_parser(**config_overrides: object) -> DocumentParser:
     return WhisperDocumentParser(WhisperIntegrationConfig.from_env(**config_overrides))
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.document_parser.whisper.integration import (
+    WHISPER_DOCUMENT_PARSER_PROVIDER_ID,
+    WhisperDocumentParserIntegration,
+    WhisperDocumentParserIntegrationConfig,
+    WhisperDocumentParserClient,
+)
+
+
+def create_whisper_document_parser_integration(
+    *,
+    client: WhisperDocumentParserClient | None = None,
+    enabled: bool = False,
+) -> WhisperDocumentParserIntegration:
+    """
+    Build a contract-based Whisper document parser integration.
+
+    The legacy facade (create_whisper_document_parser) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Whisper document parser integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return WhisperDocumentParserIntegration.from_client(client, enabled=enabled)
+    return WhisperDocumentParserIntegration.for_provider(
+        provider_id=WHISPER_DOCUMENT_PARSER_PROVIDER_ID,
+        display_name="Whisper",
+        config=WhisperDocumentParserIntegrationConfig(enabled=enabled),
+    )

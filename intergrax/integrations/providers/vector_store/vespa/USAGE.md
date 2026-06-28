@@ -1,44 +1,20 @@
-# `vespa` integration — usage
+# Vespa (vespa)
 
-**Category:** ``vector_store``  
-**Catalog factory:** ``create_vespa_vector_store()``
+Category: `vector_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_vespa_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(vector_store="vespa")
-backend = profile.resolve(IntegrationCategory.VECTOR_STORE)
-```
+- `VespaVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_vespa_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.vector_store.vespa.bundle import create_vespa_vector_store
-
-backend = create_vespa_vector_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_VESPA_URL`, `INTERGRAX_VESPA_COLLECTION`
-
-## Example
-
-```python
-from intergrax.integrations.providers.vector_store.vespa.bundle import create_vespa_vector_store
-
-store = create_vespa_vector_store(url="http://localhost:8080", collection="docs")
-```
-
-## Notes
-
-Vespa vector search catalog bridge.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

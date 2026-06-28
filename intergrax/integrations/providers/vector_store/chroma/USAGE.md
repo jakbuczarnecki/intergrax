@@ -1,56 +1,20 @@
-# `chroma` integration — usage
+# Chroma (chroma)
 
-**Category:** ``vector_store``  
-**Catalog factory:** ``create_chroma_vector_store()``
+Category: `vector_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_chroma_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(vector_store="chroma")
-backend = profile.resolve(IntegrationCategory.VECTOR_STORE)
-```
+- `ChromaVectorStoreIntegration` derives from the category-specific contract.
+- Factory: `create_chroma_vector_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
-
-backend = create_chroma_vector_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_CHROMA_MODE` (`embedded`|`http`); optional `INTERGRAX_CHROMA_HOST`, `INTERGRAX_CHROMA_PORT`, `INTERGRAX_CHROMA_PERSIST_DIRECTORY`, `INTERGRAX_CHROMA_COLLECTION`, `INTERGRAX_CHROMA_TENANT_ID`
-
-## Example
-
-```python
-from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
-
-store = create_chroma_vector_store(
-    collection_name="intergrax-rag",
-    tenant_id="tenant-a",
-    mode="embedded",
-    persist_directory=None,
-)
-store.add_documents(
-    [Document(page_content="Intergrax overview", metadata={"source": "docs"})],
-    [[0.01, 0.02, 0.03]],
-    ids=["doc-1"],
-)
-hits = store.query([0.01, 0.02, 0.03], top_k=5)
-store.delete(["doc-1"])
-```
-
-## Notes
-
-Catalog bridge to ``intergrax/rag/`` — ``chromadb`` import only in ``opens.py``; RAG ``ChromaVectorStore`` unchanged.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

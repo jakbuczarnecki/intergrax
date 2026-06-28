@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Semantic Scholar (semantic_scholar)
 
-# `semantic_scholar` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_semantic_scholar_search_provider()``  
-**Env prefix:** ``INTERGRAX_SEMANTIC_SCHOLAR_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.search_provider.semantic_scholar.bundle import create_semantic_scholar_search_provider
+- `create_semantic_scholar_search_provider()` remains backward-compatible.
 
-backend = create_semantic_scholar_search_provider()
-```
+## Contract-based integration
+
+- `SemanticScholarSearchProviderIntegration` derives from the category-specific contract.
+- Factory: `create_semantic_scholar_search_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

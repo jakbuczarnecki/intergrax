@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Arxiv (arxiv)
 
-# `arxiv` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_arxiv_search_provider()``  
-**Env prefix:** ``INTERGRAX_ARXIV_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.search_provider.arxiv.bundle import create_arxiv_search_provider
+- `create_arxiv_search_provider()` remains backward-compatible.
 
-backend = create_arxiv_search_provider()
-```
+## Contract-based integration
+
+- `ArxivSearchProviderIntegration` derives from the category-specific contract.
+- Factory: `create_arxiv_search_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.
