@@ -20,7 +20,6 @@ HAND_EDITED_PROVIDER_FILES: frozenset[str] = frozenset(
 )
 
 CONTRACT_INTEGRATION_FILE = "integration.py"
-CONTRACT_FACTORY_SUFFIX = "_integration"
 
 
 def is_contract_aware_package(pkg: Path) -> bool:
@@ -37,15 +36,6 @@ def should_skip_provider_file(pkg: Path, filename: str) -> bool:
     contract-based integration package layout.
     """
     return is_contract_aware_package(pkg) and filename in HAND_EDITED_PROVIDER_FILES
-
-
-def bundle_has_contract_factory(bundle_path: Path, slug: str) -> bool:
-    """Detect contract-based factory exports already present in bundle.py."""
-    if not bundle_path.is_file():
-        return False
-    source = bundle_path.read_text(encoding="utf-8")
-    contract_factory = f"create_{slug}{CONTRACT_FACTORY_SUFFIX}"
-    return contract_factory in source
 
 
 def write_provider_file_if_allowed(pkg: Path, filename: str, content: str) -> bool:

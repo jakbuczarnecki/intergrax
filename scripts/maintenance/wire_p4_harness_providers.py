@@ -4,6 +4,7 @@ Generate thin provider shells pointing to _shared.p4.factories.
 
 Legacy shell generator for unmigrated providers. When ``integration.py`` exists
 in a provider package, canonical files are preserved (contract-aware mode).
+Do not use this script to regenerate migrated contract-based providers.
 """
 from __future__ import annotations
 
@@ -42,13 +43,22 @@ def _category_folder(cat_enum: str) -> str:
     return IntegrationCategory[cat_enum].value
 
 
-for slug, cat_enum, enum, factory, env in SPECS:
+def generate_provider_shell(
+    slug: str,
+    cat_enum: str,
+    *,
+    factory: str,
+    env: str,
+    providers_root: Path = PROVIDERS,
+) -> dict[str, bool]:
+    """Generate or preserve legacy shell files for one provider slug."""
     category = _category_folder(cat_enum)
-    assert SLUG_CATEGORY.get(slug) == category, f"{slug}: layout mismatch"
-    pkg = PROVIDERS / category / slug
+    assert SLUG_CATEGORY.get(slug) == category, f"{slug}: layout mismatch {SLUG_CATEGORY.get(slug)} != {category}"
+    pkg = providers_root / category / slug
     pkg.mkdir(parents=True, exist_ok=True)
     import_base = f"intergrax.integrations.providers.{category}.{slug}"
-    write_provider_file_if_allowed(
+    written: dict[str, bool] = {}
+    written["register.py"] = write_provider_file_if_allowed(
         pkg,
         "register.py",
         H
@@ -69,12 +79,12 @@ for slug, cat_enum, enum, factory, env in SPECS:
         + "        override=override,\n"
         + "    )\n",
     )
-    write_provider_file_if_allowed(
+    written["bundle.py"] = write_provider_file_if_allowed(
         pkg,
         "bundle.py",
         H + f"from intergrax.integrations._shared.p4.factories import {factory}\n\n__all__ = [\"{factory}\"]\n",
     )
-    write_provider_file_if_allowed(
+    written["__init__.py"] = write_provider_file_if_allowed(
         pkg,
         "__init__.py",
         H
@@ -88,4 +98,16 @@ for slug, cat_enum, enum, factory, env in SPECS:
         + f"        return {factory}\n"
         + "    raise AttributeError(name)\n",
     )
-print(f"generated {len(SPECS)} provider shells")
+    return written
+
+
+def main() -> None:
+    generated = 0
+    for slug, cat_enum, _enum, factory, env in SPECS:
+        generate_provider_shell(slug, cat_enum, factory=factory, env=env)
+        generated += 1
+    print(f"generated {generated} provider shells")
+
+
+if __name__ == "__main__":
+    main()

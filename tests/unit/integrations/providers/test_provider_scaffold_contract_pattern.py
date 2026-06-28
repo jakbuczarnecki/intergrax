@@ -50,6 +50,29 @@ _CANONICAL_LAYOUT = (
     "USAGE.md",
 )
 _FORBIDDEN_VENDOR_IMPORT_PREFIXES = ("langfuse",)
+_LANGFUSE_SHELL_KWARGS = {
+    "slug": "langfuse",
+    "cat_enum": "OBSERVABILITY_BACKEND",
+    "factory": "create_langfuse_observability_backend",
+    "env": "INTERGRAX_LANGFUSE",
+}
+
+
+def _contract_aware_langfuse_pkg(tmp_path: Path) -> Path:
+    """Isolated contract-aware package mirroring migrated provider layout."""
+    pkg = tmp_path / "providers" / "observability_backend" / "langfuse"
+    pkg.mkdir(parents=True)
+    (pkg / "integration.py").write_text(
+        "class ExampleObservabilityIntegration:\n    pass\n",
+        encoding="utf-8",
+    )
+    (pkg / "bundle.py").write_text(
+        "def create_langfuse_observability_backend(): ...\n"
+        "def create_langfuse_observability_integration(): ...\n",
+        encoding="utf-8",
+    )
+    (pkg / "__init__.py").write_text("__all__ = []\n", encoding="utf-8")
+    return pkg
 
 
 def test_langfuse_package_follows_canonical_provider_layout() -> None:
@@ -88,33 +111,51 @@ def test_langfuse_create_integration_disabled_without_transport_allowed() -> Non
     assert integration.transport is None
 
 
-def test_wire_p3_does_not_overwrite_langfuse_integration_py() -> None:
-    integration_path = _LANGFUSE_PKG / "integration.py"
+def test_wire_p3_does_not_overwrite_contract_aware_integration_py(tmp_path: Path) -> None:
+    pkg = _contract_aware_langfuse_pkg(tmp_path)
+    integration_path = pkg / "integration.py"
     before = integration_path.read_text(encoding="utf-8")
-    generate_provider_shell(
-        "langfuse",
-        "OBSERVABILITY_BACKEND",
-        factory="create_langfuse_observability_backend",
-        env="INTERGRAX_LANGFUSE",
-        providers_root=_PROJECT_ROOT / "intergrax" / "integrations" / "providers",
+
+    written = generate_provider_shell(
+        **_LANGFUSE_SHELL_KWARGS,
+        providers_root=tmp_path / "providers",
     )
-    after = integration_path.read_text(encoding="utf-8")
-    assert before == after
+
+    assert integration_path.read_text(encoding="utf-8") == before
+    assert written["register.py"] is False
+    assert written["bundle.py"] is False
+    assert written["__init__.py"] is False
 
 
-def test_wire_p3_preserves_langfuse_contract_factory_exports() -> None:
-    bundle_path = _LANGFUSE_PKG / "bundle.py"
+def test_wire_p3_preserves_contract_aware_bundle_exports(tmp_path: Path) -> None:
+    pkg = _contract_aware_langfuse_pkg(tmp_path)
+    bundle_path = pkg / "bundle.py"
     before = bundle_path.read_text(encoding="utf-8")
+
     generate_provider_shell(
-        "langfuse",
-        "OBSERVABILITY_BACKEND",
-        factory="create_langfuse_observability_backend",
-        env="INTERGRAX_LANGFUSE",
-        providers_root=_PROJECT_ROOT / "intergrax" / "integrations" / "providers",
+        **_LANGFUSE_SHELL_KWARGS,
+        providers_root=tmp_path / "providers",
     )
+
     after = bundle_path.read_text(encoding="utf-8")
     assert "create_langfuse_observability_integration" in after
     assert before == after
+
+
+def test_wire_p3_writes_legacy_shell_for_unmigrated_provider(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+
+    written = generate_provider_shell(
+        **_LANGFUSE_SHELL_KWARGS,
+        providers_root=providers_root,
+    )
+
+    pkg = providers_root / "observability_backend" / "langfuse"
+    assert written == {"register.py": True, "bundle.py": True, "__init__.py": True}
+    assert (pkg / "register.py").is_file()
+    assert (pkg / "bundle.py").is_file()
+    assert (pkg / "__init__.py").is_file()
+    assert "create_langfuse_observability_backend" in (pkg / "bundle.py").read_text(encoding="utf-8")
 
 
 def test_langfuse_init_lazy_exports_public_api() -> None:
@@ -134,7 +175,8 @@ def test_langfuse_integration_module_has_no_vendor_sdk_imports() -> None:
         assert f"from {token}" not in source
 
 
-def test_contract_aware_package_skips_hand_edited_files() -> None:
-    assert is_contract_aware_package(_LANGFUSE_PKG)
+def test_contract_aware_package_skips_hand_edited_files(tmp_path: Path) -> None:
+    pkg = _contract_aware_langfuse_pkg(tmp_path)
+    assert is_contract_aware_package(pkg)
     for filename in HAND_EDITED_PROVIDER_FILES:
-        assert should_skip_provider_file(_LANGFUSE_PKG, filename)
+        assert should_skip_provider_file(pkg, filename)
