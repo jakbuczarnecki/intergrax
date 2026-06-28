@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Salesforce (salesforce)
 
-# `salesforce` integration — usage
+Category: `crm`
 
-**Category:** `crm`  
-**Catalog factory:** ``create_salesforce_crm()``  
-**Env prefix:** ``INTERGRAX_SALESFORCE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.crm.salesforce.bundle import create_salesforce_crm
+- `create_salesforce_crm()` remains backward-compatible.
 
-backend = create_salesforce_crm()
-```
+## Contract-based integration
+
+- `SalesforceCrmIntegration` derives from the category-specific contract.
+- Factory: `create_salesforce_crm_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

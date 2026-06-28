@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Triton (triton)
 
-# `triton` integration — usage
+Category: `vision_serving`
 
-**Category:** `vision_serving`  
-**Catalog factory:** ``create_triton_vision_serving()``  
-**Env prefix:** ``INTERGRAX_TRITON_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.vision_serving.triton.bundle import create_triton_vision_serving
+- `create_triton_vision_serving()` remains backward-compatible.
 
-backend = create_triton_vision_serving()
-```
+## Contract-based integration
+
+- `TritonVisionServingIntegration` derives from the category-specific contract.
+- Factory: `create_triton_vision_serving_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

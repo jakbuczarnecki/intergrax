@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Hubspot (hubspot)
 
-# `hubspot` integration — usage
+Category: `crm`
 
-**Category:** `crm`  
-**Catalog factory:** ``create_hubspot_crm()``  
-**Env prefix:** ``INTERGRAX_HUBSPOT_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.crm.hubspot.bundle import create_hubspot_crm
+- `create_hubspot_crm()` remains backward-compatible.
 
-backend = create_hubspot_crm()
-```
+## Contract-based integration
+
+- `HubspotCrmIntegration` derives from the category-specific contract.
+- Factory: `create_hubspot_crm_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

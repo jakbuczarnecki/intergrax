@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Deepgram (deepgram)
 
-# `deepgram` integration — usage
+Category: `speech_provider`
 
-**Category:** `speech_provider`  
-**Catalog factory:** ``create_deepgram_speech_provider()``  
-**Env prefix:** ``INTERGRAX_DEEPGRAM_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.speech_provider.deepgram.bundle import create_deepgram_speech_provider
+- `create_deepgram_speech_provider()` remains backward-compatible.
 
-backend = create_deepgram_speech_provider()
-```
+## Contract-based integration
+
+- `DeepgramSpeechProviderIntegration` derives from the category-specific contract.
+- Factory: `create_deepgram_speech_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

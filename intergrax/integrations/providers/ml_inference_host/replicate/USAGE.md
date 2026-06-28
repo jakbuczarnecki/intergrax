@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Replicate (replicate)
 
-# `replicate` integration — usage
+Category: `ml_inference_host`
 
-**Category:** `ml_inference_host`  
-**Catalog factory:** ``create_replicate_ml_inference_host()``  
-**Env prefix:** ``INTERGRAX_REPLICATE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.ml_inference_host.replicate.bundle import create_replicate_ml_inference_host
+- `create_replicate_ml_inference_host()` remains backward-compatible.
 
-backend = create_replicate_ml_inference_host()
-```
+## Contract-based integration
+
+- `ReplicateMlInferenceHostIntegration` derives from the category-specific contract.
+- Factory: `create_replicate_ml_inference_host_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

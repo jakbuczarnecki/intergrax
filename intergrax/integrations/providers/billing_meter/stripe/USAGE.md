@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Stripe (stripe)
 
-# `stripe` integration — usage
+Category: `billing_meter`
 
-**Category:** `billing_meter`  
-**Catalog factory:** ``create_stripe_billing_meter()``  
-**Env prefix:** ``INTERGRAX_STRIPE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.billing_meter.stripe.bundle import create_stripe_billing_meter
+- `create_stripe_billing_meter()` remains backward-compatible.
 
-backend = create_stripe_billing_meter()
-```
+## Contract-based integration
+
+- `StripeBillingMeterIntegration` derives from the category-specific contract.
+- Factory: `create_stripe_billing_meter_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.
