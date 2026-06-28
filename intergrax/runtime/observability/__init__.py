@@ -31,6 +31,15 @@ from intergrax.runtime.observability.export_bridge import (
     make_journal_export_runtime_plugin,
     register_journal_export_plugin,
 )
+from intergrax.runtime.observability.export_policy import (
+    ExportPolicyResult,
+    ObservabilityExportMode,
+    ObservabilityExportPolicy,
+    ObservabilityFieldAction,
+    apply_observability_export_policy,
+    try_export_observability_envelope,
+)
+from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
 from intergrax.runtime.observability.journal_export import (
     JournalExportSnapshot,
@@ -81,6 +90,7 @@ __all__ = [
     "build_journal_ref",
     "build_journal_ref_payload",
     "EmittedDiagnostic",
+    "ExportPolicyResult",
     "envelope_from_gateway_call_source",
     "envelope_from_journal_ref",
     "envelope_from_rag_call",
@@ -92,9 +102,14 @@ __all__ = [
     "gateway_call_export_source_from_tool_call",
     "runtime_event_export_source_from_event",
     "is_journal_export_enabled",
+    "apply_observability_export_policy",
     "JournalExportSnapshot",
     "JournalRef",
     "make_journal_export_runtime_plugin",
+    "make_observability_export_runtime_plugin",
+    "ObservabilityExportMode",
+    "ObservabilityExportPolicy",
+    "ObservabilityFieldAction",
     "ExtensionSchemaError",
     "ObservabilityEmitter",
     "PayloadSchemaRegistry",
@@ -108,6 +123,7 @@ __all__ = [
     "register_extension_runtime_payload",
     "register_journal_export_plugin",
     "render_journal_otlp_json",
+    "try_export_observability_envelope",
     "sample_runtime_event",
     "serialize_runtime_event",
     "TraceScopeState",
