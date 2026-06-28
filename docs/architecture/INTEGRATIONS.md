@@ -83,7 +83,20 @@ Observability backends (Langfuse, Arize, Phoenix, Elasticsearch, OTLP-oriented v
 
 **Input boundary:** vendor integrations accept only **`ObservabilityExportEnvelope`** records that have already passed **`ObservabilityExportPolicy`** / **`try_export_observability_envelope`**. They consume **`sanitized_application_attributes`** only — never raw **`application_attributes`**, never **`RuntimeEvent`** raw payloads, and never bypass export policy.
 
-**Why not ad-hoc exporters:** OTLP/JSONL helpers remain transport-oriented exporters until aligned; future Langfuse/Arize/Phoenix/Elasticsearch adapters share identity, capabilities, health, failure isolation, and mapping through this contract — one integration class per category, not scattered SDK calls from runtime hot paths.
+**Why not ad-hoc exporters:** **`OtlpObservabilityIntegration`** (INTEGRATIONS-1C) is the first concrete observability vendor integration — it subclasses **`ObservabilityVendorIntegrationContract`** and wraps the lower-level **`OtlpObservabilityExporter`** / **`OtlpTransport`** delivery path. Future Langfuse/Arize/Phoenix/Elasticsearch adapters share identity, capabilities, health, failure isolation, and mapping through this contract — one integration class per category, not scattered SDK calls from runtime hot paths.
+
+**JSONL classification:** **`JsonlObservabilityExporter`** is a **local file export sink**, not a remote observability vendor integration. It remains a transport-oriented exporter until a separate local-sink integration contract is introduced (if needed). Do not classify JSONL as **`ObservabilityVendorIntegrationContract`**.
+
+**OTLP concrete integration (INTEGRATIONS-1C):**
+
+| Type | Role |
+|------|------|
+| **`OtlpObservabilityIntegration`** | First concrete observability vendor integration; `provider_id=otlp` |
+| **`OtlpObservabilityIntegrationConfig`** | Typed opt-in config for OTLP integration |
+| **`OtlpObservabilityExporter`** | Lower-level OTLP mapper/exporter (implementation detail behind integration) |
+| **`OtlpTransport`** / **`OtlpHttpTransport`** | Lower-level OTLP delivery (implementation detail behind integration) |
+
+Explicit operator wiring (**`build_otlp_observability_integration`**, **`build_otlp_observability_exporter`**, **`build_otlp_observability_export_runtime_plugin`**) constructs the integration-backed OTLP path — no global bootstrap registration.
 
 **Provider vs category (unchanged rule):** the same **`provider_id`** (for example `elasticsearch`) may appear in multiple categories through **separate** integration classes — never one multi-category class or multiple inheritance across unrelated categories:
 

@@ -26,8 +26,16 @@ from intergrax.runtime.integrations.observability import (
     map_envelope_to_vendor_payload,
     require_policy_sanitized_envelope,
 )
+from intergrax.runtime.integrations.observability_otlp import (
+    OTLP_OBSERVABILITY_PROVIDER_ID,
+    OtlpObservabilityIntegration,
+    OtlpObservabilityIntegrationConfig,
+)
 
 __all__ = [
+    "OTLP_OBSERVABILITY_PROVIDER_ID",
+    "OtlpObservabilityIntegration",
+    "OtlpObservabilityIntegrationConfig",
     "OBSERVABILITY_VENDOR_INTEGRATION_CONTRACT_SCHEMA",
     "OBSERVABILITY_VENDOR_PAYLOAD_SCHEMA",
     "PLATFORM_INTEGRATION_CONTRACT_SCHEMA",

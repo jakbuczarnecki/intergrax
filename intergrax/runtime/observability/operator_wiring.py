@@ -69,16 +69,28 @@ def _build_otlp_exporter_config(otlp: OtlpExportOperatorConfig) -> OtlpObservabi
     )
 
 
+def build_otlp_observability_integration(
+    config: ObservabilityExportOperatorConfig,
+    *,
+    transport: OtlpTransport | None = None,
+):
+    """Construct an OTLP observability vendor integration from explicit operator configuration."""
+    from intergrax.runtime.integrations.observability_otlp import OtlpObservabilityIntegration
+
+    otlp = _require_enabled_otlp_config(config)
+    exporter_config = _build_otlp_exporter_config(otlp)
+    active_transport = transport or OtlpHttpTransport()
+    exporter = OtlpObservabilityExporter(exporter_config, active_transport)
+    return OtlpObservabilityIntegration.from_exporter(exporter, enabled=config.enabled)
+
+
 def build_otlp_observability_exporter(
     config: ObservabilityExportOperatorConfig,
     *,
     transport: OtlpTransport | None = None,
 ) -> OtlpObservabilityExporter:
     """Construct an OTLP exporter from explicit operator configuration."""
-    otlp = _require_enabled_otlp_config(config)
-    exporter_config = _build_otlp_exporter_config(otlp)
-    active_transport = transport or OtlpHttpTransport()
-    return OtlpObservabilityExporter(exporter_config, active_transport)
+    return build_otlp_observability_integration(config, transport=transport).exporter
 
 
 def build_otlp_observability_export_runtime_plugin(
@@ -90,6 +102,6 @@ def build_otlp_observability_export_runtime_plugin(
     if not config.enabled:
         return None
 
-    exporter = build_otlp_observability_exporter(config, transport=transport)
+    integration = build_otlp_observability_integration(config, transport=transport)
     policy = ObservabilityExportPolicy(enabled=True, export_content=False)
-    return make_observability_export_runtime_plugin(exporter=exporter, policy=policy)
+    return make_observability_export_runtime_plugin(exporter=integration, policy=policy)

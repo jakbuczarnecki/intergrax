@@ -64,6 +64,7 @@ from intergrax.runtime.observability.operator_wiring import (
     OtlpExportOperatorConfig,
     build_otlp_observability_export_runtime_plugin,
     build_otlp_observability_exporter,
+    build_otlp_observability_integration,
 )
 from intergrax.runtime.observability.otlp_http_transport import OtlpHttpTransport
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
@@ -124,6 +125,7 @@ __all__ = [
     "OtlpExportOperatorConfig",
     "build_otlp_observability_export_runtime_plugin",
     "build_otlp_observability_exporter",
+    "build_otlp_observability_integration",
     "RuntimeEventExportSource",
     "SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
     "SanitizedApplicationObservabilityAttributes",
