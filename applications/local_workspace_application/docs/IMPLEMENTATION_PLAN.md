@@ -144,7 +144,7 @@ This track is executed one task at a time.
 | LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
 | LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **In progress — H1.1/H1.2 passed; H1.3 next** | High |
+| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | Planned | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
@@ -280,17 +280,19 @@ qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw
 - [x] UAEP/ACP host catalog tool invocation bridge fixed in LKW.1.13.
 - [x] Tenant-scoped retrieve and local_search allowed-tool declaration fixed in LKW.1.15.
 - [x] Live index tool-call accounting fixed in LKW-H1.1.
-- [x] Broader trace/evidence inspection lessons are reflected in LKW-H1.2 (curated `lkw_evidence.v1` slice); H1.3 smoke assertions remain.
+- [x] Broader trace/evidence inspection lessons are reflected in LKW-H1.2 (curated `lkw_evidence.v1` slice); H1.3 smoke assertions passed (see §4).
 - [ ] Any remaining env/settings/scaffold/Docker/CI implications from LKW.1 are recorded in H1/H3 if they prove reusable.
 
-### Known follow-ups after LKW.1
+### Known follow-ups after LKW.1 *(historical — superseded by LKW-H1 / PF closeout; see §4)*
 
-| Follow-up | Classification | Target |
+| Follow-up | Classification | Target *(at time of LKW.1 closeout)* |
 |----------|----------------|--------|
-| Search/synthesize per-tool accounting (`rag.retrieve`, `workspace.write_file`) in trace/summary | Observability/accounting | Platform / LKW-H1.3 |
-| RuntimeEvent `TOOL_*`, policy decisions, raw tool reason/error at event layer | Observability/platform | Platform deferred |
-| `RunArtifactBundle` / `WorkspaceArtifactRef` platform wiring | Observability/platform | Platform deferred |
-| RAG ingest-specific observability contract | Observability/platform | Platform deferred |
+| Search/synthesize per-tool accounting (`rag.retrieve`, `workspace.write_file`) in trace/summary | Observability/accounting | **Closed** — LKW-H1.3 |
+| RuntimeEvent `TOOL_*` at event layer | Observability/platform | **Closed** — LKW-PF1 / **LKW-PF1A** (`runtime_event_summary.v1`) |
+| `RunArtifactBundle` / `WorkspaceArtifactRef` platform wiring | Observability/platform | **Closed** — LKW-PF2 / **LKW-PF2A** (`shadow_workspace_id` propagation) |
+| Policy decisions, raw tool reason/error at RuntimeEvent layer | Observability/platform | Platform deferred |
+| RAG ingest-specific observability contract | Observability/platform | Platform deferred (optional) |
+| Async runtime plugin coroutine warnings | Observability/platform | Platform deferred |
 | Standalone synthesize with message-only input returns `content_missing` | Pipeline/orchestration input contract | LKW.2 |
 | Developer first-run/adoption simplification | Packaging/adoption | LKW-H3 |
 
@@ -323,7 +325,7 @@ LKW.1.15 passed product behavior. H1.1 fixed the first accounting gap for live i
 local.workspace.index -> rag.ingest_document -> application_run_summary.v1 total_tool_calls=1
 ```
 
-The remaining H1 work after H1.2: search/synthesize per-tool accounting in trace/summary, H1.3 smoke assertions, and platform event-layer observability (RuntimeEvent `TOOL_*`, policy decisions, `RunArtifactBundle`).
+H1.1–H1.3 are closed for LKW.2 entry. Platform event-layer topics originally tracked here were closed in **LKW-PF1** / **LKW-PF1A** (RuntimeEvent `TOOL_*`), **LKW-PF2** / **LKW-PF2A** (`RunArtifactBundle` / `WorkspaceArtifactRef`, `shadow_workspace_id`). Remaining deferred platform topics: async runtime plugin coroutine warnings; optional RAG ingest observability contract; policy/raw tool reason decisions at RuntimeEvent layer.
 
 H1 must improve visibility. It must not replace or reopen product execution blockers that are already fixed in LKW.1.9–LKW.1.15.
 
@@ -422,14 +424,14 @@ search — lkw.search_summary.v1 num_results/evidence_count/source_refs + redact
 synthesize — lkw.synthesize_summary.v1 shadow_write/artifact_path|artifact_ref + redaction
 ```
 
-Platform follow-ups deferred (out of H1.2 scope):
+Platform follow-ups deferred at H1.2 closeout *(historical — superseded)*:
 
 ```text
-RunArtifactBundle / WorkspaceArtifactRef platform wiring
-RAG ingest-specific observability contract
-search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary
-LKW-H1.3 smoke/assertion hardening
-async runtime plugin coroutine warnings in event_bus/task_trace handlers
+RunArtifactBundle / WorkspaceArtifactRef platform wiring -> closed LKW-PF2 / LKW-PF2A
+RuntimeEvent TOOL_* HTTP visibility -> closed LKW-PF1 / LKW-PF1A
+search/synthesize per-tool accounting + LKW-H1.3 smoke/assertion hardening -> closed LKW-H1.3
+ACP shadow_workspace_id propagation -> closed LKW-PF2A
+Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer; async runtime plugin coroutine warnings
 ```
 
 **LKW-PF1 (2026-06-27):** PASSED WITH FOLLOW-UP — immediate `TOOL_*` RuntimeEvents wired in `RuntimeExecutionContext.invoke_tool`; unit coverage in `tests/unit/contracts/test_invoke_tool_runtime_events.py`. Follow-up closed in **LKW-PF1A** (`runtime_event_summary.v1` on HTTP run metadata).
@@ -481,14 +483,16 @@ typed diagnostics/evidence slice pattern is reusable across Tier-3 apps
 developer ergonomics acceptable; helper/template/docs follow-up recommended
 ```
 
-Platform follow-ups remain outside H1.3:
+Platform follow-ups remain outside H1.3 *(current deferred queue)*:
 
 ```text
-RunArtifactBundle / WorkspaceArtifactRef platform wiring
-optional ingest-specific RAG observability
+optional RAG ingest observability contract
+policy/raw tool reason decisions at RuntimeEvent layer
 async runtime plugin coroutine warnings in event_bus/task_trace handlers
 developer ergonomics helper/template/docs
 ```
+
+Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifactBundle / WorkspaceArtifactRef + ACP shadow_workspace_id (LKW-PF2 / LKW-PF2A).
 
 **LKW-PF1:** PASSED WITH FOLLOW-UP — see IMPLEMENTATION_PLAN §Platform follow-ups before LKW.2.
 ---

@@ -166,14 +166,14 @@ uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_l
 Result: 9 passed, 12 warnings
 ```
 
-Platform follow-ups deferred:
+Platform follow-ups at H1.2 closeout *(historical — superseded)*:
 
 ```text
-RAG ingest-specific observability contract
-search/synthesize per-tool accounting (rag.retrieve, workspace.write_file) in trace/summary -> LKW-H1.3
-policy decisions and raw tool reason/error at RuntimeEvent layer
-async runtime plugin coroutine warnings in event_bus/task_trace handlers
-ACP shadow_workspace_id propagation into execution structured_data -> closed in LKW-PF2A
+RuntimeEvent TOOL_* -> closed LKW-PF1 / LKW-PF1A (runtime_event_summary.v1)
+RunArtifactBundle / WorkspaceArtifactRef -> closed LKW-PF2 / LKW-PF2A
+ACP shadow_workspace_id propagation -> closed LKW-PF2A
+search/synthesize per-tool accounting + smoke assertions -> closed LKW-H1.3
+Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer; async runtime plugin coroutine warnings
 ```
 
 **LKW-PF1:** immediate `TOOL_*` RuntimeEvents — PASSED WITH FOLLOW-UP (see §LKW-PF1).
@@ -471,22 +471,30 @@ Queue:
 NEXT: LKW.2
 ```
 
-## Known follow-ups after LKW.1 / H1.1 / H1.2
+## Known follow-ups after LKW.1 / H1.1 / H1.2 *(historical — superseded)*
+
+Closed since this snapshot:
 
 ```text
-Search/synthesize per-tool accounting in trace/summary -> LKW-H1.3 (closed)
-RAG ingest observability contract -> platform deferred
-ACP shadow_workspace_id on execution structured_data -> closed in LKW-PF2A
-Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
+RuntimeEvent TOOL_* -> LKW-PF1 / LKW-PF1A
+RunArtifactBundle / WorkspaceArtifactRef + ACP shadow_workspace_id -> LKW-PF2 / LKW-PF2A
+search/synthesize per-tool accounting in trace/summary -> LKW-H1.3
+index total_tool_calls=0 -> LKW-H1.1
+curated lkw_evidence.v1 inspection surface -> LKW-H1.2
 ```
 
-Classification:
+Remaining deferred platform topics:
 
 ```text
-index total_tool_calls=0 -> fixed in LKW-H1.1 for live UAEP path
-curated lkw_evidence.v1 inspection surface -> fixed in LKW-H1.2 for index/search/synthesize diagnostics
-search/synthesize per-tool visibility in trace/summary -> LKW-H1.3
-message-only synthesize content_missing -> LKW.2 / pipeline-orchestration input contract
+async runtime plugin coroutine warnings
+optional RAG ingest observability contract
+policy/raw tool reason decisions at RuntimeEvent layer
+```
+
+Product queue:
+
+```text
+Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
 ## Closeout rule
@@ -500,5 +508,5 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 Next queue item:
 
 ```text
-LKW-H1.3 — smoke/assertion hardening for inspectable LKW run output
+LKW.2 — graph pipeline local.workspace.pipeline + local workspace skills
 ```
