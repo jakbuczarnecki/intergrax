@@ -25,7 +25,7 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-**LKW.2** (graph pipeline + local workspace skills) is **in progress**. **LKW.2.1–LKW.2.4B** are complete (local skill bundle, agent `skill_ids`, environment profile, pipeline graph spec, search evidence handoff). **Next:** **LKW.2.4C** — live pipeline proof and metadata preservation for `local.workspace.pipeline`. LKW.2 is not closed; live pipeline proof has not passed yet.
+**LKW.2** (graph pipeline + local workspace skills) is **in progress**. **LKW.2.1–LKW.2.4C** are complete (local skill bundle, agent `skill_ids`, environment profile, pipeline graph spec, search evidence handoff, live pipeline proof). **Next:** **LKW.2 closeout docs** — direct-capability smoke + platform proof checklist. LKW.2 is not fully closed until closeout lands.
 
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
@@ -105,7 +105,7 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 
 - **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
-- **Skills:** `harness` + `local` bundles (LKW.0, LKW.2.1–LKW.2.3); pipeline capability `local.workspace.pipeline` registered (LKW.2.4A–LKW.2.4B), live proof pending (LKW.2.4C).
+- **Skills:** `harness` + `local` bundles (LKW.0, LKW.2.1–LKW.2.3); pipeline capability `local.workspace.pipeline` registered and live proof passed (LKW.2.4A–LKW.2.4C).
 
 ## Docs
 

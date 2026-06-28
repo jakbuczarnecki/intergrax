@@ -493,12 +493,15 @@ def _trace_summary_payload(
     *,
     terminal_reason: TerminalReason,
 ) -> dict[str, object]:
+    from intergrax.agents.authoring.diagnostic_serialization import aggregate_step_diagnostics
+
     return {
         "total_steps": trace.total_steps,
         "total_llm_tokens": trace.total_llm_tokens,
         "total_tool_calls": trace.total_tool_calls,
         "total_rag_calls": trace.total_rag_calls,
         "terminal_reason": terminal_reason.value,
+        "step_diagnostics": aggregate_step_diagnostics(trace),
     }
 
 

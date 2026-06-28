@@ -28,9 +28,10 @@ class LocalWorkspaceRunService:
         nexus_loop: NexusLoop,
         *,
         default_agent_id: str,
+        task_runner: UnifiedTaskRunner | None = None,
     ) -> LocalWorkspaceRunService:
         return cls(
-            task_runner=UnifiedTaskRunner(nexus_loop),
+            task_runner=task_runner or UnifiedTaskRunner(nexus_loop),
             default_agent_id=default_agent_id,
             nexus_loop=nexus_loop,
         )
@@ -76,10 +77,12 @@ def mount_local_workspace_routes(
     nexus_loop: NexusLoop,
     prefix: str = "/v1/local_workspace",
     default_agent_id: str = "local_search",
+    task_runner: UnifiedTaskRunner | None = None,
 ) -> LocalWorkspaceRunService:
     service = LocalWorkspaceRunService.from_nexus_loop(
         nexus_loop,
         default_agent_id=default_agent_id,
+        task_runner=task_runner,
     )
     router = APIRouter(prefix=prefix, tags=["local_workspace"])
 

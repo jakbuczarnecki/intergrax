@@ -501,7 +501,7 @@ Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifac
 
 ## 5. LKW.2: graph pipeline + local workspace skills
 
-**Progress:** LKW.2.1–LKW.2.4B **done**; **next:** LKW.2.4C live pipeline proof and metadata preservation. LKW.2 is not closed until LKW.2.4C passes and closeout docs land. `local.workspace.pipeline` has **not** passed live proof yet.
+**Progress:** LKW.2.1–LKW.2.4C **done**; **next:** LKW.2 closeout docs (direct-capability smoke + platform proof checklist). Live pipeline proof for `local.workspace.pipeline` **passed** (LKW.2.4C).
 
 | ID | Task | Module | Owner | Status | Platform propagation |
 |----|------|--------|-------|--------|----------------------|
@@ -512,14 +512,15 @@ Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifac
 | LKW.2.4A1 | Allow graph trigger capabilities in package closure | applications packaging | Tier-3 | **Done** — graph trigger package closure | — |
 | LKW.2.4A2 | Align pipeline graph nodes with agent roster | graph spec | Tier-1/3 | **Done** — graph node roster identity | — |
 | LKW.2.4B | Pass search evidence into pipeline synthesize | pipeline graph | Tier-1/3 | **Done** — search evidence handoff into synthesize | — |
-| LKW.2.4C | Live pipeline proof and metadata preservation | live verification | Tier-3 | **Next** | — |
+| LKW.2.4C | Live pipeline proof and metadata preservation | live verification | Tier-3 | **Done** — live pipeline proof passed | — |
 
 Acceptance:
 
-- [ ] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection *(LKW.2.4C)*.
+- [x] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection *(LKW.2.4C)*.
 - [x] Tool access is resolved through `skill_ids`, not ad-hoc allowlists in agent code *(LKW.2.1–LKW.2.2)*.
 - [ ] Existing LKW.1 index/search/synthesize direct capabilities still pass *(LKW.2 closeout smoke)*.
 - [x] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline *(LKW.2.4B)*.
+- [x] Metadata preservation on pipeline run: `application_run_summary.v1`, redacted `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1` *(LKW.2.4C)*.
 - [ ] Platform proof checklist in §0a is completed *(LKW.2 closeout)*.
 
 **Observability boundary (OBS-EXPORT):**

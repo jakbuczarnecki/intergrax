@@ -119,16 +119,24 @@ def collect_runtime_events_for_task(
     if nexus_loop is None:
         return []
 
-    run_id = task_result.run_id
+    run_id = task_result.run_id or ""
     task_id = task_result.task_id
+    match_ids = _task_run_id_candidates(task_result)
     merged: dict[str, RuntimeEvent] = {}
 
     for event in nexus_loop.event_bus.history:
-        if _event_matches_task(event, run_id=run_id, task_id=task_id):
+        if _event_matches_task(event, match_ids=match_ids):
             merged[event.event_id] = event
 
     store: RuntimeEventPersistence | None = nexus_loop.runtime_event_store
     if store is not None:
+        for candidate in match_ids:
+            for source in (
+                store.list_for_run(candidate, tenant_id=tenant_id),
+                store.list_for_task(candidate, tenant_id=tenant_id),
+            ):
+                for event in source:
+                    merged.setdefault(event.event_id, event)
         for source in (
             store.list_for_run(run_id, tenant_id=tenant_id),
             store.list_for_task(task_id, tenant_id=tenant_id),
@@ -137,6 +145,26 @@ def collect_runtime_events_for_task(
                 merged.setdefault(event.event_id, event)
 
     return list(merged.values())
+
+
+def _task_run_id_candidates(task_result: TaskResult) -> set[str]:
+    candidates = {task_result.task_id}
+    if task_result.run_id:
+        candidates.add(task_result.run_id)
+
+    metadata = task_result.metadata or {}
+    app_summary = metadata.get("application_run_summary.v1") or metadata.get(
+        "application_run_summary"
+    )
+    if isinstance(app_summary, dict):
+        for invocation in app_summary.get("agent_invocations") or []:
+            if not isinstance(invocation, dict):
+                continue
+            agent_run_id = invocation.get("run_id")
+            if isinstance(agent_run_id, str) and agent_run_id.strip():
+                candidates.add(agent_run_id.strip())
+
+    return candidates
 
 
 def attach_runtime_event_summary_metadata(
@@ -160,16 +188,14 @@ def attach_runtime_event_summary_metadata(
 def _event_matches_task(
     event: RuntimeEvent,
     *,
-    run_id: str,
-    task_id: str,
+    match_ids: set[str],
 ) -> bool:
-    ids = {run_id, task_id}
     if event.run_id:
-        if event.run_id in ids:
+        if event.run_id in match_ids:
             return True
-        if any(event.run_id == candidate or event.run_id.startswith(f"{candidate}:") for candidate in ids):
+        if any(event.run_id.startswith(f"{candidate}:") for candidate in match_ids):
             return True
-    if event.task_id and event.task_id in ids:
+    if event.task_id and event.task_id in match_ids:
         return True
     return False
 

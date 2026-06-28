@@ -31,6 +31,7 @@ from intergrax.runtime.interactions.router import create_interaction_intake_rout
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
+from local_workspace_application.host.run_task_enricher import build_lkw_http_run_task_enricher
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
 
@@ -67,6 +68,11 @@ def create_local_workspace_backend_app(
         idempotency_store=runtime.reliability.idempotency_store,
     )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
+    lkw_run_task_enricher = build_lkw_http_run_task_enricher(
+        env,
+        agent_checkpoint_store=runtime.agent_checkpoint_store,
+    )
+    lkw_run_task_runner = build_task_runner_with_enricher(nexus_loop, lkw_run_task_enricher)
     scheduler_wiring = wire_long_running_scheduler(
         checkpoint_store=checkpoint_store,
         task_runner=task_runner,
@@ -107,6 +113,7 @@ def create_local_workspace_backend_app(
         nexus_loop=nexus_loop,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
+        task_runner=lkw_run_task_runner,
     )
 
     if settings.include_task_control:

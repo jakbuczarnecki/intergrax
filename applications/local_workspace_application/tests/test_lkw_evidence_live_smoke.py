@@ -20,6 +20,9 @@ _PREFIX = "/v1/local_workspace"
 _APP_SUMMARY_KEY = "application_run_summary.v1"
 _EVIDENCE_KEY = "lkw_evidence.v1"
 _RUNTIME_EVENT_SUMMARY_KEY = "runtime_event_summary.v1"
+_ARTIFACT_BUNDLE_KEY = "run_artifact_bundle.v1"
+_PIPELINE_AGENTS = ("local_indexer", "local_search", "local_synthesizer")
+_PIPELINE_TENANT_ID = "tenant-lkw-pipeline"
 
 _FIXTURE_TEXT = "Intergrax LKW evidence smoke fixture — searchable paragraph."
 _QUERY = "Intergrax LKW evidence smoke"
@@ -168,10 +171,77 @@ def _assert_companion_metadata_unchanged(metadata: dict[str, Any]) -> None:
     evidence = metadata.get(_EVIDENCE_KEY)
     assert isinstance(evidence, dict)
     assert evidence.get("schema_version") == _EVIDENCE_KEY
-    bundle = metadata.get("run_artifact_bundle.v1")
+    bundle = metadata.get(_ARTIFACT_BUNDLE_KEY)
     if bundle is not None:
         assert isinstance(bundle, dict)
-        assert bundle.get("schema_version") == "run_artifact_bundle.v1"
+        assert bundle.get("schema_version") == _ARTIFACT_BUNDLE_KEY
+
+
+def _agent_invocation_ids(summary: dict[str, Any]) -> list[str]:
+    invocations = summary.get("agent_invocations") or []
+    ids: list[str] = []
+    for entry in invocations:
+        if isinstance(entry, dict) and entry.get("agent_id"):
+            ids.append(str(entry["agent_id"]))
+    return ids
+
+
+def _tool_calls_by_agent(summary: dict[str, Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for entry in summary.get("agent_invocations") or []:
+        if not isinstance(entry, dict):
+            continue
+        agent_id = entry.get("agent_id")
+        raw = entry.get("total_tool_calls")
+        if agent_id is not None and raw is not None:
+            counts[str(agent_id)] = int(raw)
+    return counts
+
+
+def _assert_pipeline_agent_order(summary: dict[str, Any]) -> None:
+    ids = _agent_invocation_ids(summary)
+    assert ids == list(_PIPELINE_AGENTS), ids
+
+
+def _assert_artifact_bundle(metadata: dict[str, Any]) -> dict[str, Any]:
+    assert _ARTIFACT_BUNDLE_KEY in metadata
+    bundle = metadata[_ARTIFACT_BUNDLE_KEY]
+    assert isinstance(bundle, dict)
+    assert bundle.get("schema_version") == _ARTIFACT_BUNDLE_KEY
+    workspace = bundle.get("workspace")
+    assert isinstance(workspace, list) and workspace, bundle
+    serialized = json.dumps(bundle)
+    assert _FIXTURE_TEXT not in serialized
+    for key in _UNSAFE_DIAGNOSTIC_KEYS:
+        assert f'"{key}"' not in serialized
+    return bundle
+
+
+def _assert_runtime_event_summary_present_and_redacted(metadata: dict[str, Any]) -> dict[str, Any]:
+    assert _RUNTIME_EVENT_SUMMARY_KEY in metadata
+    summary = metadata[_RUNTIME_EVENT_SUMMARY_KEY]
+    assert isinstance(summary, dict)
+    assert summary.get("schema_version") == _RUNTIME_EVENT_SUMMARY_KEY
+    tool_events = summary.get("tool_events")
+    assert isinstance(tool_events, dict)
+    serialized = json.dumps(summary)
+    assert _FIXTURE_TEXT not in serialized
+    assert _QUERY not in serialized
+    for key in _UNSAFE_DIAGNOSTIC_KEYS:
+        assert f'"{key}"' not in serialized
+    return summary
+
+
+def _assert_runtime_event_tools(metadata: dict[str, Any], expected_tool_ids: set[str]) -> None:
+    summary = _assert_runtime_event_summary_present_and_redacted(metadata)
+    tool_events = summary.get("tool_events")
+    assert isinstance(tool_events, dict)
+    assert tool_events.get("total", 0) > 0
+    tools = tool_events.get("tools")
+    assert isinstance(tools, list) and tools
+    seen = {str(entry.get("tool_id")) for entry in tools if isinstance(entry, dict)}
+    missing = expected_tool_ids - seen
+    assert not missing, f"missing tool visibility: {sorted(missing)}; seen={sorted(seen)}"
 
 
 def test_lkw_evidence_live_smoke_index(
@@ -344,3 +414,54 @@ def test_lkw_evidence_live_smoke_synthesize(
     _assert_raw_text_not_in_evidence(evidence, _FIXTURE_TEXT)
     _assert_runtime_event_summary(metadata, expected_tool_id="workspace.write_file")
     _assert_companion_metadata_unchanged(metadata)
+
+
+def test_lkw_evidence_live_smoke_pipeline(
+    lkw_smoke_client: TestClient,
+    lkw_smoke_workspace: tuple[Path, str],
+) -> None:
+    fixture_doc, fixture_path = lkw_smoke_workspace
+    original_bytes = fixture_doc.read_bytes()
+
+    body = _post_run(
+        lkw_smoke_client,
+        {
+            "tenant_id": _PIPELINE_TENANT_ID,
+            "message": _QUERY,
+            "capability": "local.workspace.pipeline",
+            "metadata": {
+                "source_paths": [fixture_path],
+                "collection_id": _COLLECTION_ID,
+                "query": _QUERY,
+                "top_k": 5,
+                "shadow_workspace": True,
+                "output_name": "pipeline-synthesis-draft.md",
+            },
+        },
+    )
+    metadata = _metadata(body)
+    _assert_trace_not_exposed(metadata)
+    summary = _assert_app_summary(metadata)
+    _assert_pipeline_agent_order(summary)
+    evidence = _assert_evidence_shell(metadata, capability="local.workspace.pipeline")
+
+    tool_calls = _tool_calls_by_agent(summary)
+    assert tool_calls.get("local_indexer", 0) >= 1
+    assert tool_calls.get("local_search", 0) >= 1
+    assert tool_calls.get("local_synthesizer", 0) >= 1
+
+    synth_diag = evidence["diagnostics"].get("lkw.synthesize_summary.v1")
+    assert isinstance(synth_diag, dict), evidence["diagnostics"]
+    assert synth_diag.get("shadow_write") is True
+    assert synth_diag.get("write_status") not in (None, "")
+    assert synth_diag.get("content_missing") is not True
+    assert synth_diag.get("reason") != "content_missing"
+    assert synth_diag.get("artifact_path") or synth_diag.get("artifact_ref"), synth_diag
+
+    _assert_no_unsafe_diagnostic_keys(evidence["diagnostics"])
+    _assert_raw_text_not_in_evidence(evidence, _FIXTURE_TEXT)
+    _assert_artifact_bundle(metadata)
+    _assert_runtime_event_summary_present_and_redacted(metadata)
+    _assert_companion_metadata_unchanged(metadata)
+
+    assert fixture_doc.read_bytes() == original_bytes
