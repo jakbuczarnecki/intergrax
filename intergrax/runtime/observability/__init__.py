@@ -57,6 +57,14 @@ from intergrax.runtime.observability.otlp_exporter import (
     OtlpObservabilityExporterConfig,
     OtlpTransport,
 )
+from intergrax.runtime.observability.operator_wiring import (
+    ObservabilityExportBackend,
+    ObservabilityExportOperatorConfig,
+    ObservabilityExportOperatorConfigError,
+    OtlpExportOperatorConfig,
+    build_otlp_observability_export_runtime_plugin,
+    build_otlp_observability_exporter,
+)
 from intergrax.runtime.observability.otlp_http_transport import OtlpHttpTransport
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
 from intergrax.runtime.observability.journal_export import (
@@ -108,8 +116,14 @@ __all__ = [
     "OtlpTransport",
     "OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA",
     "ObservabilityAttributeValue",
+    "ObservabilityExportBackend",
     "ObservabilityExportEnvelope",
+    "ObservabilityExportOperatorConfig",
+    "ObservabilityExportOperatorConfigError",
     "ObservabilityExporter",
+    "OtlpExportOperatorConfig",
+    "build_otlp_observability_export_runtime_plugin",
+    "build_otlp_observability_exporter",
     "RuntimeEventExportSource",
     "SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
     "SanitizedApplicationObservabilityAttributes",
