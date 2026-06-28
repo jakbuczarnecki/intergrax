@@ -139,6 +139,8 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 
 **Scope boundary (INTEGRATIONS-2A):** category contracts only — no concrete provider migration, no vendor SDK imports, no registry/bootstrap wiring.
 
+**Provider package migration pattern (INTEGRATIONS-2B pilot):** adapt existing provider packages by adding a contract-based integration class (for example **`LangfuseObservabilityIntegration`**) inside the same slug folder. Do **not** duplicate providers or create parallel adapter packages. Keep legacy provider facades (for example **`ObservabilityBackend`** query APIs) backward-compatible when possible.
+
 ### Default safety and opt-in rules
 
 - Integrations are **explicit opt-in** — disabled unless operator/config enables them.

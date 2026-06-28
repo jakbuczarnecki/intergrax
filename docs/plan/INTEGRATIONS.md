@@ -76,6 +76,26 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+## Phase INTEGRATIONS-2B — observability provider contract migration pilot (In progress)
+
+**Purpose:** Adapt existing `observability_backend` provider packages to category contracts without duplicating providers.  
+**Architecture:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-category-contract-layer-integrations-2a)  
+**Pattern:** existing provider package + new contract-based integration class; legacy query facade remains backward-compatible.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **INTEGRATIONS-2B-LANGFUSE** | Code | P1 | **Done (pilot)** | Langfuse `LangfuseObservabilityIntegration` in existing provider package | Subclasses **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; injectable transport; old **`ObservabilityBackend`** facade unchanged; focused tests green |
+
+**INTEGRATIONS-2B status (2026-06-28):**
+
+- **Langfuse** selected as first provider contract migration (pilot only — not batch migration)
+- **`LangfuseObservabilityIntegration`** added under `intergrax/integrations/providers/observability_backend/langfuse/`
+- Legacy **`create_langfuse_observability_backend`** / **`register_langfuse_integration`** remain backward-compatible
+- Arize, Phoenix, Elasticsearch, and remaining observability_backend slugs **deferred**
+- No LKW change; no global bootstrap registration; no vendor SDK imports
+
+---
+
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7 · baseline **32/32 L3**  

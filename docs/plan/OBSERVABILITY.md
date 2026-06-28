@@ -197,6 +197,12 @@ Load **only** the satellite matching your task or cited gap ID.
 - Existing **`observability_backend`** catalog providers (Langfuse, Arize, Phoenix, Elasticsearch, Datadog, …) are **still awaiting migration/adaptation** to category contracts
 - **OBS-EXPORT-5** remains **deferred** until those providers are adapted as concrete **`ObservabilityVendorIntegrationContract`** subclasses
 
+**INTEGRATIONS-2B-LANGFUSE pilot status (2026-06-28):**
+
+- Existing Langfuse **`observability_backend`** provider adapted to **`ObservabilityVendorIntegrationContract`** as pilot migration
+- **`LangfuseObservabilityIntegration`** consumes policy-sanitized envelopes only; legacy **`ObservabilityBackend`** query facade unchanged
+- **OBS-EXPORT-5** remains **not complete** until migration pattern is approved and remaining providers (Arize, Phoenix, …) are adapted
+
 **Required decisions:**
 
 - External sinks are optional subscribers/export targets, not semantic owners of Intergrax observability.
