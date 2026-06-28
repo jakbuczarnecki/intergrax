@@ -70,6 +70,33 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
+## Phase OBS-EXPORT — External observability export boundary (Planned)
+
+**Purpose:** Define the platform-level export boundary for external observability sinks such as JSONL/file, OTLP, Elasticsearch, Langfuse, Arize/Phoenix.
+
+**Required decisions:**
+
+- External sinks are optional subscribers/export targets, not semantic owners of Intergrax observability.
+- Intergrax RuntimeEvent / trace / journal / diagnostic payloads remain the canonical source.
+- Vendor SDKs must not be called directly from runtime hot paths, agents, or LKW product code.
+- Exporter failure must never fail product runs.
+- Raw prompts, raw documents, raw RAG chunks, raw synthesized content, secrets, and full local file paths are not exported by default.
+- Redaction/export policy must run before external export.
+- Default posture for local-first apps such as LKW: disabled by default, strict redaction, `export_content=false`.
+- OBS-EXPORT depends on LKW.2.4 pipeline proof as a representative multi-agent workload.
+
+**Delivery rule:** one `OBS-EXPORT-*` row per PR; export through normalized envelope only; no vendor SDK in runtime hot paths.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **OBS-EXPORT-1** | Code | P2 | Planned | Normalized export envelope and exporter interface | Defines stable export envelope, exporter interface, no-op exporter, and test exporter. Uses existing spine/journal/runtime metadata as source. No vendor SDK. |
+| **OBS-EXPORT-2** | Code | P2 | Planned | Redaction/export policy and failure isolation | Explicit allow/drop/hash policy for exported fields. Export timeout/failure does not fail the run. Tests prove raw content is not exported. |
+| **OBS-EXPORT-3** | Code | P2 | Planned | Safe JSONL/file exporter | Writes redacted export records for representative runs. Useful as reference output before vendor adapters. |
+| **OBS-EXPORT-4** | Code | P2 | Planned | First real backend adapter: OTLP or Elasticsearch | Adapter maps normalized export records to backend format without changing Intergrax event semantics. |
+| **OBS-EXPORT-5** | Code | P3 | Planned | Langfuse / Arize / Phoenix adapter | Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. |
+
+---
+
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.9, §11 · baseline **32/32 L3**  

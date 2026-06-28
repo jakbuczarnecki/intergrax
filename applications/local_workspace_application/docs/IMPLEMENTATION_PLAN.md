@@ -514,6 +514,13 @@ Acceptance:
 - [ ] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline.
 - [ ] Platform proof checklist in §0a is completed.
 
+**Observability boundary (OBS-EXPORT):**
+
+- LKW.2.4 pipeline proof is a prerequisite workload for future platform **OBS-EXPORT** work (see [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-EXPORT); LKW is the proof workload, not the integration owner.
+- Vendor observability integrations (Langfuse, Arize/Phoenix, Elasticsearch, OTLP backends, etc.) are **out of scope** for LKW.2.
+- LKW must continue to use platform observability contracts only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`, RuntimeEvent `TOOL_*`, ToolCallRecord/RagCallRecord, WorkspaceArtifactRef.
+- Do not add LKW-specific exporters, telemetry buses, vendor SDK calls, trace stores, or observability workarounds.
+
 ---
 
 ## 6. Post-LKW.1 hardening and adoption waves
