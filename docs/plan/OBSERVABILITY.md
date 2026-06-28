@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine.
 
-**Last updated:** 2026-06-28 — **OBS-EXPORT-2** export policy and failure isolation implemented.
+**Last updated:** 2026-06-28 — **OBS-EXPORT-3** safe JSONL/file exporter implemented.
 
 ---
 
@@ -92,7 +92,18 @@ Load **only** the satellite matching your task or cited gap ID.
 - Exporter failure isolation added — exporter exceptions are logged and never fail product/runtime runs
 - Minimal runtime lifecycle wiring implemented via **`make_observability_export_runtime_plugin`** (optional bus subscriber; defaults to **`NoOpObservabilityExporter`**; export runs after canonical bus recording)
 - Vendor adapters **not implemented** (Langfuse, Arize, Phoenix remain OBS-EXPORT-5)
-- JSONL/file exporter remains **OBS-EXPORT-3**
+- JSONL/file exporter remains **OBS-EXPORT-3** (superseded below)
+- OTLP/Elasticsearch remains **OBS-EXPORT-4**
+
+**OBS-EXPORT-3 status (2026-06-28):**
+
+- **OBS-EXPORT-3-SAFE-JSONL-FILE-EXPORTER** — **Done**
+- **`JsonlObservabilityExporter`** added — local-first, explicit opt-in JSONL/file sink implementing **`ObservabilityExporter`**
+- Exporter writes normalized **`ObservabilityExportEnvelope`** records (one JSON object per line, UTF-8, append by default)
+- Exporter does **not** register globally; platform bootstrap registration remains deferred unless explicitly planned later
+- Redaction/export policy remains upstream — exporter writes the envelope it receives; sanitized metadata-only records when used through **`apply_observability_export_policy`** / **`try_export_observability_envelope`**
+- Raw content export remains **unsupported/disabled by default** (`export_content=false`)
+- Vendor adapters **not implemented** (Langfuse, Arize, Phoenix remain OBS-EXPORT-5)
 - OTLP/Elasticsearch remains **OBS-EXPORT-4**
 
 **Required decisions:**
@@ -112,7 +123,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |----|------|----------|--------|-------------|------------|
 | **OBS-EXPORT-1** | Code | P2 | **Done** | Normalized export envelope and exporter interface | Defines stable export envelope, exporter interface, no-op exporter, and test exporter. Uses existing spine/journal/runtime metadata as source. No vendor SDK. |
 | **OBS-EXPORT-2** | Code | P2 | **Done** | Redaction/export policy and failure isolation | Explicit allow/drop/hash policy for exported fields. Export timeout/failure does not fail the run. Tests prove raw content is not exported. Minimal runtime plugin wiring via `make_observability_export_runtime_plugin`. |
-| **OBS-EXPORT-3** | Code | P2 | Planned | Safe JSONL/file exporter | Writes redacted export records for representative runs. Useful as reference output before vendor adapters. |
+| **OBS-EXPORT-3** | Code | P2 | **Done** | Safe JSONL/file exporter | **`JsonlObservabilityExporter`** writes policy-sanitized **`ObservabilityExportEnvelope`** JSONL records; local-first explicit opt-in; no global bootstrap registration; no vendor SDK; raw content export disabled by default. |
 | **OBS-EXPORT-4** | Code | P2 | Planned | First real backend adapter: OTLP or Elasticsearch | Adapter maps normalized export records to backend format without changing Intergrax event semantics. |
 | **OBS-EXPORT-5** | Code | P3 | Planned | Langfuse / Arize / Phoenix adapter | Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. |
 

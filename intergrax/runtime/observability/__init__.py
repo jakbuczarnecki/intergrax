@@ -40,6 +40,7 @@ from intergrax.runtime.observability.export_policy import (
     try_export_observability_envelope,
 )
 from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
+from intergrax.runtime.observability.jsonl_exporter import JsonlObservabilityExporter
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
 from intergrax.runtime.observability.journal_export import (
     JournalExportSnapshot,
@@ -79,6 +80,7 @@ __all__ = [
     "FORBIDDEN_EXPORT_CONTENT_FIELDS",
     "GatewayCallExportSource",
     "InMemoryObservabilityExporter",
+    "JsonlObservabilityExporter",
     "NoOpObservabilityExporter",
     "OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA",
     "ObservabilityExportEnvelope",
