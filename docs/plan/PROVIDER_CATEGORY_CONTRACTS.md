@@ -21,6 +21,8 @@
 
 **Provider package pattern (INTEGRATIONS-2B-FOLLOWUP):** category contracts define the **base**; each concrete provider class in `integration.py` **derives from the category-specific contract** for its folder. The provider package layout (`integration.py`, `bundle.py`, `manifest.py`, `register.py`, `__init__.py`, `USAGE.md`) is the **implementation convention** — see [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up). Langfuse is the reference pilot; batch migration of remaining slugs remains deferred.
 
+**Scaffold hardening (INTEGRATIONS-SCAFFOLD-P5-P7-CONTRACT-AWARE):** maintenance provider shell generators (`wire_p2` through `wire_p7`) preserve contract-aware packages when `integration.py` exists. Provider category migration can proceed in waves after scaffold validation; full batch migration remains deferred.
+
 **Deferred:** batch provider migration, registry v2 / contract registry wiring, vendor SDK adapters, LKW wiring.
 
 ---

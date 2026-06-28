@@ -28,7 +28,10 @@ from scripts.maintenance._provider_shell_contract import (
     is_contract_aware_package,
     should_skip_provider_file,
 )
-from scripts.maintenance.wire_p3_provider_shells import generate_provider_shell
+from scripts.maintenance.wire_p3_provider_shells import generate_provider_shell as generate_p3_provider_shell
+from scripts.maintenance.wire_p5_m6_p4_providers import generate_provider_shell as generate_p5_provider_shell
+from scripts.maintenance.wire_p6_m6_p5_providers import generate_provider_shell as generate_p6_provider_shell
+from scripts.maintenance.wire_p7_m6_p6_providers import generate_provider_shell as generate_p7_provider_shell
 
 pytestmark = pytest.mark.unit
 
@@ -56,22 +59,62 @@ _LANGFUSE_SHELL_KWARGS = {
     "factory": "create_langfuse_observability_backend",
     "env": "INTERGRAX_LANGFUSE",
 }
+_GRAFANA_SHELL_KWARGS = {
+    "slug": "grafana",
+    "cat_enum": "OBSERVABILITY_BACKEND",
+    "factory": "create_grafana_observability_backend",
+    "env": "INTERGRAX_GRAFANA",
+}
+_OTEL_COLLECTOR_SHELL_KWARGS = {
+    "slug": "opentelemetry_collector",
+    "category": "observability_backend",
+    "cat_enum": "OBSERVABILITY_BACKEND",
+    "factory": "create_opentelemetry_collector_observability_backend",
+    "env": "INTERGRAX_OPENTELEMETRY_COLLECTOR",
+}
+_NEWRELIC_SHELL_KWARGS = {
+    "slug": "newrelic",
+    "category": "observability_backend",
+    "cat_enum": "OBSERVABILITY_BACKEND",
+    "factory": "create_newrelic_observability_backend",
+    "env": "INTERGRAX_NEWRELIC",
+}
+_P5_CANONICAL_FILES = ("manifest.py", "register.py", "bundle.py", "__init__.py", "USAGE.md")
 
 
 def _contract_aware_langfuse_pkg(tmp_path: Path) -> Path:
     """Isolated contract-aware package mirroring migrated provider layout."""
-    pkg = tmp_path / "providers" / "observability_backend" / "langfuse"
+    return _contract_aware_observability_pkg(
+        tmp_path,
+        "langfuse",
+        factory="create_langfuse_observability_backend",
+        integration_factory="create_langfuse_observability_integration",
+    )
+
+
+def _contract_aware_observability_pkg(
+    tmp_path: Path,
+    slug: str,
+    *,
+    factory: str,
+    integration_factory: str,
+) -> Path:
+    """Isolated contract-aware package for P5/P6/P7 scaffold tests."""
+    pkg = tmp_path / "providers" / "observability_backend" / slug
     pkg.mkdir(parents=True)
     (pkg / "integration.py").write_text(
         "class ExampleObservabilityIntegration:\n    pass\n",
         encoding="utf-8",
     )
     (pkg / "bundle.py").write_text(
-        "def create_langfuse_observability_backend(): ...\n"
-        "def create_langfuse_observability_integration(): ...\n",
+        f"def {factory}(): ...\n"
+        f"def {integration_factory}(): ...\n",
         encoding="utf-8",
     )
+    (pkg / "manifest.py").write_text("MANIFEST = None\n", encoding="utf-8")
+    (pkg / "register.py").write_text(f"def register_{slug}_integration(): pass\n", encoding="utf-8")
     (pkg / "__init__.py").write_text("__all__ = []\n", encoding="utf-8")
+    (pkg / "USAGE.md").write_text("# usage\n", encoding="utf-8")
     return pkg
 
 
@@ -116,7 +159,7 @@ def test_wire_p3_does_not_overwrite_contract_aware_integration_py(tmp_path: Path
     integration_path = pkg / "integration.py"
     before = integration_path.read_text(encoding="utf-8")
 
-    written = generate_provider_shell(
+    written = generate_p3_provider_shell(
         **_LANGFUSE_SHELL_KWARGS,
         providers_root=tmp_path / "providers",
     )
@@ -132,7 +175,7 @@ def test_wire_p3_preserves_contract_aware_bundle_exports(tmp_path: Path) -> None
     bundle_path = pkg / "bundle.py"
     before = bundle_path.read_text(encoding="utf-8")
 
-    generate_provider_shell(
+    generate_p3_provider_shell(
         **_LANGFUSE_SHELL_KWARGS,
         providers_root=tmp_path / "providers",
     )
@@ -145,7 +188,7 @@ def test_wire_p3_preserves_contract_aware_bundle_exports(tmp_path: Path) -> None
 def test_wire_p3_writes_legacy_shell_for_unmigrated_provider(tmp_path: Path) -> None:
     providers_root = tmp_path / "providers"
 
-    written = generate_provider_shell(
+    written = generate_p3_provider_shell(
         **_LANGFUSE_SHELL_KWARGS,
         providers_root=providers_root,
     )
@@ -180,3 +223,165 @@ def test_contract_aware_package_skips_hand_edited_files(tmp_path: Path) -> None:
     assert is_contract_aware_package(pkg)
     for filename in HAND_EDITED_PROVIDER_FILES:
         assert should_skip_provider_file(pkg, filename)
+
+
+def test_wire_p5_preserves_contract_aware_package_files(tmp_path: Path) -> None:
+    pkg = _contract_aware_observability_pkg(
+        tmp_path,
+        "grafana",
+        factory="create_grafana_observability_backend",
+        integration_factory="create_grafana_observability_integration",
+    )
+    before = {name: (pkg / name).read_text(encoding="utf-8") for name in _P5_CANONICAL_FILES}
+
+    written = generate_p5_provider_shell(
+        **_GRAFANA_SHELL_KWARGS,
+        providers_root=tmp_path / "providers",
+    )
+
+    for name in _P5_CANONICAL_FILES:
+        assert (pkg / name).read_text(encoding="utf-8") == before[name]
+        assert written[name] is False
+
+
+def test_wire_p6_preserves_contract_aware_package_files(tmp_path: Path) -> None:
+    pkg = _contract_aware_observability_pkg(
+        tmp_path,
+        "opentelemetry_collector",
+        factory="create_opentelemetry_collector_observability_backend",
+        integration_factory="create_opentelemetry_collector_observability_integration",
+    )
+    before = {name: (pkg / name).read_text(encoding="utf-8") for name in _P5_CANONICAL_FILES}
+
+    written = generate_p6_provider_shell(
+        **_OTEL_COLLECTOR_SHELL_KWARGS,
+        providers_root=tmp_path / "providers",
+    )
+
+    for name in _P5_CANONICAL_FILES:
+        assert (pkg / name).read_text(encoding="utf-8") == before[name]
+        assert written[name] is False
+
+
+def test_wire_p7_preserves_contract_aware_package_files(tmp_path: Path) -> None:
+    pkg = _contract_aware_observability_pkg(
+        tmp_path,
+        "newrelic",
+        factory="create_newrelic_observability_backend",
+        integration_factory="create_newrelic_observability_integration",
+    )
+    before = {name: (pkg / name).read_text(encoding="utf-8") for name in _P5_CANONICAL_FILES}
+
+    written = generate_p7_provider_shell(
+        **_NEWRELIC_SHELL_KWARGS,
+        providers_root=tmp_path / "providers",
+    )
+
+    for name in _P5_CANONICAL_FILES:
+        assert (pkg / name).read_text(encoding="utf-8") == before[name]
+        assert written[name] is False
+
+
+def test_wire_p5_writes_legacy_shell_for_unmigrated_provider(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+
+    written = generate_p5_provider_shell(
+        **_GRAFANA_SHELL_KWARGS,
+        providers_root=providers_root,
+    )
+
+    pkg = providers_root / "observability_backend" / "grafana"
+    assert written == dict.fromkeys(_P5_CANONICAL_FILES, True)
+    for name in _P5_CANONICAL_FILES:
+        assert (pkg / name).is_file()
+    assert "create_grafana_observability_backend" in (pkg / "bundle.py").read_text(encoding="utf-8")
+
+
+def test_wire_p6_writes_legacy_shell_for_unmigrated_provider(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+
+    written = generate_p6_provider_shell(
+        **_OTEL_COLLECTOR_SHELL_KWARGS,
+        providers_root=providers_root,
+    )
+
+    pkg = providers_root / "observability_backend" / "opentelemetry_collector"
+    assert written == dict.fromkeys(_P5_CANONICAL_FILES, True)
+    for name in _P5_CANONICAL_FILES:
+        assert (pkg / name).is_file()
+    assert "create_opentelemetry_collector_observability_backend" in (pkg / "bundle.py").read_text(
+        encoding="utf-8",
+    )
+
+
+def test_wire_p7_writes_legacy_shell_for_unmigrated_provider(tmp_path: Path) -> None:
+    providers_root = tmp_path / "providers"
+
+    written = generate_p7_provider_shell(
+        **_NEWRELIC_SHELL_KWARGS,
+        providers_root=providers_root,
+    )
+
+    pkg = providers_root / "observability_backend" / "newrelic"
+    assert written == dict.fromkeys(_P5_CANONICAL_FILES, True)
+    for name in _P5_CANONICAL_FILES:
+        assert (pkg / name).is_file()
+    assert "create_newrelic_observability_backend" in (pkg / "bundle.py").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("generate_fn", "kwargs"),
+    [
+        (
+            generate_p5_provider_shell,
+            {
+                "slug": "grafana",
+                "cat_enum": "OBSERVABILITY_BACKEND",
+                "factory": "create_grafana_observability_backend",
+                "integration_factory": "create_grafana_observability_integration",
+                "shell_kwargs": _GRAFANA_SHELL_KWARGS,
+            },
+        ),
+        (
+            generate_p6_provider_shell,
+            {
+                "slug": "opentelemetry_collector",
+                "factory": "create_opentelemetry_collector_observability_backend",
+                "integration_factory": "create_opentelemetry_collector_observability_integration",
+                "shell_kwargs": _OTEL_COLLECTOR_SHELL_KWARGS,
+            },
+        ),
+        (
+            generate_p7_provider_shell,
+            {
+                "slug": "newrelic",
+                "factory": "create_newrelic_observability_backend",
+                "integration_factory": "create_newrelic_observability_integration",
+                "shell_kwargs": _NEWRELIC_SHELL_KWARGS,
+            },
+        ),
+    ],
+)
+def test_p5_p6_p7_preserves_contract_based_bundle_factory(
+    tmp_path: Path,
+    generate_fn,
+    kwargs: dict[str, object],
+) -> None:
+    slug = str(kwargs["slug"])
+    factory = str(kwargs["factory"])
+    integration_factory = str(kwargs["integration_factory"])
+    shell_kwargs = dict(kwargs["shell_kwargs"])  # type: ignore[arg-type]
+    pkg = _contract_aware_observability_pkg(
+        tmp_path,
+        slug,
+        factory=factory,
+        integration_factory=integration_factory,
+    )
+    bundle_path = pkg / "bundle.py"
+    before = bundle_path.read_text(encoding="utf-8")
+
+    generate_fn(**shell_kwargs, providers_root=tmp_path / "providers")
+
+    after = bundle_path.read_text(encoding="utf-8")
+    assert integration_factory in after
+    assert before == after

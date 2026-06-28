@@ -154,7 +154,7 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
 | `__init__.py` | **Lazy public API** — factories and optional public integration types via `__getattr__`; no heavy imports or SDK loads. |
 | `USAGE.md` | Operator docs — legacy facade vs contract-based integration, opt-in and transport requirements. |
 
-**Generated vs hand-edited boundary:** maintenance shell generators (`wire_p2` / `wire_p3` / `wire_p4`) may (re)generate thin legacy shells for unmigrated providers. When `integration.py` exists, all canonical files are **preserved** — generators must not overwrite `integration.py` or strip contract factory exports from `bundle.py` / `__init__.py`.
+**Generated vs hand-edited boundary:** maintenance provider shell generators (`wire_p2` through `wire_p7`) may (re)generate thin legacy shells for unmigrated providers. When `integration.py` exists, all canonical files are **preserved** — generators must not overwrite `integration.py` or strip contract factory exports from `bundle.py` / `__init__.py`. Migrated providers are safe from legacy scaffold overwrite.
 
 **Rules:**
 

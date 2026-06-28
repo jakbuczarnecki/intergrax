@@ -92,7 +92,8 @@ Load **only** the satellite matching your task or cited gap ID.
 - **Langfuse** accepted as reference pilot **after** scaffold/pattern hardening (INTEGRATIONS-2B-FOLLOWUP)
 - **`LangfuseObservabilityIntegration`** under `intergrax/integrations/providers/observability_backend/langfuse/`
 - Legacy **`create_langfuse_observability_backend`** / **`register_langfuse_integration`** remain backward-compatible
-- Maintenance shell generators (`wire_p2` / `wire_p3` / `wire_p4`) preserve contract-aware packages when `integration.py` exists
+- Maintenance shell generators (`wire_p2` through `wire_p7`) preserve contract-aware packages when `integration.py` exists
+- Scaffold blockers for full provider migration **removed** (INTEGRATIONS-SCAFFOLD-P5-P7-CONTRACT-AWARE); full migration still **deferred** until a small multi-wave provider migration is validated
 - Arize, Phoenix, Elasticsearch, and remaining observability_backend slugs **deferred** until batch migration wave
 - No LKW change; no global bootstrap registration; no vendor SDK imports
 
