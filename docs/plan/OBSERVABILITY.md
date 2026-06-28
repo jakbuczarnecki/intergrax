@@ -159,6 +159,13 @@ Load **only** the satellite matching your task or cited gap ID.
 - Langfuse / Arize / Phoenix remains **OBS-EXPORT-5**
 - Elasticsearch remains **deferred** unless separately planned
 
+**OBS-EXPORT-5 status (dependency on INTEGRATIONS-1A):**
+
+- **OBS-EXPORT-5** is **paused** until the generic platform integration contract and observability vendor specialization exist
+- Generic **`PlatformIntegrationContract`** added in **INTEGRATIONS-1A** — observability vendor specialization (**`ObservabilityVendorIntegrationContract`**) not yet implemented
+- Concrete Langfuse / Arize / Phoenix adapters must derive from the observability vendor integration contract — not from ad-hoc exporter classes
+- **No concrete vendor adapter** is implemented in INTEGRATIONS-1A; OTLP/JSONL exporters remain unchanged
+
 **Required decisions:**
 
 - External sinks are optional subscribers/export targets, not semantic owners of Intergrax observability.
@@ -181,7 +188,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **OBS-EXPORT-4** | Code | P2 | **Done** | First remote backend adapter: OTLP | **`OtlpObservabilityExporter`** + **`OtlpObservabilityExporterConfig`** + injectable **`OtlpTransport`**; maps policy-sanitized envelopes (including **`sanitized_application_attributes`**) to OTLP-safe log payloads; no vendor SDK; explicit opt-in; no global bootstrap registration. Elasticsearch deferred. |
 | **OBS-EXPORT-4B** | Code | P2 | **Done** | OTLP HTTP transport | **`OtlpHttpTransport`** POSTs OTLP JSON to configured endpoint; explicit opt-in; platform observability only; policy-sanitized payloads only; failure isolation via **`try_export_observability_envelope`**; no vendor SDK; no global bootstrap registration. Operator wiring deferred. |
 | **OBS-EXPORT-4C** | Code | P2 | **Done** | Explicit OTLP operator wiring | **`ObservabilityExportOperatorConfig`** + **`OtlpExportOperatorConfig`** + **`build_otlp_observability_exporter`** + **`build_otlp_observability_export_runtime_plugin`**; disabled by default; **`export_content=false`** enforced; composes policy + OTLP exporter + HTTP transport + runtime plugin; no global registration; no LKW wiring; no raw content or raw **`application_attributes`** export. |
-| **OBS-EXPORT-5** | Code | P3 | Planned | Langfuse / Arize / Phoenix adapter | Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. |
+| **OBS-EXPORT-5** | Code | P3 | **Paused** | Langfuse / Arize / Phoenix adapter | **Paused** until generic platform integration contract (**INTEGRATIONS-1A**, Done) and observability vendor specialization exist. Concrete Langfuse/Arize/Phoenix adapters must derive from **`ObservabilityVendorIntegrationContract`** (not yet implemented). Adapter consumes normalized export envelope only. No runtime/vendor coupling. No raw content by default. **No concrete vendor adapter in INTEGRATIONS-1A.** |
 
 ---
 

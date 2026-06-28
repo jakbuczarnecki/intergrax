@@ -31,6 +31,51 @@ Load **only** the satellite matching your task or cited §.
 | [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) | provider catalog |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
+## Platform integration contract (Tier-1 runtime)
+
+**Code:** `intergrax/runtime/integrations/contracts.py` · **Task:** INTEGRATIONS-1A
+
+All future integration categories derive from or align with the generic **`PlatformIntegrationContract`**. Vendor adapters (Langfuse, Arize, Phoenix, Elasticsearch, OTLP backends, and future custom backends) are **integrations**, not isolated ad-hoc exporters or one-off SDK wrappers.
+
+### Core types
+
+| Type | Role |
+|------|------|
+| **`PlatformIntegrationContract`** | Generic typed base contract |
+| **`PlatformIntegrationConfig`** | Explicit opt-in config (`enabled=false` by default) |
+| **`PlatformIntegrationKind`** | Integration category discriminator |
+| **`PlatformIntegrationCapability`** | Declared capability tokens |
+| **`PlatformIntegrationSecurityPosture`** | Default-safe exposure rules |
+| **`PlatformIntegrationHealth`** | Lightweight health/check snapshot |
+
+### Provider identity vs integration kind
+
+**`provider_id`** identifies the shared vendor or backend (for example `elasticsearch`). **`integration_kind`** identifies the category (for example `observability_vendor`, `vector_store`, `search`). They are **separate**:
+
+- Same **`provider_id`** may appear in many categories.
+- Each category gets its **own integration class** and **`integration_id`** (`{provider_id}:{integration_kind}`).
+- **Do not** build one multi-category “monster” class that inherits unrelated category contracts.
+
+**Example (Elasticsearch):**
+
+| Integration class (future) | `provider_id` | `integration_kind` |
+|---------------------------|---------------|-------------------|
+| `ElasticsearchObservabilityIntegration` | `elasticsearch` | `observability_vendor` |
+| `ElasticsearchVectorStoreIntegration` | `elasticsearch` | `vector_store` |
+| `ElasticsearchSearchIntegration` | `elasticsearch` | `search` |
+
+Category-specific contracts (for example **`ObservabilityVendorIntegrationContract`**, **`VectorStoreIntegrationContract`**) **derive from** **`PlatformIntegrationContract`** — they do not replace it.
+
+### Default safety and opt-in rules
+
+- Integrations are **explicit opt-in** — disabled unless operator/config enables them.
+- **`PlatformIntegrationSecurityPosture`** defaults: no secret exposure, no raw payload exposure, sanitized diagnostics.
+- **`public_view()`** on contract/config must remain safe for logs and operator UIs.
+- Integrations declare **`expects_failure_isolation=true`** — backend/export failures must not fail product/runtime runs (aligned with observability export policy).
+- Tier-0 catalog integrations (`intergrax/integrations/`) remain separate; runtime category contracts compose platform behavior without duplicating the slug catalog.
+
+---
+
 ## Allowed integration responsibilities
 
 Integrations **MAY**:
