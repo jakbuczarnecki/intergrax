@@ -55,8 +55,8 @@ def _reset_catalogs() -> None:
     reset_default_tools_bootstrap()
 
 
-def test_shipped_catalog_has_forty_two_bundles_and_one_hundred_fifty_skills() -> None:
-    assert len(SHIPPED_SKILL_PLUGINS) == 42
+def test_shipped_catalog_has_forty_three_bundles_and_one_hundred_fifty_three_skills() -> None:
+    assert len(SHIPPED_SKILL_PLUGINS) == 43
     assert SHIPPED_SKILL_BUNDLE_IDS == frozenset(
         {
             "agent",
@@ -86,6 +86,7 @@ def test_shipped_catalog_has_forty_two_bundles_and_one_hundred_fifty_skills() ->
             "jira",
             "knowledge",
             "legal",
+            "local",
             "memory",
             "message_bus",
             "metrics",
@@ -103,7 +104,7 @@ def test_shipped_catalog_has_forty_two_bundles_and_one_hundred_fifty_skills() ->
             "workspace",
         }
     )
-    assert len(list_catalog_skill_ids()) == 150
+    assert len(list_catalog_skill_ids()) == 153
 
 
 @pytest.mark.parametrize("skill_id", SK_EXP_SKILL_IDS)

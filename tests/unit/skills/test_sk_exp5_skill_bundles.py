@@ -88,7 +88,7 @@ def test_sk_exp5_adds_fifty_skills() -> None:
     catalog_ids = set(list_catalog_skill_ids())
     assert set(SK_EXP5_SKILL_IDS) <= catalog_ids
     assert len(SK_EXP5_SKILL_IDS) == 50
-    assert len(catalog_ids) == 150
+    assert len(catalog_ids) == 153
 
 
 @pytest.mark.parametrize("skill_id", SK_EXP5_SKILL_IDS)
