@@ -526,10 +526,12 @@ Acceptance:
 **Observability boundary (OBS-EXPORT):**
 
 - LKW.2.4 pipeline proof is a prerequisite workload for future platform **OBS-EXPORT** work (see [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-EXPORT); LKW is the proof workload, not the integration owner.
-- Vendor observability integrations (Langfuse, Arize/Phoenix, Elasticsearch, OTLP backends, etc.) are **out of scope** for LKW.2.
+- **INTEGRATIONS-1D / LKW observability platform wiring — Done (2026-06-28):** `build_local_workspace_observability_plugins` composes platform **`ObservabilityExportOperatorConfig`** → **`build_otlp_observability_export_runtime_plugin`**; disabled by default; registered only via explicit LKW factory/bootstrap opt-in; no LKW-specific exporter.
+- LKW.2 pipeline remains unchanged — no graph/pipeline rework in INTEGRATIONS-1D.
+- Vendor observability integrations (Langfuse, Arize/Phoenix, Elasticsearch) remain **out of scope** for LKW; OTLP uses platform integration path only.
 - LKW must continue to use platform observability contracts only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`, RuntimeEvent `TOOL_*`, ToolCallRecord/RagCallRecord, WorkspaceArtifactRef.
 - Do not add LKW-specific exporters, telemetry buses, vendor SDK calls, trace stores, or observability workarounds.
-- **OBS-EXPORT has not started** — LKW.2 closeout records it as the next platform phase only.
+- **OBS-EXPORT-5** (Langfuse/Arize/Phoenix adapters) remains the next platform phase; LKW is not the integration owner.
 
 ### LKW.2 closeout result
 

@@ -25,7 +25,7 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-**LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-1** — external observability export boundary (vendor integrations remain out of LKW scope).
+**LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-5** — remaining vendor adapters (Langfuse/Arize/Phoenix); LKW uses platform observability export wiring only (**INTEGRATIONS-1D**).
 
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
@@ -106,6 +106,15 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 - **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
 - **Skills:** `harness` + `local` bundles (LKW.0, LKW.2.1–LKW.2.3); pipeline capability `local.workspace.pipeline` registered and live proof passed (LKW.2.4A–LKW.2.4C).
+
+## Observability export (platform opt-in)
+
+LKW uses **platform observability export mechanisms only** — there is no LKW-specific observability exporter, OTLP client, or vendor SDK in the application layer.
+
+- Export is **disabled by default**; no remote observability export occurs unless explicitly configured.
+- When enabled, pass **`ObservabilityExportOperatorConfig`** to `create_local_workspace_backend_app(observability_export=...)` or compose plugins via **`build_local_workspace_observability_plugins`** at product bootstrap.
+- OTLP export is explicit opt-in through platform **`ObservabilityExportOperatorConfig`** + **`build_otlp_observability_export_runtime_plugin`** (INTEGRATIONS-1D); policy/redaction remains enforced upstream.
+- Raw local documents, prompts, RAG chunks, synthesized content, and full local file paths are **not exported by default** (`export_content=false` enforced in platform wiring).
 
 ## Docs
 

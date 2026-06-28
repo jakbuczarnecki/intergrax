@@ -21,7 +21,8 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
-from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown, bootstrap_application_plugins
+from intergrax.runtime.observability.operator_wiring import ObservabilityExportOperatorConfig
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     build_task_runner_with_enricher,
@@ -31,6 +32,7 @@ from intergrax.runtime.interactions.router import create_interaction_intake_rout
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
+from local_workspace_application.host.observability_wiring import build_local_workspace_observability_plugins
 from local_workspace_application.host.run_task_enricher import build_lkw_http_run_task_enricher
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
@@ -41,6 +43,7 @@ def create_local_workspace_backend_app(
     settings: Optional[LocalWorkspaceBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
+    observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or LocalWorkspaceBackendSettings.from_env()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
@@ -59,6 +62,13 @@ def create_local_workspace_backend_app(
         nexus_loop,
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
+    lkw_observability_plugins = build_local_workspace_observability_plugins(observability_export)
+    if lkw_observability_plugins:
+        lkw_plugin_bootstrap = bootstrap_application_plugins(
+            list(lkw_observability_plugins),
+            nexus_loop=nexus_loop,
+        )
+        platform.shutdown_callbacks.extend(lkw_plugin_bootstrap.shutdown_callbacks)
 
     checkpoint_store = open_default_task_checkpoint_persistence()
     task_enricher = build_reliability_task_enricher(

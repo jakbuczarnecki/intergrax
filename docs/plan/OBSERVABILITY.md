@@ -170,6 +170,16 @@ Load **only** the satellite matching your task or cited gap ID.
 - **`JsonlObservabilityExporter`** unchanged — classified as local file export sink, not remote observability vendor
 - No global bootstrap registration; no LKW change; no Langfuse/Arize/Phoenix/Elasticsearch adapters
 
+**INTEGRATIONS-1D status (LKW/local workspace observability platform wiring):**
+
+- **INTEGRATIONS-1D** — **Done**
+- **`build_local_workspace_observability_plugins`** added in LKW host — composes platform **`ObservabilityExportOperatorConfig`** only; no LKW-specific exporter
+- Disabled by default; **`export_content=false`** enforced via platform **`build_otlp_observability_export_runtime_plugin`**
+- LKW factory accepts optional **`observability_export`** and registers returned **`RuntimePlugin`** only at LKW bootstrap — no global registration
+- OTLP integration-backed path only (**`build_otlp_observability_export_runtime_plugin`** → **`OtlpObservabilityIntegration`**); no direct **`OtlpHttpTransport`** from LKW
+- LKW.2 pipeline unchanged; no vendor SDK in LKW; raw content/local paths not exported by default
+- **OBS-EXPORT-5** remains **deferred** until Langfuse/Arize/Phoenix vendor adapters are implemented
+
 **OBS-EXPORT-5 status (dependency on INTEGRATIONS-1A / INTEGRATIONS-1B / INTEGRATIONS-1C):**
 
 - **OBS-EXPORT-5** remains **paused** until remaining observability integration alignment is complete (OTLP done in INTEGRATIONS-1C; Langfuse/Arize/Phoenix deferred)
