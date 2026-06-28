@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.graph_spec_to_plan import should_seed_plan_from_graph_spec
+from intergrax.applications._shared.package_wiring import (
+    build_application_package,
+    validate_application_package_closure,
+)
 from intergrax.applications._shared.skill_wiring import build_application_skill_wiring
 from intergrax.runtime.nexus.orchestration_capabilities import (
     is_orchestration_capability,
@@ -17,6 +22,7 @@ from intergrax.skills.resolver import SkillResolver
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
+from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -44,6 +50,28 @@ def test_lkw_environment_profile_registers_local_workspace_skills() -> None:
         "local.workspace.synthesize",
     ):
         assert wiring.registry.has(skill_id)
+
+
+def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
+    manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
+    env = manifest.resolved_environment()
+    wiring = wire_application_environment(manifest, env, conformance_check=False)
+    package = build_application_package(manifest, env)
+    violations = validate_application_package_closure(
+        package,
+        manifest,
+        env,
+        wiring.registry_snapshot,
+        capability_graph=wiring.capability_graph,
+    )
+    trigger_violations = [v for v in violations if "graph trigger capability" in v]
+    assert trigger_violations == []
+    roster_caps = {
+        capability
+        for binding in manifest.enabled_agents()
+        for capability in binding.capabilities
+    }
+    assert "local.workspace.pipeline" not in roster_caps
 
 
 def test_lkw_environment_profile_registers_pipeline_graph_spec() -> None:

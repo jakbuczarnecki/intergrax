@@ -8,6 +8,7 @@ import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.package_wiring import (
+    _validate_graph_spec_capabilities,
     build_application_package,
     collect_application_dependencies,
     compute_package_checksum,
@@ -17,6 +18,7 @@ from intergrax.applications._shared.package_wiring import (
 from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
 from intergrax.applications.contracts.application_package import ApplicationDependencyKind
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from echo.echo_agent import EchoAgent
 
@@ -56,6 +58,43 @@ def test_strict_product_package_closure_passes() -> None:
         capability_graph=wiring.capability_graph,
     )
     assert violations == [], f"{product_id}: {violations}"
+
+
+def test_graph_trigger_capability_not_required_on_roster() -> None:
+    graph = ApplicationGraphSpec(
+        nodes=[GraphNode(agent_id="EchoAgent")],
+        trigger_capabilities=["echo.orchestration.pipeline"],
+    )
+    manifest = ApplicationManifest.lab(
+        app_id="graph_trigger_demo",
+        name="Graph Trigger Demo",
+        route_prefix="/v1/graph_trigger_demo",
+        env_prefix="GRAPH_TRIGGER_DEMO_",
+        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+    )
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="graph_trigger_demo.scaffold").model_copy(
+        update={"graph_spec": graph},
+    )
+    assert _validate_graph_spec_capabilities(manifest, env) == []
+
+
+def test_graph_invalid_node_still_fails_closure() -> None:
+    graph = ApplicationGraphSpec(
+        nodes=[GraphNode(agent_id="missing_agent")],
+        trigger_capabilities=["echo.orchestration.pipeline"],
+    )
+    manifest = ApplicationManifest.lab(
+        app_id="graph_invalid_node_demo",
+        name="Graph Invalid Node Demo",
+        route_prefix="/v1/graph_invalid_node_demo",
+        env_prefix="GRAPH_INVALID_NODE_DEMO_",
+        agents=[AgentBinding.mount(EchoAgent, capabilities=["echo.basic"])],
+    )
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="graph_invalid_node_demo.scaffold").model_copy(
+        update={"graph_spec": graph},
+    )
+    violations = _validate_graph_spec_capabilities(manifest, env)
+    assert any("not found on manifest roster" in violation for violation in violations)
 
 
 def test_package_checksum_is_stable() -> None:
