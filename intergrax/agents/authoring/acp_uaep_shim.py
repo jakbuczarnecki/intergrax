@@ -106,6 +106,9 @@ def attach_acp_catalog_exec_ctx(
             exec_ctx,
             allowed_tools=allowed_tools,
         )
+    from intergrax.runtime.workspace.exec_ctx_isolation import attach_isolation_to_exec_ctx
+
+    attach_isolation_to_exec_ctx(exec_ctx, runtime_request, task_id=task_id)
     step_ctx.metadata["uaep_exec_ctx"] = exec_ctx
 
 

@@ -822,15 +822,14 @@ class UAEPExecutor:
         *,
         task_id: str,
     ) -> None:
-        if not execution_options_for_request(request).isolation.shadow_workspace:
-            return
-        tenant_id = request.tenant_id or "default"
-        workspace = self._shadow_manager.open_or_create(
-            tenant_id=tenant_id,
+        from intergrax.runtime.workspace.exec_ctx_isolation import attach_shadow_workspace_to_exec_ctx
+
+        attach_shadow_workspace_to_exec_ctx(
+            exec_ctx,
+            request,
+            shadow_manager=self._shadow_manager,
             task_id=task_id,
         )
-        exec_ctx.metadata["shadow_workspace"] = workspace
-        exec_ctx.metadata[SHADOW_WORKSPACE_ID_KEY] = workspace.workspace_id
 
     @staticmethod
     def _annotate_answer_with_shadow(
@@ -854,15 +853,14 @@ class UAEPExecutor:
         *,
         task_id: str,
     ) -> None:
-        if not execution_options_for_request(request).isolation.sandbox:
-            return
-        tenant_id = request.tenant_id or "default"
-        session = self._sandbox_manager.open_or_create(
-            tenant_id=tenant_id,
+        from intergrax.runtime.workspace.exec_ctx_isolation import attach_sandbox_session_to_exec_ctx
+
+        attach_sandbox_session_to_exec_ctx(
+            exec_ctx,
+            request,
+            sandbox_manager=self._sandbox_manager,
             task_id=task_id,
         )
-        exec_ctx.metadata["sandbox_session"] = session
-        exec_ctx.metadata[SANDBOX_SESSION_ID_KEY] = session.session_id
 
     @staticmethod
     def _annotate_answer_with_sandbox(
