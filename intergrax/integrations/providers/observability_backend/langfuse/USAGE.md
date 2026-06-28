@@ -7,7 +7,21 @@
 > Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
 > Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
 
-## Common pattern
+## Provider package layout (canonical)
+
+| File | Role | Generated? |
+|------|------|------------|
+| ``integration.py`` | Contract-based provider logic (hand-edited) | No |
+| ``bundle.py`` | Factory facade — legacy + contract factories | Partially (legacy shell only) |
+| ``manifest.py`` | Catalog metadata only | Hand-edited when present |
+| ``register.py`` | Registry/catalog hook only | Partially (legacy shell only) |
+| ``__init__.py`` | Lazy public API | Partially (legacy shell only) |
+| ``USAGE.md`` | Operator documentation | No |
+
+``integration.py`` is the **only** hand-edited home for contract-based provider logic.
+Maintenance shell generators skip all canonical files when ``integration.py`` exists.
+
+## Common pattern (legacy query facade)
 
 ```python
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -27,12 +41,12 @@ from intergrax.integrations.providers.observability_backend.langfuse.bundle impo
 backend = create_langfuse_observability_backend(**config_overrides)
 ```
 
-## Contract-based observability integration (INTEGRATIONS-2B pilot)
+## Contract-based observability integration (INTEGRATIONS-2B reference)
 
-Langfuse now hosts a contract-based observability vendor integration alongside the legacy query facade.
+Langfuse hosts a contract-based observability vendor integration alongside the legacy query facade.
 
 ```python
-from intergrax.integrations.providers.observability_backend.langfuse.bundle import (
+from intergrax.integrations.providers.observability_backend.langfuse import (
     create_langfuse_observability_integration,
 )
 
@@ -44,7 +58,8 @@ await integration.export(sanitized_envelope)
 - **Legacy query facade** — ``create_langfuse_observability_backend()`` / ``ObservabilityBackend`` — remains backward-compatible
 - **Sanitized envelope only** — accepts policy-sanitized ``ObservabilityExportEnvelope``; rejects raw ``application_attributes``
 - **Raw content is not exported** — prompts, documents, RAG chunks, tool args, secrets, PII, and full local paths are excluded
-- **Transport/client injection** — wire an explicit ``LangfuseObservabilityTransport`` for tests and production; disabled by default without transport
+- **Disabled by default** — ``enabled=False`` unless operator opts in
+- **Transport required when enabled** — ``enabled=True`` without ``LangfuseObservabilityTransport`` raises ``IntegrationConfigurationError`` immediately (no silent broken export)
 
 Supported signals: ``events``, ``traces``, ``llm_events``.
 
@@ -63,3 +78,4 @@ obs = create_langfuse_observability_backend(base_url="https://cloud.langfuse.com
 ## Notes
 
 LLM/agent trace metrics via HTTP (PromQL-shaped facade). Export delivery uses injectable transport — no vendor SDK in the integration class.
+``register_langfuse_integration()`` still registers the legacy query facade only; contract registry wiring is deferred.

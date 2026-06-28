@@ -199,9 +199,11 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **INTEGRATIONS-2B-LANGFUSE pilot status (2026-06-28):**
 
-- Existing Langfuse **`observability_backend`** provider adapted to **`ObservabilityVendorIntegrationContract`** as pilot migration
+- Existing Langfuse **`observability_backend`** provider adapted to **`ObservabilityVendorIntegrationContract`** as reference pilot
+- **Pattern hardened (INTEGRATIONS-2B-FOLLOWUP):** canonical provider package layout, scaffold idempotency, `enabled=True` requires transport at construction
 - **`LangfuseObservabilityIntegration`** consumes policy-sanitized envelopes only; legacy **`ObservabilityBackend`** query facade unchanged
-- **OBS-EXPORT-5** remains **not complete** until migration pattern is approved and remaining providers (Arize, Phoenix, …) are adapted
+- **Registry v2 / contract registry wiring deferred** — `register_langfuse_integration()` still registers legacy query facade only
+- **OBS-EXPORT-5** remains **not complete** until remaining observability_backend providers (Arize, Phoenix, …) are adapted
 
 **Required decisions:**
 

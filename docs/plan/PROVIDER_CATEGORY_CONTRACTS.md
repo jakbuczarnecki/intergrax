@@ -14,11 +14,14 @@
 | ID | Type | Priority | Status | Deliverable |
 |----|------|----------|--------|-------------|
 | **INTEGRATIONS-2A** | Code | P1 | **Done** | Category-specific base contracts for all `SLUG_CATEGORY` folders |
-| **INTEGRATIONS-2B** | Code | P1 | Planned | Concrete provider migration to category contracts (per slug) |
+| **INTEGRATIONS-2B** | Code | P1 | **Done (Langfuse reference pilot)** | Concrete provider migration to category contracts (per slug) |
+| **INTEGRATIONS-2B-FOLLOWUP** | Code | P1 | **Done** | Provider package pattern + scaffold hardening |
 
 **INTEGRATIONS-2A acceptance:** every `SLUG_CATEGORY` folder has a category contract or explicit alias; all derive from **`PlatformIntegrationContract`**; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; no concrete provider migration; no LKW change; focused tests green.
 
-**Deferred:** concrete provider implementations, registry/bootstrap wiring, vendor SDK adapters, LKW wiring.
+**Provider package pattern (INTEGRATIONS-2B-FOLLOWUP):** category contracts define the **base**; each concrete provider class in `integration.py` **derives from the category-specific contract** for its folder. The provider package layout (`integration.py`, `bundle.py`, `manifest.py`, `register.py`, `__init__.py`, `USAGE.md`) is the **implementation convention** — see [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up). Langfuse is the reference pilot; batch migration of remaining slugs remains deferred.
+
+**Deferred:** batch provider migration, registry v2 / contract registry wiring, vendor SDK adapters, LKW wiring.
 
 ---
 

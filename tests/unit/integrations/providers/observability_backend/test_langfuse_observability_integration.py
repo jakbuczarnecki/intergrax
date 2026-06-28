@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations._shared.conformance import assert_observability_backend
 from intergrax.integrations.providers.observability_backend.langfuse.bundle import (
     create_langfuse_observability_backend,
@@ -262,6 +263,19 @@ def test_create_langfuse_observability_integration_factory() -> None:
     assert isinstance(integration, LangfuseObservabilityIntegration)
     assert integration.transport is transport
     assert PlatformIntegrationCapability.EXPORT in integration.capabilities
+
+
+def test_create_langfuse_observability_integration_enabled_without_transport_fails() -> None:
+    with pytest.raises(IntegrationConfigurationError, match="transport"):
+        create_langfuse_observability_integration(enabled=True, transport=None)
+
+
+def test_create_langfuse_observability_integration_disabled_without_transport_allowed() -> None:
+    integration = create_langfuse_observability_integration(enabled=False, transport=None)
+
+    assert isinstance(integration, LangfuseObservabilityIntegration)
+    assert integration.transport is None
+    assert integration.config.enabled is False
 
 
 def test_no_vendor_sdk_imports_in_langfuse_integration_module() -> None:

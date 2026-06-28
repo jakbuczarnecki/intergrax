@@ -1,7 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Catalog manifest for ``langfuse`` integration."""
+"""Catalog manifest for ``langfuse`` integration.
+
+Metadata only. ``IntegrationCategory.OBSERVABILITY_BACKEND`` maps to runtime
+``ObservabilityVendorIntegrationContract`` (``integration_kind=observability_vendor``).
+"""
 
 from __future__ import annotations
 

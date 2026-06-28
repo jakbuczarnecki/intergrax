@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Generate thin provider shells pointing to _shared.p2.factories."""
+"""
+Generate thin provider shells pointing to _shared.p2.factories.
+
+Legacy shell generator for unmigrated providers. When ``integration.py`` exists
+in a provider package, canonical files are preserved (contract-aware mode).
+"""
 from __future__ import annotations
 
 import sys
@@ -10,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.layout import SLUG_CATEGORY
+from scripts.maintenance._provider_shell_contract import write_provider_file_if_allowed
 
 PROVIDERS = ROOT / "intergrax" / "integrations" / "providers"
 H = "# © Artur Czarnecki. All rights reserved.\n# Intergrax framework – proprietary and confidential.\n\n"
@@ -54,7 +60,9 @@ for slug, cat_enum, enum, factory, env in SPECS:
     pkg = PROVIDERS / category / slug
     pkg.mkdir(parents=True, exist_ok=True)
     import_base = f"intergrax.integrations.providers.{category}.{slug}"
-    (pkg / "register.py").write_text(
+    write_provider_file_if_allowed(
+        pkg,
+        "register.py",
         H
         + f'"""Register {slug}."""\n\nfrom __future__ import annotations\n\n'
         + "from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationEntry, IntegrationStatus\n"
@@ -72,13 +80,15 @@ for slug, cat_enum, enum, factory, env in SPECS:
         + "        ),\n"
         + "        override=override,\n"
         + "    )\n",
-        encoding="utf-8",
     )
-    (pkg / "bundle.py").write_text(
+    write_provider_file_if_allowed(
+        pkg,
+        "bundle.py",
         H + f"from intergrax.integrations._shared.p2.factories import {factory}\n\n__all__ = [\"{factory}\"]\n",
-        encoding="utf-8",
     )
-    (pkg / "__init__.py").write_text(
+    write_provider_file_if_allowed(
+        pkg,
+        "__init__.py",
         H
         + f'__all__ = ["{factory}", "register_{slug}_integration"]\n\n'
         + "def __getattr__(name: str):\n"
@@ -89,6 +99,5 @@ for slug, cat_enum, enum, factory, env in SPECS:
         + f"        from {import_base}.bundle import {factory}\n"
         + f"        return {factory}\n"
         + "    raise AttributeError(name)\n",
-        encoding="utf-8",
     )
 print(f"generated {len(SPECS) - len(SKIP)} provider shells")

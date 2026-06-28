@@ -76,22 +76,24 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase INTEGRATIONS-2B — observability provider contract migration pilot (In progress)
+## Phase INTEGRATIONS-2B — observability provider contract migration pilot (Done — pattern hardened)
 
 **Purpose:** Adapt existing `observability_backend` provider packages to category contracts without duplicating providers.  
-**Architecture:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-category-contract-layer-integrations-2a)  
+**Architecture:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up)  
 **Pattern:** existing provider package + new contract-based integration class; legacy query facade remains backward-compatible.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **INTEGRATIONS-2B-LANGFUSE** | Code | P1 | **Done (pilot)** | Langfuse `LangfuseObservabilityIntegration` in existing provider package | Subclasses **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; injectable transport; old **`ObservabilityBackend`** facade unchanged; focused tests green |
+| **INTEGRATIONS-2B-LANGFUSE** | Code | P1 | **Done (reference pilot)** | Langfuse `LangfuseObservabilityIntegration` in existing provider package | Subclasses **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; injectable transport; old **`ObservabilityBackend`** facade unchanged; focused tests green |
+| **INTEGRATIONS-2B-FOLLOWUP** | Code | P1 | **Done** | Provider package pattern + scaffold hardening | Canonical layout documented; Langfuse conforms; scaffold idempotent; `enabled=True` without transport fails early; batch migration **deferred** |
 
 **INTEGRATIONS-2B status (2026-06-28):**
 
-- **Langfuse** selected as first provider contract migration (pilot only — not batch migration)
-- **`LangfuseObservabilityIntegration`** added under `intergrax/integrations/providers/observability_backend/langfuse/`
+- **Langfuse** accepted as reference pilot **after** scaffold/pattern hardening (INTEGRATIONS-2B-FOLLOWUP)
+- **`LangfuseObservabilityIntegration`** under `intergrax/integrations/providers/observability_backend/langfuse/`
 - Legacy **`create_langfuse_observability_backend`** / **`register_langfuse_integration`** remain backward-compatible
-- Arize, Phoenix, Elasticsearch, and remaining observability_backend slugs **deferred**
+- Maintenance shell generators (`wire_p2` / `wire_p3` / `wire_p4`) preserve contract-aware packages when `integration.py` exists
+- Arize, Phoenix, Elasticsearch, and remaining observability_backend slugs **deferred** until batch migration wave
 - No LKW change; no global bootstrap registration; no vendor SDK imports
 
 ---

@@ -141,6 +141,28 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 
 **Provider package migration pattern (INTEGRATIONS-2B pilot):** adapt existing provider packages by adding a contract-based integration class (for example **`LangfuseObservabilityIntegration`**) inside the same slug folder. Do **not** duplicate providers or create parallel adapter packages. Keep legacy provider facades (for example **`ObservabilityBackend`** query APIs) backward-compatible when possible.
 
+### Provider package pattern (INTEGRATIONS-2B follow-up)
+
+Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
+
+| File | Responsibility |
+|------|----------------|
+| `integration.py` | **Hand-edited only** — concrete contract-based integration class, provider config, transport protocol, `provider_id`, supported signals/capabilities. No registry, manifest, bootstrap, or SDK imports unless isolated and optional. |
+| `bundle.py` | **Factory facade** — exports legacy catalog factory and contract-based factory (`create_<slug>_integration`). May import `integration.py` types only to construct factories. No registry or network I/O. |
+| `manifest.py` | **Metadata only** — slug, categories, status, `env_prefix`, description. No provider logic or client creation. |
+| `register.py` | **Registry hook only** — catalog registration via legacy factory; contract registry wiring deferred until registry v2 exists. |
+| `__init__.py` | **Lazy public API** — factories and optional public integration types via `__getattr__`; no heavy imports or SDK loads. |
+| `USAGE.md` | Operator docs — legacy facade vs contract-based integration, opt-in and transport requirements. |
+
+**Generated vs hand-edited boundary:** maintenance shell generators (`wire_p2` / `wire_p3` / `wire_p4`) may (re)generate thin legacy shells for unmigrated providers. When `integration.py` exists, all canonical files are **preserved** — generators must not overwrite `integration.py` or strip contract factory exports from `bundle.py` / `__init__.py`.
+
+**Rules:**
+
+- One integration class per category — no multi-category monster classes.
+- No duplicate provider adapters or parallel packages for the same slug.
+- `enabled=True` without required transport/client must fail at construction time (`IntegrationConfigurationError`), not during export.
+- Langfuse pilot (`observability_backend/langfuse/`) is the reference implementation.
+
 ### Default safety and opt-in rules
 
 - Integrations are **explicit opt-in** — disabled unless operator/config enables them.
