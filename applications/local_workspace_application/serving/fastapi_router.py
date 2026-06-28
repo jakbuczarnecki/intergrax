@@ -12,6 +12,7 @@ from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from local_workspace_application.serving.run_artifact_metadata import ensure_run_artifact_bundle_metadata
 from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
+from local_workspace_application.serving.runtime_event_metadata import attach_runtime_event_summary_metadata
 from local_workspace_application.serving.schemas import LocalWorkspaceRunRequestV1, LocalWorkspaceRunResponseV1
 
 
@@ -19,6 +20,7 @@ from local_workspace_application.serving.schemas import LocalWorkspaceRunRequest
 class LocalWorkspaceRunService:
     task_runner: UnifiedTaskRunner
     default_agent_id: str
+    nexus_loop: NexusLoop | None = None
 
     @classmethod
     def from_nexus_loop(
@@ -30,6 +32,7 @@ class LocalWorkspaceRunService:
         return cls(
             task_runner=UnifiedTaskRunner(nexus_loop),
             default_agent_id=default_agent_id,
+            nexus_loop=nexus_loop,
         )
 
     async def run_task(self, body: LocalWorkspaceRunRequestV1) -> LocalWorkspaceRunResponseV1:
@@ -50,6 +53,12 @@ class LocalWorkspaceRunService:
             metadata,
             task_result=result,
             capability=body.capability or "local.workspace.search",
+        )
+        attach_runtime_event_summary_metadata(
+            metadata,
+            task_result=result,
+            nexus_loop=self.nexus_loop,
+            tenant_id=body.tenant_id or "default",
         )
         return LocalWorkspaceRunResponseV1(
             task_id=result.task_id,

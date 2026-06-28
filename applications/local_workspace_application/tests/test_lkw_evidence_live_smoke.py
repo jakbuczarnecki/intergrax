@@ -19,6 +19,7 @@ pytestmark = [pytest.mark.unit]
 _PREFIX = "/v1/local_workspace"
 _APP_SUMMARY_KEY = "application_run_summary.v1"
 _EVIDENCE_KEY = "lkw_evidence.v1"
+_RUNTIME_EVENT_SUMMARY_KEY = "runtime_event_summary.v1"
 
 _FIXTURE_TEXT = "Intergrax LKW evidence smoke fixture — searchable paragraph."
 _QUERY = "Intergrax LKW evidence smoke"
@@ -132,6 +133,47 @@ def _tool_calls_for_capability(summary: dict[str, Any]) -> int | None:
     return int(raw) if raw is not None else None
 
 
+def _assert_runtime_event_summary(
+    metadata: dict[str, Any],
+    *,
+    expected_tool_id: str,
+) -> dict[str, Any]:
+    assert _RUNTIME_EVENT_SUMMARY_KEY in metadata
+    summary = metadata[_RUNTIME_EVENT_SUMMARY_KEY]
+    assert isinstance(summary, dict)
+    assert summary.get("schema_version") == _RUNTIME_EVENT_SUMMARY_KEY
+    tool_events = summary.get("tool_events")
+    assert isinstance(tool_events, dict)
+    assert tool_events.get("total", 0) > 0
+    by_type = tool_events.get("by_type")
+    assert isinstance(by_type, dict)
+    assert by_type.get("TOOL_REQUESTED", 0) >= 1
+    tools = tool_events.get("tools")
+    assert isinstance(tools, list) and tools
+    matched = next((entry for entry in tools if entry.get("tool_id") == expected_tool_id), None)
+    assert matched is not None, tools
+    assert matched.get("requested", 0) >= 1
+    serialized = json.dumps(summary)
+    assert _FIXTURE_TEXT not in serialized
+    assert _QUERY not in serialized
+    for key in _UNSAFE_DIAGNOSTIC_KEYS:
+        assert f'"{key}"' not in serialized
+    return summary
+
+
+def _assert_companion_metadata_unchanged(metadata: dict[str, Any]) -> None:
+    app_summary = metadata.get(_APP_SUMMARY_KEY)
+    assert isinstance(app_summary, dict)
+    assert app_summary.get("schema_version") == "application_run_summary.v1"
+    evidence = metadata.get(_EVIDENCE_KEY)
+    assert isinstance(evidence, dict)
+    assert evidence.get("schema_version") == _EVIDENCE_KEY
+    bundle = metadata.get("run_artifact_bundle.v1")
+    if bundle is not None:
+        assert isinstance(bundle, dict)
+        assert bundle.get("schema_version") == "run_artifact_bundle.v1"
+
+
 def test_lkw_evidence_live_smoke_index(
     lkw_smoke_client: TestClient,
     lkw_smoke_workspace: tuple[Path, str],
@@ -169,6 +211,8 @@ def test_lkw_evidence_live_smoke_index(
 
     tool_calls = _tool_calls_for_capability(summary)
     assert tool_calls is not None and tool_calls > 0
+    _assert_runtime_event_summary(metadata, expected_tool_id="rag.ingest_document")
+    _assert_companion_metadata_unchanged(metadata)
 
 
 def test_lkw_evidence_live_smoke_search(
@@ -216,6 +260,8 @@ def test_lkw_evidence_live_smoke_search(
 
     _assert_no_unsafe_diagnostic_keys(evidence["diagnostics"])
     _assert_raw_text_not_in_evidence(evidence, _FIXTURE_TEXT)
+    _assert_runtime_event_summary(metadata, expected_tool_id="rag.retrieve")
+    _assert_companion_metadata_unchanged(metadata)
 
 
 def test_lkw_evidence_live_smoke_synthesize(
@@ -296,3 +342,5 @@ def test_lkw_evidence_live_smoke_synthesize(
 
     _assert_no_unsafe_diagnostic_keys(evidence["diagnostics"])
     _assert_raw_text_not_in_evidence(evidence, _FIXTURE_TEXT)
+    _assert_runtime_event_summary(metadata, expected_tool_id="workspace.write_file")
+    _assert_companion_metadata_unchanged(metadata)

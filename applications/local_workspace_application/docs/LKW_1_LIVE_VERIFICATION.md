@@ -311,14 +311,58 @@ Result: 10 passed
 Follow-up (visibility gap):
 
 ```text
-LKW live HTTP smoke has no public runtime-event log surface; TOOL_* events are persisted
-via runtime event bus but not yet assertable from POST /v1/local_workspace/run responses.
+CLOSED in LKW-PF1A — POST /v1/local_workspace/run attaches metadata["runtime_event_summary.v1"]
+with redacted TOOL_* counts by tool_id (no raw args/content). Existing lkw_evidence.v1,
+application_run_summary.v1, and run_artifact_bundle.v1 remain unchanged.
 ```
 
 Queue:
 
 ```text
 NEXT: LKW.2
+```
+
+## LKW-PF1A — runtime event HTTP summary
+
+Status:
+
+```text
+CLOSED
+```
+
+Scope:
+
+```text
+POST /v1/local_workspace/run attaches metadata["runtime_event_summary.v1"] with redacted
+TOOL_* aggregates (total, by_type, per-tool counts). No raw args/content. Companion metadata
+(lkw_evidence.v1, application_run_summary.v1, run_artifact_bundle.v1) unchanged.
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_runtime_event_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+```
+
+## LKW-CI1 — live smoke circular import cleanup
+
+Status:
+
+```text
+CLOSED
+```
+
+Scope:
+
+```text
+Standalone live smoke avoids circular intergrax.runtime.task package import.
+AgentEngine exposes shadow_manager/sandbox_manager for graph executor isolation wiring.
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
 ```
 
 ## LKW-PF2 — RunArtifactBundle / WorkspaceArtifactRef for synthesize
