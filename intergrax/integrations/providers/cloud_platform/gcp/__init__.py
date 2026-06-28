@@ -22,6 +22,7 @@ __all__ = [
     "create_gcp_integration",
     "register_gcp_integration",
     "resolve_gcp_config",
+    "create_gcp_cloud_platform_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -32,9 +33,19 @@ _LAZY_EXPORTS = frozenset(
         "create_gcp_cloud_platform",
         "register_gcp_integration",
         "resolve_gcp_config",
+        "create_gcp_cloud_platform_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "GCP_CLOUD_PLATFORM_PROVIDER_ID",
+        "GcpCloudPlatformIntegration",
+        "GcpCloudPlatformIntegrationConfig",
+        "GcpCloudPlatformClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_gcp_integration":
@@ -49,4 +60,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
 
         return GcpCloudPlatform
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.cloud_platform.gcp import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

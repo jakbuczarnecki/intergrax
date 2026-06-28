@@ -62,3 +62,35 @@ def create_aws_cloud_platform(
         session_factory=session_factory,
         **config_overrides,
     ).cloud_platform
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.cloud_platform.aws.integration import (
+    AWS_CLOUD_PLATFORM_PROVIDER_ID,
+    AwsCloudPlatformIntegration,
+    AwsCloudPlatformIntegrationConfig,
+    AwsCloudPlatformClient,
+)
+
+
+def create_aws_cloud_platform_integration(
+    *,
+    client: AwsCloudPlatformClient | None = None,
+    enabled: bool = False,
+) -> AwsCloudPlatformIntegration:
+    """
+    Build a contract-based AWS cloud platform integration.
+
+    The legacy facade (create_aws_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "AWS cloud platform integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return AwsCloudPlatformIntegration.from_client(client, enabled=enabled)
+    return AwsCloudPlatformIntegration.for_provider(
+        provider_id=AWS_CLOUD_PLATFORM_PROVIDER_ID,
+        display_name="AWS",
+        config=AwsCloudPlatformIntegrationConfig(enabled=enabled),
+    )

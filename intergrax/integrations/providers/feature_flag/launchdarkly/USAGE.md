@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Launchdarkly (launchdarkly)
 
-# `launchdarkly` integration — usage
+Category: `feature_flag`
 
-**Category:** `feature_flag`  
-**Catalog factory:** ``create_launchdarkly_feature_flag()``  
-**Env prefix:** ``INTERGRAX_LAUNCHDARKLY_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.feature_flag.launchdarkly.bundle import create_launchdarkly_feature_flag
+- `create_launchdarkly_feature_flag()` remains backward-compatible.
 
-backend = create_launchdarkly_feature_flag()
-```
+## Contract-based integration
+
+- `LaunchdarklyFeatureFlagIntegration` derives from the category-specific contract.
+- Factory: `create_launchdarkly_feature_flag_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

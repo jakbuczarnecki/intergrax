@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Daytona (daytona)
 
-# `daytona` integration — usage
+Category: `sandbox_host`
 
-**Category:** `sandbox_host`  
-**Catalog factory:** ``create_daytona_sandbox_host()``  
-**Env prefix:** ``INTERGRAX_DAYTONA_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.sandbox_host.daytona.bundle import create_daytona_sandbox_host
+- `create_daytona_sandbox_host()` remains backward-compatible.
 
-backend = create_daytona_sandbox_host()
-```
+## Contract-based integration
+
+- `DaytonaSandboxHostIntegration` derives from the category-specific contract.
+- Factory: `create_daytona_sandbox_host_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

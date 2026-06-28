@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Auth0 (auth0)
 
-# `auth0` integration — usage
+Category: `identity_provider`
 
-**Category:** `identity_provider`  
-**Catalog factory:** ``create_auth0_identity_provider()``  
-**Env prefix:** ``INTERGRAX_AUTH0_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.identity_provider.auth0.bundle import create_auth0_identity_provider
+- `create_auth0_identity_provider()` remains backward-compatible.
 
-backend = create_auth0_identity_provider()
-```
+## Contract-based integration
+
+- `Auth0IdentityProviderIntegration` derives from the category-specific contract.
+- Factory: `create_auth0_identity_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

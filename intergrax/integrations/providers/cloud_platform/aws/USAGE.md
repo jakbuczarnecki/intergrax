@@ -1,46 +1,20 @@
-# `aws` integration — usage
+# AWS (aws)
 
-**Category:** ``cloud_platform``  
-**Catalog factory:** ``create_aws_cloud_platform()``
+Category: `cloud_platform`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_aws_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(cloud_platform="aws")
-backend = profile.resolve(IntegrationCategory.CLOUD_PLATFORM)
-```
+- `AwsCloudPlatformIntegration` derives from the category-specific contract.
+- Factory: `create_aws_cloud_platform_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.cloud_platform.aws.bundle import create_aws_cloud_platform
-
-backend = create_aws_cloud_platform(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_AWS_REGION`, `INTERGRAX_AWS_PROFILE`; optional keys or `INTERGRAX_AWS_ROLE_ARN`
-
-## Example
-
-```python
-from intergrax.integrations.providers.cloud_platform.aws.bundle import create_aws_cloud_platform
-
-platform = create_aws_cloud_platform(region="eu-central-1")
-health = platform.health()
-s3_slug = platform.resolve("object_storage")  # -> "s3"
-```
-
-## Notes
-
-boto3 SDK only in ``opens.py``. The facade does not implement S3/SQS — it returns default category slugs.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

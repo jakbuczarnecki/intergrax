@@ -22,6 +22,7 @@ __all__ = [
     "create_aws_integration",
     "register_aws_integration",
     "resolve_aws_config",
+    "create_aws_cloud_platform_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -32,9 +33,19 @@ _LAZY_EXPORTS = frozenset(
         "create_aws_cloud_platform",
         "register_aws_integration",
         "resolve_aws_config",
+        "create_aws_cloud_platform_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "AWS_CLOUD_PLATFORM_PROVIDER_ID",
+        "AwsCloudPlatformIntegration",
+        "AwsCloudPlatformIntegrationConfig",
+        "AwsCloudPlatformClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_aws_integration":
@@ -49,4 +60,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.cloud_platform.aws.adapter import AwsCloudPlatform
 
         return AwsCloudPlatform
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.cloud_platform.aws import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Keycloak (keycloak)
 
-# `keycloak` integration — usage
+Category: `identity_provider`
 
-**Category:** `identity_provider`  
-**Catalog factory:** ``create_keycloak_identity_provider()``  
-**Env prefix:** ``INTERGRAX_KEYCLOAK_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.identity_provider.keycloak.bundle import create_keycloak_identity_provider
+- `create_keycloak_identity_provider()` remains backward-compatible.
 
-backend = create_keycloak_identity_provider()
-```
+## Contract-based integration
+
+- `KeycloakIdentityProviderIntegration` derives from the category-specific contract.
+- Factory: `create_keycloak_identity_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

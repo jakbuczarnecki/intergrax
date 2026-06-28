@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Airflow (airflow)
 
-# `airflow` integration — usage
+Category: `workflow_orchestrator`
 
-**Category:** `workflow_orchestrator`  
-**Catalog factory:** ``create_airflow_workflow_orchestrator()``  
-**Env prefix:** ``INTERGRAX_AIRFLOW_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.workflow_orchestrator.airflow.bundle import create_airflow_workflow_orchestrator
+- `create_airflow_workflow_orchestrator()` remains backward-compatible.
 
-backend = create_airflow_workflow_orchestrator()
-```
+## Contract-based integration
+
+- `AirflowWorkflowOrchestratorIntegration` derives from the category-specific contract.
+- Factory: `create_airflow_workflow_orchestrator_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

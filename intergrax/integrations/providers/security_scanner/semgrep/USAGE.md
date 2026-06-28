@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Semgrep (semgrep)
 
-# `semgrep` integration — usage
+Category: `security_scanner`
 
-**Category:** `security_scanner`  
-**Catalog factory:** ``create_semgrep_security_scanner()``  
-**Env prefix:** ``INTERGRAX_SEMGREP_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.security_scanner.semgrep.bundle import create_semgrep_security_scanner
+- `create_semgrep_security_scanner()` remains backward-compatible.
 
-backend = create_semgrep_security_scanner()
-```
+## Contract-based integration
+
+- `SemgrepSecurityScannerIntegration` derives from the category-specific contract.
+- Factory: `create_semgrep_security_scanner_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

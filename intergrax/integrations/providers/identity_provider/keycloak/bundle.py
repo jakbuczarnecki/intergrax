@@ -3,4 +3,39 @@
 
 from intergrax.integrations._shared.p7.factories import create_keycloak_identity_provider
 
-__all__ = ["create_keycloak_identity_provider"]
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.identity_provider.keycloak.integration import (
+    KEYCLOAK_IDENTITY_PROVIDER_PROVIDER_ID,
+    KeycloakIdentityProviderIntegration,
+    KeycloakIdentityProviderIntegrationConfig,
+    KeycloakIdentityProviderClient,
+)
+
+__all__ = [
+    "create_keycloak_identity_provider",
+    "create_keycloak_identity_provider_integration",
+]
+
+
+def create_keycloak_identity_provider_integration(
+    *,
+    client: KeycloakIdentityProviderClient | None = None,
+    enabled: bool = False,
+) -> KeycloakIdentityProviderIntegration:
+    """
+    Build a contract-based Keycloak identity provider integration.
+
+    The legacy facade (create_keycloak_identity_provider) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Keycloak identity provider integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return KeycloakIdentityProviderIntegration.from_client(client, enabled=enabled)
+    return KeycloakIdentityProviderIntegration.for_provider(
+        provider_id=KEYCLOAK_IDENTITY_PROVIDER_PROVIDER_ID,
+        display_name="Keycloak",
+        config=KeycloakIdentityProviderIntegrationConfig(enabled=enabled),
+    )

@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Azure Key Vault (azure_key_vault)
 
-# `azure_key_vault` integration — usage
+Category: `secrets_store`
 
-**Category:** `secrets_store`  
-**Catalog factory:** ``create_azure_key_vault_secrets_store()``  
-**Env prefix:** ``INTERGRAX_AZURE_KEY_VAULT_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import create_azure_key_vault_secrets_store
+- `create_azure_key_vault_secrets_store()` remains backward-compatible.
 
-backend = create_azure_key_vault_secrets_store()
-```
+## Contract-based integration
+
+- `AzureKeyVaultSecretsStoreIntegration` derives from the category-specific contract.
+- Factory: `create_azure_key_vault_secrets_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

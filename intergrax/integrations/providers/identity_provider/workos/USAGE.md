@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Workos (workos)
 
-# `workos` integration — usage
+Category: `identity_provider`
 
-**Category:** `identity_provider`  
-**Catalog factory:** ``create_workos_identity_provider()``  
-**Env prefix:** ``INTERGRAX_WORKOS_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.identity_provider.workos.bundle import create_workos_identity_provider
+- `create_workos_identity_provider()` remains backward-compatible.
 
-backend = create_workos_identity_provider()
-```
+## Contract-based integration
+
+- `WorkosIdentityProviderIntegration` derives from the category-specific contract.
+- Factory: `create_workos_identity_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

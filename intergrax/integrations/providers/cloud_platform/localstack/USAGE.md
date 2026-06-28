@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Localstack (localstack)
 
-# `localstack` integration — usage
+Category: `cloud_platform`
 
-**Category:** `cloud_platform`  
-**Catalog factory:** ``create_localstack_cloud_platform()``  
-**Env prefix:** ``INTERGRAX_LOCALSTACK_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.cloud_platform.localstack.bundle import create_localstack_cloud_platform
+- `create_localstack_cloud_platform()` remains backward-compatible.
 
-backend = create_localstack_cloud_platform()
-```
+## Contract-based integration
+
+- `LocalstackCloudPlatformIntegration` derives from the category-specific contract.
+- Factory: `create_localstack_cloud_platform_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

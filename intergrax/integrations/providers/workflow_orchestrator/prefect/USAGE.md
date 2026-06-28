@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Prefect (prefect)
 
-# `prefect` integration — usage
+Category: `workflow_orchestrator`
 
-**Category:** `workflow_orchestrator`  
-**Catalog factory:** ``create_prefect_workflow_orchestrator()``  
-**Env prefix:** ``INTERGRAX_PREFECT_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.workflow_orchestrator.prefect.bundle import create_prefect_workflow_orchestrator
+- `create_prefect_workflow_orchestrator()` remains backward-compatible.
 
-backend = create_prefect_workflow_orchestrator()
-```
+## Contract-based integration
+
+- `PrefectWorkflowOrchestratorIntegration` derives from the category-specific contract.
+- Factory: `create_prefect_workflow_orchestrator_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

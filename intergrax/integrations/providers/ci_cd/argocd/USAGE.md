@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Argocd (argocd)
 
-# `argocd` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_argocd_ci_cd()``  
-**Env prefix:** ``INTERGRAX_ARGOCD_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.ci_cd.argocd.bundle import create_argocd_ci_cd
+- `create_argocd_ci_cd()` remains backward-compatible.
 
-backend = create_argocd_ci_cd()
-```
+## Contract-based integration
+
+- `ArgocdCiCdIntegration` derives from the category-specific contract.
+- Factory: `create_argocd_ci_cd_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

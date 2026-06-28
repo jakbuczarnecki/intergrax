@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# E2B (e2b)
 
-# `e2b` integration — usage
+Category: `sandbox_host`
 
-**Category:** `sandbox_host`  
-**Catalog factory:** ``create_e2b_sandbox_host()``  
-**Env prefix:** ``INTERGRAX_E2B_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.sandbox_host.e2b.bundle import create_e2b_sandbox_host
+- `create_e2b_sandbox_host()` remains backward-compatible.
 
-backend = create_e2b_sandbox_host()
-```
+## Contract-based integration
+
+- `E2bSandboxHostIntegration` derives from the category-specific contract.
+- Factory: `create_e2b_sandbox_host_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

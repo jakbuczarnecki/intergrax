@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Gitlab Ci (gitlab_ci)
 
-# `gitlab_ci` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_gitlab_ci_ci_cd()``  
-**Env prefix:** ``INTERGRAX_GITLAB_CI_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.ci_cd.gitlab_ci.bundle import create_gitlab_ci_ci_cd
+- `create_gitlab_ci_ci_cd()` remains backward-compatible.
 
-backend = create_gitlab_ci_ci_cd()
-```
+## Contract-based integration
+
+- `GitlabCiCiCdIntegration` derives from the category-specific contract.
+- Factory: `create_gitlab_ci_ci_cd_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

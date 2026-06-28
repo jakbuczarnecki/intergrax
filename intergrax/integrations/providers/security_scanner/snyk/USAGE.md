@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Snyk (snyk)
 
-# `snyk` integration — usage
+Category: `security_scanner`
 
-**Category:** `security_scanner`  
-**Catalog factory:** ``create_snyk_security_scanner()``  
-**Env prefix:** ``INTERGRAX_SNYK_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.security_scanner.snyk.bundle import create_snyk_security_scanner
+- `create_snyk_security_scanner()` remains backward-compatible.
 
-backend = create_snyk_security_scanner()
-```
+## Contract-based integration
+
+- `SnykSecurityScannerIntegration` derives from the category-specific contract.
+- Factory: `create_snyk_security_scanner_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -1,45 +1,20 @@
-# `gcp` integration — usage
+# GCP (gcp)
 
-**Category:** ``cloud_platform``  
-**Catalog factory:** ``create_gcp_cloud_platform()``
+Category: `cloud_platform`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_gcp_integration()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(cloud_platform="gcp")
-backend = profile.resolve(IntegrationCategory.CLOUD_PLATFORM)
-```
+- `GcpCloudPlatformIntegration` derives from the category-specific contract.
+- Factory: `create_gcp_cloud_platform_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.cloud_platform.gcp.bundle import create_gcp_cloud_platform
-
-backend = create_gcp_cloud_platform(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_GCP_PROJECT_ID`, `INTERGRAX_GCP_REGION`, `INTERGRAX_GCP_CREDENTIALS_FILE` (or ADC)
-
-## Example
-
-```python
-from intergrax.integrations.providers.cloud_platform.gcp.bundle import create_gcp_cloud_platform
-
-platform = create_gcp_cloud_platform(project_id="my-project")
-gcs_slug = platform.resolve("object_storage")  # -> "gcs"
-```
-
-## Notes
-
-``google-auth`` only in ``opens.py``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

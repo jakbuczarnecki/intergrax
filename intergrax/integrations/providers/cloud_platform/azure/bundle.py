@@ -62,3 +62,35 @@ def create_azure_cloud_platform(
         credential_factory=credential_factory,
         **config_overrides,
     ).cloud_platform
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.cloud_platform.azure.integration import (
+    AZURE_CLOUD_PLATFORM_PROVIDER_ID,
+    AzureCloudPlatformIntegration,
+    AzureCloudPlatformIntegrationConfig,
+    AzureCloudPlatformClient,
+)
+
+
+def create_azure_cloud_platform_integration(
+    *,
+    client: AzureCloudPlatformClient | None = None,
+    enabled: bool = False,
+) -> AzureCloudPlatformIntegration:
+    """
+    Build a contract-based Azure cloud platform integration.
+
+    The legacy facade (create_azure_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Azure cloud platform integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return AzureCloudPlatformIntegration.from_client(client, enabled=enabled)
+    return AzureCloudPlatformIntegration.for_provider(
+        provider_id=AZURE_CLOUD_PLATFORM_PROVIDER_ID,
+        display_name="Azure",
+        config=AzureCloudPlatformIntegrationConfig(enabled=enabled),
+    )

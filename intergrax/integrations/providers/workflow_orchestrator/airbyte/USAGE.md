@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Airbyte (airbyte)
 
-# `airbyte` integration — usage
+Category: `workflow_orchestrator`
 
-**Category:** `workflow_orchestrator`  
-**Catalog factory:** ``create_airbyte_workflow_orchestrator()``  
-**Env prefix:** ``INTERGRAX_AIRBYTE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.workflow_orchestrator.airbyte.bundle import create_airbyte_workflow_orchestrator
+- `create_airbyte_workflow_orchestrator()` remains backward-compatible.
 
-backend = create_airbyte_workflow_orchestrator()
-```
+## Contract-based integration
+
+- `AirbyteWorkflowOrchestratorIntegration` derives from the category-specific contract.
+- Factory: `create_airbyte_workflow_orchestrator_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

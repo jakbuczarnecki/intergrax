@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Doppler (doppler)
 
-# `doppler` integration — usage
+Category: `secrets_store`
 
-**Category:** `secrets_store`  
-**Catalog factory:** ``create_doppler_secrets_store()``  
-**Env prefix:** ``INTERGRAX_DOPPLER_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.secrets_store.doppler.bundle import create_doppler_secrets_store
+- `create_doppler_secrets_store()` remains backward-compatible.
 
-backend = create_doppler_secrets_store()
-```
+## Contract-based integration
+
+- `DopplerSecretsStoreIntegration` derives from the category-specific contract.
+- Factory: `create_doppler_secrets_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

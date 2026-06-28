@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# n8n (n8n)
 
-# `n8n` integration — usage
+Category: `workflow_orchestrator`
 
-**Category:** `workflow_orchestrator`  
-**Catalog factory:** ``create_n8n_workflow_orchestrator()``  
-**Env prefix:** ``INTERGRAX_N8N_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.workflow_orchestrator.n8n.bundle import create_n8n_workflow_orchestrator
+- `create_n8n_workflow_orchestrator()` remains backward-compatible.
 
-backend = create_n8n_workflow_orchestrator()
-```
+## Contract-based integration
+
+- `N8nWorkflowOrchestratorIntegration` derives from the category-specific contract.
+- Factory: `create_n8n_workflow_orchestrator_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

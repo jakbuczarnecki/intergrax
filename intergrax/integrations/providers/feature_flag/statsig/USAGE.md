@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Statsig (statsig)
 
-# `statsig` integration — usage
+Category: `feature_flag`
 
-**Category:** `feature_flag`  
-**Catalog factory:** ``create_statsig_feature_flag()``  
-**Env prefix:** ``INTERGRAX_STATSIG_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.feature_flag.statsig.bundle import create_statsig_feature_flag
+- `create_statsig_feature_flag()` remains backward-compatible.
 
-backend = create_statsig_feature_flag()
-```
+## Contract-based integration
+
+- `StatsigFeatureFlagIntegration` derives from the category-specific contract.
+- Factory: `create_statsig_feature_flag_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

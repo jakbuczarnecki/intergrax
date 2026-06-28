@@ -66,3 +66,35 @@ def create_gcp_cloud_platform(
         credential_factory=credential_factory,
         **config_overrides,
     ).cloud_platform
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.cloud_platform.gcp.integration import (
+    GCP_CLOUD_PLATFORM_PROVIDER_ID,
+    GcpCloudPlatformIntegration,
+    GcpCloudPlatformIntegrationConfig,
+    GcpCloudPlatformClient,
+)
+
+
+def create_gcp_cloud_platform_integration(
+    *,
+    client: GcpCloudPlatformClient | None = None,
+    enabled: bool = False,
+) -> GcpCloudPlatformIntegration:
+    """
+    Build a contract-based GCP cloud platform integration.
+
+    The legacy facade (create_gcp_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "GCP cloud platform integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return GcpCloudPlatformIntegration.from_client(client, enabled=enabled)
+    return GcpCloudPlatformIntegration.for_provider(
+        provider_id=GCP_CLOUD_PLATFORM_PROVIDER_ID,
+        display_name="GCP",
+        config=GcpCloudPlatformIntegrationConfig(enabled=enabled),
+    )

@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Clerk (clerk)
 
-# `clerk` integration — usage
+Category: `identity_provider`
 
-**Category:** `identity_provider`  
-**Catalog factory:** ``create_clerk_identity_provider()``  
-**Env prefix:** ``INTERGRAX_CLERK_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.identity_provider.clerk.bundle import create_clerk_identity_provider
+- `create_clerk_identity_provider()` remains backward-compatible.
 
-backend = create_clerk_identity_provider()
-```
+## Contract-based integration
+
+- `ClerkIdentityProviderIntegration` derives from the category-specific contract.
+- Factory: `create_clerk_identity_provider_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.
