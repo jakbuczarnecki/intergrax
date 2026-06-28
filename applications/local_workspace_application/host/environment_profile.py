@@ -11,6 +11,11 @@ from intergrax.applications.contracts.environment_profile import (
     ContextProfile,
     HostDeploymentProfile,
 )
+from intergrax.applications.contracts.graph_spec import (
+    ApplicationGraphSpec,
+    GraphEdge,
+    GraphNode,
+)
 from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.registry.catalog_manifests import DOCLING, INMEMORY, OTEL, QDRANT, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -32,6 +37,22 @@ def _local_vector_store_manifest():
     if raw == "qdrant":
         return QDRANT
     raise ValueError("LOCAL_WORKSPACE_VECTOR_STORE must be one of: qdrant, inmemory.")
+
+
+def build_local_workspace_pipeline_graph_spec() -> ApplicationGraphSpec:
+    """Index → search → synthesize orchestration graph for ``local.workspace.pipeline``."""
+    return ApplicationGraphSpec(
+        nodes=[
+            GraphNode(agent_id="local_indexer"),
+            GraphNode(agent_id="local_search"),
+            GraphNode(agent_id="local_synthesizer"),
+        ],
+        edges=[
+            GraphEdge(source_agent_id="local_indexer", target_agent_id="local_search"),
+            GraphEdge(source_agent_id="local_search", target_agent_id="local_synthesizer"),
+        ],
+        trigger_capabilities=["local.workspace.pipeline"],
+    )
 
 
 def build_local_workspace_integration_profile() -> IntegrationProfile:
@@ -95,4 +116,5 @@ def build_local_workspace_environment_profile(
             "options": {**profile.integration_profile.options, OTEL.slug: {}},
         },
     )
+    profile.graph_spec = build_local_workspace_pipeline_graph_spec()
     return profile
