@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.layout import SLUG_CATEGORY
 from intergrax.runtime.integrations.contracts import PlatformIntegrationKind
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationContract,
@@ -57,6 +58,16 @@ ALL_MIGRATED_SLUGS = WAVE1_SLUGS + WAVE2_SLUGS + WAVE3_SLUGS
 
 LLM_SLUGS = frozenset(WAVE1_SLUGS)
 
+# Slugs whose public integration class names are not plain per-segment .capitalize().
+_CLASS_NAME_OVERRIDES: dict[str, str] = {
+    "newrelic": "NewRelic",
+    "opentelemetry_collector": "OpenTelemetryCollector",
+}
+
+_OBSERVABILITY_BACKEND_SLUGS = frozenset(
+    slug for slug, category in SLUG_CATEGORY.items() if category == "observability_backend"
+)
+
 _FORBIDDEN_IMPORT_PREFIXES: dict[str, tuple[str, ...]] = {
     "opentelemetry_collector": ("opentelemetry",),
     "newrelic": ("newrelic",),
@@ -77,6 +88,8 @@ _FORBIDDEN_IMPORT_PREFIXES: dict[str, tuple[str, ...]] = {
 
 
 def _slug_to_class(slug: str) -> str:
+    if slug in _CLASS_NAME_OVERRIDES:
+        return _CLASS_NAME_OVERRIDES[slug]
     return "".join(part.capitalize() for part in slug.split("_"))
 
 
@@ -162,6 +175,26 @@ def _provider_id_const(slug: str) -> str:
 
 def _forbidden_prefixes(slug: str) -> tuple[str, ...]:
     return _FORBIDDEN_IMPORT_PREFIXES.get(slug, (slug,))
+
+
+def test_layout_observability_backend_slugs_match_migrated_batch() -> None:
+    """Guard: every layout observability_backend slug except Langfuse pilot is in ALL_MIGRATED_SLUGS."""
+    expected_batch = _OBSERVABILITY_BACKEND_SLUGS - {"langfuse"}
+    assert frozenset(ALL_MIGRATED_SLUGS) == expected_batch
+
+
+def test_every_layout_observability_backend_slug_has_integration_module() -> None:
+    for slug in sorted(_OBSERVABILITY_BACKEND_SLUGS):
+        integration_path = (
+            _PROJECT_ROOT
+            / "intergrax"
+            / "integrations"
+            / "providers"
+            / "observability_backend"
+            / slug
+            / "integration.py"
+        )
+        assert integration_path.is_file(), f"missing integration.py for observability_backend/{slug}"
 
 
 @pytest.mark.parametrize("slug", ALL_MIGRATED_SLUGS)

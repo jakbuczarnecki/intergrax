@@ -119,6 +119,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - **`enabled=True`** without transport raises **`IntegrationConfigurationError`**; no vendor SDK imports in `integration.py`; no network I/O in tests
 - **Registry v2 / contract registry wiring remains deferred**
 - **Deferred providers:** none — full `observability_backend` category complete
+- **OBS-EXPORT-5 linkage:** contract adapters complete; production vendor transports and operator wiring pending (not production export done)
 - No LKW change; no global bootstrap registration
 
 **Migrated slugs (26):** `langfuse`, `arize`, `phoenix`, `langsmith`, `helicone`, `braintrust`, `wandb`, `datadog`, `sentry`, `signoz`, `honeycomb`, `newrelic`, `splunk`, `posthog`, `prometheus`, `elasticsearch`, `opensearch`, `otel`, `opentelemetry_collector`, `grafana`, `loki`, `tempo`, `influxdb`, `clickhouse`, `mlflow`

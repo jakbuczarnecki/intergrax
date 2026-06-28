@@ -28,21 +28,21 @@ _OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...
 OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS = _OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS
 
 
-class OpentelemetryCollectorObservabilityIntegrationConfig(ObservabilityVendorIntegrationConfig):
+class OpenTelemetryCollectorObservabilityIntegrationConfig(ObservabilityVendorIntegrationConfig):
     """Typed config for OpenTelemetry Collector observability vendor integration."""
 
     pass
 
 
 @runtime_checkable
-class OpentelemetryCollectorObservabilityTransport(Protocol):
+class OpenTelemetryCollectorObservabilityTransport(Protocol):
     """Injectable delivery facade — no vendor SDK or network I/O in the integration class."""
 
     async def send_observability_payload(self, payload: ObservabilityVendorPayload) -> None:
         """Deliver a policy-sanitized vendor payload to OpenTelemetry Collector."""
 
 
-class OpentelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrationContract):
+class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrationContract):
     """
     OpenTelemetry Collector observability vendor integration.
 
@@ -51,32 +51,32 @@ class OpentelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
     remains separate and backward-compatible.
     """
 
-    config: OpentelemetryCollectorObservabilityIntegrationConfig = OpentelemetryCollectorObservabilityIntegrationConfig()
-    _transport: OpentelemetryCollectorObservabilityTransport | None = PrivateAttr(default=None)
+    config: OpenTelemetryCollectorObservabilityIntegrationConfig = OpenTelemetryCollectorObservabilityIntegrationConfig()
+    _transport: OpenTelemetryCollectorObservabilityTransport | None = PrivateAttr(default=None)
 
     @classmethod
     def from_transport(
         cls,
-        transport: OpentelemetryCollectorObservabilityTransport,
+        transport: OpenTelemetryCollectorObservabilityTransport,
         *,
         enabled: bool = False,
         supported_signals: tuple[ObservabilityVendorSignal, ...] | None = None,
-    ) -> OpentelemetryCollectorObservabilityIntegration:
+    ) -> OpenTelemetryCollectorObservabilityIntegration:
         integration = cls.for_provider(
             provider_id=OPENTELEMETRY_COLLECTOR_OBSERVABILITY_PROVIDER_ID,
             supported_signals=supported_signals or _OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS,
             display_name="OpenTelemetry Collector",
-            config=OpentelemetryCollectorObservabilityIntegrationConfig(enabled=enabled),
+            config=OpenTelemetryCollectorObservabilityIntegrationConfig(enabled=enabled),
         )
         integration._transport = transport
         return integration
 
     @property
-    def transport(self) -> OpentelemetryCollectorObservabilityTransport | None:
+    def transport(self) -> OpenTelemetryCollectorObservabilityTransport | None:
         return self._transport
 
     async def deliver_payload(self, payload: ObservabilityVendorPayload) -> None:
         if self._transport is None:
-            msg = "OpentelemetryCollectorObservabilityIntegration requires an injected transport for delivery"
+            msg = "OpenTelemetryCollectorObservabilityIntegration requires an injected transport for delivery"
             raise RuntimeError(msg)
         await self._transport.send_observability_payload(payload)

@@ -28,21 +28,21 @@ _NEWRELIC_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
 NEWRELIC_SUPPORTED_SIGNALS = _NEWRELIC_SUPPORTED_SIGNALS
 
 
-class NewrelicObservabilityIntegrationConfig(ObservabilityVendorIntegrationConfig):
+class NewRelicObservabilityIntegrationConfig(ObservabilityVendorIntegrationConfig):
     """Typed config for New Relic observability vendor integration."""
 
     pass
 
 
 @runtime_checkable
-class NewrelicObservabilityTransport(Protocol):
+class NewRelicObservabilityTransport(Protocol):
     """Injectable delivery facade — no vendor SDK or network I/O in the integration class."""
 
     async def send_observability_payload(self, payload: ObservabilityVendorPayload) -> None:
         """Deliver a policy-sanitized vendor payload to New Relic."""
 
 
-class NewrelicObservabilityIntegration(ObservabilityVendorIntegrationContract):
+class NewRelicObservabilityIntegration(ObservabilityVendorIntegrationContract):
     """
     New Relic observability vendor integration.
 
@@ -51,32 +51,32 @@ class NewrelicObservabilityIntegration(ObservabilityVendorIntegrationContract):
     remains separate and backward-compatible.
     """
 
-    config: NewrelicObservabilityIntegrationConfig = NewrelicObservabilityIntegrationConfig()
-    _transport: NewrelicObservabilityTransport | None = PrivateAttr(default=None)
+    config: NewRelicObservabilityIntegrationConfig = NewRelicObservabilityIntegrationConfig()
+    _transport: NewRelicObservabilityTransport | None = PrivateAttr(default=None)
 
     @classmethod
     def from_transport(
         cls,
-        transport: NewrelicObservabilityTransport,
+        transport: NewRelicObservabilityTransport,
         *,
         enabled: bool = False,
         supported_signals: tuple[ObservabilityVendorSignal, ...] | None = None,
-    ) -> NewrelicObservabilityIntegration:
+    ) -> NewRelicObservabilityIntegration:
         integration = cls.for_provider(
             provider_id=NEWRELIC_OBSERVABILITY_PROVIDER_ID,
             supported_signals=supported_signals or _NEWRELIC_SUPPORTED_SIGNALS,
             display_name="New Relic",
-            config=NewrelicObservabilityIntegrationConfig(enabled=enabled),
+            config=NewRelicObservabilityIntegrationConfig(enabled=enabled),
         )
         integration._transport = transport
         return integration
 
     @property
-    def transport(self) -> NewrelicObservabilityTransport | None:
+    def transport(self) -> NewRelicObservabilityTransport | None:
         return self._transport
 
     async def deliver_payload(self, payload: ObservabilityVendorPayload) -> None:
         if self._transport is None:
-            msg = "NewrelicObservabilityIntegration requires an injected transport for delivery"
+            msg = "NewRelicObservabilityIntegration requires an injected transport for delivery"
             raise RuntimeError(msg)
         await self._transport.send_observability_payload(payload)

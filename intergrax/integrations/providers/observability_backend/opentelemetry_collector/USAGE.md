@@ -38,7 +38,7 @@ await integration.export(sanitized_envelope)
 
 
 
-- **``OpentelemetryCollectorObservabilityIntegration``** derives from **`ObservabilityVendorIntegrationContract`**
+- **``OpenTelemetryCollectorObservabilityIntegration``** derives from **`ObservabilityVendorIntegrationContract`**
 
 - **Legacy query facade** — ``create_opentelemetry_collector_observability_backend()`` / ``ObservabilityBackend`` — remains backward-compatible
 
@@ -48,7 +48,7 @@ await integration.export(sanitized_envelope)
 
 - **Disabled by default** — ``enabled=False`` unless operator opts in
 
-- **Transport required when enabled** — ``enabled=True`` without ``OpentelemetryCollectorObservabilityTransport`` raises ``IntegrationConfigurationError`` immediately (no silent broken export)
+- **Transport required when enabled** — ``enabled=True`` without ``OpenTelemetryCollectorObservabilityTransport`` raises ``IntegrationConfigurationError`` immediately (no silent broken export)
 
 
 

@@ -180,6 +180,15 @@ Load **only** the satellite matching your task or cited gap ID.
 - LKW.2 pipeline unchanged; no vendor SDK in LKW; raw content/local paths not exported by default
 - **OBS-EXPORT-5** remains **deferred** until Langfuse/Arize/Phoenix vendor adapters are implemented
 
+**OBS-EXPORT-5 status (2026-06-28 — post INTEGRATIONS-2C):**
+
+| Sub-deliverable | Status | Notes |
+|-----------------|--------|-------|
+| Contract adapters | **Complete** | All **`observability_backend`** slugs have **`ObservabilityVendorIntegrationContract`** subclasses (**INTEGRATIONS-2C**) |
+| Production vendor transports | **Pending** | Injectable transport protocols + fake transports in tests only — no Langfuse/Arize/New Relic/etc. network exporters |
+| Operator / bootstrap wiring | **Pending** | No global registration; LKW unchanged; registry v2 deferred |
+| Production export end-to-end | **Not done** | Contract layer only — do **not** treat OBS-EXPORT-5 as “production export done” |
+
 **OBS-EXPORT-5 status (dependency on INTEGRATIONS-1A / INTEGRATIONS-1B / INTEGRATIONS-1C):**
 
 - **OBS-EXPORT-5** remains **paused** until remaining observability integration alignment is complete (OTLP done in INTEGRATIONS-1C; Langfuse/Arize/Phoenix deferred)
@@ -214,7 +223,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - **`enabled=True`** without transport fails at construction (**`IntegrationConfigurationError`**)
 - Parametrized conformance tests in **`test_observability_provider_contract_migration.py`**
 - **Registry v2 / contract registry wiring deferred** — `register_<slug>_integration()` still legacy-only
-- **OBS-EXPORT-5 progress:** contract adapters exist for all catalog observability_backend slugs; production vendor transport wiring and operator bootstrap remain follow-up (not this task)
+- **OBS-EXPORT-5 progress:** contract adapters **complete**; production vendor transports and operator/bootstrap wiring **pending** — not production export done
 - No LKW change
 
 **Required decisions:**
@@ -239,7 +248,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **OBS-EXPORT-4** | Code | P2 | **Done** | First remote backend adapter: OTLP | **`OtlpObservabilityExporter`** + **`OtlpObservabilityExporterConfig`** + injectable **`OtlpTransport`**; maps policy-sanitized envelopes (including **`sanitized_application_attributes`**) to OTLP-safe log payloads; no vendor SDK; explicit opt-in; no global bootstrap registration. Elasticsearch deferred. |
 | **OBS-EXPORT-4B** | Code | P2 | **Done** | OTLP HTTP transport | **`OtlpHttpTransport`** POSTs OTLP JSON to configured endpoint; explicit opt-in; platform observability only; policy-sanitized payloads only; failure isolation via **`try_export_observability_envelope`**; no vendor SDK; no global bootstrap registration. Operator wiring deferred. |
 | **OBS-EXPORT-4C** | Code | P2 | **Done** | Explicit OTLP operator wiring | **`ObservabilityExportOperatorConfig`** + **`OtlpExportOperatorConfig`** + **`build_otlp_observability_exporter`** + **`build_otlp_observability_export_runtime_plugin`**; disabled by default; **`export_content=false`** enforced; composes policy + OTLP exporter + HTTP transport + runtime plugin; no global registration; no LKW wiring; no raw content or raw **`application_attributes`** export. |
-| **OBS-EXPORT-5** | Code | P3 | **In progress** | Observability vendor contract adapters | Contract classes exist for all **`observability_backend`** slugs (**INTEGRATIONS-2C** Done). Production vendor transports, operator wiring, and registry v2 remain follow-up. Adapters derive from **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; no raw content by default. JSONL remains local file sink. |
+| **OBS-EXPORT-5** | Code | P3 | **In progress** | Observability vendor export | **Contract adapters complete** (INTEGRATIONS-2C). **Production transports pending.** **Operator wiring pending.** Not production export done. Adapters derive from **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; JSONL remains local file sink. |
 
 ---
 

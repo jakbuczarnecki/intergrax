@@ -38,7 +38,7 @@ await integration.export(sanitized_envelope)
 
 
 
-- **``NewrelicObservabilityIntegration``** derives from **`ObservabilityVendorIntegrationContract`**
+- **``NewRelicObservabilityIntegration``** derives from **`ObservabilityVendorIntegrationContract`**
 
 - **Legacy query facade** — ``create_newrelic_observability_backend()`` / ``ObservabilityBackend`` — remains backward-compatible
 
@@ -48,7 +48,7 @@ await integration.export(sanitized_envelope)
 
 - **Disabled by default** — ``enabled=False`` unless operator opts in
 
-- **Transport required when enabled** — ``enabled=True`` without ``NewrelicObservabilityTransport`` raises ``IntegrationConfigurationError`` immediately (no silent broken export)
+- **Transport required when enabled** — ``enabled=True`` without ``NewRelicObservabilityTransport`` raises ``IntegrationConfigurationError`` immediately (no silent broken export)
 
 
 

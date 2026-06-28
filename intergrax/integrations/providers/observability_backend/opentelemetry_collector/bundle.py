@@ -8,9 +8,9 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.opentelemetry_collector.integration import (
     OPENTELEMETRY_COLLECTOR_OBSERVABILITY_PROVIDER_ID,
     OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS,
-    OpentelemetryCollectorObservabilityIntegration,
-    OpentelemetryCollectorObservabilityIntegrationConfig,
-    OpentelemetryCollectorObservabilityTransport,
+    OpenTelemetryCollectorObservabilityIntegration,
+    OpenTelemetryCollectorObservabilityIntegrationConfig,
+    OpenTelemetryCollectorObservabilityTransport,
 )
 
 __all__ = [
@@ -21,9 +21,9 @@ __all__ = [
 
 def create_opentelemetry_collector_observability_integration(
     *,
-    transport: OpentelemetryCollectorObservabilityTransport | None = None,
+    transport: OpenTelemetryCollectorObservabilityTransport | None = None,
     enabled: bool = False,
-) -> OpentelemetryCollectorObservabilityIntegration:
+) -> OpenTelemetryCollectorObservabilityIntegration:
     """
     Build a contract-based OpenTelemetry Collector observability vendor integration.
 
@@ -35,10 +35,10 @@ def create_opentelemetry_collector_observability_integration(
             "OpenTelemetry Collector observability integration requires an injected transport when enabled=True",
         )
     if transport is not None:
-        return OpentelemetryCollectorObservabilityIntegration.from_transport(transport, enabled=enabled)
-    return OpentelemetryCollectorObservabilityIntegration.for_provider(
+        return OpenTelemetryCollectorObservabilityIntegration.from_transport(transport, enabled=enabled)
+    return OpenTelemetryCollectorObservabilityIntegration.for_provider(
         provider_id=OPENTELEMETRY_COLLECTOR_OBSERVABILITY_PROVIDER_ID,
         supported_signals=OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS,
         display_name="OpenTelemetry Collector",
-        config=OpentelemetryCollectorObservabilityIntegrationConfig(enabled=enabled),
+        config=OpenTelemetryCollectorObservabilityIntegrationConfig(enabled=enabled),
     )

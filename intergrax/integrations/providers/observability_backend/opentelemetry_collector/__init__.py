@@ -5,9 +5,9 @@ from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
     "OPENTELEMETRY_COLLECTOR_OBSERVABILITY_PROVIDER_ID",
-    "OpentelemetryCollectorObservabilityIntegration",
-    "OpentelemetryCollectorObservabilityIntegrationConfig",
-    "OpentelemetryCollectorObservabilityTransport",
+    "OpenTelemetryCollectorObservabilityIntegration",
+    "OpenTelemetryCollectorObservabilityIntegrationConfig",
+    "OpenTelemetryCollectorObservabilityTransport",
     "create_opentelemetry_collector_observability_backend",
     "create_opentelemetry_collector_observability_integration",
     "register_opentelemetry_collector_integration",
@@ -23,9 +23,9 @@ _BUNDLE_EXPORTS = frozenset(
 _INTEGRATION_EXPORTS = frozenset(
     {
         "OPENTELEMETRY_COLLECTOR_OBSERVABILITY_PROVIDER_ID",
-        "OpentelemetryCollectorObservabilityIntegration",
-        "OpentelemetryCollectorObservabilityIntegrationConfig",
-        "OpentelemetryCollectorObservabilityTransport",
+        "OpenTelemetryCollectorObservabilityIntegration",
+        "OpenTelemetryCollectorObservabilityIntegrationConfig",
+        "OpenTelemetryCollectorObservabilityTransport",
     }
 )
 

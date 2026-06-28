@@ -5,9 +5,9 @@ from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
     "NEWRELIC_OBSERVABILITY_PROVIDER_ID",
-    "NewrelicObservabilityIntegration",
-    "NewrelicObservabilityIntegrationConfig",
-    "NewrelicObservabilityTransport",
+    "NewRelicObservabilityIntegration",
+    "NewRelicObservabilityIntegrationConfig",
+    "NewRelicObservabilityTransport",
     "create_newrelic_observability_backend",
     "create_newrelic_observability_integration",
     "register_newrelic_integration",
@@ -23,9 +23,9 @@ _BUNDLE_EXPORTS = frozenset(
 _INTEGRATION_EXPORTS = frozenset(
     {
         "NEWRELIC_OBSERVABILITY_PROVIDER_ID",
-        "NewrelicObservabilityIntegration",
-        "NewrelicObservabilityIntegrationConfig",
-        "NewrelicObservabilityTransport",
+        "NewRelicObservabilityIntegration",
+        "NewRelicObservabilityIntegrationConfig",
+        "NewRelicObservabilityTransport",
     }
 )
 
