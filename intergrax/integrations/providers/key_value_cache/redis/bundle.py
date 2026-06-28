@@ -197,3 +197,35 @@ def create_redis_rerank_cache(
         ttl_seconds=ttl_seconds,
         key_prefix=key_prefix,
     )
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.key_value_cache.redis.integration import (
+    REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
+    RedisKeyValueCacheIntegration,
+    RedisKeyValueCacheIntegrationConfig,
+    RedisKeyValueCacheClient,
+)
+
+
+def create_redis_key_value_cache_integration(
+    *,
+    client: RedisKeyValueCacheClient | None = None,
+    enabled: bool = False,
+) -> RedisKeyValueCacheIntegration:
+    """
+    Build a contract-based Redis key value cache integration.
+
+    The legacy facade (create_redis_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Redis key value cache integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return RedisKeyValueCacheIntegration.from_client(client, enabled=enabled)
+    return RedisKeyValueCacheIntegration.for_provider(
+        provider_id=REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
+        display_name="Redis",
+        config=RedisKeyValueCacheIntegrationConfig(enabled=enabled),
+    )

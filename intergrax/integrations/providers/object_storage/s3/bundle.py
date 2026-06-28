@@ -76,3 +76,35 @@ def create_s3_object_storage(
         s3_client_factory=s3_client_factory,
         **config_overrides,
     ).object_storage
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.object_storage.s3.integration import (
+    S3_OBJECT_STORAGE_PROVIDER_ID,
+    S3ObjectStorageIntegration,
+    S3ObjectStorageIntegrationConfig,
+    S3ObjectStorageClient,
+)
+
+
+def create_s3_object_storage_integration(
+    *,
+    client: S3ObjectStorageClient | None = None,
+    enabled: bool = False,
+) -> S3ObjectStorageIntegration:
+    """
+    Build a contract-based S3 object storage integration.
+
+    The legacy facade (create_s3_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "S3 object storage integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return S3ObjectStorageIntegration.from_client(client, enabled=enabled)
+    return S3ObjectStorageIntegration.for_provider(
+        provider_id=S3_OBJECT_STORAGE_PROVIDER_ID,
+        display_name="S3",
+        config=S3ObjectStorageIntegrationConfig(enabled=enabled),
+    )

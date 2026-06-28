@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Motherduck (motherduck)
 
-# `motherduck` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_motherduck_relational_store()``  
-**Env prefix:** ``INTERGRAX_MOTHERDUCK_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.relational_store.motherduck.bundle import create_motherduck_relational_store
+- `create_motherduck_relational_store()` remains backward-compatible.
 
-backend = create_motherduck_relational_store()
-```
+## Contract-based integration
+
+- `MotherduckRelationalStoreIntegration` derives from the category-specific contract.
+- Factory: `create_motherduck_relational_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

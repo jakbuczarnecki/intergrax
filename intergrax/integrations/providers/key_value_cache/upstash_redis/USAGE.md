@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Upstash Redis (upstash_redis)
 
-# `upstash_redis` integration — usage
+Category: `key_value_cache`
 
-**Category:** `key_value_cache`  
-**Catalog factory:** ``create_upstash_redis_key_value_cache()``  
-**Env prefix:** ``INTERGRAX_UPSTASH_REDIS_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.key_value_cache.upstash_redis.bundle import create_upstash_redis_key_value_cache
+- `create_upstash_redis_key_value_cache()` remains backward-compatible.
 
-backend = create_upstash_redis_key_value_cache()
-```
+## Contract-based integration
+
+- `UpstashRedisKeyValueCacheIntegration` derives from the category-specific contract.
+- Factory: `create_upstash_redis_key_value_cache_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

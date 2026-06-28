@@ -96,6 +96,7 @@ __all__ = [
     "resolve_task_memory_db_path",
     "resolve_trace_db_path",
     "resolve_user_profile_db_path",
+    "create_sqlite_relational_store_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -115,9 +116,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_sqlite_user_profile_store",
         "resolve_sqlite_config",
         "register_sqlite_integration",
+        "create_sqlite_relational_store_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "SQLITE_RELATIONAL_STORE_PROVIDER_ID",
+        "SqliteRelationalStoreIntegration",
+        "SqliteRelationalStoreIntegrationConfig",
+        "SqliteRelationalStoreClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_sqlite_integration":
@@ -128,4 +139,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.relational_store.sqlite import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.relational_store.sqlite import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

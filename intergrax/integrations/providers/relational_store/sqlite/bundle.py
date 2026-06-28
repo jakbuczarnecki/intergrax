@@ -248,3 +248,35 @@ def create_sqlite_user_profile_store(
         overrides["user_profile_db"] = Path(db_path)
     _, paths = _build_paths(data_dir=data_dir, **overrides)
     return open_user_profile_store_at(paths.user_profile)
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.relational_store.sqlite.integration import (
+    SQLITE_RELATIONAL_STORE_PROVIDER_ID,
+    SqliteRelationalStoreIntegration,
+    SqliteRelationalStoreIntegrationConfig,
+    SqliteRelationalStoreClient,
+)
+
+
+def create_sqlite_relational_store_integration(
+    *,
+    client: SqliteRelationalStoreClient | None = None,
+    enabled: bool = False,
+) -> SqliteRelationalStoreIntegration:
+    """
+    Build a contract-based Sqlite relational store integration.
+
+    The legacy facade (create_sqlite_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Sqlite relational store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return SqliteRelationalStoreIntegration.from_client(client, enabled=enabled)
+    return SqliteRelationalStoreIntegration.for_provider(
+        provider_id=SQLITE_RELATIONAL_STORE_PROVIDER_ID,
+        display_name="Sqlite",
+        config=SqliteRelationalStoreIntegrationConfig(enabled=enabled),
+    )

@@ -1,44 +1,20 @@
-# `snowflake` integration — usage
+# Snowflake (snowflake)
 
-**Category:** ``relational_store``  
-**Catalog factory:** ``create_snowflake_relational_store()``
+Category: `relational_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_snowflake_relational_store()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(relational_store="snowflake")
-backend = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
-```
+- `SnowflakeRelationalStoreIntegration` derives from the category-specific contract.
+- Factory: `create_snowflake_relational_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.relational_store.snowflake.bundle import create_snowflake_relational_store
-
-backend = create_snowflake_relational_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_SNOWFLAKE_DSN` or connection components
-
-## Example
-
-```python
-from intergrax.integrations.providers.relational_store.snowflake.bundle import create_snowflake_relational_store
-
-store = create_snowflake_relational_store(dsn="snowflake://...")
-```
-
-## Notes
-
-SQL facade via ``psycopg``-compatible DSN.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

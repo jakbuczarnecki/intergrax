@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Duckdb (duckdb)
 
-# `duckdb` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_duckdb_relational_store()``  
-**Env prefix:** ``INTERGRAX_DUCKDB_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.relational_store.duckdb.bundle import create_duckdb_relational_store
+- `create_duckdb_relational_store()` remains backward-compatible.
 
-backend = create_duckdb_relational_store()
-```
+## Contract-based integration
+
+- `DuckdbRelationalStoreIntegration` derives from the category-specific contract.
+- Factory: `create_duckdb_relational_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

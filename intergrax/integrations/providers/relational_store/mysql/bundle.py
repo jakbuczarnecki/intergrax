@@ -59,3 +59,35 @@ def create_mysql_relational_store(
         **config_overrides,
     )
     return bundle.relational_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.relational_store.mysql.integration import (
+    MYSQL_RELATIONAL_STORE_PROVIDER_ID,
+    MysqlRelationalStoreIntegration,
+    MysqlRelationalStoreIntegrationConfig,
+    MysqlRelationalStoreClient,
+)
+
+
+def create_mysql_relational_store_integration(
+    *,
+    client: MysqlRelationalStoreClient | None = None,
+    enabled: bool = False,
+) -> MysqlRelationalStoreIntegration:
+    """
+    Build a contract-based Mysql relational store integration.
+
+    The legacy facade (create_mysql_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Mysql relational store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return MysqlRelationalStoreIntegration.from_client(client, enabled=enabled)
+    return MysqlRelationalStoreIntegration.for_provider(
+        provider_id=MYSQL_RELATIONAL_STORE_PROVIDER_ID,
+        display_name="Mysql",
+        config=MysqlRelationalStoreIntegrationConfig(enabled=enabled),
+    )

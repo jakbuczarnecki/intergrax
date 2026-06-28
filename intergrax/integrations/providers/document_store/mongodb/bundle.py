@@ -72,3 +72,35 @@ def create_mongodb_document_store(
         collection_factory=collection_factory,
         **config_overrides,
     ).document_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.document_store.mongodb.integration import (
+    MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+    MongodbDocumentStoreIntegration,
+    MongodbDocumentStoreIntegrationConfig,
+    MongodbDocumentStoreClient,
+)
+
+
+def create_mongodb_document_store_integration(
+    *,
+    client: MongodbDocumentStoreClient | None = None,
+    enabled: bool = False,
+) -> MongodbDocumentStoreIntegration:
+    """
+    Build a contract-based Mongodb document store integration.
+
+    The legacy facade (create_mongodb_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Mongodb document store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return MongodbDocumentStoreIntegration.from_client(client, enabled=enabled)
+    return MongodbDocumentStoreIntegration.for_provider(
+        provider_id=MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+        display_name="Mongodb",
+        config=MongodbDocumentStoreIntegrationConfig(enabled=enabled),
+    )

@@ -1,48 +1,20 @@
-# `memcached` integration — usage
+# Memcached (memcached)
 
-**Category:** ``key_value_cache``  
-**Catalog factory:** ``create_memcached_key_value_cache()``
+Category: `key_value_cache`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_memcached_key_value_cache()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(key_value_cache="memcached")
-backend = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
-```
+- `MemcachedKeyValueCacheIntegration` derives from the category-specific contract.
+- Factory: `create_memcached_key_value_cache_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.key_value_cache.memcached.bundle import create_memcached_key_value_cache
-
-backend = create_memcached_key_value_cache(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_MEMCACHED_HOST` (default `localhost`), `INTERGRAX_MEMCACHED_PORT` (default `11211`)
-
-## Example
-
-```python
-from intergrax.integrations.providers.key_value_cache.memcached.bundle import create_memcached_key_value_cache
-
-cache = create_memcached_key_value_cache(host="127.0.0.1", port=11211)
-cache.set("t1", "session:42", b"payload", ttl_seconds=3600)
-value = cache.get("t1", "session:42")
-cache.delete("t1", "session:42")
-cache.close()
-```
-
-## Notes
-
-``pymemcache`` opened lazily. Keys are tenant-scoped as ``{tenant_id}:{key}``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

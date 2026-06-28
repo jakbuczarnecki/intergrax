@@ -1,50 +1,20 @@
-# `dynamodb` integration — usage
+# Dynamodb (dynamodb)
 
-**Category:** ``document_store``  
-**Catalog factory:** ``create_dynamodb_document_store()``
+Category: `document_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_dynamodb_document_store()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(document_store="dynamodb")
-backend = profile.resolve(IntegrationCategory.DOCUMENT_STORE)
-```
+- `DynamodbDocumentStoreIntegration` derives from the category-specific contract.
+- Factory: `create_dynamodb_document_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.document_store.dynamodb.bundle import create_dynamodb_document_store
-
-backend = create_dynamodb_document_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_DYNAMODB_TABLE`; optional `INTERGRAX_DYNAMODB_REGION`; AWS credential vars
-
-## Example
-
-```python
-from intergrax.integrations.providers.document_store.dynamodb.bundle import create_dynamodb_document_store
-
-from intergrax.integrations.contracts.document_store import DocumentRecord
-
-store = create_dynamodb_document_store(table_name="intergrax-events", region="eu-central-1")
-store.put(DocumentRecord(partition_key="tenant-1", row_key="evt-1", data={"status": "ok"}))
-doc = store.get("tenant-1", "evt-1")
-result = store.query("tenant-1", limit=50, row_key_prefix="2026-")
-store.close()
-```
-
-## Notes
-
-boto3 DynamoDB resource in ``_shared/p2/factories.py``. Default ``document_store`` when ``cloud_platform=aws``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

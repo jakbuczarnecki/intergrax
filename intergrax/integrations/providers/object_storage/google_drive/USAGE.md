@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Google Drive (google_drive)
 
-# `google_drive` integration — usage
+Category: `object_storage`
 
-**Category:** `object_storage`  
-**Catalog factory:** ``create_google_drive_object_storage()``  
-**Env prefix:** ``INTERGRAX_GOOGLE_DRIVE_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.object_storage.google_drive.bundle import create_google_drive_object_storage
+- `create_google_drive_object_storage()` remains backward-compatible.
 
-backend = create_google_drive_object_storage()
-```
+## Contract-based integration
+
+- `GoogleDriveObjectStorageIntegration` derives from the category-specific contract.
+- Factory: `create_google_drive_object_storage_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

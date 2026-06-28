@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Falkordb (falkordb)
 
-# `falkordb` integration — usage
+Category: `graph_store`
 
-**Category:** `graph_store`  
-**Catalog factory:** ``create_falkordb_graph_store()``  
-**Env prefix:** ``INTERGRAX_FALKORDB_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.graph_store.falkordb.bundle import create_falkordb_graph_store
+- `create_falkordb_graph_store()` remains backward-compatible.
 
-backend = create_falkordb_graph_store()
-```
+## Contract-based integration
+
+- `FalkordbGraphStoreIntegration` derives from the category-specific contract.
+- Factory: `create_falkordb_graph_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

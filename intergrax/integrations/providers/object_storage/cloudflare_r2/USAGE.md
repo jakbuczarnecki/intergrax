@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Cloudflare R2 (cloudflare_r2)
 
-# `cloudflare_r2` integration — usage
+Category: `object_storage`
 
-**Category:** `object_storage`  
-**Catalog factory:** ``create_cloudflare_r2_object_storage()``  
-**Env prefix:** ``INTERGRAX_CLOUDFLARE_R2_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.object_storage.cloudflare_r2.bundle import create_cloudflare_r2_object_storage
+- `create_cloudflare_r2_object_storage()` remains backward-compatible.
 
-backend = create_cloudflare_r2_object_storage()
-```
+## Contract-based integration
+
+- `CloudflareR2ObjectStorageIntegration` derives from the category-specific contract.
+- Factory: `create_cloudflare_r2_object_storage_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

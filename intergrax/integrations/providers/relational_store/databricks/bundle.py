@@ -59,3 +59,35 @@ def create_databricks_relational_store(
         **config_overrides,
     )
     return bundle.relational_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.relational_store.databricks.integration import (
+    DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
+    DatabricksRelationalStoreIntegration,
+    DatabricksRelationalStoreIntegrationConfig,
+    DatabricksRelationalStoreClient,
+)
+
+
+def create_databricks_relational_store_integration(
+    *,
+    client: DatabricksRelationalStoreClient | None = None,
+    enabled: bool = False,
+) -> DatabricksRelationalStoreIntegration:
+    """
+    Build a contract-based Databricks relational store integration.
+
+    The legacy facade (create_databricks_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Databricks relational store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return DatabricksRelationalStoreIntegration.from_client(client, enabled=enabled)
+    return DatabricksRelationalStoreIntegration.for_provider(
+        provider_id=DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
+        display_name="Databricks",
+        config=DatabricksRelationalStoreIntegrationConfig(enabled=enabled),
+    )

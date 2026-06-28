@@ -1,14 +1,20 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Backblaze B2 (backblaze_b2)
 
-# `backblaze_b2` integration — usage
+Category: `object_storage`
 
-**Category:** `object_storage`  
-**Catalog factory:** ``create_backblaze_b2_object_storage()``  
-**Env prefix:** ``INTERGRAX_BACKBLAZE_B2_*``
+## Legacy facade
 
-```python
-from intergrax.integrations.providers.object_storage.backblaze_b2.bundle import create_backblaze_b2_object_storage
+- `create_backblaze_b2_object_storage()` remains backward-compatible.
 
-backend = create_backblaze_b2_object_storage()
-```
+## Contract-based integration
+
+- `BackblazeB2ObjectStorageIntegration` derives from the category-specific contract.
+- Factory: `create_backblaze_b2_object_storage_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
+
+## Registry
+
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

@@ -1,44 +1,20 @@
-# `neo4j` integration — usage
+# Neo4J (neo4j)
 
-**Category:** ``graph_store``  
-**Catalog factory:** ``create_neo4j_graph_store()``
+Category: `graph_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Legacy facade
 
-## Common pattern
+- `create_neo4j_graph_store()` remains backward-compatible.
 
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
+## Contract-based integration
 
-register_default_integrations()
-profile = IntegrationProfile(graph_store="neo4j")
-backend = profile.resolve(IntegrationCategory.GRAPH_STORE)
-```
+- `Neo4jGraphStoreIntegration` derives from the category-specific contract.
+- Factory: `create_neo4j_graph_store_integration()`.
+- Disabled by default (`enabled=False`).
+- No vendor SDK or network I/O in the contract adapter.
+- Injectable `{prefix}Client` required when `enabled=True`.
 
-Direct factory (preferred in application ``factory.py``):
+## Registry
 
-```python
-from intergrax.integrations.providers.graph_store.neo4j.bundle import create_neo4j_graph_store
-
-backend = create_neo4j_graph_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_NEO4J_URL`, `INTERGRAX_NEO4J_USER`, `INTERGRAX_NEO4J_PASSWORD`
-
-## Example
-
-```python
-from intergrax.integrations.providers.graph_store.neo4j.bundle import create_neo4j_graph_store
-
-graph = create_neo4j_graph_store(base_url="bolt://localhost:7687", user="neo4j", password="...")
-```
-
-## Notes
-
-Agent memory / tool graphs. Requires ``neo4j`` driver. New category ``graph_store``.
+- `register.py` remains legacy-compatible.
+- Registry v2 / contract registry wiring deferred.

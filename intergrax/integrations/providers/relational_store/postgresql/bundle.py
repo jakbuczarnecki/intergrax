@@ -59,3 +59,35 @@ def create_postgresql_relational_store(
         **config_overrides,
     )
     return bundle.relational_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.relational_store.postgresql.integration import (
+    POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID,
+    PostgresqlRelationalStoreIntegration,
+    PostgresqlRelationalStoreIntegrationConfig,
+    PostgresqlRelationalStoreClient,
+)
+
+
+def create_postgresql_relational_store_integration(
+    *,
+    client: PostgresqlRelationalStoreClient | None = None,
+    enabled: bool = False,
+) -> PostgresqlRelationalStoreIntegration:
+    """
+    Build a contract-based Postgresql relational store integration.
+
+    The legacy facade (create_postgresql_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Postgresql relational store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return PostgresqlRelationalStoreIntegration.from_client(client, enabled=enabled)
+    return PostgresqlRelationalStoreIntegration.for_provider(
+        provider_id=POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID,
+        display_name="Postgresql",
+        config=PostgresqlRelationalStoreIntegrationConfig(enabled=enabled),
+    )
