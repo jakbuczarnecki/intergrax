@@ -313,7 +313,7 @@ def print_list_runs(records: Sequence[Record], *, limit: int) -> None:
         workspace_ids = sorted({str(row.get("workspace_id") or "") for row in rows if row.get("workspace_id")})
         summary.append((latest, run_id, len(rows), latest_iso, tenant_ids, workspace_ids, event_counts))
 
-    summary.sort(reverse=True)
+    summary.sort(key=lambda item: (item[0], item[1]), reverse=True)
     if limit > 0:
         summary = summary[:limit]
 
