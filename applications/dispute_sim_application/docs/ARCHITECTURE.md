@@ -301,7 +301,7 @@ Detail: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
 ```bash
 uv run pytest agents/dispute_*/tests -q
-uv run pytest applications/dispute_sim_application/dispute_sim_application_tests -q
+uv run pytest applications/dispute_sim_application/tests -q
 ```
 
 After domain steps:

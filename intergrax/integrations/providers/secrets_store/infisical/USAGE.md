@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Infisical (infisical)
 
-# `infisical` integration — usage
+Category: `secrets_store`
 
-**Category:** `secrets_store`  
-**Catalog factory:** ``create_infisical_secrets_store()``  
-**Env prefix:** ``INTERGRAX_INFISICAL_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.secrets_store.infisical.bundle import create_infisical_secrets_store
-
-backend = create_infisical_secrets_store()
-```
+- **`InfisicalSecretsStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `InfisicalSecretsStoreIntegration`.
+- Contract factory: `create_infisical_secrets_store_integration()`.

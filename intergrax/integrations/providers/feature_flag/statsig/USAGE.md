@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Statsig (statsig)
 
-# `statsig` integration — usage
+Category: `feature_flag`
 
-**Category:** `feature_flag`  
-**Catalog factory:** ``create_statsig_feature_flag()``  
-**Env prefix:** ``INTERGRAX_STATSIG_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.feature_flag.statsig.bundle import create_statsig_feature_flag
-
-backend = create_statsig_feature_flag()
-```
+- **`StatsigFeatureFlagIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `StatsigFeatureFlagIntegration`.
+- Contract factory: `create_statsig_feature_flag_integration()`.

@@ -19,11 +19,24 @@ SCAN_ROOTS = (
 
 GRANDFATHER: frozenset[str] = frozenset(
     {
+        # --- utility bridge modules (safe getattr) ---
         "intergrax/utils/attribute_access.py",
         "intergrax/utils/lazy_export.py",
+        # --- migration / codemod tools ---
         "scripts/codemods/codemod_remove_getattr.py",
         "scripts/codemods/codemod_remove_getattr_text.py",
         "scripts/codemods/patch_lazy_bundle_exports.py",
+        "scripts/maintenance/add_provider_protocol_delegates.py",
+        "scripts/maintenance/cutover_provider_runtime_integrations.py",
+        "scripts/maintenance/fix_runtime_delegation.py",
+        # --- test files (intentional module introspection) ---
+        "tests/unit/integrations/providers/test_provider_category_contract_migration.py",
+        "tests/unit/integrations/providers/test_provider_legacy_delegation_removed.py",
+        "tests/unit/integrations/providers/test_provider_runtime_cutover.py",
+        "tests/unit/integrations/providers/observability_backend/test_observability_legacy_delegation_removed.py",
+        "tests/unit/integrations/providers/observability_backend/test_observability_provider_contract_migration.py",
+        "tests/unit/runtime/integrations/test_provider_category_contracts.py",
+        # --- AST audit tool ---
         "tools/ast_audit.py",
     }
 )

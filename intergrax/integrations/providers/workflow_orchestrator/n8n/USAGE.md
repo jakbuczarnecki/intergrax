@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# N8N (n8n)
 
-# `n8n` integration — usage
+Category: `workflow_orchestrator`
 
-**Category:** `workflow_orchestrator`  
-**Catalog factory:** ``create_n8n_workflow_orchestrator()``  
-**Env prefix:** ``INTERGRAX_N8N_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.workflow_orchestrator.n8n.bundle import create_n8n_workflow_orchestrator
-
-backend = create_n8n_workflow_orchestrator()
-```
+- **`N8nWorkflowOrchestratorIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `N8nWorkflowOrchestratorIntegration`.
+- Contract factory: `create_n8n_workflow_orchestrator_integration()`.

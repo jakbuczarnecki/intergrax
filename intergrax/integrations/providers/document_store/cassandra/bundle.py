@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.integrations.providers.document_store.cassandra.adapter import CassandraDocumentStore
+from intergrax.integrations.providers.document_store.cassandra.adapter import _CassandraDocumentStore
 from intergrax.integrations.providers.document_store.cassandra.client import CassandraCqlClient
 from intergrax.integrations.providers.document_store.cassandra.config import CassandraIntegrationConfig
 from intergrax.integrations.providers.document_store.cassandra.opens import open_cassandra_document_store
@@ -24,7 +24,7 @@ from intergrax.integrations.providers.document_store.cassandra.opens import open
 @dataclass(frozen=True)
 class CassandraIntegrationBundle:
     config: CassandraIntegrationConfig
-    document_store: CassandraDocumentStore
+    document_store: CassandraDocumentStoreIntegration
     cql_client: CassandraCqlClient
 
 
@@ -46,11 +46,11 @@ def create_cassandra_integration(
         session=session,
         session_factory=session_factory,
     )
-    assert isinstance(store, CassandraDocumentStore)
+    assert isinstance(store, CassandraDocumentStoreIntegration)
     return CassandraIntegrationBundle(
         config=config,
         document_store=store,
-        cql_client=store.cql_client,
+        cql_client=store._require_client().cql_client,
     )
 
 
@@ -60,7 +60,7 @@ def create_cassandra_document_store(
     session: Optional[object] = None,
     session_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
-) -> CassandraDocumentStore:
+) -> CassandraDocumentStoreIntegration:
     """Catalog factory for ``"cassandra"`` / ``DOCUMENT_STORE``."""
     return create_cassandra_integration(
         document_store=document_store,
@@ -68,3 +68,35 @@ def create_cassandra_document_store(
         session_factory=session_factory,
         **config_overrides,
     ).document_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.document_store.cassandra.integration import (
+    CASSANDRA_DOCUMENT_STORE_PROVIDER_ID,
+    CassandraDocumentStoreIntegration,
+    CassandraDocumentStoreIntegrationConfig,
+    CassandraDocumentStoreClient,
+)
+
+
+def create_cassandra_document_store_integration(
+    *,
+    client: CassandraDocumentStoreIntegrationClient | None = None,
+    enabled: bool = False,
+) -> CassandraDocumentStoreIntegration:
+    """
+    Build a contract-based Cassandra document store integration.
+
+    Compatibility shim — constructs Integration via from_store (create_cassandra_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Cassandra document store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return CassandraDocumentStoreIntegration.from_client(client, enabled=enabled)
+    return CassandraDocumentStoreIntegration.for_provider(
+        provider_id=CASSANDRA_DOCUMENT_STORE_PROVIDER_ID,
+        display_name="Cassandra",
+        config=CassandraDocumentStoreIntegrationConfig(enabled=enabled),
+    )

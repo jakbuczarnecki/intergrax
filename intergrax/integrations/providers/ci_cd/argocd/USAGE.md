@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Argocd (argocd)
 
-# `argocd` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_argocd_ci_cd()``  
-**Env prefix:** ``INTERGRAX_ARGOCD_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.argocd.bundle import create_argocd_ci_cd
-
-backend = create_argocd_ci_cd()
-```
+- **`ArgocdCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ArgocdCiCdIntegration`.
+- Contract factory: `create_argocd_ci_cd_integration()`.

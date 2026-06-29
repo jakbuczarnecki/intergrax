@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Servicenow (servicenow)
 
-# `servicenow` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_servicenow_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_SERVICENOW_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.issue_tracker.servicenow.bundle import create_servicenow_issue_tracker
-
-backend = create_servicenow_issue_tracker()
-```
+- **`ServicenowIssueTrackerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ServicenowIssueTrackerIntegration`.
+- Contract factory: `create_servicenow_issue_tracker_integration()`.

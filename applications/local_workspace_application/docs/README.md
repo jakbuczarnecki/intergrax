@@ -15,6 +15,7 @@ Only [`../README.md`](../README.md) lives at the application root. All other LKW
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Implementation wave plan |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Build/run/deploy instructions |
 | [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md) | Current live verification status |
+| [`../README.md#developer-first-run`](../README.md#developer-first-run) | Developer first-run path (in README) |
 
 ## Local history and decisions
 

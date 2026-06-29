@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.object_storage import ObjectStorage
-from intergrax.integrations.providers.object_storage.s3.adapter import S3ObjectStorage
+from intergrax.integrations.providers.object_storage.s3.adapter import _S3ObjectStorage
 from intergrax.integrations.providers.object_storage.s3.client import S3BucketClient
 from intergrax.integrations.providers.object_storage.s3.config import S3IntegrationConfig
 from intergrax.integrations.providers.object_storage.s3.opens import open_s3_object_storage
@@ -24,7 +24,7 @@ from intergrax.integrations.providers.object_storage.s3.opens import open_s3_obj
 @dataclass(frozen=True)
 class S3IntegrationBundle:
     config: S3IntegrationConfig
-    object_storage: S3ObjectStorage
+    object_storage: S3ObjectStorageIntegration
     bucket_client: S3BucketClient
 
 
@@ -50,11 +50,11 @@ def create_s3_integration(
         session_factory=session_factory,
         s3_client_factory=s3_client_factory,
     )
-    assert isinstance(store, S3ObjectStorage)
+    assert isinstance(store, S3ObjectStorageIntegration)
     return S3IntegrationBundle(
         config=config,
         object_storage=store,
-        bucket_client=store.bucket_client,
+        bucket_client=store._require_client().bucket_client,
     )
 
 
@@ -66,7 +66,7 @@ def create_s3_object_storage(
     session_factory: Optional[Callable[[], object]] = None,
     s3_client_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
-) -> S3ObjectStorage:
+) -> S3ObjectStorageIntegration:
     """Catalog factory for ``"s3"`` / ``OBJECT_STORAGE``."""
     return create_s3_integration(
         object_storage=object_storage,
@@ -76,3 +76,35 @@ def create_s3_object_storage(
         s3_client_factory=s3_client_factory,
         **config_overrides,
     ).object_storage
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.object_storage.s3.integration import (
+    S3_OBJECT_STORAGE_PROVIDER_ID,
+    S3ObjectStorageIntegration,
+    S3ObjectStorageIntegrationConfig,
+    S3ObjectStorageClient,
+)
+
+
+def create_s3_object_storage_integration(
+    *,
+    client: S3ObjectStorageIntegrationClient | None = None,
+    enabled: bool = False,
+) -> S3ObjectStorageIntegration:
+    """
+    Build a contract-based S3 object storage integration.
+
+    Compatibility shim — constructs Integration via from_store (create_s3_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "S3 object storage integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return S3ObjectStorageIntegration.from_client(client, enabled=enabled)
+    return S3ObjectStorageIntegration.for_provider(
+        provider_id=S3_OBJECT_STORAGE_PROVIDER_ID,
+        display_name="S3",
+        config=S3ObjectStorageIntegrationConfig(enabled=enabled),
+    )

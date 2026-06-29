@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.mysql.adapter import MySQLRelationalStore
+from intergrax.integrations.providers.relational_store.mysql.integration import MysqlRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.mysql.bundle import (
     MySQLIntegrationBundle,
     create_mysql_integration,
@@ -41,7 +41,7 @@ _SKIP_DIR_NAMES = {".venv", "build", "__pycache__", "node_modules"}
 _FORBIDDEN_OUTSIDE_PROVIDER = (
     "import pymysql",
     "from pymysql",
-    "MySQLRelationalStore(",
+    "MysqlRelationalStoreIntegration(",
     "integrations.providers.mysql.adapter",
     "integrations.providers.mysql.opens",
 )
@@ -207,7 +207,7 @@ def test_mysql_opens_selects_tenant_database() -> None:
         dsn="mysql://localhost/test",
         tenant_database="tenant_a",
     )
-    assert isinstance(store, MySQLRelationalStore)
+    assert isinstance(store, MysqlRelationalStoreIntegration)
     assert conn._cursor.executed == [("USE `tenant_a`", ())]
     assert conn.committed == 1
 
@@ -229,7 +229,7 @@ def test_mysql_opens_uses_pymysql_when_no_connection_factory() -> None:
 
         store = open_mysql_relational_store(config)
 
-    assert isinstance(store, MySQLRelationalStore)
+    assert isinstance(store, MysqlRelationalStoreIntegration)
     mock_pymysql.connect.assert_called_once()
     connect_kwargs = mock_pymysql.connect.call_args.kwargs
     assert connect_kwargs["cursorclass"] is dict_cursor
@@ -258,7 +258,7 @@ def test_create_mysql_integration_bundle() -> None:
     )
 
     assert isinstance(bundle, MySQLIntegrationBundle)
-    assert isinstance(bundle.relational_store, MySQLRelationalStore)
+    assert isinstance(bundle.relational_store, MysqlRelationalStoreIntegration)
     assert bundle.config.dsn == "mysql://localhost/test"
 
 
@@ -274,7 +274,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_relational_store(store)
-    assert isinstance(store, MySQLRelationalStore)
+    assert isinstance(store, MysqlRelationalStoreIntegration)
 
 
 def test_register_default_integrations_includes_mysql() -> None:
@@ -288,7 +288,7 @@ def test_register_default_integrations_includes_mysql() -> None:
         config={"dsn": "mysql://localhost/test", "connection_factory": factory},
     )
 
-    assert isinstance(store, MySQLRelationalStore)
+    assert isinstance(store, MysqlRelationalStoreIntegration)
 
 
 def test_create_mysql_relational_store_catalog_factory() -> None:
@@ -298,4 +298,5 @@ def test_create_mysql_relational_store_catalog_factory() -> None:
         dsn="mysql://localhost/test",
     )
     assert_relational_store(store)
-    assert store.config.dsn == "mysql://localhost/test"
+    assert store.client is not None
+    assert store.client.config.dsn == "mysql://localhost/test"

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Snyk (snyk)
 
-# `snyk` integration — usage
+Category: `security_scanner`
 
-**Category:** `security_scanner`  
-**Catalog factory:** ``create_snyk_security_scanner()``  
-**Env prefix:** ``INTERGRAX_SNYK_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.security_scanner.snyk.bundle import create_snyk_security_scanner
-
-backend = create_snyk_security_scanner()
-```
+- **`SnykSecurityScannerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SnykSecurityScannerIntegration`.
+- Contract factory: `create_snyk_security_scanner_integration()`.

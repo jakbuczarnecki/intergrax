@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Motherduck (motherduck)
 
-# `motherduck` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_motherduck_relational_store()``  
-**Env prefix:** ``INTERGRAX_MOTHERDUCK_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.relational_store.motherduck.bundle import create_motherduck_relational_store
-
-backend = create_motherduck_relational_store()
-```
+- **`MotherduckRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `MotherduckRelationalStoreIntegration`.
+- Contract factory: `create_motherduck_relational_store_integration()`.

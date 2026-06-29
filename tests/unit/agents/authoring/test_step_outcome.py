@@ -9,6 +9,7 @@ from intergrax.contracts.agent_run_enums import (
     StepNextAction,
     TerminalReason,
 )
+from local_indexer.diagnostics import IndexSummaryDiagnostic
 
 
 @pytest.mark.unit
@@ -55,3 +56,19 @@ def test_step_outcome_replan_sets_replanned() -> None:
     assert outcome.is_terminal is True
     assert outcome.terminal_reason == TerminalReason.REPLANNED
     assert outcome.next_action == StepNextAction.REPLAN
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_step_outcome_complete_merges_diagnostic_payloads() -> None:
+    payload = IndexSummaryDiagnostic(
+        accepted_count=1,
+        rejected_count=0,
+        ingested_count=1,
+        chunk_count=1,
+        source_count=1,
+    )
+    outcome = StepOutcome.complete({"answer": "ok"}, diagnostic_payloads=[payload])
+    assert outcome.diagnostics is not None
+    assert "lkw.index_summary.v1" in outcome.diagnostics
+    assert outcome.diagnostics["lkw.index_summary.v1"]["accepted_count"] == 1

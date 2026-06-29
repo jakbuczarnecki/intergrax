@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
+from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import create_interaction_adapter, resolve_interaction_settings
 from intergrax.runtime.interactions.metadata_keys import INTERACTION_CHANNEL_KEY
 from intergrax.runtime.interactions.parsers.teams_activity import (
@@ -61,7 +61,7 @@ def test_parse_teams_activity_text():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_teams_activity_adapter_to_task():
-    adapter = TeamsInteractionAdapter()
+    adapter = _TeamsInteractionAdapter()
     payload = _teams_activity_payload(text="<at>Intergrax</at> echo.basic hello teams")
     assert adapter.can_handle(payload)
     task = adapter.to_task(payload, tenant_id="fallback")
@@ -77,7 +77,7 @@ def test_teams_activity_adapter_to_task():
 @pytest.mark.gate
 def test_create_interaction_adapter_teams_surface():
     adapter = create_interaction_adapter(resolve_interaction_settings(surface="teams"))
-    assert isinstance(adapter, TeamsInteractionAdapter)
+    assert isinstance(adapter, _TeamsInteractionAdapter)
 
 
 @pytest.mark.unit

@@ -510,3 +510,111 @@ async def test_kernel_strict_product_ignores_permissive_missing_policy_flag() ->
     assert record.error_code == AgentRunErrorCode.POLICY_DENIED
     assert record.policy_pre is not None
     assert record.policy_pre.policy_rule_id == "kernel.missing_policy_engine"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_harvests_uaep_catalog_tool_calls() -> None:
+    from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
+    from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_search",
+    )
+    exec_ctx.metadata["_pending_tool_call_records"] = [
+        ToolCallRecord(
+            call_id="tool-abc",
+            tool_id="rag.retrieve",
+            status=GatewayCallStatus.SUCCEEDED,
+            latency_ms=12,
+        )
+    ]
+    exec_ctx.metadata["_pending_rag_call_records"] = [
+        RagCallRecord(
+            call_id="tool-abc",
+            collection_id="ws-1",
+            status=GatewayCallStatus.SUCCEEDED,
+            latency_ms=12,
+            hit_count=2,
+        )
+    ]
+    step_ctx = AgentStepContext(
+        step_index=0,
+        metadata={"uaep_exec_ctx": exec_ctx},
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="local_search",
+        run_id="run-1",
+        allow_permissive_missing_policy=True,
+    )
+    outcome = StepOutcome.continue_with({"phase": "search"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.step_record is not None
+    assert len(record.step_record.tool_calls) == 1
+    assert record.step_record.tool_calls[0].tool_id == "rag.retrieve"
+    assert len(record.step_record.rag_calls) == 1
+    assert record.step_record.rag_calls[0].collection_id == "ws-1"
+    assert record.step_record.rag_calls[0].hit_count == 2
+    assert kernel_ctx.run_trace.total_tool_calls == 1
+    assert kernel_ctx.run_trace.total_rag_calls == 1
+    assert exec_ctx.drain_pending_tool_calls() == []
+    assert exec_ctx.drain_pending_rag_calls() == []
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_harvests_rag_calls_from_invoke_tool_flow() -> None:
+    from intergrax.contracts.agent_run_trace import GatewayCallStatus
+    from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+    from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+
+    class _Gateway:
+        async def invoke(self, request: ToolRequest) -> ToolResponse:
+            return ToolResponse(
+                request_id=request.request_id,
+                status=ToolResponseStatus.SUCCESS,
+                output={
+                    "used": True,
+                    "chunks": [{"id": "c1", "text": "x", "score": 0.5, "metadata": {}}],
+                },
+                duration_ms=9,
+            )
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_search",
+        tool_gateway=_Gateway(),
+    )
+    await exec_ctx.invoke_tool(
+        ToolRequest(
+            tool_name="rag.retrieve",
+            agent_id="local_search",
+            step_id="search",
+            input={"query": "x", "workspace_id": "ws-trace"},
+        )
+    )
+    step_ctx = AgentStepContext(
+        step_index=0,
+        metadata={"uaep_exec_ctx": exec_ctx},
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="local_search",
+        run_id="run-1",
+        allow_permissive_missing_policy=True,
+    )
+    record = await HarnessKernel.execute_step(
+        StepOutcome.continue_with({"phase": "search"}),
+        step_ctx,
+        kernel_ctx,
+    )
+    assert record.step_record is not None
+    assert len(record.step_record.tool_calls) == 1
+    assert len(record.step_record.rag_calls) == 1
+    assert record.step_record.rag_calls[0].status == GatewayCallStatus.SUCCEEDED
+    assert record.step_record.rag_calls[0].collection_id == "ws-trace"
+    assert record.step_record.rag_calls[0].hit_count == 1
+    assert kernel_ctx.run_trace.total_tool_calls == 1
+    assert kernel_ctx.run_trace.total_rag_calls == 1

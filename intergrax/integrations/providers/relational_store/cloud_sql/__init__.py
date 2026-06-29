@@ -1,13 +1,60 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-__all__ = ["create_cloud_sql_relational_store", "register_cloud_sql_integration"]
+from intergrax.utils.lazy_export import export_from_bundle
+
+__all__ = [
+    "CLOUD_SQL_RELATIONAL_STORE_PROVIDER_ID",
+    "CloudSqlRelationalStoreIntegration",
+    "CloudSqlRelationalStoreIntegrationConfig",
+    "CloudSqlRelationalStoreClient",
+    "create_cloud_sql_relational_store",
+    "create_cloud_sql_relational_store_integration",
+    "register_cloud_sql_integration",
+]
+
+_BUNDLE_EXPORTS = frozenset(
+    {
+        "create_cloud_sql_relational_store",
+        "create_cloud_sql_relational_store_integration",
+    }
+)
+
+_INTEGRATION_EXPORTS = frozenset(
+    {
+        "CLOUD_SQL_RELATIONAL_STORE_PROVIDER_ID",
+        "CloudSqlRelationalStoreIntegration",
+        "CloudSqlRelationalStoreIntegrationConfig",
+        "CloudSqlRelationalStoreClient",
+    }
+)
+
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "CLOUD_SQL_RELATIONAL_STORE_PROVIDER_ID",
+        "CloudSqlRelationalStoreIntegration",
+        "CloudSqlRelationalStoreIntegrationConfig",
+        "CloudSqlRelationalStoreClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_cloud_sql_integration":
         from intergrax.integrations.providers.relational_store.cloud_sql.register import register_cloud_sql_integration
+
         return register_cloud_sql_integration
-    if name == "create_cloud_sql_relational_store":
-        from intergrax.integrations.providers.relational_store.cloud_sql.bundle import create_cloud_sql_relational_store
-        return create_cloud_sql_relational_store
-    raise AttributeError(name)
+    if name in _BUNDLE_EXPORTS:
+        from intergrax.integrations.providers.relational_store.cloud_sql import bundle as _bundle
+
+        return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.relational_store.cloud_sql import integration as _integration
+
+        return export_from_bundle(_integration, name, _INTEGRATION_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.relational_store.cloud_sql import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

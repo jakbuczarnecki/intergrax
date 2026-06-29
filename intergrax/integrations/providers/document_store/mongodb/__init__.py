@@ -22,6 +22,7 @@ __all__ = [
     "create_mongodb_integration",
     "register_mongodb_integration",
     "resolve_mongodb_config",
+    "create_mongodb_document_store_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -32,9 +33,19 @@ _LAZY_EXPORTS = frozenset(
         "create_mongodb_document_store",
         "register_mongodb_integration",
         "resolve_mongodb_config",
+        "create_mongodb_document_store_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "MONGODB_DOCUMENT_STORE_PROVIDER_ID",
+        "MongodbDocumentStoreIntegration",
+        "MongodbDocumentStoreIntegrationConfig",
+        "MongodbDocumentStoreClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_mongodb_integration":
@@ -46,7 +57,12 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "MongoDBDocumentStore":
-        from intergrax.integrations.providers.document_store.mongodb.adapter import MongoDBDocumentStore
+        from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
 
         return MongoDBDocumentStore
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.document_store.mongodb import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

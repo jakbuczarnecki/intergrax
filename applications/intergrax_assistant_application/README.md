@@ -7,7 +7,7 @@ Harness-native conversational lab — hub agent, swappable LLM (local Ollama def
 ## Quick start
 
 ```bash
-uv run pytest applications/intergrax_assistant_application/intergrax_assistant_application_tests -q
+uv run pytest applications/intergrax_assistant_application/tests -q
 cp applications/intergrax_assistant_application/.env.example applications/intergrax_assistant_application/.env
 uv run uvicorn intergrax_assistant_application.host.main:app --host 127.0.0.1 --port 8096
 ```

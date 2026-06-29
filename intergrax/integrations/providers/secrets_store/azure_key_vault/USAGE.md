@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Azure Key Vault (azure_key_vault)
 
-# `azure_key_vault` integration — usage
+Category: `secrets_store`
 
-**Category:** `secrets_store`  
-**Catalog factory:** ``create_azure_key_vault_secrets_store()``  
-**Env prefix:** ``INTERGRAX_AZURE_KEY_VAULT_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import create_azure_key_vault_secrets_store
-
-backend = create_azure_key_vault_secrets_store()
-```
+- **`AzureKeyVaultSecretsStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `AzureKeyVaultSecretsStoreIntegration`.
+- Contract factory: `create_azure_key_vault_secrets_store_integration()`.

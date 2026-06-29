@@ -26,7 +26,10 @@ from intergrax.contracts.agent_run_trace import (
     AgentStepStatus,
     PolicyCheckPhase,
     PolicyVerdictRecord,
+    RagCallRecord,
+    ToolCallRecord,
 )
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.agents.acp_token_metering_bridge import apply_llm_metering_after_step
 from intergrax.contracts.acp_budget_enforcement import (
     evaluate_hard_budget_violation,
@@ -562,6 +565,13 @@ class HarnessKernel:
         if step_ctx.llm_router is not None:
             llm_calls = step_ctx.llm_router.drain_pending_calls()
 
+        tool_calls: list[ToolCallRecord] = []
+        rag_calls: list[RagCallRecord] = []
+        exec_ctx_raw = step_ctx.metadata.get("uaep_exec_ctx")
+        if isinstance(exec_ctx_raw, RuntimeExecutionContext):
+            tool_calls = exec_ctx_raw.drain_pending_tool_calls()
+            rag_calls = exec_ctx_raw.drain_pending_rag_calls()
+
         merged_diagnostics = dict(outcome.diagnostics or {})
         if diagnostics:
             merged_diagnostics.update(diagnostics)
@@ -574,6 +584,8 @@ class HarnessKernel:
             next_action=resolved_action,
             terminal_reason=resolved_terminal,
             state_version=state_version,
+            tool_calls=tool_calls,
+            rag_calls=rag_calls,
             llm_calls=llm_calls,
             policy_verdicts=verdicts,
             diagnostics=merged_diagnostics,

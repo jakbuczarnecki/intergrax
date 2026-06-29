@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Redpanda (redpanda)
 
-# `redpanda` integration — usage
+Category: `message_bus`
 
-**Category:** `message_bus`  
-**Catalog factory:** ``create_redpanda_message_bus()``  
-**Env prefix:** ``INTERGRAX_REDPANDA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.message_bus.redpanda.bundle import create_redpanda_message_bus
-
-backend = create_redpanda_message_bus()
-```
+- **`RedpandaMessageBusIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `RedpandaMessageBusIntegration`.
+- Contract factory: `create_redpanda_message_bus_integration()`.

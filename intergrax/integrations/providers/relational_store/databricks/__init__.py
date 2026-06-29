@@ -31,6 +31,7 @@ __all__ = [
     "create_databricks_relational_store",
     "register_databricks_integration",
     "resolve_databricks_config",
+    "create_databricks_relational_store_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -41,9 +42,19 @@ _LAZY_EXPORTS = frozenset(
         "create_databricks_relational_store",
         "register_databricks_integration",
         "resolve_databricks_config",
+        "create_databricks_relational_store_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "DATABRICKS_RELATIONAL_STORE_PROVIDER_ID",
+        "DatabricksRelationalStoreIntegration",
+        "DatabricksRelationalStoreIntegrationConfig",
+        "DatabricksRelationalStoreClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_databricks_integration":
@@ -55,7 +66,12 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "DatabricksRelationalStore":
-        from intergrax.integrations.providers.relational_store.databricks.adapter import DatabricksRelationalStore
+        from intergrax.integrations.providers.relational_store.databricks.adapter import _DatabricksRelationalStore
 
         return DatabricksRelationalStore
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.relational_store.databricks import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

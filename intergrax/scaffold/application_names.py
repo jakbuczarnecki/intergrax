@@ -94,7 +94,7 @@ class ScaffoldApplicationNames:
             env_prefix=prefix,
             route_prefix=route,
             port=port,
-            tests_pkg=f"{pkg}_tests",
+            tests_pkg="tests",
             builders_const=agent_builders_const(short),
             docker_image=docker_image_tag(short),
             factory_fn=f"create_{short}_application",

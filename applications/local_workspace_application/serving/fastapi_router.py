@@ -10,6 +10,9 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from local_workspace_application.serving.run_artifact_metadata import ensure_run_artifact_bundle_metadata
+from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
+from local_workspace_application.serving.runtime_event_metadata import attach_runtime_event_summary_metadata
 from local_workspace_application.serving.schemas import LocalWorkspaceRunRequestV1, LocalWorkspaceRunResponseV1
 
 
@@ -17,6 +20,7 @@ from local_workspace_application.serving.schemas import LocalWorkspaceRunRequest
 class LocalWorkspaceRunService:
     task_runner: UnifiedTaskRunner
     default_agent_id: str
+    nexus_loop: NexusLoop | None = None
 
     @classmethod
     def from_nexus_loop(
@@ -24,10 +28,12 @@ class LocalWorkspaceRunService:
         nexus_loop: NexusLoop,
         *,
         default_agent_id: str,
+        task_runner: UnifiedTaskRunner | None = None,
     ) -> LocalWorkspaceRunService:
         return cls(
-            task_runner=UnifiedTaskRunner(nexus_loop),
+            task_runner=task_runner or UnifiedTaskRunner(nexus_loop),
             default_agent_id=default_agent_id,
+            nexus_loop=nexus_loop,
         )
 
     async def run_task(self, body: LocalWorkspaceRunRequestV1) -> LocalWorkspaceRunResponseV1:
@@ -42,13 +48,26 @@ class LocalWorkspaceRunService:
             metadata=dict(body.metadata),
         )
         result = await self.task_runner.run_task(task)
+        metadata = dict(result.metadata)
+        ensure_run_artifact_bundle_metadata(metadata, task_result=result)
+        attach_lkw_evidence_metadata(
+            metadata,
+            task_result=result,
+            capability=body.capability or "local.workspace.search",
+        )
+        attach_runtime_event_summary_metadata(
+            metadata,
+            task_result=result,
+            nexus_loop=self.nexus_loop,
+            tenant_id=body.tenant_id or "default",
+        )
         return LocalWorkspaceRunResponseV1(
             task_id=result.task_id,
             run_id=result.run_id,
             state=result.state.value,
             answer=result.answer,
             agent_id=result.agent_id,
-            metadata=dict(result.metadata),
+            metadata=metadata,
         )
 
 
@@ -58,10 +77,12 @@ def mount_local_workspace_routes(
     nexus_loop: NexusLoop,
     prefix: str = "/v1/local_workspace",
     default_agent_id: str = "local_search",
+    task_runner: UnifiedTaskRunner | None = None,
 ) -> LocalWorkspaceRunService:
     service = LocalWorkspaceRunService.from_nexus_loop(
         nexus_loop,
         default_agent_id=default_agent_id,
+        task_runner=task_runner,
     )
     router = APIRouter(prefix=prefix, tags=["local_workspace"])
 

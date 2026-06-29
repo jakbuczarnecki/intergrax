@@ -22,7 +22,7 @@ def test_poc_template_application_tree_exists() -> None:
     assert (_POC_ROOT / "docker" / "build-docker.sh").is_file()
     assert (_POC_ROOT / "docker" / "build-docker.bat").is_file()
     assert (_POC_ROOT / "docs" / "BUILD_AND_DEPLOY.md").is_file()
-    assert (_POC_ROOT / "poc_template_application_tests" / "host").is_dir()
+    assert (_POC_ROOT / "tests" / "host").is_dir()
 
 
 def test_poc_template_application_smoke() -> None:

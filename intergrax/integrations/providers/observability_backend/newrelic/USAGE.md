@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Newrelic (newrelic)
 
-# `newrelic` integration — usage
+Category: `observability_backend`
 
-**Category:** `observability_backend`  
-**Catalog factory:** ``create_newrelic_observability_backend()``  
-**Env prefix:** ``INTERGRAX_NEWRELIC_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.observability_backend.newrelic.bundle import create_newrelic_observability_backend
-
-backend = create_newrelic_observability_backend()
-```
+- **`NewRelicObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `NewRelicObservabilityIntegration`.
+- Contract factory: `create_newrelic_observability_backend_integration()`.

@@ -11,7 +11,7 @@ from intergrax.integrations.providers.rerank_provider.cohere_rerank.config impor
 from intergrax.integrations.providers.rerank_provider.cohere_rerank.opens import cohere_rerank_scores
 
 
-class CohereRerankProvider:
+class _CohereRerankProvider:
     def __init__(self, config: CohereRerankIntegrationConfig) -> None:
         self._config = config
 

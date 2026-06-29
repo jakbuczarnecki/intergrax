@@ -13,7 +13,8 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
-from intergrax.integrations.providers.cloud_platform.aws.adapter import AwsCloudPlatform
+from intergrax.integrations.providers.cloud_platform.aws.adapter import _AwsCloudPlatform
+from intergrax.integrations.providers.cloud_platform.aws.integration import AwsCloudPlatformIntegration
 from intergrax.integrations.providers.cloud_platform.aws.config import AwsIntegrationConfig
 
 
@@ -75,4 +76,4 @@ def open_aws_cloud_platform(
     if implementation is not None:
         return implementation
     boto_session = session or open_aws_boto_session(config, session_factory=session_factory)
-    return AwsCloudPlatform(config, boto_session)
+    return AwsCloudPlatformIntegration.from_client(_AwsCloudPlatform(config, boto_session))

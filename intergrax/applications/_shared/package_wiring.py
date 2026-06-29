@@ -303,12 +303,4 @@ def _validate_graph_spec_capabilities(
     except ValueError as exc:
         violations.append(str(exc))
 
-    roster_caps: set[str] = set()
-    for binding in manifest.enabled_agents():
-        roster_caps.update(binding.capabilities)
-
-    for capability in graph.trigger_capabilities:
-        if capability not in roster_caps:
-            violations.append(f"graph trigger capability {capability!r} not on roster")
-
     return violations

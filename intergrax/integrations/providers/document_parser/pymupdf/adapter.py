@@ -10,7 +10,7 @@ from intergrax.integrations.providers.document_parser.pymupdf.config import Pymu
 from intergrax.integrations.providers.document_parser.pymupdf.opens import parse_pymupdf_file
 
 
-class PymupdfDocumentParser:
+class _PymupdfDocumentParser:
     def __init__(self, config: PymupdfIntegrationConfig) -> None:
         self._config = config
 

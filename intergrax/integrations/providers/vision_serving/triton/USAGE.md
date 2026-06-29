@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Triton (triton)
 
-# `triton` integration — usage
+Category: `vision_serving`
 
-**Category:** `vision_serving`  
-**Catalog factory:** ``create_triton_vision_serving()``  
-**Env prefix:** ``INTERGRAX_TRITON_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.vision_serving.triton.bundle import create_triton_vision_serving
-
-backend = create_triton_vision_serving()
-```
+- **`TritonVisionServingIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TritonVisionServingIntegration`.
+- Contract factory: `create_triton_vision_serving_integration()`.

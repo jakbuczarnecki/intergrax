@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Azure Pipelines (azure_pipelines)
 
-# `azure_pipelines` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_azure_pipelines_ci_cd()``  
-**Env prefix:** ``INTERGRAX_AZURE_PIPELINES_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.azure_pipelines.bundle import create_azure_pipelines_ci_cd
-
-backend = create_azure_pipelines_ci_cd()
-```
+- **`AzurePipelinesCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `AzurePipelinesCiCdIntegration`.
+- Contract factory: `create_azure_pipelines_ci_cd_integration()`.

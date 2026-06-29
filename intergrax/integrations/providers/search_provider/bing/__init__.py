@@ -27,6 +27,7 @@ __all__ = [
     "create_bing_search_provider",
     "register_bing_integration",
     "resolve_bing_config",
+    "create_bing_search_provider_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -36,9 +37,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_bing_integration",
         "create_bing_search_provider",
         "resolve_bing_config",
+        "create_bing_search_provider_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "BING_SEARCH_PROVIDER_PROVIDER_ID",
+        "BingSearchProviderIntegration",
+        "BingSearchProviderIntegrationConfig",
+        "BingSearchProviderClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_bing_integration":
@@ -46,11 +57,16 @@ def __getattr__(name: str):
 
         return register_bing_integration
     if name == "BingSearchProvider":
-        from intergrax.integrations.providers.search_provider.bing.adapter import BingSearchProvider
+        from intergrax.integrations.providers.search_provider.bing.adapter import _BingSearchProvider
 
         return BingSearchProvider
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.search_provider.bing import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.search_provider.bing import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -33,7 +33,7 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 ## 2. Verification
 
 ```bash
-uv run pytest applications/poc_template_application/poc_template_application_tests -q
+uv run pytest applications/poc_template_application/tests -q
 uv run pytest tests/unit/applications/test_scaffold_application.py -q
 ```
 

@@ -94,7 +94,7 @@ Mounted on the same process (Phase L.3 + infra paydown):
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/lab_application/lab_application_tests -q
+        uv run pytest applications/lab_application/tests -q
         uv run pytest tests/unit/applications/ -q -k "lab" --ignore-glob="*" 2>/dev/null || true
         ```
 

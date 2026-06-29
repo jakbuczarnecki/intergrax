@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Huggingface Hub (huggingface_hub)
 
-# `huggingface_hub` integration — usage
+Category: `object_storage`
 
-**Category:** `object_storage`  
-**Catalog factory:** ``create_huggingface_hub_object_storage()``  
-**Env prefix:** ``INTERGRAX_HUGGINGFACE_HUB_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.object_storage.huggingface_hub.bundle import create_huggingface_hub_object_storage
-
-backend = create_huggingface_hub_object_storage()
-```
+- **`HuggingfaceHubObjectStorageIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `HuggingfaceHubObjectStorageIntegration`.
+- Contract factory: `create_huggingface_hub_object_storage_integration()`.

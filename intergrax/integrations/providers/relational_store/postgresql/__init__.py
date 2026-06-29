@@ -37,6 +37,7 @@ __all__ = [
     "create_postgresql_relational_store",
     "register_postgresql_integration",
     "resolve_postgresql_config",
+    "create_postgresql_relational_store_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -47,9 +48,19 @@ _LAZY_EXPORTS = frozenset(
         "create_postgresql_relational_store",
         "register_postgresql_integration",
         "resolve_postgresql_config",
+        "create_postgresql_relational_store_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "POSTGRESQL_RELATIONAL_STORE_PROVIDER_ID",
+        "PostgresqlRelationalStoreIntegration",
+        "PostgresqlRelationalStoreIntegrationConfig",
+        "PostgresqlRelationalStoreClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_postgresql_integration":
@@ -61,7 +72,12 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "PostgreSQLRelationalStore":
-        from intergrax.integrations.providers.relational_store.postgresql.adapter import PostgreSQLRelationalStore
+        from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
 
         return PostgreSQLRelationalStore
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.relational_store.postgresql import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

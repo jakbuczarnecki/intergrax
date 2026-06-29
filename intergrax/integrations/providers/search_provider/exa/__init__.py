@@ -1,13 +1,60 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-__all__ = ["create_exa_search_provider", "register_exa_integration"]
+from intergrax.utils.lazy_export import export_from_bundle
+
+__all__ = [
+    "EXA_SEARCH_PROVIDER_PROVIDER_ID",
+    "ExaSearchProviderIntegration",
+    "ExaSearchProviderIntegrationConfig",
+    "ExaSearchProviderClient",
+    "create_exa_search_provider",
+    "create_exa_search_provider_integration",
+    "register_exa_integration",
+]
+
+_BUNDLE_EXPORTS = frozenset(
+    {
+        "create_exa_search_provider",
+        "create_exa_search_provider_integration",
+    }
+)
+
+_INTEGRATION_EXPORTS = frozenset(
+    {
+        "EXA_SEARCH_PROVIDER_PROVIDER_ID",
+        "ExaSearchProviderIntegration",
+        "ExaSearchProviderIntegrationConfig",
+        "ExaSearchProviderClient",
+    }
+)
+
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "EXA_SEARCH_PROVIDER_PROVIDER_ID",
+        "ExaSearchProviderIntegration",
+        "ExaSearchProviderIntegrationConfig",
+        "ExaSearchProviderClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_exa_integration":
         from intergrax.integrations.providers.search_provider.exa.register import register_exa_integration
+
         return register_exa_integration
-    if name == "create_exa_search_provider":
-        from intergrax.integrations.providers.search_provider.exa.bundle import create_exa_search_provider
-        return create_exa_search_provider
-    raise AttributeError(name)
+    if name in _BUNDLE_EXPORTS:
+        from intergrax.integrations.providers.search_provider.exa import bundle as _bundle
+
+        return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.search_provider.exa import integration as _integration
+
+        return export_from_bundle(_integration, name, _INTEGRATION_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.search_provider.exa import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

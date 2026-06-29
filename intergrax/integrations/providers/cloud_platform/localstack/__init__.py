@@ -1,7 +1,60 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations.providers.cloud_platform.localstack.bundle import create_localstack_cloud_platform
-from intergrax.integrations.providers.cloud_platform.localstack.register import register_localstack_integration
+from intergrax.utils.lazy_export import export_from_bundle
 
-__all__ = ["create_localstack_cloud_platform", "register_localstack_integration"]
+__all__ = [
+    "LOCALSTACK_CLOUD_PLATFORM_PROVIDER_ID",
+    "LocalstackCloudPlatformIntegration",
+    "LocalstackCloudPlatformIntegrationConfig",
+    "LocalstackCloudPlatformClient",
+    "create_localstack_cloud_platform",
+    "create_localstack_cloud_platform_integration",
+    "register_localstack_integration",
+]
+
+_BUNDLE_EXPORTS = frozenset(
+    {
+        "create_localstack_cloud_platform",
+        "create_localstack_cloud_platform_integration",
+    }
+)
+
+_INTEGRATION_EXPORTS = frozenset(
+    {
+        "LOCALSTACK_CLOUD_PLATFORM_PROVIDER_ID",
+        "LocalstackCloudPlatformIntegration",
+        "LocalstackCloudPlatformIntegrationConfig",
+        "LocalstackCloudPlatformClient",
+    }
+)
+
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "LOCALSTACK_CLOUD_PLATFORM_PROVIDER_ID",
+        "LocalstackCloudPlatformIntegration",
+        "LocalstackCloudPlatformIntegrationConfig",
+        "LocalstackCloudPlatformClient",
+    }
+)
+
+def __getattr__(name: str):
+    if name == "register_localstack_integration":
+        from intergrax.integrations.providers.cloud_platform.localstack.register import register_localstack_integration
+
+        return register_localstack_integration
+    if name in _BUNDLE_EXPORTS:
+        from intergrax.integrations.providers.cloud_platform.localstack import bundle as _bundle
+
+        return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.cloud_platform.localstack import integration as _integration
+
+        return export_from_bundle(_integration, name, _INTEGRATION_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.cloud_platform.localstack import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

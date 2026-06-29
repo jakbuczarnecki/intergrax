@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Ollama (ollama)
 
-# `ollama` integration — usage
+Category: `interaction_surface`
 
-**Category:** `interaction_surface`  
-**Catalog factory:** ``create_ollama_interaction_surface()``  
-**Env prefix:** ``INTERGRAX_OLLAMA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.interaction_surface.ollama.bundle import create_ollama_interaction_surface
-
-backend = create_ollama_interaction_surface()
-```
+- **`OllamaInteractionSurfaceIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `OllamaInteractionSurfaceIntegration`.
+- Contract factory: `create_ollama_interaction_surface_integration()`.

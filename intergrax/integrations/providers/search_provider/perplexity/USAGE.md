@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Perplexity (perplexity)
 
-# `perplexity` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_perplexity_search_provider()``  
-**Env prefix:** ``INTERGRAX_PERPLEXITY_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.search_provider.perplexity.bundle import create_perplexity_search_provider
-
-backend = create_perplexity_search_provider()
-```
+- **`PerplexitySearchProviderIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `PerplexitySearchProviderIntegration`.
+- Contract factory: `create_perplexity_search_provider_integration()`.

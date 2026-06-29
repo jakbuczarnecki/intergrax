@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Influxdb (influxdb)
 
-# `influxdb` integration — usage
+Category: `observability_backend`
 
-**Category:** `observability_backend`  
-**Catalog factory:** ``create_influxdb_observability_backend()``  
-**Env prefix:** ``INTERGRAX_INFLUXDB_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.observability_backend.influxdb.bundle import create_influxdb_observability_backend
-
-backend = create_influxdb_observability_backend()
-```
+- **`InfluxdbObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `InfluxdbObservabilityIntegration`.
+- Contract factory: `create_influxdb_observability_backend_integration()`.

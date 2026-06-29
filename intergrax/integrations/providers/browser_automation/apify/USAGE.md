@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Apify (apify)
 
-# `apify` integration — usage
+Category: `browser_automation`
 
-**Category:** `browser_automation`  
-**Catalog factory:** ``create_apify_browser_automation()``  
-**Env prefix:** ``INTERGRAX_APIFY_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.browser_automation.apify.bundle import create_apify_browser_automation
-
-backend = create_apify_browser_automation()
-```
+- **`ApifyBrowserAutomationIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ApifyBrowserAutomationIntegration`.
+- Contract factory: `create_apify_browser_automation_integration()`.

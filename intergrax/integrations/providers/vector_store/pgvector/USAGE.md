@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Pgvector (pgvector)
 
-# `pgvector` integration — usage
+Category: `vector_store`
 
-**Category:** `vector_store`  
-**Catalog factory:** ``create_pgvector_vector_store()``  
-**Env prefix:** ``INTERGRAX_PGVECTOR_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
-
-backend = create_pgvector_vector_store()
-```
+- **`PgvectorVectorStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `PgvectorVectorStoreIntegration`.
+- Contract factory: `create_pgvector_vector_store_integration()`.

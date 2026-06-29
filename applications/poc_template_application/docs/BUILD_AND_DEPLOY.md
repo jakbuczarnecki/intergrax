@@ -78,7 +78,7 @@ MCP endpoint: ``http://127.0.0.1:8095/mcp`` (streamable HTTP transport).
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/poc_template_application/poc_template_application_tests -q
+        uv run pytest applications/poc_template_application/tests -q
         uv run pytest tests/unit/applications/ -q -k "poc_template" --ignore-glob="*" 2>/dev/null || true
         ```
 

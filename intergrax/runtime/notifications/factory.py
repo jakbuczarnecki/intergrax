@@ -92,18 +92,20 @@ def create_notification_adapter(
         return create_log_notification_channel()
 
     if backend == NotificationBackend.SLACK:
-        from intergrax.integrations.providers.notification_channel.slack.config import SlackIntegrationConfig
-        from intergrax.integrations.providers.notification_channel.slack.opens import open_slack_notification_channel
+        from intergrax.integrations.providers.notification_channel.slack.bundle import create_slack_notification_channel
 
-        config = SlackIntegrationConfig.from_env(webhook_url=resolved.slack_webhook_url)
-        return open_slack_notification_channel(config, delivery=delivery)
+        return create_slack_notification_channel(
+            webhook_url=resolved.slack_webhook_url,
+            delivery=delivery,
+        )
 
     if backend == NotificationBackend.TEAMS:
-        from intergrax.integrations.providers.notification_channel.teams.config import TeamsIntegrationConfig
-        from intergrax.integrations.providers.notification_channel.teams.opens import open_teams_notification_channel
+        from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_notification_channel
 
-        config = TeamsIntegrationConfig.from_env(webhook_url=resolved.teams_webhook_url)
-        return open_teams_notification_channel(config, delivery=delivery)
+        return create_teams_notification_channel(
+            webhook_url=resolved.teams_webhook_url,
+            delivery=delivery,
+        )
 
     if backend == NotificationBackend.WEBHOOK:
         from intergrax.integrations.providers.notification_channel.webhook.config import WebhookIntegrationConfig
@@ -121,7 +123,6 @@ def create_notification_adapter(
         from intergrax.integrations.providers.notification_channel.opsgenie.bundle import create_opsgenie_notification_channel
 
         return create_opsgenie_notification_channel()
-
     return create_log_notification_channel()
 
 

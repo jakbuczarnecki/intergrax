@@ -93,7 +93,7 @@ Routes are mounted under ``/v1/legal``. See ``serving/`` and application README 
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/legal_application/legal_tests -q
+        uv run pytest applications/legal_application/tests -q
         uv run pytest tests/unit/applications/ -q -k "legal" --ignore-glob="*" 2>/dev/null || true
         ```
 

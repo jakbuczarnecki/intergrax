@@ -12,12 +12,13 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_search_provider
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.search_provider.google_cse.adapter import GoogleCSESearchProvider
+from intergrax.integrations.providers.search_provider.google_cse.adapter import _GoogleCSESearchProvider
 from intergrax.integrations.providers.search_provider.google_cse.bundle import (
     GoogleCSEIntegrationBundle,
     create_google_cse_integration,
     create_google_cse_search_provider,
 )
+from intergrax.integrations.providers.search_provider.google_cse.integration import GoogleCseSearchProviderIntegration
 from intergrax.integrations.providers.search_provider.google_cse.register import register_google_cse_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -63,7 +64,7 @@ def test_create_google_cse_integration_bundle(mock_web_provider: MagicMock) -> N
     )
 
     assert isinstance(bundle, GoogleCSEIntegrationBundle)
-    assert isinstance(bundle.search_provider, GoogleCSESearchProvider)
+    assert isinstance(bundle.search_provider, GoogleCseSearchProviderIntegration)
     assert bundle.web_search_provider is mock_web_provider
     assert bundle.config.api_key == "key"
     assert bundle.config.cx == "cx-id"
@@ -111,11 +112,11 @@ def test_register_default_integrations_includes_google_cse(
         config={"provider": mock_web_provider},
     )
 
-    assert isinstance(provider, GoogleCSESearchProvider)
+    assert isinstance(provider, GoogleCseSearchProviderIntegration)
 
 
 def test_adapter_exposes_web_search_provider(mock_web_provider: MagicMock) -> None:
-    adapter = GoogleCSESearchProvider(mock_web_provider)
+    adapter = _GoogleCSESearchProvider(mock_web_provider)
 
     assert adapter.web_search_provider is mock_web_provider
     results: List[SearchHit] = list(adapter.search("q", limit=3))

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Launchdarkly (launchdarkly)
 
-# `launchdarkly` integration — usage
+Category: `feature_flag`
 
-**Category:** `feature_flag`  
-**Catalog factory:** ``create_launchdarkly_feature_flag()``  
-**Env prefix:** ``INTERGRAX_LAUNCHDARKLY_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.feature_flag.launchdarkly.bundle import create_launchdarkly_feature_flag
-
-backend = create_launchdarkly_feature_flag()
-```
+- **`LaunchdarklyFeatureFlagIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `LaunchdarklyFeatureFlagIntegration`.
+- Contract factory: `create_launchdarkly_feature_flag_integration()`.

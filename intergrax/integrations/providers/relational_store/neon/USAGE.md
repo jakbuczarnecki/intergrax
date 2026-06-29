@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Neon (neon)
 
-# `neon` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_neon_relational_store()``  
-**Env prefix:** ``INTERGRAX_NEON_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.relational_store.neon.bundle import create_neon_relational_store
-
-backend = create_neon_relational_store()
-```
+- **`NeonRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `NeonRelationalStoreIntegration`.
+- Contract factory: `create_neon_relational_store_integration()`.

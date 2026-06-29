@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Backblaze B2 (backblaze_b2)
 
-# `backblaze_b2` integration — usage
+Category: `object_storage`
 
-**Category:** `object_storage`  
-**Catalog factory:** ``create_backblaze_b2_object_storage()``  
-**Env prefix:** ``INTERGRAX_BACKBLAZE_B2_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.object_storage.backblaze_b2.bundle import create_backblaze_b2_object_storage
-
-backend = create_backblaze_b2_object_storage()
-```
+- **`BackblazeB2ObjectStorageIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `BackblazeB2ObjectStorageIntegration`.
+- Contract factory: `create_backblaze_b2_object_storage_integration()`.

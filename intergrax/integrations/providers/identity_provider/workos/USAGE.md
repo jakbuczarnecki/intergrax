@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Workos (workos)
 
-# `workos` integration — usage
+Category: `identity_provider`
 
-**Category:** `identity_provider`  
-**Catalog factory:** ``create_workos_identity_provider()``  
-**Env prefix:** ``INTERGRAX_WORKOS_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.identity_provider.workos.bundle import create_workos_identity_provider
-
-backend = create_workos_identity_provider()
-```
+- **`WorkosIdentityProviderIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `WorkosIdentityProviderIntegration`.
+- Contract factory: `create_workos_identity_provider_integration()`.

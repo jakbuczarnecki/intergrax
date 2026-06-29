@@ -22,7 +22,9 @@ __all__ = [
     "ENV_TEAMS_WEBHOOK_URL",
     "TeamsIntegrationBundle",
     "TeamsIntegrationConfig",
-    "TeamsInteractionAdapter",
+    "TeamsNotificationChannelIntegration",
+    "TeamsNotificationChannelIntegrationConfig",
+    "TeamsNotificationChannelClient",
     "create_teams_catalog_factory",
     "create_teams_integration",
     "create_teams_interaction_surface",
@@ -30,6 +32,7 @@ __all__ = [
     "create_teams_signature_verifier",
     "register_teams_integration",
     "resolve_teams_config",
+    "create_teams_notification_channel_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -41,6 +44,17 @@ _BUNDLE_EXPORTS = frozenset(
         "create_teams_notification_channel",
         "create_teams_signature_verifier",
         "resolve_teams_config",
+        "create_teams_notification_channel_integration",
+    }
+)
+
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID",
+        "TeamsNotificationChannelIntegration",
+        "TeamsNotificationChannelIntegrationConfig",
+        "TeamsNotificationChannelClient",
     }
 )
 
@@ -50,12 +64,13 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.notification_channel.teams.register import register_teams_integration
 
         return register_teams_integration
-    if name == "TeamsInteractionAdapter":
-        from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
-
-        return TeamsInteractionAdapter
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.notification_channel.teams import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.notification_channel.teams import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

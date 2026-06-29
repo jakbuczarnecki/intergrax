@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Hubspot (hubspot)
 
-# `hubspot` integration — usage
+Category: `crm`
 
-**Category:** `crm`  
-**Catalog factory:** ``create_hubspot_crm()``  
-**Env prefix:** ``INTERGRAX_HUBSPOT_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.crm.hubspot.bundle import create_hubspot_crm
-
-backend = create_hubspot_crm()
-```
+- **`HubspotCrmIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `HubspotCrmIntegration`.
+- Contract factory: `create_hubspot_crm_integration()`.

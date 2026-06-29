@@ -22,7 +22,7 @@ from intergrax.distributed.providers.redis_idempotency_store import RedisIdempot
 from intergrax.distributed.providers.redis_kv_store import RedisKVStore
 from intergrax.distributed.providers.redis_rate_limiter import RedisDistributedRateLimiter
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
-from intergrax.integrations.providers.key_value_cache.redis.adapter import RedisKeyValueCache
+from intergrax.integrations.providers.key_value_cache.redis.adapter import _RedisKeyValueCache
 from intergrax.integrations.providers.key_value_cache.redis.client import create_redis_client, resolve_redis_config
 from intergrax.integrations.providers.key_value_cache.redis.config import RedisIntegrationConfig
 from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
@@ -39,7 +39,7 @@ class RedisIntegrationBundle:
 
     client: "redis.Redis"
     config: RedisIntegrationConfig
-    key_value_cache: RedisKeyValueCache
+    key_value_cache: RedisKeyValueCacheIntegration
     idempotency_store: RedisIdempotencyStore
     rate_limiter: RedisDistributedRateLimiter
     execution_semaphore: RedisExecutionSemaphore
@@ -78,7 +78,7 @@ def create_redis_integration(
     resolved_client = create_redis_client(client=client, **config.model_dump())
 
     store = RedisKVStore(client=resolved_client, key_prefix=config.key_prefix)
-    cache = RedisKeyValueCache(store)
+    cache = RedisKeyValueCacheIntegration.from_client(_RedisKeyValueCache(store))
 
     return RedisIntegrationBundle(
         client=resolved_client,
@@ -102,13 +102,20 @@ def create_redis_key_value_cache(
     **config_overrides: object,
 ) -> KeyValueCache:
     """Catalog factory for ``"redis"`` / ``KEY_VALUE_CACHE``."""
-    return create_redis_integration(
+    runtime = create_redis_integration(
         url=url,
         db=db,
         key_prefix=key_prefix,
         client=client,
         **config_overrides,
     ).key_value_cache
+    from intergrax.integrations.providers.key_value_cache.redis.integration import (
+        RedisKeyValueCacheIntegration,
+    )
+
+    if isinstance(runtime, RedisKeyValueCacheIntegration):
+        return runtime
+    return RedisKeyValueCacheIntegration.from_client(runtime)
 
 
 def create_redis_kv_store(
@@ -196,4 +203,36 @@ def create_redis_rerank_cache(
         redis_client=resolved_client,
         ttl_seconds=ttl_seconds,
         key_prefix=key_prefix,
+    )
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.key_value_cache.redis.integration import (
+    REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
+    RedisKeyValueCacheIntegration,
+    RedisKeyValueCacheIntegrationConfig,
+    RedisKeyValueCacheClient,
+)
+
+
+def create_redis_key_value_cache_integration(
+    *,
+    client: RedisKeyValueCacheIntegrationClient | None = None,
+    enabled: bool = False,
+) -> RedisKeyValueCacheIntegration:
+    """
+    Build a contract-based Redis key value cache integration.
+
+    Compatibility shim — constructs Integration via from_store (create_redis_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Redis key value cache integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return RedisKeyValueCacheIntegration.from_client(client, enabled=enabled)
+    return RedisKeyValueCacheIntegration.for_provider(
+        provider_id=REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
+        display_name="Redis",
+        config=RedisKeyValueCacheIntegrationConfig(enabled=enabled),
     )

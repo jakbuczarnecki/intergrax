@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Tempo (tempo)
 
-# `tempo` integration — usage
+Category: `observability_backend`
 
-**Category:** `observability_backend`  
-**Catalog factory:** ``create_tempo_observability_backend()``  
-**Env prefix:** ``INTERGRAX_TEMPO_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.observability_backend.tempo.bundle import create_tempo_observability_backend
-
-backend = create_tempo_observability_backend()
-```
+- **`TempoObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TempoObservabilityIntegration`.
+- Contract factory: `create_tempo_observability_backend_integration()`.

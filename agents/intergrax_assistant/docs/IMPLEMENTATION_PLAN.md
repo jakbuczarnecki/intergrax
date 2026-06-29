@@ -59,7 +59,7 @@ uv run pytest agents/intergrax_assistant/tests -q
 After host wiring:
 
 ```bash
-uv run pytest applications/<app>_application/<app>_application_tests -q
+uv run pytest applications/<app>_application/tests -q
 ```
 
 

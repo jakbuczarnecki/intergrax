@@ -1,47 +1,9 @@
-# `cloud_sql` integration — usage
+# Cloud Sql (cloud_sql)
 
-**Category:** ``relational_store``  
-**Catalog factory:** ``create_cloud_sql_relational_store()``
+Category: `relational_store`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Single public entrypoint
 
-## Common pattern
-
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
-
-register_default_integrations()
-profile = IntegrationProfile(relational_store="cloud_sql")
-backend = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
-```
-
-Direct factory (preferred in application ``factory.py``):
-
-```python
-from intergrax.integrations.providers.relational_store.cloud_sql.bundle import create_cloud_sql_relational_store
-
-backend = create_cloud_sql_relational_store(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_CLOUD_SQL_DSN` or connection string components (`HOST`, `USER`, `PASSWORD`, `DATABASE`)
-
-## Example
-
-```python
-from intergrax.integrations.providers.relational_store.cloud_sql.bundle import create_cloud_sql_relational_store
-
-store = create_cloud_sql_relational_store(dsn="host=127.0.0.1 user=app password=secret dbname=intergrax")
-store.execute("INSERT INTO items (name) VALUES (%s)", ("alpha",))
-rows = store.fetch_all("SELECT name FROM items")
-store.close()
-```
-
-## Notes
-
-Default ``relational_store`` when ``cloud_platform=gcp``. ``pg8000`` opened lazily.
+- **`CloudSqlRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `CloudSqlRelationalStoreIntegration`.
+- Contract factory: `create_cloud_sql_relational_store_integration()`.

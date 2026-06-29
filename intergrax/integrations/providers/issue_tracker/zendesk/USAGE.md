@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Zendesk (zendesk)
 
-# `zendesk` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_zendesk_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_ZENDESK_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.issue_tracker.zendesk.bundle import create_zendesk_issue_tracker
-
-backend = create_zendesk_issue_tracker()
-```
+- **`ZendeskIssueTrackerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ZendeskIssueTrackerIntegration`.
+- Contract factory: `create_zendesk_issue_tracker_integration()`.

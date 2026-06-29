@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_cloud_platform
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.cloud_platform.aws.adapter import AwsCloudPlatform
+from intergrax.integrations.providers.cloud_platform.aws.adapter import _AwsCloudPlatform
 from intergrax.integrations.providers.cloud_platform.aws.bundle import (
     AwsIntegrationBundle,
     create_aws_cloud_platform,
@@ -24,6 +24,7 @@ from intergrax.integrations.providers.cloud_platform.aws.config import (
     ENV_AWS_ROLE_ARN,
     AwsIntegrationConfig,
 )
+from intergrax.integrations.providers.cloud_platform.aws.integration import AwsCloudPlatformIntegration
 from intergrax.integrations.providers.cloud_platform.aws.register import register_aws_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -180,7 +181,7 @@ def test_create_aws_integration_bundle() -> None:
     bundle = create_aws_integration(**_aws_config().model_dump(), session_factory=factory)
 
     assert isinstance(bundle, AwsIntegrationBundle)
-    assert isinstance(bundle.cloud_platform, AwsCloudPlatform)
+    assert isinstance(bundle.cloud_platform, AwsCloudPlatformIntegration)
     assert bundle.cloud_platform.default_region == "eu-central-1"
 
 
@@ -196,7 +197,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_cloud_platform(platform)
-    assert isinstance(platform, AwsCloudPlatform)
+    assert isinstance(platform, AwsCloudPlatformIntegration)
 
 
 def test_register_default_integrations_includes_aws() -> None:
@@ -210,7 +211,7 @@ def test_register_default_integrations_includes_aws() -> None:
         config={**_aws_config().model_dump(), "session_factory": factory},
     )
 
-    assert isinstance(platform, AwsCloudPlatform)
+    assert isinstance(platform, AwsCloudPlatformIntegration)
 
 
 def test_opens_assumes_role_when_configured() -> None:

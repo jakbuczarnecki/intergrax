@@ -32,7 +32,7 @@ def test_scaffold_name_normalization(
     assert names.short == short
     assert names.env_prefix == env_prefix
     assert names.pascal == pascal
-    assert names.tests_pkg == f"{pkg}_tests"
+    assert names.tests_pkg == "tests"
     assert names.factory_fn == f"create_{short}_application"
     assert names.builders_const == f"{env_prefix.rstrip('_')}_AGENT_BUILDERS"
 

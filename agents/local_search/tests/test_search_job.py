@@ -130,6 +130,12 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
         }
     ]
 
+    rag_calls = exec_ctx.drain_pending_rag_calls()
+    assert len(rag_calls) == 1
+    assert rag_calls[0].collection_id == "ws-1"
+    assert rag_calls[0].hit_count == 1
+    assert len(exec_ctx.drain_pending_tool_calls()) == 1
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -195,3 +201,22 @@ async def test_run_search_job_preserves_raw_tool_reason() -> None:
 
     assert output["search_summary"]["reason"] == "retrieve_failed"
     assert output["search_summary"]["raw_tool_reason"] == "retriever_failed"
+
+
+@pytest.mark.unit
+def test_run_search_job_output_attaches_search_summary_diagnostic() -> None:
+    output = {
+        "search_summary": {
+            "query": "find docs",
+            "num_results": 1,
+            "evidence": [{"source_path": "docs/a.md"}],
+            "raw_tool_reason": "retriever_failed",
+        }
+    }
+    from local_search.diagnostics import search_diagnostic_from_output
+
+    payload = search_diagnostic_from_output(output)
+    assert payload.schema_id() == "lkw.search_summary.v1"
+    assert payload.num_results == 1
+    assert payload.evidence_count == 1
+    assert payload.raw_tool_reason == "retriever_failed"

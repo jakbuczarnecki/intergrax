@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Codecov (codecov)
 
-# `codecov` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_codecov_ci_cd()``  
-**Env prefix:** ``INTERGRAX_CODECOV_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.codecov.bundle import create_codecov_ci_cd
-
-backend = create_codecov_ci_cd()
-```
+- **`CodecovCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `CodecovCiCdIntegration`.
+- Contract factory: `create_codecov_ci_cd_integration()`.

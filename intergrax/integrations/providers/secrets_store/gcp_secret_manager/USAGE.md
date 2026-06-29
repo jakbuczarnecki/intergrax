@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Gcp Secret Manager (gcp_secret_manager)
 
-# `gcp_secret_manager` integration — usage
+Category: `secrets_store`
 
-**Category:** `secrets_store`  
-**Catalog factory:** ``create_gcp_secret_manager_secrets_store()``  
-**Env prefix:** ``INTERGRAX_GCP_SECRET_MANAGER_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import create_gcp_secret_manager_secrets_store
-
-backend = create_gcp_secret_manager_secrets_store()
-```
+- **`GcpSecretManagerSecretsStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `GcpSecretManagerSecretsStoreIntegration`.
+- Contract factory: `create_gcp_secret_manager_secrets_store_integration()`.

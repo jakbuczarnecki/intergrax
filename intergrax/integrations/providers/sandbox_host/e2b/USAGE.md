@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# E2B (e2b)
 
-# `e2b` integration — usage
+Category: `sandbox_host`
 
-**Category:** `sandbox_host`  
-**Catalog factory:** ``create_e2b_sandbox_host()``  
-**Env prefix:** ``INTERGRAX_E2B_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.sandbox_host.e2b.bundle import create_e2b_sandbox_host
-
-backend = create_e2b_sandbox_host()
-```
+- **`E2bSandboxHostIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `E2bSandboxHostIntegration`.
+- Contract factory: `create_e2b_sandbox_host_integration()`.

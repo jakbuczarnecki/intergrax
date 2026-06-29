@@ -13,7 +13,7 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.providers.vector_store.chroma.adapter import ChromaVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.chroma.integration import ChromaVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.chroma.config import ChromaIntegrationConfig
 
 
@@ -66,4 +66,4 @@ def open_chroma_vector_store(
     if implementation is not None:
         return implementation
     inner = store if store is not None else _open_rag_store(config, store_factory=store_factory)
-    return ChromaVectorStoreIntegration(config, inner)
+    return ChromaVectorStoreIntegration.from_store(config, inner)

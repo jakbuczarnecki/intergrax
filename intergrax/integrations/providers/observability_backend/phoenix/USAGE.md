@@ -1,44 +1,9 @@
-# `phoenix` integration — usage
+# Phoenix (phoenix)
 
-**Category:** ``observability_backend``  
-**Catalog factory:** ``create_phoenix_observability_backend()``
+Category: `observability_backend`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Single public entrypoint
 
-## Common pattern
-
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
-
-register_default_integrations()
-profile = IntegrationProfile(observability_backend="phoenix")
-backend = profile.resolve(IntegrationCategory.OBSERVABILITY_BACKEND)
-```
-
-Direct factory (preferred in application ``factory.py``):
-
-```python
-from intergrax.integrations.providers.observability_backend.phoenix.bundle import create_phoenix_observability_backend
-
-backend = create_phoenix_observability_backend(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_PHOENIX_URL` (default ``http://localhost:6006``)
-
-## Example
-
-```python
-from intergrax.integrations.providers.observability_backend.phoenix.bundle import create_phoenix_observability_backend
-
-obs = create_phoenix_observability_backend(base_url="http://localhost:6006")
-```
-
-## Notes
-
-Arize Phoenix — local LLM trace UI.
+- **`PhoenixObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `PhoenixObservabilityIntegration`.
+- Contract factory: `create_phoenix_observability_backend_integration()`.

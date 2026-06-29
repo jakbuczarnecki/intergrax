@@ -24,6 +24,7 @@ __all__ = [
     "create_webhook_notification_channel",
     "register_webhook_integration",
     "resolve_webhook_config",
+    "create_webhook_notification_channel_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -32,9 +33,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_webhook_integration",
         "create_webhook_notification_channel",
         "resolve_webhook_config",
+        "create_webhook_notification_channel_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "WEBHOOK_NOTIFICATION_CHANNEL_PROVIDER_ID",
+        "WebhookNotificationChannelIntegration",
+        "WebhookNotificationChannelIntegrationConfig",
+        "WebhookNotificationChannelClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_webhook_integration":
@@ -45,4 +56,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.notification_channel.webhook import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.notification_channel.webhook import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

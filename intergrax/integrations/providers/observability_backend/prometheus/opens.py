@@ -13,7 +13,9 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
+from intergrax.integrations.providers.observability_backend.prometheus.integration import (
+    PrometheusObservabilityIntegration,
+)
 from intergrax.integrations.providers.observability_backend.prometheus.client import PrometheusRestClient
 from intergrax.integrations.providers.observability_backend.prometheus.config import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -62,4 +64,4 @@ def open_prometheus_observability_backend(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return PrometheusObservabilityBackend(rest_client)
+    return PrometheusObservabilityIntegration.from_client(rest_client)

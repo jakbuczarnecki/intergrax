@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Circleci (circleci)
 
-# `circleci` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_circleci_ci_cd()``  
-**Env prefix:** ``INTERGRAX_CIRCLECI_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.circleci.bundle import create_circleci_ci_cd
-
-backend = create_circleci_ci_cd()
-```
+- **`CircleciCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `CircleciCiCdIntegration`.
+- Contract factory: `create_circleci_ci_cd_integration()`.

@@ -40,7 +40,7 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 ## 2. Verification
 
 ```bash
-uv run pytest applications/attestation_demo/attestation_demo_tests -q
+uv run pytest applications/attestation_demo/tests -q
 uv run pytest tests/unit/runtime/attestation/ -q
 uv run pytest tests/unit/applications/test_application_deploy_triad.py -q -k attestation_demo
 uv run pytest tests/unit/applications/test_agent_app_doc_pair.py -q -k attestation_demo

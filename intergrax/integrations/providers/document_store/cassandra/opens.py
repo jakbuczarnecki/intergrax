@@ -15,7 +15,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.integrations.providers.document_store.cassandra.adapter import CassandraDocumentStore
+from intergrax.integrations.providers.document_store.cassandra.adapter import _CassandraDocumentStore
+from intergrax.integrations.providers.document_store.cassandra.integration import CassandraDocumentStoreIntegration
 from intergrax.integrations.providers.document_store.cassandra.client import CassandraCqlClient
 from intergrax.integrations.providers.document_store.cassandra.config import CassandraIntegrationConfig
 
@@ -82,4 +83,4 @@ def open_cassandra_document_store(
         session=session,
         session_factory=session_factory,
     )
-    return CassandraDocumentStore(client)
+    return CassandraDocumentStoreIntegration.from_client(_CassandraDocumentStore(client))

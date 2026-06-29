@@ -15,6 +15,12 @@ from typing import Any, Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.slack.config import SlackIntegrationConfig
+from intergrax.integrations.providers.notification_channel.slack.integration import (
+    SLACK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    SlackNotificationChannelClient,
+    SlackNotificationChannelIntegration,
+    SlackNotificationChannelIntegrationConfig,
+)
 from intergrax.integrations.providers.notification_channel.slack.opens import (
     open_slack_interaction_surface,
     open_slack_notification_channel,
@@ -24,12 +30,20 @@ from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
 
 
+def _wrap_slack_notification_channel(
+    runtime: NotificationAdapter,
+) -> SlackNotificationChannelIntegration:
+    if isinstance(runtime, SlackNotificationChannelIntegration):
+        return runtime
+    return SlackNotificationChannelIntegration.from_client(runtime)
+
+
 @dataclass(frozen=True)
 class SlackIntegrationBundle:
     """Slack notification + interaction adapters sharing one config."""
 
     config: SlackIntegrationConfig
-    notification_channel: NotificationAdapter
+    notification_channel: SlackNotificationChannelIntegration
     interaction_surface: InteractionAdapter
 
 
@@ -54,10 +68,12 @@ def create_slack_integration(
         overrides["signing_secret"] = signing_secret
 
     config = resolve_slack_config(**overrides)
-    notification = open_slack_notification_channel(
-        config,
-        implementation=notification_adapter,
-        delivery=delivery,
+    notification = _wrap_slack_notification_channel(
+        open_slack_notification_channel(
+            config,
+            implementation=notification_adapter,
+            delivery=delivery,
+        ),
     )
     interaction = open_slack_interaction_surface(
         config,
@@ -77,7 +93,7 @@ def create_slack_notification_channel(
     notification_adapter: Optional[NotificationAdapter] = None,
     delivery: Optional[NotificationDelivery] = None,
     **config_overrides: object,
-) -> NotificationAdapter:
+) -> SlackNotificationChannelIntegration:
     """Direct factory for outbound Slack notifications."""
     return create_slack_integration(
         webhook_url=webhook_url,
@@ -129,4 +145,27 @@ def create_slack_signature_verifier(
     return SlackSignatureVerifier(
         signing_secret=resolve_slack_signing_secret(signing_secret),
         enabled=enabled,
+    )
+
+
+def create_slack_notification_channel_integration(
+    *,
+    client: SlackNotificationChannelClient | None = None,
+    enabled: bool = False,
+) -> SlackNotificationChannelIntegration:
+    """
+    Build a contract-based Slack notification channel integration without runtime wiring.
+
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Slack notification channel integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return SlackNotificationChannelIntegration.from_client(client, enabled=enabled)
+    return SlackNotificationChannelIntegration.for_provider(
+        provider_id=SLACK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+        display_name="Slack",
+        config=SlackNotificationChannelIntegrationConfig(enabled=enabled),
     )

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Mailgun (mailgun)
 
-# `mailgun` integration — usage
+Category: `interaction_surface`
 
-**Category:** `interaction_surface`  
-**Catalog factory:** ``create_mailgun_interaction_surface()``  
-**Env prefix:** ``INTERGRAX_MAILGUN_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.interaction_surface.mailgun.bundle import create_mailgun_interaction_surface
-
-backend = create_mailgun_interaction_surface()
-```
+- **`MailgunInteractionSurfaceIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `MailgunInteractionSurfaceIntegration`.
+- Contract factory: `create_mailgun_interaction_surface_integration()`.

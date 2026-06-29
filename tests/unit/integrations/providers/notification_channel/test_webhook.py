@@ -38,6 +38,7 @@ def _clean_catalog() -> None:
 def mock_notification() -> MagicMock:
     adapter = MagicMock()
     adapter.notify = AsyncMock()
+    adapter.health = MagicMock(return_value=True)
     return adapter
 
 

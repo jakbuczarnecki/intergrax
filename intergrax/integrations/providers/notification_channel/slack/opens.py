@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
+from intergrax.integrations.providers.notification_channel.slack.adapter import _SlackInteractionAdapter
 from intergrax.integrations.providers.notification_channel.slack.config import SlackIntegrationConfig
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
@@ -50,4 +50,4 @@ def open_slack_interaction_surface(
     del config
     if implementation is not None:
         return implementation
-    return SlackInteractionAdapter()
+    return _SlackInteractionAdapter()

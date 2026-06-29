@@ -218,7 +218,7 @@ integrations-guardrails = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "applications", "agents"]
-# Application tests live under ``applications/<app>/legal_tests/`` to avoid clashing with repo ``tests/`` package name.
+# Application tests live under ``applications/<app>/tests/`` (discovered via ``testpaths`` ``applications``).
 # Repo root on sys.path; Tier-2 product roots are added in repo conftest.py.
 pythonpath = [".", "agents", "applications"]
 asyncio_mode = "auto"

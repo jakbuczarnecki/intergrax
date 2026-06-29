@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Algolia (algolia)
 
-# `algolia` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_algolia_search_provider()``  
-**Env prefix:** ``INTERGRAX_ALGOLIA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.search_provider.algolia.bundle import create_algolia_search_provider
-
-backend = create_algolia_search_provider()
-```
+- **`AlgoliaSearchProviderIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `AlgoliaSearchProviderIntegration`.
+- Contract factory: `create_algolia_search_provider_integration()`.

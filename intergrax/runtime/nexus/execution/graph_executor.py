@@ -531,6 +531,13 @@ class GraphExecutor:
                 request.metadata,
                 self._idempotency_store,
             )
+            from intergrax.runtime.workspace.exec_ctx_isolation import (
+                RUNTIME_SANDBOX_MANAGER_METADATA_KEY,
+                RUNTIME_SHADOW_MANAGER_METADATA_KEY,
+            )
+
+            request.metadata[RUNTIME_SHADOW_MANAGER_METADATA_KEY] = self._engine.shadow_manager
+            request.metadata[RUNTIME_SANDBOX_MANAGER_METADATA_KEY] = self._engine.sandbox_manager
             author_id = current_agent.get_contract().id
             resolved_contract = (
                 self._registry.get_contract(author_id)

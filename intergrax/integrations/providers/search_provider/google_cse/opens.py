@@ -12,7 +12,8 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.integrations.contracts.search_provider import SearchProvider
-from intergrax.integrations.providers.search_provider.google_cse.adapter import GoogleCSESearchProvider
+from intergrax.integrations.providers.search_provider.google_cse.adapter import _GoogleCSESearchProvider
+from intergrax.integrations.providers.search_provider.google_cse.integration import GoogleCseSearchProviderIntegration
 from intergrax.integrations.providers.search_provider.google_cse.config import GoogleCSEIntegrationConfig
 from intergrax.integrations.providers.search_provider.google_cse.web_client import GoogleCSEProvider
 
@@ -40,6 +41,6 @@ def open_google_cse_search_provider(
     provider: Optional[GoogleCSEProvider] = None,
     session: Optional[object] = None,
 ) -> SearchProvider:
-    return GoogleCSESearchProvider(
-        open_google_cse_web_search_provider(config, provider=provider, session=session)
+    return GoogleCseSearchProviderIntegration.from_client(_GoogleCSESearchProvider(
+        open_google_cse_web_search_provider(config, provider=provider, session=session))
     )

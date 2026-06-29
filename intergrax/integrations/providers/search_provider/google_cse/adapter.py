@@ -12,7 +12,7 @@ from intergrax.websearch.schemas.query_spec import QuerySpec
 from intergrax.websearch.schemas.search_hit import SearchHit
 
 
-class GoogleCSESearchProvider:
+class _GoogleCSESearchProvider:
     """
     Integration-catalog facade over ``GoogleCSEProvider``.
 

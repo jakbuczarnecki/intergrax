@@ -37,6 +37,7 @@ __all__ = [
     "create_mysql_relational_store",
     "register_mysql_integration",
     "resolve_mysql_config",
+    "create_mysql_relational_store_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
@@ -47,9 +48,19 @@ _LAZY_EXPORTS = frozenset(
         "create_mysql_relational_store",
         "register_mysql_integration",
         "resolve_mysql_config",
+        "create_mysql_relational_store_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "MYSQL_RELATIONAL_STORE_PROVIDER_ID",
+        "MysqlRelationalStoreIntegration",
+        "MysqlRelationalStoreIntegrationConfig",
+        "MysqlRelationalStoreClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_mysql_integration":
@@ -61,7 +72,12 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "MySQLRelationalStore":
-        from intergrax.integrations.providers.relational_store.mysql.adapter import MySQLRelationalStore
+        from intergrax.integrations.providers.relational_store.mysql.adapter import _MySQLRelationalStore
 
         return MySQLRelationalStore
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.relational_store.mysql import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Airflow (airflow)
 
-# `airflow` integration — usage
+Category: `workflow_orchestrator`
 
-**Category:** `workflow_orchestrator`  
-**Catalog factory:** ``create_airflow_workflow_orchestrator()``  
-**Env prefix:** ``INTERGRAX_AIRFLOW_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.workflow_orchestrator.airflow.bundle import create_airflow_workflow_orchestrator
-
-backend = create_airflow_workflow_orchestrator()
-```
+- **`AirflowWorkflowOrchestratorIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `AirflowWorkflowOrchestratorIntegration`.
+- Contract factory: `create_airflow_workflow_orchestrator_integration()`.

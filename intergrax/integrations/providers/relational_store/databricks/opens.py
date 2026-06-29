@@ -14,7 +14,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.integrations.providers.relational_store.databricks.adapter import DatabricksRelationalStore
+from intergrax.integrations.providers.relational_store.databricks.adapter import _DatabricksRelationalStore
+from intergrax.integrations.providers.relational_store.databricks.integration import DatabricksRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.databricks.config import DatabricksIntegrationConfig
 
 
@@ -72,4 +73,4 @@ def open_databricks_relational_store(
             catalog=config.catalog,
             tenant_schema=config.tenant_schema,
         )
-    return DatabricksRelationalStore(config, connection)
+    return DatabricksRelationalStoreIntegration.from_client(_DatabricksRelationalStore(config, connection))

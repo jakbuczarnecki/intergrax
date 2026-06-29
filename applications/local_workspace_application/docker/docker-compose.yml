@@ -29,6 +29,14 @@ services:
       INTERGRAX_DEFAULT_OLLAMA_MODEL: llama3.1:latest
       LOCAL_WORKSPACE_INCLUDE_MCP: "false"
       OLLAMA_HOST: http://ollama:11434
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: otlp
+      LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
+      LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME: intergrax-lkw
+      LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION: dev
+      LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT: dev
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT: "false"
+      LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS: "30"
     volumes:
       - lkw_sqlite:/data/sqlite
       - lkw_shadow:/data/shadow_workspaces
@@ -36,6 +44,7 @@ services:
     depends_on:
       - qdrant
       - ollama
+      - otel-collector
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -50,6 +59,15 @@ services:
       - "11434"
     volumes:
       - ollama_data:/root/.ollama
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+      - ../.observability/otel:/var/lib/otelcol
+    ports:
+      - "4318:4318"
 
 volumes:
   lkw_sqlite:

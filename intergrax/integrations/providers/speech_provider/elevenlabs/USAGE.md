@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Elevenlabs (elevenlabs)
 
-# `elevenlabs` integration — usage
+Category: `speech_provider`
 
-**Category:** `speech_provider`  
-**Catalog factory:** ``create_elevenlabs_speech_provider()``  
-**Env prefix:** ``INTERGRAX_ELEVENLABS_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.speech_provider.elevenlabs.bundle import create_elevenlabs_speech_provider
-
-backend = create_elevenlabs_speech_provider()
-```
+- **`ElevenlabsSpeechProviderIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ElevenlabsSpeechProviderIntegration`.
+- Contract factory: `create_elevenlabs_speech_provider_integration()`.

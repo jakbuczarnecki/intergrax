@@ -31,7 +31,7 @@ def render_build_deploy_doc(
     *profile* is ``lab`` or ``product`` (affects smoke checks and run API notes).
     """
     agents_csv = ", ".join(agent_dirs)
-    tests_dir = tests_pkg or f"{pkg}_tests"
+    tests_dir = tests_pkg or "tests"
     display_title = display or _display_name(short)
     health = health_path or (
         f"{route_prefix}/agents" if profile == "lab" else "/health"

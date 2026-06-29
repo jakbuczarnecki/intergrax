@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Timescaledb (timescaledb)
 
-# `timescaledb` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_timescaledb_relational_store()``  
-**Env prefix:** ``INTERGRAX_TIMESCALEDB_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.relational_store.timescaledb.bundle import create_timescaledb_relational_store
-
-backend = create_timescaledb_relational_store()
-```
+- **`TimescaledbRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TimescaledbRelationalStoreIntegration`.
+- Contract factory: `create_timescaledb_relational_store_integration()`.

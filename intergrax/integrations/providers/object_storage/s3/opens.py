@@ -14,7 +14,8 @@ from intergrax.utils import attribute_access
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.object_storage import ObjectStorage
-from intergrax.integrations.providers.object_storage.s3.adapter import S3ObjectStorage
+from intergrax.integrations.providers.object_storage.s3.adapter import _S3ObjectStorage
+from intergrax.integrations.providers.object_storage.s3.integration import S3ObjectStorageIntegration
 from intergrax.integrations.providers.object_storage.s3.client import S3BucketClient
 from intergrax.integrations.providers.object_storage.s3.config import S3IntegrationConfig
 
@@ -122,9 +123,11 @@ def open_s3_object_storage(
     session: Optional[Any] = None,
     session_factory: Optional[Callable[[], Any]] = None,
     s3_client_factory: Optional[Callable[[], Any]] = None,
-) -> ObjectStorage:
+) -> S3ObjectStorageIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, S3ObjectStorageIntegration):
+            return implementation
+        return S3ObjectStorageIntegration.from_client(implementation)
     bucket_client = open_s3_bucket_client(
         config,
         s3_client=s3_client,
@@ -132,4 +135,4 @@ def open_s3_object_storage(
         session_factory=session_factory,
         s3_client_factory=s3_client_factory,
     )
-    return S3ObjectStorage(bucket_client)
+    return S3ObjectStorageIntegration.from_client(_S3ObjectStorage(bucket_client))

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Semantic Scholar (semantic_scholar)
 
-# `semantic_scholar` integration — usage
+Category: `search_provider`
 
-**Category:** `search_provider`  
-**Catalog factory:** ``create_semantic_scholar_search_provider()``  
-**Env prefix:** ``INTERGRAX_SEMANTIC_SCHOLAR_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.search_provider.semantic_scholar.bundle import create_semantic_scholar_search_provider
-
-backend = create_semantic_scholar_search_provider()
-```
+- **`SemanticScholarSearchProviderIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SemanticScholarSearchProviderIntegration`.
+- Contract factory: `create_semantic_scholar_search_provider_integration()`.

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Incident Io (incident_io)
 
-# `incident_io` integration — usage
+Category: `notification_channel`
 
-**Category:** `notification_channel`  
-**Catalog factory:** ``create_incident_io_notification_channel()``  
-**Env prefix:** ``INTERGRAX_INCIDENT_IO_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.notification_channel.incident_io.bundle import create_incident_io_notification_channel
-
-backend = create_incident_io_notification_channel()
-```
+- **`IncidentIoNotificationChannelIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `IncidentIoNotificationChannelIntegration`.
+- Contract factory: `create_incident_io_notification_channel_integration()`.

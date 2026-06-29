@@ -16,7 +16,7 @@ import pytest
 from intergrax.integrations._shared.conformance import assert_document_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.providers.document_store.cassandra.adapter import CassandraDocumentStore
+from intergrax.integrations.providers.document_store.cassandra.integration import CassandraDocumentStoreIntegration
 from intergrax.integrations.providers.document_store.cassandra.bundle import (
     CassandraIntegrationBundle,
     create_cassandra_document_store,
@@ -42,7 +42,7 @@ _SCAN_ROOTS = ("intergrax", "applications", "agents", "tests")
 _SKIP_DIR_NAMES = {".venv", "build", "__pycache__", "node_modules"}
 _FORBIDDEN_OUTSIDE_PROVIDER = (
     "CassandraCqlClient(",
-    "CassandraDocumentStore(",
+    "CassandraDocumentStoreIntegration(",
     "integrations.providers.cassandra.client",
     "integrations.providers.cassandra.opens",
     "import cassandra",
@@ -318,7 +318,7 @@ def test_create_cassandra_integration_bundle() -> None:
     bundle = create_cassandra_integration(**_cassandra_config().model_dump(), session_factory=factory)
 
     assert isinstance(bundle, CassandraIntegrationBundle)
-    assert isinstance(bundle.document_store, CassandraDocumentStore)
+    assert isinstance(bundle.document_store, CassandraDocumentStoreIntegration)
     assert bundle.cql_client.config.keyspace == "intergrax"
 
 
@@ -334,7 +334,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_document_store(store)
-    assert isinstance(store, CassandraDocumentStore)
+    assert isinstance(store, CassandraDocumentStoreIntegration)
 
 
 def test_register_default_integrations_includes_cassandra() -> None:
@@ -348,7 +348,7 @@ def test_register_default_integrations_includes_cassandra() -> None:
         config={**_cassandra_config().model_dump(), "session_factory": factory},
     )
 
-    assert isinstance(store, CassandraDocumentStore)
+    assert isinstance(store, CassandraDocumentStoreIntegration)
 
 
 def test_opens_creates_driver_session_when_not_injected() -> None:

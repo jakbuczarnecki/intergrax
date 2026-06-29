@@ -14,7 +14,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
-from intergrax.integrations.providers.cloud_platform.azure.adapter import AzureCloudPlatform
+from intergrax.integrations.providers.cloud_platform.azure.adapter import _AzureCloudPlatform
+from intergrax.integrations.providers.cloud_platform.azure.integration import AzureCloudPlatformIntegration
 from intergrax.integrations.providers.cloud_platform.azure.config import AzureIntegrationConfig
 
 
@@ -59,4 +60,4 @@ def open_azure_cloud_platform(
         config,
         credential_factory=credential_factory,
     )
-    return AzureCloudPlatform(config, token_credential)
+    return AzureCloudPlatformIntegration.from_client(_AzureCloudPlatform(config, token_credential))

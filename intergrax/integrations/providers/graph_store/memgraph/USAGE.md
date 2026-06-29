@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Memgraph (memgraph)
 
-# `memgraph` integration — usage
+Category: `graph_store`
 
-**Category:** `graph_store`  
-**Catalog factory:** ``create_memgraph_graph_store()``  
-**Env prefix:** ``INTERGRAX_MEMGRAPH_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.graph_store.memgraph.bundle import create_memgraph_graph_store
-
-backend = create_memgraph_graph_store()
-```
+- **`MemgraphGraphStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `MemgraphGraphStoreIntegration`.
+- Contract factory: `create_memgraph_graph_store_integration()`.

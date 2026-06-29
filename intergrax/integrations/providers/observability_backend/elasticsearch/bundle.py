@@ -15,7 +15,9 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import ElasticsearchObservabilityBackend
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ElasticsearchObservabilityIntegration,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
 from intergrax.integrations.providers.observability_backend.elasticsearch.opens import (
@@ -27,7 +29,7 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.opens 
 @dataclass(frozen=True)
 class ElasticsearchIntegrationBundle:
     config: ElasticsearchIntegrationConfig
-    observability_backend: ElasticsearchObservabilityBackend
+    observability_backend: ElasticsearchObservabilityIntegration
     rest_client: ElasticsearchRestClient
 
 
@@ -54,7 +56,7 @@ def create_elasticsearch_integration(
         implementation=observability_backend,
         client=rest_client,
     )
-    assert isinstance(backend, ElasticsearchObservabilityBackend)
+    assert isinstance(backend, ElasticsearchObservabilityIntegration)
     return ElasticsearchIntegrationBundle(
         config=config,
         observability_backend=backend,
@@ -69,7 +71,7 @@ def create_elasticsearch_observability_backend(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
     **config_overrides: object,
-) -> ElasticsearchObservabilityBackend:
+) -> ElasticsearchObservabilityIntegration:
     """Catalog factory for ``"elasticsearch"`` / ``OBSERVABILITY_BACKEND``."""
     return create_elasticsearch_integration(
         observability_backend=observability_backend,
@@ -78,3 +80,38 @@ def create_elasticsearch_observability_backend(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).observability_backend
+
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+    ELASTICSEARCH_SUPPORTED_SIGNALS,
+    ElasticsearchObservabilityIntegration,
+    ElasticsearchObservabilityIntegrationConfig,
+    ElasticsearchObservabilityTransport,
+)
+
+
+def create_elasticsearch_observability_integration(
+    *,
+    transport: ElasticsearchObservabilityTransport | None = None,
+    enabled: bool = False,
+) -> ElasticsearchObservabilityIntegration:
+    """
+    Build a contract-based Elasticsearch observability vendor integration.
+
+    The legacy query facade (create_elasticsearch_observability_backend) is unchanged.
+    Transport must be injected explicitly for enabled export; disabled by default.
+    """
+    if enabled and transport is None:
+        raise IntegrationConfigurationError(
+            "Elasticsearch observability integration requires an injected transport when enabled=True",
+        )
+    if transport is not None:
+        return ElasticsearchObservabilityIntegration.from_transport(transport, enabled=enabled)
+    return ElasticsearchObservabilityIntegration.for_provider(
+        provider_id=ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+        supported_signals=ELASTICSEARCH_SUPPORTED_SIGNALS,
+        display_name="Elasticsearch",
+        config=ElasticsearchObservabilityIntegrationConfig(enabled=enabled),
+    )

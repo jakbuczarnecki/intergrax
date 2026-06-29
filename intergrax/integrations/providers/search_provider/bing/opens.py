@@ -12,7 +12,8 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.integrations.contracts.search_provider import SearchProvider
-from intergrax.integrations.providers.search_provider.bing.adapter import BingSearchProvider
+from intergrax.integrations.providers.search_provider.bing.adapter import _BingSearchProvider
+from intergrax.integrations.providers.search_provider.bing.integration import BingSearchProviderIntegration
 from intergrax.integrations.providers.search_provider.bing.config import BingIntegrationConfig
 from intergrax.integrations.providers.search_provider.bing.web_client import BingWebProvider
 
@@ -39,6 +40,6 @@ def open_bing_search_provider(
     provider: Optional[BingWebProvider] = None,
     session: Optional[object] = None,
 ) -> SearchProvider:
-    return BingSearchProvider(
-        open_bing_web_search_provider(config, provider=provider, session=session)
+    return BingSearchProviderIntegration.from_client(_BingSearchProvider(
+        open_bing_web_search_provider(config, provider=provider, session=session))
     )

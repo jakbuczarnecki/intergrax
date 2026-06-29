@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import (
-    ElasticsearchObservabilityBackend,
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ElasticsearchObservabilityIntegration,
 )
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.stores.document_backed_runtime_event_store import (
@@ -43,7 +43,7 @@ def runtime_event_persistence_for_elasticsearch_lab(
 
 
 def runtime_event_persistence_from_elasticsearch_backend(
-    backend: ElasticsearchObservabilityBackend,
+    backend: ElasticsearchObservabilityIntegration,
     *,
     document_store: DocumentStore | None = None,
 ) -> RuntimeEventPersistence:
@@ -51,7 +51,7 @@ def runtime_event_persistence_from_elasticsearch_backend(
     Resolve runtime event persistence for ``observability_backend=elasticsearch``.
 
     The ``backend`` is retained for OBS-BUS-6 export/search wiring; persistence uses
-  the document index contract until bulk index hooks land.
+    the document index contract until bulk index hooks land.
     """
     _ = backend
     return runtime_event_persistence_for_elasticsearch_lab(document_store=document_store)

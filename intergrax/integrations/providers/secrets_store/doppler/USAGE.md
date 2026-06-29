@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Doppler (doppler)
 
-# `doppler` integration — usage
+Category: `secrets_store`
 
-**Category:** `secrets_store`  
-**Catalog factory:** ``create_doppler_secrets_store()``  
-**Env prefix:** ``INTERGRAX_DOPPLER_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.secrets_store.doppler.bundle import create_doppler_secrets_store
-
-backend = create_doppler_secrets_store()
-```
+- **`DopplerSecretsStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DopplerSecretsStoreIntegration`.
+- Contract factory: `create_doppler_secrets_store_integration()`.

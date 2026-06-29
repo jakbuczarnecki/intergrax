@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Cloudflare R2 (cloudflare_r2)
 
-# `cloudflare_r2` integration — usage
+Category: `object_storage`
 
-**Category:** `object_storage`  
-**Catalog factory:** ``create_cloudflare_r2_object_storage()``  
-**Env prefix:** ``INTERGRAX_CLOUDFLARE_R2_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.object_storage.cloudflare_r2.bundle import create_cloudflare_r2_object_storage
-
-backend = create_cloudflare_r2_object_storage()
-```
+- **`CloudflareR2ObjectStorageIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `CloudflareR2ObjectStorageIntegration`.
+- Contract factory: `create_cloudflare_r2_object_storage_integration()`.

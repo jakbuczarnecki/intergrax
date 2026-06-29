@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_cloud_platform
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
+from intergrax.integrations.providers.cloud_platform.gcp.adapter import _GcpCloudPlatform
 from intergrax.integrations.providers.cloud_platform.gcp.bundle import (
     GcpIntegrationBundle,
     create_gcp_cloud_platform,
@@ -24,6 +24,7 @@ from intergrax.integrations.providers.cloud_platform.gcp.config import (
     ENV_GCP_REGION,
     GcpIntegrationConfig,
 )
+from intergrax.integrations.providers.cloud_platform.gcp.integration import GcpCloudPlatformIntegration
 from intergrax.integrations.providers.cloud_platform.gcp.register import register_gcp_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -157,7 +158,7 @@ def test_create_gcp_integration_bundle() -> None:
     bundle = create_gcp_integration(**_gcp_config().model_dump(), credential_factory=factory)
 
     assert isinstance(bundle, GcpIntegrationBundle)
-    assert isinstance(bundle.cloud_platform, GcpCloudPlatform)
+    assert isinstance(bundle.cloud_platform, GcpCloudPlatformIntegration)
     assert bundle.cloud_platform.default_region == "europe-west1"
     assert bundle.cloud_platform.project_id == "my-project"
 
@@ -174,7 +175,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_cloud_platform(platform)
-    assert isinstance(platform, GcpCloudPlatform)
+    assert isinstance(platform, GcpCloudPlatformIntegration)
 
 
 def test_register_default_integrations_includes_gcp() -> None:
@@ -188,7 +189,7 @@ def test_register_default_integrations_includes_gcp() -> None:
         config={**_gcp_config().model_dump(), "credential_factory": factory},
     )
 
-    assert isinstance(platform, GcpCloudPlatform)
+    assert isinstance(platform, GcpCloudPlatformIntegration)
 
 
 def test_opens_uses_service_account_file_when_configured() -> None:

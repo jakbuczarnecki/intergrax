@@ -19,7 +19,7 @@ from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS
 _AWS_DEFAULTS = CLOUD_PLATFORM_DEFAULTS["aws"]
 
 
-class AwsCloudPlatform:
+class _AwsCloudPlatform:
     """
     Catalog facade over a boto3 ``Session``.
 

@@ -1,44 +1,9 @@
-# `langfuse` integration — usage
+# Langfuse (langfuse)
 
-**Category:** ``observability_backend``  
-**Catalog factory:** ``create_langfuse_observability_backend()``
+Category: `observability_backend`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Single public entrypoint
 
-## Common pattern
-
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
-
-register_default_integrations()
-profile = IntegrationProfile(observability_backend="langfuse")
-backend = profile.resolve(IntegrationCategory.OBSERVABILITY_BACKEND)
-```
-
-Direct factory (preferred in application ``factory.py``):
-
-```python
-from intergrax.integrations.providers.observability_backend.langfuse.bundle import create_langfuse_observability_backend
-
-backend = create_langfuse_observability_backend(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_LANGFUSE_URL`, `INTERGRAX_LANGFUSE_API_KEY`
-
-## Example
-
-```python
-from intergrax.integrations.providers.observability_backend.langfuse.bundle import create_langfuse_observability_backend
-
-obs = create_langfuse_observability_backend(base_url="https://cloud.langfuse.com", api_key="...")
-```
-
-## Notes
-
-LLM/agent trace metrics via HTTP (PromQL-shaped facade).
+- **`LangfuseObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `LangfuseObservabilityIntegration`.
+- Contract factory: `create_langfuse_observability_backend_integration()`.

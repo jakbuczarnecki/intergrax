@@ -20,7 +20,7 @@ from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS
 _GCP_DEFAULTS = CLOUD_PLATFORM_DEFAULTS["gcp"]
 
 
-class GcpCloudPlatform:
+class _GcpCloudPlatform:
     """
     Catalog facade over Google ``Credentials``.
 

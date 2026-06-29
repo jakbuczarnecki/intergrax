@@ -91,15 +91,15 @@ def open_runtime_event_store_from_profile(
 
     obs_slug = profile.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND)
     if obs_slug == "elasticsearch":
-        from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import (
-            ElasticsearchObservabilityBackend,
+        from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+            ElasticsearchObservabilityIntegration,
         )
         from intergrax.integrations.providers.observability_backend.elasticsearch.runtime_events import (
             runtime_event_persistence_from_elasticsearch_backend,
         )
 
         resolved = profile.resolve(IntegrationCategory.OBSERVABILITY_BACKEND)
-        if isinstance(resolved, ElasticsearchObservabilityBackend):
+        if isinstance(resolved, ElasticsearchObservabilityIntegration):
             return _validating(runtime_event_persistence_from_elasticsearch_backend(resolved))
 
     from intergrax.runtime.events.store import resolve_runtime_event_persistence, resolve_runtime_events_db_path

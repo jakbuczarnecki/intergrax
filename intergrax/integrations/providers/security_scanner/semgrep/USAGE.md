@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Semgrep (semgrep)
 
-# `semgrep` integration — usage
+Category: `security_scanner`
 
-**Category:** `security_scanner`  
-**Catalog factory:** ``create_semgrep_security_scanner()``  
-**Env prefix:** ``INTERGRAX_SEMGREP_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.security_scanner.semgrep.bundle import create_semgrep_security_scanner
-
-backend = create_semgrep_security_scanner()
-```
+- **`SemgrepSecurityScannerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SemgrepSecurityScannerIntegration`.
+- Contract factory: `create_semgrep_security_scanner_integration()`.

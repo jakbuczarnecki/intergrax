@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Daytona (daytona)
 
-# `daytona` integration — usage
+Category: `sandbox_host`
 
-**Category:** `sandbox_host`  
-**Catalog factory:** ``create_daytona_sandbox_host()``  
-**Env prefix:** ``INTERGRAX_DAYTONA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.sandbox_host.daytona.bundle import create_daytona_sandbox_host
-
-backend = create_daytona_sandbox_host()
-```
+- **`DaytonaSandboxHostIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DaytonaSandboxHostIntegration`.
+- Contract factory: `create_daytona_sandbox_host_integration()`.

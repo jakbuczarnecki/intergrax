@@ -12,6 +12,9 @@ from intergrax.agents.persistence.tool_invoker_wiring import (
 )
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
+from intergrax.contracts.agent_run_trace import GatewayCallStatus
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -54,3 +57,36 @@ def test_inject_acp_tool_invoker_metadata_wires_host_invoker() -> None:
         tenant_id="tenant-1",
     )
     assert metadata[AcpMetadataKey.DECLARATIVE_TOOL_INVOKER] is invoker
+
+
+@pytest.mark.asyncio
+async def test_runtime_execution_context_records_catalog_tool_calls() -> None:
+    class _Gateway:
+        async def invoke(self, request: ToolRequest) -> ToolResponse:
+            return ToolResponse(
+                request_id=request.request_id,
+                status=ToolResponseStatus.SUCCESS,
+                output={"ok": True},
+                duration_ms=7,
+            )
+
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        tool_gateway=_Gateway(),
+    )
+    response = await exec_ctx.invoke_tool(
+        ToolRequest(
+            tool_name="rag.ingest_document",
+            agent_id="local_indexer",
+            step_id="local_indexer_step",
+            input={"source_path": "/tmp/doc.txt"},
+        )
+    )
+    assert response.status == ToolResponseStatus.SUCCESS
+    pending = exec_ctx.drain_pending_tool_calls()
+    assert len(pending) == 1
+    assert pending[0].tool_id == "rag.ingest_document"
+    assert pending[0].status == GatewayCallStatus.SUCCEEDED
+    assert exec_ctx.drain_pending_tool_calls() == []

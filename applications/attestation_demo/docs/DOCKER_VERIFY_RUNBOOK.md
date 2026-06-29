@@ -364,7 +364,7 @@ Skip if `INTERGRAX_HARNESS_API_KEY` is not set in `.env`.
 From repository root (host need **not** be running — uses in-process `TestClient`):
 
 ```bash
-uv run pytest applications/attestation_demo/attestation_demo_tests -q
+uv run pytest applications/attestation_demo/tests -q
 uv run pytest tests/unit/runtime/attestation/ -q
 ```
 

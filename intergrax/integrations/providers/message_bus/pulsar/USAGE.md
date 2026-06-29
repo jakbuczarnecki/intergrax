@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Pulsar (pulsar)
 
-# `pulsar` integration — usage
+Category: `message_bus`
 
-**Category:** `message_bus`  
-**Catalog factory:** ``create_pulsar_message_bus()``  
-**Env prefix:** ``INTERGRAX_PULSAR_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.message_bus.pulsar.bundle import create_pulsar_message_bus
-
-backend = create_pulsar_message_bus()
-```
+- **`PulsarMessageBusIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `PulsarMessageBusIntegration`.
+- Contract factory: `create_pulsar_message_bus_integration()`.

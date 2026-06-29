@@ -108,7 +108,7 @@ Journal comparison (same host): `GET /debug/tasks/{run_id}/trace`
 ## 3. Verify before deploy
 
 ```bash
-uv run pytest applications/attestation_demo/attestation_demo_tests -q
+uv run pytest applications/attestation_demo/tests -q
 uv run pytest tests/unit/runtime/attestation/ -q
 ```
 

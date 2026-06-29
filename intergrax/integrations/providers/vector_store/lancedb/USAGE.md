@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Lancedb (lancedb)
 
-# `lancedb` integration — usage
+Category: `vector_store`
 
-**Category:** `vector_store`  
-**Catalog factory:** ``create_lancedb_vector_store()``  
-**Env prefix:** ``INTERGRAX_LANCEDB_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.vector_store.lancedb.bundle import create_lancedb_vector_store
-
-backend = create_lancedb_vector_store()
-```
+- **`LancedbVectorStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `LancedbVectorStoreIntegration`.
+- Contract factory: `create_lancedb_vector_store_integration()`.

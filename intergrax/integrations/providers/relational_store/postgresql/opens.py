@@ -14,7 +14,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.integrations.providers.relational_store.postgresql.adapter import PostgreSQLRelationalStore
+from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
+from intergrax.integrations.providers.relational_store.postgresql.integration import PostgresqlRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
 
 
@@ -54,10 +55,12 @@ def open_postgresql_relational_store(
     *,
     implementation: Optional[RelationalStore] = None,
     connection_factory: Optional[Callable[[], Any]] = None,
-) -> RelationalStore:
+) -> PostgresqlRelationalStoreIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, PostgresqlRelationalStoreIntegration):
+            return implementation
+        return PostgresqlRelationalStoreIntegration.from_client(implementation)
     connection = _open_connection(config, connection_factory=connection_factory)
     if config.tenant_schema:
         _apply_search_path(connection, config.tenant_schema)
-    return PostgreSQLRelationalStore(config, connection)
+    return PostgresqlRelationalStoreIntegration.from_client(_PostgreSQLRelationalStore(config, connection))

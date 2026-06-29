@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.integrations.providers.document_store.mongodb.adapter import MongoDBDocumentStore
+from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
 from intergrax.integrations.providers.document_store.mongodb.opens import open_mongodb_document_store
@@ -24,7 +24,7 @@ from intergrax.integrations.providers.document_store.mongodb.opens import open_m
 @dataclass(frozen=True)
 class MongoDBIntegrationBundle:
     config: MongoDBIntegrationConfig
-    document_store: MongoDBDocumentStore
+    document_store: MongodbDocumentStoreIntegration
     collection_client: MongoCollectionClient
 
 
@@ -48,11 +48,11 @@ def create_mongodb_integration(
         client=client,
         collection_factory=collection_factory,
     )
-    assert isinstance(store, MongoDBDocumentStore)
+    assert isinstance(store, MongodbDocumentStoreIntegration)
     return MongoDBIntegrationBundle(
         config=config,
         document_store=store,
-        collection_client=store.mongo_client,
+        collection_client=store._require_client().mongo_client,
     )
 
 
@@ -63,7 +63,7 @@ def create_mongodb_document_store(
     client: Optional[object] = None,
     collection_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
-) -> MongoDBDocumentStore:
+) -> MongodbDocumentStoreIntegration:
     """Catalog factory for ``"mongodb"`` / ``DOCUMENT_STORE``."""
     return create_mongodb_integration(
         document_store=document_store,
@@ -72,3 +72,35 @@ def create_mongodb_document_store(
         collection_factory=collection_factory,
         **config_overrides,
     ).document_store
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.document_store.mongodb.integration import (
+    MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+    MongodbDocumentStoreIntegration,
+    MongodbDocumentStoreIntegrationConfig,
+    MongodbDocumentStoreClient,
+)
+
+
+def create_mongodb_document_store_integration(
+    *,
+    client: MongodbDocumentStoreClient | None = None,
+    enabled: bool = False,
+) -> MongodbDocumentStoreIntegration:
+    """
+    Build a contract-based Mongodb document store integration.
+
+    Compatibility shim — constructs Integration via from_store (create_mongodb_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Mongodb document store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return MongodbDocumentStoreIntegration.from_client(client, enabled=enabled)
+    return MongodbDocumentStoreIntegration.for_provider(
+        provider_id=MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+        display_name="Mongodb",
+        config=MongodbDocumentStoreIntegrationConfig(enabled=enabled),
+    )

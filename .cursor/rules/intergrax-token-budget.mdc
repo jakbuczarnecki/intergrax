@@ -28,7 +28,7 @@ Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full plan/arch h
 - **No** parallel full-file reads of plan/arch hubs in one turn.
 - **No** `Task`/explore subagents unless operator asks or `RESUME:` requires it.
 - **Expand context** (full hub, subagent, >3 source files outside operator read scope, repo-wide semantic search): **STOP** — one short question; wait for OK.
-- **LKW Tier-2 tasks:** read [`agents/lkw_shared/PATTERN.md`](../../agents/lkw_shared/PATTERN.md) for `invoke_tool` + allowlist — **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
+- **LKW Tier-2 tasks:** read `agents/local_indexer/steps/index_job.py` (or sibling LKW step modules) for `invoke_tool` + allowlist — **do not** open `uaep.py`, `boundary_demo`, or Nexus loop sources for pattern discovery.
 - **Expansion budget:** max **3 files** outside operator **read scope** per task; then STOP and ask.
 - Grep + path filter before semantic search. Respect `.cursorignore`. No `audit_results/` unless `RESUME:`.
 - **Doc topology:** domain-layer `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`; multi-layer feature `docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md` — [`docs/features/README.md`](../../docs/features/README.md).

@@ -8,9 +8,11 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.langsmith.adapter import LangSmithObservabilityBackend
 from intergrax.integrations.providers.observability_backend.langsmith.client import LangSmithRestClient
 from intergrax.integrations.providers.observability_backend.langsmith.config import DEFAULT_TIMEOUT_SECONDS, LangSmithIntegrationConfig
+from intergrax.integrations.providers.observability_backend.langsmith.integration import (
+    LangsmithObservabilityIntegration,
+)
 
 
 def _create_http_client(config: LangSmithIntegrationConfig) -> Any:
@@ -51,4 +53,4 @@ def open_langsmith_observability_backend(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return LangSmithObservabilityBackend(rest_client)
+    return LangsmithObservabilityIntegration.from_client(rest_client)

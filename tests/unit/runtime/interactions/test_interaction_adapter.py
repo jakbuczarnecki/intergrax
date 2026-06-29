@@ -3,9 +3,10 @@
 import pytest
 
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
-from intergrax.integrations.providers.interaction_surface.lab_json.adapter import LabJsonIntegrationAdapter
+from intergrax.integrations.providers.interaction_surface.lab_json.adapter import _LabJsonIntegrationAdapter
+from intergrax.integrations.providers.interaction_surface.lab_json.integration import LabJsonInteractionSurfaceIntegration
 from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
-from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
+from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
     create_interaction_adapter,
@@ -35,7 +36,7 @@ def test_parse_slash_command_text():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_lab_json_adapter_to_task():
-    adapter = LabJsonIntegrationAdapter()
+    adapter = _LabJsonIntegrationAdapter()
     payload = {
         "tenant_id": "t1",
         "user_id": "u1",
@@ -79,7 +80,7 @@ def test_slash_command_adapter_slack_payload_to_task():
 @pytest.mark.gate
 def test_chained_adapter_prefers_slack():
     adapter = ChainedInteractionAdapter(
-        [SlackInteractionAdapter(), LabJsonIntegrationAdapter()]
+        [SlackInteractionAdapter(), _LabJsonIntegrationAdapter()]
     )
     task = adapter.to_task(
         {"command": "/x", "text": "cap.a do thing", "user_id": "u1", "team_id": "t1"},
@@ -94,7 +95,7 @@ def test_chained_adapter_prefers_slack():
 def test_create_interaction_adapter_surfaces():
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="lab")),
-        LabJsonIntegrationAdapter,
+        LabJsonInteractionSurfaceIntegration,
     )
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="slash_command")),
@@ -106,7 +107,7 @@ def test_create_interaction_adapter_surfaces():
     )
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="teams")),
-        TeamsInteractionAdapter,
+        _TeamsInteractionAdapter,
     )
     auto = create_interaction_adapter(resolve_interaction_settings(surface="auto"))
     assert isinstance(auto, ChainedInteractionAdapter)

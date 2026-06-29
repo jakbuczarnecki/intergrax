@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Confluent (confluent)
 
-# `confluent` integration — usage
+Category: `message_bus`
 
-**Category:** `message_bus`  
-**Catalog factory:** ``create_confluent_message_bus()``  
-**Env prefix:** ``INTERGRAX_CONFLUENT_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.message_bus.confluent.bundle import create_confluent_message_bus
-
-backend = create_confluent_message_bus()
-```
+- **`ConfluentMessageBusIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ConfluentMessageBusIntegration`.
+- Contract factory: `create_confluent_message_bus_integration()`.

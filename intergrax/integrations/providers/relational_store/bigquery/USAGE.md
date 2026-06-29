@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Bigquery (bigquery)
 
-# `bigquery` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_bigquery_relational_store()``  
-**Env prefix:** ``INTERGRAX_BIGQUERY_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.relational_store.bigquery.bundle import create_bigquery_relational_store
-
-backend = create_bigquery_relational_store()
-```
+- **`BigqueryRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `BigqueryRelationalStoreIntegration`.
+- Contract factory: `create_bigquery_relational_store_integration()`.

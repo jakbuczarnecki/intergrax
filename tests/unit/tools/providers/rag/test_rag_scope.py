@@ -127,7 +127,7 @@ def test_vectorstore_tenant_id_unwraps_integration_adapter() -> None:
 
 
 def test_vectorstore_tenant_id_reads_qdrant_integration_bridge() -> None:
-    from intergrax.integrations.providers.vector_store.qdrant.adapter import QdrantVectorStoreIntegration
+    from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
     from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 
     bridge = QdrantVectorStoreIntegration(

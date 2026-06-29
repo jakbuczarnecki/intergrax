@@ -14,7 +14,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.integrations.providers.relational_store.mysql.adapter import MySQLRelationalStore
+from intergrax.integrations.providers.relational_store.mysql.adapter import _MySQLRelationalStore
+from intergrax.integrations.providers.relational_store.mysql.integration import MysqlRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.mysql.config import MySQLIntegrationConfig
 
 
@@ -63,4 +64,4 @@ def open_mysql_relational_store(
     connection = _open_connection(config, connection_factory=connection_factory)
     if config.tenant_database:
         _select_tenant_database(connection, config.tenant_database)
-    return MySQLRelationalStore(config, connection)
+    return MysqlRelationalStoreIntegration.from_client(_MySQLRelationalStore(config, connection))

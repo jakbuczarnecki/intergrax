@@ -8,5 +8,5 @@ from __future__ import annotations
 from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
 
 
-class LabJsonIntegrationAdapter(LabJsonInteractionAdapter):
+class _LabJsonIntegrationAdapter(LabJsonInteractionAdapter):
     """Catalog facade over ``LabJsonInteractionAdapter`` (runtime channel ``lab``)."""

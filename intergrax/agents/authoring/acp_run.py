@@ -39,6 +39,7 @@ from intergrax.agents.configure_run_strict import ConfigureRunStrictViolation
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
 from intergrax.tools.tool_execution_profile import build_profile_map
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.agents.acp_token_metering_bridge import (
     initial_invocation_usage,
     seed_state_root_budget_limits,
@@ -74,6 +75,13 @@ def _initial_state_root(request: AgentRunRequest) -> dict[str, Any]:
             return dict(request.state)
         return {ACP_STATE_KEY: dict(request.state)}
     return {ACP_STATE_KEY: {"schema_version": "acp.state.v1", "_version": 0}}
+
+
+def _exec_ctx_from_step(step_ctx: AgentStepContext) -> RuntimeExecutionContext | None:
+    raw = step_ctx.metadata.get("uaep_exec_ctx")
+    if isinstance(raw, RuntimeExecutionContext):
+        return raw
+    return None
 
 
 def _terminal_status(outcome_terminal: bool, next_action: StepNextAction) -> AgentRunStatus:
@@ -429,6 +437,16 @@ async def run_acp_session(
         agent_id=merged.agent_id,
         step_index=step_ctx.step_index,
     )
+    from intergrax.runtime.workspace.exec_ctx_isolation import isolation_structured_data_from_exec_ctx
+
+    structured_data: dict[str, Any] = {
+        AcpStructuredDataKey.TRACE_SUMMARY: _trace_summary_payload(
+            kernel_ctx.run_trace,
+            terminal_reason=terminal_reason,
+        ),
+    }
+    structured_data.update(isolation_structured_data_from_exec_ctx(_exec_ctx_from_step(step_ctx)))
+
     result = AgentRunResult(
         status=status,
         output=last_outcome.output or "",
@@ -442,12 +460,7 @@ async def run_acp_session(
         terminal_reason=terminal_reason,
         duration_ms=duration_ms,
         compliance_summary=build_compliance_summary(kernel_ctx.run_trace),
-        structured_data={
-            AcpStructuredDataKey.TRACE_SUMMARY: _trace_summary_payload(
-                kernel_ctx.run_trace,
-                terminal_reason=terminal_reason,
-            ),
-        },
+        structured_data=structured_data,
     )
     if status == AgentRunStatus.PAUSED:
         await agent.on_run_end(result)
@@ -480,12 +493,15 @@ def _trace_summary_payload(
     *,
     terminal_reason: TerminalReason,
 ) -> dict[str, object]:
+    from intergrax.agents.authoring.diagnostic_serialization import aggregate_step_diagnostics
+
     return {
         "total_steps": trace.total_steps,
         "total_llm_tokens": trace.total_llm_tokens,
         "total_tool_calls": trace.total_tool_calls,
         "total_rag_calls": trace.total_rag_calls,
         "terminal_reason": terminal_reason.value,
+        "step_diagnostics": aggregate_step_diagnostics(trace),
     }
 
 

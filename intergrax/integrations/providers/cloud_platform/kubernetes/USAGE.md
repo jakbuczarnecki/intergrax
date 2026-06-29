@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Kubernetes (kubernetes)
 
-# `kubernetes` integration — usage
+Category: `cloud_platform`
 
-**Category:** `cloud_platform`  
-**Catalog factory:** ``create_kubernetes_cloud_platform()``  
-**Env prefix:** ``INTERGRAX_KUBERNETES_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.cloud_platform.kubernetes.bundle import create_kubernetes_cloud_platform
-
-backend = create_kubernetes_cloud_platform()
-```
+- **`KubernetesCloudPlatformIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `KubernetesCloudPlatformIntegration`.
+- Contract factory: `create_kubernetes_cloud_platform_integration()`.

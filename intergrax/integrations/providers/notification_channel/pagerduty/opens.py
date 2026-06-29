@@ -8,7 +8,8 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
-from intergrax.integrations.providers.notification_channel.pagerduty.adapter import PagerDutyNotificationChannel
+from intergrax.integrations.providers.notification_channel.pagerduty.adapter import _PagerDutyNotificationChannel
+from intergrax.integrations.providers.notification_channel.pagerduty.integration import PagerdutyNotificationChannelIntegration
 from intergrax.integrations.providers.notification_channel.pagerduty.client import PagerDutyEventsClient
 from intergrax.integrations.providers.notification_channel.pagerduty.config import PagerDutyIntegrationConfig
 
@@ -39,12 +40,14 @@ def open_pagerduty_notification_channel(
     client: Optional[PagerDutyEventsClient] = None,
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[PagerDutyIntegrationConfig], Any]] = None,
-) -> NotificationChannel:
+) -> PagerdutyNotificationChannelIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, PagerdutyNotificationChannelIntegration):
+            return implementation
+        return PagerdutyNotificationChannelIntegration.from_client(implementation)
     events_client = client or open_pagerduty_events_client(
         config,
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return PagerDutyNotificationChannel(events_client)
+    return PagerdutyNotificationChannelIntegration.from_client(_PagerDutyNotificationChannel(events_client))

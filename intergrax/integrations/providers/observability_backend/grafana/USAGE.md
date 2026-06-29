@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Grafana (grafana)
 
-# `grafana` integration — usage
+Category: `observability_backend`
 
-**Category:** `observability_backend`  
-**Catalog factory:** ``create_grafana_observability_backend()``  
-**Env prefix:** ``INTERGRAX_GRAFANA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.observability_backend.grafana.bundle import create_grafana_observability_backend
-
-backend = create_grafana_observability_backend()
-```
+- **`GrafanaObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `GrafanaObservabilityIntegration`.
+- Contract factory: `create_grafana_observability_backend_integration()`.

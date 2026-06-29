@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
-from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
+from intergrax.integrations.providers.cloud_platform.gcp.adapter import _GcpCloudPlatform
 from intergrax.integrations.providers.cloud_platform.gcp.config import GcpIntegrationConfig
 from intergrax.integrations.providers.cloud_platform.gcp.opens import open_gcp_cloud_platform
 
@@ -23,7 +23,7 @@ from intergrax.integrations.providers.cloud_platform.gcp.opens import open_gcp_c
 @dataclass(frozen=True)
 class GcpIntegrationBundle:
     config: GcpIntegrationConfig
-    cloud_platform: GcpCloudPlatform
+    cloud_platform: GcpCloudPlatformIntegration
 
 
 def resolve_gcp_config(**overrides: object) -> GcpIntegrationConfig:
@@ -46,7 +46,7 @@ def create_gcp_integration(
         resolved_project_id=resolved_project_id,
         credential_factory=credential_factory,
     )
-    assert isinstance(platform, GcpCloudPlatform)
+    assert isinstance(platform, GcpCloudPlatformIntegration)
     return GcpIntegrationBundle(config=config, cloud_platform=platform)
 
 
@@ -57,7 +57,7 @@ def create_gcp_cloud_platform(
     resolved_project_id: str = "",
     credential_factory: Optional[Callable[[], tuple[object, str]]] = None,
     **config_overrides: object,
-) -> GcpCloudPlatform:
+) -> GcpCloudPlatformIntegration:
     """Catalog factory for ``"gcp"`` / ``CLOUD_PLATFORM``."""
     return create_gcp_integration(
         cloud_platform=cloud_platform,
@@ -66,3 +66,35 @@ def create_gcp_cloud_platform(
         credential_factory=credential_factory,
         **config_overrides,
     ).cloud_platform
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.cloud_platform.gcp.integration import (
+    GCP_CLOUD_PLATFORM_PROVIDER_ID,
+    GcpCloudPlatformIntegration,
+    GcpCloudPlatformIntegrationConfig,
+    GcpCloudPlatformClient,
+)
+
+
+def create_gcp_cloud_platform_integration(
+    *,
+    client: GcpCloudPlatformIntegrationClient | None = None,
+    enabled: bool = False,
+) -> GcpCloudPlatformIntegration:
+    """
+    Build a contract-based GCP cloud platform integration.
+
+    Compatibility shim — constructs Integration via from_store (create_gcp_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "GCP cloud platform integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return GcpCloudPlatformIntegration.from_client(client, enabled=enabled)
+    return GcpCloudPlatformIntegration.for_provider(
+        provider_id=GCP_CLOUD_PLATFORM_PROVIDER_ID,
+        display_name="GCP",
+        config=GcpCloudPlatformIntegrationConfig(enabled=enabled),
+    )

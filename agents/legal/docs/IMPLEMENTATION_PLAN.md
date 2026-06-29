@@ -37,5 +37,5 @@ Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_r
 
 ```bash
 uv run pytest agents/legal/tests -q
-uv run pytest applications/legal_application/legal_tests -q
+uv run pytest applications/legal_application/tests -q
 ```

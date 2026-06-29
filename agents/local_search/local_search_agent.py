@@ -5,24 +5,27 @@ from __future__ import annotations
 
 from local_search.capabilities import CAPABILITIES
 from local_search.contract import build_agent_contract
+from local_search.diagnostics import search_diagnostic_from_output
 from local_search.steps.search_job import run_search_job
+from intergrax.agents.authoring.patterns.diagnostic_reflex import DiagnosticReflexAgent
 from intergrax.agents.authoring.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,
     reason_passthrough,
 )
-from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+from intergrax.contracts.agent_run import AgentRunResult
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 
-class LocalSearchAgent(ReflexAgent):
+class LocalSearchAgent(DiagnosticReflexAgent):
     """LKW search agent — typed Reflex pattern (ACP-MIG-4)."""
 
     contract_id = "local_search"
@@ -61,3 +64,19 @@ class LocalSearchAgent(ReflexAgent):
 
     def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
         return evaluate_complete(step_ctx, output, reason="local_search_goal_met")
+
+    def build_diagnostic_payloads(self, output: dict[str, object]) -> list[DiagnosticPayload]:
+        return [search_diagnostic_from_output(output)]
+
+    async def on_run_end(self, result: AgentRunResult) -> None:
+        """Export search_summary for graph prior-output / structured-data handoff."""
+        output = result.output
+        if not isinstance(output, dict):
+            return
+        search_summary = output.get("search_summary")
+        if not isinstance(search_summary, dict) or not search_summary:
+            return
+        evidence = search_summary.get("evidence")
+        has_evidence = isinstance(evidence, list) and any(isinstance(item, dict) for item in evidence)
+        if has_evidence or bool(search_summary.get("used")):
+            result.structured_data["search_summary"] = dict(search_summary)

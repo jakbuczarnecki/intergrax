@@ -72,3 +72,35 @@ def create_bing_search_provider(
         session=session,
         **config_overrides,
     ).search_provider
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.search_provider.bing.integration import (
+    BING_SEARCH_PROVIDER_PROVIDER_ID,
+    BingSearchProviderIntegration,
+    BingSearchProviderIntegrationConfig,
+    BingSearchProviderClient,
+)
+
+
+def create_bing_search_provider_integration(
+    *,
+    client: BingSearchProviderIntegrationClient | None = None,
+    enabled: bool = False,
+) -> BingSearchProviderIntegration:
+    """
+    Build a contract-based Bing search provider integration.
+
+    Compatibility shim — constructs Integration via from_store (create_bing_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Bing search provider integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return BingSearchProviderIntegration.from_client(client, enabled=enabled)
+    return BingSearchProviderIntegration.for_provider(
+        provider_id=BING_SEARCH_PROVIDER_PROVIDER_ID,
+        display_name="Bing",
+        config=BingSearchProviderIntegrationConfig(enabled=enabled),
+    )

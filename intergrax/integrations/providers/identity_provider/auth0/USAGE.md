@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Auth0 (auth0)
 
-# `auth0` integration — usage
+Category: `identity_provider`
 
-**Category:** `identity_provider`  
-**Catalog factory:** ``create_auth0_identity_provider()``  
-**Env prefix:** ``INTERGRAX_AUTH0_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.identity_provider.auth0.bundle import create_auth0_identity_provider
-
-backend = create_auth0_identity_provider()
-```
+- **`Auth0IdentityProviderIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `Auth0IdentityProviderIntegration`.
+- Contract factory: `create_auth0_identity_provider_integration()`.

@@ -9,7 +9,9 @@ LKW.1.12 — decision_emitted event phase mismatch: PASSED
 LKW.1.13 — local_indexer RAG ingest live path: PASSED
 LKW.1.14 — final live product smoke attempt: PARTIAL (tenant-scoped search retrieve_failed)
 LKW.1.15 — tenant-scoped rag.retrieve + local_search allowlist + final product closeout: PASSED
-LKW-H1 — NEXT: trace/evidence inspection and observability/tool-call accounting
+LKW-H1.1 — live index tool-call accounting: PASSED
+LKW-H1.2 — trace/evidence contract and inspection surface: PASSED WITH PLATFORM FOLLOW-UPS
+LKW-H1.3 — PASSED WITH PLATFORM FOLLOW-UPS
 ```
 
 ## Verified LKW.1 product path
@@ -20,7 +22,7 @@ LKW.1 product path verified live:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest passing smoke:
+Latest passing product smoke:
 
 ```text
 health=ok
@@ -32,6 +34,153 @@ source immutability=original fixture unchanged
 logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed, retriever_failed
 qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw-final-20260627103000
 ```
+
+## LKW-H1.1 — live index tool-call accounting
+
+Status:
+
+```text
+PASSED
+```
+
+Commits reported by operator:
+
+```text
+62621bc1 — fix(runtime): account for catalog tool calls in LKW runs
+a22222e0 — fix(runtime): propagate live catalog tool calls into app summary
+```
+
+Root cause:
+
+```text
+1. Catalog tool calls through RuntimeExecutionContext.invoke_tool() executed correctly,
+   but the first H1.1 fix only proved the ACP/kernel harvest path.
+2. Live LKW HTTP runs use the UAEP execute_uaep_step_via_kernel path.
+3. build_uaep_step_context() did not include uaep_exec_ctx in AgentStepContext.metadata,
+   so HarnessKernel could not drain pending ToolCallRecords from the RuntimeExecutionContext
+   used by local_indexer.run_step().
+4. Product behavior still worked (ingested=1), but application_run_summary.v1 reported
+   total_tool_calls=0 because the live UAEP bridge path did not expose those tool calls
+   to the kernel trace/app summary.
+```
+
+Fix chosen:
+
+```text
+- RuntimeExecutionContext.invoke_tool() records pending ToolCallRecord entries.
+- HarnessKernel._build_step_record() drains pending tool calls from step_ctx.metadata["uaep_exec_ctx"].
+- build_uaep_step_context() now forwards uaep_exec_ctx on the UAEP bridge path used by live Nexus runs.
+- Regression coverage proves UAEP bridge tool calls reach trace_summary and application_run_summary.v1.
+```
+
+Changed files:
+
+```text
+intergrax/contracts/runtime_execution_context.py
+intergrax/runtime/kernel/step_kernel.py
+intergrax/agents/authoring/uaep_step_bridge.py
+tests/unit/agents/persistence/test_tool_invoker_wiring.py
+tests/unit/runtime/kernel/test_step_kernel.py
+tests/unit/agents/authoring/test_uaep_step_bridge.py
+```
+
+Focused tests:
+
+```text
+uv run pytest tests/unit/runtime/kernel/test_step_kernel.py::test_kernel_harvests_uaep_catalog_tool_calls -q
+uv run pytest tests/unit/agents/persistence/test_tool_invoker_wiring.py -q
+uv run pytest tests/unit/agents/authoring/test_uaep_step_bridge.py::test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary -q
+uv run pytest applications/local_workspace_application/tests -q
+
+Result: 11 passed, 4 warnings
+```
+
+Live index smoke after H1.1:
+
+```text
+local.workspace.index
+accepted=1
+rejected=0
+ingested=1
+chunks=1
+application_run_summary.v1.agent_invocations[0].total_tool_calls=1
+```
+
+Interpretation:
+
+```text
+The known total_tool_calls=0 gap is fixed for the live LKW index path
+(rag.ingest_document through UAEP/Nexus). Search and synthesize accounting
+verification remains a follow-up under H1 because those live paths should also
+show rag.retrieve and workspace.write_file respectively.
+```
+
+Known non-blocking warning:
+
+```text
+The focused application tests emitted async runtime plugin warnings about
+coroutines not awaited in event_bus/task_trace plugin handlers. Those warnings
+are not part of H1.1 tool-call accounting and should be tracked separately as
+runtime-events/observability cleanup if they remain reproducible.
+```
+
+## LKW-H1.2 — trace/evidence contract and inspection surface
+
+Status:
+
+```text
+PASSED WITH PLATFORM FOLLOW-UPS
+```
+
+Delivered:
+
+```text
+POST /v1/local_workspace/run attaches metadata["lkw_evidence.v1"] alongside application_run_summary.v1.
+Curated read model from AgentRunTrace step diagnostics — no full_trace on HTTP response.
+Typed diagnostics: lkw.index_summary.v1, lkw.search_summary.v1, lkw.synthesize_summary.v1.
+Unsafe fields redacted (query_text, content, raw_chunks, documents, …).
+Index smoke verifies total_tool_calls>0; synthesize smoke verifies shadow artifact path/ref.
+```
+
+Changed files:
+
+```text
+applications/local_workspace_application/serving/evidence_slice.py
+applications/local_workspace_application/serving/run_metadata.py
+applications/local_workspace_application/serving/fastapi_router.py
+agents/local_indexer/diagnostics.py
+agents/local_search/diagnostics.py
+agents/local_synthesizer/diagnostics.py
+applications/local_workspace_application/tests/test_evidence_slice.py
+applications/local_workspace_application/tests/test_lkw_evidence_metadata.py
+applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_evidence_slice.py -q
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+
+Result: 9 passed, 12 warnings
+```
+
+Platform follow-ups at H1.2 closeout *(historical — superseded)*:
+
+```text
+RuntimeEvent TOOL_* -> closed LKW-PF1 / LKW-PF1A (runtime_event_summary.v1)
+RunArtifactBundle / WorkspaceArtifactRef -> closed LKW-PF2 / LKW-PF2A
+ACP shadow_workspace_id propagation -> closed LKW-PF2A
+search/synthesize per-tool accounting + smoke assertions -> closed LKW-H1.3
+Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer; async runtime plugin coroutine warnings
+```
+
+**LKW-PF1:** immediate `TOOL_*` RuntimeEvents — PASSED WITH FOLLOW-UP (see §LKW-PF1).
+
+**LKW-PF2:** RunArtifactBundle / WorkspaceArtifactRef — PASSED WITH FOLLOW-UP (see §LKW-PF2).
+
+**LKW-PF2A:** ACP shadow_workspace_id propagation — CLOSED (see §LKW-PF2A).
 
 ## LKW.1.15 — tenant-scoped retrieve for live search
 
@@ -133,19 +282,219 @@ Those blockers were fixed in LKW.1.15.
 | LKW.1.11 | Runtime tool registry parity fixed. |
 | LKW.1.12 | `decision_emitted` phase mismatch fixed. |
 | LKW.1.13 | UAEP/ACP catalog invocation bridge fixed; live index ingests into Qdrant. |
+| LKW.1.15 | Tenant-scoped retrieve and local_search allowlist fixed; product proof closed. |
+| LKW-H1.1 | UAEP live bridge tool-call accounting fixed for index/app summary. |
 
-## Known follow-ups after LKW.1
+## LKW-PF1 — immediate tool RuntimeEvents
+
+Status:
 
 ```text
-total_tool_calls=0 remains an observability/accounting gap.
-Standalone synthesize with message-only input can return content_missing.
+PASSED WITH FOLLOW-UP
 ```
 
-Classification:
+Scope:
 
 ```text
-total_tool_calls=0 -> LKW-H1 / observability and tool-call accounting
-message-only synthesize content_missing -> LKW.2 / pipeline-orchestration input contract
+RuntimeExecutionContext.invoke_tool emits TOOL_REQUESTED before gateway invocation and
+TOOL_COMPLETED / TOOL_DENIED / TOOL_FAILED after, using generic platform payload only
+(tool_id, status, latency_ms, args_digest, error_code, agent_id, task_id, run_id, phase).
+No raw tool args or LKW-specific schemas in core runtime.
+```
+
+Focused tests:
+
+```text
+uv run pytest tests/unit/contracts/test_invoke_tool_runtime_events.py tests/unit/agents/authoring/test_runtime_rag_call_recording.py -q
+
+Result: 10 passed
+```
+
+Follow-up (visibility gap):
+
+```text
+CLOSED in LKW-PF1A — POST /v1/local_workspace/run attaches metadata["runtime_event_summary.v1"]
+with redacted TOOL_* counts by tool_id (no raw args/content). Existing lkw_evidence.v1,
+application_run_summary.v1, and run_artifact_bundle.v1 remain unchanged.
+```
+
+Queue:
+
+```text
+NEXT: LKW.2
+```
+
+## LKW-PF1A — runtime event HTTP summary
+
+Status:
+
+```text
+CLOSED
+```
+
+Scope:
+
+```text
+POST /v1/local_workspace/run attaches metadata["runtime_event_summary.v1"] with redacted
+TOOL_* aggregates (total, by_type, per-tool counts). No raw args/content. Companion metadata
+(lkw_evidence.v1, application_run_summary.v1, run_artifact_bundle.v1) unchanged.
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_runtime_event_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+```
+
+## LKW-CI1 — live smoke circular import cleanup
+
+Status:
+
+```text
+CLOSED
+```
+
+Scope:
+
+```text
+Standalone live smoke avoids circular intergrax.runtime.task package import.
+AgentEngine exposes shadow_manager/sandbox_manager for graph executor isolation wiring.
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+```
+
+## LKW-PF2 — RunArtifactBundle / WorkspaceArtifactRef for synthesize
+
+Status:
+
+```text
+PASSED WITH FOLLOW-UP
+```
+
+Decision:
+
+```text
+Reuse existing platform contracts (no LKW-specific artifact layer):
+- intergrax/contracts/task_artifacts.py — RunArtifactBundle, WorkspaceArtifactRef
+- run_artifact_bundle.v1 metadata key (nexus task finisher rollup)
+LKW application promotes bundle on HTTP metadata and correlates synthesize diagnostics
+to workspace refs by artifact_path / artifact_ref.
+```
+
+Wiring:
+
+```text
+applications/local_workspace_application/serving/run_artifact_metadata.py
+applications/local_workspace_application/serving/fastapi_router.py
+```
+
+Metadata exposed (safe):
+
+```text
+run_artifact_bundle.v1.workspace[].artifact_id
+run_artifact_bundle.v1.workspace[].workspace_id
+run_artifact_bundle.v1.workspace[].relative_path
+run_artifact_bundle.v1.workspace[].uri
+run_artifact_bundle.v1.workspace[].size_bytes / sha256
+lkw.synthesize_summary.v1 (unchanged domain diagnostic)
+```
+
+Not exposed:
+
+```text
+raw synthesized content, raw evidence text, raw prompts, full file bodies
+```
+
+Focused tests:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_run_artifact_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
+```
+
+Follow-up closed in **LKW-PF2A** (see §LKW-PF2A).
+
+Queue:
+
+```text
+NEXT: LKW.2
+```
+
+## LKW-PF2A — ACP shadow_workspace_id propagation
+
+Status:
+
+```text
+CLOSED
+```
+
+Commit:
+
+```text
+10e40bf7 — LKW-PF2A-ACP-SHADOW-WORKSPACE-ID-PROPAGATION
+```
+
+Propagation path verified:
+
+```text
+shadow workspace attach (exec_ctx_isolation.py)
+  -> ACP session structured_data (acp_run.py) / UAEP route.extra (uaep.py)
+  -> AgentExecutionResult.structured_data (agent_engine.py / runtime_mapping.py)
+  -> TaskResult isolation + run_artifact_bundle.v1 (task_finisher.py / run_artifact_bundle_builder.py)
+  -> LKW HTTP metadata (run_artifact_metadata.py)
+```
+
+Typed keys reused (no LKW-only artifact layer):
+
+```text
+SHADOW_WORKSPACE_ID_KEY (shadow_workspace_id)
+RunArtifactBundle / WorkspaceArtifactRef
+run_artifact_bundle.v1
+lkw.synthesize_summary.v1 (unchanged)
+runtime_event_summary.v1 (unchanged)
+application_run_summary.v1 (unchanged)
+lkw_evidence.v1 (unchanged)
+```
+
+Focused tests:
+
+```text
+uv run pytest tests/unit/agents/test_acp_shadow_workspace_propagation.py applications/local_workspace_application/tests/test_run_artifact_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+```
+
+Queue:
+
+```text
+NEXT: LKW.2
+```
+
+## Known follow-ups after LKW.1 / H1.1 / H1.2 *(historical — superseded)*
+
+Closed since this snapshot:
+
+```text
+RuntimeEvent TOOL_* -> LKW-PF1 / LKW-PF1A
+RunArtifactBundle / WorkspaceArtifactRef + ACP shadow_workspace_id -> LKW-PF2 / LKW-PF2A
+search/synthesize per-tool accounting in trace/summary -> LKW-H1.3
+index total_tool_calls=0 -> LKW-H1.1
+curated lkw_evidence.v1 inspection surface -> LKW-H1.2
+```
+
+Remaining deferred platform topics:
+
+```text
+async runtime plugin coroutine warnings
+optional RAG ingest observability contract
+policy/raw tool reason decisions at RuntimeEvent layer
+```
+
+Product queue:
+
+```text
+Standalone synthesize with message-only input can return content_missing -> LKW.2 / pipeline-orchestration input contract
 ```
 
 ## Closeout rule
@@ -159,5 +508,5 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 Next queue item:
 
 ```text
-LKW-H1 — live trace/evidence inspection and observability/tool-call accounting
+LKW.2 — graph pipeline local.workspace.pipeline + local workspace skills
 ```

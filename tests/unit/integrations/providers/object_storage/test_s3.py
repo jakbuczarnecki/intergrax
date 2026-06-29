@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_object_storage
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.object_storage.s3.adapter import S3ObjectStorage
+from intergrax.integrations.providers.object_storage.s3.integration import S3ObjectStorageIntegration
 from intergrax.integrations.providers.object_storage.s3.bundle import (
     S3IntegrationBundle,
     create_s3_integration,
@@ -213,7 +213,7 @@ def test_create_s3_integration_bundle() -> None:
     bundle = create_s3_integration(**_s3_config().model_dump(), s3_client_factory=factory)
 
     assert isinstance(bundle, S3IntegrationBundle)
-    assert isinstance(bundle.object_storage, S3ObjectStorage)
+    assert isinstance(bundle.object_storage, S3ObjectStorageIntegration)
     assert bundle.config.bucket == "intergrax-artifacts"
 
 
@@ -229,7 +229,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_object_storage(store)
-    assert isinstance(store, S3ObjectStorage)
+    assert isinstance(store, S3ObjectStorageIntegration)
 
 
 def test_register_default_integrations_includes_s3() -> None:
@@ -243,7 +243,7 @@ def test_register_default_integrations_includes_s3() -> None:
         config={**_s3_config().model_dump(), "s3_client_factory": factory},
     )
 
-    assert isinstance(store, S3ObjectStorage)
+    assert isinstance(store, S3ObjectStorageIntegration)
 
 
 def test_cloud_platform_profile_resolves_s3_by_default() -> None:
@@ -257,7 +257,7 @@ def test_cloud_platform_profile_resolves_s3_by_default() -> None:
         config={**_s3_config().model_dump(), "s3_client_factory": factory},
     )
 
-    assert isinstance(store, S3ObjectStorage)
+    assert isinstance(store, S3ObjectStorageIntegration)
 
 
 def test_opens_builds_boto_client_when_not_injected() -> None:

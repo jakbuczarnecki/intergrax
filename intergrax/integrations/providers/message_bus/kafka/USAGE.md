@@ -1,49 +1,9 @@
-# `kafka` integration — usage
+# Kafka (kafka)
 
-**Category:** ``message_bus``  
-**Catalog factory:** ``create_kafka_message_bus()``
+Category: `message_bus`
 
-> Tier-3 (application) wires integrations via catalog factories or ``IntegrationProfile``.
-> Tier-2 (agents) must **not** import provider slugs or vendor SDKs.
+## Single public entrypoint
 
-## Common pattern
-
-```python
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.bootstrap import register_default_integrations
-from intergrax.integrations.registry.profile import IntegrationProfile
-
-register_default_integrations()
-profile = IntegrationProfile(message_bus="kafka")
-backend = profile.resolve(IntegrationCategory.MESSAGE_BUS)
-```
-
-Direct factory (preferred in application ``factory.py``):
-
-```python
-from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_message_bus
-
-backend = create_kafka_message_bus(**config_overrides)
-```
-
-
-## Environment variables
-
-`INTERGRAX_KAFKA_BOOTSTRAP_SERVERS`, `INTERGRAX_KAFKA_TOPIC`, `INTERGRAX_KAFKA_CONSUMER_GROUP`
-
-## Example
-
-```python
-from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_message_bus
-
-from intergrax.queueing.contracts.task_queue import TaskRequest
-
-bus = create_kafka_message_bus(bootstrap_servers="localhost:9092", topic="intergrax.tasks")
-handle = bus.enqueue(TaskRequest(task_id="t-1", payload={"agent": "echo"}))
-status = bus.get_status(handle)
-result = bus.get_result(handle)
-```
-
-## Notes
-
-``confluent_kafka`` only in ``opens.py``.
+- **`KafkaMessageBusIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `KafkaMessageBusIntegration`.
+- Contract factory: `create_kafka_message_bus_integration()`.

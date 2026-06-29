@@ -117,7 +117,7 @@ Routes are mounted under `/v1/local_workspace`. See `serving/` and application R
 ## 4. Verify before deploy
 
 ```bash
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 ```
 
 Focused agent smoke:
@@ -167,9 +167,10 @@ Compose starts:
 local_workspace
 qdrant
 ollama
+otel-collector
 ```
 
-Only the LKW API is exposed to the host on port `8020`. Qdrant and Ollama are internal compose services used by `local_workspace` via:
+Only the LKW API is exposed to the host on port `8020`. Port `4318` is also exposed for optional local OTLP HTTP debugging. Qdrant and Ollama remain internal compose services used by `local_workspace` via:
 
 ```text
 http://qdrant:6333
@@ -206,5 +207,75 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 | Wrong agents in registry | Check `manifest.py`, `host/environment_profile.py`, and `host/tool_wiring.py` |
 
 ---
+
+---
+
+## 9. Optional OTLP observability export
+
+LKW supports exporting policy-sanitized Intergrax observability envelopes as **OTLP logs** to an OpenTelemetry Collector. This is the first external persistence proof for policy-sanitized Intergrax observability records exported as OTLP logs. It does **not** add full trace browsing.
+
+Local Docker Compose starts `otel-collector` and enables OTLP export explicitly in `local_workspace.environment`. Manual or non-compose runs keep export disabled unless you opt in via `.env`.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED` | `false` | Enable observability export (disabled by default for manual/non-compose runs) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND` | `otlp` | Export backend (only `otlp` supported) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT` | — | Required when enabled; e.g. `http://otel-collector:4318/v1/logs` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT` | `false` | Forced to `false` by policy; raw content is never exported |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS` | `30` | HTTP transport timeout |
+
+### Run with persisted OTLP logs
+
+From repository root:
+
+```bash
+docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
+```
+
+After a run via Swagger or curl (`POST /v1/local_workspace/run`), inspect persisted OTLP log records on the host:
+
+```text
+applications/local_workspace_application/.observability/otel/lkw-otlp-logs.jsonl
+```
+
+Linux/macOS:
+
+```bash
+tail -n 20 applications/local_workspace_application/.observability/otel/lkw-otlp-logs.jsonl
+```
+
+Windows PowerShell:
+
+```powershell
+Get-Content applications\local_workspace_application\.observability\otel\lkw-otlp-logs.jsonl -Tail 20
+```
+
+### What to look for
+
+Exported OTLP logs should include Intergrax attributes such as:
+
+```text
+intergrax.run_id
+intergrax.task_id
+intergrax.capability
+intergrax.tool_id
+intergrax.status
+intergrax.tenant_id
+intergrax.workspace_id
+```
+
+**Safety boundaries:**
+
+- Export is **disabled by default** in `.env.example`; no remote observability export occurs without explicit configuration.
+- OTLP endpoint is **required** when export is enabled.
+- `export_content=false` — raw documents, chunks, prompts, tool args, secrets, and full local paths are not exported by default.
+- Export failure must not fail product runs.
+- Only the `otlp` backend is supported; any other backend fails fast.
+- No Grafana, Loki, Elasticsearch, Langfuse, Arize, Phoenix, Jaeger, Tempo, or vendor SDK is included.
+
+
 
 *Generated for Intergrax Tier-3 scaffold (profile: product).*

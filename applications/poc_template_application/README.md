@@ -10,7 +10,7 @@ From **repository root**:
 
 ```bash
 # 1. Verify
-uv run pytest applications/poc_template_application/poc_template_application_tests -q
+uv run pytest applications/poc_template_application/tests -q
 
 # 2. Run locally
 cp applications/poc_template_application/.env.example applications/poc_template_application/.env

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Gitlab Ci (gitlab_ci)
 
-# `gitlab_ci` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_gitlab_ci_ci_cd()``  
-**Env prefix:** ``INTERGRAX_GITLAB_CI_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.gitlab_ci.bundle import create_gitlab_ci_ci_cd
-
-backend = create_gitlab_ci_ci_cd()
-```
+- **`GitlabCiCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `GitlabCiCiCdIntegration`.
+- Contract factory: `create_gitlab_ci_ci_cd_integration()`.

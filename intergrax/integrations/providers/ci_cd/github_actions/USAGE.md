@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Github Actions (github_actions)
 
-# `github_actions` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_github_actions_ci_cd()``  
-**Env prefix:** ``INTERGRAX_GITHUB_ACTIONS_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.github_actions.bundle import create_github_actions_ci_cd
-
-backend = create_github_actions_ci_cd()
-```
+- **`GithubActionsCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `GithubActionsCiCdIntegration`.
+- Contract factory: `create_github_actions_ci_cd_integration()`.

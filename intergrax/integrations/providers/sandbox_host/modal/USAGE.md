@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Modal (modal)
 
-# `modal` integration — usage
+Category: `sandbox_host`
 
-**Category:** `sandbox_host`  
-**Catalog factory:** ``create_modal_sandbox_host()``  
-**Env prefix:** ``INTERGRAX_MODAL_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.sandbox_host.modal.bundle import create_modal_sandbox_host
-
-backend = create_modal_sandbox_host()
-```
+- **`ModalSandboxHostIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `ModalSandboxHostIntegration`.
+- Contract factory: `create_modal_sandbox_host_integration()`.

@@ -31,6 +31,7 @@ __all__ = [
     "create_google_cse_search_provider",
     "register_google_cse_integration",
     "resolve_google_cse_config",
+    "create_google_cse_search_provider_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -40,9 +41,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_google_cse_integration",
         "create_google_cse_search_provider",
         "resolve_google_cse_config",
+        "create_google_cse_search_provider_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "GOOGLE_CSE_SEARCH_PROVIDER_PROVIDER_ID",
+        "GoogleCseSearchProviderIntegration",
+        "GoogleCseSearchProviderIntegrationConfig",
+        "GoogleCseSearchProviderClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_google_cse_integration":
@@ -50,11 +61,16 @@ def __getattr__(name: str):
 
         return register_google_cse_integration
     if name == "GoogleCSESearchProvider":
-        from intergrax.integrations.providers.search_provider.google_cse.adapter import GoogleCSESearchProvider
+        from intergrax.integrations.providers.search_provider.google_cse.adapter import _GoogleCSESearchProvider
 
         return GoogleCSESearchProvider
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.search_provider.google_cse import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.search_provider.google_cse import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -8,7 +8,7 @@ Deployable **execution environment** for the Legal capability (`agents/legal/`).
 |------|------|
 | `host/` | FastAPI ASGI app — `legal_application.host.main:app` |
 | `serving/` | HTTP routes, runtime bridge, chat API |
-| `legal_tests/` | Host/serving integration tests |
+| `tests/` | Host/serving integration tests |
 
 **Run:**
 

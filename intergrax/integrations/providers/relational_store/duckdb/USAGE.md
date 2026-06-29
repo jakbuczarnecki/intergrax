@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Duckdb (duckdb)
 
-# `duckdb` integration — usage
+Category: `relational_store`
 
-**Category:** `relational_store`  
-**Catalog factory:** ``create_duckdb_relational_store()``  
-**Env prefix:** ``INTERGRAX_DUCKDB_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.relational_store.duckdb.bundle import create_duckdb_relational_store
-
-backend = create_duckdb_relational_store()
-```
+- **`DuckdbRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DuckdbRelationalStoreIntegration`.
+- Contract factory: `create_duckdb_relational_store_integration()`.

@@ -8,5 +8,5 @@ from __future__ import annotations
 from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
 
 
-class SlashCommandIntegrationAdapter(SlashCommandInteractionAdapter):
+class _SlashCommandIntegrationAdapter(SlashCommandInteractionAdapter):
     """Catalog facade over ``SlashCommandInteractionAdapter``."""

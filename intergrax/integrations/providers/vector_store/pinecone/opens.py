@@ -15,7 +15,7 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.providers.vector_store.pinecone.adapter import PineconeVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.pinecone.integration import PineconeVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.pinecone.config import PineconeIntegrationConfig
 
 
@@ -76,4 +76,4 @@ def open_pinecone_vector_store(
         inner = store
     else:
         inner = _open_rag_store(config, store_factory=store_factory)
-    return PineconeVectorStoreIntegration(config, inner)
+    return PineconeVectorStoreIntegration.from_store(config, inner)

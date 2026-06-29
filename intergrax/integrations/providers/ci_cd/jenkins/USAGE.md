@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Jenkins (jenkins)
 
-# `jenkins` integration — usage
+Category: `ci_cd`
 
-**Category:** `ci_cd`  
-**Catalog factory:** ``create_jenkins_ci_cd()``  
-**Env prefix:** ``INTERGRAX_JENKINS_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.ci_cd.jenkins.bundle import create_jenkins_ci_cd
-
-backend = create_jenkins_ci_cd()
-```
+- **`JenkinsCiCdIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `JenkinsCiCdIntegration`.
+- Contract factory: `create_jenkins_ci_cd_integration()`.

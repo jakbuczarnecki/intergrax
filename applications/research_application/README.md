@@ -25,5 +25,5 @@ applications/research_application/docker/build-docker.sh
 ## Tests
 
 ```bash
-uv run pytest applications/research_application/research_application_tests -q
+uv run pytest applications/research_application/tests -q
 ```

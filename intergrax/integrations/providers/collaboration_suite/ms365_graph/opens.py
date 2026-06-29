@@ -15,7 +15,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import Ms365GraphCollaborationSuiteIntegration
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -96,13 +97,15 @@ def open_ms365_graph_collaboration_suite(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
-) -> CollaborationSuite:
+) -> Ms365GraphCollaborationSuiteIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, Ms365GraphCollaborationSuiteIntegration):
+            return implementation
+        return Ms365GraphCollaborationSuiteIntegration.from_client(implementation)
     rest_client = client or open_graph_rest_client(
         config,
         http_client=http_client,
         http_client_factory=http_client_factory,
         access_token=access_token,
     )
-    return Ms365GraphCollaborationSuite(rest_client)
+    return Ms365GraphCollaborationSuiteIntegration.from_client(_Ms365GraphCollaborationSuite(rest_client))

@@ -14,7 +14,7 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.providers.vector_store.qdrant.adapter import QdrantVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 
 
@@ -69,4 +69,4 @@ def open_qdrant_vector_store(
     if implementation is not None:
         return implementation
     inner = store if store is not None else _open_rag_store(config, store_factory=store_factory)
-    return QdrantVectorStoreIntegration(config, inner)
+    return QdrantVectorStoreIntegration.from_store(config, inner)

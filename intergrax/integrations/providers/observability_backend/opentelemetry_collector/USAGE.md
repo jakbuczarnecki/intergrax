@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Opentelemetry Collector (opentelemetry_collector)
 
-# `opentelemetry_collector` integration — usage
+Category: `observability_backend`
 
-**Category:** `observability_backend`  
-**Catalog factory:** ``create_opentelemetry_collector_observability_backend()``  
-**Env prefix:** ``INTERGRAX_OPENTELEMETRY_COLLECTOR_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.observability_backend.opentelemetry_collector.bundle import create_opentelemetry_collector_observability_backend
-
-backend = create_opentelemetry_collector_observability_backend()
-```
+- **`OpenTelemetryCollectorObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `OpenTelemetryCollectorObservabilityIntegration`.
+- Contract factory: `create_opentelemetry_collector_observability_backend_integration()`.

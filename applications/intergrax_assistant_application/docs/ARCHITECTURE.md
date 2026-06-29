@@ -264,7 +264,7 @@ curl -s -X POST http://127.0.0.1:8096/v1/intergrax_assistant/run \
 Tests:
 
 ```bash
-uv run pytest applications/intergrax_assistant_application/intergrax_assistant_application_tests -q
+uv run pytest applications/intergrax_assistant_application/tests -q
 ```
 
 ---

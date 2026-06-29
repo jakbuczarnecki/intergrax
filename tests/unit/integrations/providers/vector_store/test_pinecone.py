@@ -15,7 +15,7 @@ from langchain_core.documents import Document
 from intergrax.integrations._shared.conformance import assert_vector_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
-from intergrax.integrations.providers.vector_store.pinecone.adapter import PineconeVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.pinecone.integration import PineconeVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.pinecone.bundle import (
     PineconeIntegrationBundle,
     create_pinecone_integration,

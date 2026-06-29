@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Upstash Qstash (upstash_qstash)
 
-# `upstash_qstash` integration — usage
+Category: `message_bus`
 
-**Category:** `message_bus`  
-**Catalog factory:** ``create_upstash_qstash_message_bus()``  
-**Env prefix:** ``INTERGRAX_UPSTASH_QSTASH_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.message_bus.upstash_qstash.bundle import create_upstash_qstash_message_bus
-
-backend = create_upstash_qstash_message_bus()
-```
+- **`UpstashQstashMessageBusIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `UpstashQstashMessageBusIntegration`.
+- Contract factory: `create_upstash_qstash_message_bus_integration()`.

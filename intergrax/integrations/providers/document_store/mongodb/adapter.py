@@ -12,7 +12,7 @@ from intergrax.integrations.contracts.document_store import DocumentQueryResult,
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
 
 
-class MongoDBDocumentStore:
+class _MongoDBDocumentStore:
     """
     Catalog facade over ``MongoCollectionClient``.
 

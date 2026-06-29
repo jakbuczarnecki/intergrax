@@ -336,7 +336,7 @@ applications/attestation_demo/
     integration_wiring.py
   serving/
     fastapi_router.py          POST /poc/run
-  attestation_demo_tests/
+  tests/
 ```
 
 ### 9.3 Manifest

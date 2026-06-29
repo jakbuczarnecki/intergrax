@@ -12,12 +12,13 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_search_provider
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.search_provider.bing.adapter import BingSearchProvider
+from intergrax.integrations.providers.search_provider.bing.adapter import _BingSearchProvider
 from intergrax.integrations.providers.search_provider.bing.bundle import (
     BingIntegrationBundle,
     create_bing_integration,
     create_bing_search_provider,
 )
+from intergrax.integrations.providers.search_provider.bing.integration import BingSearchProviderIntegration
 from intergrax.integrations.providers.search_provider.bing.register import register_bing_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -59,7 +60,7 @@ def test_create_bing_integration_bundle(mock_web_provider: MagicMock) -> None:
     bundle = create_bing_integration(provider=mock_web_provider, api_key="key")
 
     assert isinstance(bundle, BingIntegrationBundle)
-    assert isinstance(bundle.search_provider, BingSearchProvider)
+    assert isinstance(bundle.search_provider, BingSearchProviderIntegration)
     assert bundle.web_search_provider is mock_web_provider
     assert bundle.config.api_key == "key"
 
@@ -104,11 +105,11 @@ def test_register_default_integrations_includes_bing(mock_web_provider: MagicMoc
         config={"provider": mock_web_provider},
     )
 
-    assert isinstance(provider, BingSearchProvider)
+    assert isinstance(provider, BingSearchProviderIntegration)
 
 
 def test_adapter_exposes_web_search_provider(mock_web_provider: MagicMock) -> None:
-    adapter = BingSearchProvider(mock_web_provider)
+    adapter = _BingSearchProvider(mock_web_provider)
 
     assert adapter.web_search_provider is mock_web_provider
     results: List[SearchHit] = list(adapter.search("q", limit=3))

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Trivy (trivy)
 
-# `trivy` integration — usage
+Category: `security_scanner`
 
-**Category:** `security_scanner`  
-**Catalog factory:** ``create_trivy_security_scanner()``  
-**Env prefix:** ``INTERGRAX_TRIVY_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.security_scanner.trivy.bundle import create_trivy_security_scanner
-
-backend = create_trivy_security_scanner()
-```
+- **`TrivySecurityScannerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TrivySecurityScannerIntegration`.
+- Contract factory: `create_trivy_security_scanner_integration()`.

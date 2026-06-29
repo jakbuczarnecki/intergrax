@@ -24,31 +24,41 @@ __all__ = [
     "create_chroma_vector_store",
     "register_chroma_integration",
     "resolve_chroma_config",
+    "create_chroma_vector_store_integration",
 ]
 
 _LAZY_EXPORTS = frozenset(
     {
         "ChromaIntegrationBundle",
-        "ChromaVectorStoreIntegration",
         "create_chroma_integration",
         "create_chroma_vector_store",
+        "create_chroma_vector_store_integration",
         "register_chroma_integration",
         "resolve_chroma_config",
     }
 )
 
 
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "CHROMA_VECTOR_STORE_PROVIDER_ID",
+        "ChromaVectorStoreIntegration",
+        "ChromaVectorStoreIntegrationConfig",
+        "ChromaVectorStoreClient",
+    }
+)
+
 def __getattr__(name: str):
     if name == "register_chroma_integration":
         from intergrax.integrations.providers.vector_store.chroma.register import register_chroma_integration
 
         return register_chroma_integration
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.vector_store.chroma import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.vector_store.chroma import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
-    if name == "ChromaVectorStoreIntegration":
-        from intergrax.integrations.providers.vector_store.chroma.adapter import ChromaVectorStoreIntegration
-
-        return ChromaVectorStoreIntegration
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

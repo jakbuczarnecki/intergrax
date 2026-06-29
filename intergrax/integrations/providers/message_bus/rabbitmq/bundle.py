@@ -223,3 +223,35 @@ def build_rabbitmq_transport(
         consumer=bundle.consumer,
     )
     return TransportBundle(task_queue=bundle.message_bus, worker=worker)
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.message_bus.rabbitmq.integration import (
+    RABBITMQ_MESSAGE_BUS_PROVIDER_ID,
+    RabbitmqMessageBusIntegration,
+    RabbitmqMessageBusIntegrationConfig,
+    RabbitmqMessageBusClient,
+)
+
+
+def create_rabbitmq_message_bus_integration(
+    *,
+    client: RabbitmqMessageBusClient | None = None,
+    enabled: bool = False,
+) -> RabbitmqMessageBusIntegration:
+    """
+    Build a contract-based Rabbitmq message bus integration.
+
+    The legacy facade (create_rabbitmq_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Rabbitmq message bus integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return RabbitmqMessageBusIntegration.from_client(client, enabled=enabled)
+    return RabbitmqMessageBusIntegration.for_provider(
+        provider_id=RABBITMQ_MESSAGE_BUS_PROVIDER_ID,
+        display_name="Rabbitmq",
+        config=RabbitmqMessageBusIntegrationConfig(enabled=enabled),
+    )

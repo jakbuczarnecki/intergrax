@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
-from intergrax.integrations.providers.issue_tracker.jira.adapter import JiraIssueTracker
+from intergrax.integrations.providers.issue_tracker.jira.adapter import _JiraIssueTracker
 from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestClient
 from intergrax.integrations.providers.issue_tracker.jira.config import JiraIntegrationConfig
 from intergrax.integrations.providers.issue_tracker.jira.opens import open_jira_issue_tracker, open_jira_rest_client
@@ -24,7 +24,7 @@ from intergrax.integrations.providers.issue_tracker.jira.opens import open_jira_
 @dataclass(frozen=True)
 class JiraIntegrationBundle:
     config: JiraIntegrationConfig
-    issue_tracker: JiraIssueTracker
+    issue_tracker: JiraIssueTrackerIntegration
     rest_client: JiraRestClient
 
 
@@ -47,7 +47,7 @@ def create_jira_integration(
         http_client_factory=http_client_factory,
     )
     tracker = open_jira_issue_tracker(config, implementation=issue_tracker, client=rest_client)
-    assert isinstance(tracker, JiraIssueTracker)
+    assert isinstance(tracker, JiraIssueTrackerIntegration)
     return JiraIntegrationBundle(config=config, issue_tracker=tracker, rest_client=rest_client)
 
 
@@ -58,7 +58,7 @@ def create_jira_issue_tracker(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[JiraIntegrationConfig], Any]] = None,
     **config_overrides: object,
-) -> JiraIssueTracker:
+) -> JiraIssueTrackerIntegration:
     """Catalog factory for ``"jira"`` / ``ISSUE_TRACKER``."""
     return create_jira_integration(
         issue_tracker=issue_tracker,
@@ -67,3 +67,35 @@ def create_jira_issue_tracker(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).issue_tracker
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.issue_tracker.jira.integration import (
+    JIRA_ISSUE_TRACKER_PROVIDER_ID,
+    JiraIssueTrackerIntegration,
+    JiraIssueTrackerIntegrationConfig,
+    JiraIssueTrackerClient,
+)
+
+
+def create_jira_issue_tracker_integration(
+    *,
+    client: JiraIssueTrackerIntegrationClient | None = None,
+    enabled: bool = False,
+) -> JiraIssueTrackerIntegration:
+    """
+    Build a contract-based Jira issue tracker integration.
+
+    Compatibility shim — constructs Integration via from_store (create_jira_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Jira issue tracker integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return JiraIssueTrackerIntegration.from_client(client, enabled=enabled)
+    return JiraIssueTrackerIntegration.for_provider(
+        provider_id=JIRA_ISSUE_TRACKER_PROVIDER_ID,
+        display_name="Jira",
+        config=JiraIssueTrackerIntegrationConfig(enabled=enabled),
+    )

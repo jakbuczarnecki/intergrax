@@ -17,7 +17,7 @@ from intergrax.integrations.contracts.collaboration_suite import (
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 
 
-class Ms365GraphCollaborationSuite:
+class _Ms365GraphCollaborationSuite:
     """
     Catalog facade over ``GraphRestClient``.
 

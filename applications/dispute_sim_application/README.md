@@ -20,7 +20,7 @@
 From **repository root**:
 
 ```bash
-uv run pytest applications/dispute_sim_application/dispute_sim_application_tests -q
+uv run pytest applications/dispute_sim_application/tests -q
 cp applications/dispute_sim_application/.env.example applications/dispute_sim_application/.env
 uv run uvicorn dispute_sim_application.host.main:app --host 127.0.0.1 --port 8025
 ```

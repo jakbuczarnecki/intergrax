@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Upstash Redis (upstash_redis)
 
-# `upstash_redis` integration — usage
+Category: `key_value_cache`
 
-**Category:** `key_value_cache`  
-**Catalog factory:** ``create_upstash_redis_key_value_cache()``  
-**Env prefix:** ``INTERGRAX_UPSTASH_REDIS_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.key_value_cache.upstash_redis.bundle import create_upstash_redis_key_value_cache
-
-backend = create_upstash_redis_key_value_cache()
-```
+- **`UpstashRedisKeyValueCacheIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `UpstashRedisKeyValueCacheIntegration`.
+- Contract factory: `create_upstash_redis_key_value_cache_integration()`.

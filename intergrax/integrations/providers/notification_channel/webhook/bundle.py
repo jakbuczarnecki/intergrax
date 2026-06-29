@@ -75,3 +75,35 @@ def create_webhook_notification_channel(
         formatter=formatter,
         **config_overrides,
     ).notification_channel
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.notification_channel.webhook.integration import (
+    WEBHOOK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    WebhookNotificationChannelIntegration,
+    WebhookNotificationChannelIntegrationConfig,
+    WebhookNotificationChannelClient,
+)
+
+
+def create_webhook_notification_channel_integration(
+    *,
+    client: WebhookNotificationChannelClient | None = None,
+    enabled: bool = False,
+) -> WebhookNotificationChannelIntegration:
+    """
+    Build a contract-based Webhook notification channel integration.
+
+    The legacy facade (create_webhook_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Webhook notification channel integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return WebhookNotificationChannelIntegration.from_client(client, enabled=enabled)
+    return WebhookNotificationChannelIntegration.for_provider(
+        provider_id=WEBHOOK_NOTIFICATION_CHANNEL_PROVIDER_ID,
+        display_name="Webhook",
+        config=WebhookNotificationChannelIntegrationConfig(enabled=enabled),
+    )

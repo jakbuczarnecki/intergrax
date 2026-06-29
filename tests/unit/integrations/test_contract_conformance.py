@@ -109,6 +109,9 @@ class _FakeNotificationChannel:
     async def notify(self, message: NotificationMessage) -> None:
         return None
 
+    def health(self) -> bool:
+        return True
+
 
 class _FakeInteractionSurface(InteractionAdapter):
     @property
@@ -223,10 +226,13 @@ def test_object_storage_conformance() -> None:
     assert storage.presigned_url("artifacts/run.zip") == "https://example.com/artifacts/run.zip?expires=3600"
 
 
-def test_runtime_notification_adapter_is_notification_channel() -> None:
+def test_runtime_notification_adapter_requires_health_for_notification_channel() -> None:
+    from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
     from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
 
-    assert_notification_channel(LoggingNotificationAdapter())
+    adapter = LoggingNotificationAdapter()
+    assert isinstance(adapter, NotificationAdapter)
+    assert not isinstance(adapter, NotificationChannel)
 
 
 def test_runtime_interaction_adapter_is_interaction_surface() -> None:

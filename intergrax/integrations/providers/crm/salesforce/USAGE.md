@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Salesforce (salesforce)
 
-# `salesforce` integration — usage
+Category: `crm`
 
-**Category:** `crm`  
-**Catalog factory:** ``create_salesforce_crm()``  
-**Env prefix:** ``INTERGRAX_SALESFORCE_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.crm.salesforce.bundle import create_salesforce_crm
-
-backend = create_salesforce_crm()
-```
+- **`SalesforceCrmIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SalesforceCrmIntegration`.
+- Contract factory: `create_salesforce_crm_integration()`.

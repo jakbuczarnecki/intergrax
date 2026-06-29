@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Splunk (splunk)
 
-# `splunk` integration — usage
+Category: `observability_backend`
 
-**Category:** `observability_backend`  
-**Catalog factory:** ``create_splunk_observability_backend()``  
-**Env prefix:** ``INTERGRAX_SPLUNK_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.observability_backend.splunk.bundle import create_splunk_observability_backend
-
-backend = create_splunk_observability_backend()
-```
+- **`SplunkObservabilityIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SplunkObservabilityIntegration`.
+- Contract factory: `create_splunk_observability_backend_integration()`.

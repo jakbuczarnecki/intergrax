@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Typesense (typesense)
 
-# `typesense` integration — usage
+Category: `vector_store`
 
-**Category:** `vector_store`  
-**Catalog factory:** ``create_typesense_vector_store()``  
-**Env prefix:** ``INTERGRAX_TYPESENSE_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.vector_store.typesense.bundle import create_typesense_vector_store
-
-backend = create_typesense_vector_store()
-```
+- **`TypesenseVectorStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TypesenseVectorStoreIntegration`.
+- Contract factory: `create_typesense_vector_store_integration()`.

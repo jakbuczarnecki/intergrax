@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Localstack (localstack)
 
-# `localstack` integration — usage
+Category: `cloud_platform`
 
-**Category:** `cloud_platform`  
-**Catalog factory:** ``create_localstack_cloud_platform()``  
-**Env prefix:** ``INTERGRAX_LOCALSTACK_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.cloud_platform.localstack.bundle import create_localstack_cloud_platform
-
-backend = create_localstack_cloud_platform()
-```
+- **`LocalstackCloudPlatformIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `LocalstackCloudPlatformIntegration`.
+- Contract factory: `create_localstack_cloud_platform_integration()`.

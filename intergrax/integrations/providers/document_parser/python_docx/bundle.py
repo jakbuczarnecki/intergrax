@@ -24,5 +24,37 @@ class PythonDocxDocumentParser:
         return parse_python_docx_file(self._config, source)
 
 
-def create_python_docx_document_parser(**config_overrides: object) -> DocumentParser:
-    return PythonDocxDocumentParser(PythonDocxIntegrationConfig.from_env(**config_overrides))
+def create_python_docx_document_parser(**config_overrides: object) -> PythonDocxDocumentParserIntegration:
+    return PythonDocxDocumentParserIntegration.from_client(PythonDocxDocumentParser(PythonDocxIntegrationConfig.from_env(**config_overrides)))
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.document_parser.python_docx.integration import (
+    PYTHON_DOCX_DOCUMENT_PARSER_PROVIDER_ID,
+    PythonDocxDocumentParserIntegration,
+    PythonDocxDocumentParserIntegrationConfig,
+    PythonDocxDocumentParserClient,
+)
+
+
+def create_python_docx_document_parser_integration(
+    *,
+    client: PythonDocxDocumentParserClient | None = None,
+    enabled: bool = False,
+) -> PythonDocxDocumentParserIntegration:
+    """
+    Build a contract-based Python Docx document parser integration.
+
+    The legacy facade (create_python_docx_document_parser) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Python Docx document parser integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return PythonDocxDocumentParserIntegration.from_client(client, enabled=enabled)
+    return PythonDocxDocumentParserIntegration.for_provider(
+        provider_id=PYTHON_DOCX_DOCUMENT_PARSER_PROVIDER_ID,
+        display_name="Python Docx",
+        config=PythonDocxDocumentParserIntegrationConfig(enabled=enabled),
+    )

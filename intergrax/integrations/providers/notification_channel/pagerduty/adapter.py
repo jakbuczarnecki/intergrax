@@ -12,7 +12,7 @@ from intergrax.integrations.providers.notification_channel.pagerduty.client impo
 from intergrax.runtime.notifications.models import NotificationMessage
 
 
-class PagerDutyNotificationChannel:
+class _PagerDutyNotificationChannel:
     """``NotificationChannel`` facade with explicit incident trigger."""
 
     def __init__(self, client: PagerDutyEventsClient) -> None:

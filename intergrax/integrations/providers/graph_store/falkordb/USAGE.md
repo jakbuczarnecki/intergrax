@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Falkordb (falkordb)
 
-# `falkordb` integration — usage
+Category: `graph_store`
 
-**Category:** `graph_store`  
-**Catalog factory:** ``create_falkordb_graph_store()``  
-**Env prefix:** ``INTERGRAX_FALKORDB_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.graph_store.falkordb.bundle import create_falkordb_graph_store
-
-backend = create_falkordb_graph_store()
-```
+- **`FalkordbGraphStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `FalkordbGraphStoreIntegration`.
+- Contract factory: `create_falkordb_graph_store_integration()`.

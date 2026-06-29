@@ -10,7 +10,7 @@ from intergrax.integrations.providers.document_parser.docling.config import Docl
 from intergrax.integrations.providers.document_parser.docling.opens import parse_docling_file
 
 
-class DoclingDocumentParser:
+class _DoclingDocumentParser:
     """Catalog ``DocumentParser`` for Docling local or server mode."""
 
     def __init__(self, config: DoclingIntegrationConfig) -> None:

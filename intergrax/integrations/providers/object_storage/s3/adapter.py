@@ -12,7 +12,7 @@ from intergrax.integrations.contracts.object_storage import PresignedUrlMethod, 
 from intergrax.integrations.providers.object_storage.s3.client import S3BucketClient
 
 
-class S3ObjectStorage:
+class _S3ObjectStorage:
     """
     Catalog facade over ``S3BucketClient``.
 

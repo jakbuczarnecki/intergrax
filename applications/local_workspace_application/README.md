@@ -25,11 +25,11 @@ LKW.1 product proof is now passed for the live path:
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-The current follow-up is **LKW-H1**: live trace/evidence inspection and observability/accounting cleanup, including the known `total_tool_calls=0` summary gap.
+**LKW.2** (graph pipeline + local workspace skills) is **closed — pipeline proof passed**. **LKW.2.1–LKW.2.4C** and closeout smoke verified direct capabilities (`local.workspace.index`, `local.workspace.search`, `local.workspace.synthesize`) and the pipeline capability (`local.workspace.pipeline`: index → search → synthesize → shadow artifact). **Next platform step:** **OBS-EXPORT-5** — remaining vendor adapters (Langfuse/Arize/Phoenix); LKW uses platform observability export wiring only (**INTEGRATIONS-1D**).
 
 A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clone the repository, configure LKW, start the local backend, index a document, search with evidence, synthesize a draft into the shadow workspace, and inspect the trace/evidence for the run.
 
-The current LKW execution status is tracked in [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md).
+Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](docs/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
 
 ## Local stack
 
@@ -68,7 +68,7 @@ The scripts copy `.env.example` to `.env` when needed, build the Docker image, s
 From repository root:
 
 ```bash
-uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+uv run pytest applications/local_workspace_application/tests -q
 cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
 ```
@@ -84,6 +84,178 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
   -H "Content-Type: application/json" \
   -d '{"message":"find information about project X","capability":"local.workspace.search"}'
 ```
+
+## Developer first run
+
+This section defines the minimal first-run path for a new developer after LKW.2
+(graph pipeline + local workspace skills are **closed — pipeline proof passed**).
+
+> **Important:** this is a **local product proof / developer path**, not a production
+> certification. Writes are **shadow writes only** — original source files are
+> never modified.
+
+### Prerequisites
+
+| Tool     | Purpose                                    |
+|----------|--------------------------------------------|
+| `uv`     | Python deps from repo root `pyproject.toml` |
+| Git      | Clone the repository                       |
+| Docker   | Local stack (optional; in-memory mode works) |
+
+> Full configuration reference: [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md).
+> Conceptual user journey: [`USER_JOURNEY.md`](docs/USER_JOURNEY.md).
+
+### 1. Start the LKW host
+
+**Local (no Docker):**
+
+```bash
+cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
+# Set INTERGRAX_ALLOWED_READ_ROOTS to one or more absolute folders LKW may read
+uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
+```
+
+**Docker:** see [`BUILD_AND_DEPLOY.md §2`](docs/BUILD_AND_DEPLOY.md#2-recommended-local-docker-bootstrap).
+
+All examples below assume the host is running at `http://127.0.0.1:8020`.
+
+### 2. Health check
+
+```bash
+curl -s http://127.0.0.1:8020/health
+```
+
+**Success:** the host responds with status `ok` (HTTP 200).
+
+### 3. List available agents/capabilities
+
+```bash
+curl -s http://127.0.0.1:8020/v1/local_workspace/agents
+```
+
+**Success:** the response lists the expected capabilities:
+
+- `local.workspace.index`
+- `local.workspace.search`
+- `local.workspace.synthesize`
+- `local.workspace.pipeline`
+
+### 4. Index a fixture or local document
+
+Replace `<TENANT_ID>`, `<WORKSPACE_ID>`, and `<SOURCE_PATH>` with your values.
+
+```bash
+curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "<TENANT_ID>",
+    "workspace_id": "<WORKSPACE_ID>",
+    "message": "index documents",
+    "capability": "local.workspace.index",
+    "metadata": {
+      "source_paths": ["<SOURCE_PATH>"],
+      "collection_id": "<WORKSPACE_ID>"
+    }
+  }'
+```
+
+**Success:**
+
+- `state` is `"completed"`
+- metadata contains `application_run_summary.v1`
+- accepted document count ≥ 1
+- rejected count is 0 for the fixture path
+
+### 5. Search the indexed content
+
+Use the same `<TENANT_ID>` and `<WORKSPACE_ID>` from the index step.
+
+```bash
+curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "<TENANT_ID>",
+    "workspace_id": "<WORKSPACE_ID>",
+    "message": "<YOUR_QUERY>",
+    "capability": "local.workspace.search",
+    "metadata": {
+      "collection_id": "<WORKSPACE_ID>",
+      "query": "<YOUR_QUERY>",
+      "top_k": 5
+    }
+  }'
+```
+
+**Success:**
+
+- `state` is `"completed"`
+- metadata contains `lkw_evidence.v1`
+- evidence count ≥ 1
+- source reference is present
+- no raw fixture content is required in the response
+
+### 6. Run the full pipeline
+
+The pipeline capability (`local.workspace.pipeline`) runs **index → search → synthesize**
+in a single request and produces a shadow artifact.
+
+```bash
+curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "<TENANT_ID>",
+    "workspace_id": "<WORKSPACE_ID>",
+    "message": "<YOUR_QUERY>",
+    "capability": "local.workspace.pipeline",
+    "metadata": {
+      "source_paths": ["<SOURCE_PATH>"],
+      "collection_id": "<WORKSPACE_ID>",
+      "query": "<YOUR_QUERY>",
+      "top_k": 5,
+      "shadow_workspace": true,
+      "output_name": "pipeline-synthesis-draft.md"
+    }
+  }'
+```
+
+**Success:**
+
+- `state` is `"completed"`
+- agent invocations in `application_run_summary.v1` include all three:
+  `local_indexer`, `local_search`, `local_synthesizer`
+- metadata contains `lkw_evidence.v1` with diagnostics key
+  `lkw.synthesize_summary.v1` where `shadow_write` is `true`
+- a shadow artifact was produced; check `run_artifact_bundle.v1` for artifact refs
+- original source file is **not modified** (shadow writes only)
+
+### Metadata keys that confirm success
+
+| Key | Purpose |
+|-----|---------|
+| `application_run_summary.v1` | Agent invocations, tool calls, terminal status |
+| `lkw_evidence.v1` | Search evidence and synthesis diagnostics |
+| `runtime_event_summary.v1` | Redacted runtime events per run |
+| `run_artifact_bundle.v1` | References to shadow artifacts produced |
+
+All four are present in a successful pipeline run.
+
+### Troubleshooting
+
+| Issue | Likely cause |
+|-------|--------------|
+| Host does not respond | Check host start command, port (`8020`), and environment profile |
+| Agents endpoint does not list expected capabilities | Check `LOCAL_WORKSPACE_ENABLE_RAG=true` and `LOCAL_WORKSPACE_ENABLE_RAG_INGEST=true` in `.env`; verify skill bundles |
+| Index succeeds but search returns no evidence | Use the same `tenant_id` and `workspace_id` for both steps; confirm `<SOURCE_PATH>` points to a readable fixture/test file |
+| Pipeline returns `content_missing` | Verify index completed for the same tenant/workspace before running the pipeline; or let the pipeline index first via `source_paths` |
+| No shadow artifact found | Check `run_artifact_bundle.v1` and `lkw_evidence.v1` → `lkw.synthesize_summary.v1.artifact_path` or `.artifact_ref` |
+
+### Safety
+
+- **Shadow writes only:** generated artifacts are written to `INTERGRAX_SHADOW_ROOT`,
+  not to original source locations.
+- **Read allowlist:** set `INTERGRAX_ALLOWED_READ_ROOTS` to limit which paths LKW may read.
+- This is a **local product proof / developer path**, not a production certification.
+
 
 ## MCP
 
@@ -105,7 +277,16 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 
 - **Integrations:** LKW local product profile — SQLite, Qdrant, Docling, optional Redis, local LLM;
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`;
-- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2).
+- **Skills:** `harness` + `local` bundles (LKW.0, LKW.2.1–LKW.2.3); pipeline capability `local.workspace.pipeline` registered and live proof passed (LKW.2.4A–LKW.2.4C).
+
+## Observability export (platform opt-in)
+
+LKW uses **platform observability export mechanisms only** — there is no LKW-specific observability exporter, OTLP client, or vendor SDK in the application layer.
+
+- Export is **disabled by default**; no remote observability export occurs unless explicitly configured.
+- When enabled, pass **`ObservabilityExportOperatorConfig`** to `create_local_workspace_backend_app(observability_export=...)` or compose plugins via **`build_local_workspace_observability_plugins`** at product bootstrap.
+- OTLP export is explicit opt-in through platform **`ObservabilityExportOperatorConfig`** + **`build_otlp_observability_export_runtime_plugin`** (INTEGRATIONS-1D); policy/redaction remains enforced upstream.
+- Raw local documents, prompts, RAG chunks, synthesized content, and full local file paths are **not exported by default** (`export_content=false` enforced in platform wiring).
 
 ## Docs
 

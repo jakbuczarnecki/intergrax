@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Wikipedia (wikipedia)
 
-# `wikipedia` integration — usage
+Category: `wiki_knowledge`
 
-**Category:** `wiki_knowledge`  
-**Catalog factory:** ``create_wikipedia_wiki_knowledge()``  
-**Env prefix:** ``INTERGRAX_WIKIPEDIA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.wiki_knowledge.wikipedia.bundle import create_wikipedia_wiki_knowledge
-
-backend = create_wikipedia_wiki_knowledge()
-```
+- **`WikipediaWikiKnowledgeIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `WikipediaWikiKnowledgeIntegration`.
+- Contract factory: `create_wikipedia_wiki_knowledge_integration()`.

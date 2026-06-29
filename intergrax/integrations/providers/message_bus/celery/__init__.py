@@ -34,6 +34,7 @@ __all__ = [
     "create_nexus_celery_worker_app",
     "register_celery_integration",
     "resolve_celery_config",
+    "create_celery_message_bus_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
@@ -44,9 +45,19 @@ _BUNDLE_EXPORTS = frozenset(
         "create_celery_worker_app",
         "create_nexus_celery_worker_app",
         "resolve_celery_config",
+        "create_celery_message_bus_integration",
     }
 )
 
+
+_CONTRACT_INTEGRATION_EXPORTS = frozenset(
+    {
+        "CELERY_MESSAGE_BUS_PROVIDER_ID",
+        "CeleryMessageBusIntegration",
+        "CeleryMessageBusIntegrationConfig",
+        "CeleryMessageBusClient",
+    }
+)
 
 def __getattr__(name: str):
     if name == "register_celery_integration":
@@ -57,4 +68,9 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.message_bus.celery import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _CONTRACT_INTEGRATION_EXPORTS:
+        from intergrax.integrations.providers.message_bus.celery import integration as _integration
+
+        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Bitbucket (bitbucket)
 
-# `bitbucket` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_bitbucket_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_BITBUCKET_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.issue_tracker.bitbucket.bundle import create_bitbucket_issue_tracker
-
-backend = create_bitbucket_issue_tracker()
-```
+- **`BitbucketIssueTrackerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `BitbucketIssueTrackerIntegration`.
+- Contract factory: `create_bitbucket_issue_tracker_integration()`.

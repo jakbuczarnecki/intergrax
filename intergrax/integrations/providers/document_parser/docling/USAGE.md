@@ -1,27 +1,9 @@
-# Docling document parser
+# Docling (docling)
 
-**Category:** `document_parser`  
-**Slug:** `docling`  
-**Env prefix:** `INTERGRAX_DOCLING_*`
+Category: `document_parser`
 
-## Modes
+## Single public entrypoint
 
-| Mode | Env | Description |
-|------|-----|-------------|
-| `local` | `INTERGRAX_DOCLING_MODE=local` | In-process Docling library |
-| `server` | `INTERGRAX_DOCLING_MODE=server` | HTTP service (`INTERGRAX_DOCLING_SERVER_URL` + `INTERGRAX_DOCLING_SERVER_PATH`) |
-| `none` | `INTERGRAX_DOCLING_MODE=none` | Disabled |
-
-## Resolve from catalog
-
-```python
-from intergrax.integrations.registry.factory import resolve
-from intergrax.integrations.contracts.base import IntegrationCategory
-
-parser = resolve(IntegrationCategory.DOCUMENT_PARSER, slug="docling", config={"mode": "local"})
-fragments = parser.parse_file("/path/to/file.pdf")
-```
-
-## RAG wiring
-
-`intergrax/rag/document_loaders/` uses `CatalogDocumentParser` + `resolve_document_parser("docling")` — no direct `docling` imports in RAG parsers.
+- **`DoclingDocumentParserIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DoclingDocumentParserIntegration`.
+- Contract factory: `create_docling_document_parser_integration()`.

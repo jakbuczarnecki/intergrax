@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Browserbase (browserbase)
 
-# `browserbase` integration — usage
+Category: `browser_automation`
 
-**Category:** `browser_automation`  
-**Catalog factory:** ``create_browserbase_browser_automation()``  
-**Env prefix:** ``INTERGRAX_BROWSERBASE_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.browser_automation.browserbase.bundle import create_browserbase_browser_automation
-
-backend = create_browserbase_browser_automation()
-```
+- **`BrowserbaseBrowserAutomationIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `BrowserbaseBrowserAutomationIntegration`.
+- Contract factory: `create_browserbase_browser_automation_integration()`.

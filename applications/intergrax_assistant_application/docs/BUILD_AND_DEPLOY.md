@@ -78,7 +78,7 @@ MCP endpoint: ``http://127.0.0.1:8096/mcp`` (streamable HTTP transport).
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/intergrax_assistant_application/intergrax_assistant_application_tests -q
+        uv run pytest applications/intergrax_assistant_application/tests -q
         uv run pytest tests/unit/applications/ -q -k "intergrax_assistant" --ignore-glob="*" 2>/dev/null || true
         ```
 

@@ -1,14 +1,9 @@
-# © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Asana (asana)
 
-# `asana` integration — usage
+Category: `issue_tracker`
 
-**Category:** `issue_tracker`  
-**Catalog factory:** ``create_asana_issue_tracker()``  
-**Env prefix:** ``INTERGRAX_ASANA_*``
+## Single public entrypoint
 
-```python
-from intergrax.integrations.providers.issue_tracker.asana.bundle import create_asana_issue_tracker
-
-backend = create_asana_issue_tracker()
-```
+- **`AsanaIssueTrackerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `AsanaIssueTrackerIntegration`.
+- Contract factory: `create_asana_issue_tracker_integration()`.

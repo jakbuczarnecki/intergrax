@@ -106,7 +106,7 @@ See [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md).
 ## Tests
 
 ```bash
-uv run pytest applications/lab_application/lab_application_tests -q
+uv run pytest applications/lab_application/tests -q
 ```
 
 ## Architecture

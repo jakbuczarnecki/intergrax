@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.opens import (
@@ -27,7 +27,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.opens impo
 @dataclass(frozen=True)
 class Ms365GraphIntegrationBundle:
     config: Ms365GraphIntegrationConfig
-    collaboration_suite: Ms365GraphCollaborationSuite
+    collaboration_suite: Ms365GraphCollaborationSuiteIntegration
     rest_client: GraphRestClient
 
 
@@ -45,18 +45,24 @@ def create_ms365_graph_integration(
     **config_overrides: object,
 ) -> Ms365GraphIntegrationBundle:
     config = resolve_ms365_graph_config(**config_overrides)
-    rest_client = client or open_graph_rest_client(
-        config,
-        http_client=http_client,
-        http_client_factory=http_client_factory,
-        access_token=access_token,
-    )
-    suite = open_ms365_graph_collaboration_suite(
-        config,
-        implementation=collaboration_suite,
-        client=rest_client,
-    )
-    assert isinstance(suite, Ms365GraphCollaborationSuite)
+    if collaboration_suite is not None:
+        suite = open_ms365_graph_collaboration_suite(
+            config,
+            implementation=collaboration_suite,
+        )
+        rest_client = suite._require_client().rest_client
+    else:
+        rest_client = client or open_graph_rest_client(
+            config,
+            http_client=http_client,
+            http_client_factory=http_client_factory,
+            access_token=access_token,
+        )
+        suite = open_ms365_graph_collaboration_suite(
+            config,
+            client=rest_client,
+        )
+    assert isinstance(suite, Ms365GraphCollaborationSuiteIntegration)
     return Ms365GraphIntegrationBundle(
         config=config,
         collaboration_suite=suite,
@@ -72,7 +78,7 @@ def create_ms365_graph_collaboration_suite(
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
     **config_overrides: object,
-) -> Ms365GraphCollaborationSuite:
+) -> Ms365GraphCollaborationSuiteIntegration:
     """Catalog factory for ``"ms365_graph"`` / ``COLLABORATION_SUITE``."""
     return create_ms365_graph_integration(
         collaboration_suite=collaboration_suite,
@@ -82,3 +88,35 @@ def create_ms365_graph_collaboration_suite(
         access_token=access_token,
         **config_overrides,
     ).collaboration_suite
+
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+    Ms365GraphCollaborationSuiteIntegration,
+    Ms365GraphCollaborationSuiteIntegrationConfig,
+    Ms365GraphCollaborationSuiteClient,
+)
+
+
+def create_ms365_graph_collaboration_suite_integration(
+    *,
+    client: Ms365GraphCollaborationSuiteClient | None = None,
+    enabled: bool = False,
+) -> Ms365GraphCollaborationSuiteIntegration:
+    """
+    Build a contract-based Ms365 Graph collaboration suite integration.
+
+    Compatibility shim — constructs Integration via from_store (create_ms365_graph_integration) is unchanged.
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Ms365 Graph collaboration suite integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return Ms365GraphCollaborationSuiteIntegration.from_client(client, enabled=enabled)
+    return Ms365GraphCollaborationSuiteIntegration.for_provider(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        display_name="Ms365 Graph",
+        config=Ms365GraphCollaborationSuiteIntegrationConfig(enabled=enabled),
+    )

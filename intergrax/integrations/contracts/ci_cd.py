@@ -9,6 +9,8 @@ from typing import Protocol, Sequence, runtime_checkable
 
 from pydantic import BaseModel, Field
 
+from intergrax.integrations.contracts.base import HealthStatus
+
 
 class WorkflowRunRecord(BaseModel):
     id: str
@@ -48,3 +50,6 @@ class CiCdBackend(Protocol):
 
     def cancel_workflow_run(self, run_id: str) -> WorkflowRunRecord:
         """Request cancellation of a workflow run and return updated status."""
+
+    def health(self) -> HealthStatus | bool:
+        """Optional startup / connectivity probe."""
