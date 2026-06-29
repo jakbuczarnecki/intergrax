@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_semgrep_security_scanner
+from intergrax.integrations._shared.p7.factories import create_semgrep_security_scanner as _legacy_create_semgrep_security_scanner
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.security_scanner.semgrep.integration import (
@@ -39,3 +39,11 @@ def create_semgrep_security_scanner_integration(
         display_name="Semgrep",
         config=SemgrepSecurityScannerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_semgrep_security_scanner(**kwargs: object) -> SemgrepSecurityScannerIntegration:
+    """Compatibility shim — constructs SemgrepSecurityScannerIntegration from legacy runtime."""
+    runtime = _legacy_create_semgrep_security_scanner(**kwargs)
+    if isinstance(runtime, SemgrepSecurityScannerIntegration):
+        return runtime
+    return SemgrepSecurityScannerIntegration.from_runtime(runtime)

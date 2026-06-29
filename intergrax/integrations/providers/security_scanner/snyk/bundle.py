@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_snyk_security_scanner
+from intergrax.integrations._shared.p7.factories import create_snyk_security_scanner as _legacy_create_snyk_security_scanner
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.security_scanner.snyk.integration import (
@@ -39,3 +39,11 @@ def create_snyk_security_scanner_integration(
         display_name="Snyk",
         config=SnykSecurityScannerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_snyk_security_scanner(**kwargs: object) -> SnykSecurityScannerIntegration:
+    """Compatibility shim — constructs SnykSecurityScannerIntegration from legacy runtime."""
+    runtime = _legacy_create_snyk_security_scanner(**kwargs)
+    if isinstance(runtime, SnykSecurityScannerIntegration):
+        return runtime
+    return SnykSecurityScannerIntegration.from_runtime(runtime)

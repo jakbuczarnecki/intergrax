@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_trivy_security_scanner
+from intergrax.integrations._shared.p7.factories import create_trivy_security_scanner as _legacy_create_trivy_security_scanner
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.security_scanner.trivy.integration import (
@@ -39,3 +39,11 @@ def create_trivy_security_scanner_integration(
         display_name="Trivy",
         config=TrivySecurityScannerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_trivy_security_scanner(**kwargs: object) -> TrivySecurityScannerIntegration:
+    """Compatibility shim — constructs TrivySecurityScannerIntegration from legacy runtime."""
+    runtime = _legacy_create_trivy_security_scanner(**kwargs)
+    if isinstance(runtime, TrivySecurityScannerIntegration):
+        return runtime
+    return TrivySecurityScannerIntegration.from_runtime(runtime)
