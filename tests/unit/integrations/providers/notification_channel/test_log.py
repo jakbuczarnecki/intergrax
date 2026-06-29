@@ -9,8 +9,8 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_notification_channel
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.notification_channel.log.adapter import LogNotificationAdapter
 from intergrax.integrations.providers.notification_channel.log.bundle import create_log_notification_channel
+from intergrax.integrations.providers.notification_channel.log.integration import LogNotificationChannelIntegration
 from intergrax.integrations.providers.notification_channel.log.register import register_log_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -31,7 +31,7 @@ def _clean_catalog() -> None:
 
 def test_create_log_notification_channel() -> None:
     channel = create_log_notification_channel()
-    assert isinstance(channel, LogNotificationAdapter)
+    assert isinstance(channel, LogNotificationChannelIntegration)
     assert_notification_channel(channel)
 
 
@@ -44,7 +44,7 @@ def test_register_and_resolve_log_via_profile() -> None:
         profile=profile,
     )
 
-    assert isinstance(channel, LogNotificationAdapter)
+    assert isinstance(channel, LogNotificationChannelIntegration)
 
 
 def test_register_default_integrations_includes_log() -> None:
@@ -56,4 +56,4 @@ def test_register_default_integrations_includes_log() -> None:
         profile=profile,
     )
 
-    assert isinstance(channel, LogNotificationAdapter)
+    assert isinstance(channel, LogNotificationChannelIntegration)
