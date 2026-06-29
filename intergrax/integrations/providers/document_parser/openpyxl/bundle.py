@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.document_parser import DocumentParser
-from intergrax.integrations.providers.document_parser.openpyxl.adapter import OpenpyxlDocumentParser
+from intergrax.integrations.providers.document_parser.openpyxl.adapter import _OpenpyxlDocumentParser
 from intergrax.integrations.providers.document_parser.openpyxl.config import OpenpyxlIntegrationConfig
 
 
-def create_openpyxl_document_parser(**config_overrides: object) -> DocumentParser:
-    return OpenpyxlDocumentParser(OpenpyxlIntegrationConfig.from_env(**config_overrides))
+def create_openpyxl_document_parser(**config_overrides: object) -> OpenpyxlDocumentParserIntegration:
+    return OpenpyxlDocumentParserIntegration.from_runtime(_OpenpyxlDocumentParser(OpenpyxlIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.openpyxl.integration import (
@@ -22,13 +22,13 @@ from intergrax.integrations.providers.document_parser.openpyxl.integration impor
 
 def create_openpyxl_document_parser_integration(
     *,
-    client: OpenpyxlDocumentParserClient | None = None,
+    client: OpenpyxlDocumentParserIntegrationClient | None = None,
     enabled: bool = False,
 ) -> OpenpyxlDocumentParserIntegration:
     """
     Build a contract-based Openpyxl document parser integration.
 
-    The legacy facade (create_openpyxl_document_parser) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_openpyxl_document_parser) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

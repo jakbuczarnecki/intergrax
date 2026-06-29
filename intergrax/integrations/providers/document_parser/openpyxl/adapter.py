@@ -10,7 +10,7 @@ from intergrax.integrations.providers.document_parser.openpyxl.config import Ope
 from intergrax.integrations.providers.document_parser.openpyxl.opens import parse_openpyxl_file
 
 
-class OpenpyxlDocumentParser:
+class _OpenpyxlDocumentParser:
     def __init__(self, config: OpenpyxlIntegrationConfig) -> None:
         self._config = config
 

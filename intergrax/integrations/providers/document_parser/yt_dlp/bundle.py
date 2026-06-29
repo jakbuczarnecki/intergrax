@@ -38,8 +38,8 @@ class YtDlpUrlDocumentParser:
         ]
 
 
-def create_yt_dlp_document_parser(**config_overrides: object) -> DocumentParser:
-    return YtDlpUrlDocumentParser(YtDlpIntegrationConfig.from_env(**config_overrides))
+def create_yt_dlp_document_parser(**config_overrides: object) -> YtDlpDocumentParserIntegration:
+    return YtDlpDocumentParserIntegration.from_runtime(YtDlpUrlDocumentParser(YtDlpIntegrationConfig.from_env(**config_overrides)))
 
 __all__ = ["create_yt_dlp_document_parser"
     "create_yt_dlp_document_parser_integration",

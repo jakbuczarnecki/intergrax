@@ -10,7 +10,7 @@ from intergrax.integrations.providers.document_parser.whisper.config import Whis
 from intergrax.integrations.providers.document_parser.whisper.opens import parse_whisper_audio
 
 
-class WhisperDocumentParser:
+class _WhisperDocumentParser:
     def __init__(self, config: WhisperIntegrationConfig) -> None:
         self._config = config
 

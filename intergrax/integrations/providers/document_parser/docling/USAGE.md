@@ -2,19 +2,8 @@
 
 Category: `document_parser`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_docling_document_parser()` remains backward-compatible.
-
-## Contract-based integration
-
-- `DoclingDocumentParserIntegration` derives from the category-specific contract.
-- Factory: `create_docling_document_parser_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`DoclingDocumentParserIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DoclingDocumentParserIntegration`.
+- Contract factory: `create_docling_document_parser_integration()`.

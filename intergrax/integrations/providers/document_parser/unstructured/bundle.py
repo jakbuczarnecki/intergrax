@@ -20,8 +20,8 @@ class UnstructuredDocumentParser:
         return parse_unstructured_html(source)
 
 
-def create_unstructured_document_parser(**_: object) -> DocumentParser:
-    return UnstructuredDocumentParser()
+def create_unstructured_document_parser(**_: object) -> UnstructuredDocumentParserIntegration:
+    return UnstructuredDocumentParserIntegration.from_runtime(UnstructuredDocumentParser())
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.unstructured.integration import (

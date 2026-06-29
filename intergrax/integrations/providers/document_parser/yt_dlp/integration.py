@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""yt-dlp document parser integration (INTEGRATIONS-2D)."""
+"""Yt Dlp document parser integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.runtime.integrations.categories.ai import DocumentParserIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -16,7 +18,7 @@ YT_DLP_DOCUMENT_PARSER_PROVIDER_ID = "yt_dlp"
 
 
 class YtDlpDocumentParserIntegrationConfig(CategoryIntegrationConfig):
-    """Typed config for yt-dlp document parser integration."""
+    """Typed config for Yt Dlp document parser integration."""
 
     pass
 
@@ -31,13 +33,31 @@ class YtDlpDocumentParserClient(Protocol):
 
 class YtDlpDocumentParserIntegration(DocumentParserIntegrationContract):
     """
-    yt-dlp document parser integration.
+    Single public Yt Dlp document parser entrypoint.
 
-    The legacy facade (create_yt_dlp_document_parser) remains separate and backward-compatible.
+    Legacy catalog factory (create_yt_dlp_document_parser) delegates to this class.
     """
 
     config: YtDlpDocumentParserIntegrationConfig = YtDlpDocumentParserIntegrationConfig()
     _client: YtDlpDocumentParserClient | None = PrivateAttr(default=None)
+    _runtime: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> YtDlpDocumentParserIntegration:
+        integration = cls.for_provider(
+            provider_id=YT_DLP_DOCUMENT_PARSER_PROVIDER_ID,
+            display_name="Yt Dlp",
+            config=YtDlpDocumentParserIntegrationConfig(enabled=enabled),
+        )
+        integration._runtime = runtime
+        return integration
+
+    def _require_runtime(self) -> Any:
+        if self._runtime is None:
+            raise IntegrationConfigurationError("Yt Dlp integration requires a runtime delegate")
+        return self._runtime
+
+
 
     @classmethod
     def from_client(
@@ -48,7 +68,7 @@ class YtDlpDocumentParserIntegration(DocumentParserIntegrationContract):
     ) -> YtDlpDocumentParserIntegration:
         integration = cls.for_provider(
             provider_id=YT_DLP_DOCUMENT_PARSER_PROVIDER_ID,
-            display_name="yt-dlp",
+            display_name="Yt Dlp",
             config=YtDlpDocumentParserIntegrationConfig(enabled=enabled),
         )
         integration._client = client
@@ -57,3 +77,12 @@ class YtDlpDocumentParserIntegration(DocumentParserIntegrationContract):
     @property
     def client(self) -> YtDlpDocumentParserClient | None:
         return self._client
+    def __getattr__(self, name: str) -> object:
+        if name.startswith("_"):
+            private = object.__getattribute__(self, "__pydantic_private__")
+            if name in private:
+                return private[name]
+            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+        return getattr(self._require_runtime(), name)
+
+DocumentParser.register(YtDlpDocumentParserIntegration)

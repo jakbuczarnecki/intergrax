@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.document_parser import DocumentParser
-from intergrax.integrations.providers.document_parser.pymupdf.adapter import PymupdfDocumentParser
+from intergrax.integrations.providers.document_parser.pymupdf.adapter import _PymupdfDocumentParser
 from intergrax.integrations.providers.document_parser.pymupdf.config import PymupdfIntegrationConfig
 
 
-def create_pymupdf_document_parser(**config_overrides: object) -> DocumentParser:
-    return PymupdfDocumentParser(PymupdfIntegrationConfig.from_env(**config_overrides))
+def create_pymupdf_document_parser(**config_overrides: object) -> PymupdfDocumentParserIntegration:
+    return PymupdfDocumentParserIntegration.from_runtime(_PymupdfDocumentParser(PymupdfIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.pymupdf.integration import (
@@ -22,13 +22,13 @@ from intergrax.integrations.providers.document_parser.pymupdf.integration import
 
 def create_pymupdf_document_parser_integration(
     *,
-    client: PymupdfDocumentParserClient | None = None,
+    client: PymupdfDocumentParserIntegrationClient | None = None,
     enabled: bool = False,
 ) -> PymupdfDocumentParserIntegration:
     """
     Build a contract-based Pymupdf document parser integration.
 
-    The legacy facade (create_pymupdf_document_parser) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_pymupdf_document_parser) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

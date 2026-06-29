@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_llamaparse_document_parser
+from intergrax.integrations._shared.p8.factories import create_llamaparse_document_parser as _legacy_create_llamaparse_document_parser
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.llamaparse.integration import (
@@ -39,3 +39,11 @@ def create_llamaparse_document_parser_integration(
         display_name="Llamaparse",
         config=LlamaparseDocumentParserIntegrationConfig(enabled=enabled),
     )
+
+
+def create_llamaparse_document_parser(**kwargs: object) -> LlamaparseDocumentParserIntegration:
+    """Compatibility shim — constructs LlamaparseDocumentParserIntegration from legacy runtime."""
+    runtime = _legacy_create_llamaparse_document_parser(**kwargs)
+    if isinstance(runtime, LlamaparseDocumentParserIntegration):
+        return runtime
+    return LlamaparseDocumentParserIntegration.from_runtime(runtime)

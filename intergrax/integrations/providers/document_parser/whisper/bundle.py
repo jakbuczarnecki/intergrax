@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.document_parser import DocumentParser
-from intergrax.integrations.providers.document_parser.whisper.adapter import WhisperDocumentParser
+from intergrax.integrations.providers.document_parser.whisper.adapter import _WhisperDocumentParser
 from intergrax.integrations.providers.document_parser.whisper.config import WhisperIntegrationConfig
 
 
-def create_whisper_document_parser(**config_overrides: object) -> DocumentParser:
-    return WhisperDocumentParser(WhisperIntegrationConfig.from_env(**config_overrides))
+def create_whisper_document_parser(**config_overrides: object) -> WhisperDocumentParserIntegration:
+    return WhisperDocumentParserIntegration.from_runtime(_WhisperDocumentParser(WhisperIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.whisper.integration import (
@@ -22,13 +22,13 @@ from intergrax.integrations.providers.document_parser.whisper.integration import
 
 def create_whisper_document_parser_integration(
     *,
-    client: WhisperDocumentParserClient | None = None,
+    client: WhisperDocumentParserIntegrationClient | None = None,
     enabled: bool = False,
 ) -> WhisperDocumentParserIntegration:
     """
     Build a contract-based Whisper document parser integration.
 
-    The legacy facade (create_whisper_document_parser) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_whisper_document_parser) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:
