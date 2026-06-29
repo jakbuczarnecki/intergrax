@@ -67,9 +67,11 @@ def open_mongodb_document_store(
     collection: Optional[Any] = None,
     client: Optional[Any] = None,
     collection_factory: Optional[Callable[[], Any]] = None,
-) -> DocumentStore:
+) -> MongodbDocumentStoreIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, MongodbDocumentStoreIntegration):
+            return implementation
+        return MongodbDocumentStoreIntegration.from_runtime(implementation)
     mongo_client = open_mongodb_collection_client(
         config,
         collection=collection,

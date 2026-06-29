@@ -45,18 +45,24 @@ def create_ms365_graph_integration(
     **config_overrides: object,
 ) -> Ms365GraphIntegrationBundle:
     config = resolve_ms365_graph_config(**config_overrides)
-    rest_client = client or open_graph_rest_client(
-        config,
-        http_client=http_client,
-        http_client_factory=http_client_factory,
-        access_token=access_token,
-    )
-    suite = open_ms365_graph_collaboration_suite(
-        config,
-        implementation=collaboration_suite,
-        client=rest_client,
-    )
-    assert isinstance(suite, Ms365GraphCollaborationSuite)
+    if collaboration_suite is not None:
+        suite = open_ms365_graph_collaboration_suite(
+            config,
+            implementation=collaboration_suite,
+        )
+        rest_client = suite.rest_client
+    else:
+        rest_client = client or open_graph_rest_client(
+            config,
+            http_client=http_client,
+            http_client_factory=http_client_factory,
+            access_token=access_token,
+        )
+        suite = open_ms365_graph_collaboration_suite(
+            config,
+            client=rest_client,
+        )
+    assert isinstance(suite, Ms365GraphCollaborationSuiteIntegration)
     return Ms365GraphIntegrationBundle(
         config=config,
         collaboration_suite=suite,
@@ -94,7 +100,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
 
 def create_ms365_graph_collaboration_suite_integration(
     *,
-    client: Ms365GraphCollaborationSuiteIntegrationClient | None = None,
+    client: Ms365GraphCollaborationSuiteClient | None = None,
     enabled: bool = False,
 ) -> Ms365GraphCollaborationSuiteIntegration:
     """

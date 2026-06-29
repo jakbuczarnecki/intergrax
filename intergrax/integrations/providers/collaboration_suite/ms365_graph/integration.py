@@ -39,7 +39,7 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
     """
 
     config: Ms365GraphCollaborationSuiteIntegrationConfig = Ms365GraphCollaborationSuiteIntegrationConfig()
-    _client: _Ms365GraphCollaborationSuiteClient | None = PrivateAttr(default=None)
+    _client: Ms365GraphCollaborationSuiteClient | None = PrivateAttr(default=None)
     _runtime: Any | None = PrivateAttr(default=None)
 
     @classmethod
@@ -62,7 +62,7 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
     @classmethod
     def from_client(
         cls,
-        client: _Ms365GraphCollaborationSuiteClient,
+        client: Ms365GraphCollaborationSuiteClient,
         *,
         enabled: bool = False,
     ) -> Ms365GraphCollaborationSuiteIntegration:

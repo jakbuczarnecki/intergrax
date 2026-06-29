@@ -123,9 +123,11 @@ def open_s3_object_storage(
     session: Optional[Any] = None,
     session_factory: Optional[Callable[[], Any]] = None,
     s3_client_factory: Optional[Callable[[], Any]] = None,
-) -> ObjectStorage:
+) -> S3ObjectStorageIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, S3ObjectStorageIntegration):
+            return implementation
+        return S3ObjectStorageIntegration.from_runtime(implementation)
     bucket_client = open_s3_bucket_client(
         config,
         s3_client=s3_client,

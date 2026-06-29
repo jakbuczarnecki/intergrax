@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import importlib
 import inspect
 import re
@@ -97,13 +98,15 @@ CLIENT_CONTRACT_CUTOVER_SLUGS = CUTOVER_SLUGS - OBSERVABILITY_CUTOVER_SLUGS
 NON_VECTOR_LEGACY_SMOKE_SLUGS: frozenset[str] = frozenset(
     {
         "pagerduty",
+        "ms365_graph",
         "slack",
         "filesystem",
         "github",
         "redis",
         "postgresql",
         "tavily",
-        "exa",
+        "s3",
+        "mongodb",
     }
 )
 
@@ -214,9 +217,88 @@ class _FakeIssueClient:
 
 
 class _FakePagerDutyEventsClient:
-    def trigger_incident(self, *args: object, **kwargs: object) -> dict[str, str]:
+    def trigger_incident(self, *args: object, **kwargs: object) -> str:
         del args, kwargs
-        return {"status": "success", "message": "Event processed", "dedup_key": "d1"}
+        return "d1"
+
+    def send_notification(self, *args: object, **kwargs: object) -> None:
+        del args, kwargs
+
+    def acknowledge_incident(self, *args: object, **kwargs: object) -> None:
+        del args, kwargs
+
+    def health(self) -> bool:
+        return True
+
+
+class _FakeS3Client:
+    def __init__(self) -> None:
+        self.objects: dict[str, bytes] = {}
+
+    def put_object(self, *, Bucket: str, Key: str, Body: bytes, **kwargs: object) -> None:
+        del Bucket, kwargs
+        self.objects[Key] = Body
+
+    def get_object(self, *, Bucket: str, Key: str) -> dict[str, Any]:
+        del Bucket
+        from io import BytesIO
+
+        body = self.objects.get(Key)
+        if body is None:
+            raise _FakeS3NotFound(Key)
+        return {"Body": BytesIO(body), "ContentType": "application/octet-stream", "Metadata": {}}
+
+    def delete_object(self, *, Bucket: str, Key: str) -> None:
+        del Bucket
+        self.objects.pop(Key, None)
+
+    def generate_presigned_url(self, *args: object, **kwargs: object) -> str:
+        del args, kwargs
+        return "https://example/presigned"
+
+
+class _FakeS3NotFound(Exception):
+    def __init__(self, key: str) -> None:
+        super().__init__(key)
+        self.response = {"Error": {"Code": "NoSuchKey"}}
+
+
+class _FakeMongoCollection:
+    def __init__(self) -> None:
+        self.docs: dict[tuple[str, str], dict[str, Any]] = {}
+
+    def find_one(self, query: dict[str, str]) -> dict[str, Any] | None:
+        return self.docs.get((query["partition_key"], query["row_key"]))
+
+    def replace_one(self, query: dict[str, str], payload: dict[str, Any], *, upsert: bool) -> None:
+        del upsert
+        self.docs[(query["partition_key"], query["row_key"])] = payload
+
+    def delete_one(self, query: dict[str, str]) -> None:
+        self.docs.pop((query["partition_key"], query["row_key"]), None)
+
+    def find(self, query: dict[str, Any]) -> "_FakeMongoCursor":
+        partition_key = query["partition_key"]
+        rows = [
+            doc
+            for (pk, _rk), doc in self.docs.items()
+            if pk == partition_key
+        ]
+        return _FakeMongoCursor(rows)
+
+
+class _FakeMongoCursor:
+    def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self._rows = rows
+
+    def sort(self, _field: str, _direction: int) -> "_FakeMongoCursor":
+        return self
+
+    def limit(self, _count: int) -> "_FakeMongoCursor":
+        return self
+
+    def __iter__(self) -> Any:
+        return iter(self._rows)
 
 
 class _FakePostgresqlConnection:
@@ -250,28 +332,169 @@ def _postgresql_connection_factory() -> Callable[[], _FakePostgresqlConnection]:
     return _factory
 
 
-def _legacy_smoke_factory_kwargs(slug: str, tmp_path: Path) -> dict[str, Any]:
+def _redis_smoke_client() -> MagicMock:
+    storage: dict[str, bytes] = {}
+    client = MagicMock()
+    client.get.side_effect = lambda key: storage.get(key)
+    client.set.side_effect = lambda key, value, ex=None: storage.__setitem__(key, value)
+    client.delete.side_effect = lambda *keys: sum(1 for key in keys if storage.pop(key, None) is not None)
+    client.register_script.return_value = MagicMock(return_value=1)
+    client.pipeline.return_value = MagicMock()
+    client.hget.return_value = None
+    client.hgetall.return_value = {}
+    client.eval.return_value = 1
+    return client
+
+
+def _legacy_smoke_default_kwargs(slug: str, tmp_path: Path) -> dict[str, Any]:
     if slug == "pagerduty":
-        return {"client": _FakePagerDutyEventsClient()}
+        return {"client": _FakePagerDutyEventsClient(), "routing_key": "test-key"}
+    if slug == "ms365_graph":
+        from intergrax.integrations.contracts.collaboration_suite import UserRecord
+        from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
+
+        fake_client = MagicMock(spec=GraphRestClient)
+        fake_client.get_user.return_value = UserRecord(id="u1", display_name="Smoke")
+        return {"client": fake_client}
     if slug == "slack":
         return {
             "integration_category": IntegrationCategory.NOTIFICATION_CHANNEL,
-            "notification_adapter": MagicMock(),
+            "webhook_url": "",
         }
     if slug == "filesystem":
         return {"root_dir": str(tmp_path)}
     if slug == "github":
         return {"client": _FakeIssueClient()}
     if slug == "redis":
-        return {"client": MagicMock(), "key_prefix": "smoke"}
+        return {"client": _redis_smoke_client(), "key_prefix": "smoke"}
     if slug == "postgresql":
         return {
             "connection_factory": _postgresql_connection_factory(),
             "dsn": "postgresql://localhost/test",
         }
-    if slug in {"tavily", "exa"}:
-        return {"client": _FakeSearchClient()}
-    msg = f"{slug}: no legacy smoke factory kwargs configured"
+    if slug == "tavily":
+        return {"client": _FakeSearchClient(), "api_key": "test-key"}
+    if slug == "s3":
+        return {"bucket": "smoke-bucket", "s3_client": _FakeS3Client()}
+    if slug == "mongodb":
+        return {
+            "uri": "mongodb://localhost:27017",
+            "database": "intergrax",
+            "collection_name": "intergrax_documents",
+            "collection_factory": _FakeMongoCollection,
+        }
+    msg = f"{slug}: no default legacy smoke factory kwargs configured"
+    raise AssertionError(msg)
+
+
+def _legacy_smoke_custom_kwargs(slug: str, tmp_path: Path) -> dict[str, Any]:
+    kwargs = _legacy_smoke_default_kwargs(slug, tmp_path)
+    if slug == "pagerduty":
+        from intergrax.integrations.providers.notification_channel.pagerduty.adapter import (
+            _PagerDutyNotificationChannel,
+        )
+
+        client = kwargs.pop("client")
+        kwargs["notification_channel"] = _PagerDutyNotificationChannel(client)
+        return kwargs
+    if slug == "ms365_graph":
+        from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import (
+            _Ms365GraphCollaborationSuite,
+        )
+
+        client = kwargs.pop("client")
+        kwargs["collaboration_suite"] = _Ms365GraphCollaborationSuite(client)
+        return kwargs
+    if slug == "slack":
+        kwargs["notification_adapter"] = MagicMock()
+        return kwargs
+    if slug == "filesystem":
+        kwargs["object_storage"] = MagicMock()
+        return kwargs
+    if slug == "github":
+        kwargs["issue_tracker"] = MagicMock()
+        return kwargs
+    if slug == "postgresql":
+        kwargs["relational_store"] = MagicMock()
+        return kwargs
+    if slug == "tavily":
+        kwargs["search_provider"] = MagicMock()
+        return kwargs
+    if slug == "s3":
+        kwargs["object_storage"] = MagicMock()
+        return kwargs
+    if slug == "mongodb":
+        kwargs["document_store"] = MagicMock()
+        return kwargs
+    if slug == "redis":
+        return kwargs
+    msg = f"{slug}: no custom legacy smoke factory kwargs configured"
+    raise AssertionError(msg)
+
+
+def _assert_non_vector_runtime_operations(slug: str, integration: Any, tmp_path: Path) -> None:
+    if slug == "pagerduty":
+        assert integration.trigger_incident(summary="smoke") == "d1"
+        assert integration.health().healthy is True
+        return
+    if slug == "ms365_graph":
+        user = integration.get_user("u1")
+        assert user.id == "u1"
+        assert user.display_name == "Smoke"
+        return
+    if slug == "slack":
+        from intergrax.runtime.notifications.models import NotificationMessage
+
+        asyncio.run(
+            integration.notify(
+                NotificationMessage(
+                    task_id="smoke",
+                    subject="subject",
+                    body="body",
+                    channel="slack",
+                    tenant_id="tenant-1",
+                ),
+            ),
+        )
+        return
+    if slug == "filesystem":
+        integration.put("smoke.txt", b"payload")
+        stored = integration.get("smoke.txt")
+        assert stored is not None
+        assert stored.body == b"payload"
+        return
+    if slug == "github":
+        issue = integration.get_issue("IGX-1")
+        assert issue.key == "IGX-1"
+        return
+    if slug == "redis":
+        integration.set("tenant", "key", b"value")
+        assert integration.get("tenant", "key") == b"value"
+        return
+    if slug == "postgresql":
+        integration.execute("SELECT 1")
+        rows = integration.fetch_all("SELECT name FROM tenants")
+        assert rows == [{"name": "alpha"}]
+        return
+    if slug == "tavily":
+        hits = integration.search("intergrax", limit=1)
+        assert hits[0].title == "intergrax"
+        return
+    if slug == "s3":
+        integration.put("smoke.txt", b"payload")
+        stored = integration.get("smoke.txt")
+        assert stored is not None
+        assert stored.body == b"payload"
+        return
+    if slug == "mongodb":
+        from intergrax.integrations.contracts.document_store import DocumentRecord
+
+        integration.put(DocumentRecord(partition_key="p1", row_key="r1", data={"k": "v"}))
+        stored = integration.get("p1", "r1")
+        assert stored is not None
+        assert stored.data == {"k": "v"}
+        return
+    msg = f"{slug}: no runtime operation smoke configured"
     raise AssertionError(msg)
 
 
@@ -279,6 +502,10 @@ def test_non_vector_legacy_smoke_slugs_are_cutover_representatives() -> None:
     assert NON_VECTOR_LEGACY_SMOKE_SLUGS <= CUTOVER_SLUGS
     assert SLUG_CATEGORY["redis"] == "key_value_cache"
     assert SLUG_CATEGORY["postgresql"] == "relational_store"
+    assert SLUG_CATEGORY["ms365_graph"] == "collaboration_suite"
+    assert SLUG_CATEGORY["s3"] == "object_storage"
+    assert SLUG_CATEGORY["mongodb"] == "document_store"
+    assert SLUG_CATEGORY["tavily"] == "search_provider"
 
 
 def test_cutover_registry_documents_deferred_llm_guardrail() -> None:
@@ -356,12 +583,29 @@ def test_legacy_factory_delegates_to_integration_model(slug: str) -> None:
 
 
 @pytest.mark.parametrize("slug", sorted(NON_VECTOR_LEGACY_SMOKE_SLUGS))
-def test_legacy_factory_non_vector_runtime_smoke(slug: str, tmp_path: Path) -> None:
+def test_legacy_factory_non_vector_default_returns_integration(slug: str, tmp_path: Path) -> None:
     category = SLUG_CATEGORY[slug]
     integration_cls = getattr(_integration_module(slug, category), _integration_class_name(slug, category))
     legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
-    result = legacy_factory(**_legacy_smoke_factory_kwargs(slug, tmp_path))
+    result = legacy_factory(**_legacy_smoke_default_kwargs(slug, tmp_path))
     assert isinstance(result, integration_cls)
+
+
+@pytest.mark.parametrize("slug", sorted(NON_VECTOR_LEGACY_SMOKE_SLUGS))
+def test_legacy_factory_non_vector_custom_returns_integration(slug: str, tmp_path: Path) -> None:
+    category = SLUG_CATEGORY[slug]
+    integration_cls = getattr(_integration_module(slug, category), _integration_class_name(slug, category))
+    legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
+    result = legacy_factory(**_legacy_smoke_custom_kwargs(slug, tmp_path))
+    assert isinstance(result, integration_cls)
+
+
+@pytest.mark.parametrize("slug", sorted(NON_VECTOR_LEGACY_SMOKE_SLUGS))
+def test_legacy_factory_non_vector_runtime_operations(slug: str, tmp_path: Path) -> None:
+    category = SLUG_CATEGORY[slug]
+    legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
+    integration = legacy_factory(**_legacy_smoke_default_kwargs(slug, tmp_path))
+    _assert_non_vector_runtime_operations(slug, integration, tmp_path)
 
 
 @pytest.mark.parametrize("slug", sorted(VECTOR_STORE_CUTOVER_SLUGS))

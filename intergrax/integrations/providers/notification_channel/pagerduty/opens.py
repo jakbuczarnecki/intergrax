@@ -40,9 +40,11 @@ def open_pagerduty_notification_channel(
     client: Optional[PagerDutyEventsClient] = None,
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[PagerDutyIntegrationConfig], Any]] = None,
-) -> NotificationChannel:
+) -> PagerdutyNotificationChannelIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, PagerdutyNotificationChannelIntegration):
+            return implementation
+        return PagerdutyNotificationChannelIntegration.from_runtime(implementation)
     events_client = client or open_pagerduty_events_client(
         config,
         http_client=http_client,

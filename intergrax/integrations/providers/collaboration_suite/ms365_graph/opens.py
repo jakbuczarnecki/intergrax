@@ -97,9 +97,11 @@ def open_ms365_graph_collaboration_suite(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
-) -> CollaborationSuite:
+) -> Ms365GraphCollaborationSuiteIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, Ms365GraphCollaborationSuiteIntegration):
+            return implementation
+        return Ms365GraphCollaborationSuiteIntegration.from_runtime(implementation)
     rest_client = client or open_graph_rest_client(
         config,
         http_client=http_client,
