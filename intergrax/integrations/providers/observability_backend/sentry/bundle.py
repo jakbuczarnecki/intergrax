@@ -49,4 +49,4 @@ def create_sentry_observability_backend(**kwargs: object) -> SentryObservability
     runtime = _legacy_create_sentry_observability_backend(**kwargs)
     if isinstance(runtime, SentryObservabilityIntegration):
         return runtime
-    return SentryObservabilityIntegration.from_backend(runtime)
+    return SentryObservabilityIntegration.from_client(runtime)

@@ -8,9 +8,11 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.braintrust.adapter import _BraintrustObservabilityBackend
 from intergrax.integrations.providers.observability_backend.braintrust.client import BraintrustRestClient
 from intergrax.integrations.providers.observability_backend.braintrust.config import BraintrustIntegrationConfig
+from intergrax.integrations.providers.observability_backend.braintrust.integration import (
+    BraintrustObservabilityIntegration,
+)
 
 
 def _create_http_client(config: BraintrustIntegrationConfig) -> Any:
@@ -51,4 +53,4 @@ def open_braintrust_observability_backend(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return BraintrustObservabilityBackend(rest_client)
+    return BraintrustObservabilityIntegration.from_client(rest_client)

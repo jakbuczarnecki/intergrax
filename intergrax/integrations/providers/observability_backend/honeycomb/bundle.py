@@ -49,4 +49,4 @@ def create_honeycomb_observability_backend(**kwargs: object) -> HoneycombObserva
     runtime = _legacy_create_honeycomb_observability_backend(**kwargs)
     if isinstance(runtime, HoneycombObservabilityIntegration):
         return runtime
-    return HoneycombObservabilityIntegration.from_backend(runtime)
+    return HoneycombObservabilityIntegration.from_client(runtime)

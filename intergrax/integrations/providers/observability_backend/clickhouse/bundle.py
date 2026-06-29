@@ -49,4 +49,4 @@ def create_clickhouse_observability_backend(**kwargs: object) -> ClickhouseObser
     runtime = _legacy_create_clickhouse_observability_backend(**kwargs)
     if isinstance(runtime, ClickhouseObservabilityIntegration):
         return runtime
-    return ClickhouseObservabilityIntegration.from_backend(runtime)
+    return ClickhouseObservabilityIntegration.from_client(runtime)

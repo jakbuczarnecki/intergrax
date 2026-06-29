@@ -49,4 +49,4 @@ def create_tempo_observability_backend(**kwargs: object) -> TempoObservabilityIn
     runtime = _legacy_create_tempo_observability_backend(**kwargs)
     if isinstance(runtime, TempoObservabilityIntegration):
         return runtime
-    return TempoObservabilityIntegration.from_backend(runtime)
+    return TempoObservabilityIntegration.from_client(runtime)

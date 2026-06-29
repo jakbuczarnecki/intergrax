@@ -49,4 +49,4 @@ def create_splunk_observability_backend(**kwargs: object) -> SplunkObservability
     runtime = _legacy_create_splunk_observability_backend(**kwargs)
     if isinstance(runtime, SplunkObservabilityIntegration):
         return runtime
-    return SplunkObservabilityIntegration.from_backend(runtime)
+    return SplunkObservabilityIntegration.from_client(runtime)

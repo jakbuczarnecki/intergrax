@@ -564,12 +564,12 @@ def test_legacy_factory_delegates_to_integration_model(slug: str) -> None:
     opens_source = opens_path.read_text(encoding="utf-8") if opens_path.is_file() else ""
     combined = bundle_source + opens_source
     assert hasattr(integration_cls, "from_runtime") or hasattr(integration_cls, "from_store") or hasattr(
-        integration_cls, "from_backend"
+        integration_cls, "from_client"
     )
     assert (
         f"{integration_cls.__name__}.from_runtime" in combined
         or f"{integration_cls.__name__}.from_store" in combined
-        or f"{integration_cls.__name__}.from_backend" in combined
+        or f"{integration_cls.__name__}.from_client" in combined
         or f"return {integration_cls.__name__}." in combined
     )
     if category == "vector_store":

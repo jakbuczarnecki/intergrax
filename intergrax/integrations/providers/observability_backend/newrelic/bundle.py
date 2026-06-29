@@ -49,4 +49,4 @@ def create_newrelic_observability_backend(**kwargs: object) -> NewRelicObservabi
     runtime = _legacy_create_newrelic_observability_backend(**kwargs)
     if isinstance(runtime, NewRelicObservabilityIntegration):
         return runtime
-    return NewRelicObservabilityIntegration.from_backend(runtime)
+    return NewRelicObservabilityIntegration.from_client(runtime)

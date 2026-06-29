@@ -49,4 +49,4 @@ def create_phoenix_observability_backend(**kwargs: object) -> PhoenixObservabili
     runtime = _legacy_create_phoenix_observability_backend(**kwargs)
     if isinstance(runtime, PhoenixObservabilityIntegration):
         return runtime
-    return PhoenixObservabilityIntegration.from_backend(runtime)
+    return PhoenixObservabilityIntegration.from_client(runtime)

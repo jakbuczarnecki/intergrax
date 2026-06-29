@@ -80,9 +80,11 @@ class _FakeGitlabClient:
 
 
 def test_langsmith_observability() -> None:
-    from intergrax.integrations.providers.observability_backend.langsmith.adapter import _LangSmithObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.langsmith.integration import (
+        LangsmithObservabilityIntegration,
+    )
 
-    backend = _LangSmithObservabilityBackend(_FakeObsClient())  # type: ignore[arg-type]
+    backend = LangsmithObservabilityIntegration.from_client(_FakeObsClient())  # type: ignore[arg-type]
     assert_observability_backend(backend)
     assert backend.query_instant("runs").series[0].points[0].value == 5.0
     traces = backend.query_traces(limit=1)

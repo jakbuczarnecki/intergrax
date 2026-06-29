@@ -49,4 +49,4 @@ def create_langfuse_observability_backend(**kwargs: object) -> LangfuseObservabi
     runtime = _legacy_create_langfuse_observability_backend(**kwargs)
     if isinstance(runtime, LangfuseObservabilityIntegration):
         return runtime
-    return LangfuseObservabilityIntegration.from_backend(runtime)
+    return LangfuseObservabilityIntegration.from_client(runtime)

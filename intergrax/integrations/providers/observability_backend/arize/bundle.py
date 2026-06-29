@@ -49,4 +49,4 @@ def create_arize_observability_backend(**kwargs: object) -> ArizeObservabilityIn
     runtime = _legacy_create_arize_observability_backend(**kwargs)
     if isinstance(runtime, ArizeObservabilityIntegration):
         return runtime
-    return ArizeObservabilityIntegration.from_backend(runtime)
+    return ArizeObservabilityIntegration.from_client(runtime)

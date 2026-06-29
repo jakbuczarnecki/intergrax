@@ -49,4 +49,4 @@ def create_wandb_observability_backend(**kwargs: object) -> WandbObservabilityIn
     runtime = _legacy_create_wandb_observability_backend(**kwargs)
     if isinstance(runtime, WandbObservabilityIntegration):
         return runtime
-    return WandbObservabilityIntegration.from_backend(runtime)
+    return WandbObservabilityIntegration.from_client(runtime)

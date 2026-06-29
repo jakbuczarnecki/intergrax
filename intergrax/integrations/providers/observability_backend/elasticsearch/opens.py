@@ -14,8 +14,8 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import (
-    _ElasticsearchObservabilityBackend as ElasticsearchObservabilityBackend,
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ElasticsearchObservabilityIntegration,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
@@ -69,4 +69,4 @@ def open_elasticsearch_observability_backend(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return ElasticsearchObservabilityBackend(rest_client)
+    return ElasticsearchObservabilityIntegration.from_client(rest_client)

@@ -49,4 +49,4 @@ def create_helicone_observability_backend(**kwargs: object) -> HeliconeObservabi
     runtime = _legacy_create_helicone_observability_backend(**kwargs)
     if isinstance(runtime, HeliconeObservabilityIntegration):
         return runtime
-    return HeliconeObservabilityIntegration.from_backend(runtime)
+    return HeliconeObservabilityIntegration.from_client(runtime)

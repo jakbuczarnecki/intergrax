@@ -49,4 +49,4 @@ def create_loki_observability_backend(**kwargs: object) -> LokiObservabilityInte
     runtime = _legacy_create_loki_observability_backend(**kwargs)
     if isinstance(runtime, LokiObservabilityIntegration):
         return runtime
-    return LokiObservabilityIntegration.from_backend(runtime)
+    return LokiObservabilityIntegration.from_client(runtime)

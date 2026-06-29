@@ -311,8 +311,12 @@ def test_integration_module_has_no_vendor_sdk_imports(slug: str) -> None:
     source = path.read_text(encoding="utf-8").lower()
 
     for token in _forbidden_prefixes(slug):
-        assert f"import {token}" not in source
-        assert f"from {token}" not in source
+        for line in source.splitlines():
+            stripped = line.strip()
+            if stripped.startswith(f"import {token}") or stripped.startswith(f"from {token}"):
+                raise AssertionError(
+                    f"{slug}: vendor SDK import {token!r} in integration.py: {line.strip()}",
+                )
 
 
 @pytest.mark.parametrize("slug", ALL_MIGRATED_SLUGS)

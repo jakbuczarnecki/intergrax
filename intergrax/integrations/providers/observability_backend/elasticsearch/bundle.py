@@ -15,8 +15,8 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import (
-    _ElasticsearchObservabilityBackend as ElasticsearchObservabilityBackend,
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ElasticsearchObservabilityIntegration,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
@@ -29,7 +29,7 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.opens 
 @dataclass(frozen=True)
 class ElasticsearchIntegrationBundle:
     config: ElasticsearchIntegrationConfig
-    observability_backend: ElasticsearchObservabilityBackend
+    observability_backend: ElasticsearchObservabilityIntegration
     rest_client: ElasticsearchRestClient
 
 
@@ -56,7 +56,7 @@ def create_elasticsearch_integration(
         implementation=observability_backend,
         client=rest_client,
     )
-    assert isinstance(backend, ElasticsearchObservabilityBackend)
+    assert isinstance(backend, ElasticsearchObservabilityIntegration)
     return ElasticsearchIntegrationBundle(
         config=config,
         observability_backend=backend,
@@ -71,7 +71,7 @@ def create_elasticsearch_observability_backend(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
     **config_overrides: object,
-) -> ElasticsearchObservabilityBackend:
+) -> ElasticsearchObservabilityIntegration:
     """Catalog factory for ``"elasticsearch"`` / ``OBSERVABILITY_BACKEND``."""
     return create_elasticsearch_integration(
         observability_backend=observability_backend,

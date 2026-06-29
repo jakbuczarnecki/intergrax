@@ -49,4 +49,4 @@ def create_posthog_observability_backend(**kwargs: object) -> PosthogObservabili
     runtime = _legacy_create_posthog_observability_backend(**kwargs)
     if isinstance(runtime, PosthogObservabilityIntegration):
         return runtime
-    return PosthogObservabilityIntegration.from_backend(runtime)
+    return PosthogObservabilityIntegration.from_client(runtime)

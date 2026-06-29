@@ -169,6 +169,8 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
 
 **INTEGRATIONS-2E (runtime cutover — Done):** each provider/category exposes exactly **one** public entrypoint: `<ProviderPascal><CategoryPascal>Integration` in `integration.py`. Legacy catalog factories in `bundle.py` remain as **compatibility shims** that delegate to the Integration class; they must not return parallel public adapter/facade types. Former public adapters (e.g. `adapter.py` classes sharing the Integration name) are **removed or privatized** (`_ProviderRuntime`, `_ProviderBridge`). Private SDK clients, bridges, and mappers are allowed as implementation details only. Cut-over completeness tracked in `test_provider_runtime_cutover.py` (`CUTOVER_SLUGS` — 185 slugs derived from `SLUG_CATEGORY`, excluding 9 deferred `llm_guardrail` slugs).
 
+**Observability backend inline cutover:** after contract migration, each `observability_backend/<slug>/integration.py` **owns** category catalog behavior (query/health/provider-specific methods). Legacy private adapter delegates (`_*ObservabilityBackend`, `_require_runtime`, `__getattr__` runtime fallback, `_backend: Any`) **must not** remain behind contract classes. Catalog factories may keep historical names but must construct the Integration via typed `_client` / `from_client()` — not a parallel private backend. Regression: `test_observability_legacy_delegation_removed.py`.
+
 ### Default safety and opt-in rules
 
 - Integrations are **explicit opt-in** — disabled unless operator/config enables them.

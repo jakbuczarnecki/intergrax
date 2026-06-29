@@ -49,4 +49,4 @@ def create_influxdb_observability_backend(**kwargs: object) -> InfluxdbObservabi
     runtime = _legacy_create_influxdb_observability_backend(**kwargs)
     if isinstance(runtime, InfluxdbObservabilityIntegration):
         return runtime
-    return InfluxdbObservabilityIntegration.from_backend(runtime)
+    return InfluxdbObservabilityIntegration.from_client(runtime)

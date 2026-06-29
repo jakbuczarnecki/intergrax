@@ -49,4 +49,4 @@ def create_otel_observability_backend(**kwargs: object) -> OtelObservabilityInte
     runtime = _legacy_create_otel_observability_backend(**kwargs)
     if isinstance(runtime, OtelObservabilityIntegration):
         return runtime
-    return OtelObservabilityIntegration.from_backend(runtime)
+    return OtelObservabilityIntegration.from_client(runtime)

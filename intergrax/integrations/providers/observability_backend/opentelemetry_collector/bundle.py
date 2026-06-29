@@ -49,4 +49,4 @@ def create_opentelemetry_collector_observability_backend(**kwargs: object) -> Op
     runtime = _legacy_create_opentelemetry_collector_observability_backend(**kwargs)
     if isinstance(runtime, OpenTelemetryCollectorObservabilityIntegration):
         return runtime
-    return OpenTelemetryCollectorObservabilityIntegration.from_backend(runtime)
+    return OpenTelemetryCollectorObservabilityIntegration.from_client(runtime)

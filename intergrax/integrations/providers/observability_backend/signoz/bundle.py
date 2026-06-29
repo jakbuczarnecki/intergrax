@@ -49,4 +49,4 @@ def create_signoz_observability_backend(**kwargs: object) -> SignozObservability
     runtime = _legacy_create_signoz_observability_backend(**kwargs)
     if isinstance(runtime, SignozObservabilityIntegration):
         return runtime
-    return SignozObservabilityIntegration.from_backend(runtime)
+    return SignozObservabilityIntegration.from_client(runtime)

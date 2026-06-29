@@ -49,4 +49,4 @@ def create_grafana_observability_backend(**kwargs: object) -> GrafanaObservabili
     runtime = _legacy_create_grafana_observability_backend(**kwargs)
     if isinstance(runtime, GrafanaObservabilityIntegration):
         return runtime
-    return GrafanaObservabilityIntegration.from_backend(runtime)
+    return GrafanaObservabilityIntegration.from_client(runtime)

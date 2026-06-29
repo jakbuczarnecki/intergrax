@@ -5,11 +5,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
+from intergrax.integrations.providers.observability_backend._catalog_client import (
+    ObservabilityCatalogClient,
+    require_observability_catalog_client,
+)
 from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
@@ -47,17 +51,17 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
     """
     Single public Opentelemetry Collector observability entrypoint.
 
-    Legacy catalog factory (create_opentelemetry_collector_observability_backend) delegates to this class via from_backend().
+    Legacy catalog factory (create_opentelemetry_collector_observability_backend) owns catalog query behavior; legacy factories use from_client().
     """
 
     config: OpenTelemetryCollectorObservabilityIntegrationConfig = OpenTelemetryCollectorObservabilityIntegrationConfig()
     _transport: OpenTelemetryCollectorObservabilityTransport | None = PrivateAttr(default=None)
-    _backend: Any | None = PrivateAttr(default=None)
+    _client: ObservabilityCatalogClient | None = PrivateAttr(default=None)
 
     @classmethod
-    def from_backend(
+    def from_client(
         cls,
-        backend: Any,
+        client: ObservabilityCatalogClient,
         *,
         enabled: bool = True,
         supported_signals: tuple[ObservabilityVendorSignal, ...] | None = None,
@@ -69,15 +73,15 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
             display_name="Opentelemetry Collector",
             config=OpenTelemetryCollectorObservabilityIntegrationConfig(enabled=enabled),
         )
-        integration._backend = backend
+        integration._client = client
         return integration
 
     @property
-    def backend(self) -> Any | None:
-        return self._backend
+    def client(self) -> ObservabilityCatalogClient | None:
+        return self._client
 
     def query_instant(self, promql: str, *, eval_time: float | None = None) -> MetricQueryResult:
-        return self._require_runtime().query_instant(promql, eval_time=eval_time)
+        return self._require_client().query_instant(promql, eval_time=eval_time)
 
     def query_range(
         self,
@@ -87,7 +91,7 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
         end: float,
         step: str = "15s",
     ) -> MetricQueryResult:
-        return self._require_runtime().query_range(
+        return self._require_client().query_range(
             promql,
             start=start,
             end=end,
@@ -100,21 +104,26 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
         limit: int = 20,
         name: str | None = None,
     ) -> TraceQueryResult:
-        return self._require_runtime().query_traces(limit=limit, name=name)
+        return self._require_client().query_traces(limit=limit, name=name)
 
-
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
-            raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+    def health(self) -> HealthStatus:
+        client = self._require_client()
+        health_fn = getattr(client, "health", None)
+        if callable(health_fn):
+            result = health_fn()
+            if isinstance(result, HealthStatus):
+                return result
+            return HealthStatus(
+                slug="opentelemetry_collector",
+                healthy=bool(result),
+                detail="opentelemetry_collector ready probe",
             )
-        return runtime
+        raise IntegrationConfigurationError(
+            f"{type(self).__name__} catalog client does not support health",
+        )
+
+    def _require_client(self) -> ObservabilityCatalogClient:
+        return require_observability_catalog_client(self, self._client)
 
 
     @classmethod
@@ -144,12 +153,5 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
             raise RuntimeError(msg)
         await self._transport.send_observability_payload(payload)
 
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 ObservabilityBackend.register(OpenTelemetryCollectorObservabilityIntegration)

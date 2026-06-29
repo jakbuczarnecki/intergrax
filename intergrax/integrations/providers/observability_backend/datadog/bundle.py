@@ -49,4 +49,4 @@ def create_datadog_observability_backend(**kwargs: object) -> DatadogObservabili
     runtime = _legacy_create_datadog_observability_backend(**kwargs)
     if isinstance(runtime, DatadogObservabilityIntegration):
         return runtime
-    return DatadogObservabilityIntegration.from_backend(runtime)
+    return DatadogObservabilityIntegration.from_client(runtime)

@@ -115,9 +115,11 @@ class _FakeBraintrustClient:
 
 
 def test_full_langsmith_adapter() -> None:
-    from intergrax.integrations.providers.observability_backend.langsmith.adapter import _LangSmithObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.langsmith.integration import (
+        LangsmithObservabilityIntegration,
+    )
 
-    backend = _LangSmithObservabilityBackend(_FakeLangSmithClient())  # type: ignore[arg-type]
+    backend = LangsmithObservabilityIntegration.from_client(_FakeLangSmithClient())  # type: ignore[arg-type]
     assert backend.query_instant("sessions").series[0].points[0].value == 3.0
     assert backend.query_traces(limit=1).traces[0].trace_id == "ls-1"
 
@@ -147,9 +149,11 @@ def test_pagerduty_trigger_incident_tool() -> None:
 
 
 def test_braintrust_log_eval_tool() -> None:
-    from intergrax.integrations.providers.observability_backend.braintrust.adapter import _BraintrustObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.braintrust.integration import (
+        BraintrustObservabilityIntegration,
+    )
 
-    backend = _BraintrustObservabilityBackend(_FakeBraintrustClient())  # type: ignore[arg-type]
+    backend = BraintrustObservabilityIntegration.from_client(_FakeBraintrustClient())  # type: ignore[arg-type]
     ctx = ToolWiringContext(observability_backend=backend)
     out = braintrust_log_eval(ctx, BraintrustLogEvalInput(name="accuracy", score=0.9))
     assert out.log_id == "log-1"

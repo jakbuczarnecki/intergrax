@@ -49,4 +49,4 @@ def create_mlflow_observability_backend(**kwargs: object) -> MlflowObservability
     runtime = _legacy_create_mlflow_observability_backend(**kwargs)
     if isinstance(runtime, MlflowObservabilityIntegration):
         return runtime
-    return MlflowObservabilityIntegration.from_backend(runtime)
+    return MlflowObservabilityIntegration.from_client(runtime)
