@@ -15,6 +15,12 @@ from typing import Any, Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.teams.config import TeamsIntegrationConfig
+from intergrax.integrations.providers.notification_channel.teams.integration import (
+    TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    TeamsNotificationChannelClient,
+    TeamsNotificationChannelIntegration,
+    TeamsNotificationChannelIntegrationConfig,
+)
 from intergrax.integrations.providers.notification_channel.teams.opens import (
     open_teams_interaction_surface,
     open_teams_notification_channel,
@@ -29,7 +35,7 @@ class TeamsIntegrationBundle:
     """Teams notification + interaction adapters sharing one config."""
 
     config: TeamsIntegrationConfig
-    notification_channel: NotificationAdapter
+    notification_channel: TeamsNotificationChannelIntegration
     interaction_surface: InteractionAdapter
 
 
@@ -77,7 +83,7 @@ def create_teams_notification_channel(
     notification_adapter: Optional[NotificationAdapter] = None,
     delivery: Optional[NotificationDelivery] = None,
     **config_overrides: object,
-) -> NotificationAdapter:
+) -> TeamsNotificationChannelIntegration:
     """Direct factory for outbound Teams notifications."""
     return create_teams_integration(
         webhook_url=webhook_url,
@@ -132,14 +138,6 @@ def create_teams_signature_verifier(
     )
 
 
-from intergrax.integrations.providers.notification_channel.teams.integration import (
-    TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID,
-    TeamsNotificationChannelClient,
-    TeamsNotificationChannelIntegration,
-    TeamsNotificationChannelIntegrationConfig,
-)
-
-
 def create_teams_notification_channel_integration(
     *,
     client: TeamsNotificationChannelClient | None = None,
@@ -148,7 +146,6 @@ def create_teams_notification_channel_integration(
     """
     Build a contract-based Teams notification channel integration.
 
-    Compatibility shim — constructs Integration via from_store (create_teams_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:
