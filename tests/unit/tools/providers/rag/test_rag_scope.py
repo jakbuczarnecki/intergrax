@@ -130,9 +130,9 @@ def test_vectorstore_tenant_id_reads_qdrant_integration_bridge() -> None:
     from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
     from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 
-    bridge = QdrantVectorStoreIntegration(
+    bridge = QdrantVectorStoreIntegration.from_store(
         QdrantIntegrationConfig(collection_name="local_workspace", tenant_id="lkw-smoke"),
-        _StoreStub("lkw-smoke"),
+        _StoreStub("default"),
     )
     assert vectorstore_tenant_id(VectorstoreManager(bridge)) == "lkw-smoke"
 
