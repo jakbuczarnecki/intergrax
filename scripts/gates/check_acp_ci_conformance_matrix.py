@@ -12,6 +12,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PYTHON = sys.executable
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
 
 MATRIX: tuple[tuple[str, str, str | None], ...] = (
     ("CI-01", "check_agents_lifecycle_metadata.py", None),
@@ -41,7 +45,7 @@ MATRIX: tuple[tuple[str, str, str | None], ...] = (
 
 
 def _run_script(script: str) -> int:
-    path = REPO_ROOT / "scripts" / script
+    path = resolve_script(script)
     for cmd in (
         ["uv", "run", "python", str(path)],
         [PYTHON, str(path)],
@@ -62,9 +66,8 @@ def main() -> int:
     args = parser.parse_args()
 
     violations: list[str] = []
-    scripts_dir = REPO_ROOT / "scripts"
     for row_id, script, test_path in MATRIX:
-        if not (scripts_dir / script).is_file():
+        if not resolve_script(script).is_file():
             violations.append(f"{row_id}: missing script {script}")
         if test_path and not (REPO_ROOT / test_path).is_file():
             violations.append(f"{row_id}: missing test {test_path}")

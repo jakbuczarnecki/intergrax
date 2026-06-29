@@ -64,7 +64,12 @@ LEGACY_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
 )
 
 ACP_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"\bCognitiveAgent\b|\bReflexAgent\b|\bReactAgent\b"), "cognitive_pattern_base"),
+    (
+        re.compile(
+            r"\bCognitiveAgent\b|\bReflexAgent\b|\bReactAgent\b|\bDiagnosticReflexAgent\b"
+        ),
+        "cognitive_pattern_base",
+    ),
     (re.compile(r"\bon_next_step\b"), "on_next_step"),
     (re.compile(r"\bcognitive_pattern\s*="), "cognitive_pattern_declared"),
 )

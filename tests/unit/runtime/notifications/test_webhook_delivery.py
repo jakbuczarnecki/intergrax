@@ -3,6 +3,9 @@
 import httpx
 import pytest
 
+from intergrax.integrations.providers.notification_channel.log.integration import LogNotificationChannelIntegration
+from intergrax.integrations.providers.notification_channel.slack.integration import SlackNotificationChannelIntegration
+from intergrax.integrations.providers.notification_channel.teams.integration import TeamsNotificationChannelIntegration
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
 from intergrax.runtime.notifications.adapters.webhook_adapter import WebhookNotificationAdapter
@@ -39,19 +42,21 @@ async def test_logging_notification_adapter(caplog):
 @pytest.mark.unit
 @pytest.mark.gate
 def test_resolve_notification_adapter_channels():
-    assert isinstance(resolve_notification_adapter("log"), LoggingNotificationAdapter)
+    assert isinstance(resolve_notification_adapter("log"), LogNotificationChannelIntegration)
     settings = resolve_notification_settings(
         backend="slack",
         slack_webhook_url="https://hooks.example.test/slack",
     )
     slack = create_notification_adapter(settings)
-    assert isinstance(slack, WebhookNotificationAdapter)
+    assert isinstance(slack, SlackNotificationChannelIntegration)
+    assert isinstance(slack._require_client(), WebhookNotificationAdapter)
     settings = resolve_notification_settings(
         backend="teams",
         teams_webhook_url="https://hooks.example.test/teams",
     )
     teams = create_notification_adapter(settings)
-    assert isinstance(teams, WebhookNotificationAdapter)
+    assert isinstance(teams, TeamsNotificationChannelIntegration)
+    assert isinstance(teams._require_client(), WebhookNotificationAdapter)
 
 
 @pytest.mark.unit
@@ -117,7 +122,8 @@ def test_create_notification_adapter_falls_back_to_log_without_url(monkeypatch):
     monkeypatch.delenv("INTERGRAX_SLACK_WEBHOOK_URL", raising=False)
     settings = resolve_notification_settings(backend="slack", slack_webhook_url="")
     adapter = create_notification_adapter(settings)
-    assert isinstance(adapter, LoggingNotificationAdapter)
+    assert isinstance(adapter, SlackNotificationChannelIntegration)
+    assert isinstance(adapter._require_client(), LoggingNotificationAdapter)
 
 
 @pytest.mark.unit

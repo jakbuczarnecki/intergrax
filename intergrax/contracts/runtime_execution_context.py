@@ -21,6 +21,8 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 _PENDING_TOOL_CALLS_KEY = "_pending_tool_call_records"
 _PENDING_RAG_CALLS_KEY = "_pending_rag_call_records"
 RAG_RETRIEVE_TOOL_ID = "rag.retrieve"
+RAG_INGEST_TOOL_ID = "rag.ingest_document"
+WORKSPACE_WRITE_FILE_TOOL_ID = "workspace.write_file"
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.runtime_event import RuntimeEvent

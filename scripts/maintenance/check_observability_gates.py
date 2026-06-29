@@ -9,6 +9,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PYTHON = sys.executable
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
+
 _AUDIT_SCRIPTS = (
     "check_trace_bridge_event_catalog.py",
     "check_observability_emission_coverage.py",
@@ -20,14 +27,22 @@ _AUDIT_SCRIPTS = (
 )
 
 
+def _run(script: str) -> int:
+    path = resolve_script(script)
+    for cmd in (
+        ["uv", "run", "python", str(path)],
+        [PYTHON, str(path)],
+    ):
+        completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
+        if completed.returncode == 0:
+            return 0
+    return 1
+
+
 def main() -> int:
-    repo_root = Path(__file__).resolve().parents[2]
-    scripts_dir = repo_root / "scripts"
     for name in _AUDIT_SCRIPTS:
-        script = scripts_dir / name
-        result = subprocess.run([sys.executable, str(script)], cwd=repo_root, check=False)
-        if result.returncode != 0:
-            return result.returncode
+        if _run(name) != 0:
+            return 1
 
     l4_cmd = [
         sys.executable,
@@ -36,7 +51,7 @@ def main() -> int:
         "tests/unit/runtime/events/test_observability_layer_depth_gate.py",
         "-q",
     ]
-    l4_result = subprocess.run(l4_cmd, cwd=repo_root, check=False)
+    l4_result = subprocess.run(l4_cmd, cwd=REPO_ROOT, check=False)
     if l4_result.returncode != 0:
         return l4_result.returncode
 

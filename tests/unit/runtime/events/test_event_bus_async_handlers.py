@@ -44,16 +44,17 @@ def test_record_runs_async_handler_without_coroutine_warning() -> None:
 @pytest.mark.asyncio
 async def test_record_schedules_async_handler_when_loop_running() -> None:
     bus = RuntimeEventBus(record_history=False)
-    seen: asyncio.Event = asyncio.Event()
+    done: asyncio.Future[None] = asyncio.get_running_loop().create_future()
 
     async def _async_handler(_event: RuntimeEvent) -> None:
-        seen.set()
+        if not done.done():
+            done.set_result(None)
 
     bus.subscribe(_async_handler, event_types={RuntimeEventType.TASK_COMPLETED})
 
     bus.record(_sample_event())
 
-    await asyncio.wait_for(seen.wait(), timeout=1.0)
+    await asyncio.wait_for(done, timeout=1.0)
 
 
 @pytest.mark.unit

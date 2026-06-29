@@ -13,7 +13,7 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
 )
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
+from intergrax.contracts.runtime_execution_context import RAG_RETRIEVE_TOOL_ID
 
 SEARCH_STEP_ID = "local_search_step"
 
