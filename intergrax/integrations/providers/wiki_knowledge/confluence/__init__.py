@@ -57,7 +57,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "ConfluenceWikiKnowledge":
-        from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import ConfluenceWikiKnowledge
+        from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import _ConfluenceWikiKnowledge
 
         return ConfluenceWikiKnowledge
     if name in _CONTRACT_INTEGRATION_EXPORTS:

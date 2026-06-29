@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_wikipedia_wiki_knowledge
+from intergrax.integrations._shared.p8.factories import create_wikipedia_wiki_knowledge as _legacy_create_wikipedia_wiki_knowledge
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.wiki_knowledge.wikipedia.integration import (
@@ -39,3 +39,11 @@ def create_wikipedia_wiki_knowledge_integration(
         display_name="Wikipedia",
         config=WikipediaWikiKnowledgeIntegrationConfig(enabled=enabled),
     )
+
+
+def create_wikipedia_wiki_knowledge(**kwargs: object) -> WikipediaWikiKnowledgeIntegration:
+    """Compatibility shim — constructs WikipediaWikiKnowledgeIntegration from legacy runtime."""
+    runtime = _legacy_create_wikipedia_wiki_knowledge(**kwargs)
+    if isinstance(runtime, WikipediaWikiKnowledgeIntegration):
+        return runtime
+    return WikipediaWikiKnowledgeIntegration.from_runtime(runtime)

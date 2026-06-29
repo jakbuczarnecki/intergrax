@@ -13,7 +13,8 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
-from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import ConfluenceWikiKnowledge
+from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import _ConfluenceWikiKnowledge
+from intergrax.integrations.providers.wiki_knowledge.confluence.integration import ConfluenceWikiKnowledgeIntegration
 from intergrax.integrations.providers.wiki_knowledge.confluence.client import ConfluenceRestClient
 from intergrax.integrations.providers.wiki_knowledge.confluence.config import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -60,4 +61,4 @@ def open_confluence_wiki_knowledge(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return ConfluenceWikiKnowledge(rest_client)
+    return ConfluenceWikiKnowledgeIntegration.from_runtime(_ConfluenceWikiKnowledge(rest_client))

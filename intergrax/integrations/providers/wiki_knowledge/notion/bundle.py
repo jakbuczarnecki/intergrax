@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_notion_wiki_knowledge
+from intergrax.integrations._shared.p2.factories import create_notion_wiki_knowledge as _legacy_create_notion_wiki_knowledge
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.wiki_knowledge.notion.integration import (
@@ -39,3 +39,11 @@ def create_notion_wiki_knowledge_integration(
         display_name="Notion",
         config=NotionWikiKnowledgeIntegrationConfig(enabled=enabled),
     )
+
+
+def create_notion_wiki_knowledge(**kwargs: object) -> NotionWikiKnowledgeIntegration:
+    """Compatibility shim — constructs NotionWikiKnowledgeIntegration from legacy runtime."""
+    runtime = _legacy_create_notion_wiki_knowledge(**kwargs)
+    if isinstance(runtime, NotionWikiKnowledgeIntegration):
+        return runtime
+    return NotionWikiKnowledgeIntegration.from_runtime(runtime)

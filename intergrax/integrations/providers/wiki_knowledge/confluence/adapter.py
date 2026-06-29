@@ -9,7 +9,7 @@ from intergrax.integrations.contracts.wiki_knowledge import WikiPageRecord, Wiki
 from intergrax.integrations.providers.wiki_knowledge.confluence.client import ConfluenceRestClient
 
 
-class ConfluenceWikiKnowledge:
+class _ConfluenceWikiKnowledge:
     """
     Catalog facade over ``ConfluenceRestClient``.
 

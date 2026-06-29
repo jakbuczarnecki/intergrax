@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_sharepoint_wiki_knowledge
+from intergrax.integrations._shared.p2.factories import create_sharepoint_wiki_knowledge as _legacy_create_sharepoint_wiki_knowledge
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.wiki_knowledge.sharepoint.integration import (
@@ -39,3 +39,11 @@ def create_sharepoint_wiki_knowledge_integration(
         display_name="Sharepoint",
         config=SharepointWikiKnowledgeIntegrationConfig(enabled=enabled),
     )
+
+
+def create_sharepoint_wiki_knowledge(**kwargs: object) -> SharepointWikiKnowledgeIntegration:
+    """Compatibility shim — constructs SharepointWikiKnowledgeIntegration from legacy runtime."""
+    runtime = _legacy_create_sharepoint_wiki_knowledge(**kwargs)
+    if isinstance(runtime, SharepointWikiKnowledgeIntegration):
+        return runtime
+    return SharepointWikiKnowledgeIntegration.from_runtime(runtime)

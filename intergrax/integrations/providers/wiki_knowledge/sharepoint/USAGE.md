@@ -2,19 +2,8 @@
 
 Category: `wiki_knowledge`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_sharepoint_wiki_knowledge()` remains backward-compatible.
-
-## Contract-based integration
-
-- `SharepointWikiKnowledgeIntegration` derives from the category-specific contract.
-- Factory: `create_sharepoint_wiki_knowledge_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`SharepointWikiKnowledgeIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SharepointWikiKnowledgeIntegration`.
+- Contract factory: `create_sharepoint_wiki_knowledge_integration()`.

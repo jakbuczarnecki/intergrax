@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
-from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import ConfluenceWikiKnowledge
+from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import _ConfluenceWikiKnowledge
 from intergrax.integrations.providers.wiki_knowledge.confluence.client import ConfluenceRestClient
 from intergrax.integrations.providers.wiki_knowledge.confluence.config import ConfluenceIntegrationConfig
 from intergrax.integrations.providers.wiki_knowledge.confluence.opens import (
@@ -27,7 +27,7 @@ from intergrax.integrations.providers.wiki_knowledge.confluence.opens import (
 @dataclass(frozen=True)
 class ConfluenceIntegrationBundle:
     config: ConfluenceIntegrationConfig
-    wiki_knowledge: ConfluenceWikiKnowledge
+    wiki_knowledge: ConfluenceWikiKnowledgeIntegration
     rest_client: ConfluenceRestClient
 
 
@@ -65,7 +65,7 @@ def create_confluence_wiki_knowledge(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[ConfluenceIntegrationConfig], Any]] = None,
     **config_overrides: object,
-) -> ConfluenceWikiKnowledge:
+) -> ConfluenceWikiKnowledgeIntegration:
     """Catalog factory for ``"confluence"`` / ``WIKI_KNOWLEDGE``."""
     return create_confluence_integration(
         wiki_knowledge=wiki_knowledge,
@@ -86,13 +86,13 @@ from intergrax.integrations.providers.wiki_knowledge.confluence.integration impo
 
 def create_confluence_wiki_knowledge_integration(
     *,
-    client: ConfluenceWikiKnowledgeClient | None = None,
+    client: ConfluenceWikiKnowledgeIntegrationClient | None = None,
     enabled: bool = False,
 ) -> ConfluenceWikiKnowledgeIntegration:
     """
     Build a contract-based Confluence wiki knowledge integration.
 
-    The legacy facade (create_confluence_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_confluence_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:
