@@ -10,6 +10,13 @@ from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.runtime.observability.operator_wiring import (
+    ObservabilityExportBackend,
+    ObservabilityExportOperatorConfig,
+    OtlpExportOperatorConfig,
+)
+
+
 
 LocalWorkspaceIdentitySource = Literal["body_or_context", "context_only"]
 
@@ -63,6 +70,15 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     openapi_enabled_override: Optional[bool] = None
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     interaction_execute_default: bool = True
+    # Observability export settings (env-driven; disabled by default)
+    observability_export_enabled: bool = False
+    observability_export_backend: str = "otlp"
+    observability_export_content: bool = False
+    observability_otlp_endpoint: str = ""
+    observability_service_name: str = "intergrax-lkw"
+    observability_service_version: str = ""
+    observability_environment: str = ""
+    observability_otlp_timeout_seconds: float = 30.0
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -75,6 +91,43 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         return ids
 
     # ------------------------------------------------------------------
+    def build_observability_export_config(self) -> ObservabilityExportOperatorConfig | None:
+        """Build optional ObservabilityExportOperatorConfig from env-driven settings.
+
+        Returns None when export is disabled.  Raises ValueError on
+        missing endpoint or unsupported backend.
+        """
+        if not self.observability_export_enabled:
+            return None
+
+        backend = self.observability_export_backend.strip().lower()
+        if backend != "otlp":
+            raise ValueError(
+                f"unsupported LKW observability export backend: {backend!r}"
+            )
+
+        endpoint = self.observability_otlp_endpoint.strip()
+        if not endpoint:
+            raise ValueError(
+                "LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT is required when "
+                "observability export is enabled"
+            )
+
+        # Safety: never export raw content regardless of env value
+        return ObservabilityExportOperatorConfig(
+            enabled=True,
+            export_content=False,
+            backend=ObservabilityExportBackend.OTLP,
+            otlp=OtlpExportOperatorConfig(
+                endpoint=endpoint,
+                service_name=self.observability_service_name or "intergrax-lkw",
+                service_version=self.observability_service_version or None,
+                environment=self.observability_environment or None,
+                timeout_seconds=self.observability_otlp_timeout_seconds,
+                headers=None,
+            ),
+        )
+
     # Application-specific settings
     # Add your own env-backed fields here.
     # ------------------------------------------------------------------
@@ -152,6 +205,40 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                     "LOCAL_WORKSPACE_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
+
+        # Observability export
+        observability_export_enabled = env.bool(
+            "OBSERVABILITY_EXPORT_ENABLED",
+            default=cls._field_default("observability_export_enabled"),  # type: ignore[arg-type]
+        )
+        observability_export_backend = env.str(
+            "OBSERVABILITY_EXPORT_BACKEND",
+            default=cls._field_default("observability_export_backend"),  # type: ignore[arg-type]
+        )
+        observability_export_content = env.bool(
+            "OBSERVABILITY_EXPORT_CONTENT",
+            default=cls._field_default("observability_export_content"),  # type: ignore[arg-type]
+        )
+        observability_otlp_endpoint = env.str(
+            "OBSERVABILITY_OTLP_ENDPOINT",
+            default=cls._field_default("observability_otlp_endpoint"),  # type: ignore[arg-type]
+        )
+        observability_service_name = env.str(
+            "OBSERVABILITY_SERVICE_NAME",
+            default=cls._field_default("observability_service_name"),  # type: ignore[arg-type]
+        )
+        observability_service_version = env.str(
+            "OBSERVABILITY_SERVICE_VERSION",
+            default=cls._field_default("observability_service_version"),  # type: ignore[arg-type]
+        )
+        observability_environment = env.str(
+            "OBSERVABILITY_ENVIRONMENT",
+            default=cls._field_default("observability_environment"),  # type: ignore[arg-type]
+        )
+        observability_otlp_timeout_seconds = env.float(
+            "OBSERVABILITY_OTLP_TIMEOUT_SECONDS",
+            default=cls._field_default("observability_otlp_timeout_seconds"),  # type: ignore[arg-type]
+        )
         read_roots_raw = (os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS") or "").strip()
         allowed_read_roots = frozenset(
             part.strip() for part in read_roots_raw.split(",") if part.strip()
@@ -171,4 +258,12 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                 "INTERACTION_EXECUTE_DEFAULT",
                 default=cls._field_default("interaction_execute_default"),  # type: ignore[arg-type]
             ),
+            "observability_export_enabled": observability_export_enabled,
+            "observability_export_backend": observability_export_backend,
+            "observability_export_content": observability_export_content,
+            "observability_otlp_endpoint": observability_otlp_endpoint,
+            "observability_service_name": observability_service_name,
+            "observability_service_version": observability_service_version,
+            "observability_environment": observability_environment,
+            "observability_otlp_timeout_seconds": observability_otlp_timeout_seconds,
         }

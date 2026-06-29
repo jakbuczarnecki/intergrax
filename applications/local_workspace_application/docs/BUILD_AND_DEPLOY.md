@@ -207,4 +207,31 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 
 ---
 
+---
+
+## 9. Optional OTLP observability export
+
+LKW supports exporting policy-sanitized Intergrax observability envelopes as OTLP logs to an external OpenTelemetry Collector.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED` | `false` | Enable observability export (disabled by default) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND` | `otlp` | Export backend (only `otlp` supported) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT` | — | Required when enabled; e.g. `http://otel-collector:4318/v1/logs` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT` | `false` | Forced to `false` by policy; raw content is never exported |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS` | `30` | HTTP transport timeout |
+
+**Safety boundaries:**
+
+- Export is **disabled by default**; no remote observability export occurs without explicit configuration.
+- OTLP endpoint is **required** when export is enabled.
+- `export_content` is **always false** — raw documents, chunks, prompts, tool arguments, secrets, and full local paths are not exported.
+- Only the `otlp` backend is supported; any other backend fails fast.
+- Docker Compose collector/viewer setup is a **follow-up task**; no Grafana, Loki, Langfuse, or vendor backend is included yet.
+
+
+
 *Generated for Intergrax Tier-3 scaffold (profile: product).*

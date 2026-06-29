@@ -46,6 +46,8 @@ def create_local_workspace_backend_app(
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or LocalWorkspaceBackendSettings.from_env()
+    if observability_export is None:
+        observability_export = settings.build_observability_export_config()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
