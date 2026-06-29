@@ -9,7 +9,8 @@ import importlib
 import inspect
 import re
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Callable, Optional, Sequence
+from unittest.mock import MagicMock
 
 import pytest
 from langchain_core.documents import Document
@@ -91,6 +92,20 @@ OBSERVABILITY_CUTOVER_SLUGS = frozenset(
     slug for slug in CUTOVER_SLUGS if SLUG_CATEGORY[slug] == "observability_backend"
 )
 CLIENT_CONTRACT_CUTOVER_SLUGS = CUTOVER_SLUGS - OBSERVABILITY_CUTOVER_SLUGS
+
+# Non-vector category representatives — legacy factory must return Integration at runtime.
+NON_VECTOR_LEGACY_SMOKE_SLUGS: frozenset[str] = frozenset(
+    {
+        "pagerduty",
+        "slack",
+        "filesystem",
+        "github",
+        "redis",
+        "postgresql",
+        "tavily",
+        "exa",
+    }
+)
 
 
 def _provider_dir(slug: str, category: str) -> Path:
@@ -178,6 +193,94 @@ class _FakeClient:
         return None
 
 
+class _FakeSearchClient:
+    def search(self, query: str, limit: int) -> dict[str, Any]:
+        return {"results": [{"title": query, "url": "https://example", "content": "hit"}]}
+
+
+class _FakeIssueClient:
+    def get_issue(self, issue_key: str) -> dict[str, Any]:
+        return {"key": issue_key, "summary": "Task", "status": "open"}
+
+    def add_comment(self, issue_key: str, body: str) -> dict[str, Any]:
+        return {"id": "c1", "body": body, "issue": issue_key}
+
+    def search_issues(self, jql: str, *, limit: int) -> list[dict[str, Any]]:
+        del limit
+        return [{"key": "1", "summary": jql, "status": "open"}]
+
+    def health(self) -> bool:
+        return True
+
+
+class _FakePagerDutyEventsClient:
+    def trigger_incident(self, *args: object, **kwargs: object) -> dict[str, str]:
+        del args, kwargs
+        return {"status": "success", "message": "Event processed", "dedup_key": "d1"}
+
+
+class _FakePostgresqlConnection:
+    def __init__(self) -> None:
+        self.executed: list[tuple[str, tuple[Any, ...]]] = []
+        self.committed = 0
+        self.closed = False
+
+    def execute(self, sql: str, params: tuple[Any, ...] = ()) -> object:
+        self.executed.append((sql, params))
+
+        class _Cursor:
+            def fetchall(self) -> list[dict[str, str]]:
+                return [{"name": "alpha"}]
+
+        return _Cursor()
+
+    def commit(self) -> None:
+        self.committed += 1
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def _postgresql_connection_factory() -> Callable[[], _FakePostgresqlConnection]:
+    conn = _FakePostgresqlConnection()
+
+    def _factory() -> _FakePostgresqlConnection:
+        return conn
+
+    return _factory
+
+
+def _legacy_smoke_factory_kwargs(slug: str, tmp_path: Path) -> dict[str, Any]:
+    if slug == "pagerduty":
+        return {"client": _FakePagerDutyEventsClient()}
+    if slug == "slack":
+        return {
+            "integration_category": IntegrationCategory.NOTIFICATION_CHANNEL,
+            "notification_adapter": MagicMock(),
+        }
+    if slug == "filesystem":
+        return {"root_dir": str(tmp_path)}
+    if slug == "github":
+        return {"client": _FakeIssueClient()}
+    if slug == "redis":
+        return {"client": MagicMock(), "key_prefix": "smoke"}
+    if slug == "postgresql":
+        return {
+            "connection_factory": _postgresql_connection_factory(),
+            "dsn": "postgresql://localhost/test",
+        }
+    if slug in {"tavily", "exa"}:
+        return {"client": _FakeSearchClient()}
+    msg = f"{slug}: no legacy smoke factory kwargs configured"
+    raise AssertionError(msg)
+
+
+def test_non_vector_legacy_smoke_slugs_are_cutover_representatives() -> None:
+    assert NON_VECTOR_LEGACY_SMOKE_SLUGS <= CUTOVER_SLUGS
+    assert SLUG_CATEGORY["redis"] == "key_value_cache"
+    assert SLUG_CATEGORY["postgresql"] == "relational_store"
+
+
 def test_cutover_registry_documents_deferred_llm_guardrail() -> None:
     for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
         assert slug not in CUTOVER_SLUGS
@@ -250,6 +353,15 @@ def test_legacy_factory_delegates_to_integration_model(slug: str) -> None:
 
         store = legacy_factory(store_factory=_factory, collection_name="c1", tenant_id="t1")
         assert isinstance(store, integration_cls)
+
+
+@pytest.mark.parametrize("slug", sorted(NON_VECTOR_LEGACY_SMOKE_SLUGS))
+def test_legacy_factory_non_vector_runtime_smoke(slug: str, tmp_path: Path) -> None:
+    category = SLUG_CATEGORY[slug]
+    integration_cls = getattr(_integration_module(slug, category), _integration_class_name(slug, category))
+    legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
+    result = legacy_factory(**_legacy_smoke_factory_kwargs(slug, tmp_path))
+    assert isinstance(result, integration_cls)
 
 
 @pytest.mark.parametrize("slug", sorted(VECTOR_STORE_CUTOVER_SLUGS))

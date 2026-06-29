@@ -5,7 +5,7 @@
 **Code:** `intergrax/runtime/integrations/categories/`  
 **Task:** INTEGRATIONS-2A
 
-**Last updated:** 2026-06-29 — INTEGRATIONS-2E runtime cutover phase started (vector_store wave 1).
+**Last updated:** 2026-06-29 — INTEGRATIONS-2E runtime cutover **Done** (185 slugs); 9 `llm_guardrail` slugs deferred.
 
 ---
 
@@ -18,7 +18,7 @@
 | **INTEGRATIONS-2B-FOLLOWUP** | Code | P1 | **Done** | Provider package pattern + scaffold hardening |
 | **INTEGRATIONS-2C** | Code | P1 | **Done** | All `observability_backend` slugs migrated |
 | **INTEGRATIONS-2D** | Code | P1 | **Done** | All remaining non-observability slugs migrated (160) or explicitly deferred (9 `llm_guardrail`) |
-| **INTEGRATIONS-2E** | Code | P1 | **In progress** | Runtime cutover — Integration is single public entrypoint; legacy factories are shims only |
+| **INTEGRATIONS-2E** | Code | P1 | **Done** | Runtime cutover — Integration is single public entrypoint; legacy factories are shims only (9 `llm_guardrail` deferred) |
 
 **INTEGRATIONS-2A acceptance:** every `SLUG_CATEGORY` folder has a category contract or explicit alias; all derive from **`PlatformIntegrationContract`**; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; no LKW change; focused tests green.
 
