@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 
 import pytest
 
@@ -15,9 +16,13 @@ from intergrax.runtime.integrations.categories import (
     OBSERVABILITY_VENDOR_INTEGRATION_KIND,
     PROVIDER_CATEGORY_CONTRACT_REGISTRY,
 )
+from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability, PlatformIntegrationContract
-from intergrax.runtime.integrations.observability import ObservabilityVendorIntegrationContract
+from intergrax.runtime.integrations.observability import (
+    ObservabilityVendorIntegrationConfig,
+    ObservabilityVendorIntegrationContract,
+)
 from intergrax.runtime.integrations.registry_v2 import (
     DEFERRED_LLM_GUARDRAIL_SLUGS,
     DuplicateIntegrationRegistrationError,
@@ -61,7 +66,7 @@ def _fake_vector_factory(*, enabled: bool = False) -> ElasticsearchVectorStoreIn
     return ElasticsearchVectorStoreIntegration.for_provider(
         provider_id="elasticsearch",
         display_name="Elasticsearch Vector",
-        config=ElasticsearchVectorStoreIntegration.model_fields["config"].default_factory()(enabled=enabled),
+        config=CategoryIntegrationConfig(enabled=enabled),
     )
 
 
@@ -69,7 +74,7 @@ def _fake_observability_factory(*, enabled: bool = False) -> ElasticsearchObserv
     return ElasticsearchObservabilityIntegration.for_provider(
         provider_id="elasticsearch",
         display_name="Elasticsearch Observability",
-        config=ElasticsearchObservabilityIntegration.model_fields["config"].default_factory()(enabled=enabled),
+        config=ObservabilityVendorIntegrationConfig(enabled=enabled),
     )
 
 
@@ -79,9 +84,9 @@ def _registration_from_sample(
     category: str,
     contract_class: type[PlatformIntegrationContract],
     integration_class: type[PlatformIntegrationContract],
-    factory: object,
+    factory: Callable[..., PlatformIntegrationContract],
 ) -> IntegrationRegistration:
-    sample = factory(enabled=False)  # type: ignore[operator]
+    sample = factory(enabled=False)
     return IntegrationRegistration(
         provider_id=sample.provider_id,
         slug=slug,
@@ -89,7 +94,7 @@ def _registration_from_sample(
         integration_kind=sample.integration_kind,
         contract_class=contract_class,
         integration_class=integration_class,
-        factory=factory,  # type: ignore[arg-type]
+        factory=factory,
         config_class=type(sample.config),
         display_name=sample.display_name or sample.provider_id,
         capabilities=tuple(capability.value for capability in sample.capabilities),
@@ -167,8 +172,9 @@ def test_registration_factory_disabled_returns_integration() -> None:
     assert integration.enabled is False
 
 
-def test_registration_enabled_without_client_raises() -> None:
-    registration = build_integration_registration("qdrant")
+@pytest.mark.parametrize("slug", ["filesystem", "github", "langfuse", "qdrant", "slack"])
+def test_registration_enabled_without_client_or_transport_raises(slug: str) -> None:
+    registration = build_integration_registration(slug)
 
     with pytest.raises(IntegrationConfigurationError):
         registration.factory(enabled=True)
@@ -215,6 +221,21 @@ def test_registry_lists_by_provider() -> None:
     )
 
 
+def test_registry_construction_has_no_vendor_network_or_sdk_dependency() -> None:
+    before_modules = set(sys.modules)
+
+    build_contract_registry()
+
+    new_modules = set(sys.modules) - before_modules
+    forbidden_imports = sorted(
+        module_name
+        for module_name in new_modules
+        if module_name in _FORBIDDEN_VENDOR_SDK_MODULES
+        or any(module_name.startswith(f"{prefix}.") for prefix in _FORBIDDEN_VENDOR_SDK_MODULES)
+    )
+    assert forbidden_imports == []
+
+
 def test_all_non_deferred_cutover_providers_are_registry_v2_compatible() -> None:
     registry = build_contract_registry()
     expected_slugs = set(non_deferred_provider_slugs())
@@ -242,18 +263,3 @@ def test_deferred_llm_guardrail_slugs_are_explicitly_excluded() -> None:
     for slug in DEFERRED_LLM_GUARDRAIL_SLUGS:
         assert slug not in registered_slugs
         assert SLUG_CATEGORY[slug] == "llm_guardrail"
-
-
-def test_registry_construction_has_no_vendor_network_or_sdk_dependency() -> None:
-    before_modules = set(sys.modules)
-
-    build_contract_registry()
-
-    new_modules = set(sys.modules) - before_modules
-    forbidden_imports = sorted(
-        module_name
-        for module_name in new_modules
-        if module_name in _FORBIDDEN_VENDOR_SDK_MODULES
-        or any(module_name.startswith(f"{prefix}.") for prefix in _FORBIDDEN_VENDOR_SDK_MODULES)
-    )
-    assert forbidden_imports == []
