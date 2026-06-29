@@ -11,12 +11,12 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_interaction_surface
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.interaction_surface.lab_json.adapter import LabJsonIntegrationAdapter
 from intergrax.integrations.providers.interaction_surface.lab_json.bundle import (
     LabJsonIntegrationBundle,
     create_lab_json_integration,
     create_lab_json_interaction_surface,
 )
+from intergrax.integrations.providers.interaction_surface.lab_json.integration import LabJsonInteractionSurfaceIntegration
 from intergrax.integrations.providers.interaction_surface.lab_json.register import register_lab_json_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -48,13 +48,14 @@ def test_create_lab_json_integration_bundle(mock_interaction: MagicMock) -> None
     bundle = create_lab_json_integration(interaction_adapter=mock_interaction)
 
     assert isinstance(bundle, LabJsonIntegrationBundle)
-    assert bundle.interaction_surface is mock_interaction
+    assert isinstance(bundle.interaction_surface, LabJsonInteractionSurfaceIntegration)
+    assert bundle.interaction_surface._runtime is mock_interaction
 
 
 def test_create_lab_json_interaction_surface_default() -> None:
     surface = create_lab_json_interaction_surface()
 
-    assert isinstance(surface, LabJsonIntegrationAdapter)
+    assert isinstance(surface, LabJsonInteractionSurfaceIntegration)
     assert surface.channel == "lab"
     assert surface.can_handle({"message": "hello", "capability": "echo.basic"})
 
@@ -69,7 +70,8 @@ def test_register_and_resolve_via_profile(mock_interaction: MagicMock) -> None:
         config={"interaction_adapter": mock_interaction},
     )
 
-    assert surface is mock_interaction
+    assert isinstance(surface, LabJsonInteractionSurfaceIntegration)
+    assert surface._runtime is mock_interaction
 
 
 def test_register_and_resolve_conformance() -> None:
@@ -79,7 +81,7 @@ def test_register_and_resolve_conformance() -> None:
     surface = resolve(IntegrationCategory.INTERACTION_SURFACE, profile=profile)
 
     assert_interaction_surface(surface)
-    assert isinstance(surface, LabJsonIntegrationAdapter)
+    assert isinstance(surface, LabJsonInteractionSurfaceIntegration)
 
 
 def test_register_default_integrations_includes_lab_json() -> None:
@@ -88,17 +90,17 @@ def test_register_default_integrations_includes_lab_json() -> None:
 
     surface = resolve(IntegrationCategory.INTERACTION_SURFACE, profile=profile)
 
-    assert isinstance(surface, LabJsonIntegrationAdapter)
+    assert isinstance(surface, LabJsonInteractionSurfaceIntegration)
 
 
 def test_runtime_interaction_factory_delegates_lab_surface() -> None:
     adapter = create_interaction_adapter(resolve_interaction_settings(surface="lab"))
-    assert isinstance(adapter, LabJsonIntegrationAdapter)
+    assert isinstance(adapter, LabJsonInteractionSurfaceIntegration)
 
 
 def test_runtime_interaction_factory_delegates_lab_json_surface() -> None:
     adapter = create_interaction_adapter(resolve_interaction_settings(surface="lab_json"))
-    assert isinstance(adapter, LabJsonIntegrationAdapter)
+    assert isinstance(adapter, LabJsonInteractionSurfaceIntegration)
 
 
 def test_lab_json_adapter_to_task_roundtrip() -> None:
