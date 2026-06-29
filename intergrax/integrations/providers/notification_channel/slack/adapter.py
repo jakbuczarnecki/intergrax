@@ -14,3 +14,6 @@ class _SlackInteractionAdapter(SlashCommandInteractionAdapter):
     @property
     def channel(self) -> str:
         return "slack"
+
+
+SlackInteractionAdapter = _SlackInteractionAdapter
