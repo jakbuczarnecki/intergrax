@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_codecov_ci_cd
+from intergrax.integrations._shared.p6.factories import create_codecov_ci_cd as _legacy_create_codecov_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.codecov.integration import (
@@ -39,3 +39,11 @@ def create_codecov_ci_cd_integration(
         display_name="Codecov",
         config=CodecovCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_codecov_ci_cd(**kwargs: object) -> CodecovCiCdIntegration:
+    """Compatibility shim — constructs CodecovCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_codecov_ci_cd(**kwargs)
+    if isinstance(runtime, CodecovCiCdIntegration):
+        return runtime
+    return CodecovCiCdIntegration.from_runtime(runtime)

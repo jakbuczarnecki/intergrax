@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_jenkins_ci_cd
+from intergrax.integrations._shared.p7.factories import create_jenkins_ci_cd as _legacy_create_jenkins_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.jenkins.integration import (
@@ -39,3 +39,11 @@ def create_jenkins_ci_cd_integration(
         display_name="Jenkins",
         config=JenkinsCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_jenkins_ci_cd(**kwargs: object) -> JenkinsCiCdIntegration:
+    """Compatibility shim — constructs JenkinsCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_jenkins_ci_cd(**kwargs)
+    if isinstance(runtime, JenkinsCiCdIntegration):
+        return runtime
+    return JenkinsCiCdIntegration.from_runtime(runtime)

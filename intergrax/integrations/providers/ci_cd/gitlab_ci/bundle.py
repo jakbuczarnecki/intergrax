@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_gitlab_ci_ci_cd
+from intergrax.integrations._shared.p6.factories import create_gitlab_ci_ci_cd as _legacy_create_gitlab_ci_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.gitlab_ci.integration import (
@@ -39,3 +39,11 @@ def create_gitlab_ci_ci_cd_integration(
         display_name="Gitlab Ci",
         config=GitlabCiCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_gitlab_ci_ci_cd(**kwargs: object) -> GitlabCiCiCdIntegration:
+    """Compatibility shim — constructs GitlabCiCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_gitlab_ci_ci_cd(**kwargs)
+    if isinstance(runtime, GitlabCiCiCdIntegration):
+        return runtime
+    return GitlabCiCiCdIntegration.from_runtime(runtime)

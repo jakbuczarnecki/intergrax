@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_github_actions_ci_cd
+from intergrax.integrations._shared.p5.factories import create_github_actions_ci_cd as _legacy_create_github_actions_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.github_actions.integration import (
@@ -39,3 +39,11 @@ def create_github_actions_ci_cd_integration(
         display_name="Github Actions",
         config=GithubActionsCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_github_actions_ci_cd(**kwargs: object) -> GithubActionsCiCdIntegration:
+    """Compatibility shim — constructs GithubActionsCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_github_actions_ci_cd(**kwargs)
+    if isinstance(runtime, GithubActionsCiCdIntegration):
+        return runtime
+    return GithubActionsCiCdIntegration.from_runtime(runtime)

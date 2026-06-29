@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_argocd_ci_cd
+from intergrax.integrations._shared.p7.factories import create_argocd_ci_cd as _legacy_create_argocd_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.argocd.integration import (
@@ -39,3 +39,11 @@ def create_argocd_ci_cd_integration(
         display_name="Argocd",
         config=ArgocdCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_argocd_ci_cd(**kwargs: object) -> ArgocdCiCdIntegration:
+    """Compatibility shim — constructs ArgocdCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_argocd_ci_cd(**kwargs)
+    if isinstance(runtime, ArgocdCiCdIntegration):
+        return runtime
+    return ArgocdCiCdIntegration.from_runtime(runtime)

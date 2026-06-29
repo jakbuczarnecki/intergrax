@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_azure_pipelines_ci_cd
+from intergrax.integrations._shared.p6.factories import create_azure_pipelines_ci_cd as _legacy_create_azure_pipelines_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.azure_pipelines.integration import (
@@ -39,3 +39,11 @@ def create_azure_pipelines_ci_cd_integration(
         display_name="Azure Pipelines",
         config=AzurePipelinesCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_azure_pipelines_ci_cd(**kwargs: object) -> AzurePipelinesCiCdIntegration:
+    """Compatibility shim — constructs AzurePipelinesCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_azure_pipelines_ci_cd(**kwargs)
+    if isinstance(runtime, AzurePipelinesCiCdIntegration):
+        return runtime
+    return AzurePipelinesCiCdIntegration.from_runtime(runtime)

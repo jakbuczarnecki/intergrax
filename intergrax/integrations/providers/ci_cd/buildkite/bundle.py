@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_buildkite_ci_cd
+from intergrax.integrations._shared.p7.factories import create_buildkite_ci_cd as _legacy_create_buildkite_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.buildkite.integration import (
@@ -39,3 +39,11 @@ def create_buildkite_ci_cd_integration(
         display_name="Buildkite",
         config=BuildkiteCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_buildkite_ci_cd(**kwargs: object) -> BuildkiteCiCdIntegration:
+    """Compatibility shim — constructs BuildkiteCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_buildkite_ci_cd(**kwargs)
+    if isinstance(runtime, BuildkiteCiCdIntegration):
+        return runtime
+    return BuildkiteCiCdIntegration.from_runtime(runtime)

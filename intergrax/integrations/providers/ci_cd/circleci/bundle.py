@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_circleci_ci_cd
+from intergrax.integrations._shared.p6.factories import create_circleci_ci_cd as _legacy_create_circleci_ci_cd
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ci_cd.circleci.integration import (
@@ -39,3 +39,11 @@ def create_circleci_ci_cd_integration(
         display_name="Circleci",
         config=CircleciCiCdIntegrationConfig(enabled=enabled),
     )
+
+
+def create_circleci_ci_cd(**kwargs: object) -> CircleciCiCdIntegration:
+    """Compatibility shim — constructs CircleciCiCdIntegration from legacy runtime."""
+    runtime = _legacy_create_circleci_ci_cd(**kwargs)
+    if isinstance(runtime, CircleciCiCdIntegration):
+        return runtime
+    return CircleciCiCdIntegration.from_runtime(runtime)
