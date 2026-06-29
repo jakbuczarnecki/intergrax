@@ -9,7 +9,7 @@ compose them only through this package.
 """
 
 from intergrax.utils.lazy_export import export_from_bundle
-from intergrax.integrations.providers.relational_store.sqlite.adapter import SQLiteRelationalStore
+from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.config import (
     ENV_SQLITE_DATA_DIR,
     SQLiteIntegrationConfig,

@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.mysql.config import MySQLIntegrationConfig
 
 
-class MySQLRelationalStore:
+class _MySQLRelationalStore:
     """
     Minimal ``RelationalStore`` over an existing MySQL connection.
 

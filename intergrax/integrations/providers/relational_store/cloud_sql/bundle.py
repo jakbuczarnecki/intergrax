@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_cloud_sql_relational_store
+from intergrax.integrations._shared.p2.factories import create_cloud_sql_relational_store as _legacy_create_cloud_sql_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.cloud_sql.integration import (
@@ -39,3 +39,11 @@ def create_cloud_sql_relational_store_integration(
         display_name="Cloud Sql",
         config=CloudSqlRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_cloud_sql_relational_store(**kwargs: object) -> CloudSqlRelationalStoreIntegration:
+    """Compatibility shim — constructs CloudSqlRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_cloud_sql_relational_store(**kwargs)
+    if isinstance(runtime, CloudSqlRelationalStoreIntegration):
+        return runtime
+    return CloudSqlRelationalStoreIntegration.from_runtime(runtime)

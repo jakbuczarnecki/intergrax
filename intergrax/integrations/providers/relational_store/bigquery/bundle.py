@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_bigquery_relational_store
+from intergrax.integrations._shared.p8.factories import create_bigquery_relational_store as _legacy_create_bigquery_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.bigquery.integration import (
@@ -39,3 +39,11 @@ def create_bigquery_relational_store_integration(
         display_name="Bigquery",
         config=BigqueryRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_bigquery_relational_store(**kwargs: object) -> BigqueryRelationalStoreIntegration:
+    """Compatibility shim — constructs BigqueryRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_bigquery_relational_store(**kwargs)
+    if isinstance(runtime, BigqueryRelationalStoreIntegration):
+        return runtime
+    return BigqueryRelationalStoreIntegration.from_runtime(runtime)

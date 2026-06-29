@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_azure_sql_relational_store
+from intergrax.integrations._shared.p2.factories import create_azure_sql_relational_store as _legacy_create_azure_sql_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.azure_sql.integration import (
@@ -39,3 +39,11 @@ def create_azure_sql_relational_store_integration(
         display_name="Azure Sql",
         config=AzureSqlRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_azure_sql_relational_store(**kwargs: object) -> AzureSqlRelationalStoreIntegration:
+    """Compatibility shim — constructs AzureSqlRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_azure_sql_relational_store(**kwargs)
+    if isinstance(runtime, AzureSqlRelationalStoreIntegration):
+        return runtime
+    return AzureSqlRelationalStoreIntegration.from_runtime(runtime)

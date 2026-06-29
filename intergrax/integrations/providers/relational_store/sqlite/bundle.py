@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from intergrax.integrations.providers.relational_store.sqlite.adapter import SQLiteRelationalStore
+from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.config import SQLiteIntegrationConfig
 from intergrax.integrations.providers.relational_store.sqlite.opens import (
     open_experiment_store_at,
@@ -45,7 +45,7 @@ class SQLiteIntegrationBundle:
 
     config: SQLiteIntegrationConfig
     paths: SqliteStorePaths
-    relational_store: SQLiteRelationalStore
+    relational_store: SqliteRelationalStoreIntegration
     trace_store: SQLiteRunTraceStore
     runtime_event_store: SQLiteRuntimeEventStore
     task_checkpoint_store: SQLiteTaskCheckpointStore
@@ -84,7 +84,7 @@ def create_sqlite_integration(
     """Single entry point for SQLite — paths and all domain store facades."""
     config, paths = _build_paths(data_dir=data_dir, **config_overrides)
 
-    relational = SQLiteRelationalStore(paths.relational)
+    relational = _SQLiteRelationalStore(paths.relational)
     relational.connect()
 
     return SQLiteIntegrationBundle(
@@ -109,13 +109,13 @@ def create_sqlite_relational_store(
     data_dir: Path | str | None = None,
     db_path: Path | str | None = None,
     **config_overrides: object,
-) -> SQLiteRelationalStore:
+) -> SqliteRelationalStoreIntegration:
     """Catalog factory for ``"sqlite"`` / ``RELATIONAL_STORE``."""
     overrides: dict[str, object] = dict(config_overrides)
     if db_path is not None:
         overrides["relational_db"] = Path(db_path)
     _, paths = _build_paths(data_dir=data_dir, **overrides)
-    store = SQLiteRelationalStore(paths.relational)
+    store = _SQLiteRelationalStore(paths.relational)
     store.connect()
     return store
 
@@ -266,7 +266,7 @@ def create_sqlite_relational_store_integration(
     """
     Build a contract-based Sqlite relational store integration.
 
-    The legacy facade (create_sqlite_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_sqlite_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

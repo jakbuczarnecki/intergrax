@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_timescaledb_relational_store
+from intergrax.integrations._shared.p5.factories import create_timescaledb_relational_store as _legacy_create_timescaledb_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.timescaledb.integration import (
@@ -39,3 +39,11 @@ def create_timescaledb_relational_store_integration(
         display_name="Timescaledb",
         config=TimescaledbRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_timescaledb_relational_store(**kwargs: object) -> TimescaledbRelationalStoreIntegration:
+    """Compatibility shim — constructs TimescaledbRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_timescaledb_relational_store(**kwargs)
+    if isinstance(runtime, TimescaledbRelationalStoreIntegration):
+        return runtime
+    return TimescaledbRelationalStoreIntegration.from_runtime(runtime)

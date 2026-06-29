@@ -72,7 +72,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "MySQLRelationalStore":
-        from intergrax.integrations.providers.relational_store.mysql.adapter import MySQLRelationalStore
+        from intergrax.integrations.providers.relational_store.mysql.adapter import _MySQLRelationalStore
 
         return MySQLRelationalStore
     if name in _CONTRACT_INTEGRATION_EXPORTS:

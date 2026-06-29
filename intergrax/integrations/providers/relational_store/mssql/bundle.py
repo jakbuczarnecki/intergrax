@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_mssql_relational_store
+from intergrax.integrations._shared.p2.factories import create_mssql_relational_store as _legacy_create_mssql_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.mssql.integration import (
@@ -39,3 +39,11 @@ def create_mssql_relational_store_integration(
         display_name="Mssql",
         config=MssqlRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_mssql_relational_store(**kwargs: object) -> MssqlRelationalStoreIntegration:
+    """Compatibility shim — constructs MssqlRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_mssql_relational_store(**kwargs)
+    if isinstance(runtime, MssqlRelationalStoreIntegration):
+        return runtime
+    return MssqlRelationalStoreIntegration.from_runtime(runtime)

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.integrations.providers.relational_store.postgresql.adapter import PostgreSQLRelationalStore
+from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
 from intergrax.integrations.providers.relational_store.postgresql.opens import open_postgresql_relational_store
 
@@ -23,7 +23,7 @@ from intergrax.integrations.providers.relational_store.postgresql.opens import o
 @dataclass(frozen=True)
 class PostgreSQLIntegrationBundle:
     config: PostgreSQLIntegrationConfig
-    relational_store: PostgreSQLRelationalStore
+    relational_store: PostgresqlRelationalStoreIntegration
 
 
 def resolve_postgresql_config(**overrides: object) -> PostgreSQLIntegrationConfig:
@@ -42,7 +42,7 @@ def create_postgresql_integration(
         implementation=relational_store,
         connection_factory=connection_factory,
     )
-    assert isinstance(store, PostgreSQLRelationalStore)
+    assert isinstance(store, PostgresqlRelationalStoreIntegration)
     return PostgreSQLIntegrationBundle(config=config, relational_store=store)
 
 
@@ -51,7 +51,7 @@ def create_postgresql_relational_store(
     relational_store: Optional[RelationalStore] = None,
     connection_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
-) -> PostgreSQLRelationalStore:
+) -> PostgresqlRelationalStoreIntegration:
     """Catalog factory for ``"postgresql"`` / ``RELATIONAL_STORE``."""
     bundle = create_postgresql_integration(
         relational_store=relational_store,
@@ -77,7 +77,7 @@ def create_postgresql_relational_store_integration(
     """
     Build a contract-based Postgresql relational store integration.
 
-    The legacy facade (create_postgresql_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_postgresql_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

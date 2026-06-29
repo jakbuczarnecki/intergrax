@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_snowflake_relational_store
+from intergrax.integrations._shared.p3.factories import create_snowflake_relational_store as _legacy_create_snowflake_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.snowflake.integration import (
@@ -39,3 +39,11 @@ def create_snowflake_relational_store_integration(
         display_name="Snowflake",
         config=SnowflakeRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_snowflake_relational_store(**kwargs: object) -> SnowflakeRelationalStoreIntegration:
+    """Compatibility shim — constructs SnowflakeRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_snowflake_relational_store(**kwargs)
+    if isinstance(runtime, SnowflakeRelationalStoreIntegration):
+        return runtime
+    return SnowflakeRelationalStoreIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_neon_relational_store
+from intergrax.integrations._shared.p7.factories import create_neon_relational_store as _legacy_create_neon_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.neon.integration import (
@@ -39,3 +39,11 @@ def create_neon_relational_store_integration(
         display_name="Neon",
         config=NeonRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_neon_relational_store(**kwargs: object) -> NeonRelationalStoreIntegration:
+    """Compatibility shim — constructs NeonRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_neon_relational_store(**kwargs)
+    if isinstance(runtime, NeonRelationalStoreIntegration):
+        return runtime
+    return NeonRelationalStoreIntegration.from_runtime(runtime)

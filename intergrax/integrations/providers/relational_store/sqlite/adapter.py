@@ -12,7 +12,7 @@ from typing import Any, Mapping, Optional, Sequence
 from intergrax.integrations.contracts.relational_store import RelationalStore
 
 
-class SQLiteRelationalStore:
+class _SQLiteRelationalStore:
     """
     Minimal ``RelationalStore`` over a single SQLite file.
 

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_oracle_relational_store
+from intergrax.integrations._shared.p2.factories import create_oracle_relational_store as _legacy_create_oracle_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.oracle.integration import (
@@ -39,3 +39,11 @@ def create_oracle_relational_store_integration(
         display_name="Oracle",
         config=OracleRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_oracle_relational_store(**kwargs: object) -> OracleRelationalStoreIntegration:
+    """Compatibility shim — constructs OracleRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_oracle_relational_store(**kwargs)
+    if isinstance(runtime, OracleRelationalStoreIntegration):
+        return runtime
+    return OracleRelationalStoreIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_motherduck_relational_store
+from intergrax.integrations._shared.p8.factories import create_motherduck_relational_store as _legacy_create_motherduck_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.motherduck.integration import (
@@ -39,3 +39,11 @@ def create_motherduck_relational_store_integration(
         display_name="Motherduck",
         config=MotherduckRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_motherduck_relational_store(**kwargs: object) -> MotherduckRelationalStoreIntegration:
+    """Compatibility shim — constructs MotherduckRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_motherduck_relational_store(**kwargs)
+    if isinstance(runtime, MotherduckRelationalStoreIntegration):
+        return runtime
+    return MotherduckRelationalStoreIntegration.from_runtime(runtime)

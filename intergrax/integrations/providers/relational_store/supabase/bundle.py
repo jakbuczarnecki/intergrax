@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_supabase_relational_store
+from intergrax.integrations._shared.p3.factories import create_supabase_relational_store as _legacy_create_supabase_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.supabase.integration import (
@@ -39,3 +39,11 @@ def create_supabase_relational_store_integration(
         display_name="Supabase",
         config=SupabaseRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_supabase_relational_store(**kwargs: object) -> SupabaseRelationalStoreIntegration:
+    """Compatibility shim — constructs SupabaseRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_supabase_relational_store(**kwargs)
+    if isinstance(runtime, SupabaseRelationalStoreIntegration):
+        return runtime
+    return SupabaseRelationalStoreIntegration.from_runtime(runtime)

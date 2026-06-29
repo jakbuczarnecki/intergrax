@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_duckdb_relational_store
+from intergrax.integrations._shared.p5.factories import create_duckdb_relational_store as _legacy_create_duckdb_relational_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.duckdb.integration import (
@@ -39,3 +39,11 @@ def create_duckdb_relational_store_integration(
         display_name="Duckdb",
         config=DuckdbRelationalStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_duckdb_relational_store(**kwargs: object) -> DuckdbRelationalStoreIntegration:
+    """Compatibility shim — constructs DuckdbRelationalStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_duckdb_relational_store(**kwargs)
+    if isinstance(runtime, DuckdbRelationalStoreIntegration):
+        return runtime
+    return DuckdbRelationalStoreIntegration.from_runtime(runtime)

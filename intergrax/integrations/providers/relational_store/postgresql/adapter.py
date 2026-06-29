@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.config import PostgreSQLIntegrationConfig
 
 
-class PostgreSQLRelationalStore:
+class _PostgreSQLRelationalStore:
     """
     Minimal ``RelationalStore`` over an existing PostgreSQL connection.
 

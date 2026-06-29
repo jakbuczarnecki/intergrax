@@ -72,7 +72,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "PostgreSQLRelationalStore":
-        from intergrax.integrations.providers.relational_store.postgresql.adapter import PostgreSQLRelationalStore
+        from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
 
         return PostgreSQLRelationalStore
     if name in _CONTRACT_INTEGRATION_EXPORTS:

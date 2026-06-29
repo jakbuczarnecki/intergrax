@@ -2,19 +2,8 @@
 
 Category: `relational_store`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_bigquery_relational_store()` remains backward-compatible.
-
-## Contract-based integration
-
-- `BigqueryRelationalStoreIntegration` derives from the category-specific contract.
-- Factory: `create_bigquery_relational_store_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`BigqueryRelationalStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `BigqueryRelationalStoreIntegration`.
+- Contract factory: `create_bigquery_relational_store_integration()`.

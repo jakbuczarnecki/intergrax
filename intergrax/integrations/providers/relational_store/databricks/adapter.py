@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.databricks.config import DatabricksIntegrationConfig
 
 
-class DatabricksRelationalStore:
+class _DatabricksRelationalStore:
     """
     Minimal ``RelationalStore`` over an existing Databricks SQL connection.
 

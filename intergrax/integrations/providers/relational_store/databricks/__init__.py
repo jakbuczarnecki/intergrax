@@ -66,7 +66,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "DatabricksRelationalStore":
-        from intergrax.integrations.providers.relational_store.databricks.adapter import DatabricksRelationalStore
+        from intergrax.integrations.providers.relational_store.databricks.adapter import _DatabricksRelationalStore
 
         return DatabricksRelationalStore
     if name in _CONTRACT_INTEGRATION_EXPORTS:
