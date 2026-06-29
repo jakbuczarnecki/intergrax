@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_elasticache_key_value_cache
+from intergrax.integrations._shared.p2.factories import create_elasticache_key_value_cache as _legacy_create_elasticache_key_value_cache
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.key_value_cache.elasticache.integration import (
@@ -39,3 +39,11 @@ def create_elasticache_key_value_cache_integration(
         display_name="Elasticache",
         config=ElasticacheKeyValueCacheIntegrationConfig(enabled=enabled),
     )
+
+
+def create_elasticache_key_value_cache(**kwargs: object) -> ElasticacheKeyValueCacheIntegration:
+    """Compatibility shim — constructs ElasticacheKeyValueCacheIntegration from legacy runtime."""
+    runtime = _legacy_create_elasticache_key_value_cache(**kwargs)
+    if isinstance(runtime, ElasticacheKeyValueCacheIntegration):
+        return runtime
+    return ElasticacheKeyValueCacheIntegration.from_runtime(runtime)

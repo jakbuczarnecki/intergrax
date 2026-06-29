@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_upstash_redis_key_value_cache
+from intergrax.integrations._shared.p8.factories import create_upstash_redis_key_value_cache as _legacy_create_upstash_redis_key_value_cache
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.key_value_cache.upstash_redis.integration import (
@@ -39,3 +39,11 @@ def create_upstash_redis_key_value_cache_integration(
         display_name="Upstash Redis",
         config=UpstashRedisKeyValueCacheIntegrationConfig(enabled=enabled),
     )
+
+
+def create_upstash_redis_key_value_cache(**kwargs: object) -> UpstashRedisKeyValueCacheIntegration:
+    """Compatibility shim — constructs UpstashRedisKeyValueCacheIntegration from legacy runtime."""
+    runtime = _legacy_create_upstash_redis_key_value_cache(**kwargs)
+    if isinstance(runtime, UpstashRedisKeyValueCacheIntegration):
+        return runtime
+    return UpstashRedisKeyValueCacheIntegration.from_runtime(runtime)

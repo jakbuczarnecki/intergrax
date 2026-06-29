@@ -22,7 +22,7 @@ from intergrax.distributed.providers.redis_idempotency_store import RedisIdempot
 from intergrax.distributed.providers.redis_kv_store import RedisKVStore
 from intergrax.distributed.providers.redis_rate_limiter import RedisDistributedRateLimiter
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
-from intergrax.integrations.providers.key_value_cache.redis.adapter import RedisKeyValueCache
+from intergrax.integrations.providers.key_value_cache.redis.adapter import _RedisKeyValueCache
 from intergrax.integrations.providers.key_value_cache.redis.client import create_redis_client, resolve_redis_config
 from intergrax.integrations.providers.key_value_cache.redis.config import RedisIntegrationConfig
 from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
@@ -39,7 +39,7 @@ class RedisIntegrationBundle:
 
     client: "redis.Redis"
     config: RedisIntegrationConfig
-    key_value_cache: RedisKeyValueCache
+    key_value_cache: RedisKeyValueCacheIntegration
     idempotency_store: RedisIdempotencyStore
     rate_limiter: RedisDistributedRateLimiter
     execution_semaphore: RedisExecutionSemaphore
@@ -78,7 +78,7 @@ def create_redis_integration(
     resolved_client = create_redis_client(client=client, **config.model_dump())
 
     store = RedisKVStore(client=resolved_client, key_prefix=config.key_prefix)
-    cache = RedisKeyValueCache(store)
+    cache = _RedisKeyValueCache(store)
 
     return RedisIntegrationBundle(
         client=resolved_client,
@@ -209,13 +209,13 @@ from intergrax.integrations.providers.key_value_cache.redis.integration import (
 
 def create_redis_key_value_cache_integration(
     *,
-    client: RedisKeyValueCacheClient | None = None,
+    client: RedisKeyValueCacheIntegrationClient | None = None,
     enabled: bool = False,
 ) -> RedisKeyValueCacheIntegration:
     """
     Build a contract-based Redis key value cache integration.
 
-    The legacy facade (create_redis_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_redis_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:
