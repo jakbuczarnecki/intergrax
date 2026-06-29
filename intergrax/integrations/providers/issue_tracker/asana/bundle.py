@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_asana_issue_tracker
+from intergrax.integrations._shared.p5.factories import create_asana_issue_tracker as _legacy_create_asana_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.asana.integration import (
@@ -39,3 +39,11 @@ def create_asana_issue_tracker_integration(
         display_name="Asana",
         config=AsanaIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_asana_issue_tracker(**kwargs: object) -> AsanaIssueTrackerIntegration:
+    """Compatibility shim — constructs AsanaIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_asana_issue_tracker(**kwargs)
+    if isinstance(runtime, AsanaIssueTrackerIntegration):
+        return runtime
+    return AsanaIssueTrackerIntegration.from_runtime(runtime)

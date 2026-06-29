@@ -13,7 +13,8 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
-from intergrax.integrations.providers.issue_tracker.jira.adapter import JiraIssueTracker
+from intergrax.integrations.providers.issue_tracker.jira.adapter import _JiraIssueTracker
+from intergrax.integrations.providers.issue_tracker.jira.integration import JiraIssueTrackerIntegration
 from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestClient
 from intergrax.integrations.providers.issue_tracker.jira.config import DEFAULT_TIMEOUT_SECONDS, JiraIntegrationConfig
 
@@ -57,4 +58,4 @@ def open_jira_issue_tracker(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return JiraIssueTracker(rest_client)
+    return JiraIssueTrackerIntegration.from_runtime(_JiraIssueTracker(rest_client))

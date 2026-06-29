@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_github_issue_tracker
+from intergrax.integrations._shared.p2.factories import create_github_issue_tracker as _legacy_create_github_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.github.integration import (
@@ -39,3 +39,11 @@ def create_github_issue_tracker_integration(
         display_name="Github",
         config=GithubIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_github_issue_tracker(**kwargs: object) -> GithubIssueTrackerIntegration:
+    """Compatibility shim — constructs GithubIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_github_issue_tracker(**kwargs)
+    if isinstance(runtime, GithubIssueTrackerIntegration):
+        return runtime
+    return GithubIssueTrackerIntegration.from_runtime(runtime)

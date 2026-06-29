@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
-from intergrax.integrations.providers.issue_tracker.gitlab.adapter import GitLabIssueTracker
+from intergrax.integrations.providers.issue_tracker.gitlab.adapter import _GitLabIssueTracker
 from intergrax.integrations.providers.issue_tracker.gitlab.client import GitLabRestClient
 from intergrax.integrations.providers.issue_tracker.gitlab.config import GitLabIntegrationConfig
 from intergrax.integrations.providers.issue_tracker.gitlab.opens import open_gitlab_issue_tracker, open_gitlab_rest_client
@@ -18,7 +18,7 @@ from intergrax.integrations.providers.issue_tracker.gitlab.opens import open_git
 @dataclass(frozen=True)
 class GitLabIntegrationBundle:
     config: GitLabIntegrationConfig
-    issue_tracker: GitLabIssueTracker
+    issue_tracker: GitlabIssueTrackerIntegration
     rest_client: GitLabRestClient
 
 
@@ -52,7 +52,7 @@ def create_gitlab_issue_tracker(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[GitLabIntegrationConfig], Any]] = None,
     **config_overrides: object,
-) -> GitLabIssueTracker:
+) -> GitlabIssueTrackerIntegration:
     """Catalog factory for ``"gitlab"`` / ``ISSUE_TRACKER``."""
     return create_gitlab_integration(
         issue_tracker=issue_tracker,
@@ -79,7 +79,7 @@ def create_gitlab_issue_tracker_integration(
     """
     Build a contract-based Gitlab issue tracker integration.
 
-    The legacy facade (create_gitlab_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_gitlab_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

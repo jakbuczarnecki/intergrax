@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_azure_devops_issue_tracker
+from intergrax.integrations._shared.p2.factories import create_azure_devops_issue_tracker as _legacy_create_azure_devops_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.azure_devops.integration import (
@@ -39,3 +39,11 @@ def create_azure_devops_issue_tracker_integration(
         display_name="Azure Devops",
         config=AzureDevopsIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_azure_devops_issue_tracker(**kwargs: object) -> AzureDevopsIssueTrackerIntegration:
+    """Compatibility shim — constructs AzureDevopsIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_azure_devops_issue_tracker(**kwargs)
+    if isinstance(runtime, AzureDevopsIssueTrackerIntegration):
+        return runtime
+    return AzureDevopsIssueTrackerIntegration.from_runtime(runtime)

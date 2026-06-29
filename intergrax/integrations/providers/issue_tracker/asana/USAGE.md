@@ -2,19 +2,8 @@
 
 Category: `issue_tracker`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_asana_issue_tracker()` remains backward-compatible.
-
-## Contract-based integration
-
-- `AsanaIssueTrackerIntegration` derives from the category-specific contract.
-- Factory: `create_asana_issue_tracker_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`AsanaIssueTrackerIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `AsanaIssueTrackerIntegration`.
+- Contract factory: `create_asana_issue_tracker_integration()`.

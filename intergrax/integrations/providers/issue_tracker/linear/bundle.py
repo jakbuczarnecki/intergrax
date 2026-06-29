@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_linear_issue_tracker
+from intergrax.integrations._shared.p2.factories import create_linear_issue_tracker as _legacy_create_linear_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.linear.integration import (
@@ -39,3 +39,11 @@ def create_linear_issue_tracker_integration(
         display_name="Linear",
         config=LinearIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_linear_issue_tracker(**kwargs: object) -> LinearIssueTrackerIntegration:
+    """Compatibility shim — constructs LinearIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_linear_issue_tracker(**kwargs)
+    if isinstance(runtime, LinearIssueTrackerIntegration):
+        return runtime
+    return LinearIssueTrackerIntegration.from_runtime(runtime)

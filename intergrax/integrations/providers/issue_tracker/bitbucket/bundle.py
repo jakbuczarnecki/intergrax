@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_bitbucket_issue_tracker
+from intergrax.integrations._shared.p5.factories import create_bitbucket_issue_tracker as _legacy_create_bitbucket_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.bitbucket.integration import (
@@ -39,3 +39,11 @@ def create_bitbucket_issue_tracker_integration(
         display_name="Bitbucket",
         config=BitbucketIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_bitbucket_issue_tracker(**kwargs: object) -> BitbucketIssueTrackerIntegration:
+    """Compatibility shim — constructs BitbucketIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_bitbucket_issue_tracker(**kwargs)
+    if isinstance(runtime, BitbucketIssueTrackerIntegration):
+        return runtime
+    return BitbucketIssueTrackerIntegration.from_runtime(runtime)

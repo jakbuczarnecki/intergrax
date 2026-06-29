@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_zendesk_issue_tracker
+from intergrax.integrations._shared.p7.factories import create_zendesk_issue_tracker as _legacy_create_zendesk_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.zendesk.integration import (
@@ -39,3 +39,11 @@ def create_zendesk_issue_tracker_integration(
         display_name="Zendesk",
         config=ZendeskIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_zendesk_issue_tracker(**kwargs: object) -> ZendeskIssueTrackerIntegration:
+    """Compatibility shim — constructs ZendeskIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_zendesk_issue_tracker(**kwargs)
+    if isinstance(runtime, ZendeskIssueTrackerIntegration):
+        return runtime
+    return ZendeskIssueTrackerIntegration.from_runtime(runtime)

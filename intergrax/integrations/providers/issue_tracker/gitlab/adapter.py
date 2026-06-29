@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRe
 from intergrax.integrations.providers.issue_tracker.gitlab.client import GitLabRestClient
 
 
-class GitLabIssueTracker:
+class _GitLabIssueTracker:
     """Catalog facade over ``GitLabRestClient``."""
 
     def __init__(self, client: GitLabRestClient) -> None:

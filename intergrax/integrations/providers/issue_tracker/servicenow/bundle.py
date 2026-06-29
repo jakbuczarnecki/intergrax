@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_servicenow_issue_tracker
+from intergrax.integrations._shared.p5.factories import create_servicenow_issue_tracker as _legacy_create_servicenow_issue_tracker
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.issue_tracker.servicenow.integration import (
@@ -39,3 +39,11 @@ def create_servicenow_issue_tracker_integration(
         display_name="Servicenow",
         config=ServicenowIssueTrackerIntegrationConfig(enabled=enabled),
     )
+
+
+def create_servicenow_issue_tracker(**kwargs: object) -> ServicenowIssueTrackerIntegration:
+    """Compatibility shim — constructs ServicenowIssueTrackerIntegration from legacy runtime."""
+    runtime = _legacy_create_servicenow_issue_tracker(**kwargs)
+    if isinstance(runtime, ServicenowIssueTrackerIntegration):
+        return runtime
+    return ServicenowIssueTrackerIntegration.from_runtime(runtime)

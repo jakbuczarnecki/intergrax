@@ -57,7 +57,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "JiraIssueTracker":
-        from intergrax.integrations.providers.issue_tracker.jira.adapter import JiraIssueTracker
+        from intergrax.integrations.providers.issue_tracker.jira.adapter import _JiraIssueTracker
 
         return JiraIssueTracker
     if name in _CONTRACT_INTEGRATION_EXPORTS:

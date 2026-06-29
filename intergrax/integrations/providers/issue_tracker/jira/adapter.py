@@ -9,7 +9,7 @@ from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRe
 from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestClient
 
 
-class JiraIssueTracker:
+class _JiraIssueTracker:
     """
     Catalog facade over ``JiraRestClient``.
 
