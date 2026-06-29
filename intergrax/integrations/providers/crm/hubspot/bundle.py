@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_hubspot_crm
+from intergrax.integrations._shared.p7.factories import create_hubspot_crm as _legacy_create_hubspot_crm
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.crm.hubspot.integration import (
@@ -39,3 +39,11 @@ def create_hubspot_crm_integration(
         display_name="Hubspot",
         config=HubspotCrmIntegrationConfig(enabled=enabled),
     )
+
+
+def create_hubspot_crm(**kwargs: object) -> HubspotCrmIntegration:
+    """Compatibility shim — constructs HubspotCrmIntegration from legacy runtime."""
+    runtime = _legacy_create_hubspot_crm(**kwargs)
+    if isinstance(runtime, HubspotCrmIntegration):
+        return runtime
+    return HubspotCrmIntegration.from_runtime(runtime)

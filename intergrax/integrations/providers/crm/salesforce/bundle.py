@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_salesforce_crm
+from intergrax.integrations._shared.p7.factories import create_salesforce_crm as _legacy_create_salesforce_crm
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.crm.salesforce.integration import (
@@ -39,3 +39,11 @@ def create_salesforce_crm_integration(
         display_name="Salesforce",
         config=SalesforceCrmIntegrationConfig(enabled=enabled),
     )
+
+
+def create_salesforce_crm(**kwargs: object) -> SalesforceCrmIntegration:
+    """Compatibility shim — constructs SalesforceCrmIntegration from legacy runtime."""
+    runtime = _legacy_create_salesforce_crm(**kwargs)
+    if isinstance(runtime, SalesforceCrmIntegration):
+        return runtime
+    return SalesforceCrmIntegration.from_runtime(runtime)
