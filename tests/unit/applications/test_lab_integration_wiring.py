@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations.providers.notification_channel.log.adapter import LogNotificationAdapter
-from intergrax.integrations.providers.notification_channel.pagerduty.adapter import _PagerDutyNotificationChannel
+from intergrax.integrations.providers.notification_channel.log.integration import LogNotificationChannelIntegration
+from intergrax.integrations.providers.notification_channel.pagerduty.integration import PagerdutyNotificationChannelIntegration
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from lab_application.host.integration_wiring import (
     build_lab_integration_profile,
@@ -38,7 +38,7 @@ def test_wire_lab_integrations_uses_profile_and_sqlite(tmp_path) -> None:
     )
 
     assert_profile_slug(wiring.profile, "relational_store", "sqlite")
-    assert isinstance(wiring.notification_adapter, LogNotificationAdapter)
+    assert isinstance(wiring.notification_adapter, LogNotificationChannelIntegration)
     assert wiring.checkpoint_store is wiring.sqlite_bundle.task_checkpoint_store
     assert wiring.runtime_event_store is wiring.sqlite_bundle.runtime_event_store
 
@@ -58,5 +58,5 @@ def test_wire_lab_integrations_harness_profile_and_pagerduty(monkeypatch: pytest
     assert_profile_slug(wiring.profile, "notification_channel", "pagerduty")
     assert_profile_slug(wiring.profile, "observability_backend", "sentry")
     assert "langsmith" in wiring.profile.options
-    assert isinstance(wiring.notification_adapter, PagerDutyNotificationChannel)
+    assert isinstance(wiring.notification_adapter, PagerdutyNotificationChannelIntegration)
     assert wiring.default_long_running_notify_channel == "pagerduty"
