@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_replicate_ml_inference_host
+from intergrax.integrations._shared.p7.factories import create_replicate_ml_inference_host as _legacy_create_replicate_ml_inference_host
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.ml_inference_host.replicate.integration import (
@@ -39,3 +39,11 @@ def create_replicate_ml_inference_host_integration(
         display_name="Replicate",
         config=ReplicateMlInferenceHostIntegrationConfig(enabled=enabled),
     )
+
+
+def create_replicate_ml_inference_host(**kwargs: object) -> ReplicateMlInferenceHostIntegration:
+    """Compatibility shim — constructs ReplicateMlInferenceHostIntegration from legacy runtime."""
+    runtime = _legacy_create_replicate_ml_inference_host(**kwargs)
+    if isinstance(runtime, ReplicateMlInferenceHostIntegration):
+        return runtime
+    return ReplicateMlInferenceHostIntegration.from_runtime(runtime)
