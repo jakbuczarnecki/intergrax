@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_redpanda_message_bus
+from intergrax.integrations._shared.p5.factories import create_redpanda_message_bus as _legacy_create_redpanda_message_bus
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.redpanda.integration import (
@@ -39,3 +39,11 @@ def create_redpanda_message_bus_integration(
         display_name="Redpanda",
         config=RedpandaMessageBusIntegrationConfig(enabled=enabled),
     )
+
+
+def create_redpanda_message_bus(**kwargs: object) -> RedpandaMessageBusIntegration:
+    """Compatibility shim — constructs RedpandaMessageBusIntegration from legacy runtime."""
+    runtime = _legacy_create_redpanda_message_bus(**kwargs)
+    if isinstance(runtime, RedpandaMessageBusIntegration):
+        return runtime
+    return RedpandaMessageBusIntegration.from_runtime(runtime)

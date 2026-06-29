@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_confluent_message_bus
+from intergrax.integrations._shared.p7.factories import create_confluent_message_bus as _legacy_create_confluent_message_bus
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.confluent.integration import (
@@ -39,3 +39,11 @@ def create_confluent_message_bus_integration(
         display_name="Confluent",
         config=ConfluentMessageBusIntegrationConfig(enabled=enabled),
     )
+
+
+def create_confluent_message_bus(**kwargs: object) -> ConfluentMessageBusIntegration:
+    """Compatibility shim — constructs ConfluentMessageBusIntegration from legacy runtime."""
+    runtime = _legacy_create_confluent_message_bus(**kwargs)
+    if isinstance(runtime, ConfluentMessageBusIntegration):
+        return runtime
+    return ConfluentMessageBusIntegration.from_runtime(runtime)

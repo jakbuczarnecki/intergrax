@@ -2,19 +2,8 @@
 
 Category: `message_bus`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_kafka_integration()` remains backward-compatible.
-
-## Contract-based integration
-
-- `KafkaMessageBusIntegration` derives from the category-specific contract.
-- Factory: `create_kafka_message_bus_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`KafkaMessageBusIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `KafkaMessageBusIntegration`.
+- Contract factory: `create_kafka_message_bus_integration()`.

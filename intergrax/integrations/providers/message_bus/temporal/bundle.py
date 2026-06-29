@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_temporal_message_bus
+from intergrax.integrations._shared.p3.factories import create_temporal_message_bus as _legacy_create_temporal_message_bus
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.temporal.integration import (
@@ -39,3 +39,11 @@ def create_temporal_message_bus_integration(
         display_name="Temporal",
         config=TemporalMessageBusIntegrationConfig(enabled=enabled),
     )
+
+
+def create_temporal_message_bus(**kwargs: object) -> TemporalMessageBusIntegration:
+    """Compatibility shim — constructs TemporalMessageBusIntegration from legacy runtime."""
+    runtime = _legacy_create_temporal_message_bus(**kwargs)
+    if isinstance(runtime, TemporalMessageBusIntegration):
+        return runtime
+    return TemporalMessageBusIntegration.from_runtime(runtime)

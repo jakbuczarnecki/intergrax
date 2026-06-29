@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_pubsub_message_bus
+from intergrax.integrations._shared.p2.factories import create_pubsub_message_bus as _legacy_create_pubsub_message_bus
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.pubsub.integration import (
@@ -39,3 +39,11 @@ def create_pubsub_message_bus_integration(
         display_name="Pubsub",
         config=PubsubMessageBusIntegrationConfig(enabled=enabled),
     )
+
+
+def create_pubsub_message_bus(**kwargs: object) -> PubsubMessageBusIntegration:
+    """Compatibility shim — constructs PubsubMessageBusIntegration from legacy runtime."""
+    runtime = _legacy_create_pubsub_message_bus(**kwargs)
+    if isinstance(runtime, PubsubMessageBusIntegration):
+        return runtime
+    return PubsubMessageBusIntegration.from_runtime(runtime)

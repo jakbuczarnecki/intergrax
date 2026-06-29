@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_service_bus_message_bus
+from intergrax.integrations._shared.p2.factories import create_service_bus_message_bus as _legacy_create_service_bus_message_bus
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.service_bus.integration import (
@@ -39,3 +39,11 @@ def create_service_bus_message_bus_integration(
         display_name="Service Bus",
         config=ServiceBusMessageBusIntegrationConfig(enabled=enabled),
     )
+
+
+def create_service_bus_message_bus(**kwargs: object) -> ServiceBusMessageBusIntegration:
+    """Compatibility shim — constructs ServiceBusMessageBusIntegration from legacy runtime."""
+    runtime = _legacy_create_service_bus_message_bus(**kwargs)
+    if isinstance(runtime, ServiceBusMessageBusIntegration):
+        return runtime
+    return ServiceBusMessageBusIntegration.from_runtime(runtime)

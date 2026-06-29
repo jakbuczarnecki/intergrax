@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_upstash_qstash_message_bus
+from intergrax.integrations._shared.p8.factories import create_upstash_qstash_message_bus as _legacy_create_upstash_qstash_message_bus
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.message_bus.upstash_qstash.integration import (
@@ -39,3 +39,11 @@ def create_upstash_qstash_message_bus_integration(
         display_name="Upstash Qstash",
         config=UpstashQstashMessageBusIntegrationConfig(enabled=enabled),
     )
+
+
+def create_upstash_qstash_message_bus(**kwargs: object) -> UpstashQstashMessageBusIntegration:
+    """Compatibility shim — constructs UpstashQstashMessageBusIntegration from legacy runtime."""
+    runtime = _legacy_create_upstash_qstash_message_bus(**kwargs)
+    if isinstance(runtime, UpstashQstashMessageBusIntegration):
+        return runtime
+    return UpstashQstashMessageBusIntegration.from_runtime(runtime)
