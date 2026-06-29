@@ -44,7 +44,7 @@ def create_pagerduty_integration(
         implementation=notification_channel,
         client=events_client,
     )
-    assert isinstance(channel, PagerDutyNotificationChannel)
+    assert isinstance(channel, PagerdutyNotificationChannelIntegration)
     return PagerDutyIntegrationBundle(
         config=config,
         notification_channel=channel,
