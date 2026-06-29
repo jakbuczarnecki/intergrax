@@ -2,19 +2,8 @@
 
 Category: `browser_automation`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_selenium_browser_automation()` remains backward-compatible.
-
-## Contract-based integration
-
-- `SeleniumBrowserAutomationIntegration` derives from the category-specific contract.
-- Factory: `create_selenium_browser_automation_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`SeleniumBrowserAutomationIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `SeleniumBrowserAutomationIntegration`.
+- Contract factory: `create_selenium_browser_automation_integration()`.

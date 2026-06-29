@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_browserbase_browser_automation
+from intergrax.integrations._shared.p8.factories import create_browserbase_browser_automation as _legacy_create_browserbase_browser_automation
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.browser_automation.browserbase.integration import (
@@ -39,3 +39,11 @@ def create_browserbase_browser_automation_integration(
         display_name="Browserbase",
         config=BrowserbaseBrowserAutomationIntegrationConfig(enabled=enabled),
     )
+
+
+def create_browserbase_browser_automation(**kwargs: object) -> BrowserbaseBrowserAutomationIntegration:
+    """Compatibility shim — constructs BrowserbaseBrowserAutomationIntegration from legacy runtime."""
+    runtime = _legacy_create_browserbase_browser_automation(**kwargs)
+    if isinstance(runtime, BrowserbaseBrowserAutomationIntegration):
+        return runtime
+    return BrowserbaseBrowserAutomationIntegration.from_runtime(runtime)

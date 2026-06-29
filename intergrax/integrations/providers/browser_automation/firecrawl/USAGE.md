@@ -2,19 +2,8 @@
 
 Category: `browser_automation`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_firecrawl_browser_automation()` remains backward-compatible.
-
-## Contract-based integration
-
-- `FirecrawlBrowserAutomationIntegration` derives from the category-specific contract.
-- Factory: `create_firecrawl_browser_automation_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`FirecrawlBrowserAutomationIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `FirecrawlBrowserAutomationIntegration`.
+- Contract factory: `create_firecrawl_browser_automation_integration()`.

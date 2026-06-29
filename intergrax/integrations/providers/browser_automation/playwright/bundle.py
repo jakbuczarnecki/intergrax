@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_playwright_browser_automation
+from intergrax.integrations._shared.p2.factories import create_playwright_browser_automation as _legacy_create_playwright_browser_automation
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.browser_automation.playwright.integration import (
@@ -39,3 +39,11 @@ def create_playwright_browser_automation_integration(
         display_name="Playwright",
         config=PlaywrightBrowserAutomationIntegrationConfig(enabled=enabled),
     )
+
+
+def create_playwright_browser_automation(**kwargs: object) -> PlaywrightBrowserAutomationIntegration:
+    """Compatibility shim — constructs PlaywrightBrowserAutomationIntegration from legacy runtime."""
+    runtime = _legacy_create_playwright_browser_automation(**kwargs)
+    if isinstance(runtime, PlaywrightBrowserAutomationIntegration):
+        return runtime
+    return PlaywrightBrowserAutomationIntegration.from_runtime(runtime)
