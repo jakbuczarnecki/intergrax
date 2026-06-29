@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_memgraph_graph_store
+from intergrax.integrations._shared.p5.factories import create_memgraph_graph_store as _legacy_create_memgraph_graph_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.graph_store.memgraph.integration import (
@@ -39,3 +39,11 @@ def create_memgraph_graph_store_integration(
         display_name="Memgraph",
         config=MemgraphGraphStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_memgraph_graph_store(**kwargs: object) -> MemgraphGraphStoreIntegration:
+    """Compatibility shim — constructs MemgraphGraphStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_memgraph_graph_store(**kwargs)
+    if isinstance(runtime, MemgraphGraphStoreIntegration):
+        return runtime
+    return MemgraphGraphStoreIntegration.from_runtime(runtime)

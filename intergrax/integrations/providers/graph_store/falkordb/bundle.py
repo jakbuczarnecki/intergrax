@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_falkordb_graph_store
+from intergrax.integrations._shared.p5.factories import create_falkordb_graph_store as _legacy_create_falkordb_graph_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.graph_store.falkordb.integration import (
@@ -39,3 +39,11 @@ def create_falkordb_graph_store_integration(
         display_name="Falkordb",
         config=FalkordbGraphStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_falkordb_graph_store(**kwargs: object) -> FalkordbGraphStoreIntegration:
+    """Compatibility shim — constructs FalkordbGraphStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_falkordb_graph_store(**kwargs)
+    if isinstance(runtime, FalkordbGraphStoreIntegration):
+        return runtime
+    return FalkordbGraphStoreIntegration.from_runtime(runtime)
