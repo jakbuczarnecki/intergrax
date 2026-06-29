@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_unleash_feature_flag
+from intergrax.integrations._shared.p5.factories import create_unleash_feature_flag as _legacy_create_unleash_feature_flag
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.feature_flag.unleash.integration import (
@@ -39,3 +39,11 @@ def create_unleash_feature_flag_integration(
         display_name="Unleash",
         config=UnleashFeatureFlagIntegrationConfig(enabled=enabled),
     )
+
+
+def create_unleash_feature_flag(**kwargs: object) -> UnleashFeatureFlagIntegration:
+    """Compatibility shim — constructs UnleashFeatureFlagIntegration from legacy runtime."""
+    runtime = _legacy_create_unleash_feature_flag(**kwargs)
+    if isinstance(runtime, UnleashFeatureFlagIntegration):
+        return runtime
+    return UnleashFeatureFlagIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_launchdarkly_feature_flag
+from intergrax.integrations._shared.p5.factories import create_launchdarkly_feature_flag as _legacy_create_launchdarkly_feature_flag
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.feature_flag.launchdarkly.integration import (
@@ -39,3 +39,11 @@ def create_launchdarkly_feature_flag_integration(
         display_name="Launchdarkly",
         config=LaunchdarklyFeatureFlagIntegrationConfig(enabled=enabled),
     )
+
+
+def create_launchdarkly_feature_flag(**kwargs: object) -> LaunchdarklyFeatureFlagIntegration:
+    """Compatibility shim — constructs LaunchdarklyFeatureFlagIntegration from legacy runtime."""
+    runtime = _legacy_create_launchdarkly_feature_flag(**kwargs)
+    if isinstance(runtime, LaunchdarklyFeatureFlagIntegration):
+        return runtime
+    return LaunchdarklyFeatureFlagIntegration.from_runtime(runtime)
