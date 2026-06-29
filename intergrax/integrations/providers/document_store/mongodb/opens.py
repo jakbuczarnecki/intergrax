@@ -14,7 +14,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.integrations.providers.document_store.mongodb.adapter import MongoDBDocumentStore
+from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
+from intergrax.integrations.providers.document_store.mongodb.integration import MongodbDocumentStoreIntegration
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
 
@@ -75,4 +76,4 @@ def open_mongodb_document_store(
         client=client,
         collection_factory=collection_factory,
     )
-    return MongoDBDocumentStore(mongo_client)
+    return MongodbDocumentStoreIntegration.from_runtime(_MongoDBDocumentStore(mongo_client))

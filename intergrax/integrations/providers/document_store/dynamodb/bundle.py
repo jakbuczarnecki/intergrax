@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_dynamodb_document_store
+from intergrax.integrations._shared.p2.factories import create_dynamodb_document_store as _legacy_create_dynamodb_document_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_store.dynamodb.integration import (
@@ -39,3 +39,11 @@ def create_dynamodb_document_store_integration(
         display_name="Dynamodb",
         config=DynamodbDocumentStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_dynamodb_document_store(**kwargs: object) -> DynamodbDocumentStoreIntegration:
+    """Compatibility shim — constructs DynamodbDocumentStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_dynamodb_document_store(**kwargs)
+    if isinstance(runtime, DynamodbDocumentStoreIntegration):
+        return runtime
+    return DynamodbDocumentStoreIntegration.from_runtime(runtime)

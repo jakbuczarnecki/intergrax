@@ -63,7 +63,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "CassandraDocumentStore":
-        from intergrax.integrations.providers.document_store.cassandra.adapter import CassandraDocumentStore
+        from intergrax.integrations.providers.document_store.cassandra.adapter import _CassandraDocumentStore
 
         return CassandraDocumentStore
     if name in _CONTRACT_INTEGRATION_EXPORTS:

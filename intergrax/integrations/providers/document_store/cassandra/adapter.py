@@ -12,7 +12,7 @@ from intergrax.integrations.contracts.document_store import DocumentQueryResult,
 from intergrax.integrations.providers.document_store.cassandra.client import CassandraCqlClient
 
 
-class CassandraDocumentStore:
+class _CassandraDocumentStore:
     """
     Catalog facade over ``CassandraCqlClient``.
 

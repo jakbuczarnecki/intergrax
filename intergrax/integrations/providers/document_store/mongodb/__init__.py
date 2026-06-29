@@ -57,7 +57,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "MongoDBDocumentStore":
-        from intergrax.integrations.providers.document_store.mongodb.adapter import MongoDBDocumentStore
+        from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
 
         return MongoDBDocumentStore
     if name in _CONTRACT_INTEGRATION_EXPORTS:

@@ -2,19 +2,8 @@
 
 Category: `document_store`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_dynamodb_document_store()` remains backward-compatible.
-
-## Contract-based integration
-
-- `DynamodbDocumentStoreIntegration` derives from the category-specific contract.
-- Factory: `create_dynamodb_document_store_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`DynamodbDocumentStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DynamodbDocumentStoreIntegration`.
+- Contract factory: `create_dynamodb_document_store_integration()`.
