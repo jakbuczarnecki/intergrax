@@ -19,7 +19,9 @@ __all__ = [
     "DEFAULT_SOURCE",
     "ENV_LAB_JSON_DEFAULT_SOURCE",
     "LabJsonIntegrationBundle",
-    "LabJsonIntegrationAdapter",
+    "LabJsonInteractionSurfaceIntegration",
+    "LabJsonInteractionSurfaceIntegrationConfig",
+    "LabJsonInteractionSurfaceClient",
     "LabJsonIntegrationConfig",
     "create_lab_json_integration",
     "create_lab_json_interaction_surface",
@@ -48,15 +50,12 @@ _CONTRACT_INTEGRATION_EXPORTS = frozenset(
     }
 )
 
+
 def __getattr__(name: str):
     if name == "register_lab_json_integration":
         from intergrax.integrations.providers.interaction_surface.lab_json.register import register_lab_json_integration
 
         return register_lab_json_integration
-    if name == "LabJsonIntegrationAdapter":
-        from intergrax.integrations.providers.interaction_surface.lab_json.adapter import _LabJsonIntegrationAdapter
-
-        return LabJsonIntegrationAdapter
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.interaction_surface.lab_json import bundle as _bundle
 
