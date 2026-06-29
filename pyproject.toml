@@ -49,7 +49,7 @@ dependencies = [
   # -----------------
   # Runtime / Server
   # -----------------
-  "torch==2.2.2",
+  "torch==2.12.1",
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "starlette>=0.41",
