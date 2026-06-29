@@ -3,9 +3,9 @@
 **Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md)  
 **Taxonomy source:** `intergrax/integrations/providers/layout.py` (`SLUG_CATEGORY`)  
 **Code:** `intergrax/runtime/integrations/categories/`  
-**Task:** INTEGRATIONS-2A
+**Current follow-up:** INTEGRATIONS-3A-CONTRACT-REGISTRY-V2
 
-**Last updated:** 2026-06-29 — INTEGRATIONS-2E runtime cutover **Done** (185 slugs); 9 `llm_guardrail` slugs deferred.
+**Last updated:** 2026-06-29 — INTEGRATIONS-3A contract registry v2 **In progress**; INTEGRATIONS-2E runtime cutover **Done** (185 slugs); 9 `llm_guardrail` slugs deferred.
 
 ---
 
@@ -19,6 +19,7 @@
 | **INTEGRATIONS-2C** | Code | P1 | **Done** | All `observability_backend` slugs migrated |
 | **INTEGRATIONS-2D** | Code | P1 | **Done** | All remaining non-observability slugs migrated (160) or explicitly deferred (9 `llm_guardrail`) |
 | **INTEGRATIONS-2E** | Code | P1 | **Done** | Runtime cutover — Integration is single public entrypoint; legacy factories are shims only (9 `llm_guardrail` deferred) |
+| **INTEGRATIONS-3A-CONTRACT-REGISTRY-V2** | Code | P1 | **In progress** | Additive, contract-aware registry metadata for provider/category registrations; no runtime binding yet |
 
 **INTEGRATIONS-2A acceptance:** every `SLUG_CATEGORY` folder has a category contract or explicit alias; all derive from **`PlatformIntegrationContract`**; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; no LKW change; focused tests green.
 
@@ -34,7 +35,37 @@
 
 **Scaffold hardening (INTEGRATIONS-SCAFFOLD-P5-P7-CONTRACT-AWARE):** maintenance provider shell generators (`wire_p2` through `wire_p7`) preserve contract-aware packages when `integration.py` exists.
 
-**Deferred:** `llm_guardrail` per-slug packages (shared bundles layout), registry v2 / contract registry wiring, vendor SDK adapters, LKW wiring.
+**Deferred:** `llm_guardrail` per-slug packages (shared bundles layout), runtime binding/profile resolution, vendor SDK adapters, LKW wiring.
+
+---
+
+## Contract Registry v2 — INTEGRATIONS-3A
+
+`intergrax/runtime/integrations/registry_v2.py` introduces an additive metadata registry for contract-aware provider registrations. It does **not** replace the legacy catalog yet and does **not** perform runtime binding.
+
+**Registration identity:** `(provider_id, category)`.
+
+- `provider_id` may repeat across categories, for example `elasticsearch` can later exist as `vector_store`, `search_provider`, and `observability_backend` registrations.
+- `provider_id + category` must be unique; duplicate registrations raise `DuplicateIntegrationRegistrationError`.
+- `category` comes from `SLUG_CATEGORY` / provider folder taxonomy.
+- `integration_kind` is stored separately and validated against the category contract. For `observability_backend`, the category remains `observability_backend` while `integration_kind` remains `observability_vendor`.
+
+**Typed metadata:** `IntegrationRegistration` stores `provider_id`, `slug`, `category`, `integration_kind`, `contract_class`, `integration_class`, contract factory, `config_class`, display name, capabilities, security posture, `default_enabled=False`, health/runtime-binding support flags, and safe metadata.
+
+**Builder behavior:** `build_integration_registration(slug)` derives provider metadata from:
+
+- `intergrax/integrations/providers/layout.py` (`SLUG_CATEGORY`)
+- `PROVIDER_CATEGORY_CONTRACT_REGISTRY`
+- provider `integration.py` single public Integration class
+- provider `bundle.py` contract factory (`create_<slug>_<category>_integration` or `create_<slug>_observability_integration`)
+
+The builder calls the contract factory only with `enabled=False` to validate the disabled integration shape. It must not initialize vendor SDK clients, read secrets, perform network I/O, activate providers from environment, replace bootstrap, or create tenant/workspace/application bindings.
+
+**Registry behavior:** `IntegrationRegistry` can register, get, list all, list by category, and list by provider. It is deterministic and isolated; no global provider bootstrap is changed in INTEGRATIONS-3A.
+
+**Deferred/excluded:** the 9 `llm_guardrail` slugs remain explicitly excluded from registry v2 completeness until INTEGRATIONS-2F package normalization.
+
+**Next phase:** INTEGRATIONS-3B will own explicit integration binding / provider profile resolution. LKW adoption remains after INTEGRATIONS-3B and LKW-H1.
 
 ---
 
@@ -116,8 +147,10 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 
 `tests/unit/runtime/integrations/test_provider_category_contracts.py` — registry coverage, inheritance, observability alias, schema_id stability, config safety, multi-category identity separation.
 
+`tests/unit/runtime/integrations/test_contract_registry_v2.py` — registry v2 model validation, duplicate identity, same provider across categories, disabled factory compatibility, `observability_backend` alias handling, deferred `llm_guardrail` exclusion, and no SDK/network initialization guard.
+
 Focused run:
 
 ```bash
-uv run pytest tests/unit/runtime/integrations/test_platform_integration_contract.py tests/unit/runtime/integrations/test_observability_vendor_integration_contract.py tests/unit/runtime/integrations/test_provider_category_contracts.py -q
+uv run pytest tests/unit/runtime/integrations/test_contract_registry_v2.py tests/unit/runtime/integrations/test_platform_integration_contract.py tests/unit/runtime/integrations/test_observability_vendor_integration_contract.py tests/unit/runtime/integrations/test_provider_category_contracts.py -q
 ```
