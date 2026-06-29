@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_google_drive_object_storage
+from intergrax.integrations._shared.p8.factories import create_google_drive_object_storage as _legacy_create_google_drive_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.google_drive.integration import (
@@ -39,3 +39,11 @@ def create_google_drive_object_storage_integration(
         display_name="Google Drive",
         config=GoogleDriveObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_google_drive_object_storage(**kwargs: object) -> GoogleDriveObjectStorageIntegration:
+    """Compatibility shim — constructs GoogleDriveObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_google_drive_object_storage(**kwargs)
+    if isinstance(runtime, GoogleDriveObjectStorageIntegration):
+        return runtime
+    return GoogleDriveObjectStorageIntegration.from_runtime(runtime)

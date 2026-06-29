@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_minio_object_storage
+from intergrax.integrations._shared.p3.factories import create_minio_object_storage as _legacy_create_minio_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.minio.integration import (
@@ -39,3 +39,11 @@ def create_minio_object_storage_integration(
         display_name="Minio",
         config=MinioObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_minio_object_storage(**kwargs: object) -> MinioObjectStorageIntegration:
+    """Compatibility shim — constructs MinioObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_minio_object_storage(**kwargs)
+    if isinstance(runtime, MinioObjectStorageIntegration):
+        return runtime
+    return MinioObjectStorageIntegration.from_runtime(runtime)

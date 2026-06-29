@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_backblaze_b2_object_storage
+from intergrax.integrations._shared.p7.factories import create_backblaze_b2_object_storage as _legacy_create_backblaze_b2_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.backblaze_b2.integration import (
@@ -39,3 +39,11 @@ def create_backblaze_b2_object_storage_integration(
         display_name="Backblaze B2",
         config=BackblazeB2ObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_backblaze_b2_object_storage(**kwargs: object) -> BackblazeB2ObjectStorageIntegration:
+    """Compatibility shim — constructs BackblazeB2ObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_backblaze_b2_object_storage(**kwargs)
+    if isinstance(runtime, BackblazeB2ObjectStorageIntegration):
+        return runtime
+    return BackblazeB2ObjectStorageIntegration.from_runtime(runtime)

@@ -2,19 +2,8 @@
 
 Category: `object_storage`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_s3_integration()` remains backward-compatible.
-
-## Contract-based integration
-
-- `S3ObjectStorageIntegration` derives from the category-specific contract.
-- Factory: `create_s3_object_storage_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`S3ObjectStorageIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `S3ObjectStorageIntegration`.
+- Contract factory: `create_s3_object_storage_integration()`.

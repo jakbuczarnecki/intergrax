@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_gcs_object_storage
+from intergrax.integrations._shared.p2.factories import create_gcs_object_storage as _legacy_create_gcs_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.gcs.integration import (
@@ -39,3 +39,11 @@ def create_gcs_object_storage_integration(
         display_name="Gcs",
         config=GcsObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_gcs_object_storage(**kwargs: object) -> GcsObjectStorageIntegration:
+    """Compatibility shim — constructs GcsObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_gcs_object_storage(**kwargs)
+    if isinstance(runtime, GcsObjectStorageIntegration):
+        return runtime
+    return GcsObjectStorageIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_huggingface_hub_object_storage
+from intergrax.integrations._shared.p5.factories import create_huggingface_hub_object_storage as _legacy_create_huggingface_hub_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.huggingface_hub.integration import (
@@ -39,3 +39,11 @@ def create_huggingface_hub_object_storage_integration(
         display_name="Huggingface Hub",
         config=HuggingfaceHubObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_huggingface_hub_object_storage(**kwargs: object) -> HuggingfaceHubObjectStorageIntegration:
+    """Compatibility shim — constructs HuggingfaceHubObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_huggingface_hub_object_storage(**kwargs)
+    if isinstance(runtime, HuggingfaceHubObjectStorageIntegration):
+        return runtime
+    return HuggingfaceHubObjectStorageIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_cloudflare_r2_object_storage
+from intergrax.integrations._shared.p5.factories import create_cloudflare_r2_object_storage as _legacy_create_cloudflare_r2_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.cloudflare_r2.integration import (
@@ -39,3 +39,11 @@ def create_cloudflare_r2_object_storage_integration(
         display_name="Cloudflare R2",
         config=CloudflareR2ObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_cloudflare_r2_object_storage(**kwargs: object) -> CloudflareR2ObjectStorageIntegration:
+    """Compatibility shim — constructs CloudflareR2ObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_cloudflare_r2_object_storage(**kwargs)
+    if isinstance(runtime, CloudflareR2ObjectStorageIntegration):
+        return runtime
+    return CloudflareR2ObjectStorageIntegration.from_runtime(runtime)

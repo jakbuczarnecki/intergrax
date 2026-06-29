@@ -59,7 +59,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "S3ObjectStorage":
-        from intergrax.integrations.providers.object_storage.s3.adapter import S3ObjectStorage
+        from intergrax.integrations.providers.object_storage.s3.adapter import _S3ObjectStorage
 
         return S3ObjectStorage
     if name in _CONTRACT_INTEGRATION_EXPORTS:

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_filesystem_object_storage
+from intergrax.integrations._shared.p3.factories import create_filesystem_object_storage as _legacy_create_filesystem_object_storage
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.object_storage.filesystem.integration import (
@@ -39,3 +39,11 @@ def create_filesystem_object_storage_integration(
         display_name="Filesystem",
         config=FilesystemObjectStorageIntegrationConfig(enabled=enabled),
     )
+
+
+def create_filesystem_object_storage(**kwargs: object) -> FilesystemObjectStorageIntegration:
+    """Compatibility shim — constructs FilesystemObjectStorageIntegration from legacy runtime."""
+    runtime = _legacy_create_filesystem_object_storage(**kwargs)
+    if isinstance(runtime, FilesystemObjectStorageIntegration):
+        return runtime
+    return FilesystemObjectStorageIntegration.from_runtime(runtime)
