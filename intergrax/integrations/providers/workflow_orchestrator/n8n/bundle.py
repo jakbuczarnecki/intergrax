@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_n8n_workflow_orchestrator
+from intergrax.integrations._shared.p8.factories import create_n8n_workflow_orchestrator as _legacy_create_n8n_workflow_orchestrator
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.workflow_orchestrator.n8n.integration import (
@@ -39,3 +39,11 @@ def create_n8n_workflow_orchestrator_integration(
         display_name="n8n",
         config=N8nWorkflowOrchestratorIntegrationConfig(enabled=enabled),
     )
+
+
+def create_n8n_workflow_orchestrator(**kwargs: object) -> N8nWorkflowOrchestratorIntegration:
+    """Compatibility shim — constructs N8nWorkflowOrchestratorIntegration from legacy runtime."""
+    runtime = _legacy_create_n8n_workflow_orchestrator(**kwargs)
+    if isinstance(runtime, N8nWorkflowOrchestratorIntegration):
+        return runtime
+    return N8nWorkflowOrchestratorIntegration.from_runtime(runtime)

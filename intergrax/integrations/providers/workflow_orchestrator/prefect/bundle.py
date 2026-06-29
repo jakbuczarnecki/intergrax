@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_prefect_workflow_orchestrator
+from intergrax.integrations._shared.p7.factories import create_prefect_workflow_orchestrator as _legacy_create_prefect_workflow_orchestrator
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.workflow_orchestrator.prefect.integration import (
@@ -39,3 +39,11 @@ def create_prefect_workflow_orchestrator_integration(
         display_name="Prefect",
         config=PrefectWorkflowOrchestratorIntegrationConfig(enabled=enabled),
     )
+
+
+def create_prefect_workflow_orchestrator(**kwargs: object) -> PrefectWorkflowOrchestratorIntegration:
+    """Compatibility shim — constructs PrefectWorkflowOrchestratorIntegration from legacy runtime."""
+    runtime = _legacy_create_prefect_workflow_orchestrator(**kwargs)
+    if isinstance(runtime, PrefectWorkflowOrchestratorIntegration):
+        return runtime
+    return PrefectWorkflowOrchestratorIntegration.from_runtime(runtime)

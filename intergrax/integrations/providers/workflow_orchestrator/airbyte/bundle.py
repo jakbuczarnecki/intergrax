@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_airbyte_workflow_orchestrator
+from intergrax.integrations._shared.p8.factories import create_airbyte_workflow_orchestrator as _legacy_create_airbyte_workflow_orchestrator
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.workflow_orchestrator.airbyte.integration import (
@@ -39,3 +39,11 @@ def create_airbyte_workflow_orchestrator_integration(
         display_name="Airbyte",
         config=AirbyteWorkflowOrchestratorIntegrationConfig(enabled=enabled),
     )
+
+
+def create_airbyte_workflow_orchestrator(**kwargs: object) -> AirbyteWorkflowOrchestratorIntegration:
+    """Compatibility shim — constructs AirbyteWorkflowOrchestratorIntegration from legacy runtime."""
+    runtime = _legacy_create_airbyte_workflow_orchestrator(**kwargs)
+    if isinstance(runtime, AirbyteWorkflowOrchestratorIntegration):
+        return runtime
+    return AirbyteWorkflowOrchestratorIntegration.from_runtime(runtime)
