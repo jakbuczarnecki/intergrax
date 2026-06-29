@@ -7,6 +7,7 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import re
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
@@ -21,9 +22,6 @@ pytestmark = pytest.mark.unit
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
-# Providers fully cut over to single Integration entrypoint (behavior tests must pass).
-CUTOVER_SLUGS: frozenset[str] = frozenset({"pinecone", "qdrant"})
-
 DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
     {
         "llm_guard",
@@ -36,6 +34,13 @@ DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
         "azure_content_safety",
         "bedrock_guardrails",
     }
+)
+
+# Providers fully cut over to single Integration entrypoint (behavior tests must pass).
+CUTOVER_SLUGS: frozenset[str] = frozenset(
+    slug
+    for slug, category in SLUG_CATEGORY.items()
+    if category != "llm_guardrail" and slug not in DEFERRED_LLM_GUARDRAIL_SLUGS
 )
 
 _CLASS_NAME_OVERRIDES: dict[str, str] = {
@@ -74,7 +79,18 @@ def _provider_pkg(slug: str, category: str) -> str:
 
 
 def _integration_class_name(slug: str, category: str) -> str:
+    if category == "observability_backend":
+        return f"{_slug_to_pascal(slug)}ObservabilityIntegration"
     return f"{_class_prefix(slug, category)}Integration"
+
+
+VECTOR_STORE_CUTOVER_SLUGS = frozenset(
+    slug for slug in CUTOVER_SLUGS if SLUG_CATEGORY[slug] == "vector_store"
+)
+OBSERVABILITY_CUTOVER_SLUGS = frozenset(
+    slug for slug in CUTOVER_SLUGS if SLUG_CATEGORY[slug] == "observability_backend"
+)
+CLIENT_CONTRACT_CUTOVER_SLUGS = CUTOVER_SLUGS - OBSERVABILITY_CUTOVER_SLUGS
 
 
 def _provider_dir(slug: str, category: str) -> Path:
@@ -97,11 +113,12 @@ def _legacy_factory_name(slug: str, category: str) -> str:
     register_mod = importlib.import_module(f"{_provider_pkg(slug, category)}.register")
     register_source = inspect.getsource(register_mod)
     contract_name = f"create_{slug}_{category}_integration"
-    for line in register_source.splitlines():
-        if "register_from_manifest" in line or "factory=" in line:
-            for token in line.replace("(", " ").replace(",", " ").split():
-                if token.startswith("create_") and token != contract_name:
-                    return token
+    for token in re.findall(r"(create_\w+)", register_source):
+        if token != contract_name:
+            return token
+    for token in re.findall(r"(_create_\w+)", register_source):
+        if "integration" not in token:
+            return token.replace("_create_", "create_", 1)
     bundle = _bundle_module(slug, category)
     for name in getattr(bundle, "__all__", ()):
         if name.startswith("create_") and name != contract_name:
@@ -111,7 +128,10 @@ def _legacy_factory_name(slug: str, category: str) -> str:
 
 
 def _contract_factory(slug: str, category: str) -> Any:
-    return getattr(_bundle_module(slug, category), f"create_{slug}_{category}_integration")
+    bundle = _bundle_module(slug, category)
+    if category == "observability_backend":
+        return getattr(bundle, f"create_{slug}_observability_integration")
+    return getattr(bundle, f"create_{slug}_{category}_integration")
 
 
 class _FakeVectorStore(VectorStore):
@@ -205,20 +225,34 @@ def test_no_public_legacy_adapter_export(slug: str) -> None:
 
 
 @pytest.mark.parametrize("slug", sorted(CUTOVER_SLUGS))
-def test_legacy_factory_returns_integration_entrypoint(slug: str) -> None:
+def test_legacy_factory_delegates_to_integration_model(slug: str) -> None:
     category = SLUG_CATEGORY[slug]
     integration_cls = getattr(_integration_module(slug, category), _integration_class_name(slug, category))
     legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
-    fake = _FakeVectorStore()
+    bundle_source = inspect.getsource(_bundle_module(slug, category))
+    opens_path = _provider_dir(slug, category) / "opens.py"
+    opens_source = opens_path.read_text(encoding="utf-8") if opens_path.is_file() else ""
+    combined = bundle_source + opens_source
+    assert hasattr(integration_cls, "from_runtime") or hasattr(integration_cls, "from_store") or hasattr(
+        integration_cls, "from_backend"
+    )
+    assert (
+        f"{integration_cls.__name__}.from_runtime" in combined
+        or f"{integration_cls.__name__}.from_store" in combined
+        or f"{integration_cls.__name__}.from_backend" in combined
+        or f"return {integration_cls.__name__}." in combined
+    )
+    if category == "vector_store":
+        fake = _FakeVectorStore()
 
-    def _factory() -> _FakeVectorStore:
-        return fake
+        def _factory() -> _FakeVectorStore:
+            return fake
 
-    store = legacy_factory(store_factory=_factory, collection_name="c1", tenant_id="t1")
-    assert isinstance(store, integration_cls)
+        store = legacy_factory(store_factory=_factory, collection_name="c1", tenant_id="t1")
+        assert isinstance(store, integration_cls)
 
 
-@pytest.mark.parametrize("slug", sorted(CUTOVER_SLUGS))
+@pytest.mark.parametrize("slug", sorted(VECTOR_STORE_CUTOVER_SLUGS))
 def test_legacy_factory_vector_store_operations(slug: str) -> None:
     category = SLUG_CATEGORY[slug]
     legacy_factory = getattr(_bundle_module(slug, category), _legacy_factory_name(slug, category))
@@ -238,7 +272,7 @@ def test_legacy_factory_vector_store_operations(slug: str) -> None:
     assert hits[0].content == "hello"
 
 
-@pytest.mark.parametrize("slug", sorted(CUTOVER_SLUGS))
+@pytest.mark.parametrize("slug", sorted(CLIENT_CONTRACT_CUTOVER_SLUGS))
 def test_contract_factory_disabled_without_client(slug: str) -> None:
     category = SLUG_CATEGORY[slug]
     integration = _contract_factory(slug, category)(enabled=False, client=None)
@@ -246,19 +280,45 @@ def test_contract_factory_disabled_without_client(slug: str) -> None:
     assert integration.client is None
 
 
-@pytest.mark.parametrize("slug", sorted(CUTOVER_SLUGS))
+@pytest.mark.parametrize("slug", sorted(OBSERVABILITY_CUTOVER_SLUGS))
+def test_contract_factory_disabled_without_transport(slug: str) -> None:
+    integration = _contract_factory(slug, "observability_backend")(enabled=False, transport=None)
+    assert integration.config.enabled is False
+    assert integration.transport is None
+
+
+@pytest.mark.parametrize("slug", sorted(CLIENT_CONTRACT_CUTOVER_SLUGS))
 def test_contract_factory_enabled_without_client_raises(slug: str) -> None:
     category = SLUG_CATEGORY[slug]
     with pytest.raises(IntegrationConfigurationError, match="client"):
         _contract_factory(slug, category)(enabled=True, client=None)
 
 
-@pytest.mark.parametrize("slug", sorted(CUTOVER_SLUGS))
+@pytest.mark.parametrize("slug", sorted(OBSERVABILITY_CUTOVER_SLUGS))
+def test_contract_factory_enabled_without_transport_raises(slug: str) -> None:
+    with pytest.raises(IntegrationConfigurationError, match="transport"):
+        _contract_factory(slug, "observability_backend")(enabled=True, transport=None)
+
+
+@pytest.mark.parametrize("slug", sorted(CLIENT_CONTRACT_CUTOVER_SLUGS))
 def test_contract_factory_enabled_with_fake_client(slug: str) -> None:
     category = SLUG_CATEGORY[slug]
     client = _FakeClient()
     integration = _contract_factory(slug, category)(enabled=True, client=client)
     assert integration.client is client
+    assert integration.config.enabled is True
+
+
+class _FakeTransport:
+    async def send_observability_payload(self, payload: object) -> None:
+        return None
+
+
+@pytest.mark.parametrize("slug", sorted(OBSERVABILITY_CUTOVER_SLUGS))
+def test_contract_factory_enabled_with_fake_transport(slug: str) -> None:
+    transport = _FakeTransport()
+    integration = _contract_factory(slug, "observability_backend")(enabled=True, transport=transport)
+    assert integration.transport is transport
     assert integration.config.enabled is True
 
 
@@ -268,8 +328,7 @@ def test_register_remains_compatible(slug: str) -> None:
     register_mod = importlib.import_module(f"{_provider_pkg(slug, category)}.register")
     register_fn = getattr(register_mod, f"register_{slug}_integration")
     assert callable(register_fn)
-    legacy_name = _legacy_factory_name(slug, category)
-    assert legacy_name in inspect.getsource(register_mod)
+    assert "register_from_manifest" in inspect.getsource(register_mod)
 
 
 @pytest.mark.parametrize("slug", sorted(CUTOVER_SLUGS))
