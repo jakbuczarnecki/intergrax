@@ -2,19 +2,8 @@
 
 Category: `secrets_store`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_doppler_secrets_store()` remains backward-compatible.
-
-## Contract-based integration
-
-- `DopplerSecretsStoreIntegration` derives from the category-specific contract.
-- Factory: `create_doppler_secrets_store_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`DopplerSecretsStoreIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `DopplerSecretsStoreIntegration`.
+- Contract factory: `create_doppler_secrets_store_integration()`.

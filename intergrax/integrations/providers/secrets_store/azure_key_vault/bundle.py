@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_azure_key_vault_secrets_store
+from intergrax.integrations._shared.p5.factories import create_azure_key_vault_secrets_store as _legacy_create_azure_key_vault_secrets_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.secrets_store.azure_key_vault.integration import (
@@ -39,3 +39,11 @@ def create_azure_key_vault_secrets_store_integration(
         display_name="Azure Key Vault",
         config=AzureKeyVaultSecretsStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_azure_key_vault_secrets_store(**kwargs: object) -> AzureKeyVaultSecretsStoreIntegration:
+    """Compatibility shim — constructs AzureKeyVaultSecretsStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_azure_key_vault_secrets_store(**kwargs)
+    if isinstance(runtime, AzureKeyVaultSecretsStoreIntegration):
+        return runtime
+    return AzureKeyVaultSecretsStoreIntegration.from_runtime(runtime)

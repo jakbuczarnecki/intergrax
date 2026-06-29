@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_vault_secrets_store
+from intergrax.integrations._shared.p3.factories import create_vault_secrets_store as _legacy_create_vault_secrets_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.secrets_store.vault.integration import (
@@ -39,3 +39,11 @@ def create_vault_secrets_store_integration(
         display_name="Vault",
         config=VaultSecretsStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_vault_secrets_store(**kwargs: object) -> VaultSecretsStoreIntegration:
+    """Compatibility shim — constructs VaultSecretsStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_vault_secrets_store(**kwargs)
+    if isinstance(runtime, VaultSecretsStoreIntegration):
+        return runtime
+    return VaultSecretsStoreIntegration.from_runtime(runtime)

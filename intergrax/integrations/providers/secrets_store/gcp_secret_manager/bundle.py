@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_gcp_secret_manager_secrets_store
+from intergrax.integrations._shared.p5.factories import create_gcp_secret_manager_secrets_store as _legacy_create_gcp_secret_manager_secrets_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.secrets_store.gcp_secret_manager.integration import (
@@ -39,3 +39,11 @@ def create_gcp_secret_manager_secrets_store_integration(
         display_name="Gcp Secret Manager",
         config=GcpSecretManagerSecretsStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_gcp_secret_manager_secrets_store(**kwargs: object) -> GcpSecretManagerSecretsStoreIntegration:
+    """Compatibility shim — constructs GcpSecretManagerSecretsStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_gcp_secret_manager_secrets_store(**kwargs)
+    if isinstance(runtime, GcpSecretManagerSecretsStoreIntegration):
+        return runtime
+    return GcpSecretManagerSecretsStoreIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_aws_secrets_manager_secrets_store
+from intergrax.integrations._shared.p5.factories import create_aws_secrets_manager_secrets_store as _legacy_create_aws_secrets_manager_secrets_store
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.secrets_store.aws_secrets_manager.integration import (
@@ -39,3 +39,11 @@ def create_aws_secrets_manager_secrets_store_integration(
         display_name="Aws Secrets Manager",
         config=AwsSecretsManagerSecretsStoreIntegrationConfig(enabled=enabled),
     )
+
+
+def create_aws_secrets_manager_secrets_store(**kwargs: object) -> AwsSecretsManagerSecretsStoreIntegration:
+    """Compatibility shim — constructs AwsSecretsManagerSecretsStoreIntegration from legacy runtime."""
+    runtime = _legacy_create_aws_secrets_manager_secrets_store(**kwargs)
+    if isinstance(runtime, AwsSecretsManagerSecretsStoreIntegration):
+        return runtime
+    return AwsSecretsManagerSecretsStoreIntegration.from_runtime(runtime)
