@@ -61,7 +61,7 @@ def __getattr__(name: str):
 
         return register_google_cse_integration
     if name == "GoogleCSESearchProvider":
-        from intergrax.integrations.providers.search_provider.google_cse.adapter import GoogleCSESearchProvider
+        from intergrax.integrations.providers.search_provider.google_cse.adapter import _GoogleCSESearchProvider
 
         return GoogleCSESearchProvider
     if name in _BUNDLE_EXPORTS:

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_brave_search_provider
+from intergrax.integrations._shared.p2.factories import create_brave_search_provider as _legacy_create_brave_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.brave.integration import (
@@ -39,3 +39,11 @@ def create_brave_search_provider_integration(
         display_name="Brave",
         config=BraveSearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_brave_search_provider(**kwargs: object) -> BraveSearchProviderIntegration:
+    """Compatibility shim — constructs BraveSearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_brave_search_provider(**kwargs)
+    if isinstance(runtime, BraveSearchProviderIntegration):
+        return runtime
+    return BraveSearchProviderIntegration.from_runtime(runtime)

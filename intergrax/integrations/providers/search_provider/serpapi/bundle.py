@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_serpapi_search_provider
+from intergrax.integrations._shared.p2.factories import create_serpapi_search_provider as _legacy_create_serpapi_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.serpapi.integration import (
@@ -39,3 +39,11 @@ def create_serpapi_search_provider_integration(
         display_name="Serpapi",
         config=SerpapiSearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_serpapi_search_provider(**kwargs: object) -> SerpapiSearchProviderIntegration:
+    """Compatibility shim — constructs SerpapiSearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_serpapi_search_provider(**kwargs)
+    if isinstance(runtime, SerpapiSearchProviderIntegration):
+        return runtime
+    return SerpapiSearchProviderIntegration.from_runtime(runtime)

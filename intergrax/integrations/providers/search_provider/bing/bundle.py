@@ -84,13 +84,13 @@ from intergrax.integrations.providers.search_provider.bing.integration import (
 
 def create_bing_search_provider_integration(
     *,
-    client: BingSearchProviderClient | None = None,
+    client: BingSearchProviderIntegrationClient | None = None,
     enabled: bool = False,
 ) -> BingSearchProviderIntegration:
     """
     Build a contract-based Bing search provider integration.
 
-    The legacy facade (create_bing_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_bing_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

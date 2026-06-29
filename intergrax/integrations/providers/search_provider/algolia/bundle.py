@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_algolia_search_provider
+from intergrax.integrations._shared.p7.factories import create_algolia_search_provider as _legacy_create_algolia_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.algolia.integration import (
@@ -39,3 +39,11 @@ def create_algolia_search_provider_integration(
         display_name="Algolia",
         config=AlgoliaSearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_algolia_search_provider(**kwargs: object) -> AlgoliaSearchProviderIntegration:
+    """Compatibility shim — constructs AlgoliaSearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_algolia_search_provider(**kwargs)
+    if isinstance(runtime, AlgoliaSearchProviderIntegration):
+        return runtime
+    return AlgoliaSearchProviderIntegration.from_runtime(runtime)

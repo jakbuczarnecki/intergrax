@@ -8,9 +8,9 @@ from intergrax.integrations.providers.search_provider.reddit.config import Reddi
 from intergrax.integrations.providers.search_provider.reddit.opens import open_reddit_search_provider
 
 
-def create_reddit_search_provider(**config_overrides: object) -> SearchProvider:
+def create_reddit_search_provider(**config_overrides: object) -> RedditSearchProviderIntegration:
     config = RedditIntegrationConfig.from_env(**config_overrides)
-    return open_reddit_search_provider(config)
+    return RedditSearchProviderIntegration.from_runtime(open_reddit_search_provider(config))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.reddit.integration import (

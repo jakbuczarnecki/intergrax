@@ -95,7 +95,7 @@ def create_google_cse_search_provider_integration(
     """
     Build a contract-based Google Cse search provider integration.
 
-    The legacy facade (create_google_cse_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_google_cse_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

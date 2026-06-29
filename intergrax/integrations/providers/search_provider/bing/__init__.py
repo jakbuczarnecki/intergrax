@@ -57,7 +57,7 @@ def __getattr__(name: str):
 
         return register_bing_integration
     if name == "BingSearchProvider":
-        from intergrax.integrations.providers.search_provider.bing.adapter import BingSearchProvider
+        from intergrax.integrations.providers.search_provider.bing.adapter import _BingSearchProvider
 
         return BingSearchProvider
     if name in _BUNDLE_EXPORTS:

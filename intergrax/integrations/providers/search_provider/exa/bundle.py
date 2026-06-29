@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_exa_search_provider
+from intergrax.integrations._shared.p3.factories import create_exa_search_provider as _legacy_create_exa_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.exa.integration import (
@@ -39,3 +39,11 @@ def create_exa_search_provider_integration(
         display_name="Exa",
         config=ExaSearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_exa_search_provider(**kwargs: object) -> ExaSearchProviderIntegration:
+    """Compatibility shim — constructs ExaSearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_exa_search_provider(**kwargs)
+    if isinstance(runtime, ExaSearchProviderIntegration):
+        return runtime
+    return ExaSearchProviderIntegration.from_runtime(runtime)

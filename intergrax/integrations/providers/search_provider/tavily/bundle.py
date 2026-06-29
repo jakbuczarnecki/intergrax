@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_tavily_search_provider
+from intergrax.integrations._shared.p3.factories import create_tavily_search_provider as _legacy_create_tavily_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.tavily.integration import (
@@ -39,3 +39,11 @@ def create_tavily_search_provider_integration(
         display_name="Tavily",
         config=TavilySearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_tavily_search_provider(**kwargs: object) -> TavilySearchProviderIntegration:
+    """Compatibility shim — constructs TavilySearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_tavily_search_provider(**kwargs)
+    if isinstance(runtime, TavilySearchProviderIntegration):
+        return runtime
+    return TavilySearchProviderIntegration.from_runtime(runtime)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_semantic_scholar_search_provider
+from intergrax.integrations._shared.p8.factories import create_semantic_scholar_search_provider as _legacy_create_semantic_scholar_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.semantic_scholar.integration import (
@@ -39,3 +39,11 @@ def create_semantic_scholar_search_provider_integration(
         display_name="Semantic Scholar",
         config=SemanticScholarSearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_semantic_scholar_search_provider(**kwargs: object) -> SemanticScholarSearchProviderIntegration:
+    """Compatibility shim — constructs SemanticScholarSearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_semantic_scholar_search_provider(**kwargs)
+    if isinstance(runtime, SemanticScholarSearchProviderIntegration):
+        return runtime
+    return SemanticScholarSearchProviderIntegration.from_runtime(runtime)

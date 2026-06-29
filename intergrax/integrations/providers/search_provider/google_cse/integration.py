@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Google Cse search provider integration (INTEGRATIONS-2D)."""
+"""Google Cse search provider integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.runtime.integrations.categories.search import SearchProviderIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -31,13 +33,48 @@ class GoogleCseSearchProviderClient(Protocol):
 
 class GoogleCseSearchProviderIntegration(SearchProviderIntegrationContract):
     """
-    Google Cse search provider integration.
+    Single public Google Cse search provider entrypoint.
 
-    The legacy facade (create_google_cse_integration) remains separate and backward-compatible.
+    Legacy catalog factory (create_google_cse_integration) delegates to this class.
     """
 
     config: GoogleCseSearchProviderIntegrationConfig = GoogleCseSearchProviderIntegrationConfig()
     _client: GoogleCseSearchProviderClient | None = PrivateAttr(default=None)
+    _runtime: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_runtime(
+        cls,
+        runtime: Any,
+        *,
+        enabled: bool = True,
+    ) -> GoogleCseSearchProviderIntegration:
+        integration = cls.for_provider(
+            provider_id=GOOGLE_CSE_SEARCH_PROVIDER_PROVIDER_ID,
+            display_name="Google Cse",
+            config=GoogleCseSearchProviderIntegrationConfig(enabled=enabled),
+        )
+        integration._runtime = runtime
+        return integration
+
+
+    def search(self, query: str, *, limit: int = 10) -> list[dict[str, object]]:
+        return self._require_runtime().search(query, limit=limit)
+
+
+    def _require_runtime(self) -> Any:
+        private = object.__getattribute__(self, "__pydantic_private__")
+        runtime = private.get("_runtime")
+        if runtime is None:
+            runtime = private.get("_backend")
+        if runtime is None:
+            runtime = private.get("_inner")
+        if runtime is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+            )
+        return runtime
+
 
     @classmethod
     def from_client(
@@ -57,3 +94,5 @@ class GoogleCseSearchProviderIntegration(SearchProviderIntegrationContract):
     @property
     def client(self) -> GoogleCseSearchProviderClient | None:
         return self._client
+
+SearchProvider.register(GoogleCseSearchProviderIntegration)

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_arxiv_search_provider
+from intergrax.integrations._shared.p8.factories import create_arxiv_search_provider as _legacy_create_arxiv_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.arxiv.integration import (
@@ -39,3 +39,11 @@ def create_arxiv_search_provider_integration(
         display_name="Arxiv",
         config=ArxivSearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_arxiv_search_provider(**kwargs: object) -> ArxivSearchProviderIntegration:
+    """Compatibility shim — constructs ArxivSearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_arxiv_search_provider(**kwargs)
+    if isinstance(runtime, ArxivSearchProviderIntegration):
+        return runtime
+    return ArxivSearchProviderIntegration.from_runtime(runtime)

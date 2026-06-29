@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_perplexity_search_provider
+from intergrax.integrations._shared.p8.factories import create_perplexity_search_provider as _legacy_create_perplexity_search_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.perplexity.integration import (
@@ -39,3 +39,11 @@ def create_perplexity_search_provider_integration(
         display_name="Perplexity",
         config=PerplexitySearchProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_perplexity_search_provider(**kwargs: object) -> PerplexitySearchProviderIntegration:
+    """Compatibility shim — constructs PerplexitySearchProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_perplexity_search_provider(**kwargs)
+    if isinstance(runtime, PerplexitySearchProviderIntegration):
+        return runtime
+    return PerplexitySearchProviderIntegration.from_runtime(runtime)
