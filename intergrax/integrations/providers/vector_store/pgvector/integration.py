@@ -14,6 +14,8 @@ from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.utils import attribute_access
+
 
 PGVECTOR_VECTOR_STORE_PROVIDER_ID = "pgvector"
 
@@ -133,7 +135,7 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
             return True
         if isinstance(inner, IntegrationHealthProbe):
             return inner.health()
-        probe = getattr(inner, "health", None)
+        probe = attribute_access.optional(inner, "health", None)
         if callable(probe):
             return probe()
         return True

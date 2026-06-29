@@ -29,6 +29,8 @@ from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationSecurityPosture,
 )
 
+from intergrax.utils import attribute_access
+
 IntegrationCapability: TypeAlias = PlatformIntegrationCapability
 IntegrationSecurityPosture: TypeAlias = PlatformIntegrationSecurityPosture
 IntegrationFactory: TypeAlias = Callable[..., PlatformIntegrationContract]
@@ -258,7 +260,7 @@ def build_integration_registration(
         normalized_slug,
     )
     factory_name = _contract_factory_name(normalized_slug, category)
-    resolved_factory = factory or cast(IntegrationFactory, getattr(bundle_module, factory_name))
+    resolved_factory = factory or cast(IntegrationFactory, attribute_access.optional(bundle_module, factory_name))
 
     sample = _create_disabled_sample(
         resolved_factory,
@@ -272,7 +274,7 @@ def build_integration_registration(
         "provider_module": provider_module_path,
         "integration_module": integration_module.__name__,
         "bundle_module": bundle_module.__name__,
-        "factory_name": getattr(resolved_factory, "__name__", factory_name),
+        "factory_name": attribute_access.optional_str(resolved_factory, "__name__", default=factory_name),
         "integration_class_name": resolved_integration_class.__name__,
     }
     if metadata:
@@ -401,7 +403,7 @@ def _create_disabled_sample(
 def _capability_values(capabilities: Iterable[Any]) -> tuple[str, ...]:
     values: list[str] = []
     for capability in capabilities:
-        value = getattr(capability, "value", capability)
+        value = attribute_access.optional(capability, "value", capability)
         values.append(str(value))
     return tuple(values)
 

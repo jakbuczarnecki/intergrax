@@ -13,6 +13,8 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.runtime.integrations.categories.devops import CloudPlatformIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.utils import attribute_access
+
 
 AZURE_CLOUD_PLATFORM_PROVIDER_ID = "azure"
 
@@ -38,7 +40,7 @@ class AzureCloudPlatformIntegration(CloudPlatformIntegrationContract):
 
     @property
     def default_region(self):
-        return getattr(self._require_client(), 'default_region')
+        return attribute_access.optional_str(self._require_client(), 'default_region')
 
     def health(self):
         return self._require_client().health()
@@ -48,7 +50,7 @@ class AzureCloudPlatformIntegration(CloudPlatformIntegrationContract):
 
     @property
     def slug(self):
-        return getattr(self._require_client(), 'slug')
+        return attribute_access.optional_str(self._require_client(), 'slug')
 
     def _require_client(self) -> CloudPlatform:
         if self._client is None:

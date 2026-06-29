@@ -23,6 +23,8 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorSignal,
 )
 
+from intergrax.utils import attribute_access
+
 OPENTELEMETRY_COLLECTOR_OBSERVABILITY_PROVIDER_ID = "opentelemetry_collector"
 
 _OPENTELEMETRY_COLLECTOR_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
@@ -109,7 +111,7 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
 
     def health(self) -> HealthStatus:
         client = self._require_client()
-        health_fn = getattr(client, "health", None)
+        health_fn = attribute_access.optional(client, "health", None)
         if callable(health_fn):
             result = health_fn()
             if isinstance(result, HealthStatus):

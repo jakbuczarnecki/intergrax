@@ -21,6 +21,8 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
 )
+from intergrax.utils import attribute_access
+
 
 OPENSEARCH_OBSERVABILITY_PROVIDER_ID = "opensearch"
 
@@ -118,7 +120,7 @@ class OpensearchObservabilityIntegration(ObservabilityVendorIntegrationContract)
         doc_id: str | None = None,
     ) -> str:
         client = self._require_client()
-        index_document = getattr(client, "index_document", None)
+        index_document = attribute_access.optional(client, "index_document", None)
         if not callable(index_document):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support index_document",
@@ -127,7 +129,7 @@ class OpensearchObservabilityIntegration(ObservabilityVendorIntegrationContract)
 
     def ensure_index(self, index: str) -> bool:
         client = self._require_client()
-        ensure_index = getattr(client, "ensure_index", None)
+        ensure_index = attribute_access.optional(client, "ensure_index", None)
         if not callable(ensure_index):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support ensure_index",

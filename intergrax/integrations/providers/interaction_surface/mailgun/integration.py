@@ -13,6 +13,8 @@ from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.interaction_surface import InteractionSurface
 from intergrax.runtime.integrations.categories.collaboration import InteractionSurfaceIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.utils import attribute_access
+
 
 MAILGUN_INTERACTION_SURFACE_PROVIDER_ID = "mailgun"
 
@@ -41,7 +43,7 @@ class MailgunInteractionSurfaceIntegration(InteractionSurfaceIntegrationContract
 
     @property
     def channel(self):
-        return getattr(self._require_client(), 'channel')
+        return attribute_access.optional_str(self._require_client(), 'channel')
 
     def to_inbound(self, payload, *, tenant_id: str, user_id: str):
         return self._require_client().to_inbound(payload, tenant_id=tenant_id, user_id=user_id)

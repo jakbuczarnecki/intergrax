@@ -23,6 +23,8 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorSignal,
 )
 
+from intergrax.utils import attribute_access
+
 PROMETHEUS_OBSERVABILITY_PROVIDER_ID = "prometheus"
 
 _PROMETHEUS_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
@@ -113,7 +115,7 @@ class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract)
 
     def health(self) -> HealthStatus:
         client = self._require_client()
-        health_fn = getattr(client, "health", None)
+        health_fn = attribute_access.optional(client, "health", None)
         if callable(health_fn):
             result = health_fn()
             if isinstance(result, HealthStatus):

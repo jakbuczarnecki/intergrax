@@ -21,6 +21,8 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
 )
+from intergrax.utils import attribute_access
+
 
 BRAINTRUST_OBSERVABILITY_PROVIDER_ID = "braintrust"
 
@@ -118,7 +120,7 @@ class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract)
         project: str | None = None,
     ) -> str:
         client = self._require_client()
-        log_eval = getattr(client, "log_eval", None)
+        log_eval = attribute_access.optional(client, "log_eval", None)
         if not callable(log_eval):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support log_eval",

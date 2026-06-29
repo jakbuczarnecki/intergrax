@@ -23,6 +23,8 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorSignal,
 )
 
+from intergrax.utils import attribute_access
+
 SENTRY_OBSERVABILITY_PROVIDER_ID = "sentry"
 
 _SENTRY_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
@@ -109,7 +111,7 @@ class SentryObservabilityIntegration(ObservabilityVendorIntegrationContract):
 
     def capture_exception(self, exc: BaseException, *, tags: dict[str, str] | None = None) -> str:
         client = self._require_client()
-        capture = getattr(client, "capture_exception", None)
+        capture = attribute_access.optional(client, "capture_exception", None)
         if not callable(capture):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support capture_exception",
@@ -118,7 +120,7 @@ class SentryObservabilityIntegration(ObservabilityVendorIntegrationContract):
 
     def capture_message(self, message: str, *, level: str = "info") -> str:
         client = self._require_client()
-        capture = getattr(client, "capture_message", None)
+        capture = attribute_access.optional(client, "capture_message", None)
         if not callable(capture):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support capture_message",
