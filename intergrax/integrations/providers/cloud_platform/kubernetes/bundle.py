@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_kubernetes_cloud_platform
+from intergrax.integrations._shared.p5.factories import create_kubernetes_cloud_platform as _legacy_create_kubernetes_cloud_platform
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.cloud_platform.kubernetes.integration import (
@@ -39,3 +39,11 @@ def create_kubernetes_cloud_platform_integration(
         display_name="Kubernetes",
         config=KubernetesCloudPlatformIntegrationConfig(enabled=enabled),
     )
+
+
+def create_kubernetes_cloud_platform(**kwargs: object) -> KubernetesCloudPlatformIntegration:
+    """Compatibility shim — constructs KubernetesCloudPlatformIntegration from legacy runtime."""
+    runtime = _legacy_create_kubernetes_cloud_platform(**kwargs)
+    if isinstance(runtime, KubernetesCloudPlatformIntegration):
+        return runtime
+    return KubernetesCloudPlatformIntegration.from_runtime(runtime)

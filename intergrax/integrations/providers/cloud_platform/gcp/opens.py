@@ -15,7 +15,8 @@ from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
-from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
+from intergrax.integrations.providers.cloud_platform.gcp.adapter import _GcpCloudPlatform
+from intergrax.integrations.providers.cloud_platform.gcp.integration import GcpCloudPlatformIntegration
 from intergrax.integrations.providers.cloud_platform.gcp.config import GcpIntegrationConfig
 
 _GCP_CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
@@ -77,8 +78,8 @@ def open_gcp_cloud_platform(
             config,
             credential_factory=credential_factory,
         )
-    return GcpCloudPlatform(
+    return GcpCloudPlatformIntegration.from_runtime(_GcpCloudPlatform(
         config,
         credentials,
         resolved_project_id=resolved_project_id,
-    )
+    ))

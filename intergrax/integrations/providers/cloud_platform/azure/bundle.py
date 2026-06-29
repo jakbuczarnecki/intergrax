@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
-from intergrax.integrations.providers.cloud_platform.azure.adapter import AzureCloudPlatform
+from intergrax.integrations.providers.cloud_platform.azure.adapter import _AzureCloudPlatform
 from intergrax.integrations.providers.cloud_platform.azure.config import AzureIntegrationConfig
 from intergrax.integrations.providers.cloud_platform.azure.opens import open_azure_cloud_platform
 
@@ -23,7 +23,7 @@ from intergrax.integrations.providers.cloud_platform.azure.opens import open_azu
 @dataclass(frozen=True)
 class AzureIntegrationBundle:
     config: AzureIntegrationConfig
-    cloud_platform: AzureCloudPlatform
+    cloud_platform: AzureCloudPlatformIntegration
 
 
 def resolve_azure_config(**overrides: object) -> AzureIntegrationConfig:
@@ -54,7 +54,7 @@ def create_azure_cloud_platform(
     credential: Optional[object] = None,
     credential_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
-) -> AzureCloudPlatform:
+) -> AzureCloudPlatformIntegration:
     """Catalog factory for ``"azure"`` / ``CLOUD_PLATFORM``."""
     return create_azure_integration(
         cloud_platform=cloud_platform,
@@ -74,13 +74,13 @@ from intergrax.integrations.providers.cloud_platform.azure.integration import (
 
 def create_azure_cloud_platform_integration(
     *,
-    client: AzureCloudPlatformClient | None = None,
+    client: AzureCloudPlatformIntegrationClient | None = None,
     enabled: bool = False,
 ) -> AzureCloudPlatformIntegration:
     """
     Build a contract-based Azure cloud platform integration.
 
-    The legacy facade (create_azure_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_azure_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

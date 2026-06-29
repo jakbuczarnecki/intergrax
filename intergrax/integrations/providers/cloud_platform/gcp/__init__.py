@@ -57,7 +57,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "GcpCloudPlatform":
-        from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
+        from intergrax.integrations.providers.cloud_platform.gcp.adapter import _GcpCloudPlatform
 
         return GcpCloudPlatform
     if name in _CONTRACT_INTEGRATION_EXPORTS:

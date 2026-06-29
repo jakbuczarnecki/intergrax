@@ -61,7 +61,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "AzureCloudPlatform":
-        from intergrax.integrations.providers.cloud_platform.azure.adapter import AzureCloudPlatform
+        from intergrax.integrations.providers.cloud_platform.azure.adapter import _AzureCloudPlatform
 
         return AzureCloudPlatform
     if name in _CONTRACT_INTEGRATION_EXPORTS:

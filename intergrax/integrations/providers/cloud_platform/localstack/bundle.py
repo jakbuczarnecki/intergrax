@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_localstack_cloud_platform
+from intergrax.integrations._shared.p6.factories import create_localstack_cloud_platform as _legacy_create_localstack_cloud_platform
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.cloud_platform.localstack.integration import (
@@ -39,3 +39,11 @@ def create_localstack_cloud_platform_integration(
         display_name="Localstack",
         config=LocalstackCloudPlatformIntegrationConfig(enabled=enabled),
     )
+
+
+def create_localstack_cloud_platform(**kwargs: object) -> LocalstackCloudPlatformIntegration:
+    """Compatibility shim — constructs LocalstackCloudPlatformIntegration from legacy runtime."""
+    runtime = _legacy_create_localstack_cloud_platform(**kwargs)
+    if isinstance(runtime, LocalstackCloudPlatformIntegration):
+        return runtime
+    return LocalstackCloudPlatformIntegration.from_runtime(runtime)

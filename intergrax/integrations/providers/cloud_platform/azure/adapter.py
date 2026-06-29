@@ -20,7 +20,7 @@ from intergrax.integrations.registry.slugs import CLOUD_PLATFORM_DEFAULTS
 _AZURE_DEFAULTS = CLOUD_PLATFORM_DEFAULTS["azure"]
 
 
-class AzureCloudPlatform:
+class _AzureCloudPlatform:
     """
     Catalog facade over an Azure ``TokenCredential``.
 

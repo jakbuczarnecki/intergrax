@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Localstack cloud platform integration (INTEGRATIONS-2D)."""
+"""Localstack cloud platform integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.runtime.integrations.categories.devops import CloudPlatformIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -31,13 +33,31 @@ class LocalstackCloudPlatformClient(Protocol):
 
 class LocalstackCloudPlatformIntegration(CloudPlatformIntegrationContract):
     """
-    Localstack cloud platform integration.
+    Single public Localstack cloud platform entrypoint.
 
-    The legacy facade (create_localstack_cloud_platform) remains separate and backward-compatible.
+    Legacy catalog factory (create_localstack_cloud_platform) delegates to this class.
     """
 
     config: LocalstackCloudPlatformIntegrationConfig = LocalstackCloudPlatformIntegrationConfig()
     _client: LocalstackCloudPlatformClient | None = PrivateAttr(default=None)
+    _runtime: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> LocalstackCloudPlatformIntegration:
+        integration = cls.for_provider(
+            provider_id=LOCALSTACK_CLOUD_PLATFORM_PROVIDER_ID,
+            display_name="Localstack",
+            config=LocalstackCloudPlatformIntegrationConfig(enabled=enabled),
+        )
+        integration._runtime = runtime
+        return integration
+
+    def _require_runtime(self) -> Any:
+        if self._runtime is None:
+            raise IntegrationConfigurationError("Localstack integration requires a runtime delegate")
+        return self._runtime
+
+
 
     @classmethod
     def from_client(
@@ -57,3 +77,12 @@ class LocalstackCloudPlatformIntegration(CloudPlatformIntegrationContract):
     @property
     def client(self) -> LocalstackCloudPlatformClient | None:
         return self._client
+    def __getattr__(self, name: str) -> object:
+        if name.startswith("_"):
+            private = object.__getattribute__(self, "__pydantic_private__")
+            if name in private:
+                return private[name]
+            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+        return getattr(self._require_runtime(), name)
+
+CloudPlatform.register(LocalstackCloudPlatformIntegration)

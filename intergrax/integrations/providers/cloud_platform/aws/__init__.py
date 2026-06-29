@@ -57,7 +57,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "AwsCloudPlatform":
-        from intergrax.integrations.providers.cloud_platform.aws.adapter import AwsCloudPlatform
+        from intergrax.integrations.providers.cloud_platform.aws.adapter import _AwsCloudPlatform
 
         return AwsCloudPlatform
     if name in _CONTRACT_INTEGRATION_EXPORTS:
