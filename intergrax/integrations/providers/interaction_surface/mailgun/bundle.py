@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_mailgun_interaction_surface
+from intergrax.integrations._shared.p5.factories import create_mailgun_interaction_surface as _legacy_create_mailgun_interaction_surface
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.interaction_surface.mailgun.integration import (
@@ -39,3 +39,11 @@ def create_mailgun_interaction_surface_integration(
         display_name="Mailgun",
         config=MailgunInteractionSurfaceIntegrationConfig(enabled=enabled),
     )
+
+
+def create_mailgun_interaction_surface(**kwargs: object) -> MailgunInteractionSurfaceIntegration:
+    """Compatibility shim — constructs MailgunInteractionSurfaceIntegration from legacy runtime."""
+    runtime = _legacy_create_mailgun_interaction_surface(**kwargs)
+    if isinstance(runtime, MailgunInteractionSurfaceIntegration):
+        return runtime
+    return MailgunInteractionSurfaceIntegration.from_runtime(runtime)

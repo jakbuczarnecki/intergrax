@@ -54,7 +54,7 @@ def __getattr__(name: str):
 
         return register_lab_json_integration
     if name == "LabJsonIntegrationAdapter":
-        from intergrax.integrations.providers.interaction_surface.lab_json.adapter import LabJsonIntegrationAdapter
+        from intergrax.integrations.providers.interaction_surface.lab_json.adapter import _LabJsonIntegrationAdapter
 
         return LabJsonIntegrationAdapter
     if name in _BUNDLE_EXPORTS:

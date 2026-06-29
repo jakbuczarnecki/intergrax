@@ -57,7 +57,7 @@ def create_slash_command_interaction_surface_integration(
     """
     Build a contract-based Slash Command interaction surface integration.
 
-    The legacy facade (create_slash_command_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_slash_command_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

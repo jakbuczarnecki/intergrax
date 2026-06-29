@@ -81,7 +81,7 @@ def create_lab_json_interaction_surface_integration(
     """
     Build a contract-based Lab Json interaction surface integration.
 
-    The legacy facade (create_lab_json_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_lab_json_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

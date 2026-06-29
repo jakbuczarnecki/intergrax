@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.integrations.providers.interaction_surface.lab_json.adapter import LabJsonIntegrationAdapter
+from intergrax.integrations.providers.interaction_surface.lab_json.adapter import _LabJsonIntegrationAdapter
 from intergrax.integrations.providers.interaction_surface.lab_json.config import LabJsonIntegrationConfig
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 
@@ -24,4 +24,4 @@ def open_lab_json_interaction_surface(
     del config
     if implementation is not None:
         return implementation
-    return LabJsonIntegrationAdapter()
+    return _LabJsonIntegrationAdapter()

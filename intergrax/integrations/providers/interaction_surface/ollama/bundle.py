@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_ollama_interaction_surface
+from intergrax.integrations._shared.p5.factories import create_ollama_interaction_surface as _legacy_create_ollama_interaction_surface
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.interaction_surface.ollama.integration import (
@@ -39,3 +39,11 @@ def create_ollama_interaction_surface_integration(
         display_name="Ollama",
         config=OllamaInteractionSurfaceIntegrationConfig(enabled=enabled),
     )
+
+
+def create_ollama_interaction_surface(**kwargs: object) -> OllamaInteractionSurfaceIntegration:
+    """Compatibility shim — constructs OllamaInteractionSurfaceIntegration from legacy runtime."""
+    runtime = _legacy_create_ollama_interaction_surface(**kwargs)
+    if isinstance(runtime, OllamaInteractionSurfaceIntegration):
+        return runtime
+    return OllamaInteractionSurfaceIntegration.from_runtime(runtime)
