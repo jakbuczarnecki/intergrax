@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p5.factories import create_tempo_observability_backend
+from intergrax.integrations._shared.p5.factories import create_tempo_observability_backend as _legacy_create_tempo_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.tempo.integration import (
     TEMPO_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_tempo_observability_integration(
         display_name="Tempo",
         config=TempoObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_tempo_observability_backend(**kwargs: object) -> TempoObservabilityIntegration:
+    """Compatibility shim — constructs TempoObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_tempo_observability_backend(**kwargs)
+    if isinstance(runtime, TempoObservabilityIntegration):
+        return runtime
+    return TempoObservabilityIntegration.from_backend(runtime)

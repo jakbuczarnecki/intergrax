@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_braintrust_observability_backend
+from intergrax.integrations._shared.p4.factories import create_braintrust_observability_backend as _legacy_create_braintrust_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.braintrust.integration import (
     BRAINTRUST_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_braintrust_observability_integration(
         display_name="Braintrust",
         config=BraintrustObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_braintrust_observability_backend(**kwargs: object) -> BraintrustObservabilityIntegration:
+    """Compatibility shim — constructs BraintrustObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_braintrust_observability_backend(**kwargs)
+    if isinstance(runtime, BraintrustObservabilityIntegration):
+        return runtime
+    return BraintrustObservabilityIntegration.from_backend(runtime)

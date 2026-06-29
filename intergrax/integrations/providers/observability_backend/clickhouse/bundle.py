@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p3.factories import create_clickhouse_observability_backend
+from intergrax.integrations._shared.p3.factories import create_clickhouse_observability_backend as _legacy_create_clickhouse_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.clickhouse.integration import (
     CLICKHOUSE_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_clickhouse_observability_integration(
         display_name="Clickhouse",
         config=ClickhouseObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_clickhouse_observability_backend(**kwargs: object) -> ClickhouseObservabilityIntegration:
+    """Compatibility shim — constructs ClickhouseObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_clickhouse_observability_backend(**kwargs)
+    if isinstance(runtime, ClickhouseObservabilityIntegration):
+        return runtime
+    return ClickhouseObservabilityIntegration.from_backend(runtime)

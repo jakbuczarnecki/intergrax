@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_helicone_observability_backend
+from intergrax.integrations._shared.p4.factories import create_helicone_observability_backend as _legacy_create_helicone_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.helicone.integration import (
     HELICONE_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_helicone_observability_integration(
         display_name="Helicone",
         config=HeliconeObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_helicone_observability_backend(**kwargs: object) -> HeliconeObservabilityIntegration:
+    """Compatibility shim — constructs HeliconeObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_helicone_observability_backend(**kwargs)
+    if isinstance(runtime, HeliconeObservabilityIntegration):
+        return runtime
+    return HeliconeObservabilityIntegration.from_backend(runtime)

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_opensearch_observability_backend
+from intergrax.integrations._shared.p4.factories import create_opensearch_observability_backend as _legacy_create_opensearch_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.opensearch.integration import (
     OPENSEARCH_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_opensearch_observability_integration(
         display_name="OpenSearch",
         config=OpensearchObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_opensearch_observability_backend(**kwargs: object) -> OpensearchObservabilityIntegration:
+    """Compatibility shim — constructs OpensearchObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_opensearch_observability_backend(**kwargs)
+    if isinstance(runtime, OpensearchObservabilityIntegration):
+        return runtime
+    return OpensearchObservabilityIntegration.from_backend(runtime)

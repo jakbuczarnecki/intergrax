@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.observability_backend import MetricQueryRe
 from intergrax.integrations.providers.observability_backend.opensearch.client import OpenSearchRestClient
 
 
-class OpenSearchObservabilityBackend:
+class _OpenSearchObservabilityBackend:
     """Catalog facade over ``OpenSearchRestClient``."""
 
     def __init__(self, client: OpenSearchRestClient) -> None:

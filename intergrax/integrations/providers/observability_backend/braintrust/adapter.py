@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.observability_backend import MetricQueryRe
 from intergrax.integrations.providers.observability_backend.braintrust.client import BraintrustRestClient
 
 
-class BraintrustObservabilityBackend:
+class _BraintrustObservabilityBackend:
     """Catalog facade over ``BraintrustRestClient``."""
 
     def __init__(self, client: BraintrustRestClient) -> None:

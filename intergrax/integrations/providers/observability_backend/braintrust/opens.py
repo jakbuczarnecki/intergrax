@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.braintrust.adapter import BraintrustObservabilityBackend
+from intergrax.integrations.providers.observability_backend.braintrust.adapter import _BraintrustObservabilityBackend
 from intergrax.integrations.providers.observability_backend.braintrust.client import BraintrustRestClient
 from intergrax.integrations.providers.observability_backend.braintrust.config import BraintrustIntegrationConfig
 

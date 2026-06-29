@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Posthog observability vendor integration (INTEGRATIONS-2C)."""
+"""Posthog observability vendor integration (INTEGRATIONS-2C · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
@@ -27,7 +29,6 @@ _POSTHOG_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
 
 POSTHOG_SUPPORTED_SIGNALS = _POSTHOG_SUPPORTED_SIGNALS
 
-
 class PosthogObservabilityIntegrationConfig(ObservabilityVendorIntegrationConfig):
     """Typed config for Posthog observability vendor integration."""
 
@@ -44,15 +45,77 @@ class PosthogObservabilityTransport(Protocol):
 
 class PosthogObservabilityIntegration(ObservabilityVendorIntegrationContract):
     """
-    Posthog observability vendor integration.
+    Single public Posthog observability entrypoint.
 
-    Consumes only policy-sanitized ObservabilityExportEnvelope records via map_envelope().
-    The legacy ObservabilityBackend query facade (create_posthog_observability_backend)
-    remains separate and backward-compatible.
+    Legacy catalog factory (create_posthog_observability_backend) delegates to this class via from_backend().
     """
 
     config: PosthogObservabilityIntegrationConfig = PosthogObservabilityIntegrationConfig()
     _transport: PosthogObservabilityTransport | None = PrivateAttr(default=None)
+    _backend: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_backend(
+        cls,
+        backend: Any,
+        *,
+        enabled: bool = True,
+        supported_signals: tuple[ObservabilityVendorSignal, ...] | None = None,
+    ) -> PosthogObservabilityIntegration:
+        signals = supported_signals or POSTHOG_SUPPORTED_SIGNALS
+        integration = cls.for_provider(
+            provider_id=POSTHOG_OBSERVABILITY_PROVIDER_ID,
+            supported_signals=signals,
+            display_name="Posthog",
+            config=PosthogObservabilityIntegrationConfig(enabled=enabled),
+        )
+        integration._backend = backend
+        return integration
+
+    @property
+    def backend(self) -> Any | None:
+        return self._backend
+
+    def query_instant(self, promql: str, *, eval_time: float | None = None) -> MetricQueryResult:
+        return self._require_runtime().query_instant(promql, eval_time=eval_time)
+
+    def query_range(
+        self,
+        promql: str,
+        *,
+        start: float,
+        end: float,
+        step: str = "15s",
+    ) -> MetricQueryResult:
+        return self._require_runtime().query_range(
+            promql,
+            start=start,
+            end=end,
+            step=step,
+        )
+
+    def query_traces(
+        self,
+        *,
+        limit: int = 20,
+        name: str | None = None,
+    ) -> TraceQueryResult:
+        return self._require_runtime().query_traces(limit=limit, name=name)
+
+
+    def _require_runtime(self) -> Any:
+        private = object.__getattribute__(self, "__pydantic_private__")
+        runtime = private.get("_runtime")
+        if runtime is None:
+            runtime = private.get("_backend")
+        if runtime is None:
+            runtime = private.get("_inner")
+        if runtime is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+            )
+        return runtime
+
 
     @classmethod
     def from_transport(
@@ -64,7 +127,7 @@ class PosthogObservabilityIntegration(ObservabilityVendorIntegrationContract):
     ) -> PosthogObservabilityIntegration:
         integration = cls.for_provider(
             provider_id=POSTHOG_OBSERVABILITY_PROVIDER_ID,
-            supported_signals=supported_signals or _POSTHOG_SUPPORTED_SIGNALS,
+            supported_signals=supported_signals or POSTHOG_SUPPORTED_SIGNALS,
             display_name="Posthog",
             config=PosthogObservabilityIntegrationConfig(enabled=enabled),
         )
@@ -80,3 +143,13 @@ class PosthogObservabilityIntegration(ObservabilityVendorIntegrationContract):
             msg = "PosthogObservabilityIntegration requires an injected transport for delivery"
             raise RuntimeError(msg)
         await self._transport.send_observability_payload(payload)
+
+    def __getattr__(self, name: str) -> object:
+        if name.startswith("_"):
+            private = object.__getattribute__(self, "__pydantic_private__")
+            if name in private:
+                return private[name]
+            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+        return getattr(self._require_runtime(), name)
+
+ObservabilityBackend.register(PosthogObservabilityIntegration)

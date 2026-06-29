@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p7.factories import create_splunk_observability_backend
+from intergrax.integrations._shared.p7.factories import create_splunk_observability_backend as _legacy_create_splunk_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.splunk.integration import (
     SPLUNK_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_splunk_observability_integration(
         display_name="Splunk",
         config=SplunkObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_splunk_observability_backend(**kwargs: object) -> SplunkObservabilityIntegration:
+    """Compatibility shim — constructs SplunkObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_splunk_observability_backend(**kwargs)
+    if isinstance(runtime, SplunkObservabilityIntegration):
+        return runtime
+    return SplunkObservabilityIntegration.from_backend(runtime)

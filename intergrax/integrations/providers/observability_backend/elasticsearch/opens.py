@@ -14,7 +14,9 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import ElasticsearchObservabilityBackend
+from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import (
+    _ElasticsearchObservabilityBackend as ElasticsearchObservabilityBackend,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
     DEFAULT_TIMEOUT_SECONDS,

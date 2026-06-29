@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p5.factories import create_mlflow_observability_backend
+from intergrax.integrations._shared.p5.factories import create_mlflow_observability_backend as _legacy_create_mlflow_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.mlflow.integration import (
     MLFLOW_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_mlflow_observability_integration(
         display_name="MLflow",
         config=MlflowObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_mlflow_observability_backend(**kwargs: object) -> MlflowObservabilityIntegration:
+    """Compatibility shim — constructs MlflowObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_mlflow_observability_backend(**kwargs)
+    if isinstance(runtime, MlflowObservabilityIntegration):
+        return runtime
+    return MlflowObservabilityIntegration.from_backend(runtime)

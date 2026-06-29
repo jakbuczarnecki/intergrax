@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_wandb_observability_backend
+from intergrax.integrations._shared.p4.factories import create_wandb_observability_backend as _legacy_create_wandb_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.wandb.integration import (
     WANDB_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_wandb_observability_integration(
         display_name="W&B",
         config=WandbObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_wandb_observability_backend(**kwargs: object) -> WandbObservabilityIntegration:
+    """Compatibility shim — constructs WandbObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_wandb_observability_backend(**kwargs)
+    if isinstance(runtime, WandbObservabilityIntegration):
+        return runtime
+    return WandbObservabilityIntegration.from_backend(runtime)

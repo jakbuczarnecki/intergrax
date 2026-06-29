@@ -64,7 +64,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "ElasticsearchObservabilityBackend":
-        from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import ElasticsearchObservabilityBackend
+        from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import _ElasticsearchObservabilityBackend
 
         return ElasticsearchObservabilityBackend
 

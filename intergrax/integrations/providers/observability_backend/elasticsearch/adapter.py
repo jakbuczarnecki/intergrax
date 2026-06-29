@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.observability_backend import MetricQueryRe
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 
 
-class ElasticsearchObservabilityBackend:
+class _ElasticsearchObservabilityBackend:
     """
     Catalog facade over ``ElasticsearchRestClient``.
 

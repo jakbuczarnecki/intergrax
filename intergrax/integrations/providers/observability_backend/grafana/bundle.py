@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p5.factories import create_grafana_observability_backend
+from intergrax.integrations._shared.p5.factories import create_grafana_observability_backend as _legacy_create_grafana_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.grafana.integration import (
     GRAFANA_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_grafana_observability_integration(
         display_name="Grafana",
         config=GrafanaObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_grafana_observability_backend(**kwargs: object) -> GrafanaObservabilityIntegration:
+    """Compatibility shim — constructs GrafanaObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_grafana_observability_backend(**kwargs)
+    if isinstance(runtime, GrafanaObservabilityIntegration):
+        return runtime
+    return GrafanaObservabilityIntegration.from_backend(runtime)

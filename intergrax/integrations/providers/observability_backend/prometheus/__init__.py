@@ -62,7 +62,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "PrometheusObservabilityBackend":
-        from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
+        from intergrax.integrations.providers.observability_backend.prometheus.adapter import _PrometheusObservabilityBackend
 
         return PrometheusObservabilityBackend
 

@@ -12,7 +12,7 @@ from intergrax.integrations.contracts.observability_backend import MetricQueryRe
 from intergrax.integrations.providers.observability_backend.prometheus.client import PrometheusRestClient
 
 
-class PrometheusObservabilityBackend:
+class _PrometheusObservabilityBackend:
     """
     Catalog facade over ``PrometheusRestClient``.
 

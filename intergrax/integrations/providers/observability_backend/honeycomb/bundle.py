@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_honeycomb_observability_backend
+from intergrax.integrations._shared.p4.factories import create_honeycomb_observability_backend as _legacy_create_honeycomb_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.honeycomb.integration import (
     HONEYCOMB_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_honeycomb_observability_integration(
         display_name="Honeycomb",
         config=HoneycombObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_honeycomb_observability_backend(**kwargs: object) -> HoneycombObservabilityIntegration:
+    """Compatibility shim — constructs HoneycombObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_honeycomb_observability_backend(**kwargs)
+    if isinstance(runtime, HoneycombObservabilityIntegration):
+        return runtime
+    return HoneycombObservabilityIntegration.from_backend(runtime)

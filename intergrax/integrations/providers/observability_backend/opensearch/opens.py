@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.opensearch.adapter import OpenSearchObservabilityBackend
+from intergrax.integrations.providers.observability_backend.opensearch.adapter import _OpenSearchObservabilityBackend
 from intergrax.integrations.providers.observability_backend.opensearch.client import OpenSearchRestClient
 from intergrax.integrations.providers.observability_backend.opensearch.config import OpenSearchIntegrationConfig
 

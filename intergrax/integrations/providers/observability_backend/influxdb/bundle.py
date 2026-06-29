@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p5.factories import create_influxdb_observability_backend
+from intergrax.integrations._shared.p5.factories import create_influxdb_observability_backend as _legacy_create_influxdb_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.influxdb.integration import (
     INFLUXDB_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_influxdb_observability_integration(
         display_name="Influxdb",
         config=InfluxdbObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_influxdb_observability_backend(**kwargs: object) -> InfluxdbObservabilityIntegration:
+    """Compatibility shim — constructs InfluxdbObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_influxdb_observability_backend(**kwargs)
+    if isinstance(runtime, InfluxdbObservabilityIntegration):
+        return runtime
+    return InfluxdbObservabilityIntegration.from_backend(runtime)

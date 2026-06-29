@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_posthog_observability_backend
+from intergrax.integrations._shared.p4.factories import create_posthog_observability_backend as _legacy_create_posthog_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.posthog.integration import (
     POSTHOG_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_posthog_observability_integration(
         display_name="Posthog",
         config=PosthogObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_posthog_observability_backend(**kwargs: object) -> PosthogObservabilityIntegration:
+    """Compatibility shim — constructs PosthogObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_posthog_observability_backend(**kwargs)
+    if isinstance(runtime, PosthogObservabilityIntegration):
+        return runtime
+    return PosthogObservabilityIntegration.from_backend(runtime)

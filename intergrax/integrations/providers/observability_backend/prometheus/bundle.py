@@ -15,7 +15,9 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
+from intergrax.integrations.providers.observability_backend.prometheus.adapter import (
+    _PrometheusObservabilityBackend as PrometheusObservabilityBackend,
+)
 from intergrax.integrations.providers.observability_backend.prometheus.client import PrometheusRestClient
 from intergrax.integrations.providers.observability_backend.prometheus.config import PrometheusIntegrationConfig
 from intergrax.integrations.providers.observability_backend.prometheus.opens import (

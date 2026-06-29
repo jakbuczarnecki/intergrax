@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p2.factories import create_otel_observability_backend
+from intergrax.integrations._shared.p2.factories import create_otel_observability_backend as _legacy_create_otel_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.otel.integration import (
     OTEL_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_otel_observability_integration(
         display_name="OTel",
         config=OtelObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_otel_observability_backend(**kwargs: object) -> OtelObservabilityIntegration:
+    """Compatibility shim — constructs OtelObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_otel_observability_backend(**kwargs)
+    if isinstance(runtime, OtelObservabilityIntegration):
+        return runtime
+    return OtelObservabilityIntegration.from_backend(runtime)

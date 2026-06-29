@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_arize_observability_backend
+from intergrax.integrations._shared.p4.factories import create_arize_observability_backend as _legacy_create_arize_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.arize.integration import (
     ARIZE_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_arize_observability_integration(
         display_name="Arize",
         config=ArizeObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_arize_observability_backend(**kwargs: object) -> ArizeObservabilityIntegration:
+    """Compatibility shim — constructs ArizeObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_arize_observability_backend(**kwargs)
+    if isinstance(runtime, ArizeObservabilityIntegration):
+        return runtime
+    return ArizeObservabilityIntegration.from_backend(runtime)

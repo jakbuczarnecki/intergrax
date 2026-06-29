@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p4.factories import create_signoz_observability_backend
+from intergrax.integrations._shared.p4.factories import create_signoz_observability_backend as _legacy_create_signoz_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.signoz.integration import (
     SIGNOZ_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_signoz_observability_integration(
         display_name="SigNoz",
         config=SignozObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_signoz_observability_backend(**kwargs: object) -> SignozObservabilityIntegration:
+    """Compatibility shim — constructs SignozObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_signoz_observability_backend(**kwargs)
+    if isinstance(runtime, SignozObservabilityIntegration):
+        return runtime
+    return SignozObservabilityIntegration.from_backend(runtime)

@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
-from intergrax.integrations.providers.observability_backend.langsmith.adapter import LangSmithObservabilityBackend
+from intergrax.integrations.providers.observability_backend.langsmith.adapter import _LangSmithObservabilityBackend
 from intergrax.integrations.providers.observability_backend.langsmith.client import LangSmithRestClient
 from intergrax.integrations.providers.observability_backend.langsmith.config import DEFAULT_TIMEOUT_SECONDS, LangSmithIntegrationConfig
 

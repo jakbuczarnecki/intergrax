@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.p3.factories import create_datadog_observability_backend
+from intergrax.integrations._shared.p3.factories import create_datadog_observability_backend as _legacy_create_datadog_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.datadog.integration import (
     DATADOG_OBSERVABILITY_PROVIDER_ID,
@@ -42,3 +42,11 @@ def create_datadog_observability_integration(
         display_name="Datadog",
         config=DatadogObservabilityIntegrationConfig(enabled=enabled),
     )
+
+
+def create_datadog_observability_backend(**kwargs: object) -> DatadogObservabilityIntegration:
+    """Compatibility shim — constructs DatadogObservabilityIntegration from legacy runtime."""
+    runtime = _legacy_create_datadog_observability_backend(**kwargs)
+    if isinstance(runtime, DatadogObservabilityIntegration):
+        return runtime
+    return DatadogObservabilityIntegration.from_backend(runtime)

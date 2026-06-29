@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.observability_backend import MetricQueryRe
 from intergrax.integrations.providers.observability_backend.langsmith.client import LangSmithRestClient
 
 
-class LangSmithObservabilityBackend:
+class _LangSmithObservabilityBackend:
     """Catalog facade over ``LangSmithRestClient``."""
 
     def __init__(self, client: LangSmithRestClient) -> None:
