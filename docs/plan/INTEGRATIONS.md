@@ -8,7 +8,7 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-06-28 — **INTEGRATIONS-2D** remaining provider category contract migration complete.
+**Last updated:** 2026-06-29 — **INTEGRATIONS-2E** runtime cutover wave 1 (vector_store: pinecone, qdrant) in progress.
 
 ---
 
@@ -149,6 +149,39 @@ Load **only** the satellite matching your task or cited gap ID.
 - No LKW change; no global bootstrap registration
 
 **Migrated categories (30):** all `SLUG_CATEGORY` folders except deferred `llm_guardrail` slugs (category contract exists; per-slug packages deferred).
+
+---
+
+## Phase INTEGRATIONS-2E — runtime cutover to single provider entrypoint (In progress)
+
+**Purpose:** Convert contract migration shells into real single-entrypoint providers. Each slug exposes exactly one public class: `<ProviderPascal><CategoryPascal>Integration`. Legacy catalog factories remain as compatibility shims delegating to that class; parallel public adapter/facade classes are removed or privatized.
+
+**Distinction from INTEGRATIONS-2D:** 2D added contract-based `integration.py` beside legacy runtime adapters. 2E moves runtime behavior into the Integration class and eliminates symbol shadowing (e.g. `PineconeVectorStoreIntegration` in both `adapter.py` and `integration.py`).
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **INTEGRATIONS-2E-TESTS** | Test | P1 | **Done (wave 1 guard)** | `test_provider_runtime_cutover.py` | `CUTOVER_SLUGS` registry; bundle shadowing guard; legacy shim + behavior tests |
+| **INTEGRATIONS-2E-VECTOR-W1** | Code | P1 | **Done** | `pinecone`, `qdrant` | Single `*VectorStoreIntegration`; `adapter.py` removed; legacy factories shim to Integration |
+| **INTEGRATIONS-2E-VECTOR-W2** | Code | P1 | **Planned** | `chroma`, `weaviate`, `milvus`, `inmemory`, `pgvector`, `vespa`, `typesense` | Same cutover pattern |
+| **INTEGRATIONS-2E-STORAGE** | Code | P2 | **Planned** | object_storage + relational/document stores | Per-provider commits |
+| **INTEGRATIONS-2E-COMM** | Code | P2 | **Planned** | notification/channel/message/collaboration | Per-provider commits |
+| **INTEGRATIONS-2E-RETRIEVAL** | Code | P2 | **Planned** | search/rerank/document_parser | Per-provider commits |
+| **INTEGRATIONS-2E-PLATFORM** | Code | P2 | **Planned** | DevOps/security/platform providers | Per-provider commits |
+| **INTEGRATIONS-2E-AI** | Code | P2 | **Planned** | AI/service/business providers | Per-provider commits |
+| **INTEGRATIONS-2E-OBS** | Code | P2 | **Planned** | observability_backend providers | After vector/storage waves |
+| **INTEGRATIONS-2E-LLM-GUARDRAIL** | Code | P3 | **Deferred** | 9 `llm_guardrail` slugs | Requires **INTEGRATIONS-2F-LLM-GUARDRAIL-PACKAGE-NORMALIZATION** |
+
+**INTEGRATIONS-2E status (2026-06-29):**
+
+- Cut over (behavior tests pass): **`pinecone`**, **`qdrant`**
+- Legacy factories (`create_<slug>_vector_store`) are compatibility shims — construct `*VectorStoreIntegration.from_store()`
+- Public `adapter.py` removed for cut-over slugs; no symbol shadowing in `bundle.py`
+- Contract factory unchanged; `register.py` remains legacy catalog hook
+- No registry v2; no LKW change; no bootstrap change
+
+**Cut-over registry:** `CUTOVER_SLUGS` in `tests/unit/integrations/providers/test_provider_runtime_cutover.py`
+
+**Deferred (9):** `llm_guardrail` slugs — shared `bundles/` layout; do not mark cut over until package normalization.
 
 ---
 

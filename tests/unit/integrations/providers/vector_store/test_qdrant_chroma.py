@@ -19,7 +19,7 @@ from intergrax.integrations.providers.vector_store.chroma.adapter import ChromaV
 from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.integrations.providers.vector_store.chroma.config import ChromaIntegrationConfig
 from intergrax.integrations.providers.vector_store.chroma.register import register_chroma_integration
-from intergrax.integrations.providers.vector_store.qdrant.adapter import QdrantVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 from intergrax.integrations.providers.vector_store.qdrant.register import register_qdrant_integration

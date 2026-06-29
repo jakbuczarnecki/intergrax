@@ -5,7 +5,7 @@
 **Code:** `intergrax/runtime/integrations/categories/`  
 **Task:** INTEGRATIONS-2A
 
-**Last updated:** 2026-06-28 — INTEGRATIONS-2D non-observability provider migration complete.
+**Last updated:** 2026-06-29 — INTEGRATIONS-2E runtime cutover phase started (vector_store wave 1).
 
 ---
 
@@ -18,8 +18,15 @@
 | **INTEGRATIONS-2B-FOLLOWUP** | Code | P1 | **Done** | Provider package pattern + scaffold hardening |
 | **INTEGRATIONS-2C** | Code | P1 | **Done** | All `observability_backend` slugs migrated |
 | **INTEGRATIONS-2D** | Code | P1 | **Done** | All remaining non-observability slugs migrated (160) or explicitly deferred (9 `llm_guardrail`) |
+| **INTEGRATIONS-2E** | Code | P1 | **In progress** | Runtime cutover — Integration is single public entrypoint; legacy factories are shims only |
 
 **INTEGRATIONS-2A acceptance:** every `SLUG_CATEGORY` folder has a category contract or explicit alias; all derive from **`PlatformIntegrationContract`**; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; no LKW change; focused tests green.
+
+**Contract migration vs runtime cutover (INTEGRATIONS-2E):** INTEGRATIONS-2D added contract-based classes in `integration.py` while legacy runtime adapters often remained as parallel public APIs (same class name in `adapter.py` and `integration.py` in some categories). INTEGRATIONS-2E completes migration: `<ProviderPascal><CategoryPascal>Integration` owns runtime behavior; legacy factories delegate to it; old public adapter/facade classes are removed or renamed private (`_ProviderRuntime`).
+
+**Legacy factory shim policy:** `create_<slug>_<category>()` and slug-specific legacy names (e.g. `create_pinecone_vector_store`) may remain for import stability but MUST construct or return the new Integration class (directly or via `.from_store()` / `.as_*()` view owned by Integration). They must NOT return a separate public adapter class.
+
+**Private helper policy:** SDK clients, bridges, mappers, and runtime helpers MAY remain as `_`-prefixed private modules/classes inside the provider package. They must not appear in `__init__.py` `__all__`, bundle public exports, or registry factory return types (unless the factory explicitly documents returning an Integration-owned view).
 
 **Provider package pattern (INTEGRATIONS-2B-FOLLOWUP / 2D):** category contracts define the **base**; each concrete provider class in `integration.py` **derives from the category-specific contract** for its folder. The provider package layout (`integration.py`, `bundle.py`, `manifest.py`, `register.py`, `__init__.py`, `USAGE.md`) is the **implementation convention** — see [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up). Langfuse is the observability reference pilot; **INTEGRATIONS-2D** applied the same package pattern across all non-observability categories.
 
