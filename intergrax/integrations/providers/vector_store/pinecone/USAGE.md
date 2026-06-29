@@ -2,19 +2,30 @@
 
 Category: `vector_store`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_pinecone_integration()` remains backward-compatible.
+- **`PineconeVectorStoreIntegration`** in `integration.py` is the only public provider class.
+- Contract factory: `create_pinecone_vector_store_integration()`.
+- Legacy compatibility shims: `create_pinecone_vector_store()`, `create_pinecone_integration()`.
+- Legacy shims construct the same `PineconeVectorStoreIntegration` via `from_store()` (inner RAG store).
 
-## Contract-based integration
+## Runtime behavior
 
-- `PineconeVectorStoreIntegration` derives from the category-specific contract.
-- Factory: `create_pinecone_vector_store_integration()`.
+- Vector store operations (`add_documents`, `query`, `delete`, `count`) live on `PineconeVectorStoreIntegration`.
+- Inner RAG store is accessed via `.rag_store`; catalog settings via `.store_config`.
+- Pinecone SDK is imported only in `opens.py`.
+
+## Contract path
+
 - Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
+- No vendor SDK or network I/O in `integration.py`.
+- Injectable `PineconeVectorStoreClient` required when `enabled=True`.
 
 ## Registry
 
-- `register.py` remains legacy-compatible.
+- `register_pinecone_integration()` remains legacy-compatible (registers `create_pinecone_vector_store` shim).
 - Registry v2 / contract registry wiring deferred.
+
+## Removed
+
+- Public `adapter.py` facade — behavior merged into `PineconeVectorStoreIntegration`.

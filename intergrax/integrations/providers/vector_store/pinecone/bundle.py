@@ -14,9 +14,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.providers.vector_store.pinecone.adapter import PineconeVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.pinecone.config import PineconeIntegrationConfig
+from intergrax.integrations.providers.vector_store.pinecone.integration import (
+    PINECONE_VECTOR_STORE_PROVIDER_ID,
+    PineconeVectorStoreIntegration,
+    PineconeVectorStoreIntegrationConfig,
+    PineconeVectorStoreClient,
+)
 from intergrax.integrations.providers.vector_store.pinecone.opens import open_pinecone_vector_store
 
 
@@ -28,6 +34,29 @@ class PineconeIntegrationBundle:
 
 def resolve_pinecone_config(**overrides: object) -> PineconeIntegrationConfig:
     return PineconeIntegrationConfig.from_env(**overrides)
+
+
+def create_pinecone_vector_store_integration(
+    *,
+    client: PineconeVectorStoreClient | None = None,
+    enabled: bool = False,
+) -> PineconeVectorStoreIntegration:
+    """
+    Build a contract-based Pinecone vector store integration.
+
+    Client must be injected explicitly when enabled=True; disabled by default.
+    """
+    if enabled and client is None:
+        raise IntegrationConfigurationError(
+            "Pinecone vector store integration requires an injected client when enabled=True",
+        )
+    if client is not None:
+        return PineconeVectorStoreIntegration.from_client(client, enabled=enabled)
+    return PineconeVectorStoreIntegration.for_provider(
+        provider_id=PINECONE_VECTOR_STORE_PROVIDER_ID,
+        display_name="Pinecone",
+        config=PineconeVectorStoreIntegrationConfig(enabled=enabled),
+    )
 
 
 def create_pinecone_integration(
@@ -55,42 +84,10 @@ def create_pinecone_vector_store(
     store_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
 ) -> PineconeVectorStoreIntegration:
-    """Catalog factory for ``"pinecone"`` / ``VECTOR_STORE``."""
+    """Compatibility shim — constructs ``PineconeVectorStoreIntegration`` via legacy catalog path."""
     return create_pinecone_integration(
         vector_store=vector_store,
         store=store,
         store_factory=store_factory,
         **config_overrides,
     ).vector_store
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.vector_store.pinecone.integration import (
-    PINECONE_VECTOR_STORE_PROVIDER_ID,
-    PineconeVectorStoreIntegration,
-    PineconeVectorStoreIntegrationConfig,
-    PineconeVectorStoreClient,
-)
-
-
-def create_pinecone_vector_store_integration(
-    *,
-    client: PineconeVectorStoreClient | None = None,
-    enabled: bool = False,
-) -> PineconeVectorStoreIntegration:
-    """
-    Build a contract-based Pinecone vector store integration.
-
-    The legacy facade (create_pinecone_integration) is unchanged.
-    Client must be injected explicitly when enabled=True; disabled by default.
-    """
-    if enabled and client is None:
-        raise IntegrationConfigurationError(
-            "Pinecone vector store integration requires an injected client when enabled=True",
-        )
-    if client is not None:
-        return PineconeVectorStoreIntegration.from_client(client, enabled=enabled)
-    return PineconeVectorStoreIntegration.for_provider(
-        provider_id=PINECONE_VECTOR_STORE_PROVIDER_ID,
-        display_name="Pinecone",
-        config=PineconeVectorStoreIntegrationConfig(enabled=enabled),
-    )
