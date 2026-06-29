@@ -16,7 +16,7 @@ import pytest
 from intergrax.integrations._shared.conformance import assert_document_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.providers.document_store.cassandra.adapter import CassandraDocumentStore
+from intergrax.integrations.providers.document_store.cassandra.adapter import _CassandraDocumentStore
 from intergrax.integrations.providers.document_store.cassandra.bundle import (
     CassandraIntegrationBundle,
     create_cassandra_document_store,

@@ -12,7 +12,7 @@ import pytest
 from intergrax.experiments.store import SQLiteExperimentStore
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.relational_store.sqlite.adapter import SQLiteRelationalStore
+from intergrax.integrations.providers.relational_store.sqlite.adapter import _SQLiteRelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     SQLiteIntegrationBundle,
     create_sqlite_integration,

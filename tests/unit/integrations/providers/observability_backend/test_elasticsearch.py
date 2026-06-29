@@ -12,7 +12,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_observability_backend
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import ElasticsearchObservabilityBackend
+from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import _ElasticsearchObservabilityBackend
 from intergrax.integrations.providers.observability_backend.elasticsearch.bundle import (
     ElasticsearchIntegrationBundle,
     create_elasticsearch_integration,
@@ -168,7 +168,7 @@ def test_create_elasticsearch_integration_bundle() -> None:
     bundle = create_elasticsearch_integration(**_elasticsearch_config().model_dump(), http_client=http)
 
     assert isinstance(bundle, ElasticsearchIntegrationBundle)
-    assert isinstance(bundle.observability_backend, ElasticsearchObservabilityBackend)
+    assert isinstance(bundle.observability_backend, _ElasticsearchObservabilityBackend)
 
 
 def test_register_and_resolve_via_profile() -> None:
@@ -183,7 +183,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_observability_backend(backend)
-    assert isinstance(backend, ElasticsearchObservabilityBackend)
+    assert isinstance(backend, _ElasticsearchObservabilityBackend)
 
 
 def test_register_default_integrations_includes_elasticsearch() -> None:
@@ -197,7 +197,7 @@ def test_register_default_integrations_includes_elasticsearch() -> None:
         config={**_elasticsearch_config().model_dump(), "http_client": http},
     )
 
-    assert isinstance(backend, ElasticsearchObservabilityBackend)
+    assert isinstance(backend, _ElasticsearchObservabilityBackend)
 
 
 def test_opens_creates_httpx_client_when_not_injected() -> None:

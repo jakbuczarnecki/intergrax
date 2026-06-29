@@ -15,7 +15,7 @@ import pytest
 from intergrax.integrations._shared.conformance import assert_document_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.providers.document_store.mongodb.adapter import MongoDBDocumentStore
+from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
 from intergrax.integrations.providers.document_store.mongodb.bundle import (
     MongoDBIntegrationBundle,
     create_mongodb_document_store,

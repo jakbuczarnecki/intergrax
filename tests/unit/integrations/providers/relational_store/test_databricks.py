@@ -15,7 +15,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.databricks.adapter import DatabricksRelationalStore
+from intergrax.integrations.providers.relational_store.databricks.adapter import _DatabricksRelationalStore
 from intergrax.integrations.providers.relational_store.databricks.bundle import (
     DatabricksIntegrationBundle,
     create_databricks_integration,

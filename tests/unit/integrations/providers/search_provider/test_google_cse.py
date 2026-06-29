@@ -12,7 +12,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_search_provider
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.search_provider.google_cse.adapter import GoogleCSESearchProvider
+from intergrax.integrations.providers.search_provider.google_cse.adapter import _GoogleCSESearchProvider
 from intergrax.integrations.providers.search_provider.google_cse.bundle import (
     GoogleCSEIntegrationBundle,
     create_google_cse_integration,

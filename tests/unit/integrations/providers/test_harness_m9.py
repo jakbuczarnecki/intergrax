@@ -16,7 +16,7 @@ from intergrax.integrations.providers.notification_channel.pagerduty.bundle impo
 from intergrax.integrations.providers.observability_backend.braintrust.bundle import create_braintrust_observability_backend
 from intergrax.integrations.providers.observability_backend.langsmith.bundle import create_langsmith_observability_backend
 from intergrax.integrations.providers.observability_backend.opensearch.bundle import create_opensearch_observability_backend
-from intergrax.integrations.providers.vector_store.vespa.adapter import VespaVectorStore
+from intergrax.integrations.providers.vector_store.vespa.adapter import _VespaVectorStore
 from intergrax.integrations.providers.vector_store.vespa.config import VespaIntegrationConfig
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog, list_slugs
@@ -115,9 +115,9 @@ class _FakeBraintrustClient:
 
 
 def test_full_langsmith_adapter() -> None:
-    from intergrax.integrations.providers.observability_backend.langsmith.adapter import LangSmithObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.langsmith.adapter import _LangSmithObservabilityBackend
 
-    backend = LangSmithObservabilityBackend(_FakeLangSmithClient())  # type: ignore[arg-type]
+    backend = _LangSmithObservabilityBackend(_FakeLangSmithClient())  # type: ignore[arg-type]
     assert backend.query_instant("sessions").series[0].points[0].value == 3.0
     assert backend.query_traces(limit=1).traces[0].trace_id == "ls-1"
 
@@ -135,9 +135,9 @@ def test_gitlab_create_issue_tool() -> None:
 
 
 def test_pagerduty_trigger_incident_tool() -> None:
-    from intergrax.integrations.providers.notification_channel.pagerduty.adapter import PagerDutyNotificationChannel
+    from intergrax.integrations.providers.notification_channel.pagerduty.adapter import _PagerDutyNotificationChannel
 
-    channel = PagerDutyNotificationChannel(_FakePagerDutyClient())  # type: ignore[arg-type]
+    channel = _PagerDutyNotificationChannel(_FakePagerDutyClient())  # type: ignore[arg-type]
     ctx = ToolWiringContext(notification_channel=channel)
     out = pagerduty_trigger_incident(
         ctx,
@@ -147,9 +147,9 @@ def test_pagerduty_trigger_incident_tool() -> None:
 
 
 def test_braintrust_log_eval_tool() -> None:
-    from intergrax.integrations.providers.observability_backend.braintrust.adapter import BraintrustObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.braintrust.adapter import _BraintrustObservabilityBackend
 
-    backend = BraintrustObservabilityBackend(_FakeBraintrustClient())  # type: ignore[arg-type]
+    backend = _BraintrustObservabilityBackend(_FakeBraintrustClient())  # type: ignore[arg-type]
     ctx = ToolWiringContext(observability_backend=backend)
     out = braintrust_log_eval(ctx, BraintrustLogEvalInput(name="accuracy", score=0.9))
     assert out.log_id == "log-1"
@@ -239,5 +239,5 @@ def test_vespa_feed_and_query() -> None:
     client = VespaRestClient(VespaIntegrationConfig(), http_client=_FakeHttp())
     client.feed_document(doc_id="doc-1", fields={"content": "hello"})
     assert fed
-    store = VespaVectorStore(VespaIntegrationConfig(), client)
+    store = _VespaVectorStore(VespaIntegrationConfig(), client)
     assert store.count() >= 0

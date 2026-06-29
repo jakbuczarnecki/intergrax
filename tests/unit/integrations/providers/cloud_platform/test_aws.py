@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_cloud_platform
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.cloud_platform.aws.adapter import AwsCloudPlatform
+from intergrax.integrations.providers.cloud_platform.aws.adapter import _AwsCloudPlatform
 from intergrax.integrations.providers.cloud_platform.aws.bundle import (
     AwsIntegrationBundle,
     create_aws_cloud_platform,

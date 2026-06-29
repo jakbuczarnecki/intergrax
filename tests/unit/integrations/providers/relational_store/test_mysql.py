@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.mysql.adapter import MySQLRelationalStore
+from intergrax.integrations.providers.relational_store.mysql.adapter import _MySQLRelationalStore
 from intergrax.integrations.providers.relational_store.mysql.bundle import (
     MySQLIntegrationBundle,
     create_mysql_integration,

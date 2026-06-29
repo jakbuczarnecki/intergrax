@@ -12,7 +12,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_search_provider
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.search_provider.bing.adapter import BingSearchProvider
+from intergrax.integrations.providers.search_provider.bing.adapter import _BingSearchProvider
 from intergrax.integrations.providers.search_provider.bing.bundle import (
     BingIntegrationBundle,
     create_bing_integration,

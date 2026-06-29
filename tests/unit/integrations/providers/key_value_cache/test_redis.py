@@ -24,7 +24,7 @@ from intergrax.integrations._shared.conformance import assert_key_value_cache
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 
-from intergrax.integrations.providers.key_value_cache.redis.adapter import RedisKeyValueCache
+from intergrax.integrations.providers.key_value_cache.redis.adapter import _RedisKeyValueCache
 
 from intergrax.integrations.providers.key_value_cache.redis.bundle import (
 

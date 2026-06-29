@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_issue_tracker
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.issue_tracker.jira.adapter import JiraIssueTracker
+from intergrax.integrations.providers.issue_tracker.jira.adapter import _JiraIssueTracker
 from intergrax.integrations.providers.issue_tracker.jira.bundle import (
     JiraIntegrationBundle,
     create_jira_integration,

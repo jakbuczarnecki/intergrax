@@ -12,7 +12,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_observability_backend
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
+from intergrax.integrations.providers.observability_backend.prometheus.adapter import _PrometheusObservabilityBackend
 from intergrax.integrations.providers.observability_backend.prometheus.bundle import (
     PrometheusIntegrationBundle,
     create_prometheus_integration,
@@ -183,7 +183,7 @@ def test_create_prometheus_integration_bundle() -> None:
     bundle = create_prometheus_integration(**_prometheus_config().model_dump(), http_client=http)
 
     assert isinstance(bundle, PrometheusIntegrationBundle)
-    assert isinstance(bundle.observability_backend, PrometheusObservabilityBackend)
+    assert isinstance(bundle.observability_backend, _PrometheusObservabilityBackend)
 
 
 def test_register_and_resolve_via_profile() -> None:
@@ -198,7 +198,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_observability_backend(backend)
-    assert isinstance(backend, PrometheusObservabilityBackend)
+    assert isinstance(backend, _PrometheusObservabilityBackend)
 
 
 def test_register_default_integrations_includes_prometheus() -> None:
@@ -212,7 +212,7 @@ def test_register_default_integrations_includes_prometheus() -> None:
         config={**_prometheus_config().model_dump(), "http_client": http},
     )
 
-    assert isinstance(backend, PrometheusObservabilityBackend)
+    assert isinstance(backend, _PrometheusObservabilityBackend)
 
 
 def test_opens_creates_httpx_client_when_not_injected() -> None:

@@ -203,7 +203,7 @@ def test_p6_opentelemetry_collector_observability() -> None:
 
 def test_p5_harden_health_probes() -> None:
     from intergrax.integrations.providers.issue_tracker.github.bundle import create_github_issue_tracker
-    from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.prometheus.adapter import _PrometheusObservabilityBackend
     from intergrax.integrations.providers.observability_backend.prometheus.client import PrometheusRestClient
     from intergrax.integrations.providers.observability_backend.prometheus.config import PrometheusIntegrationConfig
     from intergrax.integrations.providers.secrets_store.vault.bundle import create_vault_secrets_store
@@ -222,7 +222,7 @@ def test_p5_harden_health_probes() -> None:
 
     config = PrometheusIntegrationConfig(base_url="http://localhost:9090")
     client = PrometheusRestClient(config, http_client=_Http())
-    prom_backend = PrometheusObservabilityBackend(client)
+    prom_backend = _PrometheusObservabilityBackend(client)
     assert prom_backend.health().healthy is True
 
     github = create_github_issue_tracker(client=_FakeIssueClient())

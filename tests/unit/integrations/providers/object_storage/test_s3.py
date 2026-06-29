@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_object_storage
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.object_storage.s3.adapter import S3ObjectStorage
+from intergrax.integrations.providers.object_storage.s3.adapter import _S3ObjectStorage
 from intergrax.integrations.providers.object_storage.s3.bundle import (
     S3IntegrationBundle,
     create_s3_integration,

@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_cloud_platform
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.cloud_platform.azure.adapter import AzureCloudPlatform
+from intergrax.integrations.providers.cloud_platform.azure.adapter import _AzureCloudPlatform
 from intergrax.integrations.providers.cloud_platform.azure.bundle import (
     AzureIntegrationBundle,
     create_azure_cloud_platform,

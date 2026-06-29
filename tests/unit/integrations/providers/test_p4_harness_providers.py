@@ -80,9 +80,9 @@ class _FakeGitlabClient:
 
 
 def test_langsmith_observability() -> None:
-    from intergrax.integrations.providers.observability_backend.langsmith.adapter import LangSmithObservabilityBackend
+    from intergrax.integrations.providers.observability_backend.langsmith.adapter import _LangSmithObservabilityBackend
 
-    backend = LangSmithObservabilityBackend(_FakeObsClient())  # type: ignore[arg-type]
+    backend = _LangSmithObservabilityBackend(_FakeObsClient())  # type: ignore[arg-type]
     assert_observability_backend(backend)
     assert backend.query_instant("runs").series[0].points[0].value == 5.0
     traces = backend.query_traces(limit=1)
@@ -90,9 +90,9 @@ def test_langsmith_observability() -> None:
 
 
 def test_gitlab_issue_tracker() -> None:
-    from intergrax.integrations.providers.issue_tracker.gitlab.adapter import GitLabIssueTracker
+    from intergrax.integrations.providers.issue_tracker.gitlab.adapter import _GitLabIssueTracker
 
-    tracker = GitLabIssueTracker(_FakeGitlabClient())  # type: ignore[arg-type]
+    tracker = _GitLabIssueTracker(_FakeGitlabClient())  # type: ignore[arg-type]
     assert_issue_tracker(tracker)
     assert tracker.get_issue("42").summary == "Bug"
 

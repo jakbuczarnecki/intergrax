@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.integrations.providers.notification_channel.log.adapter import LogNotificationAdapter
-from intergrax.integrations.providers.notification_channel.pagerduty.adapter import PagerDutyNotificationChannel
+from intergrax.integrations.providers.notification_channel.pagerduty.adapter import _PagerDutyNotificationChannel
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from lab_application.host.integration_wiring import (
     build_lab_integration_profile,

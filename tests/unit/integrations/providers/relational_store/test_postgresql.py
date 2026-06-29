@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.postgresql.adapter import PostgreSQLRelationalStore
+from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
 from intergrax.integrations.providers.relational_store.postgresql.bundle import (
     PostgreSQLIntegrationBundle,
     create_postgresql_integration,

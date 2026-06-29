@@ -12,7 +12,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_wiki_knowledge
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import ConfluenceWikiKnowledge
+from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import _ConfluenceWikiKnowledge
 from intergrax.integrations.providers.wiki_knowledge.confluence.bundle import (
     ConfluenceIntegrationBundle,
     create_confluence_integration,

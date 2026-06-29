@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_cloud_platform
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
+from intergrax.integrations.providers.cloud_platform.gcp.adapter import _GcpCloudPlatform
 from intergrax.integrations.providers.cloud_platform.gcp.bundle import (
     GcpIntegrationBundle,
     create_gcp_cloud_platform,

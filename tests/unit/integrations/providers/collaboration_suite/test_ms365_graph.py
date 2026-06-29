@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_collaboration_suite
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.bundle import (
     Ms365GraphIntegrationBundle,
     create_ms365_graph_collaboration_suite,
