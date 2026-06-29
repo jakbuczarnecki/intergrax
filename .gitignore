@@ -30,3 +30,5 @@ build/agent_fleet_inventory.json
 
 _external_apps/
 docs/_external/
+
+applications/local_workspace_application/.observability/

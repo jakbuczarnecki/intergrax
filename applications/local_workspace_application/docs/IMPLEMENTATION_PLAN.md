@@ -599,8 +599,6 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 | LKW-H3.2 | Decide optional dependency split | `pyproject.toml` / docs | Minimal install story is clear; heavy optional stacks are documented or split |
 | LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits the improved env/build/deploy documentation pattern |
 
-| LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits the improved env/build/deploy documentation pattern |
-
 ---
 
 ### LKW-OBS — OTLP Observability export
@@ -608,4 +606,5 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 | ID | Task | Module | Acceptance |
 |----|------|--------|------------|
 | LKW-OBS-OTLP-1A | Add env-driven OTLP observability export configuration for LKW | `host/settings.py`, `host/factory.py`, `tests/host/` | **Done** — env-driven config; disabled by default; endpoint required; unsupported backend fails fast; `export_content` forced false; explicit factory parameter still works |
+| LKW-OBS-OTLP-1B | Add self-hosted OpenTelemetry Collector to LKW Docker Compose and persist exported logs | `docker-compose.yml`, `otel-collector-config.yaml`, docs | **Done** — local Compose starts `otel-collector`; LKW exports OTLP logs to `http://otel-collector:4318/v1/logs`; collector persists records under `.observability/otel/` |
 
