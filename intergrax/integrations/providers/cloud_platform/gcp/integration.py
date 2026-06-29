@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -23,7 +23,13 @@ class GcpCloudPlatformIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-GcpCloudPlatformClient = CloudPlatform
+@runtime_checkable
+class GcpCloudPlatformClient(CloudPlatform, Protocol):
+    """GCP cloud platform client with project identifier."""
+
+    @property
+    def project_id(self) -> str: ...
+
 
 class GcpCloudPlatformIntegration(CloudPlatformIntegrationContract):
     """
@@ -38,7 +44,7 @@ class GcpCloudPlatformIntegration(CloudPlatformIntegrationContract):
 
     @property
     def default_region(self):
-        return getattr(self._require_client(), 'default_region')
+        return self._require_client().default_region
 
     @property
     def project_id(self):
@@ -52,9 +58,9 @@ class GcpCloudPlatformIntegration(CloudPlatformIntegrationContract):
 
     @property
     def slug(self):
-        return getattr(self._require_client(), 'slug')
+        return self._require_client().slug
 
-    def _require_client(self) -> CloudPlatform:
+    def _require_client(self) -> GcpCloudPlatformClient:
         if self._client is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",

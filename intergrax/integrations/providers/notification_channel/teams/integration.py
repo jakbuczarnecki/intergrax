@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Any
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations._shared.health import probe_client_health
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.runtime.integrations.categories.messaging import NotificationChannelIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -23,7 +24,13 @@ class TeamsNotificationChannelIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-TeamsNotificationChannelClient = NotificationChannel
+@runtime_checkable
+class TeamsNotificationChannelClient(NotificationChannel, Protocol):
+    """Teams notification client with webhook URL accessor."""
+
+    @property
+    def webhook_url(self) -> str | None: ...
+
 
 class TeamsNotificationChannelIntegration(NotificationChannelIntegrationContract):
     """
@@ -47,12 +54,16 @@ class TeamsNotificationChannelIntegration(NotificationChannelIntegrationContract
             return None
         return client.webhook_url
 
-    def health(self) -> Any:
-        return self._require_client().health()
+    def health(self) -> HealthStatus:
+        return probe_client_health(
+            self._require_client(),
+            slug=TEAMS_NOTIFICATION_CHANNEL_PROVIDER_ID,
+            default_detail="teams ready probe",
+        )
 
 
 
-    def _require_client(self) -> NotificationChannel:
+    def _require_client(self) -> TeamsNotificationChannelClient:
         if self._client is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",

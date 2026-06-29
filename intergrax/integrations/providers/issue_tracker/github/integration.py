@@ -5,12 +5,11 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
-from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.issue_tracker import IssueRecord, IssueSearchResult, IssueTracker
 from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -24,7 +23,14 @@ class GithubIssueTrackerIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-GithubIssueTrackerClient = IssueTracker
+@runtime_checkable
+class GithubIssueTrackerClient(IssueTracker, Protocol):
+    """GitHub-specific issue tracker client (``body`` param + health probe)."""
+
+    def create_issue(self, *, title: str, body: str = "", labels: Sequence[str] = ()) -> IssueRecord: ...
+
+    def health(self) -> HealthStatus | bool: ...
+
 
 class GithubIssueTrackerIntegration(IssueTrackerIntegrationContract):
     """
@@ -61,7 +67,7 @@ class GithubIssueTrackerIntegration(IssueTrackerIntegrationContract):
             detail="github ready probe",
         )
 
-    def _require_client(self) -> IssueTracker:
+    def _require_client(self) -> GithubIssueTrackerClient:
         if self._client is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",

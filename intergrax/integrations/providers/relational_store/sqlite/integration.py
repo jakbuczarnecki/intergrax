@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Mapping, Any
+from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -23,7 +23,13 @@ class SqliteRelationalStoreIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-SqliteRelationalStoreClient = RelationalStore
+@runtime_checkable
+class SqliteRelationalStoreClient(RelationalStore, Protocol):
+    """SQLite relational store client with filesystem path."""
+
+    @property
+    def db_path(self) -> str: ...
+
 
 class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     """
@@ -53,7 +59,7 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     def db_path(self):
         return self._require_client().db_path
 
-    def _require_client(self) -> RelationalStore:
+    def _require_client(self) -> SqliteRelationalStoreClient:
         if self._client is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",

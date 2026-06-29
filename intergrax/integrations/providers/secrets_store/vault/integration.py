@@ -5,11 +5,11 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.runtime.integrations.categories.security import SecretsStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -23,7 +23,12 @@ class VaultSecretsStoreIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-VaultSecretsStoreClient = SecretsStore
+@runtime_checkable
+class VaultSecretsStoreClient(SecretsStore, Protocol):
+    """Vault client with health probe."""
+
+    def health(self) -> HealthStatus | bool: ...
+
 
 class VaultSecretsStoreIntegration(SecretsStoreIntegrationContract):
     """
@@ -41,7 +46,7 @@ class VaultSecretsStoreIntegration(SecretsStoreIntegrationContract):
         return self._require_client().get_secret(key)
 
     def set_secret(self, key: str, value: str) -> None:
-        self._require_client().set_secret(key, value)
+        self._require_client().put_secret(key, value)
 
     def delete_secret(self, key: str) -> None:
         self._require_client().delete_secret(key)
@@ -52,7 +57,7 @@ class VaultSecretsStoreIntegration(SecretsStoreIntegrationContract):
     def put_secret(self, path, value):
         return self._require_client().put_secret(path, value)
 
-    def _require_client(self) -> SecretsStore:
+    def _require_client(self) -> VaultSecretsStoreClient:
         if self._client is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",

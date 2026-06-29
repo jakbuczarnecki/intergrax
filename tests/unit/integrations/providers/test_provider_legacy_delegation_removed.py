@@ -33,8 +33,21 @@ DEFERRED_LLM_GUARDRAIL_SLUGS: frozenset[str] = frozenset(
     }
 )
 
-# Vector stores with intentional typed RAG inner-store bridge (pre-migrated reference pattern).
-DEFERRED_VECTOR_BRIDGE_SLUGS: frozenset[str] = frozenset({"qdrant", "pinecone"})
+# Vector stores with intentional typed RAG inner-store bridge (category rule).
+VECTOR_STORE_BRIDGE_SLUGS: frozenset[str] = frozenset(
+    {
+        "qdrant",
+        "pinecone",
+        "chroma",
+        "milvus",
+        "weaviate",
+        "pgvector",
+        "typesense",
+        "inmemory",
+        "vespa",
+        "lancedb",
+    }
+)
 
 INLINE_WAVE_SLUGS: tuple[str, ...] = tuple(
     sorted(
@@ -42,7 +55,7 @@ INLINE_WAVE_SLUGS: tuple[str, ...] = tuple(
         for slug, category in SLUG_CATEGORY.items()
         if category not in {"observability_backend", "llm_guardrail"}
         and slug not in DEFERRED_LLM_GUARDRAIL_SLUGS
-        and slug not in DEFERRED_VECTOR_BRIDGE_SLUGS
+        and slug not in VECTOR_STORE_BRIDGE_SLUGS
         and (_PROVIDERS_ROOT / category / slug / "integration.py").is_file()
     )
 )
@@ -183,11 +196,14 @@ def test_representative_legacy_factory_returns_public_integration(slug: str) -> 
         assert integration._client is client
 
 
-def test_deferred_vector_bridge_slugs_use_typed_inner_not_runtime_delegate() -> None:
-    for slug in sorted(DEFERRED_VECTOR_BRIDGE_SLUGS):
+def test_vector_store_bridge_slugs_use_typed_inner_not_runtime_delegate() -> None:
+    for slug in sorted(VECTOR_STORE_BRIDGE_SLUGS):
         category = SLUG_CATEGORY[slug]
         path = _PROVIDERS_ROOT / category / slug / "integration.py"
         source = path.read_text(encoding="utf-8")
-        assert "def _require_runtime" not in source
         assert "_inner: VectorStore | None" in source
         assert "def _require_inner" in source
+        assert "def _require_runtime" not in source
+        assert "def __getattr__" not in source
+        assert "__pydantic_private__" not in source
+        assert "inner: Any" not in source

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from typing import Optional, Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -24,7 +24,13 @@ class RedisKeyValueCacheIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-RedisKeyValueCacheClient = KeyValueCache
+@runtime_checkable
+class RedisKeyValueCacheClient(KeyValueCache, Protocol):
+    """Redis key-value cache client exposing the underlying KV store."""
+
+    @property
+    def kv_store(self) -> RedisKVStore: ...
+
 
 class RedisKeyValueCacheIntegration(KeyValueCacheIntegrationContract):
     """
@@ -53,7 +59,7 @@ class RedisKeyValueCacheIntegration(KeyValueCacheIntegrationContract):
     def kv_store(self) -> RedisKVStore:
         return self._require_client().kv_store
 
-    def _require_client(self) -> KeyValueCache:
+    def _require_client(self) -> RedisKeyValueCacheClient:
         if self._client is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",

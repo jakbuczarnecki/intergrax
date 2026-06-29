@@ -41,14 +41,14 @@ class MilvusVectorStoreIntegration(VectorStoreIntegrationContract):
 
     config: MilvusVectorStoreIntegrationConfig = MilvusVectorStoreIntegrationConfig()
     _client: MilvusVectorStoreClient | None = PrivateAttr(default=None)
-    _store_config: Any | None = PrivateAttr(default=None)
+    _store_config: object | None = PrivateAttr(default=None)
     _inner: VectorStore | None = PrivateAttr(default=None)
 
     @classmethod
     def from_store(
         cls,
-        store_config: Any,
-        inner: Any,
+        store_config: object,
+        inner: VectorStore,
         *,
         enabled: bool = True,
     ) -> MilvusVectorStoreIntegration:
@@ -63,7 +63,7 @@ class MilvusVectorStoreIntegration(VectorStoreIntegrationContract):
 
 
     @property
-    def store_config(self) -> Any | None:
+    def store_config(self) -> object | None:
         return self._store_config
 
     @property

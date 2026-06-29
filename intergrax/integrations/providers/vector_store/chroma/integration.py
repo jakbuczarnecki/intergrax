@@ -12,6 +12,7 @@ from pydantic import PrivateAttr
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
+from intergrax.integrations.providers.vector_store.chroma.config import ChromaIntegrationConfig
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -41,14 +42,14 @@ class ChromaVectorStoreIntegration(VectorStoreIntegrationContract):
 
     config: ChromaVectorStoreIntegrationConfig = ChromaVectorStoreIntegrationConfig()
     _client: ChromaVectorStoreClient | None = PrivateAttr(default=None)
-    _store_config: Any | None = PrivateAttr(default=None)
+    _store_config: ChromaIntegrationConfig | None = PrivateAttr(default=None)
     _inner: VectorStore | None = PrivateAttr(default=None)
 
     @classmethod
     def from_store(
         cls,
-        store_config: Any,
-        inner: Any,
+        store_config: ChromaIntegrationConfig,
+        inner: VectorStore,
         *,
         enabled: bool = True,
     ) -> ChromaVectorStoreIntegration:
@@ -63,7 +64,7 @@ class ChromaVectorStoreIntegration(VectorStoreIntegrationContract):
 
 
     @property
-    def store_config(self) -> Any | None:
+    def store_config(self) -> ChromaIntegrationConfig | None:
         return self._store_config
 
     @property

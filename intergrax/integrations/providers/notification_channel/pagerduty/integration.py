@@ -9,7 +9,8 @@ from typing import Sequence, Any
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations._shared.health import probe_client_health
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.runtime.integrations.categories.messaging import NotificationChannelIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -40,8 +41,12 @@ class PagerdutyNotificationChannelIntegration(NotificationChannelIntegrationCont
     async def notify(self, message: Any) -> None:
         await self._require_client().notify(message)
 
-    def health(self) -> Any:
-        return self._require_client().health()
+    def health(self) -> HealthStatus:
+        return probe_client_health(
+            self._require_client(),
+            slug=PAGERDUTY_NOTIFICATION_CHANNEL_PROVIDER_ID,
+            default_detail="pagerduty ready probe",
+        )
 
     def trigger_incident(self, *, summary: str, **kwargs: Any) -> str:
         return self._require_client().trigger_incident(summary=summary, **kwargs)

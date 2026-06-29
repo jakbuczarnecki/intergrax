@@ -41,14 +41,14 @@ class TypesenseVectorStoreIntegration(VectorStoreIntegrationContract):
 
     config: TypesenseVectorStoreIntegrationConfig = TypesenseVectorStoreIntegrationConfig()
     _client: TypesenseVectorStoreClient | None = PrivateAttr(default=None)
-    _store_config: Any | None = PrivateAttr(default=None)
+    _store_config: object | None = PrivateAttr(default=None)
     _inner: VectorStore | None = PrivateAttr(default=None)
 
     @classmethod
     def from_store(
         cls,
-        store_config: Any,
-        inner: Any,
+        store_config: object,
+        inner: VectorStore,
         *,
         enabled: bool = True,
     ) -> TypesenseVectorStoreIntegration:
@@ -63,7 +63,7 @@ class TypesenseVectorStoreIntegration(VectorStoreIntegrationContract):
 
 
     @property
-    def store_config(self) -> Any | None:
+    def store_config(self) -> object | None:
         return self._store_config
 
     @property

@@ -9,6 +9,8 @@ from typing import Protocol, Sequence, runtime_checkable
 
 from pydantic import BaseModel, Field
 
+from intergrax.integrations.contracts.base import HealthStatus
+
 
 class ScanFinding(BaseModel):
     """Normalized security finding row."""
@@ -38,3 +40,6 @@ class SecurityScannerBackend(Protocol):
 
     def scan_repo(self, repo_path: str) -> ScanReport:
         """Scan a repository path or VCS URL for policy violations."""
+
+    def health(self) -> HealthStatus | bool:
+        """Optional startup / connectivity probe."""
