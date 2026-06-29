@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.providers.vector_store.chroma.adapter import ChromaVectorStoreIntegration
+from intergrax.integrations.providers.vector_store.chroma.integration import ChromaVectorStoreIntegration
 from intergrax.integrations.providers.vector_store.chroma.config import ChromaIntegrationConfig
 from intergrax.integrations.providers.vector_store.chroma.opens import open_chroma_vector_store
 
@@ -74,7 +74,7 @@ def create_chroma_vector_store_integration(
     """
     Build a contract-based Chroma vector store integration.
 
-    The legacy facade (create_chroma_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_chroma_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

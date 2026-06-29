@@ -1,14 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Typesense vector store integration (INTEGRATIONS-2D)."""
+"""Typesense vector store integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
+from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -31,13 +34,94 @@ class TypesenseVectorStoreClient(Protocol):
 
 class TypesenseVectorStoreIntegration(VectorStoreIntegrationContract):
     """
-    Typesense vector store integration.
+    Single public Typesense vector store entrypoint.
 
-    The legacy facade (create_typesense_vector_store) remains separate and backward-compatible.
+    Legacy catalog factory (create_typesense_vector_store) delegates to this class.
     """
 
     config: TypesenseVectorStoreIntegrationConfig = TypesenseVectorStoreIntegrationConfig()
     _client: TypesenseVectorStoreClient | None = PrivateAttr(default=None)
+    _store_config: Any | None = PrivateAttr(default=None)
+    _inner: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_store(
+        cls,
+        store_config: Any,
+        inner: Any,
+        *,
+        enabled: bool = True,
+    ) -> TypesenseVectorStoreIntegration:
+        integration = cls.for_provider(
+            provider_id=TYPESENSE_VECTOR_STORE_PROVIDER_ID,
+            display_name="Typesense",
+            config=TypesenseVectorStoreIntegrationConfig(enabled=enabled),
+        )
+        integration._store_config = store_config
+        integration._inner = inner
+        return integration
+
+    @classmethod
+    def from_runtime(
+        cls,
+        runtime: Any,
+        *,
+        enabled: bool = True,
+        store_config: Any | None = None,
+    ) -> TypesenseVectorStoreIntegration:
+        return cls.from_store(runtime, enabled=enabled, store_config=store_config)
+
+    @property
+    def store_config(self) -> Any | None:
+        return self._store_config
+
+    @property
+    def rag_store(self) -> VectorStore:
+        return self._require_runtime()
+    def add_documents(
+        self,
+        documents: Sequence[Any],
+        embeddings: Sequence[Sequence[float]],
+        *,
+        ids: Sequence[str] | None = None,
+    ) -> None:
+        self._require_runtime().add_documents(documents, embeddings, ids=ids)
+
+    def query(
+        self,
+        query_embedding: Sequence[float],
+        *,
+        top_k: int,
+        metadata_filter: MetadataFilter | None = None,
+        include_embeddings: bool = False,
+    ) -> list[VectorStoreHit]:
+        return self._require_runtime().query(
+            query_embedding,
+            top_k=top_k,
+            metadata_filter=metadata_filter,
+            include_embeddings=include_embeddings,
+        )
+
+    def delete(self, ids: Sequence[str]) -> None:
+        self._require_runtime().delete(ids)
+
+    def count(self) -> int:
+        return self._require_runtime().count()
+
+
+    def _require_runtime(self) -> Any:
+        private = object.__getattribute__(self, "__pydantic_private__")
+        runtime = private.get("_runtime")
+        if runtime is None:
+            runtime = private.get("_backend")
+        if runtime is None:
+            runtime = private.get("_inner")
+        if runtime is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+            )
+        return runtime
+
 
     @classmethod
     def from_client(
@@ -57,3 +141,5 @@ class TypesenseVectorStoreIntegration(VectorStoreIntegrationContract):
     @property
     def client(self) -> TypesenseVectorStoreClient | None:
         return self._client
+
+VectorStore.register(TypesenseVectorStoreIntegration)

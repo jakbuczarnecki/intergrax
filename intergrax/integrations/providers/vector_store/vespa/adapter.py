@@ -14,7 +14,7 @@ from intergrax.integrations.providers.vector_store.vespa.client import VespaRest
 from intergrax.integrations.providers.vector_store.vespa.config import VespaIntegrationConfig
 
 
-class VespaVectorStore(VectorStore):
+class _VespaVectorStore(VectorStore):
     """Feed/query facade over Vespa document API."""
 
     def __init__(self, config: VespaIntegrationConfig, client: VespaRestClient) -> None:
