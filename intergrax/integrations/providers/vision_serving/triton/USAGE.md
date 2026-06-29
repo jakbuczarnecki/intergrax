@@ -2,19 +2,8 @@
 
 Category: `vision_serving`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_triton_vision_serving()` remains backward-compatible.
-
-## Contract-based integration
-
-- `TritonVisionServingIntegration` derives from the category-specific contract.
-- Factory: `create_triton_vision_serving_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`TritonVisionServingIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TritonVisionServingIntegration`.
+- Contract factory: `create_triton_vision_serving_integration()`.

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_triton_vision_serving
+from intergrax.integrations._shared.p7.factories import create_triton_vision_serving as _legacy_create_triton_vision_serving
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vision_serving.triton.integration import (
@@ -39,3 +39,11 @@ def create_triton_vision_serving_integration(
         display_name="Triton",
         config=TritonVisionServingIntegrationConfig(enabled=enabled),
     )
+
+
+def create_triton_vision_serving(**kwargs: object) -> TritonVisionServingIntegration:
+    """Compatibility shim — constructs TritonVisionServingIntegration from legacy runtime."""
+    runtime = _legacy_create_triton_vision_serving(**kwargs)
+    if isinstance(runtime, TritonVisionServingIntegration):
+        return runtime
+    return TritonVisionServingIntegration.from_runtime(runtime)
