@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_clerk_identity_provider
+from intergrax.integrations._shared.p8.factories import create_clerk_identity_provider as _legacy_create_clerk_identity_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.identity_provider.clerk.integration import (
@@ -39,3 +39,11 @@ def create_clerk_identity_provider_integration(
         display_name="Clerk",
         config=ClerkIdentityProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_clerk_identity_provider(**kwargs: object) -> ClerkIdentityProviderIntegration:
+    """Compatibility shim — constructs ClerkIdentityProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_clerk_identity_provider(**kwargs)
+    if isinstance(runtime, ClerkIdentityProviderIntegration):
+        return runtime
+    return ClerkIdentityProviderIntegration.from_runtime(runtime)

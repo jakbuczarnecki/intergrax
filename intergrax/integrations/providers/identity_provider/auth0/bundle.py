@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_auth0_identity_provider
+from intergrax.integrations._shared.p7.factories import create_auth0_identity_provider as _legacy_create_auth0_identity_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.identity_provider.auth0.integration import (
@@ -39,3 +39,11 @@ def create_auth0_identity_provider_integration(
         display_name="Auth0",
         config=Auth0IdentityProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_auth0_identity_provider(**kwargs: object) -> Auth0IdentityProviderIntegration:
+    """Compatibility shim — constructs Auth0IdentityProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_auth0_identity_provider(**kwargs)
+    if isinstance(runtime, Auth0IdentityProviderIntegration):
+        return runtime
+    return Auth0IdentityProviderIntegration.from_runtime(runtime)

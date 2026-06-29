@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_workos_identity_provider
+from intergrax.integrations._shared.p7.factories import create_workos_identity_provider as _legacy_create_workos_identity_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.identity_provider.workos.integration import (
@@ -39,3 +39,11 @@ def create_workos_identity_provider_integration(
         display_name="Workos",
         config=WorkosIdentityProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_workos_identity_provider(**kwargs: object) -> WorkosIdentityProviderIntegration:
+    """Compatibility shim — constructs WorkosIdentityProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_workos_identity_provider(**kwargs)
+    if isinstance(runtime, WorkosIdentityProviderIntegration):
+        return runtime
+    return WorkosIdentityProviderIntegration.from_runtime(runtime)

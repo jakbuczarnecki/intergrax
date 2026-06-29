@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_keycloak_identity_provider
+from intergrax.integrations._shared.p7.factories import create_keycloak_identity_provider as _legacy_create_keycloak_identity_provider
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.identity_provider.keycloak.integration import (
@@ -39,3 +39,11 @@ def create_keycloak_identity_provider_integration(
         display_name="Keycloak",
         config=KeycloakIdentityProviderIntegrationConfig(enabled=enabled),
     )
+
+
+def create_keycloak_identity_provider(**kwargs: object) -> KeycloakIdentityProviderIntegration:
+    """Compatibility shim — constructs KeycloakIdentityProviderIntegration from legacy runtime."""
+    runtime = _legacy_create_keycloak_identity_provider(**kwargs)
+    if isinstance(runtime, KeycloakIdentityProviderIntegration):
+        return runtime
+    return KeycloakIdentityProviderIntegration.from_runtime(runtime)
