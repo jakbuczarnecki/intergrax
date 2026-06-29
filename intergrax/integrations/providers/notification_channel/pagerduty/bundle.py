@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
-from intergrax.integrations.providers.notification_channel.pagerduty.adapter import PagerDutyNotificationChannel
+from intergrax.integrations.providers.notification_channel.pagerduty.adapter import _PagerDutyNotificationChannel
 from intergrax.integrations.providers.notification_channel.pagerduty.client import PagerDutyEventsClient
 from intergrax.integrations.providers.notification_channel.pagerduty.config import PagerDutyIntegrationConfig
 from intergrax.integrations.providers.notification_channel.pagerduty.opens import (
@@ -21,7 +21,7 @@ from intergrax.integrations.providers.notification_channel.pagerduty.opens impor
 @dataclass(frozen=True)
 class PagerDutyIntegrationBundle:
     config: PagerDutyIntegrationConfig
-    notification_channel: PagerDutyNotificationChannel
+    notification_channel: PagerdutyNotificationChannelIntegration
     events_client: PagerDutyEventsClient
 
 
@@ -59,7 +59,7 @@ def create_pagerduty_notification_channel(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[PagerDutyIntegrationConfig], Any]] = None,
     **config_overrides: object,
-) -> PagerDutyNotificationChannel:
+) -> PagerdutyNotificationChannelIntegration:
     """Catalog factory for ``"pagerduty"``."""
     return create_pagerduty_integration(
         notification_channel=notification_channel,
@@ -86,7 +86,7 @@ def create_pagerduty_notification_channel_integration(
     """
     Build a contract-based Pagerduty notification channel integration.
 
-    The legacy facade (create_pagerduty_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_pagerduty_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

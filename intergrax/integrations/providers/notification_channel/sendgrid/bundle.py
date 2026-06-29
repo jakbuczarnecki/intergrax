@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_sendgrid_notification_channel
+from intergrax.integrations._shared.p5.factories import create_sendgrid_notification_channel as _legacy_create_sendgrid_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.sendgrid.integration import (
@@ -39,3 +39,11 @@ def create_sendgrid_notification_channel_integration(
         display_name="Sendgrid",
         config=SendgridNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_sendgrid_notification_channel(**kwargs: object) -> SendgridNotificationChannelIntegration:
+    """Compatibility shim — constructs SendgridNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_sendgrid_notification_channel(**kwargs)
+    if isinstance(runtime, SendgridNotificationChannelIntegration):
+        return runtime
+    return SendgridNotificationChannelIntegration.from_runtime(runtime)

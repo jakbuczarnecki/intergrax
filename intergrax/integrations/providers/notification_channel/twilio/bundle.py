@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_twilio_notification_channel
+from intergrax.integrations._shared.p3.factories import create_twilio_notification_channel as _legacy_create_twilio_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.twilio.integration import (
@@ -39,3 +39,11 @@ def create_twilio_notification_channel_integration(
         display_name="Twilio",
         config=TwilioNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_twilio_notification_channel(**kwargs: object) -> TwilioNotificationChannelIntegration:
+    """Compatibility shim — constructs TwilioNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_twilio_notification_channel(**kwargs)
+    if isinstance(runtime, TwilioNotificationChannelIntegration):
+        return runtime
+    return TwilioNotificationChannelIntegration.from_runtime(runtime)

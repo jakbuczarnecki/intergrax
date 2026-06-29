@@ -2,19 +2,8 @@
 
 Category: `notification_channel`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_log_integration()` remains backward-compatible.
-
-## Contract-based integration
-
-- `LogNotificationChannelIntegration` derives from the category-specific contract.
-- Factory: `create_log_notification_channel_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`LogNotificationChannelIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `LogNotificationChannelIntegration`.
+- Contract factory: `create_log_notification_channel_integration()`.

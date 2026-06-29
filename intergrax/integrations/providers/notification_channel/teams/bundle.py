@@ -148,7 +148,7 @@ def create_teams_notification_channel_integration(
     """
     Build a contract-based Teams notification channel integration.
 
-    The legacy facade (create_teams_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_teams_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

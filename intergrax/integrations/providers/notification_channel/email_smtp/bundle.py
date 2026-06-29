@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_email_smtp_notification_channel
+from intergrax.integrations._shared.p2.factories import create_email_smtp_notification_channel as _legacy_create_email_smtp_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.email_smtp.integration import (
@@ -39,3 +39,11 @@ def create_email_smtp_notification_channel_integration(
         display_name="Email Smtp",
         config=EmailSmtpNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_email_smtp_notification_channel(**kwargs: object) -> EmailSmtpNotificationChannelIntegration:
+    """Compatibility shim — constructs EmailSmtpNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_email_smtp_notification_channel(**kwargs)
+    if isinstance(runtime, EmailSmtpNotificationChannelIntegration):
+        return runtime
+    return EmailSmtpNotificationChannelIntegration.from_runtime(runtime)

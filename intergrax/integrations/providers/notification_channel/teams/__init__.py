@@ -62,7 +62,7 @@ def __getattr__(name: str):
 
         return register_teams_integration
     if name == "TeamsInteractionAdapter":
-        from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
+        from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 
         return TeamsInteractionAdapter
     if name in _BUNDLE_EXPORTS:

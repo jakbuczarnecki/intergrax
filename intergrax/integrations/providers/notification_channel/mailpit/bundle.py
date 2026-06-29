@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_mailpit_notification_channel
+from intergrax.integrations._shared.p6.factories import create_mailpit_notification_channel as _legacy_create_mailpit_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.mailpit.integration import (
@@ -39,3 +39,11 @@ def create_mailpit_notification_channel_integration(
         display_name="Mailpit",
         config=MailpitNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_mailpit_notification_channel(**kwargs: object) -> MailpitNotificationChannelIntegration:
+    """Compatibility shim — constructs MailpitNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_mailpit_notification_channel(**kwargs)
+    if isinstance(runtime, MailpitNotificationChannelIntegration):
+        return runtime
+    return MailpitNotificationChannelIntegration.from_runtime(runtime)

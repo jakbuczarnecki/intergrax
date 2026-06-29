@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p3.factories import create_discord_notification_channel
+from intergrax.integrations._shared.p3.factories import create_discord_notification_channel as _legacy_create_discord_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.discord.integration import (
@@ -39,3 +39,11 @@ def create_discord_notification_channel_integration(
         display_name="Discord",
         config=DiscordNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_discord_notification_channel(**kwargs: object) -> DiscordNotificationChannelIntegration:
+    """Compatibility shim — constructs DiscordNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_discord_notification_channel(**kwargs)
+    if isinstance(runtime, DiscordNotificationChannelIntegration):
+        return runtime
+    return DiscordNotificationChannelIntegration.from_runtime(runtime)

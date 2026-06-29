@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p6.factories import create_grafana_oncall_notification_channel
+from intergrax.integrations._shared.p6.factories import create_grafana_oncall_notification_channel as _legacy_create_grafana_oncall_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.grafana_oncall.integration import (
@@ -39,3 +39,11 @@ def create_grafana_oncall_notification_channel_integration(
         display_name="Grafana Oncall",
         config=GrafanaOncallNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_grafana_oncall_notification_channel(**kwargs: object) -> GrafanaOncallNotificationChannelIntegration:
+    """Compatibility shim — constructs GrafanaOncallNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_grafana_oncall_notification_channel(**kwargs)
+    if isinstance(runtime, GrafanaOncallNotificationChannelIntegration):
+        return runtime
+    return GrafanaOncallNotificationChannelIntegration.from_runtime(runtime)

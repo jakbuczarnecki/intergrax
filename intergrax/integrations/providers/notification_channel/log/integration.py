@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Log notification channel integration (INTEGRATIONS-2D)."""
+"""Log notification channel integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.runtime.integrations.categories.messaging import NotificationChannelIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -31,13 +33,51 @@ class LogNotificationChannelClient(Protocol):
 
 class LogNotificationChannelIntegration(NotificationChannelIntegrationContract):
     """
-    Log notification channel integration.
+    Single public Log notification channel entrypoint.
 
-    The legacy facade (create_log_integration) remains separate and backward-compatible.
+    Legacy catalog factory (create_log_integration) delegates to this class.
     """
 
     config: LogNotificationChannelIntegrationConfig = LogNotificationChannelIntegrationConfig()
     _client: LogNotificationChannelClient | None = PrivateAttr(default=None)
+    _runtime: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_runtime(
+        cls,
+        runtime: Any,
+        *,
+        enabled: bool = True,
+    ) -> LogNotificationChannelIntegration:
+        integration = cls.for_provider(
+            provider_id=LOG_NOTIFICATION_CHANNEL_PROVIDER_ID,
+            display_name="Log",
+            config=LogNotificationChannelIntegrationConfig(enabled=enabled),
+        )
+        integration._runtime = runtime
+        return integration
+
+
+    async def notify(self, message: Any) -> None:
+        await self._require_runtime().notify(message)
+
+    def health(self) -> Any:
+        return self._require_runtime().health()
+
+
+    def _require_runtime(self) -> Any:
+        private = object.__getattribute__(self, "__pydantic_private__")
+        runtime = private.get("_runtime")
+        if runtime is None:
+            runtime = private.get("_backend")
+        if runtime is None:
+            runtime = private.get("_inner")
+        if runtime is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+            )
+        return runtime
+
 
     @classmethod
     def from_client(
@@ -57,3 +97,12 @@ class LogNotificationChannelIntegration(NotificationChannelIntegrationContract):
     @property
     def client(self) -> LogNotificationChannelClient | None:
         return self._client
+    def __getattr__(self, name: str) -> object:
+        if name.startswith("_"):
+            private = object.__getattribute__(self, "__pydantic_private__")
+            if name in private:
+                return private[name]
+            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+        return getattr(self._require_runtime(), name)
+
+NotificationChannel.register(LogNotificationChannelIntegration)

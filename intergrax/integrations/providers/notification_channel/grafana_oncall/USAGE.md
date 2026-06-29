@@ -2,19 +2,8 @@
 
 Category: `notification_channel`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_grafana_oncall_notification_channel()` remains backward-compatible.
-
-## Contract-based integration
-
-- `GrafanaOncallNotificationChannelIntegration` derives from the category-specific contract.
-- Factory: `create_grafana_oncall_notification_channel_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`GrafanaOncallNotificationChannelIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `GrafanaOncallNotificationChannelIntegration`.
+- Contract factory: `create_grafana_oncall_notification_channel_integration()`.

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p4.factories import create_opsgenie_notification_channel
+from intergrax.integrations._shared.p4.factories import create_opsgenie_notification_channel as _legacy_create_opsgenie_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.opsgenie.integration import (
@@ -39,3 +39,11 @@ def create_opsgenie_notification_channel_integration(
         display_name="Opsgenie",
         config=OpsgenieNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_opsgenie_notification_channel(**kwargs: object) -> OpsgenieNotificationChannelIntegration:
+    """Compatibility shim — constructs OpsgenieNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_opsgenie_notification_channel(**kwargs)
+    if isinstance(runtime, OpsgenieNotificationChannelIntegration):
+        return runtime
+    return OpsgenieNotificationChannelIntegration.from_runtime(runtime)

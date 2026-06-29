@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.integrations.providers.notification_channel.teams.adapter import TeamsInteractionAdapter
+from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 from intergrax.integrations.providers.notification_channel.teams.config import TeamsIntegrationConfig
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
@@ -50,4 +50,4 @@ def open_teams_interaction_surface(
     del config
     if implementation is not None:
         return implementation
-    return TeamsInteractionAdapter()
+    return _TeamsInteractionAdapter()

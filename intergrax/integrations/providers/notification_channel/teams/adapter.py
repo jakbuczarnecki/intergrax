@@ -8,5 +8,5 @@ from __future__ import annotations
 from intergrax.runtime.interactions.adapters.teams_activity_adapter import TeamsActivityInteractionAdapter
 
 
-class TeamsInteractionAdapter(TeamsActivityInteractionAdapter):
+class _TeamsInteractionAdapter(TeamsActivityInteractionAdapter):
     """Catalog facade over ``TeamsActivityInteractionAdapter`` (channel ``teams``)."""

@@ -62,7 +62,7 @@ def __getattr__(name: str):
 
         return register_slack_integration
     if name == "SlackInteractionAdapter":
-        from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
+        from intergrax.integrations.providers.notification_channel.slack.adapter import _SlackInteractionAdapter
 
         return SlackInteractionAdapter
     if name in _BUNDLE_EXPORTS:

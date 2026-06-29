@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p5.factories import create_incident_io_notification_channel
+from intergrax.integrations._shared.p5.factories import create_incident_io_notification_channel as _legacy_create_incident_io_notification_channel
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.incident_io.integration import (
@@ -39,3 +39,11 @@ def create_incident_io_notification_channel_integration(
         display_name="Incident Io",
         config=IncidentIoNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_incident_io_notification_channel(**kwargs: object) -> IncidentIoNotificationChannelIntegration:
+    """Compatibility shim — constructs IncidentIoNotificationChannelIntegration from legacy runtime."""
+    runtime = _legacy_create_incident_io_notification_channel(**kwargs)
+    if isinstance(runtime, IncidentIoNotificationChannelIntegration):
+        return runtime
+    return IncidentIoNotificationChannelIntegration.from_runtime(runtime)

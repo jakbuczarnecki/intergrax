@@ -2,19 +2,8 @@
 
 Category: `notification_channel`
 
-## Legacy facade
+## Single public entrypoint
 
-- `create_telegram_catalog_factory()` remains backward-compatible.
-
-## Contract-based integration
-
-- `TelegramNotificationChannelIntegration` derives from the category-specific contract.
-- Factory: `create_telegram_notification_channel_integration()`.
-- Disabled by default (`enabled=False`).
-- No vendor SDK or network I/O in the contract adapter.
-- Injectable `{prefix}Client` required when `enabled=True`.
-
-## Registry
-
-- `register.py` remains legacy-compatible.
-- Registry v2 / contract registry wiring deferred.
+- **`TelegramNotificationChannelIntegration`** in `integration.py` is the only public provider class.
+- Legacy catalog factories are compatibility shims delegating to `TelegramNotificationChannelIntegration`.
+- Contract factory: `create_telegram_notification_channel_integration()`.
