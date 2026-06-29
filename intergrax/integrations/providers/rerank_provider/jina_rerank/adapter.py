@@ -11,7 +11,7 @@ from intergrax.integrations.providers.rerank_provider.jina_rerank.config import 
 from intergrax.integrations.providers.rerank_provider.jina_rerank.opens import jina_rerank_scores
 
 
-class JinaRerankProvider:
+class _JinaRerankProvider:
     def __init__(self, config: JinaRerankIntegrationConfig) -> None:
         self._config = config
 

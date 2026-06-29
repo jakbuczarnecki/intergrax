@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.rerank_provider import RerankProvider
-from intergrax.integrations.providers.rerank_provider.jina_rerank.adapter import JinaRerankProvider
+from intergrax.integrations.providers.rerank_provider.jina_rerank.adapter import _JinaRerankProvider
 from intergrax.integrations.providers.rerank_provider.jina_rerank.config import JinaRerankIntegrationConfig
 
 
-def create_jina_rerank_provider(**config_overrides: object) -> RerankProvider:
-    return JinaRerankProvider(JinaRerankIntegrationConfig.from_env(**config_overrides))
+def create_jina_rerank_provider(**config_overrides: object) -> JinaRerankRerankProviderIntegration:
+    return JinaRerankRerankProviderIntegration.from_runtime(_JinaRerankProvider(JinaRerankIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.rerank_provider.jina_rerank.integration import (
@@ -28,7 +28,7 @@ def create_jina_rerank_rerank_provider_integration(
     """
     Build a contract-based Jina Rerank rerank provider integration.
 
-    The legacy facade (create_jina_rerank_provider) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_jina_rerank_provider) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:
