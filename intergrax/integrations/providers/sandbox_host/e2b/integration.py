@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""E2B sandbox host integration (INTEGRATIONS-2D)."""
+"""E2B sandbox host integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, Sequence, runtime_checkable
 
 from pydantic import PrivateAttr
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.runtime.integrations.categories.devops import SandboxHostIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -31,13 +33,31 @@ class E2bSandboxHostClient(Protocol):
 
 class E2bSandboxHostIntegration(SandboxHostIntegrationContract):
     """
-    E2B sandbox host integration.
+    Single public E2B sandbox host entrypoint.
 
-    The legacy facade (create_e2b_sandbox_host) remains separate and backward-compatible.
+    Legacy catalog factory (create_e2b_sandbox_host) delegates to this class.
     """
 
     config: E2bSandboxHostIntegrationConfig = E2bSandboxHostIntegrationConfig()
     _client: E2bSandboxHostClient | None = PrivateAttr(default=None)
+    _runtime: Any | None = PrivateAttr(default=None)
+
+    @classmethod
+    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> E2bSandboxHostIntegration:
+        integration = cls.for_provider(
+            provider_id=E2B_SANDBOX_HOST_PROVIDER_ID,
+            display_name="E2B",
+            config=E2bSandboxHostIntegrationConfig(enabled=enabled),
+        )
+        integration._runtime = runtime
+        return integration
+
+    def _require_runtime(self) -> Any:
+        if self._runtime is None:
+            raise IntegrationConfigurationError("E2B integration requires a runtime delegate")
+        return self._runtime
+
+
 
     @classmethod
     def from_client(
@@ -57,3 +77,12 @@ class E2bSandboxHostIntegration(SandboxHostIntegrationContract):
     @property
     def client(self) -> E2bSandboxHostClient | None:
         return self._client
+    def __getattr__(self, name: str) -> object:
+        if name.startswith("_"):
+            private = object.__getattribute__(self, "__pydantic_private__")
+            if name in private:
+                return private[name]
+            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
+        return getattr(self._require_runtime(), name)
+
+SandboxHostBackend.register(E2bSandboxHostIntegration)

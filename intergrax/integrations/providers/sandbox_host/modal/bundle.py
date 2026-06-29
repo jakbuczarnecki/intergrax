@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_modal_sandbox_host
+from intergrax.integrations._shared.p7.factories import create_modal_sandbox_host as _legacy_create_modal_sandbox_host
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.sandbox_host.modal.integration import (
@@ -39,3 +39,11 @@ def create_modal_sandbox_host_integration(
         display_name="Modal",
         config=ModalSandboxHostIntegrationConfig(enabled=enabled),
     )
+
+
+def create_modal_sandbox_host(**kwargs: object) -> ModalSandboxHostIntegration:
+    """Compatibility shim — constructs ModalSandboxHostIntegration from legacy runtime."""
+    runtime = _legacy_create_modal_sandbox_host(**kwargs)
+    if isinstance(runtime, ModalSandboxHostIntegration):
+        return runtime
+    return ModalSandboxHostIntegration.from_runtime(runtime)
