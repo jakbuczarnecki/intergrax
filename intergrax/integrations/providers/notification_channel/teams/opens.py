@@ -14,6 +14,7 @@ from typing import Optional
 
 from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 from intergrax.integrations.providers.notification_channel.teams.config import TeamsIntegrationConfig
+from intergrax.integrations.providers.notification_channel.teams.integration import TeamsNotificationChannelIntegration
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.delivery_contract import NotificationDelivery
@@ -24,21 +25,25 @@ def open_teams_notification_channel(
     *,
     implementation: Optional[NotificationAdapter] = None,
     delivery: Optional[NotificationDelivery] = None,
-) -> NotificationAdapter:
+) -> TeamsNotificationChannelIntegration:
     if implementation is not None:
-        return implementation
+        if isinstance(implementation, TeamsNotificationChannelIntegration):
+            return implementation
+        return TeamsNotificationChannelIntegration.from_runtime(implementation)
     from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
     from intergrax.runtime.notifications.adapters.webhook_adapter import WebhookNotificationAdapter
     from intergrax.runtime.notifications.formatters import TeamsPayloadFormatter
 
     url = config.webhook_url.strip()
     if not url:
-        return LoggingNotificationAdapter()
-    return WebhookNotificationAdapter(
-        webhook_url=url,
-        formatter=TeamsPayloadFormatter(),
-        delivery=delivery,
-        channel="teams",
+        return TeamsNotificationChannelIntegration.from_runtime(LoggingNotificationAdapter())
+    return TeamsNotificationChannelIntegration.from_runtime(
+        WebhookNotificationAdapter(
+            webhook_url=url,
+            formatter=TeamsPayloadFormatter(),
+            delivery=delivery,
+            channel="teams",
+        ),
     )
 
 
