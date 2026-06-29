@@ -54,3 +54,19 @@ async def test_record_schedules_async_handler_when_loop_running() -> None:
     bus.record(_sample_event())
 
     await asyncio.wait_for(seen.wait(), timeout=1.0)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_publish_notifies_subscribers_once() -> None:
+    bus = RuntimeEventBus(record_history=False)
+    seen: list[str] = []
+
+    async def _async_handler(_event: RuntimeEvent) -> None:
+        seen.append("handled")
+
+    bus.subscribe(_async_handler, event_types={RuntimeEventType.TASK_COMPLETED})
+
+    await bus.publish(_sample_event())
+
+    assert seen == ["handled"]

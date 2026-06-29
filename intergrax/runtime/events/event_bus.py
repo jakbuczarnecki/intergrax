@@ -154,14 +154,9 @@ class RuntimeEventBus:
         return handlers
 
     async def publish(self, event: RuntimeEvent) -> None:
-        self.record(event)
-        for sid, _prio, handler in self._collect_handlers(event):
-            try:
-                result = handler(event)
-                if result is not None:
-                    await result
-            except Exception:
-                logger.exception("RuntimeEventBus handler %s failed for %s", sid, event.event_type)
+        """Persist then notify subscribers once (async handlers are awaited)."""
+        self._store_event(event)
+        await self._dispatch_handlers_async(event)
 
     @property
     def history(self) -> List[RuntimeEvent]:
@@ -172,6 +167,10 @@ class RuntimeEventBus:
 
     def record(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
+        self._store_event(event, tenant_id=tenant_id)
+        self._dispatch_handlers_sync(event)
+
+    def _store_event(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         if self._record_history:
             self._history.append(event)
         if self._persistence is not None and should_persist_event(event):
@@ -185,6 +184,21 @@ class RuntimeEventBus:
                     "RuntimeEvent persistence failed for %s",
                     event.event_type.value,
                 )
+
+    async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
+        for sid, _prio, handler in self._collect_handlers(event):
+            try:
+                result = handler(event)
+                if result is not None:
+                    await result
+            except Exception:
+                logger.exception(
+                    "RuntimeEventBus handler %s failed for %s",
+                    sid,
+                    event.event_type,
+                )
+
+    def _dispatch_handlers_sync(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):
             try:
                 result = handler(event)

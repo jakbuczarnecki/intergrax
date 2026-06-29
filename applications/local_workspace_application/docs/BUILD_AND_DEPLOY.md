@@ -267,6 +267,8 @@ intergrax.tenant_id
 intergrax.workspace_id
 ```
 
+To verify no duplicate export for the same runtime event, group persisted log records by `intergrax.event_id` (and `intergrax.run_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, `intergrax.capability`). Each `event_id` should appear at most once per run.
+
 **Safety boundaries:**
 
 - Export is **disabled by default** in `.env.example`; no remote observability export occurs without explicit configuration.
