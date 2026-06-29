@@ -253,6 +253,19 @@ Windows PowerShell:
 Get-Content applications\local_workspace_application\.observability\otel\lkw-otlp-logs.jsonl -Tail 20
 ```
 
+### Inspect persisted OTLP logs
+
+For a readable local timeline and duplicate-export check, use the lightweight inspector from repository root:
+
+```powershell
+applications\local_workspace_application\inspect-otlp-logs.bat
+applications\local_workspace_application\inspect-otlp-logs.bat --list-runs
+applications\local_workspace_application\inspect-otlp-logs.bat --run-id run_... --check-duplicates
+applications\local_workspace_application\inspect-otlp-logs.bat --tool-id rag.retrieve
+```
+
+The default invocation reads `.observability/otel/lkw-otlp-logs.jsonl`, selects the latest run, prints a compact event timeline, and reports duplicate status. The duplicate check groups by `intergrax.event_id` plus run, event type, agent, tool, and capability metadata.
+
 ### What to look for
 
 Exported OTLP logs should include Intergrax attributes such as:
