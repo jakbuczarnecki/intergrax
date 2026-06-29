@@ -13,7 +13,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.interaction_surface.lab_json.config import LabJsonIntegrationConfig
+from intergrax.integrations.providers.interaction_surface.lab_json.integration import (
+    LAB_JSON_INTERACTION_SURFACE_PROVIDER_ID,
+    LabJsonInteractionSurfaceClient,
+    LabJsonInteractionSurfaceIntegration,
+    LabJsonInteractionSurfaceIntegrationConfig,
+)
 from intergrax.integrations.providers.interaction_surface.lab_json.opens import open_lab_json_interaction_surface
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 
@@ -23,7 +30,7 @@ class LabJsonIntegrationBundle:
     """Lab JSON interaction surface + config."""
 
     config: LabJsonIntegrationConfig
-    interaction_surface: InteractionAdapter
+    interaction_surface: LabJsonInteractionSurfaceIntegration
 
 
 def resolve_lab_json_config(**overrides: object) -> LabJsonIntegrationConfig:
@@ -57,20 +64,12 @@ def create_lab_json_interaction_surface(
     *,
     interaction_adapter: Optional[InteractionAdapter] = None,
     **config_overrides: object,
-) -> InteractionAdapter:
+) -> LabJsonInteractionSurfaceIntegration:
     """Catalog factory for ``"lab_json"`` / ``INTERACTION_SURFACE``."""
     return create_lab_json_integration(
         interaction_adapter=interaction_adapter,
         **config_overrides,
     ).interaction_surface
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.interaction_surface.lab_json.integration import (
-    LAB_JSON_INTERACTION_SURFACE_PROVIDER_ID,
-    LabJsonInteractionSurfaceIntegration,
-    LabJsonInteractionSurfaceIntegrationConfig,
-    LabJsonInteractionSurfaceClient,
-)
 
 
 def create_lab_json_interaction_surface_integration(
@@ -81,7 +80,6 @@ def create_lab_json_interaction_surface_integration(
     """
     Build a contract-based Lab Json interaction surface integration.
 
-    Compatibility shim — constructs Integration via from_store (create_lab_json_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:
