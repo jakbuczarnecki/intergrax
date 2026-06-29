@@ -95,11 +95,7 @@ def _delegation_block(category: str, prefix: str, label: str) -> str:
             "            raise IntegrationConfigurationError(\n"
             f'                f"{{type(self).__name__}} requires an {require_target} for operations",\n'
             "            )\n"
-            "        return client\n\n"
-            "    def __getattr__(self, name: str) -> Any:\n"
-            '        if name.startswith("_"):\n'
-            "            raise AttributeError(name)\n"
-            f"        return getattr(self.{require_name}(), name)\n"
+            "        return client\n"
         )
 
     extra_properties = spec.get("extra_properties", "")

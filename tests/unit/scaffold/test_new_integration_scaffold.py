@@ -14,6 +14,21 @@ from intergrax.scaffold.new_integration import run_new_integration
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
+_FORBIDDEN_INTEGRATION_SNIPPETS: tuple[str, ...] = (
+    "def __getattr__(self, name",
+    "def _require_runtime",
+    "__pydantic_private__",
+    "from_runtime(",
+    "from_backend(",
+    "_backend: Any",
+    "_runtime: Any",
+)
+
+
+def _assert_integration_forbids_legacy_delegation(integration_source: str) -> None:
+    violations = [snippet for snippet in _FORBIDDEN_INTEGRATION_SNIPPETS if snippet in integration_source]
+    assert violations == [], f"forbidden legacy delegation snippets: {violations!r}"
+
 
 def test_new_integration_scaffold_emits_runtime_contract_layout(tmp_path: Path) -> None:
     root = tmp_path
@@ -36,6 +51,7 @@ def test_new_integration_scaffold_emits_runtime_contract_layout(tmp_path: Path) 
     assert "class AcmeKvKeyValueCacheIntegration(" in integration
     assert "IntegrationPlugin" not in integration
     assert "AcmeKvKeyValueCacheClient" in integration
+    _assert_integration_forbids_legacy_delegation(integration)
 
     bundle = (provider_dir / "bundle.py").read_text(encoding="utf-8")
     assert "def create_acme_kv_key_value_cache_integration(" in bundle
@@ -62,6 +78,7 @@ def test_new_integration_scaffold_observability_backend(tmp_path: Path) -> None:
     assert class_prefix("acme_obs", "observability_backend") + "Integration" in integration
     assert "ObservabilityVendorIntegrationContract" in integration
     assert "from_transport" in integration
+    _assert_integration_forbids_legacy_delegation(integration)
 
     bundle = (provider_dir / "bundle.py").read_text(encoding="utf-8")
     assert "create_acme_obs_observability_integration" in bundle
