@@ -35,6 +35,15 @@ def authoritative_tenant_id(
     return meta, None
 
 
+def _tenant_id_from_config(config: object | None) -> str | None:
+    if config is None:
+        return None
+    tenant = attribute_access.optional(config, "tenant_id", None)
+    if tenant is not None and str(tenant).strip():
+        return str(tenant).strip()
+    return None
+
+
 def vectorstore_tenant_id(manager: object | None) -> str | None:
     if manager is None:
         return None
@@ -44,19 +53,10 @@ def vectorstore_tenant_id(manager: object | None) -> str | None:
     while store is not None and id(store) not in seen:
         seen.add(id(store))
 
-        cfg = attribute_access.optional(store, "cfg", None)
-        if cfg is not None:
-            tenant = attribute_access.optional(cfg, "tenant_id", None)
-            if tenant is not None and str(tenant).strip():
-                return str(tenant).strip()
-
-        config = attribute_access.optional(store, "_config", None)
-        if config is None:
-            config = attribute_access.optional(store, "config", None)
-        if config is not None:
-            tenant = attribute_access.optional(config, "tenant_id", None)
-            if tenant is not None and str(tenant).strip():
-                return str(tenant).strip()
+        for config_attr in ("cfg", "store_config", "_store_config", "_config", "config"):
+            tenant = _tenant_id_from_config(attribute_access.optional(store, config_attr, None))
+            if tenant is not None:
+                return tenant
 
         inner = attribute_access.optional(store, "_inner", None)
         if inner is None:
