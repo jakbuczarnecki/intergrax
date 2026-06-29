@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p7.factories import create_stripe_billing_meter
+from intergrax.integrations._shared.p7.factories import create_stripe_billing_meter as _legacy_create_stripe_billing_meter
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.billing_meter.stripe.integration import (
@@ -39,3 +39,11 @@ def create_stripe_billing_meter_integration(
         display_name="Stripe",
         config=StripeBillingMeterIntegrationConfig(enabled=enabled),
     )
+
+
+def create_stripe_billing_meter(**kwargs: object) -> StripeBillingMeterIntegration:
+    """Compatibility shim — constructs StripeBillingMeterIntegration from legacy runtime."""
+    runtime = _legacy_create_stripe_billing_meter(**kwargs)
+    if isinstance(runtime, StripeBillingMeterIntegration):
+        return runtime
+    return StripeBillingMeterIntegration.from_runtime(runtime)
