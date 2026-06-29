@@ -59,7 +59,7 @@ def __getattr__(name: str):
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "Ms365GraphCollaborationSuite":
-        from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
+        from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
 
         return Ms365GraphCollaborationSuite
     if name in _CONTRACT_INTEGRATION_EXPORTS:

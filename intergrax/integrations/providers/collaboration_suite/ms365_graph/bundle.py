@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.opens import (
@@ -27,7 +27,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.opens impo
 @dataclass(frozen=True)
 class Ms365GraphIntegrationBundle:
     config: Ms365GraphIntegrationConfig
-    collaboration_suite: Ms365GraphCollaborationSuite
+    collaboration_suite: Ms365GraphCollaborationSuiteIntegration
     rest_client: GraphRestClient
 
 
@@ -72,7 +72,7 @@ def create_ms365_graph_collaboration_suite(
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
     **config_overrides: object,
-) -> Ms365GraphCollaborationSuite:
+) -> Ms365GraphCollaborationSuiteIntegration:
     """Catalog factory for ``"ms365_graph"`` / ``COLLABORATION_SUITE``."""
     return create_ms365_graph_integration(
         collaboration_suite=collaboration_suite,
@@ -94,13 +94,13 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
 
 def create_ms365_graph_collaboration_suite_integration(
     *,
-    client: Ms365GraphCollaborationSuiteClient | None = None,
+    client: Ms365GraphCollaborationSuiteIntegrationClient | None = None,
     enabled: bool = False,
 ) -> Ms365GraphCollaborationSuiteIntegration:
     """
     Build a contract-based Ms365 Graph collaboration suite integration.
 
-    The legacy facade (create_ms365_graph_integration) is unchanged.
+    Compatibility shim — constructs Integration via from_store (create_ms365_graph_integration) is unchanged.
     Client must be injected explicitly when enabled=True; disabled by default.
     """
     if enabled and client is None:

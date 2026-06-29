@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p2.factories import create_google_workspace_collaboration_suite
+from intergrax.integrations._shared.p2.factories import create_google_workspace_collaboration_suite as _legacy_create_google_workspace_collaboration_suite
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
@@ -39,3 +39,11 @@ def create_google_workspace_collaboration_suite_integration(
         display_name="Google Workspace",
         config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(enabled=enabled),
     )
+
+
+def create_google_workspace_collaboration_suite(**kwargs: object) -> GoogleWorkspaceCollaborationSuiteIntegration:
+    """Compatibility shim — constructs GoogleWorkspaceCollaborationSuiteIntegration from legacy runtime."""
+    runtime = _legacy_create_google_workspace_collaboration_suite(**kwargs)
+    if isinstance(runtime, GoogleWorkspaceCollaborationSuiteIntegration):
+        return runtime
+    return GoogleWorkspaceCollaborationSuiteIntegration.from_runtime(runtime)
