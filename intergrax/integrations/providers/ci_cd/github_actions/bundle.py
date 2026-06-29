@@ -46,4 +46,4 @@ def create_github_actions_ci_cd(**kwargs: object) -> GithubActionsCiCdIntegratio
     runtime = _legacy_create_github_actions_ci_cd(**kwargs)
     if isinstance(runtime, GithubActionsCiCdIntegration):
         return runtime
-    return GithubActionsCiCdIntegration.from_runtime(runtime)
+    return GithubActionsCiCdIntegration.from_client(runtime)

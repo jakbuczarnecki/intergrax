@@ -46,4 +46,4 @@ def create_pulsar_message_bus(**kwargs: object) -> PulsarMessageBusIntegration:
     runtime = _legacy_create_pulsar_message_bus(**kwargs)
     if isinstance(runtime, PulsarMessageBusIntegration):
         return runtime
-    return PulsarMessageBusIntegration.from_runtime(runtime)
+    return PulsarMessageBusIntegration.from_client(runtime)

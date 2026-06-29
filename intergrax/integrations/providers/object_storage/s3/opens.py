@@ -127,7 +127,7 @@ def open_s3_object_storage(
     if implementation is not None:
         if isinstance(implementation, S3ObjectStorageIntegration):
             return implementation
-        return S3ObjectStorageIntegration.from_runtime(implementation)
+        return S3ObjectStorageIntegration.from_client(implementation)
     bucket_client = open_s3_bucket_client(
         config,
         s3_client=s3_client,
@@ -135,4 +135,4 @@ def open_s3_object_storage(
         session_factory=session_factory,
         s3_client_factory=s3_client_factory,
     )
-    return S3ObjectStorageIntegration.from_runtime(_S3ObjectStorage(bucket_client))
+    return S3ObjectStorageIntegration.from_client(_S3ObjectStorage(bucket_client))

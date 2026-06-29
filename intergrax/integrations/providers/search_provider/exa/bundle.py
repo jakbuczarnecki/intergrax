@@ -46,4 +46,4 @@ def create_exa_search_provider(**kwargs: object) -> ExaSearchProviderIntegration
     runtime = _legacy_create_exa_search_provider(**kwargs)
     if isinstance(runtime, ExaSearchProviderIntegration):
         return runtime
-    return ExaSearchProviderIntegration.from_runtime(runtime)
+    return ExaSearchProviderIntegration.from_client(runtime)

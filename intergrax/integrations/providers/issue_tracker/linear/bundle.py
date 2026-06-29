@@ -46,4 +46,4 @@ def create_linear_issue_tracker(**kwargs: object) -> LinearIssueTrackerIntegrati
     runtime = _legacy_create_linear_issue_tracker(**kwargs)
     if isinstance(runtime, LinearIssueTrackerIntegration):
         return runtime
-    return LinearIssueTrackerIntegration.from_runtime(runtime)
+    return LinearIssueTrackerIntegration.from_client(runtime)

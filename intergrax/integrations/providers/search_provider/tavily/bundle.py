@@ -46,4 +46,4 @@ def create_tavily_search_provider(**kwargs: object) -> TavilySearchProviderInteg
     runtime = _legacy_create_tavily_search_provider(**kwargs)
     if isinstance(runtime, TavilySearchProviderIntegration):
         return runtime
-    return TavilySearchProviderIntegration.from_runtime(runtime)
+    return TavilySearchProviderIntegration.from_client(runtime)

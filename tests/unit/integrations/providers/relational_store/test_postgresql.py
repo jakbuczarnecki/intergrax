@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.postgresql.adapter import _PostgreSQLRelationalStore
+from intergrax.integrations.providers.relational_store.postgresql.integration import PostgresqlRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.postgresql.bundle import (
     PostgreSQLIntegrationBundle,
     create_postgresql_integration,
@@ -41,7 +41,7 @@ _SKIP_DIR_NAMES = {".venv", "build", "__pycache__", "node_modules"}
 _FORBIDDEN_OUTSIDE_PROVIDER = (
     "import psycopg",
     "from psycopg",
-    "PostgreSQLRelationalStore(",
+    "PostgresqlRelationalStoreIntegration(",
     "integrations.providers.postgresql.adapter",
     "integrations.providers.postgresql.opens",
 )
@@ -187,7 +187,7 @@ def test_postgresql_opens_sets_search_path_when_tenant_schema_configured() -> No
         dsn="postgresql://localhost/test",
         tenant_schema="tenant_a",
     )
-    assert isinstance(store, PostgreSQLRelationalStore)
+    assert isinstance(store, PostgresqlRelationalStoreIntegration)
 
     assert conn.executed == [("SET search_path TO tenant_a, public", ())]
     assert conn.committed == 1
@@ -208,7 +208,7 @@ def test_postgresql_opens_uses_psycopg_when_no_connection_factory() -> None:
 
         store = open_postgresql_relational_store(config)
 
-    assert isinstance(store, PostgreSQLRelationalStore)
+    assert isinstance(store, PostgresqlRelationalStoreIntegration)
     mock_psycopg.connect.assert_called_once_with(
         "postgresql://localhost/test",
         row_factory=dict_row,
@@ -238,7 +238,7 @@ def test_create_postgresql_integration_bundle() -> None:
     )
 
     assert isinstance(bundle, PostgreSQLIntegrationBundle)
-    assert isinstance(bundle.relational_store, PostgreSQLRelationalStore)
+    assert isinstance(bundle.relational_store, PostgresqlRelationalStoreIntegration)
     assert bundle.config.dsn == "postgresql://localhost/test"
 
 
@@ -254,7 +254,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_relational_store(store)
-    assert isinstance(store, PostgreSQLRelationalStore)
+    assert isinstance(store, PostgresqlRelationalStoreIntegration)
 
 
 def test_register_default_integrations_includes_postgresql() -> None:
@@ -268,7 +268,7 @@ def test_register_default_integrations_includes_postgresql() -> None:
         config={"dsn": "postgresql://localhost/test", "connection_factory": factory},
     )
 
-    assert isinstance(store, PostgreSQLRelationalStore)
+    assert isinstance(store, PostgresqlRelationalStoreIntegration)
 
 
 def test_create_postgresql_relational_store_catalog_factory() -> None:

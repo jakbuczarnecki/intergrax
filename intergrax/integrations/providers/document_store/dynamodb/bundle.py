@@ -46,4 +46,4 @@ def create_dynamodb_document_store(**kwargs: object) -> DynamodbDocumentStoreInt
     runtime = _legacy_create_dynamodb_document_store(**kwargs)
     if isinstance(runtime, DynamodbDocumentStoreIntegration):
         return runtime
-    return DynamodbDocumentStoreIntegration.from_runtime(runtime)
+    return DynamodbDocumentStoreIntegration.from_client(runtime)

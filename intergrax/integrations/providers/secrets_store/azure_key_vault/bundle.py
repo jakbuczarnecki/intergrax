@@ -46,4 +46,4 @@ def create_azure_key_vault_secrets_store(**kwargs: object) -> AzureKeyVaultSecre
     runtime = _legacy_create_azure_key_vault_secrets_store(**kwargs)
     if isinstance(runtime, AzureKeyVaultSecretsStoreIntegration):
         return runtime
-    return AzureKeyVaultSecretsStoreIntegration.from_runtime(runtime)
+    return AzureKeyVaultSecretsStoreIntegration.from_client(runtime)

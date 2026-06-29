@@ -9,7 +9,7 @@ from intergrax.integrations.providers.rerank_provider.jina_rerank.config import 
 
 
 def create_jina_rerank_provider(**config_overrides: object) -> JinaRerankRerankProviderIntegration:
-    return JinaRerankRerankProviderIntegration.from_runtime(_JinaRerankProvider(JinaRerankIntegrationConfig.from_env(**config_overrides)))
+    return JinaRerankRerankProviderIntegration.from_client(_JinaRerankProvider(JinaRerankIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.rerank_provider.jina_rerank.integration import (

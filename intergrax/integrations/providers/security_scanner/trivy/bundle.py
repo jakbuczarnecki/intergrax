@@ -46,4 +46,4 @@ def create_trivy_security_scanner(**kwargs: object) -> TrivySecurityScannerInteg
     runtime = _legacy_create_trivy_security_scanner(**kwargs)
     if isinstance(runtime, TrivySecurityScannerIntegration):
         return runtime
-    return TrivySecurityScannerIntegration.from_runtime(runtime)
+    return TrivySecurityScannerIntegration.from_client(runtime)

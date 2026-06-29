@@ -46,4 +46,4 @@ def create_selenium_browser_automation(**kwargs: object) -> SeleniumBrowserAutom
     runtime = _legacy_create_selenium_browser_automation(**kwargs)
     if isinstance(runtime, SeleniumBrowserAutomationIntegration):
         return runtime
-    return SeleniumBrowserAutomationIntegration.from_runtime(runtime)
+    return SeleniumBrowserAutomationIntegration.from_client(runtime)

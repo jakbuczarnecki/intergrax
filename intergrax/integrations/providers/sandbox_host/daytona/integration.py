@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,40 +23,34 @@ class DaytonaSandboxHostIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class DaytonaSandboxHostClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+DaytonaSandboxHostClient = SandboxHostBackend
 
 class DaytonaSandboxHostIntegration(SandboxHostIntegrationContract):
     """
     Single public Daytona sandbox host entrypoint.
 
-    Legacy catalog factory (create_daytona_sandbox_host) delegates to this class.
+    Legacy catalog factory (create_daytona_sandbox_host) owns catalog behavior; legacy factories use from_client().
     """
 
     config: DaytonaSandboxHostIntegrationConfig = DaytonaSandboxHostIntegrationConfig()
     _client: DaytonaSandboxHostClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
+    
 
-    @classmethod
-    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> DaytonaSandboxHostIntegration:
-        integration = cls.for_provider(
-            provider_id=DAYTONA_SANDBOX_HOST_PROVIDER_ID,
-            display_name="Daytona",
-            config=DaytonaSandboxHostIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    def create_session(self):
+        return self._require_client().create_session()
 
-    def _require_runtime(self) -> Any:
-        if self._runtime is None:
-            raise IntegrationConfigurationError("Daytona integration requires a runtime delegate")
-        return self._runtime
+    def exec(self, session_id, command):
+        return self._require_client().exec(session_id, command)
 
+    def upload_artifact(self, session_id, local_path, remote_name):
+        return self._require_client().upload_artifact(session_id, local_path, remote_name)
+
+    def _require_client(self) -> SandboxHostBackend:
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a catalog client for operations",
+            )
+        return self._client
 
 
     @classmethod
@@ -77,12 +71,5 @@ class DaytonaSandboxHostIntegration(SandboxHostIntegrationContract):
     @property
     def client(self) -> DaytonaSandboxHostClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 SandboxHostBackend.register(DaytonaSandboxHostIntegration)

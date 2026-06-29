@@ -10,7 +10,7 @@ from intergrax.integrations.providers.search_provider.reddit.opens import open_r
 
 def create_reddit_search_provider(**config_overrides: object) -> RedditSearchProviderIntegration:
     config = RedditIntegrationConfig.from_env(**config_overrides)
-    return RedditSearchProviderIntegration.from_runtime(open_reddit_search_provider(config))
+    return RedditSearchProviderIntegration.from_client(open_reddit_search_provider(config))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.reddit.integration import (

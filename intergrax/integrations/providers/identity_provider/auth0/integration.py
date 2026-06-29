@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,40 +23,34 @@ class Auth0IdentityProviderIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class Auth0IdentityProviderClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+Auth0IdentityProviderClient = IdentityProviderBackend
 
 class Auth0IdentityProviderIntegration(IdentityProviderIntegrationContract):
     """
     Single public Auth0 identity provider entrypoint.
 
-    Legacy catalog factory (create_auth0_identity_provider) delegates to this class.
+    Legacy catalog factory (create_auth0_identity_provider) owns catalog behavior; legacy factories use from_client().
     """
 
     config: Auth0IdentityProviderIntegrationConfig = Auth0IdentityProviderIntegrationConfig()
     _client: Auth0IdentityProviderClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
+    
 
-    @classmethod
-    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> Auth0IdentityProviderIntegration:
-        integration = cls.for_provider(
-            provider_id=AUTH0_IDENTITY_PROVIDER_PROVIDER_ID,
-            display_name="Auth0",
-            config=Auth0IdentityProviderIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    def list_tenants(self, limit: int = 50):
+        return self._require_client().list_tenants(limit=limit)
 
-    def _require_runtime(self) -> Any:
-        if self._runtime is None:
-            raise IntegrationConfigurationError("Auth0 integration requires a runtime delegate")
-        return self._runtime
+    def userinfo(self, token):
+        return self._require_client().userinfo(token)
 
+    def verify_token(self, token):
+        return self._require_client().verify_token(token)
+
+    def _require_client(self) -> IdentityProviderBackend:
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a catalog client for operations",
+            )
+        return self._client
 
 
     @classmethod
@@ -77,12 +71,5 @@ class Auth0IdentityProviderIntegration(IdentityProviderIntegrationContract):
     @property
     def client(self) -> Auth0IdentityProviderClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 IdentityProviderBackend.register(Auth0IdentityProviderIntegration)

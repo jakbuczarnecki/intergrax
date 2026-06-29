@@ -46,4 +46,4 @@ def create_asana_issue_tracker(**kwargs: object) -> AsanaIssueTrackerIntegration
     runtime = _legacy_create_asana_issue_tracker(**kwargs)
     if isinstance(runtime, AsanaIssueTrackerIntegration):
         return runtime
-    return AsanaIssueTrackerIntegration.from_runtime(runtime)
+    return AsanaIssueTrackerIntegration.from_client(runtime)

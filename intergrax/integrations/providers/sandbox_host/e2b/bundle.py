@@ -46,4 +46,4 @@ def create_e2b_sandbox_host(**kwargs: object) -> E2bSandboxHostIntegration:
     runtime = _legacy_create_e2b_sandbox_host(**kwargs)
     if isinstance(runtime, E2bSandboxHostIntegration):
         return runtime
-    return E2bSandboxHostIntegration.from_runtime(runtime)
+    return E2bSandboxHostIntegration.from_client(runtime)

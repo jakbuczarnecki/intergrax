@@ -46,4 +46,4 @@ def create_auth0_identity_provider(**kwargs: object) -> Auth0IdentityProviderInt
     runtime = _legacy_create_auth0_identity_provider(**kwargs)
     if isinstance(runtime, Auth0IdentityProviderIntegration):
         return runtime
-    return Auth0IdentityProviderIntegration.from_runtime(runtime)
+    return Auth0IdentityProviderIntegration.from_client(runtime)

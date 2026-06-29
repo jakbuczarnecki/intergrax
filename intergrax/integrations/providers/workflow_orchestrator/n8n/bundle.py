@@ -46,4 +46,4 @@ def create_n8n_workflow_orchestrator(**kwargs: object) -> N8nWorkflowOrchestrato
     runtime = _legacy_create_n8n_workflow_orchestrator(**kwargs)
     if isinstance(runtime, N8nWorkflowOrchestratorIntegration):
         return runtime
-    return N8nWorkflowOrchestratorIntegration.from_runtime(runtime)
+    return N8nWorkflowOrchestratorIntegration.from_client(runtime)

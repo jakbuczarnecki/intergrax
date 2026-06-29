@@ -71,11 +71,11 @@ def open_mongodb_document_store(
     if implementation is not None:
         if isinstance(implementation, MongodbDocumentStoreIntegration):
             return implementation
-        return MongodbDocumentStoreIntegration.from_runtime(implementation)
+        return MongodbDocumentStoreIntegration.from_client(implementation)
     mongo_client = open_mongodb_collection_client(
         config,
         collection=collection,
         client=client,
         collection_factory=collection_factory,
     )
-    return MongodbDocumentStoreIntegration.from_runtime(_MongoDBDocumentStore(mongo_client))
+    return MongodbDocumentStoreIntegration.from_client(_MongoDBDocumentStore(mongo_client))

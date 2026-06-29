@@ -46,4 +46,4 @@ def create_redpanda_message_bus(**kwargs: object) -> RedpandaMessageBusIntegrati
     runtime = _legacy_create_redpanda_message_bus(**kwargs)
     if isinstance(runtime, RedpandaMessageBusIntegration):
         return runtime
-    return RedpandaMessageBusIntegration.from_runtime(runtime)
+    return RedpandaMessageBusIntegration.from_client(runtime)

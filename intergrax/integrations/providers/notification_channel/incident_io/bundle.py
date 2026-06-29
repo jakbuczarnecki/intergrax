@@ -46,4 +46,4 @@ def create_incident_io_notification_channel(**kwargs: object) -> IncidentIoNotif
     runtime = _legacy_create_incident_io_notification_channel(**kwargs)
     if isinstance(runtime, IncidentIoNotificationChannelIntegration):
         return runtime
-    return IncidentIoNotificationChannelIntegration.from_runtime(runtime)
+    return IncidentIoNotificationChannelIntegration.from_client(runtime)

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, Mapping, runtime_checkable
+from typing import Sequence, Mapping, Any
 
 from pydantic import PrivateAttr
 
@@ -23,66 +23,39 @@ class MysqlRelationalStoreIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class MysqlRelationalStoreClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+MysqlRelationalStoreClient = RelationalStore
 
 class MysqlRelationalStoreIntegration(RelationalStoreIntegrationContract):
     """
     Single public Mysql relational store entrypoint.
 
-    Legacy catalog factory (create_mysql_integration) delegates to this class.
+    Legacy catalog factory (create_mysql_integration) owns catalog behavior; legacy factories use from_client().
     """
 
     config: MysqlRelationalStoreIntegrationConfig = MysqlRelationalStoreIntegrationConfig()
     _client: MysqlRelationalStoreClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
-
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-    ) -> MysqlRelationalStoreIntegration:
-        integration = cls.for_provider(
-            provider_id=MYSQL_RELATIONAL_STORE_PROVIDER_ID,
-            display_name="Mysql",
-            config=MysqlRelationalStoreIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    
 
 
     def connect(self) -> None:
-        self._require_runtime().connect()
+        self._require_client().connect()
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> None:
-        self._require_runtime().execute(sql, params)
+        self._require_client().execute(sql, params)
 
     def fetch_all(self, sql: str, params: Sequence[Any] = ()) -> Sequence[Mapping[str, Any]]:
-        return self._require_runtime().fetch_all(sql, params)
+        return self._require_client().fetch_all(sql, params)
 
     def close(self) -> None:
-        self._require_runtime().close()
+        self._require_client().close()
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+    def _require_client(self) -> RelationalStore:
+        if self._client is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires a catalog client for operations",
             )
-        return runtime
+        return self._client
 
 
     @classmethod

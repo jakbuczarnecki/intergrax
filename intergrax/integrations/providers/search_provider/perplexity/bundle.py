@@ -46,4 +46,4 @@ def create_perplexity_search_provider(**kwargs: object) -> PerplexitySearchProvi
     runtime = _legacy_create_perplexity_search_provider(**kwargs)
     if isinstance(runtime, PerplexitySearchProviderIntegration):
         return runtime
-    return PerplexitySearchProviderIntegration.from_runtime(runtime)
+    return PerplexitySearchProviderIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_temporal_message_bus(**kwargs: object) -> TemporalMessageBusIntegrati
     runtime = _legacy_create_temporal_message_bus(**kwargs)
     if isinstance(runtime, TemporalMessageBusIntegration):
         return runtime
-    return TemporalMessageBusIntegration.from_runtime(runtime)
+    return TemporalMessageBusIntegration.from_client(runtime)

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,63 +23,39 @@ class VaultSecretsStoreIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class VaultSecretsStoreClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+VaultSecretsStoreClient = SecretsStore
 
 class VaultSecretsStoreIntegration(SecretsStoreIntegrationContract):
     """
     Single public Vault secrets store entrypoint.
 
-    Legacy catalog factory (create_vault_secrets_store) delegates to this class.
+    Legacy catalog factory (create_vault_secrets_store) owns catalog behavior; legacy factories use from_client().
     """
 
     config: VaultSecretsStoreIntegrationConfig = VaultSecretsStoreIntegrationConfig()
     _client: VaultSecretsStoreClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
-
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-    ) -> VaultSecretsStoreIntegration:
-        integration = cls.for_provider(
-            provider_id=VAULT_SECRETS_STORE_PROVIDER_ID,
-            display_name="Vault",
-            config=VaultSecretsStoreIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    
 
 
     def get_secret(self, key: str) -> str | None:
-        return self._require_runtime().get_secret(key)
+        return self._require_client().get_secret(key)
 
     def set_secret(self, key: str, value: str) -> None:
-        self._require_runtime().set_secret(key, value)
+        self._require_client().set_secret(key, value)
 
     def delete_secret(self, key: str) -> None:
-        self._require_runtime().delete_secret(key)
+        self._require_client().delete_secret(key)
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+    def put_secret(self, path, value):
+        return self._require_client().put_secret(path, value)
+
+    def _require_client(self) -> SecretsStore:
+        if self._client is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires a catalog client for operations",
             )
-        return runtime
+        return self._client
 
 
     @classmethod
@@ -100,12 +76,5 @@ class VaultSecretsStoreIntegration(SecretsStoreIntegrationContract):
     @property
     def client(self) -> VaultSecretsStoreClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 SecretsStore.register(VaultSecretsStoreIntegration)

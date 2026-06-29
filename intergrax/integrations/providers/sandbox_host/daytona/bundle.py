@@ -46,4 +46,4 @@ def create_daytona_sandbox_host(**kwargs: object) -> DaytonaSandboxHostIntegrati
     runtime = _legacy_create_daytona_sandbox_host(**kwargs)
     if isinstance(runtime, DaytonaSandboxHostIntegration):
         return runtime
-    return DaytonaSandboxHostIntegration.from_runtime(runtime)
+    return DaytonaSandboxHostIntegration.from_client(runtime)

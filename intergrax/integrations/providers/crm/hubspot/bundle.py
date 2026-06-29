@@ -46,4 +46,4 @@ def create_hubspot_crm(**kwargs: object) -> HubspotCrmIntegration:
     runtime = _legacy_create_hubspot_crm(**kwargs)
     if isinstance(runtime, HubspotCrmIntegration):
         return runtime
-    return HubspotCrmIntegration.from_runtime(runtime)
+    return HubspotCrmIntegration.from_client(runtime)

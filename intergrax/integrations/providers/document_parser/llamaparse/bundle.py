@@ -46,4 +46,4 @@ def create_llamaparse_document_parser(**kwargs: object) -> LlamaparseDocumentPar
     runtime = _legacy_create_llamaparse_document_parser(**kwargs)
     if isinstance(runtime, LlamaparseDocumentParserIntegration):
         return runtime
-    return LlamaparseDocumentParserIntegration.from_runtime(runtime)
+    return LlamaparseDocumentParserIntegration.from_client(runtime)

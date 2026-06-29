@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,57 +23,30 @@ class RedditSearchProviderIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class RedditSearchProviderClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+RedditSearchProviderClient = SearchProvider
 
 class RedditSearchProviderIntegration(SearchProviderIntegrationContract):
     """
     Single public Reddit search provider entrypoint.
 
-    Legacy catalog factory (create_reddit_search_provider) delegates to this class.
+    Legacy catalog factory (create_reddit_search_provider) owns catalog behavior; legacy factories use from_client().
     """
 
     config: RedditSearchProviderIntegrationConfig = RedditSearchProviderIntegrationConfig()
     _client: RedditSearchProviderClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
-
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-    ) -> RedditSearchProviderIntegration:
-        integration = cls.for_provider(
-            provider_id=REDDIT_SEARCH_PROVIDER_PROVIDER_ID,
-            display_name="Reddit",
-            config=RedditSearchProviderIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    
 
 
     def search(self, query: str, *, limit: int = 10) -> list[dict[str, object]]:
-        return self._require_runtime().search(query, limit=limit)
+        return self._require_client().search(query, limit=limit)
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+    def _require_client(self) -> SearchProvider:
+        if self._client is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires a catalog client for operations",
             )
-        return runtime
+        return self._client
 
 
     @classmethod

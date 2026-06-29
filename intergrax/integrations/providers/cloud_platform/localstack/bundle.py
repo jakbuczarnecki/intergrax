@@ -46,4 +46,4 @@ def create_localstack_cloud_platform(**kwargs: object) -> LocalstackCloudPlatfor
     runtime = _legacy_create_localstack_cloud_platform(**kwargs)
     if isinstance(runtime, LocalstackCloudPlatformIntegration):
         return runtime
-    return LocalstackCloudPlatformIntegration.from_runtime(runtime)
+    return LocalstackCloudPlatformIntegration.from_client(runtime)

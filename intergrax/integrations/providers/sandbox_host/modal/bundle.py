@@ -46,4 +46,4 @@ def create_modal_sandbox_host(**kwargs: object) -> ModalSandboxHostIntegration:
     runtime = _legacy_create_modal_sandbox_host(**kwargs)
     if isinstance(runtime, ModalSandboxHostIntegration):
         return runtime
-    return ModalSandboxHostIntegration.from_runtime(runtime)
+    return ModalSandboxHostIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_servicenow_issue_tracker(**kwargs: object) -> ServicenowIssueTrackerI
     runtime = _legacy_create_servicenow_issue_tracker(**kwargs)
     if isinstance(runtime, ServicenowIssueTrackerIntegration):
         return runtime
-    return ServicenowIssueTrackerIntegration.from_runtime(runtime)
+    return ServicenowIssueTrackerIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_serpapi_search_provider(**kwargs: object) -> SerpapiSearchProviderInt
     runtime = _legacy_create_serpapi_search_provider(**kwargs)
     if isinstance(runtime, SerpapiSearchProviderIntegration):
         return runtime
-    return SerpapiSearchProviderIntegration.from_runtime(runtime)
+    return SerpapiSearchProviderIntegration.from_client(runtime)

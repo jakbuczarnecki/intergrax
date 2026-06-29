@@ -46,4 +46,4 @@ def create_sqs_message_bus(**kwargs: object) -> SqsMessageBusIntegration:
     runtime = _legacy_create_sqs_message_bus(**kwargs)
     if isinstance(runtime, SqsMessageBusIntegration):
         return runtime
-    return SqsMessageBusIntegration.from_runtime(runtime)
+    return SqsMessageBusIntegration.from_client(runtime)

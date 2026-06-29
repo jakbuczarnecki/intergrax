@@ -9,7 +9,7 @@ from intergrax.integrations.providers.document_parser.whisper.config import Whis
 
 
 def create_whisper_document_parser(**config_overrides: object) -> WhisperDocumentParserIntegration:
-    return WhisperDocumentParserIntegration.from_runtime(_WhisperDocumentParser(WhisperIntegrationConfig.from_env(**config_overrides)))
+    return WhisperDocumentParserIntegration.from_client(_WhisperDocumentParser(WhisperIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.whisper.integration import (

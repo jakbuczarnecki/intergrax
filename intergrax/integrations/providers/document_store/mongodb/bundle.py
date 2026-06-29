@@ -52,7 +52,7 @@ def create_mongodb_integration(
     return MongoDBIntegrationBundle(
         config=config,
         document_store=store,
-        collection_client=store.mongo_client,
+        collection_client=store._require_client().mongo_client,
     )
 
 

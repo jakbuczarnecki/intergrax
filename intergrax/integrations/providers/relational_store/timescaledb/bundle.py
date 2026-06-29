@@ -46,4 +46,4 @@ def create_timescaledb_relational_store(**kwargs: object) -> TimescaledbRelation
     runtime = _legacy_create_timescaledb_relational_store(**kwargs)
     if isinstance(runtime, TimescaledbRelationalStoreIntegration):
         return runtime
-    return TimescaledbRelationalStoreIntegration.from_runtime(runtime)
+    return TimescaledbRelationalStoreIntegration.from_client(runtime)

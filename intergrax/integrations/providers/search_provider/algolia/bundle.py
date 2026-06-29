@@ -46,4 +46,4 @@ def create_algolia_search_provider(**kwargs: object) -> AlgoliaSearchProviderInt
     runtime = _legacy_create_algolia_search_provider(**kwargs)
     if isinstance(runtime, AlgoliaSearchProviderIntegration):
         return runtime
-    return AlgoliaSearchProviderIntegration.from_runtime(runtime)
+    return AlgoliaSearchProviderIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_falkordb_graph_store(**kwargs: object) -> FalkordbGraphStoreIntegrati
     runtime = _legacy_create_falkordb_graph_store(**kwargs)
     if isinstance(runtime, FalkordbGraphStoreIntegration):
         return runtime
-    return FalkordbGraphStoreIntegration.from_runtime(runtime)
+    return FalkordbGraphStoreIntegration.from_client(runtime)

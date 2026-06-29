@@ -46,4 +46,4 @@ def create_motherduck_relational_store(**kwargs: object) -> MotherduckRelational
     runtime = _legacy_create_motherduck_relational_store(**kwargs)
     if isinstance(runtime, MotherduckRelationalStoreIntegration):
         return runtime
-    return MotherduckRelationalStoreIntegration.from_runtime(runtime)
+    return MotherduckRelationalStoreIntegration.from_client(runtime)

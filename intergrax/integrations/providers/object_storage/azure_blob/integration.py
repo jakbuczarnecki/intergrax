@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, Mapping, runtime_checkable
+from typing import Sequence, Mapping
 
 from pydantic import PrivateAttr
 
@@ -23,39 +23,18 @@ class AzureBlobObjectStorageIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class AzureBlobObjectStorageClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+AzureBlobObjectStorageClient = ObjectStorage
 
 class AzureBlobObjectStorageIntegration(ObjectStorageIntegrationContract):
     """
     Single public Azure Blob object storage entrypoint.
 
-    Legacy catalog factory (create_azure_blob_object_storage) delegates to this class.
+    Legacy catalog factory (create_azure_blob_object_storage) owns catalog behavior; legacy factories use from_client().
     """
 
     config: AzureBlobObjectStorageIntegrationConfig = AzureBlobObjectStorageIntegrationConfig()
     _client: AzureBlobObjectStorageClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
-
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-    ) -> AzureBlobObjectStorageIntegration:
-        integration = cls.for_provider(
-            provider_id=AZURE_BLOB_OBJECT_STORAGE_PROVIDER_ID,
-            display_name="Azure Blob",
-            config=AzureBlobObjectStorageIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    
 
 
     def put(
@@ -66,13 +45,13 @@ class AzureBlobObjectStorageIntegration(ObjectStorageIntegrationContract):
         content_type: str = "application/octet-stream",
         metadata: Mapping[str, str] | None = None,
     ) -> None:
-        self._require_runtime().put(key, body, content_type=content_type, metadata=metadata)
+        self._require_client().put(key, body, content_type=content_type, metadata=metadata)
 
     def get(self, key: str) -> StoredObject | None:
-        return self._require_runtime().get(key)
+        return self._require_client().get(key)
 
     def delete(self, key: str) -> None:
-        self._require_runtime().delete(key)
+        self._require_client().delete(key)
 
     def presigned_url(
         self,
@@ -81,28 +60,22 @@ class AzureBlobObjectStorageIntegration(ObjectStorageIntegrationContract):
         expires_in_seconds: int = 3600,
         method: PresignedUrlMethod = "GET",
     ) -> str:
-        return self._require_runtime().presigned_url(
+        return self._require_client().presigned_url(
             key,
             expires_in_seconds=expires_in_seconds,
             method=method,
         )
 
     def close(self) -> None:
-        self._require_runtime().close()
+        self._require_client().close()
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+    def _require_client(self) -> ObjectStorage:
+        if self._client is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires a catalog client for operations",
             )
-        return runtime
+        return self._client
 
 
     @classmethod

@@ -46,4 +46,4 @@ def create_ollama_interaction_surface(**kwargs: object) -> OllamaInteractionSurf
     runtime = _legacy_create_ollama_interaction_surface(**kwargs)
     if isinstance(runtime, OllamaInteractionSurfaceIntegration):
         return runtime
-    return OllamaInteractionSurfaceIntegration.from_runtime(runtime)
+    return OllamaInteractionSurfaceIntegration.from_client(runtime)

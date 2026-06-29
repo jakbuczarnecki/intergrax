@@ -46,4 +46,4 @@ def create_semantic_scholar_search_provider(**kwargs: object) -> SemanticScholar
     runtime = _legacy_create_semantic_scholar_search_provider(**kwargs)
     if isinstance(runtime, SemanticScholarSearchProviderIntegration):
         return runtime
-    return SemanticScholarSearchProviderIntegration.from_runtime(runtime)
+    return SemanticScholarSearchProviderIntegration.from_client(runtime)

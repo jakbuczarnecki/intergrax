@@ -46,4 +46,4 @@ def create_playwright_browser_automation(**kwargs: object) -> PlaywrightBrowserA
     runtime = _legacy_create_playwright_browser_automation(**kwargs)
     if isinstance(runtime, PlaywrightBrowserAutomationIntegration):
         return runtime
-    return PlaywrightBrowserAutomationIntegration.from_runtime(runtime)
+    return PlaywrightBrowserAutomationIntegration.from_client(runtime)

@@ -65,7 +65,7 @@ def test_create_slack_integration_bundle(
 
     assert isinstance(bundle, SlackIntegrationBundle)
     assert isinstance(bundle.notification_channel, SlackNotificationChannelIntegration)
-    assert bundle.notification_channel._require_runtime() is mock_notification
+    assert bundle.notification_channel._require_client() is mock_notification
     assert bundle.interaction_surface is mock_interaction
     assert bundle.config.webhook_url == "https://hooks.slack.com/test"
     assert bundle.config.signing_secret == "secret"
@@ -75,7 +75,7 @@ def test_create_slack_notification_channel_injects_adapter(mock_notification: Ma
     channel = create_slack_notification_channel(notification_adapter=mock_notification)
 
     assert isinstance(channel, SlackNotificationChannelIntegration)
-    assert channel._require_runtime() is mock_notification
+    assert channel._require_client() is mock_notification
 
 
 def test_create_slack_interaction_surface_uses_slack_channel() -> None:
@@ -101,7 +101,7 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
 
     assert_notification_channel(channel)
     assert isinstance(channel, SlackNotificationChannelIntegration)
-    assert channel._require_runtime() is mock_notification
+    assert channel._require_client() is mock_notification
 
 
 def test_register_and_resolve_interaction_surface(mock_interaction: SlackInteractionAdapter) -> None:
@@ -132,7 +132,7 @@ def test_register_default_integrations_includes_slack(mock_notification: MagicMo
     )
 
     assert isinstance(channel, SlackNotificationChannelIntegration)
-    assert channel._require_runtime() is mock_notification
+    assert channel._require_client() is mock_notification
 
 
 def test_runtime_notification_factory_delegates_slack_to_integration(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -144,7 +144,7 @@ def test_runtime_notification_factory_delegates_slack_to_integration(monkeypatch
         resolve_notification_settings(backend="slack"),
     )
     assert isinstance(adapter, SlackNotificationChannelIntegration)
-    runtime = adapter._require_runtime()
+    runtime = adapter._require_client()
     assert isinstance(runtime, WebhookNotificationAdapter)
     assert runtime.webhook_url == "https://hooks.slack.com/services/test"
 
@@ -156,7 +156,7 @@ def test_long_running_resolve_notification_delegates_slack(monkeypatch: pytest.M
 
     adapter = resolve_notification_adapter("slack")
     assert isinstance(adapter, SlackNotificationChannelIntegration)
-    runtime = adapter._require_runtime()
+    runtime = adapter._require_client()
     assert isinstance(runtime, WebhookNotificationAdapter)
 
 

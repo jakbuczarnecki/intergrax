@@ -46,4 +46,4 @@ def create_snyk_security_scanner(**kwargs: object) -> SnykSecurityScannerIntegra
     runtime = _legacy_create_snyk_security_scanner(**kwargs)
     if isinstance(runtime, SnykSecurityScannerIntegration):
         return runtime
-    return SnykSecurityScannerIntegration.from_runtime(runtime)
+    return SnykSecurityScannerIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_bitbucket_issue_tracker(**kwargs: object) -> BitbucketIssueTrackerInt
     runtime = _legacy_create_bitbucket_issue_tracker(**kwargs)
     if isinstance(runtime, BitbucketIssueTrackerIntegration):
         return runtime
-    return BitbucketIssueTrackerIntegration.from_runtime(runtime)
+    return BitbucketIssueTrackerIntegration.from_client(runtime)

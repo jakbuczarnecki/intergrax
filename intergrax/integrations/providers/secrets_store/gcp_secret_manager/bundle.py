@@ -46,4 +46,4 @@ def create_gcp_secret_manager_secrets_store(**kwargs: object) -> GcpSecretManage
     runtime = _legacy_create_gcp_secret_manager_secrets_store(**kwargs)
     if isinstance(runtime, GcpSecretManagerSecretsStoreIntegration):
         return runtime
-    return GcpSecretManagerSecretsStoreIntegration.from_runtime(runtime)
+    return GcpSecretManagerSecretsStoreIntegration.from_client(runtime)

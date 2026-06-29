@@ -46,4 +46,4 @@ def create_neon_relational_store(**kwargs: object) -> NeonRelationalStoreIntegra
     runtime = _legacy_create_neon_relational_store(**kwargs)
     if isinstance(runtime, NeonRelationalStoreIntegration):
         return runtime
-    return NeonRelationalStoreIntegration.from_runtime(runtime)
+    return NeonRelationalStoreIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_sharepoint_wiki_knowledge(**kwargs: object) -> SharepointWikiKnowledg
     runtime = _legacy_create_sharepoint_wiki_knowledge(**kwargs)
     if isinstance(runtime, SharepointWikiKnowledgeIntegration):
         return runtime
-    return SharepointWikiKnowledgeIntegration.from_runtime(runtime)
+    return SharepointWikiKnowledgeIntegration.from_client(runtime)

@@ -64,4 +64,4 @@ def open_mysql_relational_store(
     connection = _open_connection(config, connection_factory=connection_factory)
     if config.tenant_database:
         _select_tenant_database(connection, config.tenant_database)
-    return MysqlRelationalStoreIntegration.from_runtime(_MySQLRelationalStore(config, connection))
+    return MysqlRelationalStoreIntegration.from_client(_MySQLRelationalStore(config, connection))

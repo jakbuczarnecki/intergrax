@@ -46,4 +46,4 @@ def create_kubernetes_cloud_platform(**kwargs: object) -> KubernetesCloudPlatfor
     runtime = _legacy_create_kubernetes_cloud_platform(**kwargs)
     if isinstance(runtime, KubernetesCloudPlatformIntegration):
         return runtime
-    return KubernetesCloudPlatformIntegration.from_runtime(runtime)
+    return KubernetesCloudPlatformIntegration.from_client(runtime)

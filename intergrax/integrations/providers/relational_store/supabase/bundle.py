@@ -46,4 +46,4 @@ def create_supabase_relational_store(**kwargs: object) -> SupabaseRelationalStor
     runtime = _legacy_create_supabase_relational_store(**kwargs)
     if isinstance(runtime, SupabaseRelationalStoreIntegration):
         return runtime
-    return SupabaseRelationalStoreIntegration.from_runtime(runtime)
+    return SupabaseRelationalStoreIntegration.from_client(runtime)

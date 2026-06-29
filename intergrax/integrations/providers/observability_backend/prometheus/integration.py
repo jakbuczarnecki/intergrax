@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+
 from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError

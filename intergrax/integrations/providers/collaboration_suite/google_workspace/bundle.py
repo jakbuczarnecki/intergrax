@@ -46,4 +46,4 @@ def create_google_workspace_collaboration_suite(**kwargs: object) -> GoogleWorks
     runtime = _legacy_create_google_workspace_collaboration_suite(**kwargs)
     if isinstance(runtime, GoogleWorkspaceCollaborationSuiteIntegration):
         return runtime
-    return GoogleWorkspaceCollaborationSuiteIntegration.from_runtime(runtime)
+    return GoogleWorkspaceCollaborationSuiteIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_firecrawl_browser_automation(**kwargs: object) -> FirecrawlBrowserAut
     runtime = _legacy_create_firecrawl_browser_automation(**kwargs)
     if isinstance(runtime, FirecrawlBrowserAutomationIntegration):
         return runtime
-    return FirecrawlBrowserAutomationIntegration.from_runtime(runtime)
+    return FirecrawlBrowserAutomationIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_github_issue_tracker(**kwargs: object) -> GithubIssueTrackerIntegrati
     runtime = _legacy_create_github_issue_tracker(**kwargs)
     if isinstance(runtime, GithubIssueTrackerIntegration):
         return runtime
-    return GithubIssueTrackerIntegration.from_runtime(runtime)
+    return GithubIssueTrackerIntegration.from_client(runtime)

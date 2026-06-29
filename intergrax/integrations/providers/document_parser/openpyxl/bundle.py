@@ -9,7 +9,7 @@ from intergrax.integrations.providers.document_parser.openpyxl.config import Ope
 
 
 def create_openpyxl_document_parser(**config_overrides: object) -> OpenpyxlDocumentParserIntegration:
-    return OpenpyxlDocumentParserIntegration.from_runtime(_OpenpyxlDocumentParser(OpenpyxlIntegrationConfig.from_env(**config_overrides)))
+    return OpenpyxlDocumentParserIntegration.from_client(_OpenpyxlDocumentParser(OpenpyxlIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.openpyxl.integration import (

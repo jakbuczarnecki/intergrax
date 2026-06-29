@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence, Any
 
 from pydantic import PrivateAttr
 
@@ -23,60 +23,34 @@ class WebhookNotificationChannelIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class WebhookNotificationChannelClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+WebhookNotificationChannelClient = NotificationChannel
 
 class WebhookNotificationChannelIntegration(NotificationChannelIntegrationContract):
     """
     Single public Webhook notification channel entrypoint.
 
-    Legacy catalog factory (create_webhook_integration) delegates to this class.
+    Legacy catalog factory (create_webhook_integration) owns catalog behavior; legacy factories use from_client().
     """
 
     config: WebhookNotificationChannelIntegrationConfig = WebhookNotificationChannelIntegrationConfig()
     _client: WebhookNotificationChannelClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
-
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-    ) -> WebhookNotificationChannelIntegration:
-        integration = cls.for_provider(
-            provider_id=WEBHOOK_NOTIFICATION_CHANNEL_PROVIDER_ID,
-            display_name="Webhook",
-            config=WebhookNotificationChannelIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    
 
 
     async def notify(self, message: Any) -> None:
-        await self._require_runtime().notify(message)
+        await self._require_client().notify(message)
 
     def health(self) -> Any:
-        return self._require_runtime().health()
+        return self._require_client().health()
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+
+    def _require_client(self) -> NotificationChannel:
+        if self._client is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires a catalog client for operations",
             )
-        return runtime
+        return self._client
 
 
     @classmethod
@@ -97,12 +71,5 @@ class WebhookNotificationChannelIntegration(NotificationChannelIntegrationContra
     @property
     def client(self) -> WebhookNotificationChannelClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 NotificationChannel.register(WebhookNotificationChannelIntegration)

@@ -46,4 +46,4 @@ def create_brave_search_provider(**kwargs: object) -> BraveSearchProviderIntegra
     runtime = _legacy_create_brave_search_provider(**kwargs)
     if isinstance(runtime, BraveSearchProviderIntegration):
         return runtime
-    return BraveSearchProviderIntegration.from_runtime(runtime)
+    return BraveSearchProviderIntegration.from_client(runtime)

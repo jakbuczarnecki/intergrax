@@ -46,4 +46,4 @@ def create_okta_identity_provider(**kwargs: object) -> OktaIdentityProviderInteg
     runtime = _legacy_create_okta_identity_provider(**kwargs)
     if isinstance(runtime, OktaIdentityProviderIntegration):
         return runtime
-    return OktaIdentityProviderIntegration.from_runtime(runtime)
+    return OktaIdentityProviderIntegration.from_client(runtime)

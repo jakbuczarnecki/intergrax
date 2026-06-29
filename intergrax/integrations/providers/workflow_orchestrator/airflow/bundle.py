@@ -46,4 +46,4 @@ def create_airflow_workflow_orchestrator(**kwargs: object) -> AirflowWorkflowOrc
     runtime = _legacy_create_airflow_workflow_orchestrator(**kwargs)
     if isinstance(runtime, AirflowWorkflowOrchestratorIntegration):
         return runtime
-    return AirflowWorkflowOrchestratorIntegration.from_runtime(runtime)
+    return AirflowWorkflowOrchestratorIntegration.from_client(runtime)

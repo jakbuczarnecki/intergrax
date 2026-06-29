@@ -46,4 +46,4 @@ def create_grafana_oncall_notification_channel(**kwargs: object) -> GrafanaOncal
     runtime = _legacy_create_grafana_oncall_notification_channel(**kwargs)
     if isinstance(runtime, GrafanaOncallNotificationChannelIntegration):
         return runtime
-    return GrafanaOncallNotificationChannelIntegration.from_runtime(runtime)
+    return GrafanaOncallNotificationChannelIntegration.from_client(runtime)

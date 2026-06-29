@@ -46,4 +46,4 @@ def create_duckdb_relational_store(**kwargs: object) -> DuckdbRelationalStoreInt
     runtime = _legacy_create_duckdb_relational_store(**kwargs)
     if isinstance(runtime, DuckdbRelationalStoreIntegration):
         return runtime
-    return DuckdbRelationalStoreIntegration.from_runtime(runtime)
+    return DuckdbRelationalStoreIntegration.from_client(runtime)

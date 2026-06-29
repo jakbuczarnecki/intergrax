@@ -46,4 +46,4 @@ def create_prefect_workflow_orchestrator(**kwargs: object) -> PrefectWorkflowOrc
     runtime = _legacy_create_prefect_workflow_orchestrator(**kwargs)
     if isinstance(runtime, PrefectWorkflowOrchestratorIntegration):
         return runtime
-    return PrefectWorkflowOrchestratorIntegration.from_runtime(runtime)
+    return PrefectWorkflowOrchestratorIntegration.from_client(runtime)

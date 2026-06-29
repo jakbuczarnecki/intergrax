@@ -46,4 +46,4 @@ def create_apify_browser_automation(**kwargs: object) -> ApifyBrowserAutomationI
     runtime = _legacy_create_apify_browser_automation(**kwargs)
     if isinstance(runtime, ApifyBrowserAutomationIntegration):
         return runtime
-    return ApifyBrowserAutomationIntegration.from_runtime(runtime)
+    return ApifyBrowserAutomationIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_argocd_ci_cd(**kwargs: object) -> ArgocdCiCdIntegration:
     runtime = _legacy_create_argocd_ci_cd(**kwargs)
     if isinstance(runtime, ArgocdCiCdIntegration):
         return runtime
-    return ArgocdCiCdIntegration.from_runtime(runtime)
+    return ArgocdCiCdIntegration.from_client(runtime)

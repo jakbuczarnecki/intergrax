@@ -46,4 +46,4 @@ def create_arxiv_search_provider(**kwargs: object) -> ArxivSearchProviderIntegra
     runtime = _legacy_create_arxiv_search_provider(**kwargs)
     if isinstance(runtime, ArxivSearchProviderIntegration):
         return runtime
-    return ArxivSearchProviderIntegration.from_runtime(runtime)
+    return ArxivSearchProviderIntegration.from_client(runtime)

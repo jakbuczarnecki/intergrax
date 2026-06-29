@@ -46,4 +46,4 @@ def create_keycloak_identity_provider(**kwargs: object) -> KeycloakIdentityProvi
     runtime = _legacy_create_keycloak_identity_provider(**kwargs)
     if isinstance(runtime, KeycloakIdentityProviderIntegration):
         return runtime
-    return KeycloakIdentityProviderIntegration.from_runtime(runtime)
+    return KeycloakIdentityProviderIntegration.from_client(runtime)

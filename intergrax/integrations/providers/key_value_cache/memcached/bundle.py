@@ -46,4 +46,4 @@ def create_memcached_key_value_cache(**kwargs: object) -> MemcachedKeyValueCache
     runtime = _legacy_create_memcached_key_value_cache(**kwargs)
     if isinstance(runtime, MemcachedKeyValueCacheIntegration):
         return runtime
-    return MemcachedKeyValueCacheIntegration.from_runtime(runtime)
+    return MemcachedKeyValueCacheIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_twilio_notification_channel(**kwargs: object) -> TwilioNotificationCh
     runtime = _legacy_create_twilio_notification_channel(**kwargs)
     if isinstance(runtime, TwilioNotificationChannelIntegration):
         return runtime
-    return TwilioNotificationChannelIntegration.from_runtime(runtime)
+    return TwilioNotificationChannelIntegration.from_client(runtime)

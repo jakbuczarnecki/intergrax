@@ -101,11 +101,11 @@ def open_ms365_graph_collaboration_suite(
     if implementation is not None:
         if isinstance(implementation, Ms365GraphCollaborationSuiteIntegration):
             return implementation
-        return Ms365GraphCollaborationSuiteIntegration.from_runtime(implementation)
+        return Ms365GraphCollaborationSuiteIntegration.from_client(implementation)
     rest_client = client or open_graph_rest_client(
         config,
         http_client=http_client,
         http_client_factory=http_client_factory,
         access_token=access_token,
     )
-    return Ms365GraphCollaborationSuiteIntegration.from_runtime(_Ms365GraphCollaborationSuite(rest_client))
+    return Ms365GraphCollaborationSuiteIntegration.from_client(_Ms365GraphCollaborationSuite(rest_client))

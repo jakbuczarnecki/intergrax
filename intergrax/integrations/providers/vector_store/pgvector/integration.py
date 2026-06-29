@@ -36,13 +36,13 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
     """
     Single public Pgvector vector store entrypoint.
 
-    Legacy catalog factory (create_pgvector_vector_store) delegates to this class.
+    Legacy catalog factories construct this class. Catalog factory (create_pgvector_vector_store) delegates to this class.
     """
 
     config: PgvectorVectorStoreIntegrationConfig = PgvectorVectorStoreIntegrationConfig()
     _client: PgvectorVectorStoreClient | None = PrivateAttr(default=None)
     _store_config: Any | None = PrivateAttr(default=None)
-    _inner: Any | None = PrivateAttr(default=None)
+    _inner: VectorStore | None = PrivateAttr(default=None)
 
     @classmethod
     def from_store(
@@ -61,15 +61,6 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
         integration._inner = inner
         return integration
 
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-        store_config: Any | None = None,
-    ) -> PgvectorVectorStoreIntegration:
-        return cls.from_store(runtime, enabled=enabled, store_config=store_config)
 
     @property
     def store_config(self) -> Any | None:
@@ -77,7 +68,7 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
 
     @property
     def rag_store(self) -> VectorStore:
-        return self._require_runtime()
+        return self._require_inner()
     def add_documents(
         self,
         documents: Sequence[Any],
@@ -85,7 +76,7 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
         *,
         ids: Sequence[str] | None = None,
     ) -> None:
-        self._require_runtime().add_documents(documents, embeddings, ids=ids)
+        self._require_inner().add_documents(documents, embeddings, ids=ids)
 
     def query(
         self,
@@ -95,7 +86,7 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
         metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> list[VectorStoreHit]:
-        return self._require_runtime().query(
+        return self._require_inner().query(
             query_embedding,
             top_k=top_k,
             metadata_filter=metadata_filter,
@@ -103,24 +94,18 @@ class PgvectorVectorStoreIntegration(VectorStoreIntegrationContract):
         )
 
     def delete(self, ids: Sequence[str]) -> None:
-        self._require_runtime().delete(ids)
+        self._require_inner().delete(ids)
 
     def count(self) -> int:
-        return self._require_runtime().count()
+        return self._require_inner().count()
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+    def _require_inner(self) -> VectorStore:
+        if self._inner is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires an inner store for vector operations",
             )
-        return runtime
+        return self._inner
 
 
     @classmethod

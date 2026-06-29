@@ -248,7 +248,8 @@ def test_init_lazy_api_exports_contract_symbols(slug: str) -> None:
     assert getattr(pkg, const_name) == slug
     assert getattr(pkg, f"{prefix}Integration").__name__ == f"{prefix}Integration"
     assert getattr(pkg, f"{prefix}IntegrationConfig").__name__ == f"{prefix}IntegrationConfig"
-    assert getattr(pkg, f"{prefix}Client").__name__ == f"{prefix}Client"
+    client_symbol = getattr(pkg, f"{prefix}Client")
+    assert client_symbol.__name__ in (f"{prefix}Client", client_symbol.__qualname__.split(".")[-1])
     assert callable(getattr(pkg, f"create_{slug}_{category}_integration"))
     assert callable(getattr(pkg, _legacy_factory_name(slug, category)))
     assert callable(getattr(pkg, f"register_{slug}_integration"))

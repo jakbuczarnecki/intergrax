@@ -46,4 +46,4 @@ def create_backblaze_b2_object_storage(**kwargs: object) -> BackblazeB2ObjectSto
     runtime = _legacy_create_backblaze_b2_object_storage(**kwargs)
     if isinstance(runtime, BackblazeB2ObjectStorageIntegration):
         return runtime
-    return BackblazeB2ObjectStorageIntegration.from_runtime(runtime)
+    return BackblazeB2ObjectStorageIntegration.from_client(runtime)

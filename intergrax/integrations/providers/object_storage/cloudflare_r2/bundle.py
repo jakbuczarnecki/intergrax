@@ -46,4 +46,4 @@ def create_cloudflare_r2_object_storage(**kwargs: object) -> CloudflareR2ObjectS
     runtime = _legacy_create_cloudflare_r2_object_storage(**kwargs)
     if isinstance(runtime, CloudflareR2ObjectStorageIntegration):
         return runtime
-    return CloudflareR2ObjectStorageIntegration.from_runtime(runtime)
+    return CloudflareR2ObjectStorageIntegration.from_client(runtime)

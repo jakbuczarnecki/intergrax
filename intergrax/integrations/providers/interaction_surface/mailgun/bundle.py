@@ -46,4 +46,4 @@ def create_mailgun_interaction_surface(**kwargs: object) -> MailgunInteractionSu
     runtime = _legacy_create_mailgun_interaction_surface(**kwargs)
     if isinstance(runtime, MailgunInteractionSurfaceIntegration):
         return runtime
-    return MailgunInteractionSurfaceIntegration.from_runtime(runtime)
+    return MailgunInteractionSurfaceIntegration.from_client(runtime)

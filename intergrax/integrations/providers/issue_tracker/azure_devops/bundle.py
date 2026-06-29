@@ -46,4 +46,4 @@ def create_azure_devops_issue_tracker(**kwargs: object) -> AzureDevopsIssueTrack
     runtime = _legacy_create_azure_devops_issue_tracker(**kwargs)
     if isinstance(runtime, AzureDevopsIssueTrackerIntegration):
         return runtime
-    return AzureDevopsIssueTrackerIntegration.from_runtime(runtime)
+    return AzureDevopsIssueTrackerIntegration.from_client(runtime)

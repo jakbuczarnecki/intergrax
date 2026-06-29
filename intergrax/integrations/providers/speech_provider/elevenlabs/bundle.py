@@ -46,4 +46,4 @@ def create_elevenlabs_speech_provider(**kwargs: object) -> ElevenlabsSpeechProvi
     runtime = _legacy_create_elevenlabs_speech_provider(**kwargs)
     if isinstance(runtime, ElevenlabsSpeechProviderIntegration):
         return runtime
-    return ElevenlabsSpeechProviderIntegration.from_runtime(runtime)
+    return ElevenlabsSpeechProviderIntegration.from_client(runtime)

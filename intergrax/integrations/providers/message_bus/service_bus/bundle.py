@@ -46,4 +46,4 @@ def create_service_bus_message_bus(**kwargs: object) -> ServiceBusMessageBusInte
     runtime = _legacy_create_service_bus_message_bus(**kwargs)
     if isinstance(runtime, ServiceBusMessageBusIntegration):
         return runtime
-    return ServiceBusMessageBusIntegration.from_runtime(runtime)
+    return ServiceBusMessageBusIntegration.from_client(runtime)

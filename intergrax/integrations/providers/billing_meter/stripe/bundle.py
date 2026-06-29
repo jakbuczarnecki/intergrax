@@ -46,4 +46,4 @@ def create_stripe_billing_meter(**kwargs: object) -> StripeBillingMeterIntegrati
     runtime = _legacy_create_stripe_billing_meter(**kwargs)
     if isinstance(runtime, StripeBillingMeterIntegration):
         return runtime
-    return StripeBillingMeterIntegration.from_runtime(runtime)
+    return StripeBillingMeterIntegration.from_client(runtime)

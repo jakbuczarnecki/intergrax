@@ -46,4 +46,4 @@ def create_semgrep_security_scanner(**kwargs: object) -> SemgrepSecurityScannerI
     runtime = _legacy_create_semgrep_security_scanner(**kwargs)
     if isinstance(runtime, SemgrepSecurityScannerIntegration):
         return runtime
-    return SemgrepSecurityScannerIntegration.from_runtime(runtime)
+    return SemgrepSecurityScannerIntegration.from_client(runtime)

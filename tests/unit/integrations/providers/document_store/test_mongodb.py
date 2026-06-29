@@ -15,7 +15,7 @@ import pytest
 from intergrax.integrations._shared.conformance import assert_document_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
+from intergrax.integrations.providers.document_store.mongodb.integration import MongodbDocumentStoreIntegration
 from intergrax.integrations.providers.document_store.mongodb.bundle import (
     MongoDBIntegrationBundle,
     create_mongodb_document_store,
@@ -41,7 +41,7 @@ _SCAN_ROOTS = ("intergrax", "applications", "agents", "tests")
 _SKIP_DIR_NAMES = {".venv", "build", "__pycache__", "node_modules"}
 _FORBIDDEN_OUTSIDE_PROVIDER = (
     "MongoCollectionClient(",
-    "MongoDBDocumentStore(",
+    "MongodbDocumentStoreIntegration(",
     "integrations.providers.mongodb.client",
     "integrations.providers.mongodb.opens",
     "import pymongo",
@@ -303,7 +303,7 @@ def test_create_mongodb_integration_bundle() -> None:
     bundle = create_mongodb_integration(**_mongodb_config().model_dump(), collection_factory=factory)
 
     assert isinstance(bundle, MongoDBIntegrationBundle)
-    assert isinstance(bundle.document_store, MongoDBDocumentStore)
+    assert isinstance(bundle.document_store, MongodbDocumentStoreIntegration)
     assert bundle.config.database == "intergrax"
 
 
@@ -319,7 +319,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_document_store(store)
-    assert isinstance(store, MongoDBDocumentStore)
+    assert isinstance(store, MongodbDocumentStoreIntegration)
 
 
 def test_register_default_integrations_includes_mongodb() -> None:
@@ -333,7 +333,7 @@ def test_register_default_integrations_includes_mongodb() -> None:
         config={**_mongodb_config().model_dump(), "collection_factory": factory},
     )
 
-    assert isinstance(store, MongoDBDocumentStore)
+    assert isinstance(store, MongodbDocumentStoreIntegration)
 
 
 def test_opens_creates_driver_client_when_not_injected() -> None:

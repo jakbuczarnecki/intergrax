@@ -59,8 +59,8 @@ def open_postgresql_relational_store(
     if implementation is not None:
         if isinstance(implementation, PostgresqlRelationalStoreIntegration):
             return implementation
-        return PostgresqlRelationalStoreIntegration.from_runtime(implementation)
+        return PostgresqlRelationalStoreIntegration.from_client(implementation)
     connection = _open_connection(config, connection_factory=connection_factory)
     if config.tenant_schema:
         _apply_search_path(connection, config.tenant_schema)
-    return PostgresqlRelationalStoreIntegration.from_runtime(_PostgreSQLRelationalStore(config, connection))
+    return PostgresqlRelationalStoreIntegration.from_client(_PostgreSQLRelationalStore(config, connection))

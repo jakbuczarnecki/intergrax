@@ -46,4 +46,4 @@ def create_codecov_ci_cd(**kwargs: object) -> CodecovCiCdIntegration:
     runtime = _legacy_create_codecov_ci_cd(**kwargs)
     if isinstance(runtime, CodecovCiCdIntegration):
         return runtime
-    return CodecovCiCdIntegration.from_runtime(runtime)
+    return CodecovCiCdIntegration.from_client(runtime)

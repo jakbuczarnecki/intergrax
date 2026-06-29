@@ -46,4 +46,4 @@ def create_gitlab_ci_ci_cd(**kwargs: object) -> GitlabCiCiCdIntegration:
     runtime = _legacy_create_gitlab_ci_ci_cd(**kwargs)
     if isinstance(runtime, GitlabCiCiCdIntegration):
         return runtime
-    return GitlabCiCiCdIntegration.from_runtime(runtime)
+    return GitlabCiCiCdIntegration.from_client(runtime)

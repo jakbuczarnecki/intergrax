@@ -15,7 +15,7 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.relational_store.databricks.adapter import _DatabricksRelationalStore
+from intergrax.integrations.providers.relational_store.databricks.integration import DatabricksRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.databricks.bundle import (
     DatabricksIntegrationBundle,
     create_databricks_integration,
@@ -44,7 +44,7 @@ _SKIP_DIR_NAMES = {".venv", "build", "__pycache__", "node_modules"}
 _FORBIDDEN_OUTSIDE_PROVIDER = (
     "from databricks import sql",
     "import databricks",
-    "DatabricksRelationalStore(",
+    "DatabricksRelationalStoreIntegration(",
     "integrations.providers.databricks.adapter",
     "integrations.providers.databricks.opens",
 )
@@ -208,7 +208,7 @@ def test_databricks_opens_sets_unity_catalog_when_configured() -> None:
         catalog="main",
         tenant_schema="analytics",
     )
-    assert isinstance(store, DatabricksRelationalStore)
+    assert isinstance(store, DatabricksRelationalStoreIntegration)
 
     assert conn._cursor.executed == [
         ("USE CATALOG main", None),
@@ -232,7 +232,7 @@ def test_databricks_opens_uses_driver_when_no_connection_factory() -> None:
 
         store = open_databricks_relational_store(config)
 
-    assert isinstance(store, DatabricksRelationalStore)
+    assert isinstance(store, DatabricksRelationalStoreIntegration)
     mock_sql.connect.assert_called_once_with(
         server_hostname="adb-123.4.azuredatabricks.net",
         http_path="/sql/1.0/warehouses/abc",
@@ -265,7 +265,7 @@ def test_create_databricks_integration_bundle() -> None:
     )
 
     assert isinstance(bundle, DatabricksIntegrationBundle)
-    assert isinstance(bundle.relational_store, DatabricksRelationalStore)
+    assert isinstance(bundle.relational_store, DatabricksRelationalStoreIntegration)
     assert bundle.config.host == "adb.example.net"
 
 
@@ -286,7 +286,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_relational_store(store)
-    assert isinstance(store, DatabricksRelationalStore)
+    assert isinstance(store, DatabricksRelationalStoreIntegration)
 
 
 def test_register_default_integrations_includes_databricks() -> None:
@@ -305,7 +305,7 @@ def test_register_default_integrations_includes_databricks() -> None:
         },
     )
 
-    assert isinstance(store, DatabricksRelationalStore)
+    assert isinstance(store, DatabricksRelationalStoreIntegration)
 
 
 def test_create_databricks_relational_store_catalog_factory() -> None:

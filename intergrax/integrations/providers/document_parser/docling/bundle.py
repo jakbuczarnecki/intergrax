@@ -12,7 +12,7 @@ from intergrax.integrations.providers.document_parser.docling.config import Docl
 
 def create_docling_document_parser(**config_overrides: object) -> DoclingDocumentParserIntegration:
     config = DoclingIntegrationConfig.from_env(**config_overrides)
-    return DoclingDocumentParserIntegration.from_runtime(_DoclingDocumentParser(config))
+    return DoclingDocumentParserIntegration.from_client(_DoclingDocumentParser(config))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.docling.integration import (

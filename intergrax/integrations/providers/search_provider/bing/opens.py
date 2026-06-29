@@ -40,6 +40,6 @@ def open_bing_search_provider(
     provider: Optional[BingWebProvider] = None,
     session: Optional[object] = None,
 ) -> SearchProvider:
-    return BingSearchProviderIntegration.from_runtime(_BingSearchProvider(
+    return BingSearchProviderIntegration.from_client(_BingSearchProvider(
         open_bing_web_search_provider(config, provider=provider, session=session))
     )

@@ -18,6 +18,9 @@ from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import _ConfluenceWikiKnowledge
 from intergrax.integrations.providers.wiki_knowledge.confluence.client import ConfluenceRestClient
 from intergrax.integrations.providers.wiki_knowledge.confluence.config import ConfluenceIntegrationConfig
+from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
+    ConfluenceWikiKnowledgeIntegration,
+)
 from intergrax.integrations.providers.wiki_knowledge.confluence.opens import (
     open_confluence_rest_client,
     open_confluence_wiki_knowledge,
@@ -54,7 +57,7 @@ def create_confluence_integration(
         implementation=wiki_knowledge,
         client=rest_client,
     )
-    assert isinstance(wiki, ConfluenceWikiKnowledge)
+    assert isinstance(wiki, ConfluenceWikiKnowledgeIntegration)
     return ConfluenceIntegrationBundle(config=config, wiki_knowledge=wiki, rest_client=rest_client)
 
 

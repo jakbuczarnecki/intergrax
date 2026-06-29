@@ -46,4 +46,4 @@ def create_workos_identity_provider(**kwargs: object) -> WorkosIdentityProviderI
     runtime = _legacy_create_workos_identity_provider(**kwargs)
     if isinstance(runtime, WorkosIdentityProviderIntegration):
         return runtime
-    return WorkosIdentityProviderIntegration.from_runtime(runtime)
+    return WorkosIdentityProviderIntegration.from_client(runtime)

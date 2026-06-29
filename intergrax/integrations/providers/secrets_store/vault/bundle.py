@@ -46,4 +46,4 @@ def create_vault_secrets_store(**kwargs: object) -> VaultSecretsStoreIntegration
     runtime = _legacy_create_vault_secrets_store(**kwargs)
     if isinstance(runtime, VaultSecretsStoreIntegration):
         return runtime
-    return VaultSecretsStoreIntegration.from_runtime(runtime)
+    return VaultSecretsStoreIntegration.from_client(runtime)

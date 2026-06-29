@@ -46,4 +46,4 @@ def create_azure_pipelines_ci_cd(**kwargs: object) -> AzurePipelinesCiCdIntegrat
     runtime = _legacy_create_azure_pipelines_ci_cd(**kwargs)
     if isinstance(runtime, AzurePipelinesCiCdIntegration):
         return runtime
-    return AzurePipelinesCiCdIntegration.from_runtime(runtime)
+    return AzurePipelinesCiCdIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_oracle_relational_store(**kwargs: object) -> OracleRelationalStoreInt
     runtime = _legacy_create_oracle_relational_store(**kwargs)
     if isinstance(runtime, OracleRelationalStoreIntegration):
         return runtime
-    return OracleRelationalStoreIntegration.from_runtime(runtime)
+    return OracleRelationalStoreIntegration.from_client(runtime)

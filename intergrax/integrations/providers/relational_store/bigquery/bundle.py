@@ -46,4 +46,4 @@ def create_bigquery_relational_store(**kwargs: object) -> BigqueryRelationalStor
     runtime = _legacy_create_bigquery_relational_store(**kwargs)
     if isinstance(runtime, BigqueryRelationalStoreIntegration):
         return runtime
-    return BigqueryRelationalStoreIntegration.from_runtime(runtime)
+    return BigqueryRelationalStoreIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_browserbase_browser_automation(**kwargs: object) -> BrowserbaseBrowse
     runtime = _legacy_create_browserbase_browser_automation(**kwargs)
     if isinstance(runtime, BrowserbaseBrowserAutomationIntegration):
         return runtime
-    return BrowserbaseBrowserAutomationIntegration.from_runtime(runtime)
+    return BrowserbaseBrowserAutomationIntegration.from_client(runtime)

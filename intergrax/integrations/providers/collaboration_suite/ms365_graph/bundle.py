@@ -50,7 +50,7 @@ def create_ms365_graph_integration(
             config,
             implementation=collaboration_suite,
         )
-        rest_client = suite.rest_client
+        rest_client = suite._require_client().rest_client
     else:
         rest_client = client or open_graph_rest_client(
             config,

@@ -46,4 +46,4 @@ def create_jenkins_ci_cd(**kwargs: object) -> JenkinsCiCdIntegration:
     runtime = _legacy_create_jenkins_ci_cd(**kwargs)
     if isinstance(runtime, JenkinsCiCdIntegration):
         return runtime
-    return JenkinsCiCdIntegration.from_runtime(runtime)
+    return JenkinsCiCdIntegration.from_client(runtime)

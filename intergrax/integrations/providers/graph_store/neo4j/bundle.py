@@ -46,4 +46,4 @@ def create_neo4j_graph_store(**kwargs: object) -> Neo4jGraphStoreIntegration:
     runtime = _legacy_create_neo4j_graph_store(**kwargs)
     if isinstance(runtime, Neo4jGraphStoreIntegration):
         return runtime
-    return Neo4jGraphStoreIntegration.from_runtime(runtime)
+    return Neo4jGraphStoreIntegration.from_client(runtime)

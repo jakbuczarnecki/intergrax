@@ -46,4 +46,4 @@ def create_triton_vision_serving(**kwargs: object) -> TritonVisionServingIntegra
     runtime = _legacy_create_triton_vision_serving(**kwargs)
     if isinstance(runtime, TritonVisionServingIntegration):
         return runtime
-    return TritonVisionServingIntegration.from_runtime(runtime)
+    return TritonVisionServingIntegration.from_client(runtime)

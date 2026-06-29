@@ -46,4 +46,4 @@ def create_statsig_feature_flag(**kwargs: object) -> StatsigFeatureFlagIntegrati
     runtime = _legacy_create_statsig_feature_flag(**kwargs)
     if isinstance(runtime, StatsigFeatureFlagIntegration):
         return runtime
-    return StatsigFeatureFlagIntegration.from_runtime(runtime)
+    return StatsigFeatureFlagIntegration.from_client(runtime)

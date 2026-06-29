@@ -46,4 +46,4 @@ def create_minio_object_storage(**kwargs: object) -> MinioObjectStorageIntegrati
     runtime = _legacy_create_minio_object_storage(**kwargs)
     if isinstance(runtime, MinioObjectStorageIntegration):
         return runtime
-    return MinioObjectStorageIntegration.from_runtime(runtime)
+    return MinioObjectStorageIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_email_smtp_notification_channel(**kwargs: object) -> EmailSmtpNotific
     runtime = _legacy_create_email_smtp_notification_channel(**kwargs)
     if isinstance(runtime, EmailSmtpNotificationChannelIntegration):
         return runtime
-    return EmailSmtpNotificationChannelIntegration.from_runtime(runtime)
+    return EmailSmtpNotificationChannelIntegration.from_client(runtime)

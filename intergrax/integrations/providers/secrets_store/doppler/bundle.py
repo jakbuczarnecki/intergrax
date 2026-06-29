@@ -46,4 +46,4 @@ def create_doppler_secrets_store(**kwargs: object) -> DopplerSecretsStoreIntegra
     runtime = _legacy_create_doppler_secrets_store(**kwargs)
     if isinstance(runtime, DopplerSecretsStoreIntegration):
         return runtime
-    return DopplerSecretsStoreIntegration.from_runtime(runtime)
+    return DopplerSecretsStoreIntegration.from_client(runtime)

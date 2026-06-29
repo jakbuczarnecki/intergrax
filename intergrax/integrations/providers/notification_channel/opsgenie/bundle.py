@@ -46,4 +46,4 @@ def create_opsgenie_notification_channel(**kwargs: object) -> OpsgenieNotificati
     runtime = _legacy_create_opsgenie_notification_channel(**kwargs)
     if isinstance(runtime, OpsgenieNotificationChannelIntegration):
         return runtime
-    return OpsgenieNotificationChannelIntegration.from_runtime(runtime)
+    return OpsgenieNotificationChannelIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_buildkite_ci_cd(**kwargs: object) -> BuildkiteCiCdIntegration:
     runtime = _legacy_create_buildkite_ci_cd(**kwargs)
     if isinstance(runtime, BuildkiteCiCdIntegration):
         return runtime
-    return BuildkiteCiCdIntegration.from_runtime(runtime)
+    return BuildkiteCiCdIntegration.from_client(runtime)

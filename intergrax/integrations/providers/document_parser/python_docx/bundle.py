@@ -25,7 +25,7 @@ class PythonDocxDocumentParser:
 
 
 def create_python_docx_document_parser(**config_overrides: object) -> PythonDocxDocumentParserIntegration:
-    return PythonDocxDocumentParserIntegration.from_runtime(PythonDocxDocumentParser(PythonDocxIntegrationConfig.from_env(**config_overrides)))
+    return PythonDocxDocumentParserIntegration.from_client(PythonDocxDocumentParser(PythonDocxIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.python_docx.integration import (

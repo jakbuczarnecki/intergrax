@@ -115,7 +115,7 @@ def create_redis_key_value_cache(
 
     if isinstance(runtime, RedisKeyValueCacheIntegration):
         return runtime
-    return RedisKeyValueCacheIntegration.from_runtime(runtime)
+    return RedisKeyValueCacheIntegration.from_client(runtime)
 
 
 def create_redis_kv_store(

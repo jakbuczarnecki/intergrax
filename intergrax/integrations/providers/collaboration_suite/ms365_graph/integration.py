@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,40 +23,46 @@ class Ms365GraphCollaborationSuiteIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class Ms365GraphCollaborationSuiteClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+Ms365GraphCollaborationSuiteClient = CollaborationSuite
 
 class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContract):
     """
     Single public Ms365 Graph collaboration suite entrypoint.
 
-    Legacy catalog factory (create_ms365_graph_integration) delegates to this class.
+    Legacy catalog factory (create_ms365_graph_integration) owns catalog behavior; legacy factories use from_client().
     """
 
     config: Ms365GraphCollaborationSuiteIntegrationConfig = Ms365GraphCollaborationSuiteIntegrationConfig()
     _client: Ms365GraphCollaborationSuiteClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
+    
 
-    @classmethod
-    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> Ms365GraphCollaborationSuiteIntegration:
-        integration = cls.for_provider(
-            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
-            display_name="Ms365 Graph",
-            config=Ms365GraphCollaborationSuiteIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    def create_event(self, user_id, subject, start, end, location: str = '', attendees: Sequence[str] = ()):
+        return self._require_client().create_event(user_id, subject, start, end, location=location, attendees=attendees)
 
-    def _require_runtime(self) -> Any:
-        if self._runtime is None:
-            raise IntegrationConfigurationError("Ms365 Graph integration requires a runtime delegate")
-        return self._runtime
+    def get_message(self, user_id, message_id):
+        return self._require_client().get_message(user_id, message_id)
 
+    def get_user(self, user_id):
+        return self._require_client().get_user(user_id)
+
+    def list_calendar_events(self, user_id, start, end, limit: int = 50):
+        return self._require_client().list_calendar_events(user_id, start, end, limit=limit)
+
+    def list_messages(self, user_id, folder: str = 'inbox', limit: int = 25):
+        return self._require_client().list_messages(user_id, folder=folder, limit=limit)
+
+    def reply_message(self, user_id, message_id, body):
+        return self._require_client().reply_message(user_id, message_id, body)
+
+    def send_mail(self, user_id, subject, body, to):
+        return self._require_client().send_mail(user_id, subject, body, to)
+
+    def _require_client(self) -> CollaborationSuite:
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a catalog client for operations",
+            )
+        return self._client
 
 
     @classmethod
@@ -77,12 +83,5 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
     @property
     def client(self) -> Ms365GraphCollaborationSuiteClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 CollaborationSuite.register(Ms365GraphCollaborationSuiteIntegration)

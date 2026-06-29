@@ -35,7 +35,7 @@ def _wrap_slack_notification_channel(
 ) -> SlackNotificationChannelIntegration:
     if isinstance(runtime, SlackNotificationChannelIntegration):
         return runtime
-    return SlackNotificationChannelIntegration.from_runtime(runtime)
+    return SlackNotificationChannelIntegration.from_client(runtime)
 
 
 @dataclass(frozen=True)

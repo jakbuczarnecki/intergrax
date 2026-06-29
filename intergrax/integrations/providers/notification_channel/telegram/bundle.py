@@ -46,4 +46,4 @@ def create_telegram_catalog_factory(**kwargs: object) -> TelegramNotificationCha
     runtime = _legacy_create_telegram_catalog_factory(**kwargs)
     if isinstance(runtime, TelegramNotificationChannelIntegration):
         return runtime
-    return TelegramNotificationChannelIntegration.from_runtime(runtime)
+    return TelegramNotificationChannelIntegration.from_client(runtime)

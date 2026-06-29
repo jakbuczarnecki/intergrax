@@ -61,4 +61,4 @@ def open_confluence_wiki_knowledge(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return ConfluenceWikiKnowledgeIntegration.from_runtime(_ConfluenceWikiKnowledge(rest_client))
+    return ConfluenceWikiKnowledgeIntegration.from_client(_ConfluenceWikiKnowledge(rest_client))

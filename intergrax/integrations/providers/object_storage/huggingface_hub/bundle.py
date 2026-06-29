@@ -46,4 +46,4 @@ def create_huggingface_hub_object_storage(**kwargs: object) -> HuggingfaceHubObj
     runtime = _legacy_create_huggingface_hub_object_storage(**kwargs)
     if isinstance(runtime, HuggingfaceHubObjectStorageIntegration):
         return runtime
-    return HuggingfaceHubObjectStorageIntegration.from_runtime(runtime)
+    return HuggingfaceHubObjectStorageIntegration.from_client(runtime)

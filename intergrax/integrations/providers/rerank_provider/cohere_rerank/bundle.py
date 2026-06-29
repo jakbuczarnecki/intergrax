@@ -9,7 +9,7 @@ from intergrax.integrations.providers.rerank_provider.cohere_rerank.config impor
 
 
 def create_cohere_rerank_provider(**config_overrides: object) -> CohereRerankRerankProviderIntegration:
-    return CohereRerankRerankProviderIntegration.from_runtime(_CohereRerankProvider(CohereRerankIntegrationConfig.from_env(**config_overrides)))
+    return CohereRerankRerankProviderIntegration.from_client(_CohereRerankProvider(CohereRerankIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.rerank_provider.cohere_rerank.integration import (

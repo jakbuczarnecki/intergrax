@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, Mapping, runtime_checkable
+from typing import Sequence, Mapping
 
 from pydantic import PrivateAttr
 
@@ -23,60 +23,51 @@ class UpstashQstashMessageBusIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class UpstashQstashMessageBusClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+UpstashQstashMessageBusClient = MessageBus
 
 class UpstashQstashMessageBusIntegration(MessageBusIntegrationContract):
     """
     Single public Upstash Qstash message bus entrypoint.
 
-    Legacy catalog factory (create_upstash_qstash_message_bus) delegates to this class.
+    Legacy catalog factory (create_upstash_qstash_message_bus) owns catalog behavior; legacy factories use from_client().
     """
 
     config: UpstashQstashMessageBusIntegrationConfig = UpstashQstashMessageBusIntegrationConfig()
     _client: UpstashQstashMessageBusClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
-
-    @classmethod
-    def from_runtime(
-        cls,
-        runtime: Any,
-        *,
-        enabled: bool = True,
-    ) -> UpstashQstashMessageBusIntegration:
-        integration = cls.for_provider(
-            provider_id=UPSTASH_QSTASH_MESSAGE_BUS_PROVIDER_ID,
-            display_name="Upstash Qstash",
-            config=UpstashQstashMessageBusIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    
 
 
     def publish(self, topic: str, payload: bytes, *, headers: Mapping[str, str] | None = None) -> None:
-        self._require_runtime().publish(topic, payload, headers=headers)
+        self._require_client().publish(topic, payload, headers=headers)
 
     def close(self) -> None:
-        self._require_runtime().close()
+        self._require_client().close()
 
 
-    def _require_runtime(self) -> Any:
-        private = object.__getattribute__(self, "__pydantic_private__")
-        runtime = private.get("_runtime")
-        if runtime is None:
-            runtime = private.get("_backend")
-        if runtime is None:
-            runtime = private.get("_inner")
-        if runtime is None:
+    def cancel(self, handle):
+        return self._require_client().cancel(handle)
+
+    def enqueue(self, request):
+        return self._require_client().enqueue(request)
+
+    def get_result(self, handle):
+        return self._require_client().get_result(handle)
+
+    def get_status(self, handle):
+        return self._require_client().get_status(handle)
+
+    def list_tasks(self, tenant_id, limit: int = 50, status_filter: Optional[TaskStatus] = None):
+        return self._require_client().list_tasks(tenant_id, limit=limit, status_filter=status_filter)
+
+    def purge_completed(self, tenant_id, older_than_seconds: int = 0):
+        return self._require_client().purge_completed(tenant_id, older_than_seconds=older_than_seconds)
+
+    def _require_client(self) -> MessageBus:
+        if self._client is None:
             raise IntegrationConfigurationError(
-                f"{type(self).__name__} requires a runtime delegate for catalog operations",
+                f"{type(self).__name__} requires a catalog client for operations",
             )
-        return runtime
+        return self._client
 
 
     @classmethod
@@ -97,12 +88,5 @@ class UpstashQstashMessageBusIntegration(MessageBusIntegrationContract):
     @property
     def client(self) -> UpstashQstashMessageBusClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 MessageBus.register(UpstashQstashMessageBusIntegration)

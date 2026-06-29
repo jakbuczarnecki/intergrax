@@ -52,4 +52,4 @@ def open_gitlab_issue_tracker(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return GitlabIssueTrackerIntegration.from_runtime(_GitLabIssueTracker(rest_client))
+    return GitlabIssueTrackerIntegration.from_client(_GitLabIssueTracker(rest_client))

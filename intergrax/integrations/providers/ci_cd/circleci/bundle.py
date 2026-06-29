@@ -46,4 +46,4 @@ def create_circleci_ci_cd(**kwargs: object) -> CircleciCiCdIntegration:
     runtime = _legacy_create_circleci_ci_cd(**kwargs)
     if isinstance(runtime, CircleciCiCdIntegration):
         return runtime
-    return CircleciCiCdIntegration.from_runtime(runtime)
+    return CircleciCiCdIntegration.from_client(runtime)

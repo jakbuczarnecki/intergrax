@@ -46,4 +46,4 @@ def create_sendgrid_notification_channel(**kwargs: object) -> SendgridNotificati
     runtime = _legacy_create_sendgrid_notification_channel(**kwargs)
     if isinstance(runtime, SendgridNotificationChannelIntegration):
         return runtime
-    return SendgridNotificationChannelIntegration.from_runtime(runtime)
+    return SendgridNotificationChannelIntegration.from_client(runtime)

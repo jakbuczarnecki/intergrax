@@ -76,4 +76,4 @@ def open_aws_cloud_platform(
     if implementation is not None:
         return implementation
     boto_session = session or open_aws_boto_session(config, session_factory=session_factory)
-    return AwsCloudPlatformIntegration.from_runtime(_AwsCloudPlatform(config, boto_session))
+    return AwsCloudPlatformIntegration.from_client(_AwsCloudPlatform(config, boto_session))

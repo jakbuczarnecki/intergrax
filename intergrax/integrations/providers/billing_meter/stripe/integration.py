@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,40 +23,31 @@ class StripeBillingMeterIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class StripeBillingMeterClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+StripeBillingMeterClient = BillingMeterBackend
 
 class StripeBillingMeterIntegration(BillingMeterIntegrationContract):
     """
     Single public Stripe billing meter entrypoint.
 
-    Legacy catalog factory (create_stripe_billing_meter) delegates to this class.
+    Legacy catalog factory (create_stripe_billing_meter) owns catalog behavior; legacy factories use from_client().
     """
 
     config: StripeBillingMeterIntegrationConfig = StripeBillingMeterIntegrationConfig()
     _client: StripeBillingMeterClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
+    
 
-    @classmethod
-    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> StripeBillingMeterIntegration:
-        integration = cls.for_provider(
-            provider_id=STRIPE_BILLING_METER_PROVIDER_ID,
-            display_name="Stripe",
-            config=StripeBillingMeterIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    def list_meter_events(self, customer_id, limit: int = 50):
+        return self._require_client().list_meter_events(customer_id, limit=limit)
 
-    def _require_runtime(self) -> Any:
-        if self._runtime is None:
-            raise IntegrationConfigurationError("Stripe integration requires a runtime delegate")
-        return self._runtime
+    def submit_meter_event(self, customer_id, metric, quantity):
+        return self._require_client().submit_meter_event(customer_id, metric, quantity)
 
+    def _require_client(self) -> BillingMeterBackend:
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a catalog client for operations",
+            )
+        return self._client
 
 
     @classmethod
@@ -77,12 +68,5 @@ class StripeBillingMeterIntegration(BillingMeterIntegrationContract):
     @property
     def client(self) -> StripeBillingMeterClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 BillingMeterBackend.register(StripeBillingMeterIntegration)

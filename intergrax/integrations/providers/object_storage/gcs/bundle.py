@@ -46,4 +46,4 @@ def create_gcs_object_storage(**kwargs: object) -> GcsObjectStorageIntegration:
     runtime = _legacy_create_gcs_object_storage(**kwargs)
     if isinstance(runtime, GcsObjectStorageIntegration):
         return runtime
-    return GcsObjectStorageIntegration.from_runtime(runtime)
+    return GcsObjectStorageIntegration.from_client(runtime)

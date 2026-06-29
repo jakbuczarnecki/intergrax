@@ -83,4 +83,4 @@ def open_cassandra_document_store(
         session=session,
         session_factory=session_factory,
     )
-    return CassandraDocumentStoreIntegration.from_runtime(_CassandraDocumentStore(client))
+    return CassandraDocumentStoreIntegration.from_client(_CassandraDocumentStore(client))

@@ -46,4 +46,4 @@ def create_confluent_message_bus(**kwargs: object) -> ConfluentMessageBusIntegra
     runtime = _legacy_create_confluent_message_bus(**kwargs)
     if isinstance(runtime, ConfluentMessageBusIntegration):
         return runtime
-    return ConfluentMessageBusIntegration.from_runtime(runtime)
+    return ConfluentMessageBusIntegration.from_client(runtime)

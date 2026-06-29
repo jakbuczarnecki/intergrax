@@ -46,4 +46,4 @@ def create_mssql_relational_store(**kwargs: object) -> MssqlRelationalStoreInteg
     runtime = _legacy_create_mssql_relational_store(**kwargs)
     if isinstance(runtime, MssqlRelationalStoreIntegration):
         return runtime
-    return MssqlRelationalStoreIntegration.from_runtime(runtime)
+    return MssqlRelationalStoreIntegration.from_client(runtime)

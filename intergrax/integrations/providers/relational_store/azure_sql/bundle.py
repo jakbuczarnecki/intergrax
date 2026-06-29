@@ -46,4 +46,4 @@ def create_azure_sql_relational_store(**kwargs: object) -> AzureSqlRelationalSto
     runtime = _legacy_create_azure_sql_relational_store(**kwargs)
     if isinstance(runtime, AzureSqlRelationalStoreIntegration):
         return runtime
-    return AzureSqlRelationalStoreIntegration.from_runtime(runtime)
+    return AzureSqlRelationalStoreIntegration.from_client(runtime)

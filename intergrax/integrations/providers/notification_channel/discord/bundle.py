@@ -46,4 +46,4 @@ def create_discord_notification_channel(**kwargs: object) -> DiscordNotification
     runtime = _legacy_create_discord_notification_channel(**kwargs)
     if isinstance(runtime, DiscordNotificationChannelIntegration):
         return runtime
-    return DiscordNotificationChannelIntegration.from_runtime(runtime)
+    return DiscordNotificationChannelIntegration.from_client(runtime)

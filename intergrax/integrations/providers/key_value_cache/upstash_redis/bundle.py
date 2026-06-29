@@ -46,4 +46,4 @@ def create_upstash_redis_key_value_cache(**kwargs: object) -> UpstashRedisKeyVal
     runtime = _legacy_create_upstash_redis_key_value_cache(**kwargs)
     if isinstance(runtime, UpstashRedisKeyValueCacheIntegration):
         return runtime
-    return UpstashRedisKeyValueCacheIntegration.from_runtime(runtime)
+    return UpstashRedisKeyValueCacheIntegration.from_client(runtime)

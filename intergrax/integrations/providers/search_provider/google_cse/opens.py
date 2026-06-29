@@ -41,6 +41,6 @@ def open_google_cse_search_provider(
     provider: Optional[GoogleCSEProvider] = None,
     session: Optional[object] = None,
 ) -> SearchProvider:
-    return GoogleCseSearchProviderIntegration.from_runtime(_GoogleCSESearchProvider(
+    return GoogleCseSearchProviderIntegration.from_client(_GoogleCSESearchProvider(
         open_google_cse_web_search_provider(config, provider=provider, session=session))
     )

@@ -50,7 +50,7 @@ def create_cassandra_integration(
     return CassandraIntegrationBundle(
         config=config,
         document_store=store,
-        cql_client=store.cql_client,
+        cql_client=store._require_client().cql_client,
     )
 
 

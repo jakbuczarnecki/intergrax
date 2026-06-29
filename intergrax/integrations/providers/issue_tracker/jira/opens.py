@@ -58,4 +58,4 @@ def open_jira_issue_tracker(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return JiraIssueTrackerIntegration.from_runtime(_JiraIssueTracker(rest_client))
+    return JiraIssueTrackerIntegration.from_client(_JiraIssueTracker(rest_client))

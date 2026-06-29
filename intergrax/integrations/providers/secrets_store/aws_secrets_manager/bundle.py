@@ -46,4 +46,4 @@ def create_aws_secrets_manager_secrets_store(**kwargs: object) -> AwsSecretsMana
     runtime = _legacy_create_aws_secrets_manager_secrets_store(**kwargs)
     if isinstance(runtime, AwsSecretsManagerSecretsStoreIntegration):
         return runtime
-    return AwsSecretsManagerSecretsStoreIntegration.from_runtime(runtime)
+    return AwsSecretsManagerSecretsStoreIntegration.from_client(runtime)

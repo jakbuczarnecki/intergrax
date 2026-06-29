@@ -10,7 +10,7 @@ from intergrax.integrations.providers.search_provider.google_places.opens import
 
 def create_google_places_search_provider(**config_overrides: object) -> GooglePlacesSearchProviderIntegration:
     config = GooglePlacesIntegrationConfig.from_env(**config_overrides)
-    return GooglePlacesSearchProviderIntegration.from_runtime(open_google_places_search_provider(config))
+    return GooglePlacesSearchProviderIntegration.from_client(open_google_places_search_provider(config))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.search_provider.google_places.integration import (

@@ -46,4 +46,4 @@ def create_mailpit_notification_channel(**kwargs: object) -> MailpitNotification
     runtime = _legacy_create_mailpit_notification_channel(**kwargs)
     if isinstance(runtime, MailpitNotificationChannelIntegration):
         return runtime
-    return MailpitNotificationChannelIntegration.from_runtime(runtime)
+    return MailpitNotificationChannelIntegration.from_client(runtime)

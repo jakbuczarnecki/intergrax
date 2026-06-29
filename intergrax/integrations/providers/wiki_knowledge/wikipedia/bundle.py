@@ -46,4 +46,4 @@ def create_wikipedia_wiki_knowledge(**kwargs: object) -> WikipediaWikiKnowledgeI
     runtime = _legacy_create_wikipedia_wiki_knowledge(**kwargs)
     if isinstance(runtime, WikipediaWikiKnowledgeIntegration):
         return runtime
-    return WikipediaWikiKnowledgeIntegration.from_runtime(runtime)
+    return WikipediaWikiKnowledgeIntegration.from_client(runtime)

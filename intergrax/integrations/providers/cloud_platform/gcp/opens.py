@@ -78,7 +78,7 @@ def open_gcp_cloud_platform(
             config,
             credential_factory=credential_factory,
         )
-    return GcpCloudPlatformIntegration.from_runtime(_GcpCloudPlatform(
+    return GcpCloudPlatformIntegration.from_client(_GcpCloudPlatform(
         config,
         credentials,
         resolved_project_id=resolved_project_id,

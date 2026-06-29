@@ -54,7 +54,7 @@ def create_s3_integration(
     return S3IntegrationBundle(
         config=config,
         object_storage=store,
-        bucket_client=store._require_runtime().bucket_client,
+        bucket_client=store._require_client().bucket_client,
     )
 
 

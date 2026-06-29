@@ -46,4 +46,4 @@ def create_launchdarkly_feature_flag(**kwargs: object) -> LaunchdarklyFeatureFla
     runtime = _legacy_create_launchdarkly_feature_flag(**kwargs)
     if isinstance(runtime, LaunchdarklyFeatureFlagIntegration):
         return runtime
-    return LaunchdarklyFeatureFlagIntegration.from_runtime(runtime)
+    return LaunchdarklyFeatureFlagIntegration.from_client(runtime)

@@ -46,4 +46,4 @@ def create_replicate_ml_inference_host(**kwargs: object) -> ReplicateMlInference
     runtime = _legacy_create_replicate_ml_inference_host(**kwargs)
     if isinstance(runtime, ReplicateMlInferenceHostIntegration):
         return runtime
-    return ReplicateMlInferenceHostIntegration.from_runtime(runtime)
+    return ReplicateMlInferenceHostIntegration.from_client(runtime)

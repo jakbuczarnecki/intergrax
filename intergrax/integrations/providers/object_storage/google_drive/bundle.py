@@ -46,4 +46,4 @@ def create_google_drive_object_storage(**kwargs: object) -> GoogleDriveObjectSto
     runtime = _legacy_create_google_drive_object_storage(**kwargs)
     if isinstance(runtime, GoogleDriveObjectStorageIntegration):
         return runtime
-    return GoogleDriveObjectStorageIntegration.from_runtime(runtime)
+    return GoogleDriveObjectStorageIntegration.from_client(runtime)

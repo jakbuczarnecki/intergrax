@@ -46,4 +46,4 @@ def create_pubsub_message_bus(**kwargs: object) -> PubsubMessageBusIntegration:
     runtime = _legacy_create_pubsub_message_bus(**kwargs)
     if isinstance(runtime, PubsubMessageBusIntegration):
         return runtime
-    return PubsubMessageBusIntegration.from_runtime(runtime)
+    return PubsubMessageBusIntegration.from_client(runtime)

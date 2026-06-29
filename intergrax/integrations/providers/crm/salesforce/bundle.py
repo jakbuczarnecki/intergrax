@@ -46,4 +46,4 @@ def create_salesforce_crm(**kwargs: object) -> SalesforceCrmIntegration:
     runtime = _legacy_create_salesforce_crm(**kwargs)
     if isinstance(runtime, SalesforceCrmIntegration):
         return runtime
-    return SalesforceCrmIntegration.from_runtime(runtime)
+    return SalesforceCrmIntegration.from_client(runtime)

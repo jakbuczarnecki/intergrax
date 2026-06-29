@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Sequence
 
 from pydantic import PrivateAttr
 
@@ -23,40 +23,40 @@ class N8nWorkflowOrchestratorIntegrationConfig(CategoryIntegrationConfig):
     pass
 
 
-@runtime_checkable
-class N8nWorkflowOrchestratorClient(Protocol):
-    """Injectable client facade — no vendor SDK or network I/O in the integration class."""
-
-    async def ping(self) -> None:
-        """Lightweight connectivity check."""
-
+N8nWorkflowOrchestratorClient = WorkflowOrchestratorBackend
 
 class N8nWorkflowOrchestratorIntegration(WorkflowOrchestratorIntegrationContract):
     """
     Single public N8N workflow orchestrator entrypoint.
 
-    Legacy catalog factory (create_n8n_workflow_orchestrator) delegates to this class.
+    Legacy catalog factory (create_n8n_workflow_orchestrator) owns catalog behavior; legacy factories use from_client().
     """
 
     config: N8nWorkflowOrchestratorIntegrationConfig = N8nWorkflowOrchestratorIntegrationConfig()
     _client: N8nWorkflowOrchestratorClient | None = PrivateAttr(default=None)
-    _runtime: Any | None = PrivateAttr(default=None)
+    
 
-    @classmethod
-    def from_runtime(cls, runtime: Any, *, enabled: bool = True) -> N8nWorkflowOrchestratorIntegration:
-        integration = cls.for_provider(
-            provider_id=N8N_WORKFLOW_ORCHESTRATOR_PROVIDER_ID,
-            display_name="N8N",
-            config=N8nWorkflowOrchestratorIntegrationConfig(enabled=enabled),
-        )
-        integration._runtime = runtime
-        return integration
+    def cancel_run(self, run_id):
+        return self._require_client().cancel_run(run_id)
 
-    def _require_runtime(self) -> Any:
-        if self._runtime is None:
-            raise IntegrationConfigurationError("N8N integration requires a runtime delegate")
-        return self._runtime
+    def fetch_logs(self, run_id, tail_lines: int = 200):
+        return self._require_client().fetch_logs(run_id, tail_lines=tail_lines)
 
+    def list_runs(self, workflow_id: str = '', limit: int = 20):
+        return self._require_client().list_runs(workflow_id=workflow_id, limit=limit)
+
+    def poll_status(self, run_id):
+        return self._require_client().poll_status(run_id)
+
+    def trigger_run(self, workflow_id, parameters: dict[str, str] | None = None):
+        return self._require_client().trigger_run(workflow_id, parameters=parameters)
+
+    def _require_client(self) -> WorkflowOrchestratorBackend:
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} requires a catalog client for operations",
+            )
+        return self._client
 
 
     @classmethod
@@ -77,12 +77,5 @@ class N8nWorkflowOrchestratorIntegration(WorkflowOrchestratorIntegrationContract
     @property
     def client(self) -> N8nWorkflowOrchestratorClient | None:
         return self._client
-    def __getattr__(self, name: str) -> object:
-        if name.startswith("_"):
-            private = object.__getattribute__(self, "__pydantic_private__")
-            if name in private:
-                return private[name]
-            raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
-        return getattr(self._require_runtime(), name)
 
 WorkflowOrchestratorBackend.register(N8nWorkflowOrchestratorIntegration)

@@ -73,4 +73,4 @@ def open_databricks_relational_store(
             catalog=config.catalog,
             tenant_schema=config.tenant_schema,
         )
-    return DatabricksRelationalStoreIntegration.from_runtime(_DatabricksRelationalStore(config, connection))
+    return DatabricksRelationalStoreIntegration.from_client(_DatabricksRelationalStore(config, connection))

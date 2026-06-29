@@ -46,4 +46,4 @@ def create_upstash_qstash_message_bus(**kwargs: object) -> UpstashQstashMessageB
     runtime = _legacy_create_upstash_qstash_message_bus(**kwargs)
     if isinstance(runtime, UpstashQstashMessageBusIntegration):
         return runtime
-    return UpstashQstashMessageBusIntegration.from_runtime(runtime)
+    return UpstashQstashMessageBusIntegration.from_client(runtime)

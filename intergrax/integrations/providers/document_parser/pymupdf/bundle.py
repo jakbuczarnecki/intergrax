@@ -9,7 +9,7 @@ from intergrax.integrations.providers.document_parser.pymupdf.config import Pymu
 
 
 def create_pymupdf_document_parser(**config_overrides: object) -> PymupdfDocumentParserIntegration:
-    return PymupdfDocumentParserIntegration.from_runtime(_PymupdfDocumentParser(PymupdfIntegrationConfig.from_env(**config_overrides)))
+    return PymupdfDocumentParserIntegration.from_client(_PymupdfDocumentParser(PymupdfIntegrationConfig.from_env(**config_overrides)))
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_parser.pymupdf.integration import (

@@ -46,4 +46,4 @@ def create_infisical_secrets_store(**kwargs: object) -> InfisicalSecretsStoreInt
     runtime = _legacy_create_infisical_secrets_store(**kwargs)
     if isinstance(runtime, InfisicalSecretsStoreIntegration):
         return runtime
-    return InfisicalSecretsStoreIntegration.from_runtime(runtime)
+    return InfisicalSecretsStoreIntegration.from_client(runtime)

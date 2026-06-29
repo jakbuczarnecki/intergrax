@@ -29,15 +29,15 @@ def open_teams_notification_channel(
     if implementation is not None:
         if isinstance(implementation, TeamsNotificationChannelIntegration):
             return implementation
-        return TeamsNotificationChannelIntegration.from_runtime(implementation)
+        return TeamsNotificationChannelIntegration.from_client(implementation)
     from intergrax.runtime.notifications.adapters.logging_adapter import LoggingNotificationAdapter
     from intergrax.runtime.notifications.adapters.webhook_adapter import WebhookNotificationAdapter
     from intergrax.runtime.notifications.formatters import TeamsPayloadFormatter
 
     url = config.webhook_url.strip()
     if not url:
-        return TeamsNotificationChannelIntegration.from_runtime(LoggingNotificationAdapter())
-    return TeamsNotificationChannelIntegration.from_runtime(
+        return TeamsNotificationChannelIntegration.from_client(LoggingNotificationAdapter())
+    return TeamsNotificationChannelIntegration.from_client(
         WebhookNotificationAdapter(
             webhook_url=url,
             formatter=TeamsPayloadFormatter(),

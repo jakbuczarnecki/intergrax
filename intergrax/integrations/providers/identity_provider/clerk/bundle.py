@@ -46,4 +46,4 @@ def create_clerk_identity_provider(**kwargs: object) -> ClerkIdentityProviderInt
     runtime = _legacy_create_clerk_identity_provider(**kwargs)
     if isinstance(runtime, ClerkIdentityProviderIntegration):
         return runtime
-    return ClerkIdentityProviderIntegration.from_runtime(runtime)
+    return ClerkIdentityProviderIntegration.from_client(runtime)

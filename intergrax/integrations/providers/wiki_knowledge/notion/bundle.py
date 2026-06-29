@@ -46,4 +46,4 @@ def create_notion_wiki_knowledge(**kwargs: object) -> NotionWikiKnowledgeIntegra
     runtime = _legacy_create_notion_wiki_knowledge(**kwargs)
     if isinstance(runtime, NotionWikiKnowledgeIntegration):
         return runtime
-    return NotionWikiKnowledgeIntegration.from_runtime(runtime)
+    return NotionWikiKnowledgeIntegration.from_client(runtime)

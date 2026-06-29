@@ -46,4 +46,4 @@ def create_memgraph_graph_store(**kwargs: object) -> MemgraphGraphStoreIntegrati
     runtime = _legacy_create_memgraph_graph_store(**kwargs)
     if isinstance(runtime, MemgraphGraphStoreIntegration):
         return runtime
-    return MemgraphGraphStoreIntegration.from_runtime(runtime)
+    return MemgraphGraphStoreIntegration.from_client(runtime)

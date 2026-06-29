@@ -46,4 +46,4 @@ def create_deepgram_speech_provider(**kwargs: object) -> DeepgramSpeechProviderI
     runtime = _legacy_create_deepgram_speech_provider(**kwargs)
     if isinstance(runtime, DeepgramSpeechProviderIntegration):
         return runtime
-    return DeepgramSpeechProviderIntegration.from_runtime(runtime)
+    return DeepgramSpeechProviderIntegration.from_client(runtime)

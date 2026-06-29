@@ -46,4 +46,4 @@ def create_elasticache_key_value_cache(**kwargs: object) -> ElasticacheKeyValueC
     runtime = _legacy_create_elasticache_key_value_cache(**kwargs)
     if isinstance(runtime, ElasticacheKeyValueCacheIntegration):
         return runtime
-    return ElasticacheKeyValueCacheIntegration.from_runtime(runtime)
+    return ElasticacheKeyValueCacheIntegration.from_client(runtime)

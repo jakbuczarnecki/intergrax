@@ -46,4 +46,4 @@ def create_zendesk_issue_tracker(**kwargs: object) -> ZendeskIssueTrackerIntegra
     runtime = _legacy_create_zendesk_issue_tracker(**kwargs)
     if isinstance(runtime, ZendeskIssueTrackerIntegration):
         return runtime
-    return ZendeskIssueTrackerIntegration.from_runtime(runtime)
+    return ZendeskIssueTrackerIntegration.from_client(runtime)

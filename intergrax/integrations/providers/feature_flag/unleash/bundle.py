@@ -46,4 +46,4 @@ def create_unleash_feature_flag(**kwargs: object) -> UnleashFeatureFlagIntegrati
     runtime = _legacy_create_unleash_feature_flag(**kwargs)
     if isinstance(runtime, UnleashFeatureFlagIntegration):
         return runtime
-    return UnleashFeatureFlagIntegration.from_runtime(runtime)
+    return UnleashFeatureFlagIntegration.from_client(runtime)

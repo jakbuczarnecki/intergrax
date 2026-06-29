@@ -26,5 +26,5 @@ def open_lab_json_interaction_surface(
     if implementation is not None:
         if isinstance(implementation, LabJsonInteractionSurfaceIntegration):
             return implementation
-        return LabJsonInteractionSurfaceIntegration.from_runtime(implementation)
-    return LabJsonInteractionSurfaceIntegration.from_runtime(_LabJsonIntegrationAdapter())
+        return LabJsonInteractionSurfaceIntegration.from_client(implementation)
+    return LabJsonInteractionSurfaceIntegration.from_client(_LabJsonIntegrationAdapter())

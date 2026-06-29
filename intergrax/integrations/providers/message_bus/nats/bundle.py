@@ -46,4 +46,4 @@ def create_nats_message_bus(**kwargs: object) -> NatsMessageBusIntegration:
     runtime = _legacy_create_nats_message_bus(**kwargs)
     if isinstance(runtime, NatsMessageBusIntegration):
         return runtime
-    return NatsMessageBusIntegration.from_runtime(runtime)
+    return NatsMessageBusIntegration.from_client(runtime)

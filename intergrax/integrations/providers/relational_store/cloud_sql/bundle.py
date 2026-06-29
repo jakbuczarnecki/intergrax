@@ -46,4 +46,4 @@ def create_cloud_sql_relational_store(**kwargs: object) -> CloudSqlRelationalSto
     runtime = _legacy_create_cloud_sql_relational_store(**kwargs)
     if isinstance(runtime, CloudSqlRelationalStoreIntegration):
         return runtime
-    return CloudSqlRelationalStoreIntegration.from_runtime(runtime)
+    return CloudSqlRelationalStoreIntegration.from_client(runtime)

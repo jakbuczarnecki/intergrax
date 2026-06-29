@@ -46,4 +46,4 @@ def create_filesystem_object_storage(**kwargs: object) -> FilesystemObjectStorag
     runtime = _legacy_create_filesystem_object_storage(**kwargs)
     if isinstance(runtime, FilesystemObjectStorageIntegration):
         return runtime
-    return FilesystemObjectStorageIntegration.from_runtime(runtime)
+    return FilesystemObjectStorageIntegration.from_client(runtime)

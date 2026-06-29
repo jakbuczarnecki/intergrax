@@ -46,4 +46,4 @@ def create_snowflake_relational_store(**kwargs: object) -> SnowflakeRelationalSt
     runtime = _legacy_create_snowflake_relational_store(**kwargs)
     if isinstance(runtime, SnowflakeRelationalStoreIntegration):
         return runtime
-    return SnowflakeRelationalStoreIntegration.from_runtime(runtime)
+    return SnowflakeRelationalStoreIntegration.from_client(runtime)

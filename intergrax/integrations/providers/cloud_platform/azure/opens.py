@@ -60,4 +60,4 @@ def open_azure_cloud_platform(
         config,
         credential_factory=credential_factory,
     )
-    return AzureCloudPlatformIntegration.from_runtime(_AzureCloudPlatform(config, token_credential))
+    return AzureCloudPlatformIntegration.from_client(_AzureCloudPlatform(config, token_credential))

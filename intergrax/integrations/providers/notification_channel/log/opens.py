@@ -22,5 +22,5 @@ def open_log_notification_channel(
     if implementation is not None:
         if isinstance(implementation, LogNotificationChannelIntegration):
             return implementation
-        return LogNotificationChannelIntegration.from_runtime(implementation)
-    return LogNotificationChannelIntegration.from_runtime(_LogNotificationAdapter())
+        return LogNotificationChannelIntegration.from_client(implementation)
+    return LogNotificationChannelIntegration.from_client(_LogNotificationAdapter())
