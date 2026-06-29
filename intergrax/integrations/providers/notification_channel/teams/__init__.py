@@ -22,7 +22,9 @@ __all__ = [
     "ENV_TEAMS_WEBHOOK_URL",
     "TeamsIntegrationBundle",
     "TeamsIntegrationConfig",
-    "TeamsInteractionAdapter",
+    "TeamsNotificationChannelIntegration",
+    "TeamsNotificationChannelIntegrationConfig",
+    "TeamsNotificationChannelClient",
     "create_teams_catalog_factory",
     "create_teams_integration",
     "create_teams_interaction_surface",
@@ -56,15 +58,12 @@ _CONTRACT_INTEGRATION_EXPORTS = frozenset(
     }
 )
 
+
 def __getattr__(name: str):
     if name == "register_teams_integration":
         from intergrax.integrations.providers.notification_channel.teams.register import register_teams_integration
 
         return register_teams_integration
-    if name == "TeamsInteractionAdapter":
-        from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
-
-        return TeamsInteractionAdapter
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.notification_channel.teams import bundle as _bundle
 
