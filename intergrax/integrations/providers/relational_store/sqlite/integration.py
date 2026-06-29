@@ -49,6 +49,9 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     def close(self) -> None:
         self._require_client().close()
 
+    @property
+    def db_path(self):
+        return self._require_client().db_path
 
     def _require_client(self) -> RelationalStore:
         if self._client is None:

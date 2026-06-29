@@ -25,6 +25,7 @@ from intergrax.integrations.providers.issue_tracker.jira.config import (
     ENV_JIRA_EMAIL,
     JiraIntegrationConfig,
 )
+from intergrax.integrations.providers.issue_tracker.jira.integration import JiraIssueTrackerIntegration
 from intergrax.integrations.providers.issue_tracker.jira.register import register_jira_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -204,7 +205,7 @@ def test_create_jira_integration_bundle() -> None:
     bundle = create_jira_integration(**_jira_config().model_dump(), http_client=http)
 
     assert isinstance(bundle, JiraIntegrationBundle)
-    assert isinstance(bundle.issue_tracker, JiraIssueTracker)
+    assert isinstance(bundle.issue_tracker, JiraIssueTrackerIntegration)
 
 
 def test_register_and_resolve_via_profile() -> None:
@@ -219,7 +220,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_issue_tracker(tracker)
-    assert isinstance(tracker, JiraIssueTracker)
+    assert isinstance(tracker, JiraIssueTrackerIntegration)
 
 
 def test_register_default_integrations_includes_jira() -> None:
@@ -233,7 +234,7 @@ def test_register_default_integrations_includes_jira() -> None:
         config={**_jira_config().model_dump(), "http_client": http},
     )
 
-    assert isinstance(tracker, JiraIssueTracker)
+    assert isinstance(tracker, JiraIssueTrackerIntegration)
 
 
 def test_opens_creates_httpx_client_when_not_injected() -> None:

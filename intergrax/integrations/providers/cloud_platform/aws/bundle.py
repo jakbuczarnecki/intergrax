@@ -44,7 +44,7 @@ def create_aws_integration(
         session=session,
         session_factory=session_factory,
     )
-    assert isinstance(platform, AwsCloudPlatform)
+    assert isinstance(platform, AwsCloudPlatformIntegration)
     return AwsIntegrationBundle(config=config, cloud_platform=platform)
 
 

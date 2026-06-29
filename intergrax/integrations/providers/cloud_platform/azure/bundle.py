@@ -44,7 +44,7 @@ def create_azure_integration(
         credential=credential,
         credential_factory=credential_factory,
     )
-    assert isinstance(platform, AzureCloudPlatform)
+    assert isinstance(platform, AzureCloudPlatformIntegration)
     return AzureIntegrationBundle(config=config, cloud_platform=platform)
 
 

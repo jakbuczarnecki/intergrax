@@ -78,7 +78,7 @@ def create_redis_integration(
     resolved_client = create_redis_client(client=client, **config.model_dump())
 
     store = RedisKVStore(client=resolved_client, key_prefix=config.key_prefix)
-    cache = _RedisKeyValueCache(store)
+    cache = RedisKeyValueCacheIntegration.from_client(_RedisKeyValueCache(store))
 
     return RedisIntegrationBundle(
         client=resolved_client,

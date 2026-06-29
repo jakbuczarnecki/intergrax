@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 from pydantic import PrivateAttr
 
@@ -43,11 +43,11 @@ class LabJsonInteractionSurfaceIntegration(InteractionSurfaceIntegrationContract
     def channel(self):
         return getattr(self._require_client(), 'channel')
 
-    def to_inbound(self, payload, tenant_id, user_id):
-        return self._require_client().to_inbound(payload, tenant_id, user_id)
+    def to_inbound(self, payload, *, tenant_id: str, user_id: str):
+        return self._require_client().to_inbound(payload, tenant_id=tenant_id, user_id=user_id)
 
-    def to_task(self, payload, tenant_id, user_id: Optional[str] = None):
-        return self._require_client().to_task(payload, tenant_id, user_id=user_id)
+    def to_task(self, payload, *, tenant_id: str, user_id: Optional[str] = None):
+        return self._require_client().to_task(payload, tenant_id=tenant_id, user_id=user_id)
 
     def _require_client(self) -> InteractionSurface:
         if self._client is None:

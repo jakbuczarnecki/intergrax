@@ -46,7 +46,7 @@ def create_gcp_integration(
         resolved_project_id=resolved_project_id,
         credential_factory=credential_factory,
     )
-    assert isinstance(platform, GcpCloudPlatform)
+    assert isinstance(platform, GcpCloudPlatformIntegration)
     return GcpIntegrationBundle(config=config, cloud_platform=platform)
 
 

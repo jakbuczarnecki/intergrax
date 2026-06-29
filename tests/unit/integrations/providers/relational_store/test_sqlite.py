@@ -24,6 +24,7 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     RELATIONAL_DB_NAME,
     TRACE_DB_NAME,
 )
+from intergrax.integrations.providers.relational_store.sqlite.integration import SqliteRelationalStoreIntegration
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -54,7 +55,7 @@ def _clean_catalog() -> None:
 
 def test_sqlite_relational_store_execute_and_fetch(tmp_path: Path) -> None:
     db_path = tmp_path / "test.db"
-    store = SQLiteRelationalStore(db_path)
+    store = _SQLiteRelationalStore(db_path)
     assert_relational_store(store)
 
     store.connect()
@@ -75,7 +76,7 @@ def test_create_sqlite_integration_bundle_uses_shared_data_dir(tmp_path: Path) -
     assert bundle.paths.trace == tmp_path / TRACE_DB_NAME
     assert bundle.paths.experiments == tmp_path / EXPERIMENTS_DB_NAME
 
-    assert isinstance(bundle.relational_store, SQLiteRelationalStore)
+    assert isinstance(bundle.relational_store, SqliteRelationalStoreIntegration)
     assert isinstance(bundle.trace_store, SQLiteRunTraceStore)
     assert isinstance(bundle.runtime_event_store, SQLiteRuntimeEventStore)
     assert type(bundle.task_checkpoint_store).__name__ == "SQLiteTaskCheckpointStore"
@@ -107,7 +108,7 @@ def test_register_and_resolve_via_lab_profile(tmp_path: Path) -> None:
     )
 
     assert_relational_store(store)
-    assert isinstance(store, SQLiteRelationalStore)
+    assert isinstance(store, SqliteRelationalStoreIntegration)
     assert store.db_path == tmp_path / RELATIONAL_DB_NAME
 
 
@@ -121,7 +122,7 @@ def test_register_default_integrations_includes_sqlite(tmp_path: Path) -> None:
         config={"data_dir": str(tmp_path)},
     )
 
-    assert isinstance(store, SQLiteRelationalStore)
+    assert isinstance(store, SqliteRelationalStoreIntegration)
 
 
 def test_create_sqlite_relational_store_catalog_factory(tmp_path: Path) -> None:

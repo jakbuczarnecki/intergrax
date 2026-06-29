@@ -40,6 +40,13 @@ class TeamsNotificationChannelIntegration(NotificationChannelIntegrationContract
     async def notify(self, message: Any) -> None:
         await self._require_client().notify(message)
 
+    @property
+    def webhook_url(self) -> str | None:
+        client = self._client
+        if client is None:
+            return None
+        return client.webhook_url
+
     def health(self) -> Any:
         return self._require_client().health()
 

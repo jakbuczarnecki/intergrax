@@ -65,7 +65,7 @@ def test_create_teams_integration_bundle(
 
     assert isinstance(bundle, TeamsIntegrationBundle)
     assert isinstance(bundle.notification_channel, TeamsNotificationChannelIntegration)
-    assert bundle.notification_channel._runtime is mock_notification
+    assert bundle.notification_channel._require_client() is mock_notification
     assert bundle.interaction_surface is mock_interaction
     assert bundle.config.webhook_url == "https://outlook.office.com/webhook/test"
     assert bundle.config.security_token == "token"
@@ -75,7 +75,7 @@ def test_create_teams_notification_channel_injects_adapter(mock_notification: Ma
     channel = create_teams_notification_channel(notification_adapter=mock_notification)
 
     assert isinstance(channel, TeamsNotificationChannelIntegration)
-    assert channel._runtime is mock_notification
+    assert channel._require_client() is mock_notification
 
 
 def test_create_teams_interaction_surface_uses_teams_channel() -> None:
@@ -108,7 +108,7 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
 
     assert_notification_channel(channel)
     assert isinstance(channel, TeamsNotificationChannelIntegration)
-    assert channel._runtime is mock_notification
+    assert channel._require_client() is mock_notification
 
 
 def test_register_and_resolve_interaction_surface(mock_interaction: _TeamsInteractionAdapter) -> None:
@@ -139,7 +139,7 @@ def test_register_default_integrations_includes_teams(mock_notification: MagicMo
     )
 
     assert isinstance(channel, TeamsNotificationChannelIntegration)
-    assert channel._runtime is mock_notification
+    assert channel._require_client() is mock_notification
 
 
 def test_runtime_notification_factory_delegates_teams_to_integration(

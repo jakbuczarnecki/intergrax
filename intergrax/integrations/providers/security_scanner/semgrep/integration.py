@@ -42,6 +42,9 @@ class SemgrepSecurityScannerIntegration(SecurityScannerIntegrationContract):
     def scan_repo(self, repo_path):
         return self._require_client().scan_repo(repo_path)
 
+    def health(self):
+        return self._require_client().health()
+
     def _require_client(self) -> SecurityScannerBackend:
         if self._client is None:
             raise IntegrationConfigurationError(

@@ -25,6 +25,7 @@ from intergrax.integrations._shared.conformance import assert_key_value_cache
 from intergrax.integrations.contracts.base import IntegrationCategory
 
 from intergrax.integrations.providers.key_value_cache.redis.adapter import _RedisKeyValueCache
+from intergrax.integrations.providers.key_value_cache.redis.integration import RedisKeyValueCacheIntegration
 
 from intergrax.integrations.providers.key_value_cache.redis.bundle import (
 
@@ -91,7 +92,7 @@ def test_redis_adapter_set_if_absent_delegates_to_compare_and_set() -> None:
 
     store.compare_and_set.return_value = True
 
-    cache = RedisKeyValueCache(store)
+    cache = _RedisKeyValueCache(store)
 
 
 
@@ -225,6 +226,6 @@ def test_register_default_integrations_includes_redis() -> None:
 
 
 
-    assert isinstance(cache, RedisKeyValueCache)
+    assert isinstance(cache, RedisKeyValueCacheIntegration)
 
 

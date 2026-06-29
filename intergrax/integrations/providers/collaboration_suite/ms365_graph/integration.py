@@ -36,26 +36,67 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
     _client: Ms365GraphCollaborationSuiteClient | None = PrivateAttr(default=None)
     
 
-    def create_event(self, user_id, subject, start, end, location: str = '', attendees: Sequence[str] = ()):
-        return self._require_client().create_event(user_id, subject, start, end, location=location, attendees=attendees)
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees: Sequence[str] = (),
+    ):
+        return self._require_client().create_event(
+            user_id,
+            subject=subject,
+            start=start,
+            end=end,
+            location=location,
+            attendees=attendees,
+        )
 
-    def get_message(self, user_id, message_id):
+    def get_message(self, user_id: str, message_id: str):
         return self._require_client().get_message(user_id, message_id)
 
-    def get_user(self, user_id):
+    def get_user(self, user_id: str):
         return self._require_client().get_user(user_id)
 
-    def list_calendar_events(self, user_id, start, end, limit: int = 50):
-        return self._require_client().list_calendar_events(user_id, start, end, limit=limit)
+    def list_calendar_events(
+        self,
+        user_id: str,
+        *,
+        start: str,
+        end: str,
+        limit: int = 50,
+    ):
+        return self._require_client().list_calendar_events(
+            user_id,
+            start=start,
+            end=end,
+            limit=limit,
+        )
 
-    def list_messages(self, user_id, folder: str = 'inbox', limit: int = 25):
+    def list_messages(
+        self,
+        user_id: str,
+        *,
+        folder: str = "inbox",
+        limit: int = 25,
+    ):
         return self._require_client().list_messages(user_id, folder=folder, limit=limit)
 
-    def reply_message(self, user_id, message_id, body):
-        return self._require_client().reply_message(user_id, message_id, body)
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        return self._require_client().reply_message(user_id, message_id, body=body)
 
-    def send_mail(self, user_id, subject, body, to):
-        return self._require_client().send_mail(user_id, subject, body, to)
+    def send_mail(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        body: str,
+        to: Sequence[str],
+    ) -> None:
+        return self._require_client().send_mail(user_id, subject=subject, body=body, to=to)
 
     def _require_client(self) -> CollaborationSuite:
         if self._client is None:

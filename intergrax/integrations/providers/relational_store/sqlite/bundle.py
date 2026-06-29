@@ -84,7 +84,8 @@ def create_sqlite_integration(
     """Single entry point for SQLite — paths and all domain store facades."""
     config, paths = _build_paths(data_dir=data_dir, **config_overrides)
 
-    relational = _SQLiteRelationalStore(paths.relational)
+    adapter = _SQLiteRelationalStore(paths.relational)
+    relational = SqliteRelationalStoreIntegration.from_client(adapter)
     relational.connect()
 
     return SQLiteIntegrationBundle(
@@ -116,8 +117,9 @@ def create_sqlite_relational_store(
         overrides["relational_db"] = Path(db_path)
     _, paths = _build_paths(data_dir=data_dir, **overrides)
     store = _SQLiteRelationalStore(paths.relational)
-    store.connect()
-    return store
+    integration = SqliteRelationalStoreIntegration.from_client(store)
+    integration.connect()
+    return integration
 
 
 def create_sqlite_trace_store(

@@ -46,6 +46,8 @@ class VaultSecretsStoreIntegration(SecretsStoreIntegrationContract):
     def delete_secret(self, key: str) -> None:
         self._require_client().delete_secret(key)
 
+    def health(self):
+        return self._require_client().health()
 
     def put_secret(self, path, value):
         return self._require_client().put_secret(path, value)

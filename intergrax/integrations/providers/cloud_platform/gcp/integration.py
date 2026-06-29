@@ -40,6 +40,10 @@ class GcpCloudPlatformIntegration(CloudPlatformIntegrationContract):
     def default_region(self):
         return getattr(self._require_client(), 'default_region')
 
+    @property
+    def project_id(self):
+        return self._require_client().project_id
+
     def health(self):
         return self._require_client().health()
 

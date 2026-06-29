@@ -9,7 +9,7 @@ from typing import Sequence
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.issue_tracker import IssueRecord, IssueSearchResult, IssueTracker
 from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
@@ -50,6 +50,16 @@ class GithubIssueTrackerIntegration(IssueTrackerIntegrationContract):
 
     def add_comment(self, issue_key, body):
         return self._require_client().add_comment(issue_key, body)
+
+    def health(self) -> HealthStatus:
+        result = self._require_client().health()
+        if isinstance(result, HealthStatus):
+            return result
+        return HealthStatus(
+            slug=GITHUB_ISSUE_TRACKER_PROVIDER_ID,
+            healthy=bool(result),
+            detail="github ready probe",
+        )
 
     def _require_client(self) -> IssueTracker:
         if self._client is None:

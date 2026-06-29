@@ -9,7 +9,7 @@ from typing import Sequence
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.runtime.integrations.categories.devops import CiCdIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -42,11 +42,21 @@ class CircleciCiCdIntegration(CiCdIntegrationContract):
     def get_workflow_run(self, run_id):
         return self._require_client().get_workflow_run(run_id)
 
-    def list_check_suites(self, ref, limit: int = 20):
-        return self._require_client().list_check_suites(ref, limit=limit)
+    def list_check_suites(self, *, ref: str, limit: int = 20):
+        return self._require_client().list_check_suites(ref=ref, limit=limit)
 
     def list_workflow_runs(self, workflow_id: str = '', ref: str = '', limit: int = 20):
         return self._require_client().list_workflow_runs(workflow_id=workflow_id, ref=ref, limit=limit)
+
+    def health(self) -> HealthStatus:
+        result = self._require_client().health()
+        if isinstance(result, HealthStatus):
+            return result
+        return HealthStatus(
+            slug=CIRCLECI_CI_CD_PROVIDER_ID,
+            healthy=bool(result),
+            detail="circleci ready probe",
+        )
 
     def _require_client(self) -> CiCdBackend:
         if self._client is None:

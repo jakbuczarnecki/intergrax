@@ -24,6 +24,7 @@ from intergrax.integrations.providers.cloud_platform.azure.config import (
     ENV_AZURE_TENANT_ID,
     AzureIntegrationConfig,
 )
+from intergrax.integrations.providers.cloud_platform.azure.integration import AzureCloudPlatformIntegration
 from intergrax.integrations.providers.cloud_platform.azure.register import register_azure_integration
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
@@ -174,7 +175,7 @@ def test_create_azure_integration_bundle() -> None:
     bundle = create_azure_integration(**_azure_config().model_dump(), credential_factory=factory)
 
     assert isinstance(bundle, AzureIntegrationBundle)
-    assert isinstance(bundle.cloud_platform, AzureCloudPlatform)
+    assert isinstance(bundle.cloud_platform, AzureCloudPlatformIntegration)
     assert bundle.cloud_platform.default_region == "westeurope"
 
 
@@ -190,7 +191,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_cloud_platform(platform)
-    assert isinstance(platform, AzureCloudPlatform)
+    assert isinstance(platform, AzureCloudPlatformIntegration)
 
 
 def test_register_default_integrations_includes_azure() -> None:
@@ -204,7 +205,7 @@ def test_register_default_integrations_includes_azure() -> None:
         config={**_azure_config().model_dump(), "credential_factory": factory},
     )
 
-    assert isinstance(platform, AzureCloudPlatform)
+    assert isinstance(platform, AzureCloudPlatformIntegration)
 
 
 def test_opens_uses_service_principal_when_configured() -> None:

@@ -5,10 +5,11 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 from pydantic import PrivateAttr
 
+from intergrax.distributed.providers.redis_kv_store import RedisKVStore
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.runtime.integrations.categories.data import KeyValueCacheIntegrationContract
@@ -47,6 +48,10 @@ class RedisKeyValueCacheIntegration(KeyValueCacheIntegrationContract):
 
     def set_if_absent(self, tenant_id, key, value, ttl_seconds: Optional[int] = None):
         return self._require_client().set_if_absent(tenant_id, key, value, ttl_seconds=ttl_seconds)
+
+    @property
+    def kv_store(self) -> RedisKVStore:
+        return self._require_client().kv_store
 
     def _require_client(self) -> KeyValueCache:
         if self._client is None:

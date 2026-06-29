@@ -49,7 +49,7 @@ def test_create_lab_json_integration_bundle(mock_interaction: MagicMock) -> None
 
     assert isinstance(bundle, LabJsonIntegrationBundle)
     assert isinstance(bundle.interaction_surface, LabJsonInteractionSurfaceIntegration)
-    assert bundle.interaction_surface._runtime is mock_interaction
+    assert bundle.interaction_surface._require_client() is mock_interaction
 
 
 def test_create_lab_json_interaction_surface_default() -> None:
@@ -71,7 +71,7 @@ def test_register_and_resolve_via_profile(mock_interaction: MagicMock) -> None:
     )
 
     assert isinstance(surface, LabJsonInteractionSurfaceIntegration)
-    assert surface._runtime is mock_interaction
+    assert surface._require_client() is mock_interaction
 
 
 def test_register_and_resolve_conformance() -> None:

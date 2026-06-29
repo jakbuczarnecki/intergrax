@@ -47,7 +47,7 @@ def create_jira_integration(
         http_client_factory=http_client_factory,
     )
     tracker = open_jira_issue_tracker(config, implementation=issue_tracker, client=rest_client)
-    assert isinstance(tracker, JiraIssueTracker)
+    assert isinstance(tracker, JiraIssueTrackerIntegration)
     return JiraIntegrationBundle(config=config, issue_tracker=tracker, rest_client=rest_client)
 
 

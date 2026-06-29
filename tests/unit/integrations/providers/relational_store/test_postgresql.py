@@ -278,4 +278,5 @@ def test_create_postgresql_relational_store_catalog_factory() -> None:
         dsn="postgresql://localhost/test",
     )
     assert_relational_store(store)
-    assert store.config.dsn == "postgresql://localhost/test"
+    assert store.client is not None
+    assert store.client.config.dsn == "postgresql://localhost/test"

@@ -317,4 +317,5 @@ def test_create_databricks_relational_store_catalog_factory() -> None:
         access_token="token",
     )
     assert_relational_store(store)
-    assert store.config.access_token == "token"
+    assert store.client is not None
+    assert store.client.config.access_token == "token"

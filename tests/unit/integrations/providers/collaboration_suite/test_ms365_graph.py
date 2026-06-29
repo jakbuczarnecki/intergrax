@@ -13,7 +13,9 @@ import pytest
 
 from intergrax.integrations._shared.conformance import assert_collaboration_suite
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    Ms365GraphCollaborationSuiteIntegration,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.bundle import (
     Ms365GraphIntegrationBundle,
     create_ms365_graph_collaboration_suite,
@@ -276,7 +278,7 @@ def test_create_ms365_graph_integration_bundle() -> None:
     bundle = create_ms365_graph_integration(**_ms365_config().model_dump(), http_client=http)
 
     assert isinstance(bundle, Ms365GraphIntegrationBundle)
-    assert isinstance(bundle.collaboration_suite, Ms365GraphCollaborationSuite)
+    assert isinstance(bundle.collaboration_suite, Ms365GraphCollaborationSuiteIntegration)
 
 
 def test_register_and_resolve_via_profile() -> None:
@@ -291,7 +293,7 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_collaboration_suite(suite)
-    assert isinstance(suite, Ms365GraphCollaborationSuite)
+    assert isinstance(suite, Ms365GraphCollaborationSuiteIntegration)
 
 
 def test_register_default_integrations_includes_ms365_graph() -> None:
@@ -305,7 +307,7 @@ def test_register_default_integrations_includes_ms365_graph() -> None:
         config={**_ms365_config().model_dump(), "http_client": http},
     )
 
-    assert isinstance(suite, Ms365GraphCollaborationSuite)
+    assert isinstance(suite, Ms365GraphCollaborationSuiteIntegration)
 
 
 def test_opens_creates_httpx_client_when_not_injected() -> None:
