@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
+import inspect
 
 import pytest
 
@@ -20,6 +21,7 @@ from intergrax.runtime.observability.export_attributes import (
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
     ExportRecordKind,
+    NoOpObservabilityExporter,
     ObservabilityExportEnvelope,
     envelope_from_runtime_event,
     envelope_is_content_safe,
@@ -35,9 +37,11 @@ from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
     ObservabilityExportOperatorConfigError,
     OtlpExportOperatorConfig,
+    build_observability_export_integration,
     build_observability_export_runtime_plugin,
     build_otlp_observability_export_runtime_plugin,
     build_otlp_observability_exporter,
+    build_otlp_observability_integration,
     parse_observability_export_backend_id,
 )
 from intergrax.runtime.observability.otlp_exporter import (
@@ -195,10 +199,6 @@ def test_valid_non_registered_backend_id_fails_as_missing_builder() -> None:
     config = ObservabilityExportOperatorConfig(
         enabled=True,
         backend_id="elasticsearch",
-        otlp=OtlpExportOperatorConfig(
-            endpoint="https://collector.example/v1/logs",
-            service_name="intergrax.test",
-        ),
     )
 
     with pytest.raises(
@@ -206,6 +206,62 @@ def test_valid_non_registered_backend_id_fails_as_missing_builder() -> None:
         match="no observability export backend builder registered for 'elasticsearch'",
     ):
         build_observability_export_runtime_plugin(config)
+
+
+def test_generic_build_observability_export_runtime_plugin_has_no_transport_argument() -> None:
+    sig = inspect.signature(build_observability_export_runtime_plugin)
+    assert "transport" not in sig.parameters
+
+
+def test_generic_build_observability_export_integration_has_no_transport_argument() -> None:
+    sig = inspect.signature(build_observability_export_integration)
+    assert "transport" not in sig.parameters
+
+
+def test_generic_builder_registry_does_not_pass_transport_kwarg_to_custom_builders() -> None:
+    registry = ObservabilityExportBackendRegistry()
+    called_with: list[ObservabilityExportOperatorConfig] = []
+
+    def _builder(config: ObservabilityExportOperatorConfig) -> object:
+        called_with.append(config)
+        return NoOpObservabilityExporter()
+
+    registry.register("acme_observability", _builder)
+    config = ObservabilityExportOperatorConfig(enabled=True, backend_id="acme_observability")
+    build_observability_export_integration(config, registry=registry)
+    assert called_with == [config]
+
+
+def test_custom_registry_builder_can_build_non_otlp_backend_plugin() -> None:
+    registry = ObservabilityExportBackendRegistry()
+    registry.register("acme_observability", lambda _config: NoOpObservabilityExporter())
+    config = ObservabilityExportOperatorConfig(enabled=True, backend_id="acme_observability")
+
+    plugin = build_observability_export_runtime_plugin(config, registry=registry)
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
+
+
+def test_default_otlp_registry_still_builds_otlp_runtime_plugin() -> None:
+    plugin = build_observability_export_runtime_plugin(_enabled_config())
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
+
+
+def test_otlp_registry_closure_can_inject_fake_transport() -> None:
+    transport = FakeOtlpTransport()
+    registry = ObservabilityExportBackendRegistry()
+    registry.register(
+        "otlp",
+        lambda config: build_otlp_observability_integration(config, transport=transport),
+    )
+
+    plugin = build_observability_export_runtime_plugin(_enabled_config(), registry=registry)
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
 
 
 def test_default_operator_config_is_disabled() -> None:

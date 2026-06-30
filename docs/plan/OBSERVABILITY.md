@@ -368,6 +368,10 @@ Done — observability backend selection is open and plugin-based. Operator conf
 
 Closed backend enums are forbidden as runtime/operator selectors. Well-known vendor names may exist as documentation/scaffold constants only, not as the extensibility boundary.
 
+**OBS-VENDOR-2B correction:**
+
+Generic backend selection no longer carries OTLP-specific configuration requirements. OTLP endpoint is required only when `backend_id="otlp"`. Non-OTLP `backend_id`s are valid at config time and become usable when a backend builder is registered. Generic builder APIs are vendor-neutral; OTLP transport injection is kept only on OTLP-specific helper functions and tests may use custom registries for injection.
+
 ### OBS-VENDOR-1 — execution model (reference)
 
 1. Runtime emits **`ObservabilityExportEnvelope`** (from spine/journal/runtime metadata).

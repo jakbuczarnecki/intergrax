@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 from pathlib import Path
 from typing import Any
@@ -14,10 +15,13 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.observability.operator_wiring import (
+    ObservabilityExportBackendRegistry,
+    ObservabilityExportBackendRegistryError,
     ObservabilityExportOperatorConfig,
     OtlpExportOperatorConfig,
+    build_otlp_observability_integration,
 )
-from intergrax.runtime.observability.otlp_exporter import OtlpObservabilityExporterConfig, OtlpTransport
+from intergrax.runtime.observability.otlp_exporter import OtlpObservabilityExporterConfig
 from intergrax.runtime.plugins.contract import RuntimePlugin
 from local_workspace_application.host.observability_wiring import build_local_workspace_observability_plugins
 
@@ -78,6 +82,15 @@ def _enabled_config(
     )
 
 
+def _otlp_registry_with_transport(transport: FakeOtlpTransport) -> ObservabilityExportBackendRegistry:
+    registry = ObservabilityExportBackendRegistry()
+    registry.register(
+        "otlp",
+        lambda config: build_otlp_observability_integration(config, transport=transport),
+    )
+    return registry
+
+
 def _attribute_map(payload: dict[str, Any]) -> dict[str, Any]:
     attrs = payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]["attributes"]
     mapped: dict[str, Any] = {}
@@ -109,36 +122,64 @@ def test_disabled_observability_export_operator_config_registers_no_plugin() -> 
     assert build_local_workspace_observability_plugins(config) == ()
 
 
+def test_lkw_observability_wiring_does_not_expose_otlp_transport() -> None:
+    source = _LKW_OBSERVABILITY_WIRING_PATH.read_text(encoding="utf-8")
+    assert "OtlpTransport" not in source
+
+    sig = inspect.signature(build_local_workspace_observability_plugins)
+    assert "transport" not in sig.parameters
+
+
 def test_enabled_otlp_config_returns_exactly_one_runtime_plugin() -> None:
-    plugins = build_local_workspace_observability_plugins(
-        _enabled_config(),
-        transport=FakeOtlpTransport(),
-    )
+    plugins = build_local_workspace_observability_plugins(_enabled_config())
 
     assert len(plugins) == 1
     assert isinstance(plugins[0], RuntimePlugin)
     assert plugins[0].plugin_id == "runtime.observability_export"
 
 
-def test_helper_uses_platform_build_otlp_observability_export_runtime_plugin_path() -> None:
+def test_helper_uses_platform_build_observability_export_runtime_plugin_path() -> None:
     config = _enabled_config()
-    transport = FakeOtlpTransport()
     sentinel = RuntimePlugin(plugin_id="runtime.observability_export", version="1.0.0")
 
     with patch(
-        "local_workspace_application.host.observability_wiring.build_otlp_observability_export_runtime_plugin",
+        "local_workspace_application.host.observability_wiring.build_observability_export_runtime_plugin",
         return_value=sentinel,
     ) as build_plugin:
-        plugins = build_local_workspace_observability_plugins(config, transport=transport)
+        plugins = build_local_workspace_observability_plugins(config)
 
-    build_plugin.assert_called_once_with(config, transport=transport)
+    build_plugin.assert_called_once_with(config, registry=None)
     assert plugins == (sentinel,)
+
+
+def test_custom_registry_closure_injects_fake_transport() -> None:
+    transport = FakeOtlpTransport()
+    plugins = build_local_workspace_observability_plugins(
+        _enabled_config(),
+        registry=_otlp_registry_with_transport(transport),
+    )
+
+    assert len(plugins) == 1
+    assert plugins[0].plugin_id == "runtime.observability_export"
+
+
+def test_unregistered_backend_id_fails_at_plugin_build() -> None:
+    config = ObservabilityExportOperatorConfig(enabled=True, backend_id="acme_observability")
+
+    with pytest.raises(
+        ObservabilityExportBackendRegistryError,
+        match="no observability export backend builder registered for 'acme_observability'",
+    ):
+        build_local_workspace_observability_plugins(config)
 
 
 @pytest.mark.asyncio
 async def test_runtime_event_through_plugin_reaches_injected_fake_transport() -> None:
     transport = FakeOtlpTransport()
-    plugins = build_local_workspace_observability_plugins(_enabled_config(), transport=transport)
+    plugins = build_local_workspace_observability_plugins(
+        _enabled_config(),
+        registry=_otlp_registry_with_transport(transport),
+    )
     assert len(plugins) == 1
 
     bus = RuntimeEventBus(record_history=False)
@@ -162,7 +203,7 @@ async def test_export_content_true_in_app_config_is_still_forced_to_metadata_onl
     transport = FakeOtlpTransport()
     plugins = build_local_workspace_observability_plugins(
         _enabled_config(export_content=True),
-        transport=transport,
+        registry=_otlp_registry_with_transport(transport),
     )
     assert len(plugins) == 1
 
@@ -192,7 +233,10 @@ async def test_export_content_true_in_app_config_is_still_forced_to_metadata_onl
 @pytest.mark.asyncio
 async def test_raw_prompt_content_and_local_path_do_not_appear_in_exported_payload() -> None:
     transport = FakeOtlpTransport()
-    plugins = build_local_workspace_observability_plugins(_enabled_config(), transport=transport)
+    plugins = build_local_workspace_observability_plugins(
+        _enabled_config(),
+        registry=_otlp_registry_with_transport(transport),
+    )
     assert len(plugins) == 1
 
     bus = RuntimeEventBus(record_history=False)

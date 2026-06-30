@@ -22,8 +22,6 @@ from intergrax.runtime.plugins.contract import RuntimePlugin
 
 _BACKEND_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
-ObservabilityExportBackendBuilder = Callable[..., object]
-
 
 class ObservabilityExportOperatorConfigError(ValueError):
     """Invalid operator export configuration."""
@@ -85,6 +83,9 @@ class ObservabilityExportOperatorConfig:
     otlp: OtlpExportOperatorConfig | None = None
 
 
+ObservabilityExportBackendBuilder = Callable[[ObservabilityExportOperatorConfig], object]
+
+
 def _require_enabled_otlp_config(config: ObservabilityExportOperatorConfig) -> OtlpExportOperatorConfig:
     if not config.enabled:
         raise ObservabilityExportOperatorConfigError("observability export is disabled")
@@ -123,28 +124,28 @@ def build_otlp_observability_integration(
     return OtlpObservabilityIntegration.from_exporter(exporter, enabled=config.enabled)
 
 
-def _build_otlp_observability_integration_from_registry(
+def _build_default_otlp_observability_integration(
     config: ObservabilityExportOperatorConfig,
-    *,
-    transport: OtlpTransport | None = None,
-):
-    return build_otlp_observability_integration(config, transport=transport)
+) -> object:
+    return build_otlp_observability_integration(config)
 
 
 DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY = ObservabilityExportBackendRegistry()
-DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.register("otlp", _build_otlp_observability_integration_from_registry)
+DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.register(
+    "otlp",
+    _build_default_otlp_observability_integration,
+)
 
 
 def build_observability_export_integration(
     config: ObservabilityExportOperatorConfig,
     *,
-    transport: OtlpTransport | None = None,
     registry: ObservabilityExportBackendRegistry | None = None,
 ):
     """Construct an observability vendor integration via the open backend builder registry."""
     active_registry = registry or DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY
     builder = active_registry.get(config.backend_id)
-    return builder(config, transport=transport)
+    return builder(config)
 
 
 def build_otlp_observability_exporter(
@@ -159,7 +160,6 @@ def build_otlp_observability_exporter(
 def build_observability_export_runtime_plugin(
     config: ObservabilityExportOperatorConfig,
     *,
-    transport: OtlpTransport | None = None,
     registry: ObservabilityExportBackendRegistry | None = None,
 ) -> RuntimePlugin | None:
     """Construct a runtime export plugin from explicit operator configuration."""
@@ -168,7 +168,6 @@ def build_observability_export_runtime_plugin(
 
     integration = build_observability_export_integration(
         config,
-        transport=transport,
         registry=registry,
     )
     policy = ObservabilityExportPolicy(enabled=True, export_content=False)

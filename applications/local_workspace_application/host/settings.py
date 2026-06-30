@@ -106,26 +106,31 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         except ObservabilityExportOperatorConfigError as exc:
             raise ValueError(str(exc)) from exc
 
-        endpoint = self.observability_otlp_endpoint.strip()
-        if not endpoint:
-            raise ValueError(
-                "LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT is required when "
-                "observability export is enabled"
-            )
-
-        # Safety: never export raw content regardless of env value
-        return ObservabilityExportOperatorConfig(
-            enabled=True,
-            export_content=False,
-            backend_id=backend_id,
-            otlp=OtlpExportOperatorConfig(
+        otlp: OtlpExportOperatorConfig | None
+        if backend_id == "otlp":
+            endpoint = self.observability_otlp_endpoint.strip()
+            if not endpoint:
+                raise ValueError(
+                    "LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT is required when "
+                    "observability export is enabled"
+                )
+            otlp = OtlpExportOperatorConfig(
                 endpoint=endpoint,
                 service_name=self.observability_service_name or "intergrax-lkw",
                 service_version=self.observability_service_version or None,
                 environment=self.observability_environment or None,
                 timeout_seconds=self.observability_otlp_timeout_seconds,
                 headers=None,
-            ),
+            )
+        else:
+            otlp = None
+
+        # Safety: never export raw content regardless of env value
+        return ObservabilityExportOperatorConfig(
+            enabled=True,
+            export_content=False,
+            backend_id=backend_id,
+            otlp=otlp,
         )
 
     # Application-specific settings
