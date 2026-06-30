@@ -19,24 +19,31 @@
 - **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **the same agent class** moving from lab evaluation toward governed deployment paths when explicitly permitted.
 
 ```text
-                    Intergrax — Harness AI
+Intergrax — Harness AI
 
-              ┌─────────────────────────────┐
-              │  Application environment     │  identity · profiles · org policy
-              │  (Tier-3)                    │  AgentBinding · production scoreboard
-              └──────────────┬──────────────┘
-                             │ Task
-              ┌──────────────▼──────────────┐
-              │  NexusLoop (Agent OS)        │  graphs · capability routing · HITL
-              │  (Tier-1)                    │
-              └──────────────┬──────────────┘
-                             │ one agent node → Agent.run()
-              ┌──────────────▼──────────────┐
-              │  Agent session (Tier-2)      │  on_next_step → domain decides
-              │  HarnessKernel               │  policy · trace · state · budgets
-              └──────────────┬──────────────┘
-                             │
-         Integration → Tool → Skill → LLM · RAG · Memory (Tier-0)
+┌──────────────────────────────────────────┐
+│ Tier-3 Application environment           │
+│ identity · profiles · org policy         │
+│ AgentBinding · production scoreboard     │
+└─────────────────────┬────────────────────┘
+                      │ Task
+┌─────────────────────▼────────────────────┐
+│ Tier-1 NexusLoop (Agent OS)              │
+│ graphs · capability routing · HITL       │
+└─────────────────────┬────────────────────┘
+                      │ one agent node → Agent.run()
+┌─────────────────────▼────────────────────┐
+│ Tier-2 Agent session                     │
+│ HarnessKernel                            │
+│ on_next_step · policy · trace · state    │
+│ budgets                                  │
+└─────────────────────┬────────────────────┘
+                      │
+┌─────────────────────▼────────────────────┐
+│ Tier-0 Platform                          │
+│ Integration → Tool → Skill → LLM · RAG   │
+│ Memory                                   │
+└──────────────────────────────────────────┘
 ```
 
 Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
