@@ -1,5 +1,5 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal
 
 set "SCRIPT_DIR=%~dp0"
 set "APP_DIR=%SCRIPT_DIR%.."
@@ -26,25 +26,16 @@ if not exist "%ENV_FILE%" (
     echo Created %ENV_FILE% from .env.example
 )
 
-set "COMPOSE_ARGS=-f ^"%BASE_COMPOSE%^""
-
-echo Compose files:
-echo   %BASE_COMPOSE%
-for %%F in ("%DOCKER_DIR%\docker-compose.*.yml") do (
-    if exist "%%~fF" (
-        set "COMPOSE_ARGS=!COMPOSE_ARGS! -f ^"%%~fF^""
-        echo   %%~fF
-    )
-)
-
+set "LKW_COMPOSE_BASE=%BASE_COMPOSE%"
+set "LKW_COMPOSE_DOCKER_DIR=%DOCKER_DIR%"
 if "%~1"=="" (
-    echo Running: docker compose !COMPOSE_ARGS! up --build
-    docker compose !COMPOSE_ARGS! up --build
+    set "LKW_COMPOSE_COMMAND=up --build"
 ) else (
-    echo Running: docker compose !COMPOSE_ARGS! %*
-    docker compose !COMPOSE_ARGS! %*
+    set "LKW_COMPOSE_COMMAND=%*"
 )
 
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $base = (Resolve-Path -LiteralPath $env:LKW_COMPOSE_BASE).Path; $dockerDir = (Resolve-Path -LiteralPath $env:LKW_COMPOSE_DOCKER_DIR).Path; $files = @($base) + @(Get-ChildItem -LiteralPath $dockerDir -Filter 'docker-compose.*.yml' | Sort-Object Name | ForEach-Object { $_.FullName }); Write-Host 'Compose files:'; $files | ForEach-Object { Write-Host ('  ' + $_) }; $composeArgs = @(); foreach ($file in $files) { $composeArgs += @('-f', $file) }; $commandArgs = if ([string]::IsNullOrWhiteSpace($env:LKW_COMPOSE_COMMAND)) { @('up', '--build') } else { $env:LKW_COMPOSE_COMMAND -split ' ' }; $dockerArgs = @('compose') + $composeArgs + $commandArgs; Write-Host ('Running: docker ' + ($dockerArgs -join ' ')); & docker @dockerArgs; exit $LASTEXITCODE"
 set "EXIT_CODE=%ERRORLEVEL%"
+
 popd >nul
 exit /b %EXIT_CODE%
