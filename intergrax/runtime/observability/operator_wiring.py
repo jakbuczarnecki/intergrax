@@ -22,6 +22,31 @@ from intergrax.runtime.plugins.contract import RuntimePlugin
 
 class ObservabilityExportBackend(StrEnum):
     OTLP = "otlp"
+    LANGFUSE = "langfuse"
+    ELASTICSEARCH = "elasticsearch"
+    OPENSEARCH = "opensearch"
+    PHOENIX = "phoenix"
+    ARIZE = "arize"
+    CUSTOM = "custom"
+
+
+def parse_observability_export_backend(raw: str) -> ObservabilityExportBackend:
+    """Parse operator export backend from raw configuration text."""
+    normalized = raw.strip().lower()
+    try:
+        return ObservabilityExportBackend(normalized)
+    except ValueError as exc:
+        raise ObservabilityExportOperatorConfigError(
+            f"unsupported observability export backend: {normalized!r}"
+        ) from exc
+
+
+def _raise_if_backend_not_implemented(backend: ObservabilityExportBackend) -> None:
+    if backend is not ObservabilityExportBackend.OTLP:
+        raise ObservabilityExportOperatorConfigError(
+            f"observability export backend '{backend.value}' is recognized but not "
+            "implemented in operator wiring yet"
+        )
 
 
 class ObservabilityExportOperatorConfigError(ValueError):
@@ -49,10 +74,7 @@ class ObservabilityExportOperatorConfig:
 def _require_enabled_otlp_config(config: ObservabilityExportOperatorConfig) -> OtlpExportOperatorConfig:
     if not config.enabled:
         raise ObservabilityExportOperatorConfigError("observability export is disabled")
-    if config.backend is not ObservabilityExportBackend.OTLP:
-        raise ObservabilityExportOperatorConfigError(
-            f"unsupported observability export backend: {config.backend.value}"
-        )
+    _raise_if_backend_not_implemented(config.backend)
     if config.otlp is None:
         raise ObservabilityExportOperatorConfigError("otlp export configuration is required")
     return config.otlp

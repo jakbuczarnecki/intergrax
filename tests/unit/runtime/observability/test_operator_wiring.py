@@ -35,6 +35,7 @@ from intergrax.runtime.observability.operator_wiring import (
     OtlpExportOperatorConfig,
     build_otlp_observability_export_runtime_plugin,
     build_otlp_observability_exporter,
+    parse_observability_export_backend,
 )
 from intergrax.runtime.observability.otlp_exporter import (
     OtlpObservabilityExporter,
@@ -48,11 +49,7 @@ pytestmark = pytest.mark.unit
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 _OPERATOR_WIRING_PATH = _PROJECT_ROOT / "intergrax" / "runtime" / "observability" / "operator_wiring.py"
 
-_FORBIDDEN_VENDOR_TOKENS = (
-    "langfuse",
-    "arize",
-    "phoenix",
-    "elasticsearch",
+_FORBIDDEN_VENDOR_SDK_TOKENS = (
     "opentelemetry",
     "integrations.providers.observability_backend",
 )
@@ -122,6 +119,45 @@ def _attribute_map(payload: dict[str, Any]) -> dict[str, Any]:
         else:
             mapped[key] = value
     return mapped
+
+
+def test_parse_observability_export_backend_accepts_otlp() -> None:
+    assert parse_observability_export_backend("otlp") is ObservabilityExportBackend.OTLP
+
+
+def test_parse_observability_export_backend_trims_and_normalizes() -> None:
+    assert parse_observability_export_backend(" elasticsearch ") is ObservabilityExportBackend.ELASTICSEARCH
+
+
+def test_parse_observability_export_backend_rejects_unknown() -> None:
+    with pytest.raises(
+        ObservabilityExportOperatorConfigError,
+        match="unsupported observability export backend: 'foo'",
+    ):
+        parse_observability_export_backend("foo")
+
+
+def test_recognized_non_otlp_backend_fails_fast_as_not_implemented() -> None:
+    config = ObservabilityExportOperatorConfig(
+        enabled=True,
+        backend=ObservabilityExportBackend.ELASTICSEARCH,
+        otlp=OtlpExportOperatorConfig(
+            endpoint="https://collector.example/v1/logs",
+            service_name="intergrax.test",
+        ),
+    )
+
+    with pytest.raises(
+        ObservabilityExportOperatorConfigError,
+        match="recognized but not implemented in operator wiring yet",
+    ):
+        build_otlp_observability_exporter(config)
+
+    with pytest.raises(
+        ObservabilityExportOperatorConfigError,
+        match="recognized but not implemented in operator wiring yet",
+    ):
+        build_otlp_observability_export_runtime_plugin(config)
 
 
 def test_default_operator_config_is_disabled() -> None:
@@ -302,5 +338,5 @@ async def test_raw_application_attributes_are_not_exported_only_sanitized_are_us
 
 def test_operator_wiring_has_no_vendor_sdk_coupling() -> None:
     source = _OPERATOR_WIRING_PATH.read_text(encoding="utf-8")
-    for token in _FORBIDDEN_VENDOR_TOKENS:
+    for token in _FORBIDDEN_VENDOR_SDK_TOKENS:
         assert token not in source, f"operator_wiring.py contains forbidden vendor coupling token: {token}"

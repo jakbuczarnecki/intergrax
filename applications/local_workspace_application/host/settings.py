@@ -13,7 +13,9 @@ from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportBackend,
     ObservabilityExportOperatorConfig,
+    ObservabilityExportOperatorConfigError,
     OtlpExportOperatorConfig,
+    parse_observability_export_backend,
 )
 
 
@@ -100,10 +102,15 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         if not self.observability_export_enabled:
             return None
 
-        backend = self.observability_export_backend.strip().lower()
-        if backend != "otlp":
+        try:
+            backend = parse_observability_export_backend(self.observability_export_backend)
+        except ObservabilityExportOperatorConfigError as exc:
+            raise ValueError(str(exc)) from exc
+
+        if backend is not ObservabilityExportBackend.OTLP:
             raise ValueError(
-                f"unsupported LKW observability export backend: {backend!r}"
+                f"observability export backend '{backend.value}' is recognized but not "
+                "implemented in operator wiring yet"
             )
 
         endpoint = self.observability_otlp_endpoint.strip()

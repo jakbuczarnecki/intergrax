@@ -86,14 +86,42 @@ def test_enabled_without_endpoint_raises() -> None:
         settings.build_observability_export_config()
 
 
+def test_unrecognized_backend_raises() -> None:
+    """Unknown backend raises ValueError."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "foo"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT"] = "http://localhost:4318"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="unsupported observability export backend: 'foo'"):
+        settings.build_observability_export_config()
+
+
+def test_recognized_but_not_implemented_backend_raises() -> None:
+    """Recognized non-OTLP backend fails fast as not implemented."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT"] = "http://localhost:4318"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(
+        ValueError,
+        match="recognized but not implemented in operator wiring yet",
+    ):
+        settings.build_observability_export_config()
+
+
 def test_unsupported_backend_raises() -> None:
-    """Unsupported backend raises ValueError."""
+    """Recognized langfuse backend fails fast as not implemented."""
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "langfuse"
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT"] = "http://localhost:4318"
 
     settings = LocalWorkspaceBackendSettings.from_env()
-    with pytest.raises(ValueError, match="unsupported LKW observability export backend"):
+    with pytest.raises(
+        ValueError,
+        match="recognized but not implemented in operator wiring yet",
+    ):
         settings.build_observability_export_config()
 
 

@@ -348,7 +348,7 @@ Wiring selects the concrete integration; product code never branches on vendor S
 |----|------|----------|--------|-------------|------------|
 | **OBS-VENDOR-0** | Docs | P2 | **Done** | Close LKW OTLP inspector status in LKW implementation plan | Implementation plan references `applications/local_workspace_application/scripts/inspect_otlp_logs.py` and `inspect-otlp-logs.bat`; states duplicate check = 0; states focused inspector tests = 5 passed; no code changes |
 | **OBS-VENDOR-1** | Docs/Code | P1 | **Done** | Define canonical vendor integration execution model | Plan states platform/runtime/LKW call only contract-level `export()`; vendor SDK/API calls belong only in provider implementations; LKW remains vendor-agnostic; direct Langfuse/Elastic/Phoenix/Arize calls from LKW, agents, runtime loops, or application code are forbidden |
-| **OBS-VENDOR-2** | Code | P1 | Planned | Typed vendor backend selection in operator/runtime config | Plan defines where backend selection belongs; unknown/unsupported backend fails fast with clear configuration error; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only — do not implement all vendors at once. **Current:** `otlp`. **Planned:** `otlp`, `langfuse`, `elasticsearch` or `opensearch`, `phoenix`, `arize`, `custom`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=langfuse` |
+| **OBS-VENDOR-2** | Code | P1 | **Done** | Typed vendor backend selection in operator/runtime config | Plan defines where backend selection belongs; unknown/unsupported backend fails fast with clear configuration error; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only — do not implement all vendors at once. **Current:** `otlp`. **Planned:** `otlp`, `langfuse`, `elasticsearch` or `opensearch`, `phoenix`, `arize`, `custom`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=langfuse` |
 | **OBS-VENDOR-3** | Docs/Code | P1 | Planned | Formalize safe extension metadata API | `ApplicationObservabilityAttributes` documented as official extension path; artifact refs (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) as reference-only path; raw artifact content not exported; forbidden fields remain blocked by export policy; arbitrary `RuntimeEvent.payload` fields not auto-exported; optional helper API (e.g. `emit_observability_event(..., application_attributes=..., artifact_ref=...)`) only if needed |
 | **OBS-VENDOR-4A** | Code | P1 | Planned | **First concrete vendor adapter: Elasticsearch/OpenSearch** | Contract subclass under `intergrax/integrations/providers/observability_backend/elasticsearch/`; injectable transport for indexing policy-safe `ObservabilityVendorPayload`; no raw content export; no policy bypass; unit tests with fake transport prove policy-safe delivery, disabled config does not send, unsafe content not exported; no LKW direct dependency on Elasticsearch/OpenSearch SDK |
 | **OBS-VENDOR-5** | Code | P1 | Planned | Wire selected vendor backend into runtime operator config | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch` builds `ElasticsearchObservabilityIntegration.from_transport(...)`; `otlp` continues `OtlpObservabilityIntegration`; runtime plugin receives only contract/`ObservabilityExporter` object; LKW does not branch on vendor SDK; misconfigured credentials/endpoint fail fast at build time; exporter failures do not fail product runs |
@@ -359,6 +359,10 @@ Wiring selects the concrete integration; product code never branches on vendor S
 **OBS-VENDOR-1 status:**
 
 Done — canonical execution model closed. Runtime and applications call only **`ObservabilityVendorIntegrationContract.export()`**; vendor SDK/API calls are restricted to concrete provider implementations under **`observability_backend/<vendor>/`**; LKW remains vendor-agnostic. Export policy runs before external export; exporter failure must never fail product runs.
+
+**OBS-VENDOR-2 status:**
+
+Done — observability backend selection is typed. The platform recognizes `otlp`, `langfuse`, `elasticsearch`, `opensearch`, `phoenix`, `arize`, and `custom`. OTLP remains the only implemented backend path. Recognized non-OTLP backends fail fast until their provider transport/wiring tasks are implemented.
 
 ### OBS-VENDOR-1 — execution model (reference)
 
@@ -405,7 +409,7 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 |------------------------------|---------------------|
 | Contract adapters (INTEGRATIONS-2C) | **Done** — stubs exist; production I/O pending |
 | Production vendor transports | **OBS-VENDOR-4A**, **OBS-VENDOR-6** |
-| Operator / bootstrap wiring | **OBS-VENDOR-2**, **OBS-VENDOR-5** |
+| Operator / bootstrap wiring | **OBS-VENDOR-2** **Done**; **OBS-VENDOR-5** |
 | Production export end-to-end | **OBS-VENDOR-7** |
 | LLM-trace semantic vendors | **OBS-VENDOR-8** (later) |
 
