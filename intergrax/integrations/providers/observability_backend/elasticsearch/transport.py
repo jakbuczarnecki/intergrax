@@ -179,9 +179,10 @@ class ElasticsearchHttpObservabilityTransport:
                 )
                 return
             except ElasticsearchDeliveryError as exc:
-                if not exc.detail.retriable:
-                    raise
-                last_error = exc
+                transport_error = _transport_delivery_error(exc)
+                if not transport_error.detail.retriable:
+                    raise transport_error
+                last_error = transport_error
             except Exception as exc:
                 classified = classify_elasticsearch_delivery_error(
                     exc,
