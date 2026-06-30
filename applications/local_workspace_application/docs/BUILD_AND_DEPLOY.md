@@ -333,7 +333,7 @@ applications\local_workspace_application\scripts\inspect-elasticsearch-observabi
 applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --run-id run_... --check-duplicates --check-safety
 ```
 
-Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents.
+Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
 
 ### What to look for
 

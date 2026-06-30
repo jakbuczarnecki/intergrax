@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
+
 
 SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "inspect_elasticsearch_observability.py"
 SPEC = importlib.util.spec_from_file_location("inspect_elasticsearch_observability", SCRIPT_PATH)
@@ -141,6 +143,141 @@ def test_duplicate_check_exits_nonzero_when_duplicates_exist() -> None:
     )
 
     assert exit_code == 1
+
+
+def test_safety_check_uses_canonical_forbidden_export_fields() -> None:
+    assert inspect_es.CANONICAL_FORBIDDEN_EXPORT_KEYS == FORBIDDEN_EXPORT_CONTENT_FIELDS
+    assert inspect_es.CANONICAL_FORBIDDEN_EXPORT_KEYS == inspect_es.FORBIDDEN_EXPORT_CONTENT_FIELDS
+
+
+def test_safety_check_fails_for_exact_forbidden_keys() -> None:
+    for forbidden_key in ("prompt", "completion", "tool_args", "api_key"):
+        hits = [
+            _hit(
+                doc_id=f"unsafe-{forbidden_key}",
+                run_id="run-1",
+                event_id=f"evt-{forbidden_key}",
+                event_type="tool_requested",
+                timestamp="t1",
+                extra_source={forbidden_key: "leak"},
+            ),
+        ]
+        records = inspect_es.parse_hits(_search_response(hits))
+        violations = inspect_es.check_safety(records)
+
+        assert violations, forbidden_key
+        assert violations[0][0] == f"unsafe-{forbidden_key}"
+        assert any(forbidden_key in key for key in violations[0][1])
+
+
+def test_safety_check_fails_for_compound_forbidden_keys() -> None:
+    compound_cases = {
+        "raw_prompt": "leak",
+        "user_prompt": "leak",
+        "raw_chunks": [],
+        "raw_content": "leak",
+    }
+    for compound_key, value in compound_cases.items():
+        hits = [
+            _hit(
+                doc_id=f"unsafe-{compound_key}",
+                run_id="run-1",
+                event_id=f"evt-{compound_key}",
+                event_type="tool_requested",
+                timestamp="t1",
+                extra_source={compound_key: value},
+            ),
+        ]
+        records = inspect_es.parse_hits(_search_response(hits))
+        violations = inspect_es.check_safety(records)
+
+        assert violations, compound_key
+        assert any(compound_key in key for key in violations[0][1])
+
+
+def test_safety_check_fails_for_nested_forbidden_keys() -> None:
+    hits = [
+        _hit(
+            doc_id="unsafe-nested",
+            run_id="run-1",
+            event_id="evt-nested",
+            event_type="tool_requested",
+            timestamp="t1",
+            extra_source={"intergrax": {"prompt": "secret text"}},
+        ),
+    ]
+    records = inspect_es.parse_hits(_search_response(hits))
+    violations = inspect_es.check_safety(records)
+
+    assert violations
+    assert violations[0][0] == "unsafe-nested"
+    assert any("prompt" in key for key in violations[0][1])
+
+
+def test_safety_check_fails_for_list_nested_forbidden_keys() -> None:
+    hits = [
+        _hit(
+            doc_id="unsafe-list",
+            run_id="run-1",
+            event_id="evt-list",
+            event_type="tool_requested",
+            timestamp="t1",
+            extra_source={"items": [{"messages": ["leak"]}]},
+        ),
+    ]
+    records = inspect_es.parse_hits(_search_response(hits))
+    violations = inspect_es.check_safety(records)
+
+    assert violations
+    assert any("messages" in key for key in violations[0][1])
+
+
+def test_safety_check_passes_for_policy_safe_intergrax_fields() -> None:
+    safe_source = {
+        "intergrax.status": "ok",
+        "intergrax.run_id": "run-1",
+        "intergrax.event_id": "evt-safe",
+        "intergrax.tool_id": "rag.retrieve",
+        "intergrax.capability": "local.workspace.search",
+        "intergrax.safe_relative_path": "docs/README.md",
+        "intergrax.sha256": "abc123",
+        "intergrax.artifact_ref": "artifact://ref",
+        "@timestamp": "2026-06-30T10:00:00Z",
+    }
+    hits = [
+        _hit(
+            doc_id="safe-1",
+            run_id="run-1",
+            event_id="evt-safe",
+            event_type="tool_requested",
+            timestamp="2026-06-30T10:00:00Z",
+            extra_source=safe_source,
+        ),
+    ]
+    records = inspect_es.parse_hits(_search_response(hits))
+
+    assert inspect_es.check_safety(records) == []
+
+
+def test_safety_check_allows_safe_relative_path_despite_path_substring() -> None:
+    hits = [
+        _hit(
+            doc_id="safe-path",
+            run_id="run-1",
+            event_id="evt-path",
+            event_type="tool_requested",
+            timestamp="t1",
+            extra_source={
+                "intergrax.safe_relative_path": "docs/README.md",
+                "intergrax": {"safe_relative_path": "docs/README.md"},
+            },
+        ),
+    ]
+    records = inspect_es.parse_hits(_search_response(hits))
+
+    assert inspect_es.check_safety(records) == []
+    assert not inspect_es.key_is_forbidden_export_field("safe_relative_path")
+    assert not inspect_es.key_is_forbidden_export_field("intergrax.safe_relative_path")
 
 
 def test_safety_check_passes_for_normal_intergrax_metadata() -> None:

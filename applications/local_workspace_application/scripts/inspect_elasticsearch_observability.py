@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.error
 import urllib.request
 from collections import Counter, defaultdict
 from typing import Any, Callable, Iterable, Sequence
+
+from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
 
 Record = dict[str, Any]
 DuplicateKey = tuple[str, str, str, str, str, str]
@@ -44,20 +47,9 @@ RECORD_FIELDS = (
     "doc_id",
 )
 
-FORBIDDEN_KEY_FRAGMENTS = (
-    "prompt",
-    "completion",
-    "content",
-    "chunk",
-    "chunks",
-    "query",
-    "tool_args",
-    "secret",
-    "token",
-    "password",
-    "absolute_path",
-    "full_path",
-)
+CANONICAL_FORBIDDEN_EXPORT_KEYS = frozenset(FORBIDDEN_EXPORT_CONTENT_FIELDS)
+
+_KEY_SEGMENT_SPLIT = re.compile(r"[._\-]+")
 
 UrlOpener = Callable[[urllib.request.Request], Any]
 
@@ -192,9 +184,37 @@ def _key_name(key: Any) -> str:
     return str(key)
 
 
-def key_has_forbidden_fragment(key: str) -> bool:
-    lowered = key.lower()
-    return any(fragment in lowered for fragment in FORBIDDEN_KEY_FRAGMENTS)
+def _normalize_key_name(key: str) -> str:
+    return str(key).lower()
+
+
+def _key_segments(key: str) -> list[str]:
+    normalized = _normalize_key_name(key)
+    segments = [normalized]
+    for part in _KEY_SEGMENT_SPLIT.split(normalized):
+        if part:
+            segments.append(part)
+    return segments
+
+
+def _segment_tokens(segment: str) -> list[str]:
+    return [token for token in _KEY_SEGMENT_SPLIT.split(segment) if token]
+
+
+def key_is_forbidden_export_field(key: str) -> bool:
+    """Return True when a document key matches canonical export-policy forbidden fields."""
+    for segment in _key_segments(key):
+        if segment in CANONICAL_FORBIDDEN_EXPORT_KEYS:
+            return True
+        for token in _segment_tokens(segment):
+            if token in CANONICAL_FORBIDDEN_EXPORT_KEYS:
+                return True
+        for forbidden in CANONICAL_FORBIDDEN_EXPORT_KEYS:
+            if forbidden == segment:
+                continue
+            if re.search(rf"(^|[._\-]){re.escape(forbidden)}([._\-]|$)", segment):
+                return True
+    return False
 
 
 def find_forbidden_keys(value: Any, *, path: str = "") -> list[str]:
@@ -204,7 +224,7 @@ def find_forbidden_keys(value: Any, *, path: str = "") -> list[str]:
         for key, nested in value.items():
             key_name = _key_name(key)
             child_path = f"{path}.{key_name}" if path else key_name
-            if key_has_forbidden_fragment(key_name):
+            if key_is_forbidden_export_field(key_name):
                 offenders.append(child_path)
             offenders.extend(find_forbidden_keys(nested, path=child_path))
         return offenders
@@ -354,7 +374,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--check-safety",
         action="store_true",
-        help="Exit non-zero when forbidden raw-content key fragments are present.",
+        help="Exit non-zero when document keys match canonical export-policy forbidden fields.",
     )
     parser.add_argument("--json", action="store_true", help="Output selected records as JSON.")
     return parser
