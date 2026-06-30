@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 
 from intergrax.integrations._shared.config import BaseIntegrationConfig
 
@@ -20,6 +21,38 @@ DEFAULT_BASE_URL = "http://localhost:9200"
 DEFAULT_INDEX = "logs-*"
 DEFAULT_TIMESTAMP_FIELD = "@timestamp"
 DEFAULT_TIMEOUT_SECONDS = 30.0
+
+
+@dataclass(frozen=True, kw_only=True)
+class ElasticsearchRetryPolicy:
+    """Provider-owned retry/backoff policy for observability delivery."""
+
+    enabled: bool = True
+    max_attempts: int = 3
+    initial_backoff_seconds: float = 0.25
+    max_backoff_seconds: float = 2.0
+
+    def __post_init__(self) -> None:
+        if self.max_attempts < 1:
+            msg = "max_attempts must be >= 1"
+            raise ValueError(msg)
+        if self.initial_backoff_seconds < 0:
+            msg = "initial_backoff_seconds must be >= 0"
+            raise ValueError(msg)
+        if self.max_backoff_seconds < 0:
+            msg = "max_backoff_seconds must be >= 0"
+            raise ValueError(msg)
+        if (
+            self.initial_backoff_seconds > 0
+            and self.max_backoff_seconds < self.initial_backoff_seconds
+        ):
+            msg = "max_backoff_seconds must be >= initial_backoff_seconds"
+            raise ValueError(msg)
+
+    def effective_max_attempts(self) -> int:
+        if not self.enabled:
+            return 1
+        return self.max_attempts
 
 
 class ElasticsearchIntegrationConfig(BaseIntegrationConfig):

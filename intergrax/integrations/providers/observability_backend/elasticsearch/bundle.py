@@ -19,7 +19,10 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.integr
     ElasticsearchObservabilityIntegration,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
-from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
+from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+    ElasticsearchIntegrationConfig,
+    ElasticsearchRetryPolicy,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.opens import (
     open_elasticsearch_observability_backend,
     open_elasticsearch_rest_client,
@@ -101,6 +104,7 @@ def create_elasticsearch_observability_transport(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
     index: Optional[str] = None,
+    retry_policy: ElasticsearchRetryPolicy | None = None,
     **config_overrides: object,
 ) -> ElasticsearchHttpObservabilityTransport:
     """Build the concrete Elasticsearch observability export transport."""
@@ -110,7 +114,11 @@ def create_elasticsearch_observability_transport(
         http_client=http_client,
         http_client_factory=http_client_factory,
     )
-    return ElasticsearchHttpObservabilityTransport(rest_client, index=index)
+    return ElasticsearchHttpObservabilityTransport(
+        rest_client,
+        index=index,
+        retry_policy=retry_policy,
+    )
 
 
 def create_elasticsearch_observability_integration(

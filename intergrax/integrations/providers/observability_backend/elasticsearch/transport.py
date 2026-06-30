@@ -6,14 +6,54 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from typing import Any, Mapping, Protocol, runtime_checkable
 
-from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
-from intergrax.integrations.providers.observability_backend.elasticsearch.config import DEFAULT_TIMESTAMP_FIELD
+from intergrax.integrations.providers.observability_backend.elasticsearch.client import (
+    ElasticsearchDeliveryError,
+    ElasticsearchDeliveryErrorDetail,
+    ElasticsearchRestClient,
+    classify_elasticsearch_delivery_error,
+)
+from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+    DEFAULT_TIMESTAMP_FIELD,
+    ElasticsearchRetryPolicy,
+)
 from intergrax.runtime.integrations.observability import ObservabilityVendorPayload
 from intergrax.runtime.observability.export_attributes import ObservabilityAttributeValue
 
 _INTERGRAX_DOC_PREFIX = "intergrax."
+_ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID = "elasticsearch"
+
+
+def compute_elasticsearch_retry_backoff_seconds(
+    *,
+    retry_after_failure_number: int,
+    previous_backoff_seconds: float,
+    policy: ElasticsearchRetryPolicy,
+) -> float:
+    """Return sleep duration before the next attempt after a retriable failure."""
+    if retry_after_failure_number <= 0:
+        return 0.0
+    if retry_after_failure_number == 1:
+        return policy.initial_backoff_seconds
+    return min(previous_backoff_seconds * 2, policy.max_backoff_seconds)
+
+
+def _transport_delivery_error(error: ElasticsearchDeliveryError) -> ElasticsearchDeliveryError:
+    detail = error.detail
+    if detail.operation == "send_observability_payload":
+        return error
+    return ElasticsearchDeliveryError(
+        ElasticsearchDeliveryErrorDetail(
+            provider_id=detail.provider_id,
+            operation="send_observability_payload",
+            index=detail.index,
+            status_code=detail.status_code,
+            reason=detail.reason,
+            retriable=detail.retriable,
+        )
+    )
 
 
 def _set_optional_string(doc: dict[str, Any], key: str, value: str) -> None:
@@ -94,6 +134,8 @@ class ElasticsearchHttpObservabilityTransport:
         *,
         index: str | None = None,
         timestamp_field: str | None = None,
+        retry_policy: ElasticsearchRetryPolicy | None = None,
+        sleep: Callable[[float], Awaitable[None]] | None = None,
     ) -> None:
         self._client = client
         if isinstance(client, ElasticsearchRestClient):
@@ -105,14 +147,51 @@ class ElasticsearchHttpObservabilityTransport:
                 raise ValueError(msg)
             self._index = index
             self._timestamp_field = timestamp_field or DEFAULT_TIMESTAMP_FIELD
+        self._retry_policy = retry_policy or ElasticsearchRetryPolicy()
+        self._sleep = sleep or asyncio.sleep
 
     async def send_observability_payload(self, payload: ObservabilityVendorPayload) -> None:
         document = map_vendor_payload_to_elasticsearch_document(
             payload,
             timestamp_field=self._timestamp_field,
         )
-        await asyncio.to_thread(
-            self._client.index_document,
-            index=self._index,
-            document=document,
-        )
+        policy = self._retry_policy
+        max_attempts = policy.effective_max_attempts()
+        previous_backoff_seconds = 0.0
+        last_error: ElasticsearchDeliveryError | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            if attempt > 1:
+                retry_after_failure_number = attempt - 1
+                delay = compute_elasticsearch_retry_backoff_seconds(
+                    retry_after_failure_number=retry_after_failure_number,
+                    previous_backoff_seconds=previous_backoff_seconds,
+                    policy=policy,
+                )
+                await self._sleep(delay)
+                previous_backoff_seconds = delay
+
+            try:
+                await asyncio.to_thread(
+                    self._client.index_document,
+                    index=self._index,
+                    document=document,
+                )
+                return
+            except ElasticsearchDeliveryError as exc:
+                if not exc.detail.retriable:
+                    raise
+                last_error = exc
+            except Exception as exc:
+                classified = classify_elasticsearch_delivery_error(
+                    exc,
+                    operation="send_observability_payload",
+                    index=self._index,
+                    provider_id=_ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+                )
+                if not classified.detail.retriable:
+                    raise classified
+                last_error = classified
+
+            if attempt >= max_attempts and last_error is not None:
+                raise _transport_delivery_error(last_error)
