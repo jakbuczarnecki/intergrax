@@ -16,6 +16,11 @@ from pydantic import BaseModel, Field
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RELEASE_CYCLES_PATH = REPO_ROOT / "build" / "architecture_hardening" / "release_cycles.json"
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
+
 for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
     value = str(path)
     if value not in sys.path:
@@ -49,7 +54,7 @@ def _run_pytest(*targets: str) -> bool:
 
 
 def _run_security_promote_gate() -> bool:
-    cmd = [sys.executable, str(REPO_ROOT / "scripts" / "check_harness_security_promote_gate.py")]
+    cmd = [sys.executable, str(resolve_script("check_harness_security_promote_gate.py"))]
     completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
     return completed.returncode == 0
 

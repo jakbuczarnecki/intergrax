@@ -214,3 +214,5 @@ Regenerates audit slices, arch read scopes, audit prompts; fails if outputs drif
 uv run python scripts/audit/generate_audit_read_slices.py
 uv run python scripts/ci/check_cursor_token_setup.py
 ```
+
+`check_cursor_token_setup.py` also rejects broad Cursor access wording in audit/control prompts.

@@ -15,9 +15,14 @@ for _path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
     _entry = str(_path)
     if _entry not in sys.path:
         sys.path.insert(0, _entry)
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
+
 REPORT_PATH = REPO_ROOT / "build" / "agent_production_readiness.json"
 INVENTORY_PATH = REPO_ROOT / "build" / "agent_fleet_inventory.json"
-TYPED_STATE_ALLOWLIST = REPO_ROOT / "scripts" / "check_agent_typed_state.py"
+TYPED_STATE_ALLOWLIST = resolve_script("check_agent_typed_state.py")
 
 from intergrax.agents.readiness.scoreboard import (  # noqa: E402
     build_roster_readiness_report,

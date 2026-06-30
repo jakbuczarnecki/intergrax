@@ -1,6 +1,6 @@
 # Intergrax
 
-[![Regression gate](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml)
+<!-- [![Regression gate](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml) -->(https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
 [![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)

@@ -16,6 +16,10 @@ for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
     text = str(path)
     if text not in sys.path:
         sys.path.insert(0, text)
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
 
 REQUIRED_FACTORY_MARKERS = (
     "build_harness_host_runtime",
@@ -229,7 +233,7 @@ def check_tier3_scenario_matrix() -> list[str]:
 def check_tier3_audit_prompt() -> list[str]:
     import runpy
 
-    gen = runpy.run_path(str(REPO_ROOT / "scripts" / "generate_domain_audit_prompts.py"))
+    gen = runpy.run_path(str(resolve_script("generate_domain_audit_prompts.py")))
     audit_path = REPO_ROOT / "docs" / "audit" / "TIER3_APPLICATION_ENVIRONMENT.md"
     if not audit_path.is_file():
         return [f"missing audit prompt: {audit_path}"]

@@ -11,7 +11,7 @@ Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PRO
 index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
 ```
 
-Latest observability snapshot: **2026-06-28 — LKW-PF1A CLOSED** · **LKW-DF1 CLOSED** (async runtime plugin coroutine warnings). Immediate catalog tool calls on the UAEP path emit generic `RuntimeEventType.TOOL_*` from `RuntimeExecutionContext.invoke_tool` (platform payload only; no raw args). LKW HTTP runs attach curated `lkw_evidence.v1` alongside `application_run_summary.v1` and redacted `runtime_event_summary.v1`. **Next platform phase:** **OBS-EXPORT-1** — external observability export boundary (LKW remains proof workload; vendor integrations out of scope).
+Latest observability snapshot: **2026-06-30 — LKW-OBS OTLP proof path closed** · **LKW-OBS-VIEW-1A Done** (inspector + duplicate check = 0). LKW OTLP export: env-driven config (1A), Compose collector + JSONL sink (1B), manual Swagger proof (1C), duplicate export fix (DUP-1), lightweight inspector (`scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`; focused tests 5 passed). **Next platform phase:** **OBS-VENDOR** — production vendor integration rollout ([`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR); LKW remains proof workload, not integration owner.
 
 Current LKW.2 execution status: §5 below. LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
@@ -531,7 +531,7 @@ Acceptance:
 - Vendor observability integrations (Langfuse, Arize/Phoenix, Elasticsearch) remain **out of scope** for LKW; OTLP uses platform integration path only.
 - LKW must continue to use platform observability contracts only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`, RuntimeEvent `TOOL_*`, ToolCallRecord/RagCallRecord, WorkspaceArtifactRef.
 - Do not add LKW-specific exporters, telemetry buses, vendor SDK calls, trace stores, or observability workarounds.
-- **OBS-EXPORT-5** (Langfuse/Arize/Phoenix adapters) remains the next platform phase; LKW is not the integration owner.
+- **OBS-VENDOR** (production vendor integration rollout) is the next platform phase — see [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR; LKW is not the integration owner.
 
 ### LKW.2 closeout result
 
@@ -607,4 +607,9 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 |----|------|--------|------------|
 | LKW-OBS-OTLP-1A | Add env-driven OTLP observability export configuration for LKW | `host/settings.py`, `host/factory.py`, `tests/host/` | **Done** — env-driven config; disabled by default; endpoint required; unsupported backend fails fast; `export_content` forced false; explicit factory parameter still works |
 | LKW-OBS-OTLP-1B | Add self-hosted OpenTelemetry Collector to LKW Docker Compose and persist exported logs | `docker-compose.yml`, `otel-collector-config.yaml`, docs | **Done** — local Compose starts `otel-collector`; LKW exports OTLP logs to `http://otel-collector:4318/v1/logs`; collector persists records under `.observability/otel/` |
+| LKW-OBS-OTLP-1C | Run end-to-end Swagger proof and inspect persisted OTLP log records | docs, manual proof | **Done** — manual Docker Compose proof verified that LKW runtime events are exported as OTLP logs to the local OpenTelemetry Collector and persisted to `.observability/otel/lkw-otlp-logs.jsonl`. Persisted records include run_id, task_id, capability, agent_id, tool_id and latency_ms. Raw request/query content was not exported. |
+| LKW-OBS-OTLP-DUP-1 | Diagnose and fix duplicate OTLP log records for identical runtime events | `intergrax/runtime/events/event_bus.py`, `tests/unit/runtime/observability/`, `tests/unit/runtime/events/` | **Done** — `RuntimeEventBus.publish()` no longer double-dispatches subscribers (previously invoked handlers via `record()` and again in `publish()`); OTLP export plugin receives each runtime event once per `event_id`. |
+| LKW-OBS-VIEW-1A | Add lightweight OTLP log inspector for persisted JSONL sink | `scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`, `tests/scripts/test_inspect_otlp_logs.py` | **Done** — inspector BAT at `applications/local_workspace_application/scripts/inspect-otlp-logs.bat`; Python entrypoint `applications/local_workspace_application/scripts/inspect_otlp_logs.py`; latest-run timeline works; manual duplicate check = 0; focused tests: `uv run pytest applications/local_workspace_application/tests/scripts/test_inspect_otlp_logs.py -q` → **5 passed** |
+
+**OBS-VENDOR-0 (platform plan):** LKW-OBS-VIEW-1A closeout recorded here; next steps tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-1` … `OBS-VENDOR-8`).
 

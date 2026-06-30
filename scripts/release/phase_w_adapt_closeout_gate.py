@@ -14,6 +14,11 @@ from typing import Protocol
 from pydantic import BaseModel
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
+
 for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
     path_value = str(path)
     if path_value not in sys.path:
@@ -71,7 +76,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _run_script(script_name: str, *extra_args: str) -> int:
-    command = [sys.executable, str(REPO_ROOT / "scripts" / script_name), *extra_args]
+    command = [sys.executable, str(resolve_script(script_name)), *extra_args]
     completed = subprocess.run(command, cwd=REPO_ROOT, check=False)
     return int(completed.returncode)
 

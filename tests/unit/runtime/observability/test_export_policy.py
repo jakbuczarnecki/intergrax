@@ -216,3 +216,29 @@ async def test_observability_export_runtime_plugin_survives_exporter_failure() -
     )
 
     await bus.publish(event)
+
+
+@pytest.mark.asyncio
+async def test_observability_export_runtime_plugin_exports_once_on_publish() -> None:
+    exporter = InMemoryObservabilityExporter()
+    policy = ObservabilityExportPolicy(enabled=True)
+    bus = RuntimeEventBus(record_history=False)
+    plugin = make_observability_export_runtime_plugin(exporter=exporter, policy=policy)
+    plugin.register(bus, HookRegistry(), MagicMock())
+
+    event = RuntimeEvent(
+        task_id="task-1",
+        run_id="run-1",
+        event_id="evt-dedupe-tool",
+        tenant_id="tenant-a",
+        agent_id="local_search",
+        event_type=RuntimeEventType.TOOL_REQUESTED,
+        phase=ExecutionPhase.STEP_EXECUTION,
+        payload={"tool_id": "rag.retrieve", "status": "requested"},
+    )
+
+    await bus.publish(event)
+
+    assert len(exporter.envelopes) == 1
+    assert exporter.envelopes[0].event_id == "evt-dedupe-tool"
+    assert exporter.envelopes[0].tool_id == "rag.retrieve"

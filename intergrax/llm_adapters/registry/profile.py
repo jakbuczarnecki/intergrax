@@ -189,4 +189,4 @@ def llm_profile_from_env(*, prefix: str = "INTERGRAX_LLM") -> LLMProfile:
     """
     provider_raw = os.getenv(f"{prefix}_PROVIDER", LLMProvider.OLLAMA.value).strip()
     model = os.getenv(f"{prefix}_MODEL")
-    return LLMProfile(provider=LLMProvider(provider_raw), model=model or None)
+    return LLMProfile(provider=provider_raw, model=model or None)

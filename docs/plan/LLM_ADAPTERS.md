@@ -93,3 +93,57 @@ Load **only** the satellite matching your task or cited gap ID.
 **Explicitly excluded:** Central LLM gateway microservice (needs separate platform ADR), rewriting all 19 SDK clients, product HTTP DTOs, Phase K agents.
 
 ---
+
+## Phase LLM-PROVIDER-PLUGIN — Provider plugin registration layer (Backlog)
+
+**Architecture:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) §Provider selection · §Provider plugin layer (planned)  
+**Priority:** P2 (P1 if external provider packages become a near-term requirement) — **not blocking** current layer maturity  
+**Status:** Planned / Backlog  
+**Goal:** Add a provider metadata and plugin registration layer for LLM providers **without** replacing the existing `LLMAdapter` execution contract.
+
+| ID | Name | Priority | Status | Deliverable |
+|----|------|----------|--------|-------------|
+| **LLM-PROVIDER-PLUGIN-1** | LLM provider contract and plugin registration layer | P2 | Planned | Thin provider metadata / registration layer above `LLMAdapterRegistry`, mirroring runtime integrations registry v2 strengths |
+
+### Assumptions
+
+- `LLMAdapter` remains the hot-path execution contract (generate, stream, tools, structured output, token counting, quota/resilience).
+- `LLMProvider` enum remains valid for stable built-in providers.
+- Custom providers MUST NOT require editing `LLMProvider` enum or core `_BUILTIN_ADAPTERS`.
+- Provider packages are discoverable / registrable through a deterministic provider registration contract.
+- Mirror integrations registry v2: `provider_id`, provider kind, config class, factory, capabilities, health check support, security posture, metadata, default disabled behavior.
+- The new layer creates or describes `LLMAdapter` instances — it does **not** replace them.
+- Do **not** replace `LLMAdapter` with `PlatformIntegrationContract`.
+
+### Proposed target objects
+
+- `LLMProviderRegistration`
+- `LLMProviderContract` or `LLMProviderMetadataContract`
+- `LLMProviderConfig` base class (if needed)
+- Optional LLM provider package convention / discovery entrypoint
+- Unit tests for custom provider registration without enum/core edits
+
+### Acceptance criteria
+
+1. Built-in LLM providers still work exactly as today.
+2. `LLMProvider` enum remains available for stable built-ins.
+3. A custom provider package can register itself without modifying `LLMProvider` enum.
+4. A custom provider package can register itself without modifying `_BUILTIN_ADAPTERS`.
+5. Registry lists provider metadata: `provider_id`, `display_name`, supported protocol, config class, factory, capabilities, default model, secret/env requirements.
+6. Registry can instantiate an `LLMAdapter` from the provider registration.
+7. Provider metadata supports safe public view without exposing secrets.
+8. Unit tests prove: built-in compatibility; custom registration; duplicate rejection; invalid contract rejection; factory returns `LLMAdapter`; metadata does not expose secrets.
+9. No Tier-2 agent imports vendor SDKs directly.
+10. No rewrite of existing provider adapters required unless explicitly scoped later.
+
+### Non-goals
+
+- Do not rewrite all existing adapters.
+- Do not remove `LLMProvider` enum.
+- Do not replace `LLMAdapter` with `PlatformIntegrationContract`.
+- Do not introduce a central HTTP LLM gateway.
+- Do not change model routing behavior, `ModelCatalog` behavior, or response envelope contracts.
+
+**Delivery rule:** One **LLM-PROVIDER-PLUGIN-*** ID per PR → update this table + architecture §Provider plugin layer → gate green.
+
+---

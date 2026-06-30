@@ -9,7 +9,7 @@
 
 ## How to use
 
-1. Open a new agent chat with **full repository access**.
+1. Open a new agent chat with the repository available, but do not perform broad repository exploration. Read only the files listed in Context budget / Canonical reads, use path-filtered grep before opening files, and do not use semantic search, subagents, or full-repo scans unless the operator explicitly approves.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Integration Library** dom
 
 ## Mission
 
-Audit the **Integration Library** as the sole vendor boundary: **194** shipped slugs (`layout.py`), typed contracts, health probes, IntegrationProfile-driven backend selection, guardrail integrations, and CI-enforced import boundaries.
+Audit the **Integration Library** as the sole vendor boundary: 185+ slugs, typed contracts, health probes, IntegrationProfile-driven backend selection, guardrail integrations, and CI-enforced import boundaries.
 
 ## Key symbols and contracts
 

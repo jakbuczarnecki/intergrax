@@ -10,7 +10,7 @@
 
 ## How to use
 
-1. Open a new agent chat with **full repository access**.
+1. Open a new agent chat with the repository available, but do not perform broad repository exploration. Read only the files listed in Context budget / Canonical reads, use path-filtered grep before opening files, and do not use semantic search, subagents, or full-repo scans unless the operator explicitly approves.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.

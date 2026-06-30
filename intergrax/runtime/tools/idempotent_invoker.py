@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
@@ -15,12 +17,14 @@ from intergrax.contracts.idempotency_store import (
     IdempotencyStore,
     InvocationStatus,
 )
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import (
     ToolExecutionRequest,
     ToolExecutionResult,
 )
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 
 
 class IdempotentToolInvoker:
@@ -51,7 +55,7 @@ class IdempotentToolInvoker:
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
 
-        registry = self._base_invoker._registry  # read-only usage
+        registry = self._base_invoker.registry
         reg = registry.get(request.tool_id)
         contract = reg.contract
 

@@ -12,14 +12,12 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
     invoke_catalog_tool,
     parse_metadata_list,
     request_metadata,
+    require_read_allowlist_roots,
+    resolve_allowed_path,
     resolve_request_scope,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.filesystem.allowlist import (
-    require_read_allowlist_roots,
-    resolve_allowed_path,
-)
-from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from intergrax.contracts.runtime_execution_context import RAG_INGEST_TOOL_ID
 
 INDEX_STEP_ID = "local_indexer_step"
 

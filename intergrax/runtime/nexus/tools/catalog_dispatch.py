@@ -14,8 +14,6 @@ from pydantic import BaseModel, ValidationError
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.runtime.tools.idempotent_invoker import IdempotentToolInvoker
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
@@ -42,8 +40,6 @@ def catalog_tool_ids(tool_ids: Sequence[str]) -> tuple[str, ...]:
 def resolve_tool_registry(invoker: object | None) -> ToolRegistry | None:
     if invoker is None:
         return None
-    if isinstance(invoker, (RuntimeToolInvoker, IdempotentToolInvoker)):
-        return invoker.registry
     if isinstance(invoker, ToolInvokerProtocol):
         return invoker.registry
     return None
@@ -84,7 +80,7 @@ def invoke_catalog_tool_ids(
     trace_step: str = "CatalogDispatch",
 ) -> int:
     """
-    Invoke catalog tools via ``RuntimeToolInvoker``.
+    Invoke catalog tools via configured ``ToolInvokerProtocol``.
 
     Returns the number of successfully attempted invocations (including failures).
     """
@@ -186,7 +182,7 @@ def invoke_catalog_tool_request(
     request: ToolRequest,
     trace_step: str = "CatalogGateway",
 ) -> ToolResponse:
-    """§42.12 direct catalog ``ToolRequest`` → ``RuntimeToolInvoker``."""
+    """§42.12 direct catalog ``ToolRequest`` → configured ``ToolInvokerProtocol``."""
     from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
     from intergrax.runtime.nexus.engine.runtime_state import ToolCallTrace
 

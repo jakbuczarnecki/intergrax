@@ -11,7 +11,7 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
     request_metadata,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
+from intergrax.contracts.runtime_execution_context import WORKSPACE_WRITE_FILE_TOOL_ID
 
 SYNTHESIZE_STEP_ID = "local_synthesizer_step"
 _DEFAULT_OUTPUT_NAME = "draft.md"

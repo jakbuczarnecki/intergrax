@@ -11,12 +11,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 THREAT_GATES: tuple[tuple[str, str], ...] = (
-    ("SDK bypass", "check_agents_vendor_imports.py"),
-    ("Gateway-only step security", "check_agent_step_security.py"),
-    ("Capability routing", "check_capability_routing.py"),
-    ("Tier-3 import boundary", "check_agents_no_tier3_imports.py"),
-    ("Fleet migration", "check_agent_fleet_migration.py"),
-    ("ACP-CLOSE CI", "check_agent_acp_close_ci.py"),
+    ("SDK bypass", "maintenance/check_agents_vendor_imports.py"),
+    ("Gateway-only step security", "maintenance/check_agent_step_security.py"),
+    ("Capability routing", "maintenance/check_capability_routing.py"),
+    ("Tier-3 import boundary", "maintenance/check_agents_no_tier3_imports.py"),
+    ("Fleet migration", "maintenance/check_agent_fleet_migration.py"),
+    ("ACP-CLOSE CI", "gates/check_agent_acp_close_ci.py"),
 )
 
 REQUIRED_TESTS: tuple[str, ...] = (

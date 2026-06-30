@@ -54,6 +54,39 @@ AUDIT_BOOTSTRAPS = (
     "06_interactive_layer_by_layer_audit.txt",
 )
 HEP_BOOTSTRAP = "hep_step.txt"
+FORBIDDEN_BROAD_ACCESS_PHRASES = (
+    "full repository access",
+)
+BROAD_ACCESS_GUARD_PATHS = (
+    ROOT / "scripts" / "audit",
+    ROOT / "docs" / "audit",
+    ROOT / ".cursor",
+    ROOT / "docs" / "bootstrap",
+    ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md",
+)
+BROAD_ACCESS_GUARD_SUFFIXES = (".md", ".mdc", ".txt", ".py")
+
+
+def _broad_access_guard_candidates(path: Path) -> list[Path]:
+    if path.is_file():
+        return [path]
+    if not path.is_dir():
+        return []
+    candidates: list[Path] = []
+    for suffix in BROAD_ACCESS_GUARD_SUFFIXES:
+        candidates.extend(path.rglob(f"*{suffix}"))
+    return sorted(candidates)
+
+
+def _check_broad_access_phrases(errors: list[str]) -> None:
+    for guard_path in BROAD_ACCESS_GUARD_PATHS:
+        for candidate in _broad_access_guard_candidates(guard_path):
+            text = candidate.read_text(encoding="utf-8")
+            for phrase in FORBIDDEN_BROAD_ACCESS_PHRASES:
+                if phrase in text:
+                    errors.append(
+                        f"{candidate.relative_to(ROOT)}: forbidden broad Cursor access phrase: {phrase!r}"
+                    )
 
 
 def main() -> int:
@@ -173,6 +206,8 @@ def main() -> int:
             errors.append(f"{HEP_BOOTSTRAP}: missing {OUTPUT_BUDGET_MARKER}")
         if "STEP=" not in hep_text or "SCOPE=" not in hep_text:
             errors.append(f"{HEP_BOOTSTRAP}: must include STEP= and SCOPE= placeholders")
+
+    _check_broad_access_phrases(errors)
 
     if errors:
         print("check_cursor_token_setup: FAILED", file=sys.stderr)

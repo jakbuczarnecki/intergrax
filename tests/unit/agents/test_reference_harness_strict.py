@@ -35,11 +35,11 @@ def _request() -> RuntimeRequest:
 
 
 def test_strict_harness_builds_production_context_with_governance(tmp_path: Path) -> None:
-    trace_db = tmp_path / "trace.db"
+    trace_path = tmp_path / "strict_trace"
     harness = LabHarnessContext(
         policy_bundle=RuntimePolicyBundle(),
         strict_harness=True,
-        trace_db_path=trace_db,
+        trace_db_path=trace_path,
     )
     ctx = build_lab_agent_runtime_context(
         request=_request(),
@@ -47,7 +47,7 @@ def test_strict_harness_builds_production_context_with_governance(tmp_path: Path
         harness=harness,
     )
     assert ctx.config.production_mode is True
-    assert ctx.config.trace_db_path == str(trace_db)
+    assert ctx.config.trace_db_path == str(trace_path)
     assert isinstance(ctx.governance_service, LabAllowGovernanceService)
 
 
@@ -71,7 +71,7 @@ def test_strict_harness_preserves_policy_bundle_and_tool_scope(tmp_path: Path) -
     harness = LabHarnessContext(
         policy_bundle=bundle,
         strict_harness=True,
-        trace_db_path=tmp_path / "trace.db",
+        trace_db_path=tmp_path / "strict_trace",
     )
     config = build_lab_agent_runtime_config(
         request=_request(),

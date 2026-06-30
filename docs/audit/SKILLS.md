@@ -9,7 +9,7 @@
 
 ## How to use
 
-1. Open a new agent chat with **full repository access**.
+1. Open a new agent chat with the repository available, but do not perform broad repository exploration. Read only the files listed in Context budget / Canonical reads, use path-filtered grep before opening files, and do not use semantic search, subagents, or full-repo scans unless the operator explicitly approves.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Skill Library** domain. Y
 
 ## Mission
 
-Audit **150 skills / 42 bundles** as composable capability packs above tools: resolution, policy fragments, registration, roster consistency, and honest SK-BRIDGE gap status.
+Audit **149 skills / 41 bundles** as composable capability packs above tools: resolution, policy fragments, registration, roster consistency, and honest SK-BRIDGE gap status.
 
 ## Key symbols and contracts
 
@@ -121,7 +121,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- 150 skills resolved for agent with deep requires_skills chain.
+- 149 skills resolved for agent with deep requires_skills chain.
 - Roster vs environment consistency check at host bootstrap.
 - Import external SKILL.md at scale.
 

@@ -11,10 +11,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PYTHON = sys.executable
+_CI_DIR = REPO_ROOT / "scripts" / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+from script_paths import resolve_script  # noqa: E402
 
 
 def _run(script: str, *args: str) -> int:
-    path = REPO_ROOT / "scripts" / script
+    path = resolve_script(script)
     for cmd in (
         ["uv", "run", "python", str(path), *args],
         [PYTHON, str(path), *args],

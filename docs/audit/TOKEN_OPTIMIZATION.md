@@ -18,7 +18,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 ## How to use
 
-1. Open a new Cursor / agent chat with full repository access.
+1. Open a new Cursor / agent chat with the repository available, but do not perform broad repository exploration. Read only the files listed in Context budget / Canonical reads, use path-filtered grep before opening files, and do not use semantic search, subagents, or full-repo scans unless the operator explicitly approves.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only if needed.
 4. The agent must perform feature/domain adoption analysis first — not runtime implementation.

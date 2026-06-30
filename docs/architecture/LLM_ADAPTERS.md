@@ -176,6 +176,12 @@ profile = LLMProfile(provider="my_gateway", model="vendor/model-id")
 
 Custom provider slugs validate against `LLMAdapterRegistry.registered_providers()` — no enum edit required (**M-LLM-X.14.3**).
 
+### Provider plugin layer (planned — LLM-PROVIDER-PLUGIN-1)
+
+Today's `LLMAdapterRegistry.register()` factory hook is sufficient for runtime extension but is **not** a full provider plugin system (no deterministic metadata snapshot, config/health/security posture contract, or package discovery parity with runtime integrations registry v2).
+
+**Planned (Backlog, P2):** add a thin **`LLMProviderRegistration` / metadata contract** layer above `LLMAdapter` that registers provider packages, exposes safe public metadata, and factories `LLMAdapter` instances. **`LLMAdapter` remains the execution contract**; `LLMProvider` enum stays for stable built-ins. See plan [`LLM-PROVIDER-PLUGIN-1`](../plan/LLM_ADAPTERS.md#phase-llm-provider-plugin--provider-plugin-registration-layer-backlog).
+
 ### When to use `openrouter`
 
 `openrouter` is the **multi-vendor escape hatch**: one provider slug, arbitrary upstream model strings (`anthropic/claude-opus-4`, …). Context windows resolve via bundled **`ModelCatalog`**, optional **`fetch_gateway_metadata`** merge, or profile override. When no **exact** catalog entry matches, **`ModelCatalogMissDiagV1`** is recorded (including `provider_default` for unknown OpenRouter ids) on Plane A trace (`llm_catalog_miss`), runtime bus (`LLM_CALL`), and Prometheus (`intergrax_llm_catalog_miss_total` when metrics enabled).

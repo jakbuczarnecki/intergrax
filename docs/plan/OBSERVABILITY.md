@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine.
 
-**Last updated:** 2026-06-28 — **INTEGRATIONS-2A** observability_backend category alignment documented.
+**Last updated:** 2026-06-30 — **OBS-VENDOR-1** canonical execution model closed; LKW OTLP proof path closed.
 
 ---
 
@@ -249,6 +249,165 @@ Load **only** the satellite matching your task or cited gap ID.
 | **OBS-EXPORT-4B** | Code | P2 | **Done** | OTLP HTTP transport | **`OtlpHttpTransport`** POSTs OTLP JSON to configured endpoint; explicit opt-in; platform observability only; policy-sanitized payloads only; failure isolation via **`try_export_observability_envelope`**; no vendor SDK; no global bootstrap registration. Operator wiring deferred. |
 | **OBS-EXPORT-4C** | Code | P2 | **Done** | Explicit OTLP operator wiring | **`ObservabilityExportOperatorConfig`** + **`OtlpExportOperatorConfig`** + **`build_otlp_observability_exporter`** + **`build_otlp_observability_export_runtime_plugin`**; disabled by default; **`export_content=false`** enforced; composes policy + OTLP exporter + HTTP transport + runtime plugin; no global registration; no LKW wiring; no raw content or raw **`application_attributes`** export. |
 | **OBS-EXPORT-5** | Code | P3 | **In progress** | Observability vendor export | **Contract adapters complete** (INTEGRATIONS-2C). **Production transports pending.** **Operator wiring pending.** Not production export done. Adapters derive from **`ObservabilityVendorIntegrationContract`**; sanitized envelope only; JSONL remains local file sink. |
+
+---
+
+## Phase OBS-VENDOR — Production observability vendor integration rollout (Planned)
+
+**Purpose:** Move from the LKW OTLP proof path to a production-grade, vendor-agnostic observability export model where runtime/LKW call only the contract and vendors own backend I/O.
+
+**Cross-plan — LKW proof workload:** [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-OBS.
+
+**Platform contract:** [`intergrax/runtime/integrations/observability.py`](../../intergrax/runtime/integrations/observability.py) · **Operator wiring:** [`intergrax/runtime/observability/operator_wiring.py`](../../intergrax/runtime/observability/operator_wiring.py) · **LKW wiring:** [`applications/local_workspace_application/host/observability_wiring.py`](../../applications/local_workspace_application/host/observability_wiring.py).
+
+### Current state — LKW OTLP proof path (Done)
+
+The following LKW/platform tasks are **Done** and establish the baseline export spine:
+
+| ID | Status | Summary |
+|----|--------|---------|
+| **LKW-OBS-OTLP-1A** | **Done** | LKW env-driven OTLP observability export configuration |
+| **LKW-OBS-OTLP-1B** | **Done** | LKW Docker Compose self-hosted OpenTelemetry Collector + persisted JSONL sink |
+| **LKW-OBS-OTLP-1C** | **Done** | Manual Swagger/Compose proof — runtime events exported as OTLP logs to JSONL |
+| **LKW-OBS-OTLP-DUP-1** | **Done** | Duplicate export runtime events fixed; duplicate check for current run = 0 |
+| **LKW-OBS-VIEW-1A** | **Done** | Lightweight OTLP log inspector (`inspect_otlp_logs.py`, `inspect-otlp-logs.bat`); focused tests 5 passed; manual duplicate check = 0 |
+
+**Current end-to-end path (proof only):**
+
+```text
+LKW runtime
+→ ObservabilityExportEnvelope
+→ ObservabilityExportPolicy
+→ OtlpObservabilityIntegration.export()   # contract
+→ OtlpObservabilityExporter / OtlpHttpTransport
+→ OpenTelemetry Collector
+→ persisted JSONL (.observability/otel/lkw-otlp-logs.jsonl)
+→ local inspector (inspect-otlp-logs.bat)
+```
+
+**Target end-to-end path (production):**
+
+```text
+Intergrax runtime / LKW
+→ ObservabilityExportEnvelope
+→ ObservabilityExportPolicy
+→ ObservabilityVendorIntegrationContract.export()
+→ vendor-specific integration
+→ vendor-specific deliver_payload()
+→ Langfuse / Arize / Phoenix / Elasticsearch / OTLP / custom backend
+```
+
+### Observability Vendor Integration Invariant
+
+All observability vendor export must flow through:
+
+```text
+ObservabilityExportEnvelope
+→ ObservabilityExportPolicy
+→ ObservabilityVendorIntegrationContract.export()
+→ vendor deliver_payload()
+```
+
+**LKW, agents, runtime loops, and application code must not call vendor SDKs/APIs directly.**
+
+Vendor SDK/API calls are allowed only inside concrete provider implementations under:
+
+```text
+intergrax/integrations/providers/observability_backend/<vendor>/
+```
+
+Additional developer metadata must use **`ApplicationObservabilityAttributes`**.
+
+Artifacts must be exported only as references: **`artifact_ref`**, **`sha256`**, **`safe_relative_path`**, **`schema_id`**.
+
+Raw content, prompts, chunks, tool args, secrets, and absolute paths must not be exported by default.
+
+**Core rule:** Platform knows the contract. Vendor knows its backend. LKW does not know the vendor.
+
+### Layer responsibilities
+
+| Layer | Location | Owns | Must not contain |
+|-------|----------|------|------------------|
+| **Base / contract** | `intergrax/runtime/integrations/observability.py` | `ObservabilityVendorIntegrationContract`, `ObservabilityVendorPayload`, `ObservabilityVendorSignal`, `map_envelope()`, `export()`, shared envelope→vendor-neutral mapping, policy-safe boundary | Vendor SDK/API imports or vendor-specific network I/O |
+| **Vendor providers** | `intergrax/integrations/providers/observability_backend/<vendor>/` | `integration.py`, optional `transport.py`, config/factory, manifest/register/bundle per existing convention, vendor-specific `deliver_payload()`, vendor-specific payload mapping only when necessary, vendor-specific tests | Direct calls from LKW, agents, or runtime loops |
+| **Wiring / config** | `intergrax/runtime/observability/operator_wiring.py`, application host settings (e.g. LKW `host/settings.py`, `host/observability_wiring.py`) | Typed backend selection, integration factory, `ObservabilityExporter`-compatible plugin assembly | Vendor SDK calls; vendor-specific branching in LKW product code |
+
+Runtime and LKW always invoke:
+
+```python
+await observability_integration.export(envelope)
+```
+
+Wiring selects the concrete integration; product code never branches on vendor SDKs.
+
+### OBS-VENDOR task register
+
+**Delivery rule:** one `OBS-VENDOR-*` row per PR; no vendor SDK in runtime hot paths, LKW, or agents; exporter failure must never fail product runs.
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **OBS-VENDOR-0** | Docs | P2 | **Done** | Close LKW OTLP inspector status in LKW implementation plan | Implementation plan references `applications/local_workspace_application/scripts/inspect_otlp_logs.py` and `inspect-otlp-logs.bat`; states duplicate check = 0; states focused inspector tests = 5 passed; no code changes |
+| **OBS-VENDOR-1** | Docs/Code | P1 | **Done** | Define canonical vendor integration execution model | Plan states platform/runtime/LKW call only contract-level `export()`; vendor SDK/API calls belong only in provider implementations; LKW remains vendor-agnostic; direct Langfuse/Elastic/Phoenix/Arize calls from LKW, agents, runtime loops, or application code are forbidden |
+| **OBS-VENDOR-2** | Code | P1 | Planned | Typed vendor backend selection in operator/runtime config | Plan defines where backend selection belongs; unknown/unsupported backend fails fast with clear configuration error; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only — do not implement all vendors at once. **Current:** `otlp`. **Planned:** `otlp`, `langfuse`, `elasticsearch` or `opensearch`, `phoenix`, `arize`, `custom`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=langfuse` |
+| **OBS-VENDOR-3** | Docs/Code | P1 | Planned | Formalize safe extension metadata API | `ApplicationObservabilityAttributes` documented as official extension path; artifact refs (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) as reference-only path; raw artifact content not exported; forbidden fields remain blocked by export policy; arbitrary `RuntimeEvent.payload` fields not auto-exported; optional helper API (e.g. `emit_observability_event(..., application_attributes=..., artifact_ref=...)`) only if needed |
+| **OBS-VENDOR-4A** | Code | P1 | Planned | **First concrete vendor adapter: Elasticsearch/OpenSearch** | Contract subclass under `intergrax/integrations/providers/observability_backend/elasticsearch/`; injectable transport for indexing policy-safe `ObservabilityVendorPayload`; no raw content export; no policy bypass; unit tests with fake transport prove policy-safe delivery, disabled config does not send, unsafe content not exported; no LKW direct dependency on Elasticsearch/OpenSearch SDK |
+| **OBS-VENDOR-5** | Code | P1 | Planned | Wire selected vendor backend into runtime operator config | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch` builds `ElasticsearchObservabilityIntegration.from_transport(...)`; `otlp` continues `OtlpObservabilityIntegration`; runtime plugin receives only contract/`ObservabilityExporter` object; LKW does not branch on vendor SDK; misconfigured credentials/endpoint fail fast at build time; exporter failures do not fail product runs |
+| **OBS-VENDOR-6** | Code | P2 | Planned | Vendor-specific operational hardening | Bounded transport timeout; retry/backoff; explicit batching or non-batching decision documented; failure isolation; rate-limit handling; dead-letter or failed-export diagnostics; structured error reason; health check capability; exporter failure never breaks LKW run; tests cover transport failure isolation |
+| **OBS-VENDOR-7** | Test/Docs | P1 | Planned | End-to-end vendor proof (Elasticsearch/OpenSearch first) | LKW run → envelope → policy → vendor integration → backend → query/readback by `run_id`/`event_id`; proof records exact commands, `run_id`, backend query result; `tool_requested`/`tool_completed` appear once; duplicate check = 0; no raw query/content/prompt/chunks/secrets indexed; documented in LKW runbook or implementation plan |
+| **OBS-VENDOR-8** | Docs/Code | P3 | Planned / Later | Langfuse/Phoenix/Arize semantic mapping phase | After first event/log-oriented adapter: map Intergrax records (`runtime_event`, `tool_call`, `rag_call`, `llm_call`, `journal_ref`, `diagnostic`) to vendor concepts (`trace`, `span`, `generation`, `event`, `score`, `metadata`); preserve `run_id`/`task_id`/`event_id` correlation; no direct SDK calls outside provider package; no raw prompts/completions unless future explicit content-export mode is designed and approved; policy remains metadata-only by default |
+
+**OBS-VENDOR-1 status:**
+
+Done — canonical execution model closed. Runtime and applications call only **`ObservabilityVendorIntegrationContract.export()`**; vendor SDK/API calls are restricted to concrete provider implementations under **`observability_backend/<vendor>/`**; LKW remains vendor-agnostic. Export policy runs before external export; exporter failure must never fail product runs.
+
+### OBS-VENDOR-1 — execution model (reference)
+
+1. Runtime emits **`ObservabilityExportEnvelope`** (from spine/journal/runtime metadata).
+2. **`ObservabilityExportPolicy`** sanitizes the envelope (`apply_observability_export_policy` / `try_export_observability_envelope`).
+3. Runtime plugin calls **`ObservabilityVendorIntegrationContract.export(envelope)`**.
+4. Base contract **`map_envelope()`** maps to **`ObservabilityVendorPayload`** (vendor-neutral).
+5. Concrete vendor overrides **`deliver_payload()`** — vendor-specific network/SDK I/O allowed **only** inside provider `transport.py` / `deliver_payload()`.
+6. LKW and agents **must not** call vendor SDKs directly.
+
+**Forbidden in LKW, agents, runtime loops, and application code:**
+
+```python
+langfuse_client.trace(...)
+elasticsearch.index(...)
+phoenix.log(...)
+arize.log(...)
+```
+
+### OBS-VENDOR-3 — safe metadata and artifact extension (reference)
+
+| Path | Allowed | Forbidden |
+|------|---------|-----------|
+| Additional safe metadata | **`ApplicationObservabilityAttributes`** (namespaced, policy-sanitized) | Arbitrary `RuntimeEvent.payload` fields auto-exported |
+| Artifact references | `artifact_ref`, `sha256`, `safe_relative_path`, `schema_id` | Raw prompt, completion, message content, document content, raw chunks, query text, tool args, secrets, tokens, absolute paths, full file paths, synthesized content |
+
+Export policy blocks forbidden content by default (`export_content=false`). Vendor adapters consume **`sanitized_application_attributes`** only.
+
+### OBS-VENDOR-4A — first adapter decision
+
+**Recommended first path: Elasticsearch/OpenSearch (`OBS-VENDOR-4A`).**
+
+Rationale: current export records are event/log-oriented (`run_id`, `event_type`, `agent_id`, `tool_id`, `latency_ms`, `status`, `tenant_id`, `workspace_id`). Langfuse, Phoenix, and Arize require additional semantic mapping (trace, span, generation, observation, score) — deferred to **OBS-VENDOR-8**.
+
+**Note:** INTEGRATIONS-2C delivered contract stubs for all `observability_backend` slugs including Elasticsearch; **OBS-VENDOR-4A** implements the **production transport** and end-to-end delivery — not the contract scaffold alone.
+
+### OBS-VENDOR-6 — batching decision
+
+**Deferred for initial rollout:** batching is not required for OBS-VENDOR-4A/5/7. Document explicit non-batching in transport; revisit batching in a follow-up row if throughput requires it.
+
+### Relationship to OBS-EXPORT-5
+
+| OBS-EXPORT-5 sub-deliverable | OBS-VENDOR coverage |
+|------------------------------|---------------------|
+| Contract adapters (INTEGRATIONS-2C) | **Done** — stubs exist; production I/O pending |
+| Production vendor transports | **OBS-VENDOR-4A**, **OBS-VENDOR-6** |
+| Operator / bootstrap wiring | **OBS-VENDOR-2**, **OBS-VENDOR-5** |
+| Production export end-to-end | **OBS-VENDOR-7** |
+| LLM-trace semantic vendors | **OBS-VENDOR-8** (later) |
 
 ---
 
