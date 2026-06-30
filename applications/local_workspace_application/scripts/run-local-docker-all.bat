@@ -26,13 +26,13 @@ if not exist "%ENV_FILE%" (
     echo Created %ENV_FILE% from .env.example
 )
 
-set "COMPOSE_ARGS=-f "%BASE_COMPOSE%""
+set "COMPOSE_ARGS=-f ^"%BASE_COMPOSE%^""
 
 echo Compose files:
 echo   %BASE_COMPOSE%
 for %%F in ("%DOCKER_DIR%\docker-compose.*.yml") do (
     if exist "%%~fF" (
-        set "COMPOSE_ARGS=!COMPOSE_ARGS! -f "%%~fF""
+        set "COMPOSE_ARGS=!COMPOSE_ARGS! -f ^"%%~fF^""
         echo   %%~fF
     )
 )
