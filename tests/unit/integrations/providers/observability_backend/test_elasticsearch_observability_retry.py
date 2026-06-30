@@ -189,7 +189,7 @@ async def test_timeout_and_connection_retriable_errors_retry() -> None:
 
 
 @pytest.mark.asyncio
-async def test_http_400_non_retriable_error_does_not_retry() -> None:
+async def test_http_400_non_retriable_error_normalizes_operation_and_does_not_retry() -> None:
     indexer = FlakyIndexer(
         [_delivery_error(status_code=400, retriable=False, reason="http_status_400")]
     )
@@ -200,6 +200,7 @@ async def test_http_400_non_retriable_error_does_not_retry() -> None:
 
     assert indexer.calls == 1
     assert sleep.delays == []
+    assert exc_info.value.detail.operation == "send_observability_payload"
     assert exc_info.value.detail.retriable is False
 
 
