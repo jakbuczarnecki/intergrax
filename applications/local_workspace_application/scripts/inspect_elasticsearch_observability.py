@@ -13,8 +13,8 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from collections import Counter, defaultdict
-from typing import Any, Callable, Iterable, Sequence
+from collections import defaultdict
+from typing import Any, Callable, Sequence
 
 from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
 
@@ -52,6 +52,15 @@ CANONICAL_FORBIDDEN_EXPORT_KEYS = frozenset(FORBIDDEN_EXPORT_CONTENT_FIELDS)
 _KEY_SEGMENT_SPLIT = re.compile(r"[._\-]+")
 
 UrlOpener = Callable[[urllib.request.Request], Any]
+
+
+class ElasticsearchIndexNotFoundError(RuntimeError):
+    """Raised when the configured proof index does not exist yet."""
+
+    def __init__(self, *, index: str, detail: str) -> None:
+        super().__init__(f"Elasticsearch index not found: {index}")
+        self.index = index
+        self.detail = detail
 
 
 def normalize_url(url: str) -> str:
@@ -251,6 +260,27 @@ def check_safety(records: Sequence[Record]) -> list[SafetyViolation]:
     return violations
 
 
+def _is_index_not_found_detail(detail: str) -> bool:
+    try:
+        payload = json.loads(detail)
+    except json.JSONDecodeError:
+        return "index_not_found_exception" in detail
+
+    if not isinstance(payload, dict):
+        return False
+    error = payload.get("error")
+    if isinstance(error, dict):
+        if error.get("type") == "index_not_found_exception":
+            return True
+        root_causes = error.get("root_cause")
+        if isinstance(root_causes, list):
+            return any(
+                isinstance(cause, dict) and cause.get("type") == "index_not_found_exception"
+                for cause in root_causes
+            )
+    return False
+
+
 def elasticsearch_search(
     *,
     url: str,
@@ -272,6 +302,8 @@ def elasticsearch_search(
             raw = response.read()
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
+        if exc.code == 404 and _is_index_not_found_detail(detail):
+            raise ElasticsearchIndexNotFoundError(index=index, detail=detail) from exc
         raise RuntimeError(f"Elasticsearch search failed ({exc.code}): {detail}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Elasticsearch search failed: {exc.reason}") from exc
@@ -298,6 +330,13 @@ def print_list_runs(summary: Sequence[tuple[str, int, str]], *, url: str, index:
     print(f"{'-' * 28} {'-' * 7} {'-' * 40}")
     for run_id, count, latest in summary:
         print(f"{_truncate(latest, 28):<28} {count:>7} {run_id}")
+
+
+def print_index_not_found_for_list_runs(*, url: str, index: str) -> None:
+    print(f"URL: {url}")
+    print(f"Index: {index}")
+    print("No observability index found yet.")
+    print("This is expected before the first LKW run exports Elasticsearch observability documents.")
 
 
 def print_timeline(records: Sequence[Record], *, run_id: str, url: str, index: str) -> None:
@@ -389,12 +428,20 @@ def main(argv: Sequence[str] | None = None, *, opener: UrlOpener | None = None) 
         return 2
 
     if args.list_runs:
-        response = elasticsearch_search(
-            url=args.url,
-            index=args.index,
-            body=build_list_runs_query(limit=args.limit),
-            opener=opener,
-        )
+        try:
+            response = elasticsearch_search(
+                url=args.url,
+                index=args.index,
+                body=build_list_runs_query(limit=args.limit),
+                opener=opener,
+            )
+        except ElasticsearchIndexNotFoundError:
+            if args.json:
+                print("[]")
+            else:
+                print_index_not_found_for_list_runs(url=args.url, index=args.index)
+            return 0
+
         records = parse_hits(response)
         summary = summarize_runs(records)
         if args.json:
@@ -413,12 +460,18 @@ def main(argv: Sequence[str] | None = None, *, opener: UrlOpener | None = None) 
         print("error: --run-id is required unless --list-runs is used", file=sys.stderr)
         return 2
 
-    response = elasticsearch_search(
-        url=args.url,
-        index=args.index,
-        body=build_run_id_query(args.run_id, limit=args.limit),
-        opener=opener,
-    )
+    try:
+        response = elasticsearch_search(
+            url=args.url,
+            index=args.index,
+            body=build_run_id_query(args.run_id, limit=args.limit),
+            opener=opener,
+        )
+    except ElasticsearchIndexNotFoundError as exc:
+        print(f"error: index not found: {exc.index}", file=sys.stderr)
+        print("error: execute a real LKW run before validating a selected run_id", file=sys.stderr)
+        return 1
+
     records = sort_timeline(parse_hits(response))
     duplicates = find_duplicate_groups(records)
     violations = check_safety(records)
