@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Explicit operator wiring for OTLP observability export (OBS-EXPORT-4C)."""
+"""Explicit operator wiring for observability export (OBS-EXPORT-4C)."""
 
 from __future__ import annotations
 
