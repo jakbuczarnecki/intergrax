@@ -117,7 +117,7 @@ Intergrax is not presented as a finished SaaS, a general-purpose open-source fra
 
 | If you are… | Start with |
 |-------------|------------|
-| Evaluating Intergrax for the first time | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
+| Evaluating Intergrax for the first time | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
 | Checking use-case fit | [USE_CASES.md](USE_CASES.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | Checking collaboration or license boundaries | [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE) |
 | Reviewing the Harness AI / Agent OS model | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
@@ -272,6 +272,8 @@ After running the quick start, share structured feedback via [#186 README quick 
 ---
 
 ## Proof of platform
+
+**Live application proof:** [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) — run a real Local Knowledge Workspace platform path with Docker Compose, Elasticsearch, Kibana, and duplicate/safety validation.
 
 External narrative: [Intergrax Harness Narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md)
 
