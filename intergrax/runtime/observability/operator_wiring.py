@@ -80,6 +80,10 @@ class ElasticsearchExportOperatorConfig:
     base_url: str
     index: str
     timeout_seconds: float | None = None
+    retry_enabled: bool = True
+    retry_max_attempts: int = 3
+    retry_initial_backoff_seconds: float = 0.25
+    retry_max_backoff_seconds: float = 2.0
 
 
 @dataclass(frozen=True, slots=True)

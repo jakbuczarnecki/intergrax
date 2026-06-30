@@ -516,6 +516,43 @@ def test_elasticsearch_builder_uses_provider_transport_factory(
     assert integration._transport is sentinel  # noqa: SLF001
 
 
+def test_elasticsearch_builder_forwards_retry_policy_to_transport_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+        ElasticsearchRetryPolicy,
+    )
+
+    sentinel = ElasticsearchHttpObservabilityTransport(MagicMock(), index="logs-*")
+    create_transport = MagicMock(return_value=sentinel)
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+        create_transport,
+    )
+    retry = ElasticsearchRetryPolicy(
+        enabled=False,
+        max_attempts=2,
+        initial_backoff_seconds=0.5,
+        max_backoff_seconds=1.0,
+    )
+    config = _enabled_elasticsearch_config(
+        elasticsearch=ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="logs-*",
+            timeout_seconds=5.0,
+            retry_enabled=retry.enabled,
+            retry_max_attempts=retry.max_attempts,
+            retry_initial_backoff_seconds=retry.initial_backoff_seconds,
+            retry_max_backoff_seconds=retry.max_backoff_seconds,
+        ),
+    )
+
+    build_elasticsearch_observability_integration(config)
+
+    create_transport.assert_called_once()
+    assert create_transport.call_args.kwargs["retry_policy"] == retry
+
+
 def test_elasticsearch_registry_closure_can_inject_fake_transport() -> None:
     transport = FakeElasticsearchTransport()
     registry = ObservabilityExportBackendRegistry()

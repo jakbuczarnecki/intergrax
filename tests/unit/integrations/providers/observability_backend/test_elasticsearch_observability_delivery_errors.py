@@ -20,6 +20,9 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.client
     classify_elasticsearch_delivery_error,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
+from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+    ElasticsearchRetryPolicy,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.transport import (
     ElasticsearchHttpObservabilityTransport,
     map_vendor_payload_to_elasticsearch_document,
@@ -199,6 +202,7 @@ async def test_transport_maps_payload_before_delivery_on_failure() -> None:
     transport = ElasticsearchHttpObservabilityTransport(
         indexer,
         index="observability-events",
+        retry_policy=ElasticsearchRetryPolicy(max_attempts=1),
     )
 
     with pytest.raises(ElasticsearchDeliveryError) as exc_info:
@@ -240,13 +244,18 @@ async def test_transport_propagates_client_classified_error_without_rewrap() -> 
         )
     )
     indexer = RecordingIndexer(error=client_error)
-    transport = ElasticsearchHttpObservabilityTransport(indexer, index="observability-events")
+    transport = ElasticsearchHttpObservabilityTransport(
+        indexer,
+        index="observability-events",
+        retry_policy=ElasticsearchRetryPolicy(max_attempts=1),
+    )
 
     with pytest.raises(ElasticsearchDeliveryError) as exc_info:
         await transport.send_observability_payload(_vendor_payload())
 
-    assert exc_info.value is client_error
-    assert exc_info.value.detail.operation == "index_document"
+    assert exc_info.value.detail.operation == "send_observability_payload"
+    assert exc_info.value.detail.status_code == 503
+    assert exc_info.value.detail.retriable is True
 
 
 def test_index_document_success_path_uses_asyncio_to_thread_wrapper() -> None:

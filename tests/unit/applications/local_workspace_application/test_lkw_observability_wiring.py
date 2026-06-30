@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -28,6 +29,7 @@ from intergrax.runtime.observability.elasticsearch_export_wiring import (
 from intergrax.runtime.observability.otlp_exporter import OtlpObservabilityExporterConfig
 from intergrax.runtime.plugins.contract import RuntimePlugin
 from local_workspace_application.host.observability_wiring import build_local_workspace_observability_plugins
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
 pytestmark = pytest.mark.unit
 
@@ -326,3 +328,59 @@ def test_no_vendor_sdk_imports_are_introduced() -> None:
 def test_helper_does_not_call_otlp_http_transport_directly() -> None:
     source = _LKW_OBSERVABILITY_WIRING_PATH.read_text(encoding="utf-8")
     assert "OtlpHttpTransport" not in source
+
+
+@pytest.fixture
+def _clear_observability_env() -> Generator[None, None, None]:
+    keys = [k for k in os.environ if k.startswith("LOCAL_WORKSPACE_OBSERVABILITY_")]
+    saved = {k: os.environ[k] for k in keys}
+    for k in keys:
+        del os.environ[k]
+    yield
+    for k in saved:
+        os.environ[k] = saved[k]
+    for k in [k for k in os.environ if k.startswith("LOCAL_WORKSPACE_OBSERVABILITY_")]:
+        if k not in saved:
+            del os.environ[k]
+
+
+def test_lkw_default_env_produces_provider_retry_defaults(_clear_observability_env: None) -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.elasticsearch is not None
+    elasticsearch = config.elasticsearch
+    assert elasticsearch.retry_enabled is True
+    assert elasticsearch.retry_max_attempts == 3
+    assert elasticsearch.retry_initial_backoff_seconds == 0.25
+    assert elasticsearch.retry_max_backoff_seconds == 2.0
+
+
+def test_lkw_env_retry_overrides_are_passed_into_elasticsearch_export_operator_config(
+    _clear_observability_env: None,
+) -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_ENABLED"] = "false"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS"] = "5"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS"] = "0.5"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS"] = "4.0"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.elasticsearch is not None
+    elasticsearch = config.elasticsearch
+    assert elasticsearch.retry_enabled is False
+    assert elasticsearch.retry_max_attempts == 5
+    assert elasticsearch.retry_initial_backoff_seconds == 0.5
+    assert elasticsearch.retry_max_backoff_seconds == 4.0

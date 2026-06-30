@@ -84,6 +84,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_elasticsearch_url: str = ""
     observability_elasticsearch_index: str = ""
     observability_elasticsearch_timeout_seconds: float = 30.0
+    observability_elasticsearch_retry_enabled: bool = True
+    observability_elasticsearch_retry_max_attempts: int = 3
+    observability_elasticsearch_retry_initial_backoff_seconds: float = 0.25
+    observability_elasticsearch_retry_max_backoff_seconds: float = 2.0
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -146,6 +150,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                 base_url=base_url,
                 index=index,
                 timeout_seconds=self.observability_elasticsearch_timeout_seconds,
+                retry_enabled=self.observability_elasticsearch_retry_enabled,
+                retry_max_attempts=self.observability_elasticsearch_retry_max_attempts,
+                retry_initial_backoff_seconds=self.observability_elasticsearch_retry_initial_backoff_seconds,
+                retry_max_backoff_seconds=self.observability_elasticsearch_retry_max_backoff_seconds,
             )
         else:
             otlp = None
@@ -283,6 +291,22 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "OBSERVABILITY_ELASTICSEARCH_TIMEOUT_SECONDS",
             default=cls._field_default("observability_elasticsearch_timeout_seconds"),  # type: ignore[arg-type]
         )
+        observability_elasticsearch_retry_enabled = env.bool(
+            "OBSERVABILITY_ELASTICSEARCH_RETRY_ENABLED",
+            default=cls._field_default("observability_elasticsearch_retry_enabled"),  # type: ignore[arg-type]
+        )
+        observability_elasticsearch_retry_max_attempts = env.int(
+            "OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS",
+            default=cls._field_default("observability_elasticsearch_retry_max_attempts"),  # type: ignore[arg-type]
+        )
+        observability_elasticsearch_retry_initial_backoff_seconds = env.float(
+            "OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS",
+            default=cls._field_default("observability_elasticsearch_retry_initial_backoff_seconds"),  # type: ignore[arg-type]
+        )
+        observability_elasticsearch_retry_max_backoff_seconds = env.float(
+            "OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS",
+            default=cls._field_default("observability_elasticsearch_retry_max_backoff_seconds"),  # type: ignore[arg-type]
+        )
         read_roots_raw = (os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS") or "").strip()
         allowed_read_roots = frozenset(
             part.strip() for part in read_roots_raw.split(",") if part.strip()
@@ -313,4 +337,8 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_elasticsearch_url": observability_elasticsearch_url,
             "observability_elasticsearch_index": observability_elasticsearch_index,
             "observability_elasticsearch_timeout_seconds": observability_elasticsearch_timeout_seconds,
+            "observability_elasticsearch_retry_enabled": observability_elasticsearch_retry_enabled,
+            "observability_elasticsearch_retry_max_attempts": observability_elasticsearch_retry_max_attempts,
+            "observability_elasticsearch_retry_initial_backoff_seconds": observability_elasticsearch_retry_initial_backoff_seconds,
+            "observability_elasticsearch_retry_max_backoff_seconds": observability_elasticsearch_retry_max_backoff_seconds,
         }

@@ -55,6 +55,9 @@ def build_elasticsearch_observability_integration(
         create_elasticsearch_observability_integration,
         create_elasticsearch_observability_transport,
     )
+    from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+        ElasticsearchRetryPolicy,
+    )
 
     elasticsearch = _require_enabled_elasticsearch_config(config)
     config_overrides: dict[str, object] = {
@@ -64,9 +67,17 @@ def build_elasticsearch_observability_integration(
     if elasticsearch.timeout_seconds is not None:
         config_overrides["timeout_seconds"] = elasticsearch.timeout_seconds
 
+    retry_policy = ElasticsearchRetryPolicy(
+        enabled=elasticsearch.retry_enabled,
+        max_attempts=elasticsearch.retry_max_attempts,
+        initial_backoff_seconds=elasticsearch.retry_initial_backoff_seconds,
+        max_backoff_seconds=elasticsearch.retry_max_backoff_seconds,
+    )
+
     active_transport = transport or create_elasticsearch_observability_transport(
         http_client=http_client,
         http_client_factory=http_client_factory,
+        retry_policy=retry_policy,
         **config_overrides,
     )
     return create_elasticsearch_observability_integration(

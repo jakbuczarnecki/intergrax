@@ -226,7 +226,9 @@ curl -s http://127.0.0.1:9200/_cluster/health
 curl -s "http://127.0.0.1:9200/intergrax-lkw-observability/_search?pretty"
 ```
 
-This overlay is a local proof environment only. It does not add auth/TLS, batching, retry/backoff, dead-letter, dashboards, or the formal OBS-VENDOR-7 readback/duplicate proof.
+This overlay is a local proof environment only. It does not add auth/TLS, batching, dead-letter, dashboards, or the formal OBS-VENDOR-7 readback/duplicate proof.
+
+Elasticsearch observability retry/backoff is provider-owned and configurable per LKW deployment through `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_*` env variables.
 
 ### Run Elasticsearch observability proof helpers
 
@@ -316,6 +318,10 @@ elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL` | — | Required for `backend_id=elasticsearch`; e.g. `http://elasticsearch:9200` in compose |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX` | `intergrax-lkw-observability` | Elasticsearch/OpenSearch index for policy-safe documents |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_TIMEOUT_SECONDS` | `30` | Elasticsearch HTTP transport timeout |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_ENABLED` | `true` | Enable bounded retry for retriable Elasticsearch delivery failures |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS` | `3` | Total delivery attempts including the first one (`1` = no retry) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS` | `0.25` | Initial sleep before the second attempt |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS` | `2.0` | Maximum sleep between attempts |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
