@@ -11,6 +11,7 @@ BOOTSTRAP = ROOT / "docs" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
 CURSORIGNORE = ROOT / ".cursorignore"
 H2_IGNORE_DIRS = (
+    "docs/audit/",
     "docs/architecture/satellites/",
     "docs/plan/satellites/",
 )
@@ -71,7 +72,7 @@ def main() -> int:
         ignore = CURSORIGNORE.read_text(encoding="utf-8")
         for path in H2_IGNORE_DIRS:
             if path not in ignore:
-                errors.append(f".cursorignore must exclude satellite dir {path} (F4/G1)")
+                errors.append(f".cursorignore must exclude token-heavy dir {path} (H2)")
         for path in H2_IGNORE_PATHS:
             if path not in ignore:
                 errors.append(f".cursorignore must exclude bulky guide {path} (H2)")
