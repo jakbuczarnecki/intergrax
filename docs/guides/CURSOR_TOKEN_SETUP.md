@@ -51,7 +51,7 @@ HEP implement steps: [`docs/bootstrap/hep_step.txt`](../bootstrap/hep_step.txt) 
 |-----------|------|
 | I1 + mandatory preflight in `intergrax-token-budget.mdc` | ~180 |
 
-**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, or full hubs unless explicitly requested.
+**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full hubs, `docs/audit/`, or domain guides unless explicitly requested.
 
 **Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
 
@@ -120,6 +120,10 @@ Plan hubs include **Cursor read scope (token budget)** blocks (~150 tok) — rea
 ## H2 — Bulky docs in `.cursorignore`
 
 Explicit `@` / `Read` only (reduces accidental index/search noise):
+
+**Audit control prompts:**
+
+- `docs/audit/` — generated domain/feature audit prompts; load with explicit `@docs/audit/<DOMAIN>.md` or `@docs/audit/<FEATURE>.md` only, never as background implementation context
 
 **Satellite directories (F4 / G1 / multi-layer features):**
 
