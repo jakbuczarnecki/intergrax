@@ -324,6 +324,17 @@ applications\local_workspace_application\scripts\inspect-otlp-logs.bat --tool-id
 
 The default invocation reads `.observability/otel/lkw-otlp-logs.jsonl`, selects the latest run, prints a compact event timeline, and reports duplicate status. The duplicate check groups by `intergrax.event_id` plus run, event type, agent, tool, and capability metadata.
 
+### Inspect persisted Elasticsearch/OpenSearch documents
+
+For Elasticsearch/OpenSearch readback, duplicate-export checks, and safety-key scans, use the lightweight inspector from repository root:
+
+```powershell
+applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --list-runs
+applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --run-id run_... --check-duplicates --check-safety
+```
+
+Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents.
+
 ### What to look for
 
 Exported OTLP logs should include Intergrax attributes such as:
@@ -340,7 +351,7 @@ intergrax.workspace_id
 
 Elasticsearch/OpenSearch documents use the same policy-safe `intergrax.*` metadata fields and are append-only by default. Query the configured index by fields such as `intergrax.run_id`, `intergrax.event_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, and `intergrax.capability`.
 
-To verify no duplicate export for the same runtime event, group persisted records by `intergrax.event_id` (and `intergrax.run_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, `intergrax.capability`). Each `event_id` should appear at most once per run. The formal Elasticsearch readback/duplicate proof remains OBS-VENDOR-7.
+To verify no duplicate export for the same runtime event, group persisted records by `intergrax.event_id` (and `intergrax.run_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, `intergrax.capability`). Each `event_id` should appear at most once per run. Use `inspect-elasticsearch-observability.bat --check-duplicates` for the indexed backend; the formal live Docker Compose OBS-VENDOR-7 proof remains planned until a real `run_id` and backend query result are recorded.
 
 **Safety boundaries:**
 
