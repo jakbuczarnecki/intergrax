@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Mapping, Protocol, runtime_checkable
 
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
@@ -13,14 +14,6 @@ from intergrax.runtime.integrations.observability import ObservabilityVendorPayl
 from intergrax.runtime.observability.export_attributes import ObservabilityAttributeValue
 
 _INTERGRAX_DOC_PREFIX = "intergrax."
-
-
-def _document_id_for_payload(payload: ObservabilityVendorPayload) -> str | None:
-    if payload.event_id:
-        return payload.event_id
-    if payload.correlation_id:
-        return payload.correlation_id
-    return None
 
 
 def _set_optional_string(doc: dict[str, Any], key: str, value: str) -> None:
@@ -118,8 +111,8 @@ class ElasticsearchHttpObservabilityTransport:
             payload,
             timestamp_field=self._timestamp_field,
         )
-        self._client.index_document(
+        await asyncio.to_thread(
+            self._client.index_document,
             index=self._index,
             document=document,
-            doc_id=_document_id_for_payload(payload),
         )

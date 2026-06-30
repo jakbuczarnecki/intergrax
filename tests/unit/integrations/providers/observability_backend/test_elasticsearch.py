@@ -386,14 +386,42 @@ async def test_elasticsearch_http_transport_indexes_through_fake_indexer() -> No
     envelope = _sanitized_envelope_with_attributes()
     payload = _vendor_payload_from_envelope(envelope)
 
-    await transport.send_observability_payload(payload)
+    with patch(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.transport.asyncio.to_thread",
+        wraps=asyncio.to_thread,
+    ) as to_thread_mock:
+        await transport.send_observability_payload(payload)
 
+    to_thread_mock.assert_called_once()
+    assert to_thread_mock.call_args.args[0].__name__ == "index_document"
+    assert to_thread_mock.call_args.kwargs["index"] == "observability-events"
     assert len(indexer.calls) == 1
     call = indexer.calls[0]
+    assert to_thread_mock.call_args.kwargs["document"] == call["document"]
     assert call["index"] == "observability-events"
-    assert call["doc_id"] == "event-1"
+    assert call["doc_id"] is None
     assert call["document"]["intergrax.provider_id"] == "elasticsearch"
+    assert call["document"]["intergrax.event_id"] == "event-1"
     assert call["document"]["@timestamp"] == payload.recorded_at.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_elasticsearch_http_transport_preserves_correlation_id_in_document() -> None:
+    indexer = FakeElasticsearchIndexer()
+    transport = ElasticsearchHttpObservabilityTransport(
+        indexer,
+        index="observability-events",
+    )
+    envelope = _sanitized_envelope_with_attributes()
+    payload = _vendor_payload_from_envelope(envelope)
+    payload = payload.model_copy(update={"event_id": "", "correlation_id": "corr-42"})
+
+    await transport.send_observability_payload(payload)
+
+    call = indexer.calls[0]
+    assert call["doc_id"] is None
+    assert call["document"]["intergrax.correlation_id"] == "corr-42"
+    assert "intergrax.event_id" not in call["document"]
 
 
 @pytest.mark.asyncio
@@ -410,12 +438,17 @@ async def test_elasticsearch_http_transport_uses_rest_client_index() -> None:
     envelope = _sanitized_envelope_with_attributes()
     payload = _vendor_payload_from_envelope(envelope)
 
-    await transport.send_observability_payload(payload)
+    with patch(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.transport.asyncio.to_thread",
+        wraps=asyncio.to_thread,
+    ):
+        await transport.send_observability_payload(payload)
 
-    http.put.assert_called_once()
-    assert http.put.call_args.args[0] == "/observability-events/_doc/event-1"
-    body = http.put.call_args.kwargs["json"]
+    http.post.assert_called_once()
+    assert http.post.call_args.args[0] == "/observability-events/_doc"
+    body = http.post.call_args.kwargs["json"]
     assert body["intergrax.run_id"] == "run-1"
+    assert body["intergrax.event_id"] == "event-1"
     assert "prompt" not in body
 
 
