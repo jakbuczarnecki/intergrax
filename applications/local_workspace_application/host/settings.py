@@ -11,11 +11,10 @@ from intergrax.applications.contracts.settings import EnvReader, IntergraxApplic
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportBackend,
     ObservabilityExportOperatorConfig,
     ObservabilityExportOperatorConfigError,
     OtlpExportOperatorConfig,
-    parse_observability_export_backend,
+    parse_observability_export_backend_id,
 )
 
 
@@ -103,15 +102,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             return None
 
         try:
-            backend = parse_observability_export_backend(self.observability_export_backend)
+            backend_id = parse_observability_export_backend_id(self.observability_export_backend)
         except ObservabilityExportOperatorConfigError as exc:
             raise ValueError(str(exc)) from exc
-
-        if backend is not ObservabilityExportBackend.OTLP:
-            raise ValueError(
-                f"observability export backend '{backend.value}' is recognized but not "
-                "implemented in operator wiring yet"
-            )
 
         endpoint = self.observability_otlp_endpoint.strip()
         if not endpoint:
@@ -124,7 +117,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         return ObservabilityExportOperatorConfig(
             enabled=True,
             export_content=False,
-            backend=ObservabilityExportBackend.OTLP,
+            backend_id=backend_id,
             otlp=OtlpExportOperatorConfig(
                 endpoint=endpoint,
                 service_name=self.observability_service_name or "intergrax-lkw",

@@ -14,7 +14,6 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportBackend,
     ObservabilityExportOperatorConfig,
     OtlpExportOperatorConfig,
 )
@@ -67,7 +66,7 @@ def _enabled_config(
     return ObservabilityExportOperatorConfig(
         enabled=True,
         export_content=export_content,
-        backend=ObservabilityExportBackend.OTLP,
+        backend_id="otlp",
         otlp=OtlpExportOperatorConfig(
             endpoint="https://collector.example/v1/logs",
             service_name="intergrax.lkw.test",

@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Mapping
 
 from intergrax.runtime.observability.export_policy import ObservabilityExportPolicy
@@ -19,38 +20,51 @@ from intergrax.runtime.observability.otlp_exporter import (
 from intergrax.runtime.observability.otlp_http_transport import OtlpHttpTransport
 from intergrax.runtime.plugins.contract import RuntimePlugin
 
+_BACKEND_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
-class ObservabilityExportBackend(StrEnum):
-    OTLP = "otlp"
-    LANGFUSE = "langfuse"
-    ELASTICSEARCH = "elasticsearch"
-    OPENSEARCH = "opensearch"
-    PHOENIX = "phoenix"
-    ARIZE = "arize"
-    CUSTOM = "custom"
-
-
-def parse_observability_export_backend(raw: str) -> ObservabilityExportBackend:
-    """Parse operator export backend from raw configuration text."""
-    normalized = raw.strip().lower()
-    try:
-        return ObservabilityExportBackend(normalized)
-    except ValueError as exc:
-        raise ObservabilityExportOperatorConfigError(
-            f"unsupported observability export backend: {normalized!r}"
-        ) from exc
-
-
-def _raise_if_backend_not_implemented(backend: ObservabilityExportBackend) -> None:
-    if backend is not ObservabilityExportBackend.OTLP:
-        raise ObservabilityExportOperatorConfigError(
-            f"observability export backend '{backend.value}' is recognized but not "
-            "implemented in operator wiring yet"
-        )
+ObservabilityExportBackendBuilder = Callable[..., object]
 
 
 class ObservabilityExportOperatorConfigError(ValueError):
     """Invalid operator export configuration."""
+
+
+class ObservabilityExportBackendRegistryError(ValueError):
+    """Invalid observability export backend registry operation."""
+
+
+def parse_observability_export_backend_id(raw: str) -> str:
+    """Parse and normalize an open observability export backend identifier."""
+    normalized = raw.strip().lower()
+    if not normalized or not _BACKEND_ID_PATTERN.match(normalized):
+        raise ObservabilityExportOperatorConfigError(
+            f"invalid observability export backend id: {raw!r}"
+        )
+    return normalized
+
+
+class ObservabilityExportBackendRegistry:
+    """Open registry of observability export backend builders keyed by backend_id."""
+
+    def __init__(self) -> None:
+        self._builders: dict[str, ObservabilityExportBackendBuilder] = {}
+
+    def register(self, backend_id: str, builder: ObservabilityExportBackendBuilder) -> None:
+        normalized = parse_observability_export_backend_id(backend_id)
+        if normalized in self._builders:
+            raise ObservabilityExportBackendRegistryError(
+                f"observability export backend builder already registered for {normalized!r}"
+            )
+        self._builders[normalized] = builder
+
+    def get(self, backend_id: str) -> ObservabilityExportBackendBuilder:
+        normalized = parse_observability_export_backend_id(backend_id)
+        try:
+            return self._builders[normalized]
+        except KeyError as exc:
+            raise ObservabilityExportBackendRegistryError(
+                f"no observability export backend builder registered for {normalized!r}"
+            ) from exc
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,14 +81,17 @@ class OtlpExportOperatorConfig:
 class ObservabilityExportOperatorConfig:
     enabled: bool = False
     export_content: bool = False
-    backend: ObservabilityExportBackend = ObservabilityExportBackend.OTLP
+    backend_id: str = "otlp"
     otlp: OtlpExportOperatorConfig | None = None
 
 
 def _require_enabled_otlp_config(config: ObservabilityExportOperatorConfig) -> OtlpExportOperatorConfig:
     if not config.enabled:
         raise ObservabilityExportOperatorConfigError("observability export is disabled")
-    _raise_if_backend_not_implemented(config.backend)
+    if config.backend_id != "otlp":
+        raise ObservabilityExportOperatorConfigError(
+            f"otlp export configuration requires backend_id 'otlp', got {config.backend_id!r}"
+        )
     if config.otlp is None:
         raise ObservabilityExportOperatorConfigError("otlp export configuration is required")
     return config.otlp
@@ -106,6 +123,30 @@ def build_otlp_observability_integration(
     return OtlpObservabilityIntegration.from_exporter(exporter, enabled=config.enabled)
 
 
+def _build_otlp_observability_integration_from_registry(
+    config: ObservabilityExportOperatorConfig,
+    *,
+    transport: OtlpTransport | None = None,
+):
+    return build_otlp_observability_integration(config, transport=transport)
+
+
+DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY = ObservabilityExportBackendRegistry()
+DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.register("otlp", _build_otlp_observability_integration_from_registry)
+
+
+def build_observability_export_integration(
+    config: ObservabilityExportOperatorConfig,
+    *,
+    transport: OtlpTransport | None = None,
+    registry: ObservabilityExportBackendRegistry | None = None,
+):
+    """Construct an observability vendor integration via the open backend builder registry."""
+    active_registry = registry or DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY
+    builder = active_registry.get(config.backend_id)
+    return builder(config, transport=transport)
+
+
 def build_otlp_observability_exporter(
     config: ObservabilityExportOperatorConfig,
     *,
@@ -115,12 +156,31 @@ def build_otlp_observability_exporter(
     return build_otlp_observability_integration(config, transport=transport).exporter
 
 
+def build_observability_export_runtime_plugin(
+    config: ObservabilityExportOperatorConfig,
+    *,
+    transport: OtlpTransport | None = None,
+    registry: ObservabilityExportBackendRegistry | None = None,
+) -> RuntimePlugin | None:
+    """Construct a runtime export plugin from explicit operator configuration."""
+    if not config.enabled:
+        return None
+
+    integration = build_observability_export_integration(
+        config,
+        transport=transport,
+        registry=registry,
+    )
+    policy = ObservabilityExportPolicy(enabled=True, export_content=False)
+    return make_observability_export_runtime_plugin(exporter=integration, policy=policy)
+
+
 def build_otlp_observability_export_runtime_plugin(
     config: ObservabilityExportOperatorConfig,
     *,
     transport: OtlpTransport | None = None,
 ) -> RuntimePlugin | None:
-    """Construct a runtime export plugin from explicit operator configuration."""
+    """Construct an OTLP runtime export plugin from explicit operator configuration."""
     if not config.enabled:
         return None
 

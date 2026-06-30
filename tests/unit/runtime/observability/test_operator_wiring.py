@@ -29,13 +29,16 @@ from intergrax.runtime.observability.export_policy import (
     try_export_observability_envelope,
 )
 from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportBackend,
+    DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY,
+    ObservabilityExportBackendRegistry,
+    ObservabilityExportBackendRegistryError,
     ObservabilityExportOperatorConfig,
     ObservabilityExportOperatorConfigError,
     OtlpExportOperatorConfig,
+    build_observability_export_runtime_plugin,
     build_otlp_observability_export_runtime_plugin,
     build_otlp_observability_exporter,
-    parse_observability_export_backend,
+    parse_observability_export_backend_id,
 )
 from intergrax.runtime.observability.otlp_exporter import (
     OtlpObservabilityExporter,
@@ -87,7 +90,7 @@ def _enabled_config(
     return ObservabilityExportOperatorConfig(
         enabled=True,
         export_content=export_content,
-        backend=ObservabilityExportBackend.OTLP,
+        backend_id="otlp",
         otlp=otlp
         or OtlpExportOperatorConfig(
             endpoint="https://collector.example/v1/logs",
@@ -121,26 +124,77 @@ def _attribute_map(payload: dict[str, Any]) -> dict[str, Any]:
     return mapped
 
 
-def test_parse_observability_export_backend_accepts_otlp() -> None:
-    assert parse_observability_export_backend("otlp") is ObservabilityExportBackend.OTLP
+def test_parse_observability_export_backend_id_accepts_otlp() -> None:
+    assert parse_observability_export_backend_id("otlp") == "otlp"
 
 
-def test_parse_observability_export_backend_trims_and_normalizes() -> None:
-    assert parse_observability_export_backend(" elasticsearch ") is ObservabilityExportBackend.ELASTICSEARCH
+def test_parse_observability_export_backend_id_trims_and_normalizes() -> None:
+    assert parse_observability_export_backend_id(" elasticsearch ") == "elasticsearch"
 
 
-def test_parse_observability_export_backend_rejects_unknown() -> None:
+def test_parse_observability_export_backend_id_normalizes_uppercase() -> None:
+    assert parse_observability_export_backend_id("ACME_OBSERVABILITY") == "acme_observability"
+
+
+def test_parse_observability_export_backend_id_rejects_empty() -> None:
     with pytest.raises(
         ObservabilityExportOperatorConfigError,
-        match="unsupported observability export backend: 'foo'",
+        match="invalid observability export backend id: ''",
     ):
-        parse_observability_export_backend("foo")
+        parse_observability_export_backend_id("")
 
 
-def test_recognized_non_otlp_backend_fails_fast_as_not_implemented() -> None:
+def test_parse_observability_export_backend_id_rejects_invalid_format() -> None:
+    with pytest.raises(
+        ObservabilityExportOperatorConfigError,
+        match="invalid observability export backend id: 'foo/bar'",
+    ):
+        parse_observability_export_backend_id("foo/bar")
+
+
+def test_default_registry_contains_otlp() -> None:
+    builder = DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.get("otlp")
+    assert callable(builder)
+
+
+def test_registry_registers_builder_by_backend_id() -> None:
+    registry = ObservabilityExportBackendRegistry()
+    called: list[str] = []
+
+    def _builder(config: ObservabilityExportOperatorConfig) -> object:
+        called.append(config.backend_id)
+        return object()
+
+    registry.register("acme_observability", _builder)
+    config = ObservabilityExportOperatorConfig(enabled=True, backend_id="acme_observability")
+    registry.get("acme_observability")(config)
+    assert called == ["acme_observability"]
+
+
+def test_duplicate_backend_id_registration_fails() -> None:
+    registry = ObservabilityExportBackendRegistry()
+
+    registry.register("otlp", lambda _config: object())
+    with pytest.raises(
+        ObservabilityExportBackendRegistryError,
+        match="already registered for 'otlp'",
+    ):
+        registry.register("otlp", lambda _config: object())
+
+
+def test_missing_builder_raises_clear_error() -> None:
+    registry = ObservabilityExportBackendRegistry()
+    with pytest.raises(
+        ObservabilityExportBackendRegistryError,
+        match="no observability export backend builder registered for 'elasticsearch'",
+    ):
+        registry.get("elasticsearch")
+
+
+def test_valid_non_registered_backend_id_fails_as_missing_builder() -> None:
     config = ObservabilityExportOperatorConfig(
         enabled=True,
-        backend=ObservabilityExportBackend.ELASTICSEARCH,
+        backend_id="elasticsearch",
         otlp=OtlpExportOperatorConfig(
             endpoint="https://collector.example/v1/logs",
             service_name="intergrax.test",
@@ -148,16 +202,10 @@ def test_recognized_non_otlp_backend_fails_fast_as_not_implemented() -> None:
     )
 
     with pytest.raises(
-        ObservabilityExportOperatorConfigError,
-        match="recognized but not implemented in operator wiring yet",
+        ObservabilityExportBackendRegistryError,
+        match="no observability export backend builder registered for 'elasticsearch'",
     ):
-        build_otlp_observability_exporter(config)
-
-    with pytest.raises(
-        ObservabilityExportOperatorConfigError,
-        match="recognized but not implemented in operator wiring yet",
-    ):
-        build_otlp_observability_export_runtime_plugin(config)
+        build_observability_export_runtime_plugin(config)
 
 
 def test_default_operator_config_is_disabled() -> None:
@@ -165,7 +213,7 @@ def test_default_operator_config_is_disabled() -> None:
 
     assert config.enabled is False
     assert config.export_content is False
-    assert config.backend is ObservabilityExportBackend.OTLP
+    assert config.backend_id == "otlp"
     assert config.otlp is None
 
 
