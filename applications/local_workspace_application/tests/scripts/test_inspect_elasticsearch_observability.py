@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -58,6 +59,31 @@ def _fake_opener(response: dict[str, Any]):
     return opener
 
 
+def _index_not_found_opener(request: Any) -> None:
+    payload = {
+        "error": {
+            "root_cause": [
+                {
+                    "type": "index_not_found_exception",
+                    "reason": "no such index [intergrax-lkw-observability]",
+                    "index": "intergrax-lkw-observability",
+                }
+            ],
+            "type": "index_not_found_exception",
+            "reason": "no such index [intergrax-lkw-observability]",
+            "index": "intergrax-lkw-observability",
+        },
+        "status": 404,
+    }
+    raise urllib.error.HTTPError(
+        request.full_url,
+        404,
+        "Not Found",
+        hdrs=None,
+        fp=io.BytesIO(json.dumps(payload).encode("utf-8")),
+    )
+
+
 def test_build_search_url_uses_index_search_path() -> None:
     assert (
         inspect_es.build_search_url("http://127.0.0.1:9200", "intergrax-lkw-observability")
@@ -82,6 +108,31 @@ def test_list_runs_groups_run_ids_and_counts() -> None:
         ("run-b", 1, "2026-06-30T11:00:00Z"),
         ("run-a", 2, "2026-06-30T10:00:01Z"),
     ]
+
+
+def test_list_runs_returns_success_when_index_is_missing(capsys: Any) -> None:
+    exit_code = inspect_es.main(["--list-runs"], opener=_index_not_found_opener)
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "No observability index found yet" in output
+    assert "before the first LKW run" in output
+
+
+def test_list_runs_json_returns_empty_array_when_index_is_missing(capsys: Any) -> None:
+    exit_code = inspect_es.main(["--list-runs", "--json"], opener=_index_not_found_opener)
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out) == []
+
+
+def test_run_id_returns_nonzero_when_index_is_missing(capsys: Any) -> None:
+    exit_code = inspect_es.main(["--run-id", "run-missing"], opener=_index_not_found_opener)
+
+    assert exit_code == 1
+    error_output = capsys.readouterr().err
+    assert "index not found" in error_output
+    assert "execute a real LKW run" in error_output
 
 
 def test_run_id_timeline_extracts_intergrax_fields() -> None:
