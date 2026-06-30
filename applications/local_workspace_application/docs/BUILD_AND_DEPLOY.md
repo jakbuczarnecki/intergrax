@@ -228,6 +228,43 @@ curl -s "http://127.0.0.1:9200/intergrax-lkw-observability/_search?pretty"
 
 This overlay is a local proof environment only. It does not add auth/TLS, batching, retry/backoff, dead-letter, dashboards, or the formal OBS-VENDOR-7 readback/duplicate proof.
 
+### Run Elasticsearch observability proof helpers
+
+Use the proof helper after starting the Elasticsearch overlay stack. Without a `run_id`, the helper checks LKW health, Elasticsearch health, and lists recent indexed observability runs.
+
+Windows:
+
+```bat
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh
+```
+
+After executing a real LKW run, pass the selected run id to run timeline, duplicate, safety, and combined proof checks:
+
+```bat
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_...
+```
+
+```bash
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh run_...
+```
+
+The helpers default to `http://127.0.0.1:8020/health`, `http://127.0.0.1:9200`, and `intergrax-lkw-observability`. Override them with environment variables when needed:
+
+```text
+LOCAL_WORKSPACE_OBSERVABILITY_PROOF_LKW_HEALTH_URL
+LOCAL_WORKSPACE_OBSERVABILITY_PROOF_ES_URL
+LOCAL_WORKSPACE_OBSERVABILITY_PROOF_ES_INDEX
+```
+
+A successful helper run prints a documentation summary with `run_id`, Elasticsearch URL/index, `duplicate_check=0`, and `safety_check=passed`. This helper prepares and validates proof evidence; full OBS-VENDOR-7 should be marked Done only after a real LKW run id and backend readback result are recorded.
+
 ---
 
 ## 7. Production checklist
@@ -334,6 +371,13 @@ applications\local_workspace_application\scripts\inspect-elasticsearch-observabi
 ```
 
 Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
+
+Use the proof helper for the repeatable live-proof workflow:
+
+```powershell
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_...
+```
 
 ### What to look for
 
