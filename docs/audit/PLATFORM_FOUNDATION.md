@@ -9,7 +9,7 @@
 
 ## How to use
 
-1. Open a new agent chat with **full repository access**.
+1. Open a new agent chat with the repository available, but do not perform broad repository exploration. Read only the files listed in Context budget / Canonical reads, use path-filtered grep before opening files, and do not use semantic search, subagents, or full-repo scans unless the operator explicitly approves.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
@@ -50,11 +50,11 @@ Four-tier model · IntegrationProfile/ToolProfile/SkillProfile/LLMProfile · App
 
 ## Active plan phases (verify status vs code reality)
 
-§6.1 gate maintenance queue · Phase V architecture hardening · §6.3 out-of-scope notice (product/application work not tracked here)
+§6.1 gate maintenance queue · Phase V architecture hardening · Phase K business agents (**deferred** — must not start silently) · §6.3 product backlog
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Product/application implementation work and business backlogs (§6.3) · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)
+Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)
 
 ---
 
@@ -126,7 +126,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- 197+ integration slugs in catalog — stable vs beta honesty.
+- 185+ integration slugs in catalog — stable vs beta honesty.
 - Harness lab stack (sqlite, redis, qdrant, otel) as reference Tier-3 preset.
 - Plugin entry-point registration at scale (tools, skills, integrations bundles).
 

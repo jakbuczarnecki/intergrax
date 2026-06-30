@@ -9,7 +9,7 @@
 
 ## How to use
 
-1. Open a new agent chat with **full repository access**.
+1. Open a new agent chat with the repository available, but do not perform broad repository exploration. Read only the files listed in Context budget / Canonical reads, use path-filtered grep before opening files, and do not use semantic search, subagents, or full-repo scans unless the operator explicitly approves.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Tool Library and ToolRunt
 
 ## Mission
 
-Audit the **Tool Library** (200+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
+Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
 
 ## Key symbols and contracts
 
@@ -54,7 +54,7 @@ Phase O/T-EXPAND Done · **TOOL-ENG Closed** (2026-06-12, 36/36, S0–S8) · Pha
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic per-tool output (CVL) · ACP invoke_tool/gateway consistency across 200 tools (cross-domain). TOOL-ENG register closed. Strategic backlog: Phase **TOOL-PRODUCT-ROI** (code intelligence, git/PR context, safe patch).
+Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic per-tool output (CVL) · ACP invoke_tool/gateway consistency across 190 tools (cross-domain). TOOL-ENG register closed.
 
 ---
 
@@ -128,7 +128,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- 200 tools / 49 bundles registration at bootstrap.
+- 190 tools / 48 bundles registration at bootstrap.
 - RunBudget.max_tool_calls (128 prod default) enforcement.
 - Parallel read-only tool invocations (ENG-9 target).
 - Large allow-list filtering performance.
