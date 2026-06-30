@@ -13,7 +13,7 @@ Tier-3 application package: `applications/local_workspace_application/`. This do
 | `uv` | Python deps from repo root `pyproject.toml` / `uv.lock` |
 | Repo clone | Monorepo; build context is always repository root |
 | Docker | Local stack and image build |
-| Docker Compose | LKW backend + Qdrant + Ollama |
+| Docker Compose | LKW backend + Qdrant + Ollama + optional observability backends |
 
 Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** under `agents/` on `PYTHONPATH`.
 
@@ -179,6 +179,92 @@ http://ollama:11434
 
 Ensure `applications/local_workspace_application/.env` exists. The bootstrap scripts create it automatically when missing.
 
+### Run with all Docker Compose overlays on Windows
+
+Use this helper when you want the base stack plus every optional overlay in `applications/local_workspace_application/docker/`:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat
+```
+
+The script runs the base `docker-compose.yml` plus every matching `docker-compose.*.yml` overlay. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat ps
+applications\local_workspace_application\scripts\run-local-docker-all.bat down
+```
+
+With no arguments it runs:
+
+```text
+docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --build
+```
+
+### Run with Elasticsearch/OpenSearch-compatible observability backend
+
+Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof:
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.yml \
+  -f applications/local_workspace_application/docker/docker-compose.elasticsearch.yml \
+  up --build
+```
+
+The overlay starts an Elasticsearch single-node service and switches the LKW observability backend to:
+
+```text
+LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch
+LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL=http://elasticsearch:9200
+LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX=intergrax-lkw-observability
+```
+
+Elasticsearch is exposed on host port `9200` for manual local readback:
+
+```bash
+curl -s http://127.0.0.1:9200/_cluster/health
+curl -s "http://127.0.0.1:9200/intergrax-lkw-observability/_search?pretty"
+```
+
+This overlay is a local proof environment only. It does not add auth/TLS, batching, retry/backoff, dead-letter, dashboards, or the formal OBS-VENDOR-7 readback/duplicate proof.
+
+### Run Elasticsearch observability proof helpers
+
+Use the proof helper after starting the Elasticsearch overlay stack. Without a `run_id`, the helper checks LKW health, Elasticsearch health, and lists recent indexed observability runs.
+
+Windows:
+
+```bat
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh
+```
+
+After executing a real LKW run, pass the selected run id to run timeline, duplicate, safety, and combined proof checks:
+
+```bat
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_...
+```
+
+```bash
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh run_...
+```
+
+The helpers default to `http://127.0.0.1:8020/health`, `http://127.0.0.1:9200`, and `intergrax-lkw-observability`. Override them with environment variables when needed:
+
+```text
+LOCAL_WORKSPACE_OBSERVABILITY_PROOF_LKW_HEALTH_URL
+LOCAL_WORKSPACE_OBSERVABILITY_PROOF_ES_URL
+LOCAL_WORKSPACE_OBSERVABILITY_PROOF_ES_INDEX
+```
+
+A successful helper run prints a documentation summary with `run_id`, Elasticsearch URL/index, `duplicate_check=0`, and `safety_check=passed`. This helper prepares and validates proof evidence; full OBS-VENDOR-7 should be marked Done only after a real LKW run id and backend readback result are recorded.
+
 ---
 
 ## 7. Production checklist
@@ -201,6 +287,7 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 | `Readme file does not exist: README.md` during image build | Dockerfile must copy root `README.md` before `uv sync` |
 | uv environment marker overlap | Dockerfile must not rewrite `tool.uv.environments` markers |
 | Port `6333` already allocated | Qdrant should remain internal in compose; only expose if debugging manually |
+| Port `9200` already allocated | Stop another Elasticsearch/OpenSearch instance or change the overlay host port |
 | Ollama model missing | Run the bootstrap script or `docker compose exec ollama ollama pull <model>` |
 | Import errors for agents | Confirm agents are copied in `docker/Dockerfile` |
 | Slow rebuild | Expected on first build; avoid copying the whole repo without `.dockerignore` |
@@ -210,22 +297,30 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 
 ---
 
-## 9. Optional OTLP observability export
+## 9. Optional observability export
 
-LKW supports exporting policy-sanitized Intergrax observability envelopes as **OTLP logs** to an OpenTelemetry Collector. This is the first external persistence proof for policy-sanitized Intergrax observability records exported as OTLP logs. It does **not** add full trace browsing.
+LKW supports exporting policy-sanitized Intergrax observability envelopes to external backends. Local Docker Compose enables observability explicitly for proof environments; manual or non-compose runs keep export disabled unless you opt in via `.env`.
 
-Local Docker Compose starts `otel-collector` and enables OTLP export explicitly in `local_workspace.environment`. Manual or non-compose runs keep export disabled unless you opt in via `.env`.
+Supported local proof backends:
+
+```text
+otlp           → OpenTelemetry Collector → persisted JSONL file
+elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
+```
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED` | `false` | Enable observability export (disabled by default for manual/non-compose runs) |
-| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND` | `otlp` | Export backend (only `otlp` supported) |
-| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT` | — | Required when enabled; e.g. `http://otel-collector:4318/v1/logs` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND` | `otlp` | Export backend: `otlp` or `elasticsearch` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT` | — | Required for `backend_id=otlp`; e.g. `http://otel-collector:4318/v1/logs` |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL` | — | Required for `backend_id=elasticsearch`; e.g. `http://elasticsearch:9200` in compose |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX` | `intergrax-lkw-observability` | Elasticsearch/OpenSearch index for policy-safe documents |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_TIMEOUT_SECONDS` | `30` | Elasticsearch HTTP transport timeout |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT` | `false` | Forced to `false` by policy; raw content is never exported |
-| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS` | `30` | HTTP transport timeout |
+| `LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS` | `30` | OTLP HTTP transport timeout |
 
 ### Run with persisted OTLP logs
 
@@ -266,6 +361,24 @@ applications\local_workspace_application\scripts\inspect-otlp-logs.bat --tool-id
 
 The default invocation reads `.observability/otel/lkw-otlp-logs.jsonl`, selects the latest run, prints a compact event timeline, and reports duplicate status. The duplicate check groups by `intergrax.event_id` plus run, event type, agent, tool, and capability metadata.
 
+### Inspect persisted Elasticsearch/OpenSearch documents
+
+For Elasticsearch/OpenSearch readback, duplicate-export checks, and safety-key scans, use the lightweight inspector from repository root:
+
+```powershell
+applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --list-runs
+applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --run-id run_... --check-duplicates --check-safety
+```
+
+Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
+
+Use the proof helper for the repeatable live-proof workflow:
+
+```powershell
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat
+applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_...
+```
+
 ### What to look for
 
 Exported OTLP logs should include Intergrax attributes such as:
@@ -280,16 +393,18 @@ intergrax.tenant_id
 intergrax.workspace_id
 ```
 
-To verify no duplicate export for the same runtime event, group persisted log records by `intergrax.event_id` (and `intergrax.run_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, `intergrax.capability`). Each `event_id` should appear at most once per run.
+Elasticsearch/OpenSearch documents use the same policy-safe `intergrax.*` metadata fields and are append-only by default. Query the configured index by fields such as `intergrax.run_id`, `intergrax.event_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, and `intergrax.capability`.
+
+To verify no duplicate export for the same runtime event, group persisted records by `intergrax.event_id` (and `intergrax.run_id`, `intergrax.event_type`, `intergrax.agent_id`, `intergrax.tool_id`, `intergrax.capability`). Each `event_id` should appear at most once per run. Use `inspect-elasticsearch-observability.bat --check-duplicates` for the indexed backend; the formal live Docker Compose OBS-VENDOR-7 proof remains planned until a real `run_id` and backend query result are recorded.
 
 **Safety boundaries:**
 
 - Export is **disabled by default** in `.env.example`; no remote observability export occurs without explicit configuration.
-- OTLP endpoint is **required** when export is enabled.
+- OTLP endpoint is **required** when `backend_id=otlp` and export is enabled.
+- Elasticsearch URL and index are **required** when `backend_id=elasticsearch` and export is enabled.
 - `export_content=false` — raw documents, chunks, prompts, tool args, secrets, and full local paths are not exported by default.
 - Export failure must not fail product runs.
-- Only the `otlp` backend is supported; any other backend fails fast.
-- No Grafana, Loki, Elasticsearch, Langfuse, Arize, Phoenix, Jaeger, Tempo, or vendor SDK is included.
+- No Grafana, Loki, Langfuse, Arize, Phoenix, Jaeger, Tempo, or vendor SDK is included.
 
 
 

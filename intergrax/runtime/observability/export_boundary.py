@@ -15,6 +15,7 @@ from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.export_attributes import (
     ApplicationObservabilityAttributes,
+    ObservabilityArtifactReference,
     SanitizedApplicationObservabilityAttributes,
 )
 from intergrax.runtime.observability.journal_export import JournalRef
@@ -408,6 +409,30 @@ def envelope_from_journal_ref(ref: JournalRef) -> ObservabilityExportEnvelope:
         schema_id=ref.schema_version,
         source_schema_id=ref.schema_version,
     )
+
+
+def envelope_with_observability_extensions(
+    envelope: ObservabilityExportEnvelope,
+    *,
+    application_attributes: ApplicationObservabilityAttributes | None = None,
+    artifact_ref: ObservabilityArtifactReference | None = None,
+) -> ObservabilityExportEnvelope:
+    """Attach typed application metadata and artifact references to an export envelope."""
+    updates: dict[str, object] = {}
+    if application_attributes is not None:
+        updates["application_attributes"] = application_attributes
+    if artifact_ref is not None:
+        updates.update(
+            {
+                "artifact_ref": artifact_ref.artifact_ref,
+                "sha256": artifact_ref.sha256,
+                "safe_relative_path": artifact_ref.safe_relative_path,
+                "schema_id": artifact_ref.schema_id,
+            }
+        )
+    if not updates:
+        return envelope
+    return envelope.model_copy(update=updates)
 
 
 def envelope_is_content_safe(envelope: ObservabilityExportEnvelope) -> bool:

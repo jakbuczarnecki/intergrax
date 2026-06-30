@@ -11,9 +11,11 @@ from intergrax.applications.contracts.settings import EnvReader, IntergraxApplic
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportBackend,
+    ElasticsearchExportOperatorConfig,
     ObservabilityExportOperatorConfig,
+    ObservabilityExportOperatorConfigError,
     OtlpExportOperatorConfig,
+    parse_observability_export_backend_id,
 )
 
 
@@ -79,6 +81,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_service_version: str = ""
     observability_environment: str = ""
     observability_otlp_timeout_seconds: float = 30.0
+    observability_elasticsearch_url: str = ""
+    observability_elasticsearch_index: str = ""
+    observability_elasticsearch_timeout_seconds: float = 30.0
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -100,32 +105,59 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         if not self.observability_export_enabled:
             return None
 
-        backend = self.observability_export_backend.strip().lower()
-        if backend != "otlp":
-            raise ValueError(
-                f"unsupported LKW observability export backend: {backend!r}"
-            )
+        try:
+            backend_id = parse_observability_export_backend_id(self.observability_export_backend)
+        except ObservabilityExportOperatorConfigError as exc:
+            raise ValueError(str(exc)) from exc
 
-        endpoint = self.observability_otlp_endpoint.strip()
-        if not endpoint:
-            raise ValueError(
-                "LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT is required when "
-                "observability export is enabled"
-            )
-
-        # Safety: never export raw content regardless of env value
-        return ObservabilityExportOperatorConfig(
-            enabled=True,
-            export_content=False,
-            backend=ObservabilityExportBackend.OTLP,
-            otlp=OtlpExportOperatorConfig(
+        otlp: OtlpExportOperatorConfig | None
+        elasticsearch: ElasticsearchExportOperatorConfig | None
+        if backend_id == "otlp":
+            endpoint = self.observability_otlp_endpoint.strip()
+            if not endpoint:
+                raise ValueError(
+                    "LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT is required when "
+                    "observability export is enabled"
+                )
+            otlp = OtlpExportOperatorConfig(
                 endpoint=endpoint,
                 service_name=self.observability_service_name or "intergrax-lkw",
                 service_version=self.observability_service_version or None,
                 environment=self.observability_environment or None,
                 timeout_seconds=self.observability_otlp_timeout_seconds,
                 headers=None,
-            ),
+            )
+            elasticsearch = None
+        elif backend_id == "elasticsearch":
+            otlp = None
+            base_url = self.observability_elasticsearch_url.strip()
+            if not base_url:
+                raise ValueError(
+                    "LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL is required when "
+                    "observability export is enabled with backend_id=elasticsearch"
+                )
+            index = self.observability_elasticsearch_index.strip()
+            if not index:
+                raise ValueError(
+                    "LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX is required when "
+                    "observability export is enabled with backend_id=elasticsearch"
+                )
+            elasticsearch = ElasticsearchExportOperatorConfig(
+                base_url=base_url,
+                index=index,
+                timeout_seconds=self.observability_elasticsearch_timeout_seconds,
+            )
+        else:
+            otlp = None
+            elasticsearch = None
+
+        # Safety: never export raw content regardless of env value
+        return ObservabilityExportOperatorConfig(
+            enabled=True,
+            export_content=False,
+            backend_id=backend_id,
+            otlp=otlp,
+            elasticsearch=elasticsearch,
         )
 
     # Application-specific settings
@@ -239,6 +271,18 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "OBSERVABILITY_OTLP_TIMEOUT_SECONDS",
             default=cls._field_default("observability_otlp_timeout_seconds"),  # type: ignore[arg-type]
         )
+        observability_elasticsearch_url = env.str(
+            "OBSERVABILITY_ELASTICSEARCH_URL",
+            default=cls._field_default("observability_elasticsearch_url"),  # type: ignore[arg-type]
+        )
+        observability_elasticsearch_index = env.str(
+            "OBSERVABILITY_ELASTICSEARCH_INDEX",
+            default=cls._field_default("observability_elasticsearch_index"),  # type: ignore[arg-type]
+        )
+        observability_elasticsearch_timeout_seconds = env.float(
+            "OBSERVABILITY_ELASTICSEARCH_TIMEOUT_SECONDS",
+            default=cls._field_default("observability_elasticsearch_timeout_seconds"),  # type: ignore[arg-type]
+        )
         read_roots_raw = (os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS") or "").strip()
         allowed_read_roots = frozenset(
             part.strip() for part in read_roots_raw.split(",") if part.strip()
@@ -266,4 +310,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_service_version": observability_service_version,
             "observability_environment": observability_environment,
             "observability_otlp_timeout_seconds": observability_otlp_timeout_seconds,
+            "observability_elasticsearch_url": observability_elasticsearch_url,
+            "observability_elasticsearch_index": observability_elasticsearch_index,
+            "observability_elasticsearch_timeout_seconds": observability_elasticsearch_timeout_seconds,
         }

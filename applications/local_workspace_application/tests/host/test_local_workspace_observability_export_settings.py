@@ -6,12 +6,14 @@ from __future__ import annotations
 
 import os
 from typing import Generator
+from unittest.mock import patch
 
 import pytest
 
 from intergrax.runtime.observability.operator_wiring import (
-    ObservabilityExportBackend,
+    ObservabilityExportBackendRegistryError,
     ObservabilityExportOperatorConfig,
+    build_observability_export_runtime_plugin,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
@@ -55,7 +57,7 @@ def test_enabled_otlp_config() -> None:
 
     assert config is not None
     assert config.enabled is True
-    assert config.backend is ObservabilityExportBackend.OTLP
+    assert config.backend_id == "otlp"
     assert config.export_content is False
     assert config.otlp is not None
     assert config.otlp.endpoint == "http://otel-collector:4318/v1/logs"
@@ -64,10 +66,115 @@ def test_enabled_otlp_config() -> None:
     assert config.otlp.environment == "dev"
 
 
+def test_elasticsearch_backend_normalizes_in_config() -> None:
+    """Valid elasticsearch backend_id is accepted by LKW settings and normalized."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = " ELASTICSEARCH "
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.backend_id == "elasticsearch"
+    assert config.otlp is None
+    assert config.elasticsearch is not None
+
+
+def test_custom_plugin_backend_id_is_allowed_in_config() -> None:
+    """LKW does not reject valid custom/plugin backend ids at settings time."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "acme_observability"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.backend_id == "acme_observability"
+    assert config.otlp is None
+
+
+def test_acme_observability_without_otlp_endpoint_builds_config_with_otlp_none() -> None:
+    """Non-OTLP backend_id does not require LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "acme_observability"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.backend_id == "acme_observability"
+    assert config.otlp is None
+
+
+def test_elasticsearch_backend_fails_at_platform_build_step() -> None:
+    """Valid but unregistered backend_id fails when building the runtime plugin."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "acme_observability"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+    assert config is not None
+    assert config.otlp is None
+
+    with pytest.raises(
+        ObservabilityExportBackendRegistryError,
+        match="no observability export backend builder registered for 'acme_observability'",
+    ):
+        build_observability_export_runtime_plugin(config)
+
+
+def test_enabled_elasticsearch_config_builds_runtime_plugin() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+    assert config is not None
+    assert config.backend_id == "elasticsearch"
+    assert config.elasticsearch is not None
+    assert config.elasticsearch.base_url == "http://elasticsearch.local:9200"
+    assert config.elasticsearch.index == "logs-*"
+    assert config.otlp is None
+
+    with patch(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+    ) as create_transport:
+        create_transport.return_value = object()
+        plugin = build_observability_export_runtime_plugin(config)
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
+
+
+def test_enabled_elasticsearch_without_url_raises() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"):
+        settings.build_observability_export_config()
+
+
+def test_enabled_elasticsearch_without_index_raises() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"):
+        settings.build_observability_export_config()
+
+
 def test_export_content_remains_false() -> None:
     """Even when export_content env is true, the resulting config has False."""
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "otlp"
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT"] = "http://localhost:4318"
 
     settings = LocalWorkspaceBackendSettings.from_env()
@@ -77,8 +184,18 @@ def test_export_content_remains_false() -> None:
     assert config.export_content is False
 
 
-def test_enabled_without_endpoint_raises() -> None:
+def test_enabled_otlp_without_endpoint_raises() -> None:
     """Enabled OTLP export without endpoint raises ValueError."""
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "otlp"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT"):
+        settings.build_observability_export_config()
+
+
+def test_enabled_without_endpoint_raises() -> None:
+    """Default OTLP backend without endpoint raises ValueError."""
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
 
     settings = LocalWorkspaceBackendSettings.from_env()
@@ -86,14 +203,14 @@ def test_enabled_without_endpoint_raises() -> None:
         settings.build_observability_export_config()
 
 
-def test_unsupported_backend_raises() -> None:
-    """Unsupported backend raises ValueError."""
+def test_invalid_backend_id_raises() -> None:
+    """Invalid backend id format raises ValueError."""
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
-    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "langfuse"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "foo/bar"
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT"] = "http://localhost:4318"
 
     settings = LocalWorkspaceBackendSettings.from_env()
-    with pytest.raises(ValueError, match="unsupported LKW observability export backend"):
+    with pytest.raises(ValueError, match="invalid observability export backend id: 'foo/bar'"):
         settings.build_observability_export_config()
 
 
@@ -105,7 +222,7 @@ def test_factory_explicit_config_wins(tmp_path, monkeypatch) -> None:
     explicit_config = ObservabilityExportOperatorConfig(
         enabled=True,
         export_content=False,
-        backend=ObservabilityExportBackend.OTLP,
+        backend_id="otlp",
         otlp=None,  # Not needed for this test — we just check it's passed through
     )
 
