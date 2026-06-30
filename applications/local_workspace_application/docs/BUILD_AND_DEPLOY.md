@@ -179,6 +179,27 @@ http://ollama:11434
 
 Ensure `applications/local_workspace_application/.env` exists. The bootstrap scripts create it automatically when missing.
 
+### Run with all Docker Compose overlays on Windows
+
+Use this helper when you want the base stack plus every optional overlay in `applications/local_workspace_application/docker/`:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat
+```
+
+The script runs the base `docker-compose.yml` plus every matching `docker-compose.*.yml` overlay. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat ps
+applications\local_workspace_application\scripts\run-local-docker-all.bat down
+```
+
+With no arguments it runs:
+
+```text
+docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --build
+```
+
 ### Run with Elasticsearch/OpenSearch-compatible observability backend
 
 Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof:
