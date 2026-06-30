@@ -48,6 +48,9 @@ temp_documents/
 # Historical audit runs (use RESUME path explicitly)
 docs/audit_results/
 
+# Audit control prompts — explicit @ / Read only
+docs/audit/
+
 # ADR archive (load cited ADR only)
 docs/adr/entries/
 
