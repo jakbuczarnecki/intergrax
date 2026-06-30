@@ -30,8 +30,15 @@ from intergrax.runtime.observability.export_policy import (
     ObservabilityExportPolicy,
     try_export_observability_envelope,
 )
+from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ElasticsearchObservabilityIntegration,
+)
+from intergrax.integrations.providers.observability_backend.elasticsearch.transport import (
+    ElasticsearchHttpObservabilityTransport,
+)
 from intergrax.runtime.observability.operator_wiring import (
     DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY,
+    ElasticsearchExportOperatorConfig,
     ObservabilityExportBackendRegistry,
     ObservabilityExportBackendRegistryError,
     ObservabilityExportOperatorConfig,
@@ -43,6 +50,9 @@ from intergrax.runtime.observability.operator_wiring import (
     build_otlp_observability_exporter,
     build_otlp_observability_integration,
     parse_observability_export_backend_id,
+)
+from intergrax.runtime.observability.elasticsearch_export_wiring import (
+    build_elasticsearch_observability_integration,
 )
 from intergrax.runtime.observability.otlp_exporter import (
     OtlpObservabilityExporter,
@@ -84,6 +94,29 @@ class FakeOtlpTransport:
         self.send_count += 1
         self.payloads.append(payload)
         self.configs.append(config)
+
+
+def _enabled_elasticsearch_config(
+    *,
+    export_content: bool = False,
+    elasticsearch: ElasticsearchExportOperatorConfig | None = None,
+) -> ObservabilityExportOperatorConfig:
+    return ObservabilityExportOperatorConfig(
+        enabled=True,
+        export_content=export_content,
+        backend_id="elasticsearch",
+        elasticsearch=elasticsearch
+        or ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="logs-*",
+            timeout_seconds=5.0,
+        ),
+    )
+
+
+class FakeElasticsearchTransport:
+    async def send_observability_payload(self, payload: object) -> None:
+        return None
 
 
 def _enabled_config(
@@ -161,6 +194,11 @@ def test_default_registry_contains_otlp() -> None:
     assert callable(builder)
 
 
+def test_default_registry_contains_elasticsearch() -> None:
+    builder = DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.get("elasticsearch")
+    assert callable(builder)
+
+
 def test_registry_registers_builder_by_backend_id() -> None:
     registry = ObservabilityExportBackendRegistry()
     called: list[str] = []
@@ -190,20 +228,20 @@ def test_missing_builder_raises_clear_error() -> None:
     registry = ObservabilityExportBackendRegistry()
     with pytest.raises(
         ObservabilityExportBackendRegistryError,
-        match="no observability export backend builder registered for 'elasticsearch'",
+        match="no observability export backend builder registered for 'custom_or_unregistered'",
     ):
-        registry.get("elasticsearch")
+        registry.get("custom_or_unregistered")
 
 
 def test_valid_non_registered_backend_id_fails_as_missing_builder() -> None:
     config = ObservabilityExportOperatorConfig(
         enabled=True,
-        backend_id="elasticsearch",
+        backend_id="custom_or_unregistered",
     )
 
     with pytest.raises(
         ObservabilityExportBackendRegistryError,
-        match="no observability export backend builder registered for 'elasticsearch'",
+        match="no observability export backend builder registered for 'custom_or_unregistered'",
     ):
         build_observability_export_runtime_plugin(config)
 
@@ -444,3 +482,90 @@ def test_operator_wiring_has_no_vendor_sdk_coupling() -> None:
     source = _OPERATOR_WIRING_PATH.read_text(encoding="utf-8")
     for token in _FORBIDDEN_VENDOR_SDK_TOKENS:
         assert token not in source, f"operator_wiring.py contains forbidden vendor coupling token: {token}"
+
+
+def test_elasticsearch_registry_builds_elasticsearch_observability_integration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = FakeElasticsearchTransport()
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+        lambda **_kwargs: sentinel,
+    )
+
+    integration = build_observability_export_integration(_enabled_elasticsearch_config())
+
+    assert isinstance(integration, ElasticsearchObservabilityIntegration)
+    assert integration._transport is sentinel  # noqa: SLF001
+
+
+def test_elasticsearch_builder_uses_provider_transport_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = ElasticsearchHttpObservabilityTransport(MagicMock(), index="logs-*")
+    create_transport = MagicMock(return_value=sentinel)
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+        create_transport,
+    )
+
+    integration = build_elasticsearch_observability_integration(_enabled_elasticsearch_config())
+
+    create_transport.assert_called_once()
+    assert isinstance(integration, ElasticsearchObservabilityIntegration)
+    assert integration._transport is sentinel  # noqa: SLF001
+
+
+def test_elasticsearch_registry_closure_can_inject_fake_transport() -> None:
+    transport = FakeElasticsearchTransport()
+    registry = ObservabilityExportBackendRegistry()
+    registry.register(
+        "elasticsearch",
+        lambda config: build_elasticsearch_observability_integration(config, transport=transport),
+    )
+
+    plugin = build_observability_export_runtime_plugin(
+        _enabled_elasticsearch_config(),
+        registry=registry,
+    )
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
+
+
+def test_disabled_elasticsearch_config_does_not_create_runtime_plugin() -> None:
+    config = ObservabilityExportOperatorConfig(
+        enabled=False,
+        backend_id="elasticsearch",
+        elasticsearch=ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="logs-*",
+        ),
+    )
+
+    assert build_observability_export_runtime_plugin(config) is None
+
+
+def test_elasticsearch_builder_fails_fast_when_base_url_missing() -> None:
+    config = ObservabilityExportOperatorConfig(
+        enabled=True,
+        backend_id="elasticsearch",
+        elasticsearch=ElasticsearchExportOperatorConfig(base_url="", index="logs-*"),
+    )
+
+    with pytest.raises(ObservabilityExportOperatorConfigError, match="base_url is required"):
+        build_elasticsearch_observability_integration(config)
+
+
+def test_elasticsearch_builder_fails_fast_when_index_missing() -> None:
+    config = ObservabilityExportOperatorConfig(
+        enabled=True,
+        backend_id="elasticsearch",
+        elasticsearch=ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="",
+        ),
+    )
+
+    with pytest.raises(ObservabilityExportOperatorConfigError, match="index is required"):
+        build_elasticsearch_observability_integration(config)

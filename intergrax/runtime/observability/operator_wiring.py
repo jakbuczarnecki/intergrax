@@ -76,11 +76,19 @@ class OtlpExportOperatorConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ElasticsearchExportOperatorConfig:
+    base_url: str
+    index: str
+    timeout_seconds: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ObservabilityExportOperatorConfig:
     enabled: bool = False
     export_content: bool = False
     backend_id: str = "otlp"
     otlp: OtlpExportOperatorConfig | None = None
+    elasticsearch: ElasticsearchExportOperatorConfig | None = None
 
 
 ObservabilityExportBackendBuilder = Callable[[ObservabilityExportOperatorConfig], object]
@@ -135,6 +143,20 @@ DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.register(
     "otlp",
     _build_default_otlp_observability_integration,
 )
+
+
+def _register_default_elasticsearch_backend() -> None:
+    from intergrax.runtime.observability.elasticsearch_export_wiring import (
+        _build_default_elasticsearch_observability_integration,
+    )
+
+    DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.register(
+        "elasticsearch",
+        _build_default_elasticsearch_observability_integration,
+    )
+
+
+_register_default_elasticsearch_backend()
 
 
 def build_observability_export_integration(

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from typing import Generator
+from unittest.mock import patch
 
 import pytest
 
@@ -66,9 +67,11 @@ def test_enabled_otlp_config() -> None:
 
 
 def test_elasticsearch_backend_normalizes_in_config() -> None:
-    """Valid non-OTLP backend_id is accepted by LKW settings and normalized."""
+    """Valid elasticsearch backend_id is accepted by LKW settings and normalized."""
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = " ELASTICSEARCH "
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
 
     settings = LocalWorkspaceBackendSettings.from_env()
     config = settings.build_observability_export_config()
@@ -76,6 +79,7 @@ def test_elasticsearch_backend_normalizes_in_config() -> None:
     assert config is not None
     assert config.backend_id == "elasticsearch"
     assert config.otlp is None
+    assert config.elasticsearch is not None
 
 
 def test_custom_plugin_backend_id_is_allowed_in_config() -> None:
@@ -107,7 +111,7 @@ def test_acme_observability_without_otlp_endpoint_builds_config_with_otlp_none()
 def test_elasticsearch_backend_fails_at_platform_build_step() -> None:
     """Valid but unregistered backend_id fails when building the runtime plugin."""
     os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
-    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "acme_observability"
 
     settings = LocalWorkspaceBackendSettings.from_env()
     config = settings.build_observability_export_config()
@@ -116,9 +120,54 @@ def test_elasticsearch_backend_fails_at_platform_build_step() -> None:
 
     with pytest.raises(
         ObservabilityExportBackendRegistryError,
-        match="no observability export backend builder registered for 'elasticsearch'",
+        match="no observability export backend builder registered for 'acme_observability'",
     ):
         build_observability_export_runtime_plugin(config)
+
+
+def test_enabled_elasticsearch_config_builds_runtime_plugin() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+    assert config is not None
+    assert config.backend_id == "elasticsearch"
+    assert config.elasticsearch is not None
+    assert config.elasticsearch.base_url == "http://elasticsearch.local:9200"
+    assert config.elasticsearch.index == "logs-*"
+    assert config.otlp is None
+
+    with patch(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+    ) as create_transport:
+        create_transport.return_value = object()
+        plugin = build_observability_export_runtime_plugin(config)
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
+
+
+def test_enabled_elasticsearch_without_url_raises() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"):
+        settings.build_observability_export_config()
+
+
+def test_enabled_elasticsearch_without_index_raises() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"):
+        settings.build_observability_export_config()
 
 
 def test_export_content_remains_false() -> None:

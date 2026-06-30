@@ -15,11 +15,15 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.observability.operator_wiring import (
+    ElasticsearchExportOperatorConfig,
     ObservabilityExportBackendRegistry,
     ObservabilityExportBackendRegistryError,
     ObservabilityExportOperatorConfig,
     OtlpExportOperatorConfig,
     build_otlp_observability_integration,
+)
+from intergrax.runtime.observability.elasticsearch_export_wiring import (
+    build_elasticsearch_observability_integration,
 )
 from intergrax.runtime.observability.otlp_exporter import OtlpObservabilityExporterConfig
 from intergrax.runtime.plugins.contract import RuntimePlugin
@@ -61,6 +65,35 @@ class FakeOtlpTransport:
         self.send_count += 1
         self.payloads.append(payload)
         self.configs.append(config)
+
+
+def _enabled_elasticsearch_config() -> ObservabilityExportOperatorConfig:
+    return ObservabilityExportOperatorConfig(
+        enabled=True,
+        export_content=False,
+        backend_id="elasticsearch",
+        elasticsearch=ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="logs-*",
+            timeout_seconds=5.0,
+        ),
+    )
+
+
+class FakeElasticsearchTransport:
+    async def send_observability_payload(self, payload: object) -> None:
+        return None
+
+
+def _elasticsearch_registry_with_transport(
+    transport: FakeElasticsearchTransport,
+) -> ObservabilityExportBackendRegistry:
+    registry = ObservabilityExportBackendRegistry()
+    registry.register(
+        "elasticsearch",
+        lambda config: build_elasticsearch_observability_integration(config, transport=transport),
+    )
+    return registry
 
 
 def _enabled_config(
@@ -128,6 +161,17 @@ def test_lkw_observability_wiring_does_not_expose_otlp_transport() -> None:
 
     sig = inspect.signature(build_local_workspace_observability_plugins)
     assert "transport" not in sig.parameters
+
+
+def test_enabled_elasticsearch_config_returns_exactly_one_runtime_plugin() -> None:
+    plugins = build_local_workspace_observability_plugins(
+        _enabled_elasticsearch_config(),
+        registry=_elasticsearch_registry_with_transport(FakeElasticsearchTransport()),
+    )
+
+    assert len(plugins) == 1
+    assert isinstance(plugins[0], RuntimePlugin)
+    assert plugins[0].plugin_id == "runtime.observability_export"
 
 
 def test_enabled_otlp_config_returns_exactly_one_runtime_plugin() -> None:

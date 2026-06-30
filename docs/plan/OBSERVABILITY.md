@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine.
 
-**Last updated:** 2026-06-30 — **OBS-VENDOR-4A** Elasticsearch/OpenSearch vendor transport done; LKW OTLP proof path closed.
+**Last updated:** 2026-06-30 — **OBS-VENDOR-5** Elasticsearch backend selection wired into operator config; LKW OTLP proof path closed.
 
 ---
 
@@ -351,7 +351,7 @@ Wiring selects the concrete integration; product code never branches on vendor S
 | **OBS-VENDOR-2** | Code | P1 | **Done** | Open plugin-based observability backend selection in operator/runtime config | Plan defines where backend selection belongs; invalid backend_id format fails fast; valid but unregistered backend_id fails at builder registry lookup; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only — do not implement all vendors at once. **Built-in today:** `otlp`. **Extension:** register additional backend builders by `backend_id`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=otlp` |
 | **OBS-VENDOR-3** | Docs/Code | P1 | **Done** | Formalize safe extension metadata API | `ApplicationObservabilityAttributes` documented as official extension path; artifact refs (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) as reference-only path; raw artifact content not exported; forbidden fields remain blocked by export policy; arbitrary `RuntimeEvent.payload` fields not auto-exported; optional helper API (e.g. `emit_observability_event(..., application_attributes=..., artifact_ref=...)`) only if needed |
 | **OBS-VENDOR-4A** | Code | P1 | **Done** | **First concrete vendor adapter: Elasticsearch/OpenSearch** | Contract subclass under `intergrax/integrations/providers/observability_backend/elasticsearch/`; injectable transport for indexing policy-safe `ObservabilityVendorPayload`; no raw content export; no policy bypass; unit tests with fake transport prove policy-safe delivery, disabled config does not send, unsafe content not exported; no LKW direct dependency on Elasticsearch/OpenSearch SDK |
-| **OBS-VENDOR-5** | Code | P1 | Planned | Wire selected vendor backend into runtime operator config | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch` builds `ElasticsearchObservabilityIntegration.from_transport(...)`; `otlp` continues `OtlpObservabilityIntegration`; runtime plugin receives only contract/`ObservabilityExporter` object; LKW does not branch on vendor SDK; misconfigured credentials/endpoint fail fast at build time; exporter failures do not fail product runs |
+| **OBS-VENDOR-5** | Code | P1 | **Done** | Wire selected vendor backend into runtime operator config | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch` builds `ElasticsearchObservabilityIntegration.from_transport(...)`; `otlp` continues `OtlpObservabilityIntegration`; runtime plugin receives only contract/`ObservabilityExporter` object; LKW does not branch on vendor SDK; misconfigured credentials/endpoint fail fast at build time; exporter failures do not fail product runs |
 | **OBS-VENDOR-6** | Code | P2 | Planned | Vendor-specific operational hardening | Bounded transport timeout; retry/backoff; explicit batching or non-batching decision documented; failure isolation; rate-limit handling; dead-letter or failed-export diagnostics; structured error reason; health check capability; exporter failure never breaks LKW run; tests cover transport failure isolation |
 | **OBS-VENDOR-7** | Test/Docs | P1 | Planned | End-to-end vendor proof (Elasticsearch/OpenSearch first) | LKW run → envelope → policy → vendor integration → backend → query/readback by `run_id`/`event_id`; proof records exact commands, `run_id`, backend query result; `tool_requested`/`tool_completed` appear once; duplicate check = 0; no raw query/content/prompt/chunks/secrets indexed; documented in LKW runbook or implementation plan |
 | **OBS-VENDOR-8** | Docs/Code | P3 | Planned / Later | Langfuse/Phoenix/Arize semantic mapping phase | After first event/log-oriented adapter: map Intergrax records (`runtime_event`, `tool_call`, `rag_call`, `llm_call`, `journal_ref`, `diagnostic`) to vendor concepts (`trace`, `span`, `generation`, `event`, `score`, `metadata`); preserve `run_id`/`task_id`/`event_id` correlation; no direct SDK calls outside provider package; no raw prompts/completions unless future explicit content-export mode is designed and approved; policy remains metadata-only by default |
@@ -362,7 +362,7 @@ Done — canonical execution model closed. Runtime and applications call only **
 
 **OBS-VENDOR-2 status:**
 
-Done — observability backend selection is open and plugin-based. Operator config uses normalized `backend_id` strings rather than a closed vendor enum. OTLP is the only built-in registered backend today. Additional vendors are selected by `backend_id` and become available when a backend builder is registered; valid but unregistered `backend_id`s fail fast with a missing-builder error.
+Done — observability backend selection is open and plugin-based. Operator config uses normalized `backend_id` strings rather than a closed vendor enum. Built-in registered backends today: `otlp`, `elasticsearch`. Additional vendors are selected by `backend_id` and become available when a backend builder is registered; valid but unregistered `backend_id`s fail fast with a missing-builder error.
 
 **OBS-VENDOR-2A correction:**
 
@@ -378,7 +378,11 @@ Done — safe application extension metadata is formalized. Applications attach 
 
 **OBS-VENDOR-4A status:**
 
-Done — concrete Elasticsearch/OpenSearch observability export transport added under `intergrax/integrations/providers/observability_backend/elasticsearch/transport.py`. `ElasticsearchHttpObservabilityTransport` maps policy-safe `ObservabilityVendorPayload` to index documents and delivers via provider-owned `ElasticsearchRestClient.index_document()`. `create_elasticsearch_observability_transport()` and `create_elasticsearch_observability_integration()` expose injectable transport wiring; `enabled=False` sends nothing; `enabled=True` without transport fails at factory time with `IntegrationConfigurationError`. No runtime/LKW registry wiring; no Elasticsearch SDK dependency; unit tests use fake transport/indexer only. Follow-up: transport dispatches sync provider-owned indexing via asyncio.to_thread() and indexes append-only by default; event_id/correlation_id remain query fields, not default document IDs.
+Done — concrete Elasticsearch/OpenSearch observability export transport added under `intergrax/integrations/providers/observability_backend/elasticsearch/transport.py`. `ElasticsearchHttpObservabilityTransport` maps policy-safe `ObservabilityVendorPayload` to index documents and delivers via provider-owned `ElasticsearchRestClient.index_document()`. `create_elasticsearch_observability_transport()` and `create_elasticsearch_observability_integration()` expose injectable transport wiring; `enabled=False` sends nothing; `enabled=True` without transport fails at factory time with `IntegrationConfigurationError`. Unit tests use fake transport/indexer only. Follow-up: transport dispatches sync provider-owned indexing via asyncio.to_thread() and indexes append-only by default; event_id/correlation_id remain query fields, not default document IDs.
+
+**OBS-VENDOR-5 status:**
+
+Done — `backend_id="elasticsearch"` now resolves through open `ObservabilityExportBackendRegistry`/operator wiring to `ElasticsearchObservabilityIntegration` with provider-owned transport; OTLP remains working; no LKW vendor SDK/client dependency; Docker/E2E proof deferred.
 
 ### OBS-VENDOR-1 — execution model (reference)
 
@@ -425,7 +429,7 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 |------------------------------|---------------------|
 | Contract adapters (INTEGRATIONS-2C) | **Done** — stubs exist; production I/O pending |
 | Production vendor transports | **OBS-VENDOR-4A**, **OBS-VENDOR-6** |
-| Operator / bootstrap wiring | **OBS-VENDOR-2** **Done**; **OBS-VENDOR-5** |
+| Operator / bootstrap wiring | **OBS-VENDOR-2** **Done**; **OBS-VENDOR-5** **Done** |
 | Production export end-to-end | **OBS-VENDOR-7** |
 | LLM-trace semantic vendors | **OBS-VENDOR-8** (later) |
 
