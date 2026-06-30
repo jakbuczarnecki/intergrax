@@ -153,6 +153,31 @@ class ElasticsearchRestClient:
             "aggs": aggs,
         }
 
+    def _index_path(self, index: Optional[str] = None) -> str:
+        name = index or self._config.index
+        return f"/{quote(name, safe='*,.-')}"
+
+    def index_document(
+        self,
+        *,
+        index: str,
+        document: Mapping[str, Any],
+        doc_id: Optional[str] = None,
+    ) -> str:
+        path = self._index_path(index)
+        if doc_id:
+            response = self._http_client.put(
+                f"{path}/_doc/{quote(doc_id, safe='')}",
+                json=dict(document),
+            )
+        else:
+            response = self._http_client.post(f"{path}/_doc", json=dict(document))
+        response.raise_for_status()
+        payload = response.json()
+        if isinstance(payload, dict):
+            return str(payload.get("_id") or doc_id or "")
+        return str(doc_id or "")
+
     def _search(self, body: dict[str, Any]) -> dict[str, Any]:
         index = quote(self._config.index, safe="*,.-")
         response = self._http_client.post(f"/{index}/_search", json=body)
