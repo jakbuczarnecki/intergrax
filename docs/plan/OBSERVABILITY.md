@@ -392,6 +392,10 @@ Done — Elasticsearch export failures now produce safe provider-owned delivery 
 
 Done — Elasticsearch observability delivery now supports bounded provider-owned retry/backoff for retriable delivery failures, with LKW env overrides for deployment-specific calibration. Full OBS-VENDOR-6 remains Planned until batching, dead-letter storage, auth/TLS, health checks, and broader operational hardening are complete.
 
+**OBS-VENDOR-6C-A status:**
+
+Done — Elasticsearch observability export now exposes a provider-owned, optional failed-delivery sink contract with safe diagnostic records only (no raw document or content fields). Invocation occurs on ultimate delivery failure (immediate for non-retriable errors; after retry exhaustion for retriable errors). Full OBS-VENDOR-6C operational hardening (durable dead-letter storage) and full OBS-VENDOR-6 remain Planned.
+
 **OBS-VENDOR-7B status:**
 
 OBS-VENDOR-7B tooling done: Elasticsearch/OpenSearch readback inspector added for list-runs, run timeline, duplicate check, and safety-key check (`applications/local_workspace_application/scripts/inspect_elasticsearch_observability.py`, `inspect-elasticsearch-observability.bat`). Follow-up: Elasticsearch inspector safety-key check now derives forbidden keys from the canonical runtime export boundary (`FORBIDDEN_EXPORT_CONTENT_FIELDS`) instead of maintaining an independent ad-hoc list. Full OBS-VENDOR-7 remains **Planned** until a live Docker Compose proof records a real `run_id` and backend query result.
