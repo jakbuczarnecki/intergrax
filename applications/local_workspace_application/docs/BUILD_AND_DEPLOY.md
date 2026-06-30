@@ -404,6 +404,7 @@ To verify no duplicate export for the same runtime event, group persisted record
 - Elasticsearch URL and index are **required** when `backend_id=elasticsearch` and export is enabled.
 - `export_content=false` — raw documents, chunks, prompts, tool args, secrets, and full local paths are not exported by default.
 - Export failure must not fail product runs.
+- Elasticsearch/OpenSearch export failures are classified inside the provider transport with safe diagnostics (`operation`, `index`, `status_code`, `reason`, `retriable`) and must not include raw exported document content, prompts, secrets, or full local paths in error messages.
 - No Grafana, Loki, Langfuse, Arize, Phoenix, Jaeger, Tempo, or vendor SDK is included.
 
 

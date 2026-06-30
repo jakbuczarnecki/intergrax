@@ -8,7 +8,11 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Mapping, Protocol, runtime_checkable
 
-from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
+from intergrax.integrations.providers.observability_backend.elasticsearch.client import (
+    ElasticsearchDeliveryError,
+    ElasticsearchRestClient,
+    classify_elasticsearch_delivery_error,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import DEFAULT_TIMESTAMP_FIELD
 from intergrax.runtime.integrations.observability import ObservabilityVendorPayload
 from intergrax.runtime.observability.export_attributes import ObservabilityAttributeValue
@@ -111,8 +115,17 @@ class ElasticsearchHttpObservabilityTransport:
             payload,
             timestamp_field=self._timestamp_field,
         )
-        await asyncio.to_thread(
-            self._client.index_document,
-            index=self._index,
-            document=document,
-        )
+        try:
+            await asyncio.to_thread(
+                self._client.index_document,
+                index=self._index,
+                document=document,
+            )
+        except ElasticsearchDeliveryError:
+            raise
+        except Exception as exc:
+            raise classify_elasticsearch_delivery_error(
+                exc,
+                operation="send_observability_payload",
+                index=self._index,
+            ) from exc

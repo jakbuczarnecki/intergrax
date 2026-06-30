@@ -384,6 +384,10 @@ Done — concrete Elasticsearch/OpenSearch observability export transport added 
 
 Done — `backend_id="elasticsearch"` now resolves through open `ObservabilityExportBackendRegistry`/operator wiring to `ElasticsearchObservabilityIntegration` with provider-owned transport; OTLP remains working; no LKW vendor SDK/client dependency; Docker/E2E proof deferred.
 
+**OBS-VENDOR-6A status:**
+
+Done — Elasticsearch export failures now produce safe provider-owned delivery diagnostics with retriable/non-retriable classification. This closes failure classification for the first vendor backend; batching, retry/backoff execution, dead-letter storage, auth/TLS, and health checks remain separate OBS-VENDOR-6 follow-ups.
+
 **OBS-VENDOR-7B status:**
 
 OBS-VENDOR-7B tooling done: Elasticsearch/OpenSearch readback inspector added for list-runs, run timeline, duplicate check, and safety-key check (`applications/local_workspace_application/scripts/inspect_elasticsearch_observability.py`, `inspect-elasticsearch-observability.bat`). Follow-up: Elasticsearch inspector safety-key check now derives forbidden keys from the canonical runtime export boundary (`FORBIDDEN_EXPORT_CONTENT_FIELDS`) instead of maintaining an independent ad-hoc list. Full OBS-VENDOR-7 remains **Planned** until a live Docker Compose proof records a real `run_id` and backend query result.
