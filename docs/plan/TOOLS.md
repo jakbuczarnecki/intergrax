@@ -8,7 +8,7 @@
 
 **Queue status (2026-06-23):** Phase **TOOL-ENG** **closed** (36/36). Catalog expansion (Phase O / T-EXPAND) **closed** at **200** tools · **49** bundles. Strategic backlog → **Phase TOOL-PRODUCT-ROI** (below). Default harness queue → **gate maintenance** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). TOOLS owns compact LLM-facing tool catalog presentation and schema-preserving `ToolSchemaOptimizer`; canonical `ToolContract` registry, tool call payloads, and tool result JSON must not be mutated by default.
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). TOOLS owns compact LLM-facing tool catalog presentation and schema-preserving `ToolSchemaOptimizer`; canonical `ToolContract` registry, tool call payloads, and tool result JSON must not be mutated by default. **TOKEN-3** defines `ToolSchemaOptimizer` as an internal LLM-facing tool catalog compaction helper in `intergrax/runtime/token_optimization/tool_schema.py`; it does not change executable tool schemas or runtime tool registry behavior yet.
 
 **Layer completion mode (2026-06-12):** [§Layer completion audit](#layer-completion-audit-2026-06-12) · [§Layer completion sprints](#layer-completion-sprints-2026-06-12) · [§Final audit](#layer-completion-final-audit-2026-06-12)
 

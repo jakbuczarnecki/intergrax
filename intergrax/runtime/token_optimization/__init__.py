@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-2)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-2/TOKEN-3)."""
 
 from __future__ import annotations
 
@@ -61,6 +61,16 @@ from intergrax.runtime.token_optimization.output_policy import (
     resolve_output_policy,
     validate_resolved_output_policy,
 )
+from intergrax.runtime.token_optimization.tool_schema import (
+    DEFAULT_TOOL_CATALOG_STRATEGY,
+    DEFAULT_TOOL_CATALOG_TOKEN_POLICY,
+    ToolSchemaOptimizationConfig,
+    ToolSchemaOptimizationMode,
+    ToolSchemaOptimizationOutcome,
+    ToolSchemaOptimizationStatus,
+    ToolSchemaOptimizer,
+    optimize_tool_schema_catalog,
+)
 from intergrax.runtime.token_optimization.protected_regions import (
     BUILT_IN_PROTECTED_TERMS,
     MAX_ENV_PROTECTED_TERMS,
@@ -76,6 +86,8 @@ from intergrax.runtime.token_optimization.protected_regions import (
 __all__ = [
     "build_compression_receipt",
     "BUILT_IN_PROTECTED_TERMS",
+    "DEFAULT_TOOL_CATALOG_STRATEGY",
+    "DEFAULT_TOOL_CATALOG_TOKEN_POLICY",
     "CompressionLevel",
     "CompressionReceipt",
     "CompressionReceiptRef",
@@ -129,6 +141,12 @@ __all__ = [
     "validate_token_savings_telemetry_payload",
     "TokenSavingsMeasurement",
     "TokenUsageMeasurement",
+    "ToolSchemaOptimizationConfig",
+    "ToolSchemaOptimizationMode",
+    "ToolSchemaOptimizationOutcome",
+    "ToolSchemaOptimizationStatus",
+    "ToolSchemaOptimizer",
+    "optimize_tool_schema_catalog",
     "validate_protected_regions",
     "validate_receipt_integrity",
     "validate_resolved_output_policy",

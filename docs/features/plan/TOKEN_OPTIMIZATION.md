@@ -241,7 +241,7 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-3** — ToolSchemaOptimizer.
+**Next step:** **TOKEN-4** — ContextPackOptimizer.
 
 ---
 
@@ -265,7 +265,7 @@ Done / Closed when:
 - no telemetry emission added
 - no HOS/runtime/exporter wiring added
 - no public proof path changed
-- next step: **TOKEN-3** ToolSchemaOptimizer
+- next step: **TOKEN-4** ContextPackOptimizer
 
 ---
 
@@ -524,7 +524,7 @@ uv run python scripts/check_output_policy_wiring.py
 - no content optimization added
 - no telemetry emission added
 - no runtime hot-path wiring added
-- next step: **TOKEN-3** ToolSchemaOptimizer
+- next step: **TOKEN-4** ContextPackOptimizer
 
 ---
 
@@ -566,11 +566,22 @@ uv run python scripts/check_tool_schema_optimizer.py
 
 **Domain plan rows:** `TOKEN-TOOLS-1` in `docs/plan/TOOLS.md`.
 
-**Status:** Planned.
+**Status:** Done (TOKEN-3 closeout).
 
----
+**Closeout (TOKEN-3):**
 
-## Phase TOKEN-4 — ContextPackOptimizer
+- `ToolSchemaOptimizer` added in `intergrax/runtime/token_optimization/tool_schema.py`
+- deterministic LLM-facing tool catalog compaction added
+- description normalization/truncation added
+- required fields/types/enums/properties preserved
+- protected-region validation integrated
+- receipts integrated
+- optional `token_counter` measurement supported
+- no tokenizer/model calls added
+- no runtime tool registry wiring added
+- no prompt assembly added
+- no telemetry emission added
+- next step: **TOKEN-4** ContextPackOptimizer light/structural compression
 
 **Goal:** Optimize selected context fragments after ranking/budgeting and before final formatting/preflight.
 
