@@ -61,7 +61,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed** (§TOKEN-ARCH-0 below); **TOKEN-1A** remains **not started**. TOKEN implementation order remains **TOKEN-ARCH-0** → **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
+**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed** (§TOKEN-ARCH-0 below); **TOKEN-1A** shared contracts is **Done / Closed** (§TOKEN-1A below). TOKEN implementation order remains **TOKEN-ARCH-0** → **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
 
 ---
 
@@ -238,10 +238,34 @@ Done / Closed when:
 - [x] plugin/extensibility model documented
 - [x] benchmark claim model documented
 - [x] first public proof candidate mechanisms documented
-- [x] **TOKEN-1A** remains not started
-- [x] no runtime/code/test/CI/dependency changes
+- [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
+- [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below).
+**Next step:** **TOKEN-1B** — protected region parser/validator (Phase TOKEN-1 below).
+
+---
+
+## TOKEN-1A — Shared contracts + package skeleton
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add shared Token Optimization contract vocabulary and a minimal runtime package skeleton for later phases (TOKEN-1B..TOKEN-7).
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/__init__.py`
+- `intergrax/runtime/token_optimization/contracts.py`
+- `tests/unit/runtime/token_optimization/test_contracts.py`
+
+**Closeout:**
+
+- shared package skeleton added
+- shared contracts added (profiles, policy, attribution, mechanisms, strategies, plugin descriptors, measurements, protected regions, receipt refs, request/result)
+- plugin descriptor contracts added
+- no runtime optimization behavior added
+- no telemetry wiring added
+
+**Next step:** **TOKEN-1B** — protected region parser/validator.
 
 ---
 
@@ -302,7 +326,7 @@ Rules:
 ```text
 LKW-PF6-0   Token Optimization proof design — Done / Closed
 TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — Done / Closed
-TOKEN-1A    shared contracts + package skeleton
+TOKEN-1A    shared contracts + package skeleton — Done / Closed
 TOKEN-1B    protected region parser/validator
 TOKEN-1C    compression receipts + validation helpers
 TOKEN-2     OutputPolicy runtime resolver
