@@ -52,6 +52,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 
 | TOKEN phase | Owning plan file |
 |-------------|------------------|
+| `TOKEN-ARCH-0` engine lifecycle, mechanisms, strategy taxonomy, config, plugins, claims | feature architecture + feature plan (docs-only) |
 | `TOKEN-1` shared contracts, receipts, protected regions | feature plan + `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` |
 | `TOKEN-2` OutputPolicy runtime | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` and optional `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 | `TOKEN-3` ToolSchemaOptimizer | `docs/plan/TOOLS.md` |
@@ -60,7 +61,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-1A** remains **not started**. TOKEN implementation order remains **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
+**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed** (§TOKEN-ARCH-0 below); **TOKEN-1A** remains **not started**. TOKEN implementation order remains **TOKEN-ARCH-0** → **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
 
 ---
 
@@ -204,7 +205,7 @@ Done / Closed when:
 - [x] **TOKEN-1A** remains not started.
 - [x] No code/runtime/test/CI/dependency files changed.
 
-**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below).
+**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below). Preceded by **TOKEN-ARCH-0** (§TOKEN-ARCH-0 below).
 
 ### LKW proof phase map (post-design)
 
@@ -213,6 +214,34 @@ Done / Closed when:
 | **LKW-PF6-A** | Baseline token measurement for §workflows | TOKEN-1A contracts (minimal) |
 | **LKW-PF6-B** | First measurable savings proof | TOKEN-2/3 and/or TOKEN-4 light, TOKEN-1C receipts |
 | **LKW-PF6-C** | Public-grade proof artifact | LKW-PF6-B + TOKEN-6A-lite/6B attribution |
+
+---
+
+## TOKEN-ARCH-0 — Token Optimization Engine architecture and mechanism strategy
+
+**Status:** **Done / Closed** (docs-only).
+
+**Purpose:** Define the Token Optimization Engine lifecycle, mechanism catalog, strategy taxonomy, configuration model, plugin/extensibility model, benchmark claim model, and first public proof mechanism selection before shared contracts are implemented.
+
+**Canonical architecture:** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md) §8 Token Optimization Engine lifecycle, mechanisms, and extensibility.
+
+**Out of scope for TOKEN-ARCH-0:** shared contract implementation, runtime behavior, optimizers, telemetry payloads, validators, benchmarks, fixtures, scripts, and any `TOKEN-1*` code.
+
+### Acceptance
+
+Done / Closed when:
+
+- [x] engine lifecycle documented
+- [x] mechanism catalog documented
+- [x] strategy taxonomy documented
+- [x] configuration model documented
+- [x] plugin/extensibility model documented
+- [x] benchmark claim model documented
+- [x] first public proof candidate mechanisms documented
+- [x] **TOKEN-1A** remains not started
+- [x] no runtime/code/test/CI/dependency changes
+
+**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below).
 
 ---
 
@@ -271,16 +300,18 @@ Rules:
 ### Implementation order
 
 ```text
-TOKEN-1A  shared contracts + package skeleton
-TOKEN-1B  protected region parser/validator
-TOKEN-1C  compression receipts + validation helpers
-TOKEN-2   OutputPolicy runtime resolver
-TOKEN-3   ToolSchemaOptimizer compact catalog view
-TOKEN-4   ContextPackOptimizer light/structural compression only
-TOKEN-6A  telemetry payloads/counters for TOKEN-2..4
-TOKEN-5   MemorySummaryCompressor with staging/rollback
-TOKEN-6B  token regression benchmark runner + CI scripts
-TOKEN-7   adaptive recommendations from telemetry, no auto-apply by default
+LKW-PF6-0   Token Optimization proof design — Done / Closed
+TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — Done / Closed
+TOKEN-1A    shared contracts + package skeleton
+TOKEN-1B    protected region parser/validator
+TOKEN-1C    compression receipts + validation helpers
+TOKEN-2     OutputPolicy runtime resolver
+TOKEN-3     ToolSchemaOptimizer compact catalog view
+TOKEN-4     ContextPackOptimizer light/structural compression only
+TOKEN-6A    telemetry payloads/counters for TOKEN-2..4
+TOKEN-5     MemorySummaryCompressor with staging/rollback
+TOKEN-6B    token regression benchmark runner + CI scripts
+TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist.
@@ -293,7 +324,7 @@ Semantic compression is deliberately delayed until protected-region validation, 
 
 **Owner layer:** `UNIFIED_EXECUTION_RUNTIME` for runtime policy placement; feature plan for shared contracts; `OBSERVABILITY` consulted for receipt/telemetry shape.
 
-**Dependencies:** feature architecture accepted.
+**Dependencies:** feature architecture accepted; **TOKEN-ARCH-0** closed.
 
 **Deliverables:**
 
