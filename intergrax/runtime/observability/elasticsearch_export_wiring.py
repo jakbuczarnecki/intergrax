@@ -74,10 +74,20 @@ def build_elasticsearch_observability_integration(
         max_backoff_seconds=elasticsearch.retry_max_backoff_seconds,
     )
 
+    failed_delivery_sink = None
+    failed_delivery_file_path = (elasticsearch.failed_delivery_file_path or "").strip()
+    if failed_delivery_file_path:
+        from intergrax.integrations.providers.observability_backend.elasticsearch.failed_delivery import (
+            FileElasticsearchFailedDeliverySink,
+        )
+
+        failed_delivery_sink = FileElasticsearchFailedDeliverySink(failed_delivery_file_path)
+
     active_transport = transport or create_elasticsearch_observability_transport(
         http_client=http_client,
         http_client_factory=http_client_factory,
         retry_policy=retry_policy,
+        failed_delivery_sink=failed_delivery_sink,
         **config_overrides,
     )
     return create_elasticsearch_observability_integration(

@@ -28,6 +28,7 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.opens 
     open_elasticsearch_rest_client,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.transport import (
+    ElasticsearchFailedDeliverySink,
     ElasticsearchHttpObservabilityTransport,
 )
 
@@ -105,6 +106,7 @@ def create_elasticsearch_observability_transport(
     http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
     index: Optional[str] = None,
     retry_policy: ElasticsearchRetryPolicy | None = None,
+    failed_delivery_sink: ElasticsearchFailedDeliverySink | None = None,
     **config_overrides: object,
 ) -> ElasticsearchHttpObservabilityTransport:
     """Build the concrete Elasticsearch observability export transport."""
@@ -118,6 +120,7 @@ def create_elasticsearch_observability_transport(
         rest_client,
         index=index,
         retry_policy=retry_policy,
+        failed_delivery_sink=failed_delivery_sink,
     )
 
 

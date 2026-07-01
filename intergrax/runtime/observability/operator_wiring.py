@@ -84,6 +84,7 @@ class ElasticsearchExportOperatorConfig:
     retry_max_attempts: int = 3
     retry_initial_backoff_seconds: float = 0.25
     retry_max_backoff_seconds: float = 2.0
+    failed_delivery_file_path: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
