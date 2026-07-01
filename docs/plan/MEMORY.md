@@ -49,11 +49,24 @@ Load **only** the satellite matching your task or cited gap ID.
 **Priority:** P2 after TOKEN-UER-1 and preferably after TOKEN-CE-1 receipt path  
 **Delivery rule:** one `TOKEN-MEM-*` row per PR; no live overwrite before validation.
 
+**First implementation slice:** **TOKEN-5A** (feature plan §TOKEN-5A) — helper-only `MemorySummaryCompressor`. TOKEN-MEM-1 remains helper-only unless explicitly expanded in a later row. Live memory-store overwrite, compaction jobs, and runtime wiring are out of scope for TOKEN-MEM-1 / TOKEN-5A.
+
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-MEM-1** | Code | P2 | Planned | `intergrax/memory/summary_compressor.py` for persistent natural-language memory/documentation-derived summaries with staging, protected-region validation, compression receipt, and rollback metadata | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; original/compressed hashes stored; rollback path tested; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; `uv run pytest tests/unit/memory/ -q`; `uv run python scripts/check_memory_compression_receipts.py` |
+| **TOKEN-MEM-1** | Code | P2 | Planned | `intergrax/memory/summary_compressor.py` — conservative helper-only `MemorySummaryCompressor` with staged candidate/result model, protected-region validation, compression receipt, rollback metadata, optional `token_counter`, optional `semantic_validation_hook` interface, deterministic light/structural compression only, and benchmark-ready result fields aligned with TOKEN-5A / future TOKEN-6B / LKW-PF6 | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; rollback metadata required on every result; original/compressed hashes stored; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; benchmark-ready result fields (`source_type`, `strategy`, `original_hash`, `optimized_hash`, `original_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`, `receipt`/`receipt_ref`, `rollback_metadata`, `semantic_validation_status` when hook used); `uv run pytest tests/unit/memory/ -q` |
 
-**Explicit exclusions:** no compression of primary memory store records, no vector index mutation without primary-store source of truth, no lossy compression of legal/security/policy text unless explicitly allowed by policy.
+**Safety rules (TOKEN-MEM-1 / TOKEN-5A):**
+
+- live source must never be overwritten before validation,
+- failed compression must not corrupt persistent memory,
+- rollback metadata is required on every compression result,
+- memory compression is opt-in by policy/profile,
+- user facts, dates, IDs, policy text, and protected terms must not be silently lost,
+- no compression of primary memory store records in the helper-only slice,
+- no vector index mutation without primary-store source of truth,
+- no lossy compression of legal/security/policy text unless explicitly allowed by policy.
+
+**Explicit exclusions:** no live memory-store overwrite, no automatic memory compaction job, no vector index mutation, no embedding regeneration, no LLM/model-based semantic rewriting, no full LLM-as-a-Judge eval engine (belongs to TOKEN-6B / regression/evals), no runtime hot-path wiring, no HOS emission, no observability exporter wiring, no token regression benchmark runner, no LKW proof execution in TOKEN-MEM-1.
 
 ---
 

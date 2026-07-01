@@ -39,9 +39,9 @@ Load **only** the satellite matching your task.
 
 ## 1. Purpose
 
-Token Optimization is a multi-layer Intergrax capability that minimizes unnecessary token usage while preserving correctness, safety, provenance, auditability, and developer control.
+Token Optimization is a multi-layer Intergrax platform capability that minimizes unnecessary token usage while preserving correctness, safety, provenance, auditability, and developer control.
 
-It is not a prompt-only brevity mode. It is a runtime-controlled token economy capability spanning:
+It is not a prompt-only brevity mode or a generic prompt-shortening feature. It is a **source-aware**, **measurable**, and **auditable** runtime-controlled token economy capability spanning:
 
 ```text
 input
@@ -248,6 +248,32 @@ The first implementation slice must define these as stable contracts before deep
 ## 8. Token Optimization Engine lifecycle, mechanisms, and extensibility
 
 The **Token Optimization Engine** is a policy-governed orchestrator, not a single hard-coded compressor. It coordinates classification, policy resolution, mechanism selection, protected-region handling, token measurement, validation, receipts, observability, and safe fallback across domain-owned adapters and optional plugins.
+
+Platform capability model:
+
+```text
+Token Optimization Engine
+=
+source-aware optimization
++ protected-region validation
++ compression receipts
++ fallback
++ telemetry
++ evals/regression gates
++ measurable savings
+```
+
+Different source categories require different optimization strategies. The engine classifies content and routes to domain-owned adapters; it does not apply one generic compression algorithm across all sources.
+
+| Source category | Optimization strategy | Safety rule |
+|-----------------|----------------------|-------------|
+| `tools` | Compact LLM-facing schema/catalog view | No schema semantics mutation; canonical `ToolContract` immutability |
+| `context` / `RAG` | Structural/light compression after ranking | Provenance and evidence preservation; citation/grounding checks |
+| `memory` | Staged persistent summary compression | Validation and rollback metadata before any live overwrite |
+| `output` | Runtime output shaping (verbosity, section structure) | Shapes model completion length — not source compression |
+| `policy` / `legal` / `security` text | Exact preservation or explicit opt-in only | No silent lossy compression unless policy explicitly allows |
+
+**Semantic validation / LLM-as-a-Judge (forward-looking, not implemented today):** future regression and evals gates (for example TOKEN-6B) may use semantic validation or LLM-as-a-Judge to assess lossy/semantic compression quality across measured workflows. That layer must **not** replace deterministic protected-region validation or source-specific structural validation in the optimization path. First implementation slices use deterministic validators only; semantic judges belong to the regression/evals layer, not to helper-only compressors.
 
 ### 8.1 Engine lifecycle
 

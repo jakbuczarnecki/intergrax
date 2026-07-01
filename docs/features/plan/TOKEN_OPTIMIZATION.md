@@ -57,11 +57,11 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-2` OutputPolicy runtime | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` and optional `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 | `TOKEN-3` ToolSchemaOptimizer | `docs/plan/TOOLS.md` |
 | `TOKEN-4` ContextPackOptimizer | `docs/plan/CONTEXT_ENGINEERING.md` |
-| `TOKEN-5` MemorySummaryCompressor | `docs/plan/MEMORY.md` |
+| `TOKEN-5` / `TOKEN-5A` MemorySummaryCompressor (helper-only first slice) | `docs/plan/MEMORY.md` |
 | `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed** (§TOKEN-ARCH-0 below); **TOKEN-1A** remains **not started**. TOKEN implementation order remains **TOKEN-ARCH-0** → **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
+**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed** (§TOKEN-ARCH-0 below); **TOKEN-1A** shared contracts is **Done / Closed** (§TOKEN-1A below). TOKEN implementation order remains **TOKEN-ARCH-0** → **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
 
 ---
 
@@ -159,7 +159,7 @@ Token Optimization must never lose or rewrite:
 
 - code blocks, inline code, paths, URLs, env vars, enum values, hashes, dates, exact error strings, policy text, IDs, tenant identifiers required for correctness, evidence references
 
-**TOKEN-1B** implements protected-region parser/validator later. **LKW-PF6-0** defines proof requirements only.
+**TOKEN-1B** protected-region parser/validator is **Done / Closed** (§TOKEN-1B below). **LKW-PF6-0** defines proof requirements only.
 
 ### Compression receipt expectations
 
@@ -238,10 +238,163 @@ Done / Closed when:
 - [x] plugin/extensibility model documented
 - [x] benchmark claim model documented
 - [x] first public proof candidate mechanisms documented
-- [x] **TOKEN-1A** remains not started
-- [x] no runtime/code/test/CI/dependency changes
+- [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
+- [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below).
+**Next step:** **TOKEN-5A** — MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner (per plan ordering).
+
+---
+
+## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add helper-only telemetry summary/counter payloads for TOKEN-2 OutputPolicyResolver, TOKEN-3 ToolSchemaOptimizer, and TOKEN-4 ContextPackOptimizer.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/telemetry.py` — counter snapshot, summary payload, validation, attribute mapping
+- `tests/unit/runtime/token_optimization/test_telemetry.py`
+
+**Closeout:**
+
+- helper-only telemetry summary/counter payloads added for TOKEN-2..4
+- counter snapshot added
+- token optimization summary payload added
+- safe namespaced summary attribute mapping added
+- validation helper added
+- aggregates receipts, output-policy resolutions, tool schema outcomes, and context pack outcomes
+- deduplicates receipts by receipt_id
+- no HOS emission added
+- no observability exporter wiring added
+- no runtime event emission added
+- no tokenizer/model calls added
+- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner according to plan ordering
+
+**TOKEN-6A-R refinement:**
+
+- summary metadata hardening added
+- summary metadata passthrough is allow-listed
+- forbidden/raw-content-like metadata is dropped from summaries and attributes
+- summary validation rejects unsafe metadata
+- no HOS emission/exporter wiring added
+
+---
+
+## TOKEN-6A-lite — Token savings telemetry shape
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add typed token-savings telemetry payload contracts and helpers for future HOS/domain-signal emission.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/telemetry.py`
+- `tests/unit/runtime/token_optimization/test_telemetry.py`
+
+**Closeout:**
+
+- token savings telemetry payload shape added
+- payload builder from CompressionReceipt added
+- payload validation helper added
+- safe namespaced attribute mapping helper added
+- no telemetry emission added
+- no HOS/runtime/exporter wiring added
+- no public proof path changed
+- next step: **TOKEN-4** ContextPackOptimizer — Done / Closed (§Phase TOKEN-4 below)
+
+---
+
+## TOKEN-1C — Compression receipts + validation helpers
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add deterministic compression receipt creation and receipt integrity validation helpers for Token Optimization.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/receipts.py`
+- `tests/unit/runtime/token_optimization/test_receipts.py`
+
+**Closeout:**
+
+- compression receipt data model added
+- deterministic content hashing added
+- receipt builder added
+- receipt ref helper added
+- receipt integrity validator added
+- uses TOKEN-1A contracts
+- records TOKEN-1B protected-region validation results when supplied
+- no optimization behavior added
+- no token counting added
+- no telemetry wiring added
+- next step: **TOKEN-6A-lite** — **Done / Closed** (§TOKEN-6A-lite above)
+
+---
+
+## TOKEN-1B — Protected region parser/validator
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add deterministic protected-region detection and validation helpers as the first safety gate for Token Optimization.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/protected_regions.py`
+- `tests/unit/runtime/token_optimization/test_protected_regions.py`
+
+**Closeout:**
+
+- protected-region detection helper added
+- protected-region validation helper added
+- uses TOKEN-1A contracts
+- no optimization behavior added
+- no receipts added
+- no telemetry wiring added
+
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers — **Done / Closed** (§TOKEN-1C above).
+
+---
+
+## TOKEN-1B-R — Protected terms refinement
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Replace broad `ENV_VAR` regex guessing with explicit protected-term matching before **TOKEN-1C**.
+
+**Closeout:**
+
+- broad `ENV_VAR` regex guessing removed
+- `ENV_VAR` protection now uses built-in protected terms + env extension + explicit `protected_terms`
+- env extension variable: `INTERGRAX_TOKEN_OPTIMIZATION_PROTECTED_TERMS`
+- env extension extends built-ins, does not replace them
+- no runtime optimization behavior added
+- no public proof path changed
+- next step: **TOKEN-1C** — **Done / Closed** (§TOKEN-1C above)
+
+---
+
+## TOKEN-1A — Shared contracts + package skeleton
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add shared Token Optimization contract vocabulary and a minimal runtime package skeleton for later phases (TOKEN-1B..TOKEN-7).
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/__init__.py`
+- `intergrax/runtime/token_optimization/contracts.py`
+- `tests/unit/runtime/token_optimization/test_contracts.py`
+
+**Closeout:**
+
+- shared package skeleton added
+- shared contracts added (profiles, policy, attribution, mechanisms, strategies, plugin descriptors, measurements, protected regions, receipt refs, request/result)
+- plugin descriptor contracts added
+- no runtime optimization behavior added
+- no telemetry wiring added
+
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers — **Done / Closed** (§TOKEN-1C above).
 
 ---
 
@@ -302,14 +455,16 @@ Rules:
 ```text
 LKW-PF6-0   Token Optimization proof design — Done / Closed
 TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — Done / Closed
-TOKEN-1A    shared contracts + package skeleton
-TOKEN-1B    protected region parser/validator
-TOKEN-1C    compression receipts + validation helpers
-TOKEN-2     OutputPolicy runtime resolver
-TOKEN-3     ToolSchemaOptimizer compact catalog view
-TOKEN-4     ContextPackOptimizer light/structural compression only
-TOKEN-6A    telemetry payloads/counters for TOKEN-2..4
-TOKEN-5     MemorySummaryCompressor with staging/rollback
+TOKEN-1A    shared contracts + package skeleton — Done / Closed
+TOKEN-1B    protected region parser/validator — Done / Closed
+TOKEN-1C    compression receipts + validation helpers — Done / Closed
+TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
+TOKEN-2     OutputPolicy runtime resolver — Done / Closed
+TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
+TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
+TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
+TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
+TOKEN-5A    MemorySummaryCompressor helper-only first slice — Planned
 TOKEN-6B    token regression benchmark runner + CI scripts
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
@@ -392,7 +547,21 @@ uv run python scripts/check_output_policy_wiring.py
 
 **Domain plan rows:** `TOKEN-UER-2` in `docs/plan/UNIFIED_EXECUTION_RUNTIME.md`.
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
+
+**Closeout:**
+
+- OutputPolicy runtime resolver added
+- deterministic resolved output policy added
+- safe defaults added
+- source_type-aware conservative policy behavior added
+- validation helper added
+- no model calls added
+- no prompt assembly added
+- no content optimization added
+- no telemetry emission added
+- no runtime hot-path wiring added
+- next step: **TOKEN-3** ToolSchemaOptimizer — **Done / Closed** (§TOKEN-3 below)
 
 ---
 
@@ -404,16 +573,24 @@ uv run python scripts/check_output_policy_wiring.py
 
 **Dependencies:** TOKEN-1 contracts and protected-region validator; TOKEN-6 telemetry can be added after compact catalog works.
 
-**Deliverables:**
+**Scope (TOKEN-3 closeout):** TOKEN-3 closes helper-only `ToolSchemaOptimizer` in `intergrax/runtime/token_optimization/tool_schema.py`.
 
-- `intergrax/runtime/nexus/tools/tool_schema_optimizer.py`,
-- compact LLM-facing tool catalog view,
-- schema-preservation validator,
-- optional cache key for compact catalog view,
-- savings telemetry hook placeholder,
-- lightweight CI script `scripts/check_tool_schema_optimizer.py`.
+- no runtime tool registry wiring
+- no executable tool schema changes
+- no prompt assembly changes
+- no telemetry emission
+- runtime integration into `ToolPlanningService` / `CatalogToolPlanner` / schema export path is future work (`TOKEN-TOOLS-1B`)
 
-**Integration target:** `ToolPlanningService`, `CatalogToolPlanner`, `tool_planner_input`, or the schema export path used before `generate_with_tools`.
+**Deliverables (helper-only, TOKEN-3 closeout):**
+
+- `intergrax/runtime/token_optimization/tool_schema.py` — `ToolSchemaOptimizer` and `optimize_tool_schema_catalog`
+- deterministic LLM-facing compact catalog view
+- description normalization/truncation
+- optional example removal via `allow_example_removal`
+- protected-region validation integration
+- compression receipts integration
+- optional `token_counter` measurement
+- unit tests in `tests/unit/runtime/token_optimization/test_tool_schema.py`
 
 **Acceptance criteria:**
 
@@ -427,58 +604,101 @@ uv run python scripts/check_output_policy_wiring.py
 **Required tests/checks:**
 
 ```bash
-uv run pytest tests/unit/runtime/nexus/tools/ -q
-uv run pytest tests/unit/tools/ -q
-uv run python scripts/check_tool_schema_optimizer.py
+uv run pytest tests/unit/runtime/token_optimization/test_tool_schema.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
 ```
 
-**Domain plan rows:** `TOKEN-TOOLS-1` in `docs/plan/TOOLS.md`.
+**Domain plan rows:** `TOKEN-TOOLS-1A` (Done / Closed) and `TOKEN-TOOLS-1B` (Planned) in `docs/plan/TOOLS.md`.
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
+
+**Closeout (TOKEN-3):**
+
+- `ToolSchemaOptimizer` added in `intergrax/runtime/token_optimization/tool_schema.py`
+- deterministic LLM-facing tool catalog compaction added
+- description normalization/truncation added
+- optional example removal via `allow_example_removal` added
+- required fields/types/enums/properties preserved
+- protected-region validation integrated
+- receipts integrated
+- optional `token_counter` measurement supported
+- no tokenizer/model calls added
+- no runtime tool registry wiring added
+- no executable tool schema mutation added
+- no prompt assembly added
+- no telemetry emission added
+- runtime wiring into `ToolPlanningService` / `CatalogToolPlanner` / schema export path deferred to `TOKEN-TOOLS-1B`
+- next step: **TOKEN-4** ContextPackOptimizer light/structural compression — Done / Closed (§Phase TOKEN-4 below)
 
 ---
 
 ## Phase TOKEN-4 — ContextPackOptimizer
 
-**Goal:** Optimize selected context fragments after ranking/budgeting and before final formatting/preflight.
+**Goal:** Optimize selected context fragments using deterministic light/structural compression (helper-only slice).
 
-**Owner layer:** `CONTEXT_ENGINEERING`.
+**Owner layer:** `CONTEXT_ENGINEERING` (helper in `token_optimization`; runtime wiring deferred).
 
-**Dependencies:** TOKEN-1 contracts/receipts/protected regions; consumes LLM adapter token counters.
+**Dependencies:** TOKEN-1 contracts/receipts/protected regions; TOKEN-2 output policy resolver.
 
-**Deliverables:**
+**Deliverables (helper-only, TOKEN-4 closeout):**
 
-- `intergrax/runtime/nexus/context/context_pack_optimizer.py`,
-- source-aware compression strategy,
-- protected-region handling,
-- compression receipts attached to context provenance/metadata,
-- post-compression token recalculation,
-- fallback to original fragments on validation failure,
-- light/structural compression only in first slice.
+- `intergrax/runtime/token_optimization/context_pack.py` — `ContextPackOptimizer` and `optimize_context_pack`
+- deterministic light/structural context pack compaction
+- required fragment preservation
+- fragment order/IDs/source/provenance preservation
+- protected-region validation integration
+- compression receipts integration
+- optional `token_counter` measurement
+- unit tests in `tests/unit/runtime/token_optimization/test_context_pack.py`
 
-**Integration target:** existing CE pipeline; extend `ContextCompiler` / `DefaultNexusContextEngine` rather than building a second compiler.
+**Explicit exclusions (this slice):**
+
+- no semantic compression
+- no tokenizer/model calls
+- no `ContextCompiler` / `DefaultNexusContextEngine` wiring
+- no RAG retrieval behavior changes
+- no prompt assembly
+- no telemetry emission
+- runtime integration into CE pipeline is future work (`TOKEN-CE-1B`)
 
 **Acceptance criteria:**
 
-- ranking happens before lossy compression,
-- mandatory/policy fragments are preserved,
-- total assembled tokens decrease in benchmark cases,
-- context quality gate remains green,
-- provenance contains compression receipt references where applicable,
-- hard budget and adapter-token preflight still use the existing adapter token path,
-- semantic compression remains disabled until regression gates exist.
+- accepts `ContextFragment`, mapping fragments, and raw string fragments,
+- mandatory/policy (`required=True`) fragments are preserved exactly,
+- fragment IDs, source types, metadata/provenance, and order are unchanged,
+- fragments are not merged or removed,
+- disabled policy bypasses optimization,
+- protected-region validation with fallback on failure,
+- receipts created for apply/bypass/fallback when `include_receipt=True`,
+- optional `token_counter` measurement only.
 
 **Required tests/checks:**
 
 ```bash
-uv run pytest tests/unit/runtime/nexus/context/ -q
-uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
-uv run python scripts/check_compression_receipts.py
+uv run pytest tests/unit/runtime/token_optimization/test_context_pack.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
 ```
 
-**Domain plan rows:** `TOKEN-CE-1` and `TOKEN-CE-2` in `docs/plan/CONTEXT_ENGINEERING.md`.
+**Domain plan rows:** `TOKEN-CE-1A` (Done / Closed), `TOKEN-CE-1B` (Planned), and `TOKEN-CE-2` (Planned) in `docs/plan/CONTEXT_ENGINEERING.md`.
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
+
+**Closeout (TOKEN-4):**
+
+- `ContextPackOptimizer` helper added in `intergrax/runtime/token_optimization/context_pack.py`
+- deterministic light/structural context pack compaction added
+- required fragments preserved
+- fragment order/source/provenance preserved
+- protected-region validation integrated
+- fallback on validation failure added
+- receipts integrated
+- optional `token_counter` measurement supported
+- no tokenizer/model calls added
+- no `ContextCompiler` / `DefaultNexusContextEngine` wiring added
+- no RAG retrieval behavior changed
+- no prompt assembly added
+- no telemetry emission added
+- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner, according to plan ordering
 
 ---
 
@@ -490,35 +710,90 @@ uv run python scripts/check_compression_receipts.py
 
 **Dependencies:** TOKEN-1 contracts/receipts/protected regions; recommended after TOKEN-4 proves runtime receipts.
 
-**Deliverables:**
+**Status:** Planned.
 
-- `intergrax/memory/summary_compressor.py`,
-- staging write flow,
-- protected-region validator reuse,
-- semantic validation hook for lossy summaries,
-- receipt storage metadata,
-- rollback metadata,
-- lightweight CI script `scripts/check_memory_compression_receipts.py`.
+**First slice:** **TOKEN-5A** — helper-only `MemorySummaryCompressor` with staging, receipts, validation, rollback metadata, and benchmark-ready result shape. See §TOKEN-5A below.
 
-**Acceptance criteria:**
-
-- live source is never overwritten before validation,
-- failed compression cannot corrupt persistent memory,
-- original and compressed hashes are stored,
-- rollback path is documented and tested,
-- memory compression is opt-in by profile/policy,
-- no user facts, dates, IDs, or policy text are silently lost.
-
-**Required tests/checks:**
-
-```bash
-uv run pytest tests/unit/memory/ -q
-uv run python scripts/check_memory_compression_receipts.py
-```
+**Later slices (not TOKEN-5A):** live staging write flow, memory receipt storage wiring, CI script `scripts/check_memory_compression_receipts.py`, runtime hot-path integration.
 
 **Domain plan rows:** `TOKEN-MEM-1` in `docs/plan/MEMORY.md`.
 
+---
+
+## TOKEN-5A — MemorySummaryCompressor helper-only first slice
+
 **Status:** Planned.
+
+**Purpose:** Add a conservative MEMORY-owned `MemorySummaryCompressor` helper that compresses memory-summary candidates deterministically, records receipts and rollback metadata, and returns a benchmark-ready result shape — without live memory-store mutation, LLM-based semantic rewriting, or runtime hot-path wiring.
+
+**Deliverables (implementation task, not this docs-only slice):**
+
+- `intergrax/memory/summary_compressor.py` — conservative `MemorySummaryCompressor` helper
+- staged compressed candidate/result model
+- rollback metadata model
+- protected-region validator reuse (TOKEN-1B)
+- compression receipt integration (TOKEN-1C)
+- optional `token_counter` support
+- optional `semantic_validation_hook` interface (callable only; no built-in LLM judge)
+- deterministic light/structural compression only
+- benchmark-ready result fields for future TOKEN-6B / LKW-PF6 proof
+- fallback to original on validation failure or semantic-hook rejection
+
+**Benchmark-ready result fields (required on apply/fallback outcomes):**
+
+```text
+source_type
+strategy
+original_hash
+optimized_hash
+original_tokens
+optimized_tokens
+saved_tokens
+saved_ratio
+validation_status
+fallback_status
+receipt / receipt_ref
+rollback_metadata
+semantic_validation_status   # present only when semantic_validation_hook is used
+```
+
+**Explicit exclusions (TOKEN-5A):**
+
+- no live memory-store overwrite
+- no automatic memory compaction job
+- no vector index mutation
+- no embedding regeneration
+- no LLM/model-based semantic rewriting
+- no full LLM-as-a-Judge eval engine
+- no runtime hot-path wiring
+- no HOS/domain-signal emission
+- no observability exporter wiring
+- no token regression benchmark runner
+- no LKW proof execution
+
+**Acceptance criteria:**
+
+- helper-only: compresses in-memory candidates without mutating persistent memory stores,
+- live source is never overwritten before validation (no live mutation in this slice),
+- failed compression cannot corrupt persistent memory (no persistent writes in this slice),
+- protected-region validation with fallback to original on failure,
+- compression receipts created when `include_receipt=True`,
+- rollback metadata attached to every candidate result,
+- memory compression remains opt-in by profile/policy at call site,
+- no user facts, dates, IDs, or policy text are silently lost,
+- benchmark-ready result fields populated for TOKEN-6B / LKW-PF6 attribution.
+
+**Semantic validation note:** future semantic validation and LLM-as-a-Judge belong to **TOKEN-6B** / regression/evals work, not to TOKEN-5A. TOKEN-5A may expose an optional `semantic_validation_hook` interface; TOKEN-6B and eval gates may consume it later. TOKEN-5A must not implement or depend on a full LLM-as-a-Judge engine.
+
+**LKW-PF6 alignment:** TOKEN-5A adds the `memory` / `memory tokens` optimization and proof category so later LKW-PF6 proof runs can attribute measured savings for memory-summary compression alongside tools, context/RAG, and output shaping.
+
+**Required tests/checks (implementation task):**
+
+```bash
+uv run pytest tests/unit/memory/ -q
+```
+
+**Domain plan rows:** `TOKEN-MEM-1` in `docs/plan/MEMORY.md`.
 
 ---
 

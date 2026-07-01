@@ -61,16 +61,19 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase TOKEN-CE — ContextPackOptimizer for token optimization (Planned)
+## Phase TOKEN-CE — ContextPackOptimizer for token optimization
 
 **Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
 **Priority:** P1 after `TOKEN-UER-1` contracts and receipts  
 **Delivery rule:** one `TOKEN-CE-*` row per PR; extend existing CE compiler/engine, do not build a second context compiler.
 
+**TOKEN-4A note:** helper-only `ContextPackOptimizer` lives in `intergrax/runtime/token_optimization/context_pack.py`. It does not wire into `ContextCompiler`, `DefaultNexusContextEngine`, RAG retrieval, prompt assembly, or context runtime behavior yet. Runtime wiring remains future **TOKEN-CE-1B** work.
+
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-CE-1** | Code | P1 | Planned | `intergrax/runtime/nexus/context/context_pack_optimizer.py` with source-aware light/structural compression stage after ranking/budgeting and before format/preflight | Uses existing adapter token counter path; mandatory/policy fragments preserved; protected-region validator reused; validation failure falls back to original fragments; receipt refs attach to provenance/metadata; `uv run pytest tests/unit/runtime/nexus/context/ -q`; `uv run python scripts/check_compression_receipts.py` |
+| **TOKEN-CE-1A** | Code | P1 | Done / Closed | `intergrax/runtime/token_optimization/context_pack.py` — helper-only `ContextPackOptimizer` with deterministic light/structural compaction, protected-region validation, receipts, and optional `token_counter` measurement | Mandatory/policy fragments preserved; fragment order/IDs/source/provenance preserved; validation failure falls back to original pack; no tokenizer/model/runtime wiring; `uv run pytest tests/unit/runtime/token_optimization/test_context_pack.py -q` |
+| **TOKEN-CE-1B** | Code | P1 | Planned | Runtime wiring into `ContextCompiler` / `DefaultNexusContextEngine` / context assembly with source-aware light/structural compression stage after ranking/budgeting and before format/preflight | Uses existing adapter token counter path; receipt refs attach to provenance/metadata; `uv run pytest tests/unit/runtime/nexus/context/ -q`; `uv run python scripts/check_compression_receipts.py` |
 | **TOKEN-CE-2** | Test/Gate | P1 | Planned | Context token regression fixtures proving savings without quality/provenance loss | Benchmark fixture shows lower assembled tokens for repeated/verbose fragments; context quality gate remains green; no semantic compression enabled yet; `uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`; `uv run python scripts/check_token_regression_benchmarks.py` |
 
 **Explicit exclusions:** no semantic compression in first CE slice, no replacement of `ContextCompiler`, no direct agent prompt assembly, no bypass of `ContextBudgetPolicy` / `DegradationLadder` / adapter-token preflight.

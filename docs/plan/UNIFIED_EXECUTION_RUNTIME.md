@@ -65,6 +65,8 @@ Load **only** the satellite matching your task or cited gap ID.
 | **TOKEN-UER-1** | Code | P1 | Planned | Shared package `intergrax/runtime/token_optimization/` with contracts, protected-region validator, compression receipts, and contract check script | Contracts import cleanly; no CE/TOOLS/MEMORY hot-path imports; protected regions preserve code/paths/URLs/API names/env vars/enums/hashes/dates/errors; receipts hash original/optimized content and record token savings; `uv run pytest tests/unit/runtime/token_optimization/ -q`; `uv run python scripts/check_token_optimization_contracts.py` |
 | **TOKEN-UER-2** | Code | P1 | Planned | `OutputPolicyResolver` and runtime output profiles (`minimal`, `terse`, `standard`, `full`, `audit`, `machine_receipt`, `debug_verbose`) | Output profile resolved by runtime policy, not prompt-only wording; structured outputs and high-risk contexts can force clarity/full mode; no model-specific prompt hacks; `uv run python scripts/check_output_policy_wiring.py` |
 
+**TOKEN-2 note:** `OutputPolicyResolver` in `intergrax/runtime/token_optimization/output_policy.py` is an internal policy-resolution helper only. It is not wired into model calls, prompt assembly, or runtime execution yet.
+
 **Explicit exclusions:** no `ToolSchemaOptimizer`, no `ContextPackOptimizer`, no `MemorySummaryCompressor`, no adaptive policy auto-apply, no `docs/plan/TOKEN_OPTIMIZATION.md`.
 
 ---
