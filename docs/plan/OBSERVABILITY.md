@@ -489,6 +489,18 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 
 ---
 
+## Phase OBS-SENTRY — Sentry error-monitoring integration proof (Planned)
+
+**OBS-SENTRY status:**
+
+**Planned** — Add a provider-owned Sentry error-monitoring integration proof for safe exception capture and issue triage. Sentry complements Elasticsearch/Kibana timeline observability; it does not replace structured observability export. The proof must capture only safe diagnostic metadata and tags, never prompts, chunks, tool arguments, secrets, raw documents, file contents, or absolute payload paths.
+
+**Out of scope (this phase):** Sentry implementation; `sentry-sdk` dependency; env vars; runtime wiring; LKW wiring; live proof; tracing/profiling; PII/default user data capture.
+
+**LKW relationship:** LKW may act as the proof workload later ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) **LKW-OBS-SENTRY**); platform owns the provider integration.
+
+---
+
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.9, §11 · baseline **32/32 L3**  
