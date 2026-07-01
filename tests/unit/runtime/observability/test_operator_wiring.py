@@ -606,3 +606,95 @@ def test_elasticsearch_builder_fails_fast_when_index_missing() -> None:
 
     with pytest.raises(ObservabilityExportOperatorConfigError, match="index is required"):
         build_elasticsearch_observability_integration(config)
+
+
+def test_elasticsearch_builder_does_not_pass_file_failed_delivery_sink_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = ElasticsearchHttpObservabilityTransport(MagicMock(), index="logs-*")
+    create_transport = MagicMock(return_value=sentinel)
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+        create_transport,
+    )
+
+    build_elasticsearch_observability_integration(_enabled_elasticsearch_config())
+
+    create_transport.assert_called_once()
+    assert create_transport.call_args.kwargs.get("failed_delivery_sink") is None
+
+
+def test_elasticsearch_builder_wires_file_failed_delivery_sink_from_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from intergrax.integrations.providers.observability_backend.elasticsearch.failed_delivery import (
+        FileElasticsearchFailedDeliverySink,
+    )
+
+    sentinel = ElasticsearchHttpObservabilityTransport(MagicMock(), index="logs-*")
+    create_transport = MagicMock(return_value=sentinel)
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+        create_transport,
+    )
+    output_path = tmp_path / "failed-deliveries.jsonl"
+    config = _enabled_elasticsearch_config(
+        elasticsearch=ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="logs-*",
+            failed_delivery_file_path=str(output_path),
+        ),
+    )
+
+    build_elasticsearch_observability_integration(config)
+
+    create_transport.assert_called_once()
+    sink = create_transport.call_args.kwargs["failed_delivery_sink"]
+    assert isinstance(sink, FileElasticsearchFailedDeliverySink)
+    assert sink.output_path == output_path
+
+
+def test_elasticsearch_builder_forwards_failed_delivery_file_path_exactly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.integrations.providers.observability_backend.elasticsearch.failed_delivery import (
+        FileElasticsearchFailedDeliverySink,
+    )
+
+    sentinel = ElasticsearchHttpObservabilityTransport(MagicMock(), index="logs-*")
+    create_transport = MagicMock(return_value=sentinel)
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.bundle.create_elasticsearch_observability_transport",
+        create_transport,
+    )
+    sink_ctor = MagicMock(side_effect=FileElasticsearchFailedDeliverySink)
+    monkeypatch.setattr(
+        "intergrax.integrations.providers.observability_backend.elasticsearch.failed_delivery.FileElasticsearchFailedDeliverySink",
+        sink_ctor,
+    )
+    configured_path = "/var/lib/intergrax/runtime/failed-deliveries.jsonl"
+    config = _enabled_elasticsearch_config(
+        elasticsearch=ElasticsearchExportOperatorConfig(
+            base_url="http://elasticsearch.local:9200",
+            index="logs-*",
+            failed_delivery_file_path=configured_path,
+        ),
+    )
+
+    build_elasticsearch_observability_integration(config)
+
+    sink_ctor.assert_called_once_with(configured_path)
+    sink = create_transport.call_args.kwargs["failed_delivery_sink"]
+    assert isinstance(sink, FileElasticsearchFailedDeliverySink)
+
+
+def test_elasticsearch_export_wiring_has_no_file_write_logic() -> None:
+    wiring_path = (
+        _PROJECT_ROOT / "intergrax" / "runtime" / "observability" / "elasticsearch_export_wiring.py"
+    )
+    source = wiring_path.read_text(encoding="utf-8")
+    for token in ("json.dumps", "asdict(", ".write("):
+        assert token not in source, (
+            f"elasticsearch_export_wiring.py must not implement file write logic, found: {token}"
+        )

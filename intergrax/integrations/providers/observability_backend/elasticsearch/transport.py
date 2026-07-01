@@ -6,7 +6,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any, Mapping, Protocol, runtime_checkable
 
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import (
@@ -24,6 +26,55 @@ from intergrax.runtime.observability.export_attributes import ObservabilityAttri
 
 _INTERGRAX_DOC_PREFIX = "intergrax."
 _ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID = "elasticsearch"
+_LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ElasticsearchFailedDeliveryRecord:
+    """Safe provider-owned diagnostics for ultimately failed observability delivery."""
+
+    provider_id: str
+    operation: str
+    index: str
+    status_code: int | None
+    reason: str
+    retriable: bool
+    attempts: int
+    exhausted: bool
+
+
+@runtime_checkable
+class ElasticsearchFailedDeliverySink(Protocol):
+    """Provider-owned hook invoked when observability delivery ultimately fails."""
+
+    def record_failed_delivery(self, record: ElasticsearchFailedDeliveryRecord) -> None:
+        """Record one failed delivery using safe diagnostic metadata only."""
+
+
+class NoOpElasticsearchFailedDeliverySink:
+    """Default failed-delivery sink that discards records."""
+
+    def record_failed_delivery(self, record: ElasticsearchFailedDeliveryRecord) -> None:
+        return None
+
+
+def _failed_delivery_record_from_error(
+    error: ElasticsearchDeliveryError,
+    *,
+    attempts: int,
+    exhausted: bool,
+) -> ElasticsearchFailedDeliveryRecord:
+    detail = error.detail
+    return ElasticsearchFailedDeliveryRecord(
+        provider_id=detail.provider_id,
+        operation=detail.operation,
+        index=detail.index,
+        status_code=detail.status_code,
+        reason=detail.reason,
+        retriable=detail.retriable,
+        attempts=attempts,
+        exhausted=exhausted,
+    )
 
 
 def compute_elasticsearch_retry_backoff_seconds(
@@ -136,6 +187,7 @@ class ElasticsearchHttpObservabilityTransport:
         timestamp_field: str | None = None,
         retry_policy: ElasticsearchRetryPolicy | None = None,
         sleep: Callable[[float], Awaitable[None]] | None = None,
+        failed_delivery_sink: ElasticsearchFailedDeliverySink | None = None,
     ) -> None:
         self._client = client
         if isinstance(client, ElasticsearchRestClient):
@@ -149,6 +201,28 @@ class ElasticsearchHttpObservabilityTransport:
             self._timestamp_field = timestamp_field or DEFAULT_TIMESTAMP_FIELD
         self._retry_policy = retry_policy or ElasticsearchRetryPolicy()
         self._sleep = sleep or asyncio.sleep
+        self._failed_delivery_sink = (
+            failed_delivery_sink if failed_delivery_sink is not None else NoOpElasticsearchFailedDeliverySink()
+        )
+
+    def _invoke_failed_delivery_sink(
+        self,
+        error: ElasticsearchDeliveryError,
+        *,
+        attempts: int,
+        exhausted: bool,
+    ) -> None:
+        record = _failed_delivery_record_from_error(
+            error,
+            attempts=attempts,
+            exhausted=exhausted,
+        )
+        try:
+            self._failed_delivery_sink.record_failed_delivery(record)
+        except Exception:
+            _LOGGER.exception(
+                "Elasticsearch failed-delivery sink raised; original delivery error is preserved",
+            )
 
     async def send_observability_payload(self, payload: ObservabilityVendorPayload) -> None:
         document = map_vendor_payload_to_elasticsearch_document(
@@ -179,9 +253,15 @@ class ElasticsearchHttpObservabilityTransport:
                 )
                 return
             except ElasticsearchDeliveryError as exc:
-                if not exc.detail.retriable:
-                    raise
-                last_error = exc
+                transport_error = _transport_delivery_error(exc)
+                if not transport_error.detail.retriable:
+                    self._invoke_failed_delivery_sink(
+                        transport_error,
+                        attempts=attempt,
+                        exhausted=True,
+                    )
+                    raise transport_error
+                last_error = transport_error
             except Exception as exc:
                 classified = classify_elasticsearch_delivery_error(
                     exc,
@@ -190,8 +270,19 @@ class ElasticsearchHttpObservabilityTransport:
                     provider_id=_ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
                 )
                 if not classified.detail.retriable:
+                    self._invoke_failed_delivery_sink(
+                        classified,
+                        attempts=attempt,
+                        exhausted=True,
+                    )
                     raise classified
                 last_error = classified
 
             if attempt >= max_attempts and last_error is not None:
-                raise _transport_delivery_error(last_error)
+                final_error = _transport_delivery_error(last_error)
+                self._invoke_failed_delivery_sink(
+                    final_error,
+                    attempts=attempt,
+                    exhausted=True,
+                )
+                raise final_error

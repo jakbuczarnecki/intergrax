@@ -155,6 +155,10 @@ Notes:
 
 ## 6. Manual Docker Compose run
 
+Explicit `docker compose` commands from repository root are the **cross-platform reference path**. Windows `.bat` helpers below are convenience wrappers around the same stacks.
+
+For the full external reviewer walkthrough (expected outputs, Kibana inspection, proof-helper PASS criteria), see [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
+
 From repository root:
 
 ```bash
@@ -179,15 +183,15 @@ http://ollama:11434
 
 Ensure `applications/local_workspace_application/.env` exists. The bootstrap scripts create it automatically when missing.
 
-### Run with all Docker Compose overlays on Windows
+### Windows convenience: all Compose overlays
 
-Use this helper when you want the base stack plus every optional overlay in `applications/local_workspace_application/docker/`:
+On Windows, this helper starts the base stack plus every optional overlay in `applications/local_workspace_application/docker/` without listing each `-f` file:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat
 ```
 
-The script runs the base `docker-compose.yml` plus every matching `docker-compose.*.yml` overlay. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
+It wraps the same `docker compose -f ... -f ...` pattern documented above. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat ps
@@ -202,7 +206,7 @@ docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --bu
 
 ### Run with Elasticsearch/OpenSearch-compatible observability backend
 
-Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof:
+Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
 
 ```bash
 docker compose \
@@ -322,6 +326,7 @@ elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS` | `3` | Total delivery attempts including the first one (`1` = no retry) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS` | `0.25` | Initial sleep before the second attempt |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS` | `2.0` | Maximum sleep between attempts |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability/`) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
@@ -384,6 +389,60 @@ Use the proof helper for the repeatable live-proof workflow:
 applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat
 applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_...
 ```
+
+### Elasticsearch failed-delivery JSONL
+
+When Elasticsearch observability export is enabled and delivery ultimately fails, the provider-owned file sink can append one safe JSON diagnostic object per line. LKW only passes the deployment-owned path into runtime wiring; it does not write JSONL itself.
+
+Recommended controlled runtime/app data path:
+
+```text
+applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl
+```
+
+Set in `.env` or deployment environment:
+
+```text
+LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH=applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl
+```
+
+Leave empty or whitespace-only to disable the sink (default).
+
+Each JSONL line contains only these safe fields:
+
+```text
+provider_id
+operation
+index
+status_code
+reason
+retriable
+attempts
+exhausted
+```
+
+Never written: raw documents, prompts, chunks, tool args, secrets, tokens, or absolute payload paths.
+
+**Local proof (controlled failure):**
+
+1. Enable observability export with `backend_id=elasticsearch`.
+2. Set `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` to the path above.
+3. Trigger a safe failed delivery by pointing `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL` at an unreachable endpoint (for example `http://127.0.0.1:59200`) or by stopping Elasticsearch while export remains enabled. Optionally set `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS=1` for a faster proof.
+4. Execute one LKW run (`POST /v1/local_workspace/run`).
+5. Inspect the JSONL file:
+
+```powershell
+applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat
+applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat --check-safety
+```
+
+Windows PowerShell (raw tail):
+
+```powershell
+Get-Content applications\local_workspace_application\.observability\elasticsearch\failed-deliveries.jsonl -Tail 5
+```
+
+The inspector is read-only. It validates that every JSON object contains exactly the safe failed-delivery fields and prints record counts plus basic status summaries.
 
 ### What to look for
 

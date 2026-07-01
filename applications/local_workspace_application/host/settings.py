@@ -88,6 +88,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_elasticsearch_retry_max_attempts: int = 3
     observability_elasticsearch_retry_initial_backoff_seconds: float = 0.25
     observability_elasticsearch_retry_max_backoff_seconds: float = 2.0
+    observability_elasticsearch_failed_delivery_file_path: str = ""
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -146,6 +147,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                     "LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX is required when "
                     "observability export is enabled with backend_id=elasticsearch"
                 )
+            failed_delivery_file_path = (
+                self.observability_elasticsearch_failed_delivery_file_path.strip() or None
+            )
             elasticsearch = ElasticsearchExportOperatorConfig(
                 base_url=base_url,
                 index=index,
@@ -154,6 +158,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                 retry_max_attempts=self.observability_elasticsearch_retry_max_attempts,
                 retry_initial_backoff_seconds=self.observability_elasticsearch_retry_initial_backoff_seconds,
                 retry_max_backoff_seconds=self.observability_elasticsearch_retry_max_backoff_seconds,
+                failed_delivery_file_path=failed_delivery_file_path,
             )
         else:
             otlp = None
@@ -307,6 +312,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS",
             default=cls._field_default("observability_elasticsearch_retry_max_backoff_seconds"),  # type: ignore[arg-type]
         )
+        observability_elasticsearch_failed_delivery_file_path = env.str(
+            "OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH",
+            default=cls._field_default("observability_elasticsearch_failed_delivery_file_path"),  # type: ignore[arg-type]
+        )
         read_roots_raw = (os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS") or "").strip()
         allowed_read_roots = frozenset(
             part.strip() for part in read_roots_raw.split(",") if part.strip()
@@ -341,4 +350,5 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_elasticsearch_retry_max_attempts": observability_elasticsearch_retry_max_attempts,
             "observability_elasticsearch_retry_initial_backoff_seconds": observability_elasticsearch_retry_initial_backoff_seconds,
             "observability_elasticsearch_retry_max_backoff_seconds": observability_elasticsearch_retry_max_backoff_seconds,
+            "observability_elasticsearch_failed_delivery_file_path": observability_elasticsearch_failed_delivery_file_path,
         }

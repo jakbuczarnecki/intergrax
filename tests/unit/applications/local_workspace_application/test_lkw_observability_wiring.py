@@ -41,6 +41,13 @@ _LKW_OBSERVABILITY_WIRING_PATH = (
     / "host"
     / "observability_wiring.py"
 )
+_LKW_SETTINGS_PATH = (
+    _PROJECT_ROOT
+    / "applications"
+    / "local_workspace_application"
+    / "host"
+    / "settings.py"
+)
 
 _FORBIDDEN_VENDOR_TOKENS = (
     "langfuse",
@@ -360,6 +367,7 @@ def test_lkw_default_env_produces_provider_retry_defaults(_clear_observability_e
     assert elasticsearch.retry_max_attempts == 3
     assert elasticsearch.retry_initial_backoff_seconds == 0.25
     assert elasticsearch.retry_max_backoff_seconds == 2.0
+    assert elasticsearch.failed_delivery_file_path is None
 
 
 def test_lkw_env_retry_overrides_are_passed_into_elasticsearch_export_operator_config(
@@ -384,3 +392,48 @@ def test_lkw_env_retry_overrides_are_passed_into_elasticsearch_export_operator_c
     assert elasticsearch.retry_max_attempts == 5
     assert elasticsearch.retry_initial_backoff_seconds == 0.5
     assert elasticsearch.retry_max_backoff_seconds == 4.0
+
+
+def test_lkw_env_failed_delivery_file_path_override_passed_to_operator_config(
+    _clear_observability_env: None,
+) -> None:
+    configured_path = "applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH"] = configured_path
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.elasticsearch is not None
+    assert config.elasticsearch.failed_delivery_file_path == configured_path
+
+
+@pytest.mark.parametrize("raw_value", ["", "   "])
+def test_lkw_empty_whitespace_failed_delivery_file_path_disables_sink(
+    _clear_observability_env: None,
+    raw_value: str,
+) -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "elasticsearch"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL"] = "http://elasticsearch.local:9200"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_INDEX"] = "logs-*"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH"] = raw_value
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.elasticsearch is not None
+    assert config.elasticsearch.failed_delivery_file_path is None
+
+
+def test_lkw_settings_do_not_import_elasticsearch_failed_delivery_sink() -> None:
+    source = _LKW_SETTINGS_PATH.read_text(encoding="utf-8")
+    assert "FileElasticsearchFailedDeliverySink" not in source
+    assert "integrations.providers.observability_backend.elasticsearch.failed_delivery" not in source
+    assert "json.dump" not in source
+    assert "open(" not in source

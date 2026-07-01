@@ -10,7 +10,7 @@
 
 **Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
 
-**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine.
+**Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
 **Last updated:** 2026-06-30 — **OBS-VENDOR-5** Elasticsearch backend selection wired into operator config; LKW OTLP proof path closed.
 
@@ -60,6 +60,12 @@ Load **only** the satellite matching your task or cited gap ID.
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
 **Priority:** P1 after TOKEN-UER-1; TOKEN-OBS-1 may ship before CE/MEM integrations, TOKEN-OBS-2 after first optimized source exists.  
 **Delivery rule:** one `TOKEN-OBS-*` row per PR; emit through HOS or approved domain-signal path only.
+
+**LKW proof:** **LKW-PF6** is the platform proof workload for token savings telemetry and regression gates ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF). **LKW-PF6-0** proof design (**Done / Closed**) defines required observability attribution fields and redaction rules — see [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0 and [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §10.8. No private telemetry bus.
+
+**Early slices (before full TOKEN-OBS-1/2):** **TOKEN-6A-lite** defines the typed savings-attribution telemetry shape through the Harness Observability Spine only — no private telemetry bus. **OBS-HEALTH-lite** adds a minimal operator-visible health/status shape for exporter and token telemetry; it is not full observability production hardening. Full **OBS-VENDOR** production hardening (auth/TLS, retention, batching, dashboards-as-code, CI/live proof automation, and related operational closeout) remains **Planned**.
+
+**Maturity bar (LKW-PF0):** Platform proof vs operational proof vs production-grade readiness is defined in [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §9. **Elasticsearch/Kibana** observability export is **closed for platform proof** (see LKW §9.6 example); **OBS-VENDOR** production hardening rows in this plan remain the production hardening backlog — closing the platform proof does not imply production-grade readiness.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
@@ -254,6 +260,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase OBS-VENDOR — Production observability vendor integration rollout (Planned)
 
+**Observability projections:** **Elasticsearch/Kibana**, **Prometheus/Grafana**, **Tempo** (or equivalent), and **Sentry** are different observability projections — structured event/log timeline, metrics/SLO dashboards, distributed traces/spans, and error issue triage respectively. They complement each other; none replaces the others. Platform contracts remain vendor-neutral; backends are replaceable. See LKW strategic roadmap **LKW-PF5** in [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
+
 **Purpose:** Move from the LKW OTLP proof path to a production-grade, vendor-agnostic observability export model where runtime/LKW call only the contract and vendors own backend I/O.
 
 **Cross-plan — LKW proof workload:** [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-OBS.
@@ -392,6 +400,48 @@ Done — Elasticsearch export failures now produce safe provider-owned delivery 
 
 Done — Elasticsearch observability delivery now supports bounded provider-owned retry/backoff for retriable delivery failures, with LKW env overrides for deployment-specific calibration. Full OBS-VENDOR-6 remains Planned until batching, dead-letter storage, auth/TLS, health checks, and broader operational hardening are complete.
 
+**OBS-VENDOR-6C-A status:**
+
+Done — Elasticsearch observability export now exposes a provider-owned, optional failed-delivery sink contract with safe diagnostic records only (no raw document or content fields). Invocation occurs on ultimate delivery failure (immediate for non-retriable errors; after retry exhaustion for retriable errors). Full OBS-VENDOR-6C operational hardening (durable dead-letter storage) and full OBS-VENDOR-6 remain Planned.
+
+**OBS-VENDOR-6C-B1 status:**
+
+Done — Elasticsearch provider now ships a file-backed failed-delivery sink (`FileElasticsearchFailedDeliverySink`) that appends one UTF-8 JSON object per line using only safe `ElasticsearchFailedDeliveryRecord` fields. No LKW wiring, env configuration, or operational runbook yet. Full OBS-VENDOR-6C remains Planned until the file sink is wired/configurable and operationally documented. Full OBS-VENDOR-6 remains Planned.
+
+**OBS-VENDOR-6C-B2 status:**
+
+Done — typed operator config (`ElasticsearchExportOperatorConfig.failed_delivery_file_path`) now wires the provider-owned file failed-delivery sink through runtime Elasticsearch export wiring into `create_elasticsearch_observability_transport()`. When unset, transport keeps the no-op failed-delivery sink default. No LKW env, Docker, or operational runbook yet. Full OBS-VENDOR-6C remains Planned until LKW env wiring and operational docs exist. Full OBS-VENDOR-6 remains Planned.
+
+**OBS-VENDOR-6C-B3 status:**
+
+Done — LKW deployment settings now read `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` and pass a stripped deployment-owned path into `ElasticsearchExportOperatorConfig.failed_delivery_file_path` when `backend_id=elasticsearch`; empty or whitespace disables the file sink. LKW does not implement file/JSON writes or instantiate the provider sink. Full OBS-VENDOR-6C remains Planned until operational docs/proof (Docker, scripts, live proof) are complete. Full OBS-VENDOR-6 remains Planned.
+
+**OBS-VENDOR-6C-B4 status:**
+
+Done — LKW operational docs and read-only failed-delivery JSONL inspector added (`applications/local_workspace_application/docs/BUILD_AND_DEPLOY.md`, `applications/local_workspace_application/scripts/inspect_elasticsearch_failed_deliveries.py`, `inspect-elasticsearch-failed-deliveries.bat`). Documents env path, safe fields, controlled local proof steps, and inspector validation. Full OBS-VENDOR-6C remains Planned until live operational proof is complete. Full OBS-VENDOR-6 remains Planned.
+
+**OBS-VENDOR-6C-B5 status:**
+
+Done — live local controlled-failure proof recorded. File-backed Elasticsearch failed-delivery JSONL path is operationally complete (OBS-VENDOR-6C file-backed dead-letter proof closed). Full OBS-VENDOR-6C remains **Planned** until rotation/retention, auth/TLS, health checks, batching, and index-based dead-letter storage are done. Full OBS-VENDOR-6 remains Planned.
+
+**OBS-VENDOR-6C-B5 proof evidence (2026-07-01):**
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-07-01 |
+| `failed_delivery_file_path` | `applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl` |
+| Failure mode | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL=http://127.0.0.1:59200` (unreachable endpoint); `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS=1` |
+| LKW run | `POST http://127.0.0.1:8099/v1/local_workspace/run` (`capability=local.workspace.search`); `run_id=run_f4870c18fced4b83b61c38c8359e6be9` |
+| Inspector command | `applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat --check-safety` |
+| Inspector result | `Records: 36`; `Reason counts: connection_error: 36`; `Validation: all records contain exactly the safe failed-delivery fields`; exit code 0 |
+| Safety result | Passed — each JSONL line contains only `provider_id`, `operation`, `index`, `status_code`, `reason`, `retriable`, `attempts`, `exhausted`; no raw document, prompt, chunks, tool args, secrets, tokens, or absolute payload paths |
+
+Sample failed-delivery record:
+
+```json
+{"provider_id": "elasticsearch", "operation": "send_observability_payload", "index": "intergrax-lkw-observability", "status_code": null, "reason": "connection_error", "retriable": true, "attempts": 1, "exhausted": true}
+```
+
 **OBS-VENDOR-7B status:**
 
 OBS-VENDOR-7B tooling done: Elasticsearch/OpenSearch readback inspector added for list-runs, run timeline, duplicate check, and safety-key check (`applications/local_workspace_application/scripts/inspect_elasticsearch_observability.py`, `inspect-elasticsearch-observability.bat`). Follow-up: Elasticsearch inspector safety-key check now derives forbidden keys from the canonical runtime export boundary (`FORBIDDEN_EXPORT_CONTENT_FIELDS`) instead of maintaining an independent ad-hoc list. Full OBS-VENDOR-7 remains **Planned** until a live Docker Compose proof records a real `run_id` and backend query result.
@@ -444,6 +494,18 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 | Operator / bootstrap wiring | **OBS-VENDOR-2** **Done**; **OBS-VENDOR-5** **Done** |
 | Production export end-to-end | **OBS-VENDOR-7** |
 | LLM-trace semantic vendors | **OBS-VENDOR-8** (later) |
+
+---
+
+## Phase OBS-SENTRY — Sentry error-monitoring integration proof (Planned)
+
+**OBS-SENTRY status:**
+
+**Planned** — Add a provider-owned Sentry error-monitoring integration proof for safe exception capture and issue triage. **Sentry** is an error-monitoring projection; **Elasticsearch/Kibana** is the structured event/log timeline projection; **Prometheus/Grafana** covers metrics/SLO dashboards; **Tempo** (or equivalent) covers traces/spans. These projections complement each other — none replaces the others. The proof must capture only safe diagnostic metadata and tags, never prompts, chunks, tool arguments, secrets, raw documents, file contents, or absolute payload paths.
+
+**Out of scope (this phase):** Sentry implementation; `sentry-sdk` dependency; env vars; runtime wiring; LKW wiring; live proof; tracing/profiling; PII/default user data capture.
+
+**LKW relationship:** LKW may act as the proof workload later ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) **LKW-OBS-SENTRY**); platform owns the provider integration.
 
 ---
 

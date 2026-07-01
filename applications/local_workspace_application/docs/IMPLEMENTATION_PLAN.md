@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -60,6 +60,139 @@ Before closing any LKW wave, answer:
 - [ ] Does the implementation plan identify both the LKW work and the platform propagation work?
 
 `NexusLoop` constructor width and `StepKernelContext` width remain deferred watchlist items unless LKW exposes concrete implementation or testing pain.
+
+### LKW-PF — LKW-driven Platform Proof Roadmap
+
+LKW is the **primary product workload** used to discover missing platform capabilities. Each platform proof item must produce both:
+
+1. **LKW proof acceptance** — the capability works on the LKW proof path.
+2. **Reusable platform acceptance** — scaffold, config, deploy, CI, or operator runbook lessons propagate when applicable.
+
+**ID note:** `LKW-PF0`–`LKW-PF7` below are the **strategic platform-proof roadmap**. Closed H1 follow-up rows **`LKW-PF1`**/**`LKW-PF2`** (RuntimeEvent `TOOL_*`, `RunArtifactBundle` / `shadow_workspace_id`) in §5 Platform follow-ups are a separate historical track — same prefix family, different scope.
+
+| ID | Status | Meaning |
+|----|--------|---------|
+| **LKW-PF0** | **Done / Closed** | **Platform proof maturity bar** — defines platform proof, operational proof, production-grade readiness, and production hardening backlog. Canonical definitions: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. |
+| **LKW-PF1** | Planned / Platform-reusable | **Observability production readiness** — Elasticsearch/Kibana proof is **closed for platform proof**, but production readiness still needs health/status, auth/TLS, retention/rotation, batching/bulk decision, dashboard-as-code, CI/live proof automation, path policy, and operator runbook. See [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR. |
+| **LKW-PF2** | Planned / Platform-reusable | **Model serving provider switch proof** — prove LKW can switch model serving backends such as **Ollama** and **vLLM** through typed config/env profile without product code changes. Platform owns provider contracts/adapters; LKW owns proof workload and deployment wiring later. |
+| **LKW-PF3** | Planned / Platform-reusable | **Relational persistence proof** — introduce a **PostgreSQL**-backed persistence proof for platform/application state (tenants, users, workspaces, memberships/permissions, runs, run steps, artifact metadata, proof metadata references). Do not store raw documents, chunks, prompts, secrets, or large artifacts by default. |
+| **LKW-PF4** | Planned / Platform-reusable | **Vector store portability proof** — prove vector store backend portability. **Qdrant** remains the local-first baseline. Future provider candidates may include **Pinecone**, **Weaviate**, **Milvus**, and **pgvector**. Platform owns vector store contract/provider selection; LKW owns proof workload and deployment wiring later. |
+| **LKW-PF5** | Planned / Platform-reusable | **Metrics/tracing platform proof** — define the relationship between observability projections: **Elasticsearch/Kibana** for structured event/log timeline and readback; **Prometheus/Grafana** for metrics, counters, rates, SLO dashboards; **Tempo** (or equivalent) for traces/spans; **Sentry** for error issue triage. Use vendor-neutral platform contracts first; tools are replaceable. |
+| **LKW-PF6** | Planned / Strategic | **Token Optimization platform proof** — LKW must prove measurable token savings without correctness/safety regression. Proof uses the existing Token Optimization plan ([`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md)): baseline token usage, optimized token usage, saved tokens, compression receipts, protected-region validation, regression gates, and observability attribution by run/step/source/model/provider/strategy/output profile. |
+| **LKW-PF7** | Planned / Platform-reusable | **Scaffold/deployment propagation** — platform lessons from LKW proofs propagate into app scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks when applicable. |
+
+#### Recommended execution order
+
+The strategic roadmap IDs (`LKW-PF0`–`LKW-PF7`) are **not** a strict implementation sequence. The implementation sequence should prioritize the highest market-value platform proof: **Token Optimization**.
+
+1. ~~**LKW-PF0** — Define maturity bar~~ **Done / Closed** — see §LKW-PF0 closeout below and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
+
+2. ~~**LKW-PF6-0** — Token Optimization proof design for LKW~~ **Done / Closed** — see §LKW-PF6-0 closeout below and [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0.
+
+3. **TOKEN-1A** — Shared Token Optimization contracts  
+   Add shared contracts/package skeleton only; no hot-path optimization yet.
+
+4. **TOKEN-1B** — Protected region validator  
+   Preserve code, paths, URLs, env vars, enum values, hashes, dates, exact error strings, and other exact regions before optimization is allowed.
+
+5. **TOKEN-1C** — Compression receipts  
+   Add receipts for original/optimized hashes, token counts, saved tokens, saved ratio, validation status, and fallback.
+
+6. **TOKEN-6A-lite** — Token savings telemetry shape  
+   Define typed savings attribution through the Harness Observability Spine; no private telemetry bus.
+
+7. **TOKEN-2** — OutputPolicy runtime resolver  
+   Replace prompt-only verbosity control with runtime output profiles and budget policy.
+
+8. **TOKEN-3** — ToolSchemaOptimizer  
+   Reduce recurring LLM-facing tool catalog token cost without changing tool schema semantics.
+
+9. **LKW-PF6-A** — LKW baseline token measurement  
+   Measure baseline token usage for representative LKW workflows before optimization.
+
+10. **LKW-PF6-B** — First measurable token-saving proof  
+    Show baseline vs optimized token usage, saved tokens, receipts, and quality/regression safety.
+
+11. **OBS-HEALTH-lite** — Minimal exporter/token telemetry status  
+    Add operator-visible health/status shape for exporter and token telemetry before deeper production hardening.
+
+12. **TOKEN-4** — ContextPackOptimizer light mode  
+    Apply light/structural context optimization only; semantic compression remains gated.
+
+13. **TOKEN-6B** — Token regression gates  
+    Add token-vs-quality regression benchmarks and checks.
+
+14. **LKW-PF6-C** — Public-grade Token Optimization proof  
+    Produce a clear LKW proof showing measured savings, safety, receipts, and observability attribution.
+
+15. **LKW-PF2** — Model serving provider switch proof  
+    Prove Ollama/vLLM or equivalent provider switch through typed config/profile, with token/cost/performance telemetry preserved.
+
+16. **LKW-PF3** — Persistent application state proof  
+    Prove PostgreSQL-backed persistence for tenants, users, workspaces, permissions, runs, run steps, artifact metadata, and proof references.
+
+17. **LKW-PF4** — Vector backend portability proof  
+    Prove vector store portability and retrieval consistency. Qdrant remains baseline; other providers are future candidates.
+
+18. **LKW-PF5** — Observability projections proof  
+    Prove metrics/tracing/error-monitoring projections after the core token/cost proof: Elasticsearch/Kibana, Prometheus/Grafana, Tempo, Sentry as complementary projections.
+
+19. **LKW-PF7** — Scaffold/deploy propagation closeout  
+    Propagate reusable lessons into application scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks.
+
+**Market-value priority:** Token Optimization is the primary near-term market-value proof because it demonstrates that Intergrax can reduce model/agent operating cost while preserving correctness, safety, receipts, and observability. Infrastructure proofs such as PostgreSQL, vector-store portability, vLLM/Ollama switching, Prometheus/Grafana/Tempo, and Sentry remain important production-maturity proofs, but they should not precede the first measurable token-cost proof unless they become blockers.
+
+#### LKW-PF0 closeout — platform proof maturity bar
+
+**Status:** **Done / Closed** (docs-only).
+
+Canonical maturity definitions live in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. Summary:
+
+| Level | Meaning | Closure implies production-grade? |
+|-------|---------|-----------------------------------|
+| **Platform proof** | Reusable platform capability works through the intended abstraction/contract/integration boundary | **No** |
+| **Operational proof** | Operator can run, inspect, debug, or repeat the proof in a controlled proof environment | **No** |
+| **Production-grade readiness** | Production-oriented concerns (health, auth/TLS, retention, batching, dashboards-as-code, CI proof, runbooks, path policy, recovery, ownership) are implemented and verified | **Yes** — only when §9.3 criteria are met |
+| **Production hardening backlog** | Known production gaps tracked after platform proof closure; `closed proof != production complete` | N/A — tracks follow-up work without reopening proof scope |
+
+**LKW-PF0 acceptance (met):**
+
+- [x] Maturity bar documented in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
+- [x] Difference between platform proof, operational proof, and production-grade readiness is explicit.
+- [x] Proof closure rules documented (§9.5).
+- [x] Production hardening backlog rules documented (§9.4).
+- [x] Elasticsearch/Kibana remains **closed for platform proof** but **not production-grade** (§9.6; OBS-VENDOR production hardening **Planned** in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md)).
+- [x] Token Optimization implementation remains **Planned** — `LKW-PF6` and `TOKEN-1A` not started; `LKW-PF6-0` proof design **Done / Closed** (see §LKW-PF6-0 closeout).
+- [x] No code/runtime/test/CI/dependency files changed.
+
+**Next proofs must use this bar:** `TOKEN-1A` and all future LKW-PF items must state which maturity level they close and record production gaps in the appropriate platform plan backlog.
+
+#### LKW-PF6-0 closeout — Token Optimization proof design
+
+**Status:** **Done / Closed** (docs-only).
+
+**Maturity level closed:** proof design only — not platform proof, operational proof, or production-grade readiness.
+
+Canonical proof design: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0 · loop reference: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §10.
+
+**Narrative preserved:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos. Token Optimization is a **cross-layer platform capability**, not a private LKW feature.
+
+**LKW-PF6-0 acceptance (met):**
+
+- [x] Representative LKW workflows defined (small/medium workspace, repeated synthesis, failure/safety-preserving run).
+- [x] Baseline measurement shape defined (input/context, tool catalog, RAG/evidence/context pack, output, total tokens; model, provider, runtime profile, workflow id, run id, step id).
+- [x] Optimized measurement shape defined (baseline vs optimized usage, saved tokens/ratio, strategy, affected source/category, fallback status, validation status).
+- [x] Canonical token categories defined with attribution dimensions (run, step, source, model, provider, strategy, output profile).
+- [x] Quality/regression criteria defined — behavioral equivalence required; savings alone do not pass.
+- [x] Protected-region requirements defined — TOKEN-1B implements later; proof requirement only here.
+- [x] Compression receipt expectations defined — TOKEN-1C implements later; proof requirement only here.
+- [x] Observability visibility defined through Harness Observability Spine or approved domain-signal path — no private telemetry bus.
+- [x] Public proof format defined with redaction rules (no raw prompts, documents, chunks, synthesized content, tool args, secrets, tokens/secrets, absolute paths, large raw artifacts).
+- [x] `TOKEN-1A` remains **not started**; no code/runtime/test/CI/dependency files changed.
+
+**Next step:** `TOKEN-1A` — shared Token Optimization contracts + package skeleton (see recommended execution order §3).
+
+Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
 ---
 
@@ -610,6 +743,9 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 | LKW-OBS-OTLP-1C | Run end-to-end Swagger proof and inspect persisted OTLP log records | docs, manual proof | **Done** — manual Docker Compose proof verified that LKW runtime events are exported as OTLP logs to the local OpenTelemetry Collector and persisted to `.observability/otel/lkw-otlp-logs.jsonl`. Persisted records include run_id, task_id, capability, agent_id, tool_id and latency_ms. Raw request/query content was not exported. |
 | LKW-OBS-OTLP-DUP-1 | Diagnose and fix duplicate OTLP log records for identical runtime events | `intergrax/runtime/events/event_bus.py`, `tests/unit/runtime/observability/`, `tests/unit/runtime/events/` | **Done** — `RuntimeEventBus.publish()` no longer double-dispatches subscribers (previously invoked handlers via `record()` and again in `publish()`); OTLP export plugin receives each runtime event once per `event_id`. |
 | LKW-OBS-VIEW-1A | Add lightweight OTLP log inspector for persisted JSONL sink | `scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`, `tests/scripts/test_inspect_otlp_logs.py` | **Done** — inspector BAT at `applications/local_workspace_application/scripts/inspect-otlp-logs.bat`; Python entrypoint `applications/local_workspace_application/scripts/inspect_otlp_logs.py`; latest-run timeline works; manual duplicate check = 0; focused tests: `uv run pytest applications/local_workspace_application/tests/scripts/test_inspect_otlp_logs.py -q` → **5 passed** |
+| LKW-OBS-SENTRY | Sentry error-monitoring platform proof | — | **Planned / Platform-reusable** | LKW is the proof workload only; Sentry implementation belongs to platform [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) **OBS-SENTRY**. LKW may later own deployment env wiring and live proof once the platform provider exists. |
 
 **OBS-VENDOR-0 (platform plan):** LKW-OBS-VIEW-1A closeout recorded here; next steps tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-1` … `OBS-VENDOR-8`).
+
+**Platform proof candidate — OBS-SENTRY:** future Sentry error-monitoring proof tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-SENTRY; LKW is not the integration owner.
 

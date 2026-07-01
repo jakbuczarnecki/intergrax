@@ -18,7 +18,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 **Do not read this entire file in one session** (TOKEN_OPTIMIZATION feature architecture).
 
-- **Implement / audit default:** §1–§7 core contracts and boundaries. **On demand (one max):** [`architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md).
+- **Implement / audit default:** §1–§8 engine lifecycle, mechanisms, and extensibility. **On demand (one max):** [`architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md).
 - **Plan hub:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) read-scope block only.
 - **Satellites:** at most **one** `architecture/satellites/` file per session unless RESUME cites more.
 
@@ -245,7 +245,271 @@ The first implementation slice must define these as stable contracts before deep
 
 ---
 
-## 8. Protected region policy
+## 8. Token Optimization Engine lifecycle, mechanisms, and extensibility
+
+The **Token Optimization Engine** is a policy-governed orchestrator, not a single hard-coded compressor. It coordinates classification, policy resolution, mechanism selection, protected-region handling, token measurement, validation, receipts, observability, and safe fallback across domain-owned adapters and optional plugins.
+
+### 8.1 Engine lifecycle
+
+```text
+input/source payload
+  → classify content/source type
+  → resolve token optimization policy
+  → select mechanism and strategy
+  → detect protected regions
+  → estimate or read baseline token count
+  → apply optimization
+  → re-count optimized tokens
+  → validate protected regions and safety rules
+  → build receipt / measurement record
+  → emit observability signal through HOS or approved domain-signal path
+  → return optimized payload or fallback to original
+```
+
+Rules:
+
+- policy resolution happens before any lossy or structural change,
+- baseline token counts use the existing LLM adapter token path when available; the engine must not create a second tokenizer,
+- validation failure must fallback to the original payload or a safer/lower optimization level — never return silently degraded content,
+- every applied optimization produces a receipt or explicit bypass/fallback record when measurement is enabled,
+- observability emission uses the Harness Observability Spine or an approved domain-signal path only.
+
+### 8.2 Mechanism catalog
+
+Each mechanism class below is a **policy-selectable optimization surface**. Savings must be measured, when applicable, as:
+
+```text
+baseline_tokens
+optimized_tokens
+saved_tokens
+saved_ratio
+```
+
+Not every mechanism belongs in the first public proof. The first proof should prioritize mechanisms that are measurable, safe, and easy to validate (see §8.7).
+
+| Mechanism | What it optimizes | Typical source/category | Expected measurable metric | Safety risk | Required validator / guardrail | Likely implementation phase | First public proof candidate |
+|-----------|-------------------|-------------------------|----------------------------|-------------|-------------------------------|------------------------------|------------------------------|
+| Tool output compaction | Verbose tool results, logs, and command output replayed into context | `tool_result`, terminal/log output | `saved_tokens` on tool-result category | High — may drop errors, paths, IDs | Protected-region validator; exact error/path preservation | TOKEN-4 light + domain hooks | **Yes** — primary proof candidate |
+| Terminal/log/test-output filtering | Noisy shell, CI, and test transcripts | `terminal_output`, `test_output` | `saved_tokens` on filtered transcript category | Medium — may hide failure signals | Extractive filter rules; protected-region validator; fallback on ambiguity | TOKEN-4 / application hooks | Later — after tool-output compaction proves receipts |
+| Tool catalog/schema compaction | LLM-facing tool descriptions and catalog prose | `tool_catalog` | `saved_tokens` on tool-catalog category | Medium — must not alter schema semantics | Schema-preservation validator; canonical `ToolContract` immutability | TOKEN-3 | **Yes** — primary proof candidate |
+| RAG/context-pack light compression | Retrieved evidence fragments after ranking | `context_pack`, `rag_chunk` | `saved_tokens` on RAG/evidence category | High — may break citations/grounding | Citation/grounding checks; protected-region validator; ranking-before-compression rule | TOKEN-4 light | **Yes** — light/structural only |
+| Memory/context pruning | Low-value history, duplicate blocks, stale summaries | `memory`, `history` | `saved_tokens` on memory/history category | High — persistent loss risk | Staging + rollback; receipt; protected-region validator; quality gate | TOKEN-5 | No — gated until regression gates exist |
+| Cache alignment / stable prompt prefixing | Repeated stable prefixes across steps/runs | `prompt_prefix`, `system_policy` | Cache-hit / prefix-stability signal + `saved_tokens` where measurable | Low when prefix-only | Prefix immutability check; no mutation of dynamic tail | TOKEN-2 / TOKEN-6 | **Yes** — where cache/prefix savings are measurable |
+| Output policy / verbosity shaping | Model completion length and section structure | `model_output` | `output_tokens` vs budget; `saved_tokens` on output category | Medium — may reduce audit clarity | OutputPolicyResolver; high-risk bypass; explicit profile comparison | TOKEN-2 | **Yes** — only where baseline/optimized comparison is explicit |
+| Structured data compression | JSON/YAML/tabular blobs in context | `structured_data` | `saved_tokens` on structured-data category | Medium — schema-sensitive | Schema-shape preservation; protected keys/enums | TOKEN-4 extension | Later |
+| Reversible machine-to-machine representation | Machine-facing payloads that can be re-expanded | `m2m_payload` | `saved_tokens` with reversibility flag | Low–medium — expansion contract must hold | Reversibility validator; round-trip check | TOKEN-4 / plugin | Later — plugin-friendly |
+| Retrieval-on-demand instead of full replay | Full document/chunk replay replaced by retrieval handles | `document_replay`, `chunk_replay` | `saved_tokens` on replay category | Medium — grounding risk | Retrieval handle integrity; citation checks | TOKEN-4 / RAG integration | Later |
+| Deduplication and repeated-context suppression | Repeated paragraphs, tool prose, and duplicate evidence | `context_pack`, `history`, `tool_catalog` | `saved_tokens`; `input_tokens_after_dedup_total` | Low–medium — ordering/semantics | Dedup provenance; mandatory-fragment preservation | TOKEN-4 light | **Yes** — when provenance is recorded |
+
+### 8.3 Strategy / algorithm taxonomy
+
+Strategies are the algorithms a mechanism may apply. A single mechanism may compose multiple strategies under policy control.
+
+| Strategy type | Lossless | Lossy | Reversible | Measurement-only | Policy-only | Requires protected-region validation | Requires quality/regression benchmark | Safe for initial proof | Experimental |
+|---------------|----------|-------|------------|------------------|-------------|--------------------------------------|---------------------------------------|--------------------------|--------------|
+| Lossless normalization | Yes | No | Yes | No | No | Yes | No | **Yes** | No |
+| Lossless structural compression | Yes | No | Yes | No | No | Yes | Light | **Yes** | No |
+| Deduplication | Yes | No | Partial | No | No | Yes | Light | **Yes** | No |
+| Extractive filtering | Partial | Partial | No | No | No | Yes | Yes | Later | No |
+| Schema minimization | Yes | No | Yes | No | No | Yes | Yes | **Yes** | No |
+| Ranking/pruning | No | Yes | No | No | No | Yes | Yes | No | No |
+| Cache-prefix stabilization | Yes | No | Yes | No | No | Light | No | **Yes** | No |
+| Safe lossy summarization | No | Yes | No | No | No | Yes | **Yes** | No | No |
+| Semantic compression | No | Yes | No | No | No | **Yes** | **Yes** | No | **Yes** |
+| Reversible M2M encoding | Yes | No | **Yes** | No | No | Yes | Light | Later | No |
+| Retrieval-on-demand | Partial | Partial | Partial | No | No | Yes | Yes | Later | No |
+| Output verbosity shaping | Partial | Partial | No | No | **Yes** | Light | Yes | **Yes** — explicit comparison only | No |
+
+Rules:
+
+- aggressive lossy or semantic compression must **not** be enabled by default before protected-region validation, receipts, telemetry, and regression gates exist,
+- `measurement-only` and `policy-only` strategies may run without mutating payload content,
+- experimental strategies require an explicit `experimental` profile and operator opt-in.
+
+### 8.4 Configuration model
+
+External product configuration should expose a simple operator-facing switch:
+
+```yaml
+token_optimization:
+  enabled: true
+```
+
+The platform must support richer policy-controlled configuration underneath, for example:
+
+```yaml
+token_optimization:
+  enabled: true
+  profile: conservative
+  strategies:
+    tool_output_compaction: true
+    tool_schema_compaction: true
+    context_pack_compression: light
+    memory_compression: off
+    cache_alignment: true
+    output_policy: concise
+  safety:
+    protected_regions: strict
+    fallback_on_validation_failure: true
+    disable_for_audit_evidence: true
+  measurement:
+    emit_receipts: true
+    emit_observability: true
+    compare_baseline: true
+```
+
+**Profiles** (conceptual only — no runtime config files in this architecture slice):
+
+| Profile | Intent |
+|---------|--------|
+| `off` | No optimization; measurement may still record baseline counts. |
+| `measure_only` | Count and attribute tokens without mutating payloads. |
+| `conservative` | Lossless/normalization, schema minimization, light dedup, cache alignment; no semantic compression. |
+| `balanced` | Conservative plus light structural context compression and explicit output shaping. |
+| `aggressive` | Broader pruning and lossy summarization where validators and regression gates pass. |
+| `experimental` | Plugin or research strategies; never default in production proof paths. |
+
+Effective policy is resolved by `UNIFIED_EXECUTION_RUNTIME` and may be downgraded by step risk, audit mode, or protected-region failures.
+
+### 8.5 Plugin and extensibility model
+
+Token optimization mechanisms, strategies, and algorithms behave like other platform extension points: **replaceable, policy-governed, observable, and contract-based**.
+
+A developer with a proven third-party token optimizer should integrate through a shared platform contract and a thin adapter/plugin on their side — not by bypassing policy, validation, or telemetry.
+
+**Plugin classes allowed:**
+
+```text
+built-in strategies
+experimental strategies
+application-specific strategies
+provider-specific strategies
+third-party optimization plugins
+```
+
+**Conceptual extension interfaces** (not implemented in this architecture slice):
+
+```text
+TokenOptimizationPlugin
+TokenOptimizationStrategy
+ContentClassifier
+ProtectedRegionDetector
+TokenEstimator
+OptimizationPolicyResolver
+OptimizationValidator
+ReceiptBuilder
+```
+
+**Plugin contract responsibilities:**
+
+- declare plugin id and version,
+- declare supported source types,
+- declare supported strategies,
+- declare whether optimization is lossless/lossy/reversible,
+- declare safety class,
+- declare required validators,
+- accept a `TokenOptimizationRequest`-like input,
+- return a `TokenOptimizationResult`-like output,
+- preserve or report protected regions,
+- report baseline/optimized token counts when available,
+- report fallback reason when optimization is rejected,
+- produce or attach a receipt reference,
+- emit no private telemetry outside approved platform paths.
+
+**Plugin boundaries:**
+
+- plugins must not bypass platform policy,
+- plugins must not bypass protected-region validation,
+- plugins must not mutate canonical tool contracts,
+- plugins must not create private telemetry buses,
+- plugins must not export raw prompts, raw documents, secrets, tool args, or raw RAG chunks,
+- plugins must be observable through the Harness Observability Spine or approved domain-signal path,
+- plugins must fallback safely when validation fails.
+
+**Example third-party integration flow:**
+
+```text
+third-party optimizer
+  → thin Intergrax adapter
+  → shared TokenOptimizationPlugin contract
+  → platform policy resolver
+  → protected-region validator
+  → receipt + observability
+  → optimized payload or fallback
+```
+
+### 8.6 Benchmark and public claim model
+
+Intergrax must **not** make global unsupported claims such as:
+
+```text
+saves 95% tokens everywhere
+```
+
+Public claims must be tied to measured workflows and validation status, for example:
+
+```text
+Up to 95% fewer tokens on measured tool-output-heavy workflows.
+```
+
+**Required claim fields:**
+
+```text
+workflow_id
+workload description
+baseline_tokens
+optimized_tokens
+saved_tokens
+saved_ratio
+model
+provider
+runtime profile
+optimization profile
+strategies applied
+validation status
+fallback status
+quality/regression status
+receipt references
+known limitations
+```
+
+**Confidence levels:**
+
+| Level | Use |
+|-------|-----|
+| `measured` | Baseline and optimized counts captured on the same workflow with receipts and validation — **only level allowed in public proof tables**. |
+| `estimated` | Projected from partial categories or sampled steps; not for headline public claims. |
+| `projected` | Model-based forecast without full workflow replay. |
+| `not comparable` | Baseline and optimized runs differ in model, profile, or workload shape. |
+
+Claims without `measured` confidence, passing validation, and receipt references must not appear in public proof artifacts.
+
+### 8.7 First public proof mechanism selection
+
+The first public Token Optimization proof should prefer safe and measurable mechanisms:
+
+```text
+tool output compaction
+tool catalog/schema compaction
+RAG/context-pack light compression
+cache alignment where measurable
+output policy only where comparison is explicit
+```
+
+Defer until protected-region validation, receipts, telemetry, and regression gates are in place:
+
+```text
+deeper semantic compression
+persistent memory compression
+aggressive lossy strategies
+experimental third-party plugins without full validator coverage
+```
+
+This selection aligns with LKW proof workflows **LKW-TOK-W1**–**W4** defined in the feature plan; see [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0.
+
+---
+
+## 9. Protected region policy
 
 Token Optimization must preserve exact text for:
 
@@ -289,7 +553,7 @@ Use staging output → validate → receipt → atomic replace → rollback meta
 
 ---
 
-## 9. Context Engineering lifecycle extension
+## 10. Context Engineering lifecycle extension
 
 Token Optimization extends the Context Engineering lifecycle after ranking and budgeting, before final formatting/preflight:
 
@@ -318,7 +582,7 @@ Rules:
 
 ---
 
-## 10. Tool schema optimization rules
+## 11. Tool schema optimization rules
 
 `ToolSchemaOptimizer` may compress:
 
@@ -347,7 +611,7 @@ The optimizer must produce a compact LLM-facing catalog view, not mutate the can
 
 ---
 
-## 11. Observability requirements
+## 12. Observability requirements
 
 Token Optimization emits through the Harness Observability Spine. It must not create a private telemetry channel.
 
@@ -401,7 +665,7 @@ Savings must be attributable by:
 
 ---
 
-## 12. First-class implementation invariants
+## 13. First-class implementation invariants
 
 1. Do not build a second LLM token counter. Use `LLMAdapter.count_messages_tokens()` when an adapter is in scope.
 2. Do not build a second context compiler. Extend the existing Context Engineering pipeline.
@@ -414,7 +678,7 @@ Savings must be attributable by:
 
 ---
 
-## 13. Architecture adoption rule
+## 14. Architecture adoption rule
 
 Feature architecture coordinates cross-layer behavior. Domain architecture remains authoritative for domain-owned implementation details.
 

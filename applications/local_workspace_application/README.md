@@ -17,6 +17,8 @@ Tier-3 product host for local document indexing, semantic search, and synthesis.
 
 ## What LKW proves
 
+For the fastest external evaluation path, start with the public LKW Platform Proof: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../docs/public-adoption/LKW_PLATFORM_PROOF.md). It shows the Docker-based run path, Elasticsearch/Kibana inspection, expected outputs, and proof-helper PASS criteria.
+
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 
 LKW.1 product proof is now passed for the live path:
