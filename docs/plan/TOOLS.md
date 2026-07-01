@@ -19,7 +19,7 @@
 **Do not read this entire file in one session** (TOOLS plan).
 
 - **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites/) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
-- **Token Optimization:** read feature pair + row `TOKEN-TOOLS-1`; inspect only tool schema export / planner input path needed for compact catalog view.
+- **Token Optimization:** read feature pair + rows `TOKEN-TOOLS-1A` / `TOKEN-TOOLS-1B`; inspect only tool schema export / planner input path needed for compact catalog view.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) read-scope block only.
@@ -41,7 +41,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Phase TOKEN-TOOLS — Tool schema optimization for compact LLM catalog (Planned)
+## Phase TOKEN-TOOLS — Tool schema optimization for compact LLM catalog
 
 **Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)  
 **Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md)  
@@ -50,9 +50,18 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-TOOLS-1** | Code | P1 | Planned | `intergrax/runtime/nexus/tools/tool_schema_optimizer.py` produces compact LLM-facing tool catalog/schema view for `ToolPlanningService` / `CatalogToolPlanner` / schema export path | Canonical `ToolContract` registry unchanged; tool names, parameter names, enum values, required fields, and JSON schema semantics unchanged; tool call payloads/results not compressed by default; compact view enabled only by Token Optimization policy/profile; fixture shows lower token count; `uv run pytest tests/unit/runtime/nexus/tools/ -q`; `uv run python scripts/check_tool_schema_optimizer.py` |
+| **TOKEN-TOOLS-1A** | Code | P1 | **Done / Closed** | `intergrax/runtime/token_optimization/tool_schema.py` defines helper-only `ToolSchemaOptimizer` for deterministic LLM-facing compact catalog views | Canonical `ToolContract` registry unchanged; executable tool schemas unchanged; names/parameters/enums/required/type/properties preserved; protected-region validation, receipts, optional token_counter measurement; no runtime registry wiring; focused token optimization tests pass |
+| **TOKEN-TOOLS-1B** | Code | P1 | Planned | Runtime wiring for compact LLM-facing tool catalog view in `ToolPlanningService` / `CatalogToolPlanner` / schema export path before `generate_with_tools` | Compact view enabled only by Token Optimization policy/profile; canonical registry unchanged; tool call payloads/results not compressed by default; fixture shows lower token count; runtime/nexus tool tests and `scripts/check_tool_schema_optimizer.py` once wiring exists |
 
 **Explicit exclusions:** no payload compression, no result compression, no permission expansion, no replacement of `ToolAccessPolicy`, no change to tool runtime execution semantics.
+
+**TOKEN-TOOLS-1A closeout:**
+
+- helper-only `ToolSchemaOptimizer` added
+- deterministic compact LLM-facing view added
+- no runtime tool registry wiring
+- no executable schema mutation
+- runtime wiring deferred to `TOKEN-TOOLS-1B`
 
 ---
 

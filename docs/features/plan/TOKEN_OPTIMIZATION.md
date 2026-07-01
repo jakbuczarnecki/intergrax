@@ -424,7 +424,7 @@ TOKEN-1B    protected region parser/validator — Done / Closed
 TOKEN-1C    compression receipts + validation helpers — Done / Closed
 TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
 TOKEN-2     OutputPolicy runtime resolver — Done / Closed
-TOKEN-3     ToolSchemaOptimizer compact catalog view
+TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
 TOKEN-4     ContextPackOptimizer light/structural compression only
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4
 TOKEN-5     MemorySummaryCompressor with staging/rollback
@@ -524,7 +524,7 @@ uv run python scripts/check_output_policy_wiring.py
 - no content optimization added
 - no telemetry emission added
 - no runtime hot-path wiring added
-- next step: **TOKEN-4** ContextPackOptimizer
+- next step: **TOKEN-3** ToolSchemaOptimizer — **Done / Closed** (§TOKEN-3 below)
 
 ---
 
@@ -536,16 +536,24 @@ uv run python scripts/check_output_policy_wiring.py
 
 **Dependencies:** TOKEN-1 contracts and protected-region validator; TOKEN-6 telemetry can be added after compact catalog works.
 
-**Deliverables:**
+**Scope (TOKEN-3 closeout):** TOKEN-3 closes helper-only `ToolSchemaOptimizer` in `intergrax/runtime/token_optimization/tool_schema.py`.
 
-- `intergrax/runtime/nexus/tools/tool_schema_optimizer.py`,
-- compact LLM-facing tool catalog view,
-- schema-preservation validator,
-- optional cache key for compact catalog view,
-- savings telemetry hook placeholder,
-- lightweight CI script `scripts/check_tool_schema_optimizer.py`.
+- no runtime tool registry wiring
+- no executable tool schema changes
+- no prompt assembly changes
+- no telemetry emission
+- runtime integration into `ToolPlanningService` / `CatalogToolPlanner` / schema export path is future work (`TOKEN-TOOLS-1B`)
 
-**Integration target:** `ToolPlanningService`, `CatalogToolPlanner`, `tool_planner_input`, or the schema export path used before `generate_with_tools`.
+**Deliverables (helper-only, TOKEN-3 closeout):**
+
+- `intergrax/runtime/token_optimization/tool_schema.py` — `ToolSchemaOptimizer` and `optimize_tool_schema_catalog`
+- deterministic LLM-facing compact catalog view
+- description normalization/truncation
+- optional example removal via `allow_example_removal`
+- protected-region validation integration
+- compression receipts integration
+- optional `token_counter` measurement
+- unit tests in `tests/unit/runtime/token_optimization/test_tool_schema.py`
 
 **Acceptance criteria:**
 
@@ -559,29 +567,35 @@ uv run python scripts/check_output_policy_wiring.py
 **Required tests/checks:**
 
 ```bash
-uv run pytest tests/unit/runtime/nexus/tools/ -q
-uv run pytest tests/unit/tools/ -q
-uv run python scripts/check_tool_schema_optimizer.py
+uv run pytest tests/unit/runtime/token_optimization/test_tool_schema.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
 ```
 
-**Domain plan rows:** `TOKEN-TOOLS-1` in `docs/plan/TOOLS.md`.
+**Domain plan rows:** `TOKEN-TOOLS-1A` (Done / Closed) and `TOKEN-TOOLS-1B` (Planned) in `docs/plan/TOOLS.md`.
 
-**Status:** Done (TOKEN-3 closeout).
+**Status:** **Done / Closed**.
 
 **Closeout (TOKEN-3):**
 
 - `ToolSchemaOptimizer` added in `intergrax/runtime/token_optimization/tool_schema.py`
 - deterministic LLM-facing tool catalog compaction added
 - description normalization/truncation added
+- optional example removal via `allow_example_removal` added
 - required fields/types/enums/properties preserved
 - protected-region validation integrated
 - receipts integrated
 - optional `token_counter` measurement supported
 - no tokenizer/model calls added
 - no runtime tool registry wiring added
+- no executable tool schema mutation added
 - no prompt assembly added
 - no telemetry emission added
+- runtime wiring into `ToolPlanningService` / `CatalogToolPlanner` / schema export path deferred to `TOKEN-TOOLS-1B`
 - next step: **TOKEN-4** ContextPackOptimizer light/structural compression
+
+---
+
+## Phase TOKEN-4 — ContextPackOptimizer
 
 **Goal:** Optimize selected context fragments after ranking/budgeting and before final formatting/preflight.
 

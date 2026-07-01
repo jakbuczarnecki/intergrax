@@ -208,6 +208,7 @@ def optimize_tool_schema_catalog(
                 "input_kind": input_kind,
                 "description_fields_compacted": 0,
                 "description_fields_preserved_due_to_protected_regions": 0,
+                "examples_removed": 0,
             },
         )
 
@@ -277,6 +278,7 @@ def optimize_tool_schema_catalog(
             "description_fields_preserved_due_to_protected_regions": compaction_stats[
                 "preserved_due_to_protected_regions"
             ],
+            "examples_removed": compaction_stats["examples_removed"],
             **({"fallback_reason": "protected_region_validation_failed"} if fallback_used else {}),
         },
     )
@@ -343,10 +345,15 @@ def _compact_catalog_descriptions(
     max_description_chars: int,
     allow_example_removal: bool,
 ) -> dict[str, int]:
-    stats = {"compacted": 0, "preserved_due_to_protected_regions": 0}
+    stats = {"compacted": 0, "preserved_due_to_protected_regions": 0, "examples_removed": 0}
 
-    if isinstance(node, Mapping):
+    if isinstance(node, dict):
+        keys_to_delete: list[str] = []
         for key, value in list(node.items()):
+            if key == "examples" and allow_example_removal:
+                keys_to_delete.append(key)
+                stats["examples_removed"] += 1
+                continue
             if key == "description" and isinstance(value, str):
                 normalized, preserved = _normalize_description_field(
                     value,
@@ -357,8 +364,6 @@ def _compact_catalog_descriptions(
                 if preserved:
                     stats["preserved_due_to_protected_regions"] += 1
                 node[key] = normalized
-            elif key == "examples" and allow_example_removal:
-                continue
             else:
                 child_stats = _compact_catalog_descriptions(
                     value,
@@ -369,6 +374,21 @@ def _compact_catalog_descriptions(
                 stats["preserved_due_to_protected_regions"] += child_stats[
                     "preserved_due_to_protected_regions"
                 ]
+                stats["examples_removed"] += child_stats["examples_removed"]
+        for key in keys_to_delete:
+            del node[key]
+    elif isinstance(node, Mapping):
+        for value in node.values():
+            child_stats = _compact_catalog_descriptions(
+                value,
+                max_description_chars=max_description_chars,
+                allow_example_removal=allow_example_removal,
+            )
+            stats["compacted"] += child_stats["compacted"]
+            stats["preserved_due_to_protected_regions"] += child_stats[
+                "preserved_due_to_protected_regions"
+            ]
+            stats["examples_removed"] += child_stats["examples_removed"]
     elif isinstance(node, list):
         for item in node:
             child_stats = _compact_catalog_descriptions(
@@ -380,6 +400,7 @@ def _compact_catalog_descriptions(
             stats["preserved_due_to_protected_regions"] += child_stats[
                 "preserved_due_to_protected_regions"
             ]
+            stats["examples_removed"] += child_stats["examples_removed"]
 
     return stats
 

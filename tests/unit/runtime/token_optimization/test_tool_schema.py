@@ -43,6 +43,29 @@ _TOOL_SCHEMA_MODULE = (
     / "tool_schema.py"
 )
 
+def _sample_catalog_with_examples() -> dict[str, object]:
+    return {
+        "tools": [
+            {
+                "name": "search_files",
+                "description": "Search files.",
+                "examples": [{"query": "invoice"}],
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "enum": ["name", "content", "path"],
+                            "examples": ["invoice", "contract"],
+                        }
+                    },
+                    "required": ["query"],
+                },
+            }
+        ]
+    }
+
+
 def _sample_catalog(*, long_description: str | None = None) -> dict[str, object]:
     description = long_description or "  Search   the   workspace  "
     return {
@@ -152,6 +175,78 @@ def test_input_mapping_and_list_are_not_mutated() -> None:
 
     assert catalog == catalog_snapshot
     assert tool_list == tool_list_snapshot
+
+
+def test_default_config_preserves_examples() -> None:
+    catalog = _sample_catalog_with_examples()
+
+    outcome = optimize_tool_schema_catalog(catalog, token_policy=_enabled_policy())
+
+    parsed = json.loads(outcome.optimized_content)
+    tool = parsed["tools"][0]
+    assert "examples" in tool
+    assert tool["examples"] == [{"query": "invoice"}]
+    assert "examples" in tool["parameters"]["properties"]["query"]
+    assert tool["parameters"]["properties"]["query"]["examples"] == [
+        "invoice",
+        "contract",
+    ]
+    assert outcome.result.metadata.get("examples_removed", 0) == 0
+
+
+def test_allow_example_removal_removes_examples() -> None:
+    catalog = _sample_catalog_with_examples()
+    config = ToolSchemaOptimizationConfig(allow_example_removal=True)
+
+    outcome = optimize_tool_schema_catalog(
+        catalog,
+        token_policy=_enabled_policy(),
+        config=config,
+    )
+
+    parsed = json.loads(outcome.optimized_content)
+    tool = parsed["tools"][0]
+    assert "examples" not in tool
+    assert "examples" not in tool["parameters"]["properties"]["query"]
+    assert outcome.result.metadata["examples_removed"] == 2
+
+
+def test_allow_example_removal_preserves_schema_semantics() -> None:
+    catalog = _sample_catalog_with_examples()
+    config = ToolSchemaOptimizationConfig(allow_example_removal=True)
+
+    outcome = optimize_tool_schema_catalog(
+        catalog,
+        token_policy=_enabled_policy(),
+        config=config,
+    )
+
+    parsed = json.loads(outcome.optimized_content)
+    tool = parsed["tools"][0]
+    params = tool["parameters"]
+
+    assert tool["name"] == "search_files"
+    assert "query" in params["properties"]
+    assert params["required"] == ["query"]
+    assert params["type"] == "object"
+    assert params["properties"]["query"]["type"] == "string"
+    assert params["properties"]["query"]["enum"] == ["name", "content", "path"]
+
+
+def test_input_not_mutated_when_examples_are_removed() -> None:
+    catalog = _sample_catalog_with_examples()
+    catalog_snapshot = copy.deepcopy(catalog)
+    config = ToolSchemaOptimizationConfig(allow_example_removal=True)
+
+    optimize_tool_schema_catalog(
+        catalog,
+        token_policy=_enabled_policy(),
+        config=config,
+    )
+
+    assert catalog == catalog_snapshot
+    assert "examples" in catalog["tools"][0]
+    assert "examples" in catalog["tools"][0]["parameters"]["properties"]["query"]
 
 
 def test_runtime_schema_snapshot_unchanged_after_optimization() -> None:
