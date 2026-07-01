@@ -116,3 +116,5 @@ The LKW implementation order becomes:
 ```
 
 This is the correct proof model: LKW proves the platform by forcing the platform to absorb every reusable lesson from the product implementation.
+
+**Platform proof scope (2026-07):** The loop now explicitly covers provider-switch and production-maturity proofs beyond product capability slices — including model serving providers, persistence/database, vector stores, observability backends, metrics/tracing/error monitoring, token optimization, and scaffold/deploy propagation. Strategic roadmap: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF.

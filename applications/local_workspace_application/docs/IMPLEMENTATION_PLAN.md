@@ -61,6 +61,28 @@ Before closing any LKW wave, answer:
 
 `NexusLoop` constructor width and `StepKernelContext` width remain deferred watchlist items unless LKW exposes concrete implementation or testing pain.
 
+### LKW-PF — LKW-driven Platform Proof Roadmap
+
+LKW is the **primary product workload** used to discover missing platform capabilities. Each platform proof item must produce both:
+
+1. **LKW proof acceptance** — the capability works on the LKW proof path.
+2. **Reusable platform acceptance** — scaffold, config, deploy, CI, or operator runbook lessons propagate when applicable.
+
+**ID note:** `LKW-PF0`–`LKW-PF7` below are the **strategic platform-proof roadmap**. Closed H1 follow-up rows **`LKW-PF1`**/**`LKW-PF2`** (RuntimeEvent `TOOL_*`, `RunArtifactBundle` / `shadow_workspace_id`) in §5 Platform follow-ups are a separate historical track — same prefix family, different scope.
+
+| ID | Status | Meaning |
+|----|--------|---------|
+| **LKW-PF0** | Planned | Define what counts as platform proof, operational proof, and production-grade readiness. |
+| **LKW-PF1** | Planned / Platform-reusable | **Observability production readiness** — Elasticsearch/Kibana proof is **closed for platform proof**, but production readiness still needs health/status, auth/TLS, retention/rotation, batching/bulk decision, dashboard-as-code, CI/live proof automation, path policy, and operator runbook. See [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR. |
+| **LKW-PF2** | Planned / Platform-reusable | **Model serving provider switch proof** — prove LKW can switch model serving backends such as **Ollama** and **vLLM** through typed config/env profile without product code changes. Platform owns provider contracts/adapters; LKW owns proof workload and deployment wiring later. |
+| **LKW-PF3** | Planned / Platform-reusable | **Relational persistence proof** — introduce a **PostgreSQL**-backed persistence proof for platform/application state (tenants, users, workspaces, memberships/permissions, runs, run steps, artifact metadata, proof metadata references). Do not store raw documents, chunks, prompts, secrets, or large artifacts by default. |
+| **LKW-PF4** | Planned / Platform-reusable | **Vector store portability proof** — prove vector store backend portability. **Qdrant** remains the local-first baseline. Future provider candidates may include **Pinecone**, **Weaviate**, **Milvus**, and **pgvector**. Platform owns vector store contract/provider selection; LKW owns proof workload and deployment wiring later. |
+| **LKW-PF5** | Planned / Platform-reusable | **Metrics/tracing platform proof** — define the relationship between observability projections: **Elasticsearch/Kibana** for structured event/log timeline and readback; **Prometheus/Grafana** for metrics, counters, rates, SLO dashboards; **Tempo** (or equivalent) for traces/spans; **Sentry** for error issue triage. Use vendor-neutral platform contracts first; tools are replaceable. |
+| **LKW-PF6** | Planned / Strategic | **Token Optimization platform proof** — LKW must prove measurable token savings without correctness/safety regression. Proof uses the existing Token Optimization plan ([`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md)): baseline token usage, optimized token usage, saved tokens, compression receipts, protected-region validation, regression gates, and observability attribution by run/step/source/model/provider/strategy/output profile. |
+| **LKW-PF7** | Planned / Platform-reusable | **Scaffold/deployment propagation** — platform lessons from LKW proofs propagate into app scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks when applicable. |
+
+Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
+
 ---
 
 ## 0b. Cursor token guardrails
