@@ -425,7 +425,7 @@ TOKEN-1C    compression receipts + validation helpers — Done / Closed
 TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
 TOKEN-2     OutputPolicy runtime resolver — Done / Closed
 TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
-TOKEN-4     ContextPackOptimizer light/structural compression only
+TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4
 TOKEN-5     MemorySummaryCompressor with staging/rollback
 TOKEN-6B    token regression benchmark runner + CI scripts
