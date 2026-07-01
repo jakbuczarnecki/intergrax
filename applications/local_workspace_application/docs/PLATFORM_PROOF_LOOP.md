@@ -202,3 +202,171 @@ When closing any LKW-driven platform proof wave:
 | Production hardening backlog | **Planned** | Tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-6`, `OBS-VENDOR-6C`, and related rows). |
 
 **Preserved distinction:** Elasticsearch/Kibana path is **closed for platform proof**, but **not production-grade**. Full **OBS-VENDOR** production hardening remains **Planned**.
+
+---
+
+## 10. LKW-PF6-0 — Token Optimization proof design
+
+**Status:** **Done / Closed** (docs-only, 2026-07-01).
+
+**Maturity level closed:** proof design only. Does **not** close `LKW-PF6` platform proof, operational proof, or production-grade readiness.
+
+**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate **before** `TOKEN-1A` code starts. Token Optimization is a **cross-layer platform capability** — not a private LKW feature. Narrative: Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
+
+Canonical detail: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0. Implementation schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout.
+
+### 10.1 Representative LKW workflows
+
+All candidate workflows follow the existing LKW product proof shape:
+
+```text
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
+```
+
+| Workflow ID | Description | Proof intent |
+|-------------|-------------|--------------|
+| **LKW-TOK-W1** | Small workspace indexing + search + synthesis | Baseline for minimal tenant-scoped path; establishes per-step token categories on a compact corpus. |
+| **LKW-TOK-W2** | Medium workspace search + synthesis with evidence | Baseline for RAG/evidence/context-pack token attribution under realistic retrieval load. |
+| **LKW-TOK-W3** | Repeated synthesis run with similar tool/catalog/context exposure | Measures recurring tool-catalog and context-pack savings across runs with stable exposure. |
+| **LKW-TOK-W4** | Failure/safety-preserving run where exact regions must not be compressed | Proves optimization rejection/fallback when protected regions or safety boundaries would be violated. |
+
+Proof design only — no fixtures or scripts in this step.
+
+### 10.2 Baseline measurement shape
+
+Baseline measurement happens **before** optimization is applied and must be reproducible enough to compare against optimized runs.
+
+| Field | Meaning |
+|-------|---------|
+| `input_context_tokens` | Tokens in assembled input/context before optimization |
+| `tool_catalog_tokens` | Tokens in LLM-facing tool catalog view |
+| `retrieved_evidence_context_pack_tokens` | Tokens from RAG/evidence/context pack fragments |
+| `output_tokens` | Tokens in model output for the measured step |
+| `total_tokens` | Sum attributable to the measured scope |
+| `model` | Model identifier |
+| `provider` | Provider identifier |
+| `runtime_profile` | Active runtime/output/profile configuration |
+| `workflow_id` | One of `LKW-TOK-W1` … `LKW-TOK-W4` |
+| `run_id` | Harness run identifier |
+| `step_id` | Step identifier within the run |
+
+### 10.3 Optimized measurement shape
+
+Optimized proof runs must later report:
+
+| Field | Meaning |
+|-------|---------|
+| `baseline_token_usage` | Baseline counts per category (§10.2) |
+| `optimized_token_usage` | Post-optimization counts per category |
+| `saved_tokens` | `baseline − optimized` per category and total |
+| `saved_ratio` | `saved_tokens / baseline` where baseline > 0 |
+| `optimization_strategy` | Strategy applied (e.g. output profile, compact catalog, context-pack light mode) |
+| `affected_source_category` | Which token category/source was optimized |
+| `fallback_status` | Whether optimization was applied, partially applied, or rejected with fallback |
+| `validation_status` | Protected-region and quality validation outcome |
+
+### 10.4 Token categories
+
+Canonical categories for attribution:
+
+- input/context tokens
+- tool catalog tokens
+- RAG/evidence/context pack tokens
+- memory tokens
+- output tokens
+- system/policy tokens (where measurable)
+- total tokens
+
+Categories must support later attribution by: `run`, `step`, `source`, `model`, `provider`, `strategy`, `output_profile`.
+
+### 10.5 Quality and regression criteria
+
+An optimized run is **not** successful if it saves tokens but breaks:
+
+- tenant-scoped evidence
+- evidence references
+- synthesized answer integrity
+- shadow artifact behavior
+- safety boundaries
+- exact protected regions
+- platform abstraction boundaries
+
+**Minimum comparison expectation:** baseline result and optimized result must remain **behaviorally equivalent** for the proof workload, with differences limited to allowed formatting or verbosity changes.
+
+### 10.6 Protected-region requirements
+
+Token Optimization must never lose or rewrite protected regions such as:
+
+- code blocks
+- inline code
+- paths
+- URLs
+- env vars
+- enum values
+- hashes
+- dates
+- exact error strings
+- policy text
+- IDs
+- tenant identifiers where required for correctness
+- evidence references
+
+`TOKEN-1B` will later implement protected-region validation. `LKW-PF6-0` defines the proof requirement only.
+
+### 10.7 Compression receipt expectations
+
+Future compression receipts must prove:
+
+- original hash
+- optimized hash
+- original token count
+- optimized token count
+- saved tokens
+- saved ratio
+- strategy
+- protected-region validation status
+- fallback reason when optimization is rejected
+
+`TOKEN-1C` will later implement receipts. No implementation in `LKW-PF6-0`.
+
+### 10.8 Observability visibility
+
+Token savings must be visible through the **Harness Observability Spine** or an **approved domain-signal path**. Do not introduce a private Token Optimization telemetry bus.
+
+Proof must later show attribution by: `run_id`, `step_id`, `workflow_id`, `model`, `provider`, `profile`, `source/category`, `strategy`, `baseline_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`.
+
+See [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase TOKEN-OBS.
+
+### 10.9 Public proof format
+
+The later public-grade LKW token proof (`LKW-PF6-C`) must include:
+
+- representative workflow description
+- baseline token usage
+- optimized token usage
+- saved tokens
+- saved ratio
+- receipt references
+- protected-region validation result
+- quality/regression result
+- observability attribution
+- known limitations
+
+**Must not expose:** raw prompts, raw documents, raw RAG chunks, raw synthesized content, tool args, secrets, tokens/secrets, absolute file paths, large raw artifacts.
+
+### 10.10 LKW-PF6-0 closure rule
+
+`LKW-PF6-0` is **Done / Closed** only when all of the following hold:
+
+- [x] representative workflows are defined (§10.1),
+- [x] baseline and optimized measurement shapes are defined (§10.2, §10.3),
+- [x] token categories are defined (§10.4),
+- [x] quality/regression criteria are defined (§10.5),
+- [x] protected-region requirements are defined (§10.6),
+- [x] compression receipt expectations are defined (§10.7),
+- [x] observability visibility is defined (§10.8),
+- [x] public proof format is defined (§10.9),
+- [x] `TOKEN-1A` remains not started,
+- [x] no code/runtime/test/CI/dependency files are changed.
+
+**Next implementation step:** `TOKEN-1A` — shared contracts + package skeleton ([`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) Phase TOKEN-1).

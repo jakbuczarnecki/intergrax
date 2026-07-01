@@ -60,7 +60,159 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. Before **TOKEN-1A** implementation, define **LKW-PF6-0** proof design (representative workflow, baseline metrics, quality/regression criteria, token categories, public proof shape). LKW proof should measure at least: input/context tokens, tool catalog tokens, output tokens, total tokens, saved tokens, saved ratio, model/provider/profile, quality/regression result, and receipt references. TOKEN implementation order remains **TOKEN-1**..**TOKEN-7** below, but LKW proof ordering may introduce proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
+**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-1A** remains **not started**. TOKEN implementation order remains **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
+
+---
+
+## LKW-PF6-0 — Token Optimization proof design
+
+**Status:** **Done / Closed** (docs-only).
+
+**Maturity level:** proof design only — does not close `LKW-PF6` platform proof.
+
+**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate before **TOKEN-1A** code starts. This section is the canonical source; [`applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md`](../../applications/local_workspace_application/docs/PLATFORM_PROOF_LOOP.md) §10 and [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout mirror it for LKW scheduling.
+
+**Narrative:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
+
+**Out of scope for LKW-PF6-0:** contracts, runtime behavior, optimizers, telemetry payloads, validators, benchmarks, fixtures, scripts, and any `TOKEN-*` implementation.
+
+### Representative LKW workflows
+
+All workflows use the existing LKW product proof shape:
+
+```text
+index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
+```
+
+| Workflow ID | Description | Proof intent |
+|-------------|-------------|--------------|
+| **LKW-TOK-W1** | Small workspace indexing + search + synthesis | Minimal tenant-scoped baseline; compact corpus per-step token categories. |
+| **LKW-TOK-W2** | Medium workspace search + synthesis with evidence | RAG/evidence/context-pack attribution under realistic retrieval load. |
+| **LKW-TOK-W3** | Repeated synthesis with similar tool/catalog/context exposure | Recurring tool-catalog and context-pack savings across stable-exposure runs. |
+| **LKW-TOK-W4** | Failure/safety-preserving run — exact regions must not be compressed | Optimization rejection/fallback when protected regions or safety boundaries would be violated. |
+
+### Baseline measurement shape
+
+Measured **before** optimization; must be reproducible enough to compare against optimized runs.
+
+Required fields per measured step/run scope:
+
+- `input_context_tokens`
+- `tool_catalog_tokens`
+- `retrieved_evidence_context_pack_tokens`
+- `output_tokens`
+- `total_tokens`
+- `model`
+- `provider`
+- `runtime_profile`
+- `workflow_id` (`LKW-TOK-W1` … `LKW-TOK-W4`)
+- `run_id`
+- `step_id`
+
+### Optimized measurement shape
+
+Later optimized proof runs must report:
+
+- `baseline_token_usage` (per category)
+- `optimized_token_usage` (per category)
+- `saved_tokens`
+- `saved_ratio`
+- `optimization_strategy`
+- `affected_source_category`
+- `fallback_status`
+- `validation_status`
+
+### Token categories
+
+Canonical categories:
+
+| Category | Notes |
+|----------|-------|
+| input/context tokens | Assembled prompt/context before optimization |
+| tool catalog tokens | LLM-facing tool schema/catalog view |
+| RAG/evidence/context pack tokens | Retrieved fragments included in context |
+| memory tokens | Memory summaries/blocks when in scope |
+| output tokens | Model completion for the step |
+| system/policy tokens | Where measurable separately |
+| total tokens | Aggregate for the measured scope |
+
+Attribution dimensions (required for later telemetry and public proof): `run`, `step`, `source`, `model`, `provider`, `strategy`, `output_profile`.
+
+### Quality and regression criteria
+
+Optimized run **fails** the proof if token savings break any of:
+
+- tenant-scoped evidence
+- evidence references
+- synthesized answer integrity
+- shadow artifact behavior
+- safety boundaries
+- exact protected regions
+- platform abstraction boundaries
+
+**Behavioral equivalence rule:** baseline and optimized results must remain behaviorally equivalent for the proof workload; only allowed formatting or verbosity differences are permitted.
+
+### Protected-region requirements
+
+Token Optimization must never lose or rewrite:
+
+- code blocks, inline code, paths, URLs, env vars, enum values, hashes, dates, exact error strings, policy text, IDs, tenant identifiers required for correctness, evidence references
+
+**TOKEN-1B** implements protected-region parser/validator later. **LKW-PF6-0** defines proof requirements only.
+
+### Compression receipt expectations
+
+Future receipts ( **TOKEN-1C** ) must prove:
+
+- original hash, optimized hash
+- original token count, optimized token count
+- saved tokens, saved ratio
+- strategy
+- protected-region validation status
+- fallback reason when optimization is rejected
+
+No receipt implementation in LKW-PF6-0.
+
+### Observability visibility
+
+Token savings must be visible through the **Harness Observability Spine** or an **approved domain-signal path**. No private Token Optimization telemetry bus.
+
+Later proof attribution fields: `run_id`, `step_id`, `workflow_id`, `model`, `provider`, `profile`, `source/category`, `strategy`, `baseline_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`.
+
+Owner plan: [`docs/plan/OBSERVABILITY.md`](../../plan/OBSERVABILITY.md) Phase TOKEN-OBS; early slice **TOKEN-6A-lite** defines telemetry shape only.
+
+### Public proof format (LKW-PF6-C target)
+
+Later public-grade proof must include:
+
+- representative workflow description
+- baseline and optimized token usage
+- saved tokens and saved ratio
+- receipt references
+- protected-region validation result
+- quality/regression result
+- observability attribution
+- known limitations
+
+**Redaction — must not expose:** raw prompts, raw documents, raw RAG chunks, raw synthesized content, tool args, secrets, tokens/secrets, absolute file paths, large raw artifacts.
+
+### LKW-PF6-0 closure rule
+
+Done / Closed when:
+
+- [x] §Representative workflows, baseline/optimized shapes, categories, quality criteria, protected regions, receipts, observability, and public proof format are defined above.
+- [x] **TOKEN-1A** remains not started.
+- [x] No code/runtime/test/CI/dependency files changed.
+
+**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below).
+
+### LKW proof phase map (post-design)
+
+| Phase | Scope | Depends on |
+|-------|-------|------------|
+| **LKW-PF6-A** | Baseline token measurement for §workflows | TOKEN-1A contracts (minimal) |
+| **LKW-PF6-B** | First measurable savings proof | TOKEN-2/3 and/or TOKEN-4 light, TOKEN-1C receipts |
+| **LKW-PF6-C** | Public-grade proof artifact | LKW-PF6-B + TOKEN-6A-lite/6B attribution |
 
 ---
 

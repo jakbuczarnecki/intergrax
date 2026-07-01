@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW-PF0 Closed — platform proof maturity bar defined**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -87,8 +87,7 @@ The strategic roadmap IDs (`LKW-PF0`–`LKW-PF7`) are **not** a strict implement
 
 1. ~~**LKW-PF0** — Define maturity bar~~ **Done / Closed** — see §LKW-PF0 closeout below and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
 
-2. **LKW-PF6-0** — Token Optimization proof design for LKW  
-   Define the representative LKW workflow, baseline metrics, quality/regression criteria, token categories to measure, and public proof shape before code changes.
+2. ~~**LKW-PF6-0** — Token Optimization proof design for LKW~~ **Done / Closed** — see §LKW-PF6-0 closeout below and [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0.
 
 3. **TOKEN-1A** — Shared Token Optimization contracts  
    Add shared contracts/package skeleton only; no hot-path optimization yet.
@@ -163,10 +162,35 @@ Canonical maturity definitions live in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF
 - [x] Proof closure rules documented (§9.5).
 - [x] Production hardening backlog rules documented (§9.4).
 - [x] Elasticsearch/Kibana remains **closed for platform proof** but **not production-grade** (§9.6; OBS-VENDOR production hardening **Planned** in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md)).
-- [x] Token Optimization remains **Planned** — `LKW-PF6`, `LKW-PF6-0`, and `TOKEN-1A` not started.
+- [x] Token Optimization implementation remains **Planned** — `LKW-PF6` and `TOKEN-1A` not started; `LKW-PF6-0` proof design **Done / Closed** (see §LKW-PF6-0 closeout).
 - [x] No code/runtime/test/CI/dependency files changed.
 
-**Next proofs must use this bar:** `LKW-PF6-0` (Token Optimization proof design) and all future LKW-PF items must state which maturity level they close and record production gaps in the appropriate platform plan backlog.
+**Next proofs must use this bar:** `TOKEN-1A` and all future LKW-PF items must state which maturity level they close and record production gaps in the appropriate platform plan backlog.
+
+#### LKW-PF6-0 closeout — Token Optimization proof design
+
+**Status:** **Done / Closed** (docs-only).
+
+**Maturity level closed:** proof design only — not platform proof, operational proof, or production-grade readiness.
+
+Canonical proof design: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0 · loop reference: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §10.
+
+**Narrative preserved:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos. Token Optimization is a **cross-layer platform capability**, not a private LKW feature.
+
+**LKW-PF6-0 acceptance (met):**
+
+- [x] Representative LKW workflows defined (small/medium workspace, repeated synthesis, failure/safety-preserving run).
+- [x] Baseline measurement shape defined (input/context, tool catalog, RAG/evidence/context pack, output, total tokens; model, provider, runtime profile, workflow id, run id, step id).
+- [x] Optimized measurement shape defined (baseline vs optimized usage, saved tokens/ratio, strategy, affected source/category, fallback status, validation status).
+- [x] Canonical token categories defined with attribution dimensions (run, step, source, model, provider, strategy, output profile).
+- [x] Quality/regression criteria defined — behavioral equivalence required; savings alone do not pass.
+- [x] Protected-region requirements defined — TOKEN-1B implements later; proof requirement only here.
+- [x] Compression receipt expectations defined — TOKEN-1C implements later; proof requirement only here.
+- [x] Observability visibility defined through Harness Observability Spine or approved domain-signal path — no private telemetry bus.
+- [x] Public proof format defined with redaction rules (no raw prompts, documents, chunks, synthesized content, tool args, secrets, tokens/secrets, absolute paths, large raw artifacts).
+- [x] `TOKEN-1A` remains **not started**; no code/runtime/test/CI/dependency files changed.
+
+**Next step:** `TOKEN-1A` — shared Token Optimization contracts + package skeleton (see recommended execution order §3).
 
 Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
