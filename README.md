@@ -5,10 +5,19 @@
 [![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
 [![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)
 [![LLM context](https://img.shields.io/badge/llms.txt-available-orange.svg)](llms.txt)
+[![LKW proof](https://img.shields.io/badge/LKW%20platform%20proof-run%20locally-2ea44f.svg)](docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 **Agent OS and Harness AI runtime** for building, orchestrating, experimenting with, and validating specialized AI agents — with a **clear separation between who decides, who executes, and who orchestrates.**
 
 ---
+
+## See Intergrax running
+
+The fastest way to evaluate Intergrax is the **Local Knowledge Workspace (LKW) platform proof** — a real Tier-3 application that runs a governed agent workflow through Nexus, `rag.retrieve`, runtime events, policy-safe observability export, Elasticsearch, and Kibana.
+
+The proof validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
+
+[Run the LKW platform proof →](docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 ## Overview
 

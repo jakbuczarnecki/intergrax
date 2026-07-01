@@ -12,6 +12,7 @@ wheels/
 
 # Project
 temp_documents/
+.tmp/
 api/chat/rag_app.db
 
 # Documents
