@@ -387,8 +387,8 @@ def _apply_source_type_constraints(
         if allow_lossy:
             allow_lossy = False
             constrained = True
-        if compression_level in _AGGRESSIVE_COMPRESSION_LEVELS:
-            compression_level = CompressionLevel.MEDIUM
+        if compression_level is not CompressionLevel.OFF:
+            compression_level = CompressionLevel.OFF
             constrained = True
 
     elif source_type is TokenOptimizationSourceType.OUTPUT:

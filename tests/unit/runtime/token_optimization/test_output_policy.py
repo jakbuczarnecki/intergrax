@@ -145,7 +145,9 @@ def test_prompt_source_type_remains_conservative_and_non_lossy() -> None:
 
     assert resolved.enabled is False
     assert resolved.allow_lossy is False
-    assert resolved.compression_level is CompressionLevel.MEDIUM
+    assert resolved.compression_level is CompressionLevel.OFF
+    assert resolved.require_validation is True
+    assert resolved.fallback_on_validation_failure is True
     assert resolved.reason is OutputPolicyResolutionReason.SOURCE_TYPE_CONSTRAINT
 
 

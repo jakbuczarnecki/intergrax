@@ -423,7 +423,7 @@ TOKEN-1A    shared contracts + package skeleton — Done / Closed
 TOKEN-1B    protected region parser/validator — Done / Closed
 TOKEN-1C    compression receipts + validation helpers — Done / Closed
 TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
-TOKEN-2     OutputPolicy runtime resolver
+TOKEN-2     OutputPolicy runtime resolver — Done / Closed
 TOKEN-3     ToolSchemaOptimizer compact catalog view
 TOKEN-4     ContextPackOptimizer light/structural compression only
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4
