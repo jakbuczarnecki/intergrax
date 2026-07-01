@@ -241,7 +241,7 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-5A** — MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner (per plan ordering).
+**Next step:** **TOKEN-6B** regression benchmark runner (per plan ordering).
 
 ---
 
@@ -269,7 +269,7 @@ Done / Closed when:
 - no observability exporter wiring added
 - no runtime event emission added
 - no tokenizer/model calls added
-- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner according to plan ordering
+- next step: **TOKEN-6B** regression benchmark runner according to plan ordering
 
 **TOKEN-6A-R refinement:**
 
@@ -464,7 +464,7 @@ TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
 TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
 TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
-TOKEN-5A    MemorySummaryCompressor helper-only first slice — Planned
+TOKEN-5A    MemorySummaryCompressor helper-only first slice — Done / Closed
 TOKEN-6B    token regression benchmark runner + CI scripts
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
@@ -698,7 +698,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no RAG retrieval behavior changed
 - no prompt assembly added
 - no telemetry emission added
-- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner, according to plan ordering
+- next step: **TOKEN-6B** regression benchmark runner, according to plan ordering
 
 ---
 
@@ -710,7 +710,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Dependencies:** TOKEN-1 contracts/receipts/protected regions; recommended after TOKEN-4 proves runtime receipts.
 
-**Status:** Planned.
+**Status:** Planned (helper-only first slice **TOKEN-5A** — Done / Closed; see §TOKEN-5A).
 
 **First slice:** **TOKEN-5A** — helper-only `MemorySummaryCompressor` with staging, receipts, validation, rollback metadata, and benchmark-ready result shape. See §TOKEN-5A below.
 
@@ -722,9 +722,27 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 ## TOKEN-5A — MemorySummaryCompressor helper-only first slice
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
 
 **Purpose:** Add a conservative MEMORY-owned `MemorySummaryCompressor` helper that compresses memory-summary candidates deterministically, records receipts and rollback metadata, and returns a benchmark-ready result shape — without live memory-store mutation, LLM-based semantic rewriting, or runtime hot-path wiring.
+
+**Closeout notes:**
+
+- helper-only `MemorySummaryCompressor` added (`intergrax/memory/summary_compressor.py`)
+- staged result / rollback metadata added
+- protected-region validation integrated
+- compression receipts integrated
+- optional `token_counter` supported
+- optional `semantic_validation_hook` supported
+- benchmark-ready result shape added
+- no live memory-store overwrite
+- no vector index mutation
+- no embedding regeneration
+- no LLM/model-based semantic rewriting
+- no HOS emission
+- no runtime hot-path wiring
+- no LKW proof execution
+- next step: **TOKEN-6B** regression benchmark runner according to plan ordering
 
 **Deliverables (implementation task, not this docs-only slice):**
 
@@ -919,7 +937,7 @@ Edit scope:
 Do not wire behavior into LLM call path yet.
 Do not implement ToolSchemaOptimizer yet.
 Do not implement ContextPackOptimizer yet.
-Do not implement MemorySummaryCompressor yet.
+TOKEN-5A helper-only `MemorySummaryCompressor` implemented; do not wire live memory flows yet.
 Do not create docs/plan/TOKEN_OPTIMIZATION.md.
 
 Acceptance:
