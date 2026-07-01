@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TOKEN-6A-lite: token savings telemetry payload shape tests."""
+"""TOKEN-6A-lite / TOKEN-6A: token savings telemetry payload and summary tests."""
 
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.token_optimization.context_pack import optimize_context_pack
 from intergrax.runtime.token_optimization.contracts import (
+    CompressionLevel,
     ProtectedRegionValidationResult,
     ProtectedRegionValidationStatus,
     StrategySafetyClass,
@@ -18,6 +20,8 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationBypassReason,
     TokenOptimizationDecision,
     TokenOptimizationMechanism,
+    TokenOptimizationPolicy,
+    TokenOptimizationProfile,
     TokenOptimizationRequest,
     TokenOptimizationResult,
     TokenOptimizationSourceType,
@@ -31,13 +35,21 @@ from intergrax.runtime.token_optimization.receipts import (
     build_compression_receipt,
 )
 from intergrax.runtime.token_optimization.telemetry import (
+    TokenOptimizationCounterSnapshot,
     TokenOptimizationTelemetryEventType,
     TokenOptimizationTelemetryPayload,
+    TokenOptimizationTelemetrySummary,
+    TokenOptimizationTelemetrySummaryValidationStatus,
     TokenOptimizationTelemetryValidationStatus,
+    build_token_optimization_counter_snapshot,
+    build_token_optimization_telemetry_summary,
     build_token_savings_telemetry_payload,
+    token_optimization_summary_to_attributes,
     token_savings_payload_to_attributes,
+    validate_token_optimization_telemetry_summary,
     validate_token_savings_telemetry_payload,
 )
+from intergrax.runtime.token_optimization.tool_schema import optimize_tool_schema_catalog
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -335,3 +347,309 @@ def test_no_telemetry_emission_is_performed() -> None:
                 "emit",
             }:
                 pytest.fail("telemetry module must not emit logs or events")
+
+
+def _enabled_policy() -> TokenOptimizationPolicy:
+    return TokenOptimizationPolicy(
+        enabled=True,
+        profile=TokenOptimizationProfile.CONSERVATIVE,
+        compression_level=CompressionLevel.LIGHT,
+        allow_lossy=False,
+        require_validation=True,
+        fallback_on_validation_failure=True,
+        emit_receipts=True,
+    )
+
+
+def _sample_catalog() -> dict[str, object]:
+    return {
+        "tools": [
+            {
+                "name": "search_files",
+                "description": "  Search   the   workspace  ",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                },
+            }
+        ]
+    }
+
+
+def test_counter_snapshot_from_measured_receipt() -> None:
+    receipt = _receipt_with_measurement()
+    snapshot = build_token_optimization_counter_snapshot(receipts=[receipt])
+
+    assert snapshot.total_receipts == 1
+    assert snapshot.applied_count == 1
+    assert snapshot.receipts_with_measurement_count == 1
+    assert snapshot.baseline_tokens == 100
+    assert snapshot.optimized_tokens == 75
+    assert snapshot.saved_tokens == 25
+    assert snapshot.saved_ratio == pytest.approx(0.25)
+
+
+def test_counter_snapshot_aggregates_multiple_receipts() -> None:
+    receipt_one = _receipt_with_measurement()
+    receipt_two = build_compression_receipt(
+        original_content='{"a": 1}',
+        optimized_content='{"a":1}',
+        request=TokenOptimizationRequest(
+            content='{"a": 1}',
+            source_type=TokenOptimizationSourceType.STRUCTURED_DATA,
+            strategy=_strategy(),
+        ),
+        result=TokenOptimizationResult(
+            content='{"a":1}',
+            decision=TokenOptimizationDecision.APPLY,
+            measurement=TokenSavingsMeasurement(
+                baseline_tokens=20,
+                optimized_tokens=10,
+                saved_tokens=10,
+                saved_ratio=0.5,
+                confidence=TokenSavingsClaimConfidence.MEASURED,
+                category=TokenCategory.INPUT_CONTEXT,
+                source_type=TokenOptimizationSourceType.STRUCTURED_DATA,
+            ),
+        ),
+        receipt_id="receipt-telemetry-2",
+        created_at="2026-07-01T12:00:00+00:00",
+    )
+    snapshot = build_token_optimization_counter_snapshot(receipts=[receipt_one, receipt_two])
+
+    assert snapshot.total_receipts == 2
+    assert snapshot.applied_count == 2
+    assert snapshot.baseline_tokens == 120
+    assert snapshot.optimized_tokens == 85
+    assert snapshot.saved_tokens == 35
+
+
+def test_duplicate_receipt_id_is_not_double_counted() -> None:
+    receipt = _receipt_with_measurement()
+    duplicate = CompressionReceipt(
+        receipt_id=receipt.receipt_id,
+        created_at=receipt.created_at,
+        source_type=receipt.source_type,
+        decision=receipt.decision,
+        original_hash=receipt.original_hash,
+        optimized_hash=receipt.optimized_hash,
+        measurement=receipt.measurement,
+    )
+    tool_outcome = optimize_tool_schema_catalog(
+        _sample_catalog(),
+        token_policy=_enabled_policy(),
+        token_counter=len,
+    )
+    assert tool_outcome.receipt is not None
+    snapshot = build_token_optimization_counter_snapshot(
+        receipts=[receipt, duplicate, tool_outcome.receipt],
+        tool_schema_outcomes=[tool_outcome],
+    )
+
+    assert snapshot.total_receipts == 2
+
+
+def test_counter_snapshot_counts_tool_schema_changed() -> None:
+    outcome = optimize_tool_schema_catalog(_sample_catalog(), token_policy=_enabled_policy())
+    snapshot = build_token_optimization_counter_snapshot(tool_schema_outcomes=[outcome])
+
+    assert snapshot.total_tool_schema_outcomes == 1
+    assert snapshot.tool_schema_changed_count == 1
+
+
+def test_counter_snapshot_counts_context_pack_changed() -> None:
+    from intergrax.runtime.token_optimization.context_pack import ContextFragment
+
+    fragments = [
+        ContextFragment(
+            fragment_id="frag_1",
+            content="  spaced   content  ",
+            source_type=TokenOptimizationSourceType.RAG_CONTEXT_PACK,
+        )
+    ]
+    outcome = optimize_context_pack(fragments, token_policy=_enabled_policy())
+    snapshot = build_token_optimization_counter_snapshot(context_pack_outcomes=[outcome])
+
+    assert snapshot.total_context_pack_outcomes == 1
+    assert snapshot.context_pack_changed_count == 1
+
+
+def test_counter_snapshot_includes_receipt_measurement_from_outcome() -> None:
+    def counter(text: str) -> int:
+        return len(text)
+
+    outcome = optimize_tool_schema_catalog(
+        _sample_catalog(),
+        token_policy=_enabled_policy(),
+        token_counter=counter,
+    )
+    snapshot = build_token_optimization_counter_snapshot(tool_schema_outcomes=[outcome])
+
+    assert snapshot.total_receipts == 1
+    assert snapshot.receipts_with_measurement_count == 1
+    assert snapshot.baseline_tokens > 0
+    assert snapshot.saved_tokens > 0
+
+
+def test_counter_snapshot_without_measurement_has_zero_token_totals() -> None:
+    receipt = CompressionReceipt(
+        receipt_id="receipt-no-measurement",
+        created_at="2026-07-01T12:00:00+00:00",
+        source_type=TokenOptimizationSourceType.TOOL_CATALOG,
+        decision=TokenOptimizationDecision.BYPASS,
+        original_hash="abc",
+        optimized_hash="def",
+        bypass_reason=TokenOptimizationBypassReason.DISABLED,
+    )
+    snapshot = build_token_optimization_counter_snapshot(receipts=[receipt])
+
+    assert snapshot.baseline_tokens == 0
+    assert snapshot.optimized_tokens == 0
+    assert snapshot.saved_tokens == 0
+    assert snapshot.saved_ratio == 0.0
+
+
+def test_telemetry_summary_event_type_is_summary() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+    )
+    assert summary.event_type is TokenOptimizationTelemetryEventType.TOKEN_OPTIMIZATION_SUMMARY
+    assert summary.event_type.value == "token_optimization.summary"
+
+
+def test_telemetry_summary_includes_workflow_id_when_provided() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        workflow_id="workflow-telemetry-1",
+    )
+    assert summary.workflow_id == "workflow-telemetry-1"
+
+
+def test_telemetry_summary_excludes_raw_content() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"proof_case": "safe", "original_content": "must-not-appear"},
+    )
+    serialized = str(summary.metadata) + str(summary.snapshot.metadata)
+    assert _ORIGINAL not in serialized
+    assert _OPTIMIZED not in serialized
+    assert "original_content" not in summary.metadata
+
+
+def test_validate_telemetry_summary_passes_for_valid_summary() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+    )
+    outcome = validate_token_optimization_telemetry_summary(summary)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.PASSED
+    assert outcome.failures == ()
+
+
+def test_validate_telemetry_summary_fails_for_negative_counters() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        workflow_id=summary.workflow_id,
+        snapshot=TokenOptimizationCounterSnapshot(
+            total_receipts=-1,
+            baseline_tokens=summary.snapshot.baseline_tokens,
+            optimized_tokens=summary.snapshot.optimized_tokens,
+            saved_tokens=summary.snapshot.saved_tokens,
+            saved_ratio=summary.snapshot.saved_ratio,
+        ),
+        receipt_ids=summary.receipt_ids,
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "total_receipts must not be negative" in outcome.failures
+
+
+def test_validate_telemetry_summary_fails_for_inconsistent_saved_tokens() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        workflow_id=summary.workflow_id,
+        snapshot=TokenOptimizationCounterSnapshot(
+            total_receipts=1,
+            receipts_with_measurement_count=1,
+            baseline_tokens=100,
+            optimized_tokens=75,
+            saved_tokens=10,
+            saved_ratio=0.25,
+        ),
+        receipt_ids=summary.receipt_ids,
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "saved_tokens must equal baseline_tokens - optimized_tokens" in outcome.failures
+
+
+def test_validate_telemetry_summary_fails_for_duplicate_receipt_ids() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        snapshot=summary.snapshot,
+        receipt_ids=("receipt-telemetry-1", "receipt-telemetry-1"),
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "receipt_ids must be unique" in outcome.failures
+
+
+def test_summary_attributes_are_namespaced_and_scalar_only() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        workflow_id="workflow-attrs",
+    )
+    attributes = token_optimization_summary_to_attributes(summary)
+
+    assert attributes["intergrax.token_optimization.event_type"] == "token_optimization.summary"
+    assert attributes["intergrax.token_optimization.workflow_id"] == "workflow-attrs"
+    assert attributes["intergrax.token_optimization.total_receipts"] == 1
+    assert attributes["intergrax.token_optimization.applied_count"] == 1
+    assert attributes["intergrax.token_optimization.baseline_tokens"] == 100
+    assert attributes["intergrax.token_optimization.saved_tokens"] == 25
+    for value in attributes.values():
+        assert isinstance(value, (str, int, float, bool, type(None)))
+
+
+def test_integration_summary_from_real_tool_schema_and_context_pack_outcomes() -> None:
+    from intergrax.runtime.token_optimization.context_pack import ContextFragment
+
+    def counter(text: str) -> int:
+        return len(text)
+
+    tool_outcome = optimize_tool_schema_catalog(
+        _sample_catalog(),
+        token_policy=_enabled_policy(),
+        token_counter=counter,
+    )
+    context_outcome = optimize_context_pack(
+        [
+            ContextFragment(
+                fragment_id="frag_1",
+                content="  spaced   evidence  ",
+                source_type=TokenOptimizationSourceType.RAG_CONTEXT_PACK,
+            )
+        ],
+        token_policy=_enabled_policy(),
+        token_counter=counter,
+    )
+    summary = build_token_optimization_telemetry_summary(
+        tool_schema_outcomes=[tool_outcome],
+        context_pack_outcomes=[context_outcome],
+        workflow_id="workflow-integration",
+    )
+    attributes = token_optimization_summary_to_attributes(summary)
+
+    assert summary.snapshot.saved_tokens > 0
+    assert attributes["intergrax.token_optimization.saved_tokens"] > 0
+    serialized = str(summary.metadata) + str(summary.snapshot.metadata) + str(attributes)
+    assert tool_outcome.original_content not in serialized
+    assert tool_outcome.optimized_content not in serialized
+    assert context_outcome.original_content not in serialized
+    assert context_outcome.optimized_content not in serialized
+    for forbidden in ("original_content", "optimized_content", "raw_context", "raw_prompt"):
+        assert forbidden not in summary.metadata
+        assert forbidden not in attributes

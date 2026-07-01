@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-2/TOKEN-3/TOKEN-4)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-6A/TOKEN-2/TOKEN-3/TOKEN-4)."""
 
 from __future__ import annotations
 
@@ -42,12 +42,21 @@ from intergrax.runtime.token_optimization.receipts import (
     validate_receipt_integrity,
 )
 from intergrax.runtime.token_optimization.telemetry import (
+    TokenOptimizationCounterSnapshot,
     TokenOptimizationTelemetryEventType,
     TokenOptimizationTelemetryPayload,
+    TokenOptimizationTelemetrySource,
+    TokenOptimizationTelemetrySummary,
+    TokenOptimizationTelemetrySummaryValidationResult,
+    TokenOptimizationTelemetrySummaryValidationStatus,
     TokenOptimizationTelemetryValidationResult,
     TokenOptimizationTelemetryValidationStatus,
+    build_token_optimization_counter_snapshot,
+    build_token_optimization_telemetry_summary,
     build_token_savings_telemetry_payload,
+    token_optimization_summary_to_attributes,
     token_savings_payload_to_attributes,
+    validate_token_optimization_telemetry_summary,
     validate_token_savings_telemetry_payload,
 )
 from intergrax.runtime.token_optimization.output_policy import (
@@ -150,13 +159,22 @@ __all__ = [
     "TokenOptimizationSourceType",
     "TokenOptimizationStrategyKind",
     "TokenOptimizationStrategyRef",
+    "TokenOptimizationCounterSnapshot",
     "TokenOptimizationTelemetryEventType",
     "TokenOptimizationTelemetryPayload",
+    "TokenOptimizationTelemetrySource",
+    "TokenOptimizationTelemetrySummary",
+    "TokenOptimizationTelemetrySummaryValidationResult",
+    "TokenOptimizationTelemetrySummaryValidationStatus",
     "TokenOptimizationTelemetryValidationResult",
     "TokenOptimizationTelemetryValidationStatus",
     "TokenSavingsClaimConfidence",
+    "build_token_optimization_counter_snapshot",
+    "build_token_optimization_telemetry_summary",
     "build_token_savings_telemetry_payload",
+    "token_optimization_summary_to_attributes",
     "token_savings_payload_to_attributes",
+    "validate_token_optimization_telemetry_summary",
     "validate_token_savings_telemetry_payload",
     "TokenSavingsMeasurement",
     "TokenUsageMeasurement",

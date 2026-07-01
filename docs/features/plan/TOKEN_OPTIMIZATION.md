@@ -241,7 +241,35 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-5** — MemorySummaryCompressor or **TOKEN-6A** telemetry payloads/counters for TOKEN-2..4 (per plan ordering).
+**Next step:** **TOKEN-5** — MemorySummaryCompressor or **TOKEN-6B** regression benchmark runner (per plan ordering).
+
+---
+
+## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add helper-only telemetry summary/counter payloads for TOKEN-2 OutputPolicyResolver, TOKEN-3 ToolSchemaOptimizer, and TOKEN-4 ContextPackOptimizer.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/telemetry.py` — counter snapshot, summary payload, validation, attribute mapping
+- `tests/unit/runtime/token_optimization/test_telemetry.py`
+
+**Closeout:**
+
+- helper-only telemetry summary/counter payloads added for TOKEN-2..4
+- counter snapshot added
+- token optimization summary payload added
+- safe namespaced summary attribute mapping added
+- validation helper added
+- aggregates receipts, output-policy resolutions, tool schema outcomes, and context pack outcomes
+- deduplicates receipts by receipt_id
+- no HOS emission added
+- no observability exporter wiring added
+- no runtime event emission added
+- no tokenizer/model calls added
+- next step: **TOKEN-5** MemorySummaryCompressor or **TOKEN-6B** regression benchmark runner according to plan ordering
 
 ---
 
@@ -426,7 +454,7 @@ TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
 TOKEN-2     OutputPolicy runtime resolver — Done / Closed
 TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
 TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
-TOKEN-6A    telemetry payloads/counters for TOKEN-2..4
+TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
 TOKEN-5     MemorySummaryCompressor with staging/rollback
 TOKEN-6B    token regression benchmark runner + CI scripts
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
