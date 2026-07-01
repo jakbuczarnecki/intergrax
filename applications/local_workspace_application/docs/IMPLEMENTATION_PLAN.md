@@ -81,6 +81,69 @@ LKW is the **primary product workload** used to discover missing platform capabi
 | **LKW-PF6** | Planned / Strategic | **Token Optimization platform proof** — LKW must prove measurable token savings without correctness/safety regression. Proof uses the existing Token Optimization plan ([`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md)): baseline token usage, optimized token usage, saved tokens, compression receipts, protected-region validation, regression gates, and observability attribution by run/step/source/model/provider/strategy/output profile. |
 | **LKW-PF7** | Planned / Platform-reusable | **Scaffold/deployment propagation** — platform lessons from LKW proofs propagate into app scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks when applicable. |
 
+#### Recommended execution order
+
+The strategic roadmap IDs (`LKW-PF0`–`LKW-PF7`) are **not** a strict implementation sequence. The implementation sequence should prioritize the highest market-value platform proof: **Token Optimization**.
+
+1. **LKW-PF0** — Define maturity bar  
+   Define platform proof vs operational proof vs production-grade readiness.
+
+2. **LKW-PF6-0** — Token Optimization proof design for LKW  
+   Define the representative LKW workflow, baseline metrics, quality/regression criteria, token categories to measure, and public proof shape before code changes.
+
+3. **TOKEN-1A** — Shared Token Optimization contracts  
+   Add shared contracts/package skeleton only; no hot-path optimization yet.
+
+4. **TOKEN-1B** — Protected region validator  
+   Preserve code, paths, URLs, env vars, enum values, hashes, dates, exact error strings, and other exact regions before optimization is allowed.
+
+5. **TOKEN-1C** — Compression receipts  
+   Add receipts for original/optimized hashes, token counts, saved tokens, saved ratio, validation status, and fallback.
+
+6. **TOKEN-6A-lite** — Token savings telemetry shape  
+   Define typed savings attribution through the Harness Observability Spine; no private telemetry bus.
+
+7. **TOKEN-2** — OutputPolicy runtime resolver  
+   Replace prompt-only verbosity control with runtime output profiles and budget policy.
+
+8. **TOKEN-3** — ToolSchemaOptimizer  
+   Reduce recurring LLM-facing tool catalog token cost without changing tool schema semantics.
+
+9. **LKW-PF6-A** — LKW baseline token measurement  
+   Measure baseline token usage for representative LKW workflows before optimization.
+
+10. **LKW-PF6-B** — First measurable token-saving proof  
+    Show baseline vs optimized token usage, saved tokens, receipts, and quality/regression safety.
+
+11. **OBS-HEALTH-lite** — Minimal exporter/token telemetry status  
+    Add operator-visible health/status shape for exporter and token telemetry before deeper production hardening.
+
+12. **TOKEN-4** — ContextPackOptimizer light mode  
+    Apply light/structural context optimization only; semantic compression remains gated.
+
+13. **TOKEN-6B** — Token regression gates  
+    Add token-vs-quality regression benchmarks and checks.
+
+14. **LKW-PF6-C** — Public-grade Token Optimization proof  
+    Produce a clear LKW proof showing measured savings, safety, receipts, and observability attribution.
+
+15. **LKW-PF2** — Model serving provider switch proof  
+    Prove Ollama/vLLM or equivalent provider switch through typed config/profile, with token/cost/performance telemetry preserved.
+
+16. **LKW-PF3** — Persistent application state proof  
+    Prove PostgreSQL-backed persistence for tenants, users, workspaces, permissions, runs, run steps, artifact metadata, and proof references.
+
+17. **LKW-PF4** — Vector backend portability proof  
+    Prove vector store portability and retrieval consistency. Qdrant remains baseline; other providers are future candidates.
+
+18. **LKW-PF5** — Observability projections proof  
+    Prove metrics/tracing/error-monitoring projections after the core token/cost proof: Elasticsearch/Kibana, Prometheus/Grafana, Tempo, Sentry as complementary projections.
+
+19. **LKW-PF7** — Scaffold/deploy propagation closeout  
+    Propagate reusable lessons into application scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks.
+
+**Market-value priority:** Token Optimization is the primary near-term market-value proof because it demonstrates that Intergrax can reduce model/agent operating cost while preserving correctness, safety, receipts, and observability. Infrastructure proofs such as PostgreSQL, vector-store portability, vLLM/Ollama switching, Prometheus/Grafana/Tempo, and Sentry remain important production-maturity proofs, but they should not precede the first measurable token-cost proof unless they become blockers.
+
 Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
 ---
