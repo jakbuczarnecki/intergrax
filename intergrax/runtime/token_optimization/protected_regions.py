@@ -1,11 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Protected-region detection and validation (Phase TOKEN-1B)."""
+"""Protected-region detection and validation (Phase TOKEN-1B / TOKEN-1B-R)."""
 
 from __future__ import annotations
 
+import os
 import re
-from typing import Iterable
+from collections.abc import Iterable, Mapping
 
 from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegion,
@@ -15,6 +16,27 @@ from intergrax.runtime.token_optimization.contracts import (
 )
 
 _PREVIEW_MAX_LEN = 40
+
+PROTECTED_TERMS_ENV_VAR = "INTERGRAX_TOKEN_OPTIMIZATION_PROTECTED_TERMS"
+MAX_ENV_PROTECTED_TERMS = 200
+MAX_PROTECTED_TERM_LENGTH = 128
+
+BUILT_IN_PROTECTED_TERMS: tuple[str, ...] = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_ENDPOINT",
+    "DATABASE_URL",
+    "REDIS_URL",
+    "QDRANT_URL",
+    "ELASTICSEARCH_URL",
+    "JWT_SECRET",
+    "CLIENT_SECRET",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+)
+
+_TERM_SEP_RE = re.compile(r"[,;\n]")
 
 _FENCED_CODE_RE = re.compile(
     r"```[^\n]*\n[\s\S]*?```|```[\s\S]*?```",
@@ -30,10 +52,6 @@ _WINDOWS_PATH_RE = re.compile(
 )
 _RELATIVE_PATH_RE = re.compile(
     r"(?<![\w./])(?:\./[\w./-]+|\.\./[\w./-]+)"
-)
-_ENV_VAR_RE = re.compile(
-    r"\b[A-Z][A-Z0-9]*(?:_(?:URL|TOKEN|KEY|SECRET|PASSWORD|API_KEY))\b"
-    r"|\b[A-Z][A-Z0-9_]{2,}\b"
 )
 _HASH_RE = re.compile(r"\b[0-9a-fA-F]{32,64}\b")
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
@@ -60,7 +78,6 @@ _DETECTOR_SPECS: tuple[tuple[re.Pattern[str], ProtectedRegionKind], ...] = (
     (_UNIX_PATH_RE, ProtectedRegionKind.PATH),
     (_WINDOWS_PATH_RE, ProtectedRegionKind.PATH),
     (_RELATIVE_PATH_RE, ProtectedRegionKind.PATH),
-    (_ENV_VAR_RE, ProtectedRegionKind.ENV_VAR),
     (_HASH_RE, ProtectedRegionKind.HASH),
     (_DATE_RE, ProtectedRegionKind.DATE),
     (_VERSION_RE, ProtectedRegionKind.VERSION),
@@ -71,7 +88,56 @@ _DETECTOR_SPECS: tuple[tuple[re.Pattern[str], ProtectedRegionKind], ...] = (
 )
 
 
-def detect_protected_regions(content: str) -> tuple[ProtectedRegion, ...]:
+def parse_protected_terms(value: str) -> tuple[str, ...]:
+    """Parse a delimiter-separated protected-terms string with deterministic normalization."""
+    seen: set[str] = set()
+    result: list[str] = []
+    for part in _TERM_SEP_RE.split(value):
+        term = part.strip()
+        if not term:
+            continue
+        if len(term) > MAX_PROTECTED_TERM_LENGTH:
+            continue
+        if term in seen:
+            continue
+        seen.add(term)
+        result.append(term)
+        if len(result) >= MAX_ENV_PROTECTED_TERMS:
+            break
+    return tuple(result)
+
+
+def get_env_protected_terms(
+    env: Mapping[str, str] | None = None,
+) -> tuple[str, ...]:
+    """Return protected terms from the env extension variable, if set."""
+    source = os.environ if env is None else env
+    raw = source.get(PROTECTED_TERMS_ENV_VAR, "")
+    if not raw:
+        return ()
+    return parse_protected_terms(raw)
+
+
+def resolve_protected_terms(
+    *,
+    protected_terms: Iterable[str] = (),
+    include_env: bool = True,
+    env: Mapping[str, str] | None = None,
+) -> tuple[str, ...]:
+    """Merge built-in, env-extended, and explicit protected terms (env extends built-ins)."""
+    combined: list[str] = list(BUILT_IN_PROTECTED_TERMS)
+    if include_env:
+        combined.extend(get_env_protected_terms(env))
+    combined.extend(protected_terms)
+    return _deduplicate_terms(combined)
+
+
+def detect_protected_regions(
+    content: str,
+    *,
+    protected_terms: Iterable[str] = (),
+    include_env_protected_terms: bool = True,
+) -> tuple[ProtectedRegion, ...]:
     """Detect protected regions in *content* using conservative deterministic patterns."""
     if not content:
         return ()
@@ -119,6 +185,14 @@ def detect_protected_regions(content: str) -> tuple[ProtectedRegion, ...]:
                 )
             )
 
+    resolved_terms = resolve_protected_terms(
+        protected_terms=protected_terms,
+        include_env=include_env_protected_terms,
+    )
+    regions.extend(
+        _detect_env_var_regions(content, resolved_terms, excluded_spans)
+    )
+
     return _deduplicate_regions(regions)
 
 
@@ -127,9 +201,18 @@ def validate_protected_regions(
     optimized_content: str,
     *,
     regions: tuple[ProtectedRegion, ...] | None = None,
+    protected_terms: Iterable[str] = (),
+    include_env_protected_terms: bool = True,
 ) -> ProtectedRegionValidationResult:
     """Verify that all protected region values appear exactly in *optimized_content*."""
-    checked_regions = regions if regions is not None else detect_protected_regions(original_content)
+    if regions is not None:
+        checked_regions = regions
+    else:
+        checked_regions = detect_protected_regions(
+            original_content,
+            protected_terms=protected_terms,
+            include_env_protected_terms=include_env_protected_terms,
+        )
     if not checked_regions:
         return ProtectedRegionValidationResult(
             status=ProtectedRegionValidationStatus.NOT_APPLICABLE,
@@ -161,6 +244,45 @@ def validate_protected_regions(
         regions_failed=failed,
         failures=tuple(failures),
     )
+
+
+def _detect_env_var_regions(
+    content: str,
+    protected_terms: tuple[str, ...],
+    excluded_spans: list[tuple[int, int]],
+) -> list[ProtectedRegion]:
+    regions: list[ProtectedRegion] = []
+    for term in protected_terms:
+        start = 0
+        while start < len(content):
+            idx = content.find(term, start)
+            if idx == -1:
+                break
+            end = idx + len(term)
+            if not _span_overlaps_excluded(idx, end, excluded_spans):
+                regions.append(
+                    ProtectedRegion(
+                        kind=ProtectedRegionKind.ENV_VAR,
+                        value=term,
+                        start=idx,
+                        end=end,
+                    )
+                )
+            start = idx + len(term)
+    return regions
+
+
+def _deduplicate_terms(terms: Iterable[str]) -> tuple[str, ...]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for term in terms:
+        if not term or term in seen:
+            continue
+        if len(term) > MAX_PROTECTED_TERM_LENGTH:
+            continue
+        seen.add(term)
+        unique.append(term)
+    return tuple(unique)
 
 
 def _span_overlaps_excluded(start: int, end: int, excluded: Iterable[tuple[int, int]]) -> bool:

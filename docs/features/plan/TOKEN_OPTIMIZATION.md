@@ -269,6 +269,24 @@ Done / Closed when:
 
 ---
 
+## TOKEN-1B-R — Protected terms refinement
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Replace broad `ENV_VAR` regex guessing with explicit protected-term matching before **TOKEN-1C**.
+
+**Closeout:**
+
+- broad `ENV_VAR` regex guessing removed
+- `ENV_VAR` protection now uses built-in protected terms + env extension + explicit `protected_terms`
+- env extension variable: `INTERGRAX_TOKEN_OPTIMIZATION_PROTECTED_TERMS`
+- env extension extends built-ins, does not replace them
+- no runtime optimization behavior added
+- no public proof path changed
+- next step: **TOKEN-1C**
+
+---
+
 ## TOKEN-1A — Shared contracts + package skeleton
 
 **Status:** **Done / Closed**.

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TOKEN-1B: protected-region detection and validation tests."""
+"""TOKEN-1B / TOKEN-1B-R: protected-region detection and validation tests."""
 
 from __future__ import annotations
 
@@ -12,7 +12,11 @@ from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegionValidationStatus,
 )
 from intergrax.runtime.token_optimization.protected_regions import (
+    MAX_ENV_PROTECTED_TERMS,
+    MAX_PROTECTED_TERM_LENGTH,
+    PROTECTED_TERMS_ENV_VAR,
     detect_protected_regions,
+    parse_protected_terms,
     validate_protected_regions,
 )
 
@@ -59,6 +63,102 @@ def test_detects_env_vars() -> None:
     values = {r.value for r in env_vars}
     assert "OPENAI_API_KEY" in values
     assert "DATABASE_URL" in values
+
+
+def test_common_acronyms_are_not_detected_as_env_var_by_default() -> None:
+    content = "LKW uses RAG and API with JSON over HTTP via CLI."
+    regions = detect_protected_regions(content)
+    env_vars = [r for r in regions if r.kind is ProtectedRegionKind.ENV_VAR]
+    assert env_vars == []
+
+
+def test_builtin_openai_api_key_detected() -> None:
+    content = "Export OPENAI_API_KEY before boot."
+    regions = detect_protected_regions(content)
+    env_vars = [r for r in regions if r.kind is ProtectedRegionKind.ENV_VAR]
+    assert any(r.value == "OPENAI_API_KEY" for r in env_vars)
+
+
+def test_builtin_database_url_detected() -> None:
+    content = "Set DATABASE_URL before boot."
+    regions = detect_protected_regions(content)
+    env_vars = [r for r in regions if r.kind is ProtectedRegionKind.ENV_VAR]
+    assert any(r.value == "DATABASE_URL" for r in env_vars)
+
+
+def test_env_provided_polish_terms_detected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PROTECTED_TERMS_ENV_VAR, "HASLO_BAZY_DANYCH,KLUCZ_API")
+    content = "Configure HASLO_BAZY_DANYCH and KLUCZ_API in prod."
+    regions = detect_protected_regions(content)
+    env_vars = {r.value for r in regions if r.kind is ProtectedRegionKind.ENV_VAR}
+    assert "HASLO_BAZY_DANYCH" in env_vars
+    assert "KLUCZ_API" in env_vars
+
+
+def test_env_terms_extend_builtin_terms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PROTECTED_TERMS_ENV_VAR, "HASLO_BAZY_DANYCH")
+    content = "Needs OPENAI_API_KEY and HASLO_BAZY_DANYCH."
+    regions = detect_protected_regions(content)
+    env_vars = {r.value for r in regions if r.kind is ProtectedRegionKind.ENV_VAR}
+    assert "OPENAI_API_KEY" in env_vars
+    assert "HASLO_BAZY_DANYCH" in env_vars
+
+
+def test_explicit_protected_terms_without_env() -> None:
+    content = "Set MY_CUSTOM_SECRET before deploy."
+    regions = detect_protected_regions(
+        content,
+        protected_terms=("MY_CUSTOM_SECRET",),
+        include_env_protected_terms=False,
+    )
+    env_vars = [r for r in regions if r.kind is ProtectedRegionKind.ENV_VAR]
+    assert any(r.value == "MY_CUSTOM_SECRET" for r in env_vars)
+
+
+def test_include_env_protected_terms_false_keeps_builtin_and_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PROTECTED_TERMS_ENV_VAR, "HASLO_BAZY_DANYCH")
+    content = "OPENAI_API_KEY and HASLO_BAZY_DANYCH and MY_TERM."
+    regions = detect_protected_regions(
+        content,
+        protected_terms=("MY_TERM",),
+        include_env_protected_terms=False,
+    )
+    env_vars = {r.value for r in regions if r.kind is ProtectedRegionKind.ENV_VAR}
+    assert "OPENAI_API_KEY" in env_vars
+    assert "MY_TERM" in env_vars
+    assert "HASLO_BAZY_DANYCH" not in env_vars
+
+
+def test_parse_protected_terms_supports_separators() -> None:
+    assert parse_protected_terms("A,B;C\nD") == ("A", "B", "C", "D")
+
+
+def test_parse_protected_terms_trims_and_ignores_empty() -> None:
+    assert parse_protected_terms("  FOO  , , ; ; \n  BAR  ") == ("FOO", "BAR")
+
+
+def test_parse_protected_terms_ignores_overlong_entries() -> None:
+    long_term = "X" * (MAX_PROTECTED_TERM_LENGTH + 1)
+    assert parse_protected_terms(f"OK_TERM,{long_term},ANOTHER") == ("OK_TERM", "ANOTHER")
+
+
+def test_parse_protected_terms_caps_env_count() -> None:
+    terms = ",".join(f"TERM_{i}" for i in range(MAX_ENV_PROTECTED_TERMS + 50))
+    parsed = parse_protected_terms(terms)
+    assert len(parsed) == MAX_ENV_PROTECTED_TERMS
+
+
+def test_validation_does_not_fail_when_acronyms_disappear() -> None:
+    original = "LKW uses RAG and API with JSON over HTTP."
+    optimized = "local workspace uses retrieval."
+    result = validate_protected_regions(original, optimized)
+    assert result.status is ProtectedRegionValidationStatus.NOT_APPLICABLE
 
 
 def test_detects_hashes_dates_versions() -> None:

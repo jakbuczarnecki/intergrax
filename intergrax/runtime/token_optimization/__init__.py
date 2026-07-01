@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R)."""
 
 from __future__ import annotations
 
@@ -33,14 +33,28 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenUsageMeasurement,
 )
 from intergrax.runtime.token_optimization.protected_regions import (
+    BUILT_IN_PROTECTED_TERMS,
+    MAX_ENV_PROTECTED_TERMS,
+    MAX_PROTECTED_TERM_LENGTH,
+    PROTECTED_TERMS_ENV_VAR,
     detect_protected_regions,
+    get_env_protected_terms,
+    parse_protected_terms,
+    resolve_protected_terms,
     validate_protected_regions,
 )
 
 __all__ = [
+    "BUILT_IN_PROTECTED_TERMS",
     "CompressionLevel",
     "CompressionReceiptRef",
+    "MAX_ENV_PROTECTED_TERMS",
+    "MAX_PROTECTED_TERM_LENGTH",
+    "PROTECTED_TERMS_ENV_VAR",
     "detect_protected_regions",
+    "get_env_protected_terms",
+    "parse_protected_terms",
+    "resolve_protected_terms",
     "OutputPolicy",
     "OutputProfile",
     "ProtectedRegion",
