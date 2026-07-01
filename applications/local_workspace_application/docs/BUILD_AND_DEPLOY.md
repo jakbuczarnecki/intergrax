@@ -390,6 +390,60 @@ applications\local_workspace_application\scripts\run-elasticsearch-observability
 applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_...
 ```
 
+### Elasticsearch failed-delivery JSONL
+
+When Elasticsearch observability export is enabled and delivery ultimately fails, the provider-owned file sink can append one safe JSON diagnostic object per line. LKW only passes the deployment-owned path into runtime wiring; it does not write JSONL itself.
+
+Recommended controlled runtime/app data path:
+
+```text
+applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl
+```
+
+Set in `.env` or deployment environment:
+
+```text
+LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH=applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl
+```
+
+Leave empty or whitespace-only to disable the sink (default).
+
+Each JSONL line contains only these safe fields:
+
+```text
+provider_id
+operation
+index
+status_code
+reason
+retriable
+attempts
+exhausted
+```
+
+Never written: raw documents, prompts, chunks, tool args, secrets, tokens, or absolute payload paths.
+
+**Local proof (controlled failure):**
+
+1. Enable observability export with `backend_id=elasticsearch`.
+2. Set `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` to the path above.
+3. Trigger a safe failed delivery by pointing `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL` at an unreachable endpoint (for example `http://127.0.0.1:59200`) or by stopping Elasticsearch while export remains enabled. Optionally set `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS=1` for a faster proof.
+4. Execute one LKW run (`POST /v1/local_workspace/run`).
+5. Inspect the JSONL file:
+
+```powershell
+applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat
+applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat --check-safety
+```
+
+Windows PowerShell (raw tail):
+
+```powershell
+Get-Content applications\local_workspace_application\.observability\elasticsearch\failed-deliveries.jsonl -Tail 5
+```
+
+The inspector is read-only. It validates that every JSON object contains exactly the safe failed-delivery fields and prints record counts plus basic status summaries.
+
 ### What to look for
 
 Exported OTLP logs should include Intergrax attributes such as:
