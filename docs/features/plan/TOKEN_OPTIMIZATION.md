@@ -241,7 +241,7 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-4** — ContextPackOptimizer.
+**Next step:** **TOKEN-5** — MemorySummaryCompressor or **TOKEN-6A** telemetry payloads/counters for TOKEN-2..4 (per plan ordering).
 
 ---
 
@@ -265,7 +265,7 @@ Done / Closed when:
 - no telemetry emission added
 - no HOS/runtime/exporter wiring added
 - no public proof path changed
-- next step: **TOKEN-4** ContextPackOptimizer
+- next step: **TOKEN-4** ContextPackOptimizer — Done / Closed (§Phase TOKEN-4 below)
 
 ---
 
@@ -591,51 +591,77 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no prompt assembly added
 - no telemetry emission added
 - runtime wiring into `ToolPlanningService` / `CatalogToolPlanner` / schema export path deferred to `TOKEN-TOOLS-1B`
-- next step: **TOKEN-4** ContextPackOptimizer light/structural compression
+- next step: **TOKEN-4** ContextPackOptimizer light/structural compression — Done / Closed (§Phase TOKEN-4 below)
 
 ---
 
 ## Phase TOKEN-4 — ContextPackOptimizer
 
-**Goal:** Optimize selected context fragments after ranking/budgeting and before final formatting/preflight.
+**Goal:** Optimize selected context fragments using deterministic light/structural compression (helper-only slice).
 
-**Owner layer:** `CONTEXT_ENGINEERING`.
+**Owner layer:** `CONTEXT_ENGINEERING` (helper in `token_optimization`; runtime wiring deferred).
 
-**Dependencies:** TOKEN-1 contracts/receipts/protected regions; consumes LLM adapter token counters.
+**Dependencies:** TOKEN-1 contracts/receipts/protected regions; TOKEN-2 output policy resolver.
 
-**Deliverables:**
+**Deliverables (helper-only, TOKEN-4 closeout):**
 
-- `intergrax/runtime/nexus/context/context_pack_optimizer.py`,
-- source-aware compression strategy,
-- protected-region handling,
-- compression receipts attached to context provenance/metadata,
-- post-compression token recalculation,
-- fallback to original fragments on validation failure,
-- light/structural compression only in first slice.
+- `intergrax/runtime/token_optimization/context_pack.py` — `ContextPackOptimizer` and `optimize_context_pack`
+- deterministic light/structural context pack compaction
+- required fragment preservation
+- fragment order/IDs/source/provenance preservation
+- protected-region validation integration
+- compression receipts integration
+- optional `token_counter` measurement
+- unit tests in `tests/unit/runtime/token_optimization/test_context_pack.py`
 
-**Integration target:** existing CE pipeline; extend `ContextCompiler` / `DefaultNexusContextEngine` rather than building a second compiler.
+**Explicit exclusions (this slice):**
+
+- no semantic compression
+- no tokenizer/model calls
+- no `ContextCompiler` / `DefaultNexusContextEngine` wiring
+- no RAG retrieval behavior changes
+- no prompt assembly
+- no telemetry emission
+- runtime integration into CE pipeline is future work (`TOKEN-CE-1B`)
 
 **Acceptance criteria:**
 
-- ranking happens before lossy compression,
-- mandatory/policy fragments are preserved,
-- total assembled tokens decrease in benchmark cases,
-- context quality gate remains green,
-- provenance contains compression receipt references where applicable,
-- hard budget and adapter-token preflight still use the existing adapter token path,
-- semantic compression remains disabled until regression gates exist.
+- accepts `ContextFragment`, mapping fragments, and raw string fragments,
+- mandatory/policy (`required=True`) fragments are preserved exactly,
+- fragment IDs, source types, metadata/provenance, and order are unchanged,
+- fragments are not merged or removed,
+- disabled policy bypasses optimization,
+- protected-region validation with fallback on failure,
+- receipts created for apply/bypass/fallback when `include_receipt=True`,
+- optional `token_counter` measurement only.
 
 **Required tests/checks:**
 
 ```bash
-uv run pytest tests/unit/runtime/nexus/context/ -q
-uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py
-uv run python scripts/check_compression_receipts.py
+uv run pytest tests/unit/runtime/token_optimization/test_context_pack.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
 ```
 
-**Domain plan rows:** `TOKEN-CE-1` and `TOKEN-CE-2` in `docs/plan/CONTEXT_ENGINEERING.md`.
+**Domain plan rows:** `TOKEN-CE-1A` (Done / Closed), `TOKEN-CE-1B` (Planned), and `TOKEN-CE-2` (Planned) in `docs/plan/CONTEXT_ENGINEERING.md`.
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
+
+**Closeout (TOKEN-4):**
+
+- `ContextPackOptimizer` helper added in `intergrax/runtime/token_optimization/context_pack.py`
+- deterministic light/structural context pack compaction added
+- required fragments preserved
+- fragment order/source/provenance preserved
+- protected-region validation integrated
+- fallback on validation failure added
+- receipts integrated
+- optional `token_counter` measurement supported
+- no tokenizer/model calls added
+- no `ContextCompiler` / `DefaultNexusContextEngine` wiring added
+- no RAG retrieval behavior changed
+- no prompt assembly added
+- no telemetry emission added
+- next step: **TOKEN-6A** telemetry payloads/counters for TOKEN-2..4 or **TOKEN-5** MemorySummaryCompressor, according to plan ordering
 
 ---
 

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-2/TOKEN-3)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-2/TOKEN-3/TOKEN-4)."""
 
 from __future__ import annotations
 
@@ -61,6 +61,17 @@ from intergrax.runtime.token_optimization.output_policy import (
     resolve_output_policy,
     validate_resolved_output_policy,
 )
+from intergrax.runtime.token_optimization.context_pack import (
+    DEFAULT_CONTEXT_PACK_STRATEGY,
+    DEFAULT_CONTEXT_PACK_TOKEN_POLICY,
+    ContextFragment,
+    ContextPackOptimizationConfig,
+    ContextPackOptimizationMode,
+    ContextPackOptimizationOutcome,
+    ContextPackOptimizationStatus,
+    ContextPackOptimizer,
+    optimize_context_pack,
+)
 from intergrax.runtime.token_optimization.tool_schema import (
     DEFAULT_TOOL_CATALOG_STRATEGY,
     DEFAULT_TOOL_CATALOG_TOKEN_POLICY,
@@ -86,8 +97,16 @@ from intergrax.runtime.token_optimization.protected_regions import (
 __all__ = [
     "build_compression_receipt",
     "BUILT_IN_PROTECTED_TERMS",
+    "DEFAULT_CONTEXT_PACK_STRATEGY",
+    "DEFAULT_CONTEXT_PACK_TOKEN_POLICY",
     "DEFAULT_TOOL_CATALOG_STRATEGY",
     "DEFAULT_TOOL_CATALOG_TOKEN_POLICY",
+    "ContextFragment",
+    "ContextPackOptimizationConfig",
+    "ContextPackOptimizationMode",
+    "ContextPackOptimizationOutcome",
+    "ContextPackOptimizationStatus",
+    "ContextPackOptimizer",
     "CompressionLevel",
     "CompressionReceipt",
     "CompressionReceiptRef",
@@ -146,6 +165,7 @@ __all__ = [
     "ToolSchemaOptimizationOutcome",
     "ToolSchemaOptimizationStatus",
     "ToolSchemaOptimizer",
+    "optimize_context_pack",
     "optimize_tool_schema_catalog",
     "validate_protected_regions",
     "validate_receipt_integrity",
