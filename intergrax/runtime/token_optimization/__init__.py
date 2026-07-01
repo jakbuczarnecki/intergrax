@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite)."""
 
 from __future__ import annotations
 
@@ -40,6 +40,15 @@ from intergrax.runtime.token_optimization.receipts import (
     hash_content,
     make_compression_receipt_ref,
     validate_receipt_integrity,
+)
+from intergrax.runtime.token_optimization.telemetry import (
+    TokenOptimizationTelemetryEventType,
+    TokenOptimizationTelemetryPayload,
+    TokenOptimizationTelemetryValidationResult,
+    TokenOptimizationTelemetryValidationStatus,
+    build_token_savings_telemetry_payload,
+    token_savings_payload_to_attributes,
+    validate_token_savings_telemetry_payload,
 )
 from intergrax.runtime.token_optimization.protected_regions import (
     BUILT_IN_PROTECTED_TERMS,
@@ -91,7 +100,14 @@ __all__ = [
     "TokenOptimizationSourceType",
     "TokenOptimizationStrategyKind",
     "TokenOptimizationStrategyRef",
+    "TokenOptimizationTelemetryEventType",
+    "TokenOptimizationTelemetryPayload",
+    "TokenOptimizationTelemetryValidationResult",
+    "TokenOptimizationTelemetryValidationStatus",
     "TokenSavingsClaimConfidence",
+    "build_token_savings_telemetry_payload",
+    "token_savings_payload_to_attributes",
+    "validate_token_savings_telemetry_payload",
     "TokenSavingsMeasurement",
     "TokenUsageMeasurement",
     "validate_protected_regions",

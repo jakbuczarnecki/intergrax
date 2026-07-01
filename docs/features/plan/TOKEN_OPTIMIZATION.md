@@ -241,7 +241,31 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-2** — OutputPolicy runtime resolver (or **TOKEN-6A-lite** per current plan ordering).
+**Next step:** **TOKEN-2** — OutputPolicy runtime resolver.
+
+---
+
+## TOKEN-6A-lite — Token savings telemetry shape
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add typed token-savings telemetry payload contracts and helpers for future HOS/domain-signal emission.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/telemetry.py`
+- `tests/unit/runtime/token_optimization/test_telemetry.py`
+
+**Closeout:**
+
+- token savings telemetry payload shape added
+- payload builder from CompressionReceipt added
+- payload validation helper added
+- safe namespaced attribute mapping helper added
+- no telemetry emission added
+- no HOS/runtime/exporter wiring added
+- no public proof path changed
+- next step: **TOKEN-2** OutputPolicy runtime resolver
 
 ---
 
@@ -268,7 +292,7 @@ Done / Closed when:
 - no optimization behavior added
 - no token counting added
 - no telemetry wiring added
-- next step: **TOKEN-6A-lite** or **TOKEN-2**, depending on current plan ordering
+- next step: **TOKEN-6A-lite** — **Done / Closed** (§TOKEN-6A-lite above)
 
 ---
 
@@ -398,6 +422,7 @@ TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — 
 TOKEN-1A    shared contracts + package skeleton — Done / Closed
 TOKEN-1B    protected region parser/validator — Done / Closed
 TOKEN-1C    compression receipts + validation helpers — Done / Closed
+TOKEN-6A-lite  token savings telemetry payload shape — Done / Closed
 TOKEN-2     OutputPolicy runtime resolver
 TOKEN-3     ToolSchemaOptimizer compact catalog view
 TOKEN-4     ContextPackOptimizer light/structural compression only
