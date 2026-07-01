@@ -535,6 +535,162 @@ def test_telemetry_summary_excludes_raw_content() -> None:
     assert _ORIGINAL not in serialized
     assert _OPTIMIZED not in serialized
     assert "original_content" not in summary.metadata
+    assert summary.metadata.get("proof_case") == "safe"
+
+
+def test_summary_metadata_keeps_allowlisted_safe_scalar_keys() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={
+            "proof_case": "tool_catalog",
+            "run_id": "run-1",
+            "agent_id": "agent-1",
+            "tenant_id": "tenant-1",
+        },
+    )
+    assert summary.metadata["proof_case"] == "tool_catalog"
+    assert summary.metadata["run_id"] == "run-1"
+    assert summary.metadata["agent_id"] == "agent-1"
+    assert summary.metadata["tenant_id"] == "tenant-1"
+
+
+def test_summary_metadata_drops_non_allowlisted_neutral_keys() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"note": "harmless note", "comment": "debug info"},
+    )
+    assert "note" not in summary.metadata
+    assert "comment" not in summary.metadata
+
+
+def test_summary_metadata_drops_forbidden_keys() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"original_content": "secret", "raw_context": "ctx"},
+    )
+    assert "original_content" not in summary.metadata
+    assert "raw_context" not in summary.metadata
+
+
+def test_summary_metadata_drops_long_string_values() -> None:
+    long_value = "x" * 200
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"proof_case": long_value},
+    )
+    assert "proof_case" not in summary.metadata
+
+
+def test_summary_metadata_drops_multiline_string_values() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"proof_case": "line-one\nline-two"},
+    )
+    assert "proof_case" not in summary.metadata
+
+
+def test_summary_metadata_drops_non_scalar_values() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"proof_case": {"nested": "dict"}},
+    )
+    assert "proof_case" not in summary.metadata
+
+
+def test_summary_metadata_does_not_pass_raw_content_under_neutral_key() -> None:
+    raw_content = '{"large":"raw context or schema content that should not be exported"}'
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"note": raw_content},
+    )
+    attributes = token_optimization_summary_to_attributes(summary)
+
+    assert "note" not in summary.metadata
+    assert "intergrax.token_optimization.metadata.note" not in attributes
+    assert raw_content not in str(summary.metadata)
+    assert raw_content not in str(attributes)
+
+
+def test_summary_metadata_allows_safe_proof_case() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"proof_case": "tool_catalog"},
+    )
+    attributes = token_optimization_summary_to_attributes(summary)
+
+    assert summary.metadata["proof_case"] == "tool_catalog"
+    assert attributes["intergrax.token_optimization.metadata.proof_case"] == "tool_catalog"
+
+
+def test_summary_attributes_do_not_expose_dropped_metadata() -> None:
+    summary = build_token_optimization_telemetry_summary(
+        receipts=[_receipt_with_measurement()],
+        metadata={"note": "should-not-export", "proof_case": "safe"},
+    )
+    attributes = token_optimization_summary_to_attributes(summary)
+
+    assert "intergrax.token_optimization.metadata.note" not in attributes
+    assert attributes["intergrax.token_optimization.metadata.proof_case"] == "safe"
+
+
+def test_validate_telemetry_summary_fails_for_non_allowlisted_metadata_key() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        snapshot=summary.snapshot,
+        metadata={"note": "unsafe"},
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "metadata key is not allowed: note" in outcome.failures
+
+
+def test_validate_telemetry_summary_fails_for_long_metadata_string() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        snapshot=summary.snapshot,
+        metadata={"proof_case": "x" * 200},
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "metadata string value is too long: proof_case" in outcome.failures
+
+
+def test_validate_telemetry_summary_fails_for_multiline_metadata_string() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        snapshot=summary.snapshot,
+        metadata={"proof_case": "line-one\nline-two"},
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "metadata string value must be single-line: proof_case" in outcome.failures
+
+
+def test_validate_telemetry_summary_fails_for_non_scalar_metadata_value() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        snapshot=summary.snapshot,
+        metadata={"proof_case": ["list", "value"]},
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "metadata value is not safe scalar: proof_case" in outcome.failures
+
+
+def test_validate_telemetry_summary_fails_for_forbidden_metadata_key() -> None:
+    summary = build_token_optimization_telemetry_summary(receipts=[_receipt_with_measurement()])
+    invalid = TokenOptimizationTelemetrySummary(
+        event_type=summary.event_type,
+        snapshot=summary.snapshot,
+        metadata={"original_content": "secret"},
+    )
+    outcome = validate_token_optimization_telemetry_summary(invalid)
+    assert outcome.status is TokenOptimizationTelemetrySummaryValidationStatus.FAILED
+    assert "metadata key is not allowed: original_content" in outcome.failures
 
 
 def test_validate_telemetry_summary_passes_for_valid_summary() -> None:

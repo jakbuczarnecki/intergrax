@@ -412,6 +412,41 @@ _FORBIDDEN_SUMMARY_METADATA_KEYS: frozenset[str] = frozenset(
     }
 )
 
+_ALLOWED_SUMMARY_METADATA_PASSTHROUGH_KEYS: frozenset[str] = frozenset(
+    {
+        "proof_case",
+        "profile",
+        "environment",
+        "scenario",
+        "source",
+        "source_kind",
+        "runtime_profile",
+        "optimization_profile",
+        "strategy_id",
+        "plugin_id",
+        "tenant_id",
+        "agent_id",
+        "workflow_id",
+        "run_id",
+        "step_id",
+    }
+)
+
+_BUILDER_SUMMARY_METADATA_KEYS: frozenset[str] = frozenset(
+    {
+        "telemetry_sources",
+        "resolved_policies_enabled_count",
+        "resolved_policies_disabled_count",
+        "resolved_policies_defaulted_count",
+    }
+)
+
+_ALLOWED_SUMMARY_METADATA_KEYS: frozenset[str] = (
+    _ALLOWED_SUMMARY_METADATA_PASSTHROUGH_KEYS | _BUILDER_SUMMARY_METADATA_KEYS
+)
+
+_MAX_SUMMARY_METADATA_VALUE_LENGTH = 160
+
 _RECEIPT_DECISION_COUNTERS: dict[TokenOptimizationDecision, str] = {
     TokenOptimizationDecision.APPLY: "applied_count",
     TokenOptimizationDecision.BYPASS: "bypassed_count",
@@ -427,10 +462,58 @@ _OUTCOME_STATUS_COUNTERS: dict[str, str] = {
 }
 
 
+def _is_safe_summary_metadata_value(value: Any) -> bool:
+    scalar = _scalar_value(value)
+    if scalar is None and value is not None:
+        return False
+    if isinstance(scalar, str):
+        if len(scalar) > _MAX_SUMMARY_METADATA_VALUE_LENGTH:
+            return False
+        if "\n" in scalar or "\r" in scalar:
+            return False
+    return True
+
+
+def _metadata_value_validation_failure(key: str, value: Any) -> str | None:
+    scalar = _scalar_value(value)
+    if scalar is None and value is not None:
+        return f"metadata value is not safe scalar: {key}"
+    if isinstance(scalar, str):
+        if len(scalar) > _MAX_SUMMARY_METADATA_VALUE_LENGTH:
+            return f"metadata string value is too long: {key}"
+        if "\n" in scalar or "\r" in scalar:
+            return f"metadata string value must be single-line: {key}"
+    return None
+
+
 def _safe_metadata(metadata: Mapping[str, Any] | None) -> dict[str, Any]:
     if not metadata:
         return {}
-    return {key: value for key, value in metadata.items() if key not in _FORBIDDEN_SUMMARY_METADATA_KEYS}
+    safe: dict[str, Any] = {}
+    for key, value in metadata.items():
+        if key in _FORBIDDEN_SUMMARY_METADATA_KEYS:
+            continue
+        if key not in _ALLOWED_SUMMARY_METADATA_PASSTHROUGH_KEYS:
+            continue
+        if not _is_safe_summary_metadata_value(value):
+            continue
+        safe[key] = _scalar_value(value)
+    return safe
+
+
+def _exportable_summary_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
+    exported: dict[str, Any] = {}
+    for key, value in metadata.items():
+        if key in _FORBIDDEN_SUMMARY_METADATA_KEYS:
+            continue
+        if key not in _ALLOWED_SUMMARY_METADATA_KEYS:
+            continue
+        if not _is_safe_summary_metadata_value(value):
+            continue
+        scalar = _scalar_value(value)
+        if scalar is not None or value is None:
+            exported[key] = scalar
+    return exported
 
 
 def _collect_deduplicated_receipts(
@@ -799,9 +882,16 @@ def validate_token_optimization_telemetry_summary(
             failures.append("receipt_ids must be unique")
 
     for metadata_map in (summary.metadata, snapshot.metadata):
-        for key in metadata_map:
+        for key, value in metadata_map.items():
             if key in _FORBIDDEN_SUMMARY_METADATA_KEYS:
-                failures.append(f"metadata must not contain forbidden key: {key}")
+                failures.append(f"metadata key is not allowed: {key}")
+                continue
+            if key not in _ALLOWED_SUMMARY_METADATA_KEYS:
+                failures.append(f"metadata key is not allowed: {key}")
+                continue
+            value_failure = _metadata_value_validation_failure(key, value)
+            if value_failure is not None:
+                failures.append(value_failure)
 
     if failures:
         return TokenOptimizationTelemetrySummaryValidationResult(
@@ -850,18 +940,10 @@ def token_optimization_summary_to_attributes(
         if scalar is not None or raw_value is None:
             attributes[f"{_ATTRIBUTE_PREFIX}{key}"] = scalar
 
-    for key, raw_value in summary.metadata.items():
-        if key in _FORBIDDEN_SUMMARY_METADATA_KEYS:
-            continue
-        scalar = _scalar_value(raw_value)
-        if scalar is not None:
-            attributes[f"{_ATTRIBUTE_PREFIX}metadata.{key}"] = scalar
+    for key, scalar in _exportable_summary_metadata(summary.metadata).items():
+        attributes[f"{_ATTRIBUTE_PREFIX}metadata.{key}"] = scalar
 
-    for key, raw_value in snapshot.metadata.items():
-        if key in _FORBIDDEN_SUMMARY_METADATA_KEYS:
-            continue
-        scalar = _scalar_value(raw_value)
-        if scalar is not None:
-            attributes[f"{_ATTRIBUTE_PREFIX}snapshot.metadata.{key}"] = scalar
+    for key, scalar in _exportable_summary_metadata(snapshot.metadata).items():
+        attributes[f"{_ATTRIBUTE_PREFIX}snapshot.metadata.{key}"] = scalar
 
     return attributes

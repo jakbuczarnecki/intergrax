@@ -271,6 +271,14 @@ Done / Closed when:
 - no tokenizer/model calls added
 - next step: **TOKEN-5** MemorySummaryCompressor or **TOKEN-6B** regression benchmark runner according to plan ordering
 
+**TOKEN-6A-R refinement:**
+
+- summary metadata hardening added
+- summary metadata passthrough is allow-listed
+- forbidden/raw-content-like metadata is dropped from summaries and attributes
+- summary validation rejects unsafe metadata
+- no HOS emission/exporter wiring added
+
 ---
 
 ## TOKEN-6A-lite — Token savings telemetry shape
