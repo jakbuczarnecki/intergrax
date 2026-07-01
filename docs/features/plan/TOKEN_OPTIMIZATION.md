@@ -159,7 +159,7 @@ Token Optimization must never lose or rewrite:
 
 - code blocks, inline code, paths, URLs, env vars, enum values, hashes, dates, exact error strings, policy text, IDs, tenant identifiers required for correctness, evidence references
 
-**TOKEN-1B** implements protected-region parser/validator later. **LKW-PF6-0** defines proof requirements only.
+**TOKEN-1B** protected-region parser/validator is **Done / Closed** (§TOKEN-1B below). **LKW-PF6-0** defines proof requirements only.
 
 ### Compression receipt expectations
 
@@ -241,7 +241,31 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-1B** — protected region parser/validator (Phase TOKEN-1 below).
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers (Phase TOKEN-1 below).
+
+---
+
+## TOKEN-1B — Protected region parser/validator
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add deterministic protected-region detection and validation helpers as the first safety gate for Token Optimization.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/protected_regions.py`
+- `tests/unit/runtime/token_optimization/test_protected_regions.py`
+
+**Closeout:**
+
+- protected-region detection helper added
+- protected-region validation helper added
+- uses TOKEN-1A contracts
+- no optimization behavior added
+- no receipts added
+- no telemetry wiring added
+
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers.
 
 ---
 
@@ -265,7 +289,7 @@ Done / Closed when:
 - no runtime optimization behavior added
 - no telemetry wiring added
 
-**Next step:** **TOKEN-1B** — protected region parser/validator.
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers.
 
 ---
 
@@ -327,7 +351,7 @@ Rules:
 LKW-PF6-0   Token Optimization proof design — Done / Closed
 TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — Done / Closed
 TOKEN-1A    shared contracts + package skeleton — Done / Closed
-TOKEN-1B    protected region parser/validator
+TOKEN-1B    protected region parser/validator — Done / Closed
 TOKEN-1C    compression receipts + validation helpers
 TOKEN-2     OutputPolicy runtime resolver
 TOKEN-3     ToolSchemaOptimizer compact catalog view
