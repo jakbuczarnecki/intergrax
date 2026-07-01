@@ -155,6 +155,10 @@ Notes:
 
 ## 6. Manual Docker Compose run
 
+Explicit `docker compose` commands from repository root are the **cross-platform reference path**. Windows `.bat` helpers below are convenience wrappers around the same stacks.
+
+For the full external reviewer walkthrough (expected outputs, Kibana inspection, proof-helper PASS criteria), see [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
+
 From repository root:
 
 ```bash
@@ -179,15 +183,15 @@ http://ollama:11434
 
 Ensure `applications/local_workspace_application/.env` exists. The bootstrap scripts create it automatically when missing.
 
-### Run with all Docker Compose overlays on Windows
+### Windows convenience: all Compose overlays
 
-Use this helper when you want the base stack plus every optional overlay in `applications/local_workspace_application/docker/`:
+On Windows, this helper starts the base stack plus every optional overlay in `applications/local_workspace_application/docker/` without listing each `-f` file:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat
 ```
 
-The script runs the base `docker-compose.yml` plus every matching `docker-compose.*.yml` overlay. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
+It wraps the same `docker compose -f ... -f ...` pattern documented above. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat ps
@@ -202,7 +206,7 @@ docker compose -f docker-compose.yml -f docker-compose.<overlay>.yml ... up --bu
 
 ### Run with Elasticsearch/OpenSearch-compatible observability backend
 
-Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof:
+Use the optional Elasticsearch overlay when you want a self-contained local vendor backend instead of the default OTLP/JSONL proof. This is the stack used by the public platform proof — step-by-step evaluation: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
 
 ```bash
 docker compose \

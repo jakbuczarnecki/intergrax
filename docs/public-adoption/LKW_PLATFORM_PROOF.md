@@ -60,8 +60,20 @@ applications/local_workspace_application/docker/docker-compose.elasticsearch.yml
 The platform proof helper lives here:
 
 ```text
-applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.bat
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.bat   # Windows convenience
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh    # Linux/macOS
 ```
+
+---
+
+## Fast path for external reviewers
+
+This is a **local Docker-based proof path**. You do not need code changes or a hosted service.
+
+- **Canonical start:** explicit `docker compose` from repository root (cross-platform, readable in public docs).
+- **Windows helpers:** `.bat` scripts are convenience wrappers around the same Compose stack; the maintainer team validates them on Windows, but they are not the only path.
+- **Linux/macOS:** use the same Compose command and `.sh` proof helpers shown in the steps below.
+- **Public review assets:** screenshots or a short demo video are optional promotion assets, not requirements for the proof to pass.
 
 ---
 
@@ -70,34 +82,25 @@ applications/local_workspace_application/scripts/run-elasticsearch-observability
 Recommended local environment:
 
 ```text
-Windows + PowerShell
-Docker Desktop
-Docker Compose
+Docker + Docker Compose
 Python 3.12
 uv
 ```
 
-The commands below use Windows paths because LKW is currently easiest to verify on the maintainer's Windows local stack. Linux/macOS equivalents exist for some helper scripts, but this proof path is documented first for the currently validated local workflow.
+Optional on Windows:
+
+```text
+PowerShell (for .bat convenience helpers)
+Docker Desktop
+```
+
+The **canonical external reviewer path** is Docker Compose from repository root. Windows `.bat` helpers are the maintainer-validated convenience path on that platform; Linux and macOS reviewers should use the explicit Compose and shell commands documented here.
 
 ---
 
 ## Step 1 — Start the local platform proof stack
 
-From repository root:
-
-```powershell
-applications\local_workspace_application\scripts\run-local-docker-all.bat
-```
-
-This script runs the base LKW Docker Compose file plus all optional overlays in:
-
-```text
-applications/local_workspace_application/docker/
-```
-
-For this proof, that includes the Elasticsearch/Kibana overlay.
-
-Expected compose services include:
+Both options below start the same proof services:
 
 ```text
 local_workspace
@@ -108,44 +111,59 @@ elasticsearch
 kibana
 ```
 
+### Option A — Cross-platform Docker Compose (preferred)
+
+From repository root:
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.yml \
+  -f applications/local_workspace_application/docker/docker-compose.elasticsearch.yml \
+  up --build
+```
+
+This is the preferred public-docs path: explicit, readable, and identical on Linux, macOS, and Windows.
+
+### Option B — Windows convenience helper
+
+From repository root:
+
+```powershell
+applications\local_workspace_application\scripts\run-local-docker-all.bat
+```
+
+This wrapper runs the base `docker-compose.yml` plus every optional overlay in `applications/local_workspace_application/docker/`, including Elasticsearch/Kibana, without listing each `-f` file manually.
+
 ---
 
 ## Step 2 — Check service health
 
 In a second terminal, from repository root:
 
-```powershell
+```bash
 curl -s http://127.0.0.1:8020/health
-```
-
-Expected:
-
-```json
-{"status":"ok"}
-```
-
-Check Elasticsearch:
-
-```powershell
 curl -s http://127.0.0.1:9200/_cluster/health
 ```
 
-Expected local single-node result is usually `green` before data is indexed or `yellow` after the first index is created with an unassigned replica. For this local proof, `yellow` is acceptable when the primary shard is active.
+Open Kibana at `http://127.0.0.1:5601` — the home page should load.
 
-Open Kibana:
-
-```text
-http://127.0.0.1:5601
-```
-
-Expected: Kibana home page loads.
+See [Expected proof outputs](#expected-proof-outputs) for health and UI pass criteria.
 
 ---
 
 ## Step 3 — Run the proof helper before the first LKW run
 
+Windows:
+
 ```powershell
 applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh
 ```
 
 Before any LKW run has exported observability documents, it may print:
@@ -161,7 +179,21 @@ That is a valid pre-run state. Elasticsearch is up, but the index is not created
 
 ## Step 4 — Execute a real LKW run
 
-Submit a real LKW request:
+Submit a real LKW request.
+
+Linux/macOS / cross-platform:
+
+```bash
+curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Find documents about local workspace observability proof",
+    "capability": "local.workspace.search",
+    "metadata": { "proof": "LKW_PLATFORM_PROOF" }
+  }'
+```
+
+Windows (PowerShell):
 
 ```powershell
 $body = @{
@@ -179,17 +211,7 @@ Invoke-RestMethod `
   -Body $body
 ```
 
-Expected response shape:
-
-```text
-run_id
-state
-answer
-agent_id
-metadata
-```
-
-Copy the returned `run_id`.
+Copy the returned `run_id`. Response must include `run_id`, `state`, `answer`, `agent_id`, and `metadata` — see [Expected proof outputs](#expected-proof-outputs).
 
 Example validated run:
 
@@ -201,27 +223,21 @@ run_id=run_d28d5f36f5ca4240b8693ae46eaa5946
 
 ## Step 5 — Validate the run through the CLI proof helper
 
-Replace the example with your own `run_id`:
+Replace the example with your own `run_id`.
+
+Windows:
 
 ```powershell
 applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat run_d28d5f36f5ca4240b8693ae46eaa5946
 ```
 
-Expected output includes a timeline like:
+Linux/macOS:
 
-```text
-tool_requested   local_search   rag.retrieve
-tool_completed   local_search   rag.retrieve
-task_completed
+```bash
+applications/local_workspace_application/scripts/run-elasticsearch-observability-proof.sh run_d28d5f36f5ca4240b8693ae46eaa5946
 ```
 
-Expected proof summary:
-
-```text
-Duplicate check: duplicate groups = 0
-Safety check: 0 forbidden keys
-Proof result: PASS
-```
+Expected timeline and PASS criteria: [Expected proof outputs](#expected-proof-outputs).
 
 A validated proof run produced:
 
@@ -293,13 +309,9 @@ Filter by your run id:
 intergrax.run_id: "run_d28d5f36f5ca4240b8693ae46eaa5946"
 ```
 
-Expected: Kibana shows the indexed runtime documents for that run.
+Expected: Kibana shows indexed runtime documents for that run, including `tool_requested`, `tool_completed`, and `task_completed` in the timeline. See [Expected proof outputs](#expected-proof-outputs).
 
-A validated proof run showed:
-
-```text
-Documents: 24
-```
+A validated proof run showed `Documents: 24`.
 
 ---
 
@@ -335,11 +347,23 @@ LKW Observability Run Timeline
 
 ---
 
-## Optional screenshots
+## Expected proof outputs
 
-Screenshots are intentionally not required for the proof to pass, but they are useful for public review and demos.
+| Check | Command / context | Expected |
+|-------|-------------------|----------|
+| LKW health | `curl -s http://127.0.0.1:8020/health` | `{"status":"ok"}` |
+| Elasticsearch health | `curl -s http://127.0.0.1:9200/_cluster/health` | `green` or `yellow` acceptable for local single-node proof when primary shard is active |
+| LKW run response | Step 4 POST | Fields: `run_id`, `state`, `answer`, `agent_id`, `metadata` |
+| CLI proof helper | Step 5 with your `run_id` | `Duplicate check: duplicate groups = 0`; `Safety check: 0 forbidden keys`; `Proof result: PASS` |
+| Kibana Discover | Step 7 — filter `intergrax.run_id: "<your run_id>"` | Documents visible for selected run; timeline includes `tool_requested`, `tool_completed`, `task_completed` |
 
-Recommended screenshot paths:
+---
+
+## Public review assets
+
+Screenshots and demo video are **optional** public-review assets. They are not required for the proof to pass.
+
+Expected asset paths (add when captured for promotion):
 
 ```text
 docs/public-adoption/assets/lkw-platform-proof/kibana-discover-run-timeline.png
@@ -347,15 +371,17 @@ docs/public-adoption/assets/lkw-platform-proof/proof-helper-pass.png
 docs/public-adoption/assets/lkw-platform-proof/kibana-data-view.png
 ```
 
-Suggested captions:
+Suggested captions when assets are added:
 
 ```text
-Kibana Discover showing 24 indexed LKW runtime documents for one run_id.
+Kibana Discover showing indexed LKW runtime documents for one run_id.
 CLI proof helper returning duplicate_check=0 and safety_check=passed.
 Kibana Data View configured for intergrax-lkw-observability with @timestamp.
 ```
 
-Before committing screenshots, verify they do not include secrets, private documents, raw prompts, raw chunks, full local file paths, tokens, or personal data.
+If a short public demo video is added later, link it from this section. Do not treat video as a proof requirement.
+
+Before committing screenshots or publishing a demo, verify they do not include secrets, private documents, raw prompts, raw chunks, full local paths, tokens, or personal data.
 
 ---
 
