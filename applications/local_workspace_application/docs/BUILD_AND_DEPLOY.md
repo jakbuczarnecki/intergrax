@@ -326,6 +326,7 @@ elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS` | `3` | Total delivery attempts including the first one (`1` = no retry) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS` | `0.25` | Initial sleep before the second attempt |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS` | `2.0` | Maximum sleep between attempts |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability/`) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
