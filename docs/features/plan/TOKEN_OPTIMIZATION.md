@@ -57,7 +57,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-2` OutputPolicy runtime | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` and optional `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` |
 | `TOKEN-3` ToolSchemaOptimizer | `docs/plan/TOOLS.md` |
 | `TOKEN-4` ContextPackOptimizer | `docs/plan/CONTEXT_ENGINEERING.md` |
-| `TOKEN-5` MemorySummaryCompressor | `docs/plan/MEMORY.md` |
+| `TOKEN-5` / `TOKEN-5A` MemorySummaryCompressor (helper-only first slice) | `docs/plan/MEMORY.md` |
 | `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
@@ -241,7 +241,7 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-5** — MemorySummaryCompressor or **TOKEN-6B** regression benchmark runner (per plan ordering).
+**Next step:** **TOKEN-5A** — MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner (per plan ordering).
 
 ---
 
@@ -269,7 +269,7 @@ Done / Closed when:
 - no observability exporter wiring added
 - no runtime event emission added
 - no tokenizer/model calls added
-- next step: **TOKEN-5** MemorySummaryCompressor or **TOKEN-6B** regression benchmark runner according to plan ordering
+- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner according to plan ordering
 
 **TOKEN-6A-R refinement:**
 
@@ -463,7 +463,8 @@ TOKEN-2     OutputPolicy runtime resolver — Done / Closed
 TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
 TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
-TOKEN-5     MemorySummaryCompressor with staging/rollback
+TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
+TOKEN-5A    MemorySummaryCompressor helper-only first slice — Planned
 TOKEN-6B    token regression benchmark runner + CI scripts
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
@@ -697,7 +698,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no RAG retrieval behavior changed
 - no prompt assembly added
 - no telemetry emission added
-- next step: **TOKEN-6A** telemetry payloads/counters for TOKEN-2..4 or **TOKEN-5** MemorySummaryCompressor, according to plan ordering
+- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner, according to plan ordering
 
 ---
 
@@ -709,35 +710,90 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Dependencies:** TOKEN-1 contracts/receipts/protected regions; recommended after TOKEN-4 proves runtime receipts.
 
-**Deliverables:**
+**Status:** Planned.
 
-- `intergrax/memory/summary_compressor.py`,
-- staging write flow,
-- protected-region validator reuse,
-- semantic validation hook for lossy summaries,
-- receipt storage metadata,
-- rollback metadata,
-- lightweight CI script `scripts/check_memory_compression_receipts.py`.
+**First slice:** **TOKEN-5A** — helper-only `MemorySummaryCompressor` with staging, receipts, validation, rollback metadata, and benchmark-ready result shape. See §TOKEN-5A below.
 
-**Acceptance criteria:**
-
-- live source is never overwritten before validation,
-- failed compression cannot corrupt persistent memory,
-- original and compressed hashes are stored,
-- rollback path is documented and tested,
-- memory compression is opt-in by profile/policy,
-- no user facts, dates, IDs, or policy text are silently lost.
-
-**Required tests/checks:**
-
-```bash
-uv run pytest tests/unit/memory/ -q
-uv run python scripts/check_memory_compression_receipts.py
-```
+**Later slices (not TOKEN-5A):** live staging write flow, memory receipt storage wiring, CI script `scripts/check_memory_compression_receipts.py`, runtime hot-path integration.
 
 **Domain plan rows:** `TOKEN-MEM-1` in `docs/plan/MEMORY.md`.
 
+---
+
+## TOKEN-5A — MemorySummaryCompressor helper-only first slice
+
 **Status:** Planned.
+
+**Purpose:** Add a conservative MEMORY-owned `MemorySummaryCompressor` helper that compresses memory-summary candidates deterministically, records receipts and rollback metadata, and returns a benchmark-ready result shape — without live memory-store mutation, LLM-based semantic rewriting, or runtime hot-path wiring.
+
+**Deliverables (implementation task, not this docs-only slice):**
+
+- `intergrax/memory/summary_compressor.py` — conservative `MemorySummaryCompressor` helper
+- staged compressed candidate/result model
+- rollback metadata model
+- protected-region validator reuse (TOKEN-1B)
+- compression receipt integration (TOKEN-1C)
+- optional `token_counter` support
+- optional `semantic_validation_hook` interface (callable only; no built-in LLM judge)
+- deterministic light/structural compression only
+- benchmark-ready result fields for future TOKEN-6B / LKW-PF6 proof
+- fallback to original on validation failure or semantic-hook rejection
+
+**Benchmark-ready result fields (required on apply/fallback outcomes):**
+
+```text
+source_type
+strategy
+original_hash
+optimized_hash
+original_tokens
+optimized_tokens
+saved_tokens
+saved_ratio
+validation_status
+fallback_status
+receipt / receipt_ref
+rollback_metadata
+semantic_validation_status   # present only when semantic_validation_hook is used
+```
+
+**Explicit exclusions (TOKEN-5A):**
+
+- no live memory-store overwrite
+- no automatic memory compaction job
+- no vector index mutation
+- no embedding regeneration
+- no LLM/model-based semantic rewriting
+- no full LLM-as-a-Judge eval engine
+- no runtime hot-path wiring
+- no HOS/domain-signal emission
+- no observability exporter wiring
+- no token regression benchmark runner
+- no LKW proof execution
+
+**Acceptance criteria:**
+
+- helper-only: compresses in-memory candidates without mutating persistent memory stores,
+- live source is never overwritten before validation (no live mutation in this slice),
+- failed compression cannot corrupt persistent memory (no persistent writes in this slice),
+- protected-region validation with fallback to original on failure,
+- compression receipts created when `include_receipt=True`,
+- rollback metadata attached to every candidate result,
+- memory compression remains opt-in by profile/policy at call site,
+- no user facts, dates, IDs, or policy text are silently lost,
+- benchmark-ready result fields populated for TOKEN-6B / LKW-PF6 attribution.
+
+**Semantic validation note:** future semantic validation and LLM-as-a-Judge belong to **TOKEN-6B** / regression/evals work, not to TOKEN-5A. TOKEN-5A may expose an optional `semantic_validation_hook` interface; TOKEN-6B and eval gates may consume it later. TOKEN-5A must not implement or depend on a full LLM-as-a-Judge engine.
+
+**LKW-PF6 alignment:** TOKEN-5A adds the `memory` / `memory tokens` optimization and proof category so later LKW-PF6 proof runs can attribute measured savings for memory-summary compression alongside tools, context/RAG, and output shaping.
+
+**Required tests/checks (implementation task):**
+
+```bash
+uv run pytest tests/unit/memory/ -q
+```
+
+**Domain plan rows:** `TOKEN-MEM-1` in `docs/plan/MEMORY.md`.
 
 ---
 
