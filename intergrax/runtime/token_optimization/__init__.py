@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C)."""
 
 from __future__ import annotations
 
@@ -32,6 +32,15 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenSavingsMeasurement,
     TokenUsageMeasurement,
 )
+from intergrax.runtime.token_optimization.receipts import (
+    CompressionReceipt,
+    CompressionReceiptValidationResult,
+    CompressionReceiptValidationStatus,
+    build_compression_receipt,
+    hash_content,
+    make_compression_receipt_ref,
+    validate_receipt_integrity,
+)
 from intergrax.runtime.token_optimization.protected_regions import (
     BUILT_IN_PROTECTED_TERMS,
     MAX_ENV_PROTECTED_TERMS,
@@ -45,14 +54,20 @@ from intergrax.runtime.token_optimization.protected_regions import (
 )
 
 __all__ = [
+    "build_compression_receipt",
     "BUILT_IN_PROTECTED_TERMS",
     "CompressionLevel",
+    "CompressionReceipt",
     "CompressionReceiptRef",
+    "CompressionReceiptValidationResult",
+    "CompressionReceiptValidationStatus",
     "MAX_ENV_PROTECTED_TERMS",
     "MAX_PROTECTED_TERM_LENGTH",
     "PROTECTED_TERMS_ENV_VAR",
     "detect_protected_regions",
+    "hash_content",
     "get_env_protected_terms",
+    "make_compression_receipt_ref",
     "parse_protected_terms",
     "resolve_protected_terms",
     "OutputPolicy",
@@ -80,4 +95,5 @@ __all__ = [
     "TokenSavingsMeasurement",
     "TokenUsageMeasurement",
     "validate_protected_regions",
+    "validate_receipt_integrity",
 ]

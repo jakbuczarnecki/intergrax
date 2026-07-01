@@ -241,7 +241,34 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-1C** — compression receipts + validation helpers (Phase TOKEN-1 below).
+**Next step:** **TOKEN-2** — OutputPolicy runtime resolver (or **TOKEN-6A-lite** per current plan ordering).
+
+---
+
+## TOKEN-1C — Compression receipts + validation helpers
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add deterministic compression receipt creation and receipt integrity validation helpers for Token Optimization.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/receipts.py`
+- `tests/unit/runtime/token_optimization/test_receipts.py`
+
+**Closeout:**
+
+- compression receipt data model added
+- deterministic content hashing added
+- receipt builder added
+- receipt ref helper added
+- receipt integrity validator added
+- uses TOKEN-1A contracts
+- records TOKEN-1B protected-region validation results when supplied
+- no optimization behavior added
+- no token counting added
+- no telemetry wiring added
+- next step: **TOKEN-6A-lite** or **TOKEN-2**, depending on current plan ordering
 
 ---
 
@@ -265,7 +292,7 @@ Done / Closed when:
 - no receipts added
 - no telemetry wiring added
 
-**Next step:** **TOKEN-1C** — compression receipts + validation helpers.
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers — **Done / Closed** (§TOKEN-1C above).
 
 ---
 
@@ -283,7 +310,7 @@ Done / Closed when:
 - env extension extends built-ins, does not replace them
 - no runtime optimization behavior added
 - no public proof path changed
-- next step: **TOKEN-1C**
+- next step: **TOKEN-1C** — **Done / Closed** (§TOKEN-1C above)
 
 ---
 
@@ -307,7 +334,7 @@ Done / Closed when:
 - no runtime optimization behavior added
 - no telemetry wiring added
 
-**Next step:** **TOKEN-1C** — compression receipts + validation helpers.
+**Next step:** **TOKEN-1C** — compression receipts + validation helpers — **Done / Closed** (§TOKEN-1C above).
 
 ---
 
@@ -370,7 +397,7 @@ LKW-PF6-0   Token Optimization proof design — Done / Closed
 TOKEN-ARCH-0  Token Optimization Engine architecture and mechanism strategy — Done / Closed
 TOKEN-1A    shared contracts + package skeleton — Done / Closed
 TOKEN-1B    protected region parser/validator — Done / Closed
-TOKEN-1C    compression receipts + validation helpers
+TOKEN-1C    compression receipts + validation helpers — Done / Closed
 TOKEN-2     OutputPolicy runtime resolver
 TOKEN-3     ToolSchemaOptimizer compact catalog view
 TOKEN-4     ContextPackOptimizer light/structural compression only
