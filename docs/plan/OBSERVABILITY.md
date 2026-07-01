@@ -412,6 +412,28 @@ Done — LKW deployment settings now read `LOCAL_WORKSPACE_OBSERVABILITY_ELASTIC
 
 Done — LKW operational docs and read-only failed-delivery JSONL inspector added (`applications/local_workspace_application/docs/BUILD_AND_DEPLOY.md`, `applications/local_workspace_application/scripts/inspect_elasticsearch_failed_deliveries.py`, `inspect-elasticsearch-failed-deliveries.bat`). Documents env path, safe fields, controlled local proof steps, and inspector validation. Full OBS-VENDOR-6C remains Planned until live operational proof is complete. Full OBS-VENDOR-6 remains Planned.
 
+**OBS-VENDOR-6C-B5 status:**
+
+Done — live local controlled-failure proof recorded. File-backed Elasticsearch failed-delivery JSONL path is operationally complete (OBS-VENDOR-6C file-backed dead-letter proof closed). Full OBS-VENDOR-6C remains **Planned** until rotation/retention, auth/TLS, health checks, batching, and index-based dead-letter storage are done. Full OBS-VENDOR-6 remains Planned.
+
+**OBS-VENDOR-6C-B5 proof evidence (2026-07-01):**
+
+| Field | Value |
+|-------|-------|
+| Date | 2026-07-01 |
+| `failed_delivery_file_path` | `applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl` |
+| Failure mode | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL=http://127.0.0.1:59200` (unreachable endpoint); `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS=1` |
+| LKW run | `POST http://127.0.0.1:8099/v1/local_workspace/run` (`capability=local.workspace.search`); `run_id=run_f4870c18fced4b83b61c38c8359e6be9` |
+| Inspector command | `applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat --check-safety` |
+| Inspector result | `Records: 36`; `Reason counts: connection_error: 36`; `Validation: all records contain exactly the safe failed-delivery fields`; exit code 0 |
+| Safety result | Passed — each JSONL line contains only `provider_id`, `operation`, `index`, `status_code`, `reason`, `retriable`, `attempts`, `exhausted`; no raw document, prompt, chunks, tool args, secrets, tokens, or absolute payload paths |
+
+Sample failed-delivery record:
+
+```json
+{"provider_id": "elasticsearch", "operation": "send_observability_payload", "index": "intergrax-lkw-observability", "status_code": null, "reason": "connection_error", "retriable": true, "attempts": 1, "exhausted": true}
+```
+
 **OBS-VENDOR-7B status:**
 
 OBS-VENDOR-7B tooling done: Elasticsearch/OpenSearch readback inspector added for list-runs, run timeline, duplicate check, and safety-key check (`applications/local_workspace_application/scripts/inspect_elasticsearch_observability.py`, `inspect-elasticsearch-observability.bat`). Follow-up: Elasticsearch inspector safety-key check now derives forbidden keys from the canonical runtime export boundary (`FORBIDDEN_EXPORT_CONTENT_FIELDS`) instead of maintaining an independent ad-hoc list. Full OBS-VENDOR-7 remains **Planned** until a live Docker Compose proof records a real `run_id` and backend query result.
