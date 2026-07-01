@@ -241,7 +241,7 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-2** — OutputPolicy runtime resolver.
+**Next step:** **TOKEN-3** — ToolSchemaOptimizer.
 
 ---
 
@@ -265,7 +265,7 @@ Done / Closed when:
 - no telemetry emission added
 - no HOS/runtime/exporter wiring added
 - no public proof path changed
-- next step: **TOKEN-2** OutputPolicy runtime resolver
+- next step: **TOKEN-3** ToolSchemaOptimizer
 
 ---
 
@@ -510,7 +510,21 @@ uv run python scripts/check_output_policy_wiring.py
 
 **Domain plan rows:** `TOKEN-UER-2` in `docs/plan/UNIFIED_EXECUTION_RUNTIME.md`.
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
+
+**Closeout:**
+
+- OutputPolicy runtime resolver added
+- deterministic resolved output policy added
+- safe defaults added
+- source_type-aware conservative policy behavior added
+- validation helper added
+- no model calls added
+- no prompt assembly added
+- no content optimization added
+- no telemetry emission added
+- no runtime hot-path wiring added
+- next step: **TOKEN-3** ToolSchemaOptimizer
 
 ---
 

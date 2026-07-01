@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite)."""
+"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-2)."""
 
 from __future__ import annotations
 
@@ -50,6 +50,17 @@ from intergrax.runtime.token_optimization.telemetry import (
     token_savings_payload_to_attributes,
     validate_token_savings_telemetry_payload,
 )
+from intergrax.runtime.token_optimization.output_policy import (
+    OutputPolicyResolutionContext,
+    OutputPolicyResolutionReason,
+    OutputPolicyResolutionStatus,
+    OutputPolicyResolutionValidationResult,
+    OutputPolicyResolutionValidationStatus,
+    OutputPolicyResolver,
+    ResolvedOutputPolicy,
+    resolve_output_policy,
+    validate_resolved_output_policy,
+)
 from intergrax.runtime.token_optimization.protected_regions import (
     BUILT_IN_PROTECTED_TERMS,
     MAX_ENV_PROTECTED_TERMS,
@@ -78,9 +89,17 @@ __all__ = [
     "get_env_protected_terms",
     "make_compression_receipt_ref",
     "parse_protected_terms",
+    "resolve_output_policy",
     "resolve_protected_terms",
     "OutputPolicy",
+    "OutputPolicyResolutionContext",
+    "OutputPolicyResolutionReason",
+    "OutputPolicyResolutionStatus",
+    "OutputPolicyResolutionValidationResult",
+    "OutputPolicyResolutionValidationStatus",
+    "OutputPolicyResolver",
     "OutputProfile",
+    "ResolvedOutputPolicy",
     "ProtectedRegion",
     "ProtectedRegionKind",
     "ProtectedRegionValidationResult",
@@ -112,4 +131,5 @@ __all__ = [
     "TokenUsageMeasurement",
     "validate_protected_regions",
     "validate_receipt_integrity",
+    "validate_resolved_output_policy",
 ]
