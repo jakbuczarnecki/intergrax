@@ -118,3 +118,87 @@ The LKW implementation order becomes:
 This is the correct proof model: LKW proves the platform by forcing the platform to absorb every reusable lesson from the product implementation.
 
 **Platform proof scope (2026-07):** The loop now explicitly covers provider-switch and production-maturity proofs beyond product capability slices — including model serving providers, persistence/database, vector stores, observability backends, metrics/tracing/error monitoring, token optimization, and scaffold/deploy propagation. Strategic roadmap: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF.
+
+---
+
+## 9. Platform proof maturity bar (LKW-PF0)
+
+LKW-driven platform proofs use four distinct maturity levels. Future proofs — including **Token Optimization** (`LKW-PF6`) — must apply this bar before claiming closure or production readiness.
+
+### 9.1 Platform proof
+
+**Definition:** Evidence that a reusable platform capability works through the intended platform abstraction, contract, configuration, or integration boundary.
+
+A platform proof may be **closed** when all of the following hold:
+
+- the proof workload exercises the platform path;
+- the result is observable or inspectable;
+- the reusable lesson is captured in platform docs/plans;
+- application-specific code did not bypass platform boundaries;
+- known production gaps are explicitly recorded.
+
+**Does not mean:** production-grade readiness. Closing a platform proof validates the integration boundary and reusable lesson — not full production operation.
+
+### 9.2 Operational proof
+
+**Definition:** Evidence that an operator can run, inspect, debug, or repeat the proof in a controlled local/dev/proof environment.
+
+An operational proof may be **closed** when all of the following hold:
+
+- operator instructions exist;
+- expected inputs/outputs are documented;
+- failure or safety behavior is visible;
+- proof results can be inspected;
+- limitations are documented.
+
+**Does not mean:** full production readiness. Operational proof confirms repeatability and inspectability in a proof environment — not hardened production deployment.
+
+### 9.3 Production-grade readiness
+
+**Definition:** A higher maturity level requiring production-oriented concerns to be implemented and verified — not merely planned or deferred.
+
+Claim production-grade readiness only when applicable items below are **actually implemented and verified**:
+
+- health/status;
+- auth/TLS/secrets handling;
+- retention/rotation;
+- batching/backpressure where applicable;
+- dashboard/config as code where applicable;
+- CI/live proof automation where applicable;
+- runbooks;
+- path/security policy;
+- failure recovery behavior;
+- clear operator ownership.
+
+**Rule:** Do not claim production-grade readiness from a closed platform proof alone.
+
+### 9.4 Production hardening backlog
+
+**Definition:** The place where known production gaps are tracked **after** a platform proof is closed.
+
+Rules:
+
+- **`closed proof != production complete`** — a closed platform proof remains valid; production gaps do not reopen proof scope.
+- Record gaps in the owning platform plan (for example [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR for observability vendors).
+- Future hardening work continues without invalidating or reopening the already-valid platform proof.
+- Do not downgrade closed proof status when adding backlog items.
+
+### 9.5 Proof closure rules
+
+When closing any LKW-driven platform proof wave:
+
+1. State which maturity level is being closed (platform proof, operational proof, or production-grade).
+2. If closing platform or operational proof, record remaining production gaps in the production hardening backlog.
+3. Do not imply production-grade readiness unless §9.3 criteria are met.
+4. Preserve platform boundary discipline — no application-specific bypass of contracts or integration paths.
+
+### 9.6 Canonical example — Elasticsearch/Kibana observability
+
+| Maturity level | Status | Notes |
+|----------------|--------|-------|
+| Platform proof | **Closed** | Elasticsearch/OpenSearch export through platform contract (`OBS-VENDOR-4A` … `OBS-VENDOR-5`); LKW proof workload and live readback (`OBS-VENDOR-7` live proof, [`ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md`](ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md)). |
+| Operational proof | **Closed** (proof environment) | Operator runbook, inspectors, and controlled local proof documented in [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md). |
+| Production-grade readiness | **Not claimed** | Auth/TLS, retention/rotation, batching policy, dashboards-as-code, CI/live automation, and full operational hardening remain open. |
+| Production hardening backlog | **Planned** | Tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-6`, `OBS-VENDOR-6C`, and related rows). |
+
+**Preserved distinction:** Elasticsearch/Kibana path is **closed for platform proof**, but **not production-grade**. Full **OBS-VENDOR** production hardening remains **Planned**.

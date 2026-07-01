@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW-PF0 Closed — platform proof maturity bar defined**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -72,7 +72,7 @@ LKW is the **primary product workload** used to discover missing platform capabi
 
 | ID | Status | Meaning |
 |----|--------|---------|
-| **LKW-PF0** | Planned | Define what counts as platform proof, operational proof, and production-grade readiness. |
+| **LKW-PF0** | **Done / Closed** | **Platform proof maturity bar** — defines platform proof, operational proof, production-grade readiness, and production hardening backlog. Canonical definitions: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. |
 | **LKW-PF1** | Planned / Platform-reusable | **Observability production readiness** — Elasticsearch/Kibana proof is **closed for platform proof**, but production readiness still needs health/status, auth/TLS, retention/rotation, batching/bulk decision, dashboard-as-code, CI/live proof automation, path policy, and operator runbook. See [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR. |
 | **LKW-PF2** | Planned / Platform-reusable | **Model serving provider switch proof** — prove LKW can switch model serving backends such as **Ollama** and **vLLM** through typed config/env profile without product code changes. Platform owns provider contracts/adapters; LKW owns proof workload and deployment wiring later. |
 | **LKW-PF3** | Planned / Platform-reusable | **Relational persistence proof** — introduce a **PostgreSQL**-backed persistence proof for platform/application state (tenants, users, workspaces, memberships/permissions, runs, run steps, artifact metadata, proof metadata references). Do not store raw documents, chunks, prompts, secrets, or large artifacts by default. |
@@ -85,8 +85,7 @@ LKW is the **primary product workload** used to discover missing platform capabi
 
 The strategic roadmap IDs (`LKW-PF0`–`LKW-PF7`) are **not** a strict implementation sequence. The implementation sequence should prioritize the highest market-value platform proof: **Token Optimization**.
 
-1. **LKW-PF0** — Define maturity bar  
-   Define platform proof vs operational proof vs production-grade readiness.
+1. ~~**LKW-PF0** — Define maturity bar~~ **Done / Closed** — see §LKW-PF0 closeout below and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
 
 2. **LKW-PF6-0** — Token Optimization proof design for LKW  
    Define the representative LKW workflow, baseline metrics, quality/regression criteria, token categories to measure, and public proof shape before code changes.
@@ -143,6 +142,31 @@ The strategic roadmap IDs (`LKW-PF0`–`LKW-PF7`) are **not** a strict implement
     Propagate reusable lessons into application scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks.
 
 **Market-value priority:** Token Optimization is the primary near-term market-value proof because it demonstrates that Intergrax can reduce model/agent operating cost while preserving correctness, safety, receipts, and observability. Infrastructure proofs such as PostgreSQL, vector-store portability, vLLM/Ollama switching, Prometheus/Grafana/Tempo, and Sentry remain important production-maturity proofs, but they should not precede the first measurable token-cost proof unless they become blockers.
+
+#### LKW-PF0 closeout — platform proof maturity bar
+
+**Status:** **Done / Closed** (docs-only).
+
+Canonical maturity definitions live in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. Summary:
+
+| Level | Meaning | Closure implies production-grade? |
+|-------|---------|-----------------------------------|
+| **Platform proof** | Reusable platform capability works through the intended abstraction/contract/integration boundary | **No** |
+| **Operational proof** | Operator can run, inspect, debug, or repeat the proof in a controlled proof environment | **No** |
+| **Production-grade readiness** | Production-oriented concerns (health, auth/TLS, retention, batching, dashboards-as-code, CI proof, runbooks, path policy, recovery, ownership) are implemented and verified | **Yes** — only when §9.3 criteria are met |
+| **Production hardening backlog** | Known production gaps tracked after platform proof closure; `closed proof != production complete` | N/A — tracks follow-up work without reopening proof scope |
+
+**LKW-PF0 acceptance (met):**
+
+- [x] Maturity bar documented in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
+- [x] Difference between platform proof, operational proof, and production-grade readiness is explicit.
+- [x] Proof closure rules documented (§9.5).
+- [x] Production hardening backlog rules documented (§9.4).
+- [x] Elasticsearch/Kibana remains **closed for platform proof** but **not production-grade** (§9.6; OBS-VENDOR production hardening **Planned** in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md)).
+- [x] Token Optimization remains **Planned** — `LKW-PF6`, `LKW-PF6-0`, and `TOKEN-1A` not started.
+- [x] No code/runtime/test/CI/dependency files changed.
+
+**Next proofs must use this bar:** `LKW-PF6-0` (Token Optimization proof design) and all future LKW-PF items must state which maturity level they close and record production gaps in the appropriate platform plan backlog.
 
 Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
