@@ -289,6 +289,14 @@ def optimize_memory_summary(
         )
 
     optimized_content, compaction_stats = _compact_summary_content(original_content, cfg=cfg)
+    optimized_content, compaction_stats = _apply_lossy_truncation_guard(
+        original_content=original_content,
+        optimized_content=optimized_content,
+        compaction_stats=compaction_stats,
+        cfg=cfg,
+        effective_policy=effective_policy,
+        semantic_validation_hook=semantic_validation_hook,
+    )
 
     validation = validate_protected_regions(original_content, optimized_content)
     fallback_used = False
@@ -446,7 +454,12 @@ def _compact_summary_content(
     *,
     cfg: MemorySummaryCompressionConfig,
 ) -> tuple[str, dict[str, int]]:
-    stats = {"lines_trimmed": 0, "whitespace_compacted": 0, "chars_truncated": 0}
+    stats = {
+        "lines_trimmed": 0,
+        "whitespace_compacted": 0,
+        "chars_truncated": 0,
+        "lossy_truncation_skipped": 0,
+    }
     working = content
 
     if cfg.trim_edges:
@@ -467,15 +480,33 @@ def _compact_summary_content(
             stats["whitespace_compacted"] += 1
         working = compacted
 
-    if cfg.max_summary_chars is not None and len(working) > cfg.max_summary_chars:
-        candidate = working[: cfg.max_summary_chars].rstrip()
-        field_validation = validate_protected_regions(content, candidate)
-        if field_validation.status is ProtectedRegionValidationStatus.FAILED:
-            return content, stats
-        stats["chars_truncated"] += 1
-        working = candidate
-
     return working, stats
+
+
+def _apply_lossy_truncation_guard(
+    *,
+    original_content: str,
+    optimized_content: str,
+    compaction_stats: dict[str, int],
+    cfg: MemorySummaryCompressionConfig,
+    effective_policy: TokenOptimizationPolicy,
+    semantic_validation_hook: SemanticValidationHook | None,
+) -> tuple[str, dict[str, int]]:
+    """Apply max_summary_chars only under explicit lossy policy with semantic hook."""
+    stats = dict(compaction_stats)
+    if cfg.max_summary_chars is None or len(optimized_content) <= cfg.max_summary_chars:
+        return optimized_content, stats
+
+    lossy_allowed = (
+        effective_policy.allow_lossy and semantic_validation_hook is not None
+    )
+    if not lossy_allowed:
+        stats["lossy_truncation_skipped"] = 1
+        return optimized_content, stats
+
+    truncated = optimized_content[: cfg.max_summary_chars].rstrip()
+    stats["chars_truncated"] = 1
+    return truncated, stats
 
 
 def _compact_horizontal_whitespace(text: str) -> str:
@@ -538,6 +569,7 @@ def _base_metadata(
         "lines_trimmed": 0,
         "whitespace_compacted": 0,
         "chars_truncated": 0,
+        "lossy_truncation_skipped": 0,
     }
     if compaction_stats is not None:
         metadata.update(compaction_stats)

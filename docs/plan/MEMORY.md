@@ -66,6 +66,14 @@ Load **only** the satellite matching your task or cited gap ID.
 - no vector index mutation without primary-store source of truth,
 - no lossy compression of legal/security/policy text unless explicitly allowed by policy.
 
+**Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
+
+- `max_summary_chars` is treated as **lossy** compression
+- no truncation under default `allow_lossy=False` policy
+- lossy truncation requires explicit `allow_lossy=True` **and** `semantic_validation_hook` acceptance
+- no LLM-as-a-Judge implementation was added in TOKEN-5A-R
+- no live memory-store wiring was added in TOKEN-5A-R
+
 **Explicit exclusions:** no live memory-store overwrite, no automatic memory compaction job, no vector index mutation, no embedding regeneration, no LLM/model-based semantic rewriting, no full LLM-as-a-Judge eval engine (belongs to TOKEN-6B / regression/evals), no runtime hot-path wiring, no HOS emission, no observability exporter wiring, no token regression benchmark runner, no LKW proof execution in TOKEN-MEM-1.
 
 ---

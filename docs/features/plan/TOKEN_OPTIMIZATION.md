@@ -744,6 +744,15 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no LKW proof execution
 - next step: **TOKEN-6B** regression benchmark runner according to plan ordering
 
+**Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
+
+- `max_summary_chars` is treated as **lossy** compression, not lossless structural compaction
+- no truncation under default `allow_lossy=False` policy
+- lossy truncation requires explicit `allow_lossy=True` **and** `semantic_validation_hook` acceptance
+- protected-region validation still guards truncation candidates; semantic-hook rejection falls back to original
+- no LLM-as-a-Judge implementation was added
+- no live memory-store wiring was added
+
 **Deliverables (implementation task, not this docs-only slice):**
 
 - `intergrax/memory/summary_compressor.py` — conservative `MemorySummaryCompressor` helper

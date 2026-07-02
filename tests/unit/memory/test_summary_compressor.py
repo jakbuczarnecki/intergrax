@@ -318,6 +318,154 @@ def test_no_semantic_validation_status_without_hook() -> None:
     assert outcome.semantic_validation_status is None
 
 
+def _three_fact_summary() -> str:
+    return (
+        "User prefers concise answers.\n"
+        "User is working on LKW token optimization proof.\n"
+        "User does not want runtime memory wiring yet."
+    )
+
+
+def _lossy_policy() -> TokenOptimizationPolicy:
+    return TokenOptimizationPolicy(
+        enabled=True,
+        profile=TokenOptimizationProfile.CONSERVATIVE,
+        compression_level=CompressionLevel.LIGHT,
+        allow_lossy=True,
+        require_validation=True,
+        fallback_on_validation_failure=True,
+        emit_receipts=True,
+    )
+
+
+def test_max_summary_chars_does_not_truncate_under_default_policy() -> None:
+    original = _three_fact_summary()
+    config = MemorySummaryCompressionConfig(max_summary_chars=40)
+
+    outcome = compress_memory_summary(
+        original,
+        token_policy=_enabled_policy(),
+        config=config,
+    )
+
+    assert outcome.optimized_content == original
+    assert "User does not want runtime memory wiring yet." in outcome.optimized_content
+    assert outcome.metadata["lossy_truncation_skipped"] == 1
+    assert outcome.metadata["chars_truncated"] == 0
+
+
+def test_max_summary_chars_does_not_silently_remove_user_fact_under_conservative_policy() -> None:
+    original = _three_fact_summary()
+    config = MemorySummaryCompressionConfig(max_summary_chars=55)
+
+    outcome = optimize_memory_summary(
+        original,
+        token_policy=DEFAULT_MEMORY_SUMMARY_TOKEN_POLICY,
+        config=config,
+    )
+
+    assert "User does not want runtime memory wiring yet." in outcome.optimized_content
+    assert outcome.metadata["lossy_truncation_skipped"] == 1
+    assert outcome.fallback_status is False
+
+
+def test_allow_lossy_without_semantic_hook_does_not_truncate() -> None:
+    original = _three_fact_summary()
+    config = MemorySummaryCompressionConfig(max_summary_chars=40)
+
+    outcome = compress_memory_summary(
+        original,
+        token_policy=_lossy_policy(),
+        config=config,
+    )
+
+    assert outcome.optimized_content == original
+    assert "User does not want runtime memory wiring yet." in outcome.optimized_content
+    assert outcome.metadata["lossy_truncation_skipped"] == 1
+    assert outcome.metadata["chars_truncated"] == 0
+
+
+def test_allow_lossy_with_hook_rejection_falls_back_to_original() -> None:
+    original = _three_fact_summary()
+    config = MemorySummaryCompressionConfig(
+        compact_whitespace=False,
+        trim_blank_lines=False,
+        trim_edges=False,
+        max_summary_chars=40,
+    )
+
+    def reject_hook(orig: str, opt: str, metadata: object) -> bool:
+        return False
+
+    outcome = compress_memory_summary(
+        original,
+        token_policy=_lossy_policy(),
+        config=config,
+        semantic_validation_hook=reject_hook,
+    )
+
+    assert outcome.optimized_content == original
+    assert outcome.fallback_status is True
+    assert outcome.semantic_validation_status is SemanticValidationStatus.FAILED
+    assert outcome.status is MemorySummaryCompressionStatus.FALLBACK
+
+
+def test_allow_lossy_with_hook_acceptance_allows_truncation_when_protected_regions_pass() -> None:
+    original = _three_fact_summary()
+    config = MemorySummaryCompressionConfig(
+        compact_whitespace=False,
+        trim_blank_lines=False,
+        trim_edges=False,
+        max_summary_chars=40,
+    )
+
+    def accept_hook(orig: str, opt: str, metadata: object) -> bool:
+        return True
+
+    outcome = compress_memory_summary(
+        original,
+        token_policy=_lossy_policy(),
+        config=config,
+        semantic_validation_hook=accept_hook,
+    )
+
+    assert outcome.optimized_content != original
+    assert len(outcome.optimized_content) <= 40
+    assert outcome.metadata["chars_truncated"] == 1
+    assert outcome.fallback_status is False
+    assert outcome.semantic_validation_status is SemanticValidationStatus.PASSED
+    assert outcome.status is MemorySummaryCompressionStatus.APPLIED
+
+
+def test_protected_dates_force_fallback_when_truncation_would_remove_them() -> None:
+    original = (
+        "User prefers concise answers.\n"
+        "Follow-up scheduled on 2026-07-01.\n"
+        "User does not want runtime memory wiring yet."
+    )
+    config = MemorySummaryCompressionConfig(
+        compact_whitespace=False,
+        trim_blank_lines=False,
+        trim_edges=False,
+        max_summary_chars=55,
+    )
+
+    def accept_hook(orig: str, opt: str, metadata: object) -> bool:
+        return True
+
+    outcome = compress_memory_summary(
+        original,
+        token_policy=_lossy_policy(),
+        config=config,
+        semantic_validation_hook=accept_hook,
+    )
+
+    assert outcome.optimized_content == original
+    assert "2026-07-01" in outcome.optimized_content
+    assert outcome.fallback_status is True
+    assert outcome.status is MemorySummaryCompressionStatus.FALLBACK
+
+
 def test_helper_only_no_memory_store_imports_required() -> None:
     """Compressor operates in-memory; no store write APIs are invoked."""
     original = _compressible_summary()
