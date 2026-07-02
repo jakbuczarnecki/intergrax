@@ -241,7 +241,45 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-6B** regression benchmark runner (per plan ordering).
+**Next step:** **TOKEN-OBS-1** HOS/domain-signal emission (per plan ordering).
+
+---
+
+## TOKEN-6B — Deterministic token regression benchmark runner
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add the first cross-source deterministic regression benchmark scaffold for helper-only Token Optimization optimizers.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression.py` — fixture contracts, runner, default fixtures, summary/result dataclasses
+- `scripts/check_token_regression_benchmarks.py` — local CI-friendly gate with optional `--json` output
+- `tests/unit/runtime/token_optimization/test_regression.py`
+
+**Closeout:**
+
+- deterministic token regression benchmark runner added
+- default helper-only fixtures added for `tool_schema`, `context_pack`, and `memory_summary`
+- CI-friendly local check script added
+- summary/result dataclasses added
+- receipt/validation/fallback expectations checked
+- deterministic injected token counter used
+- no model calls
+- no external tokenizer dependency
+- no HOS/domain-signal emission
+- no observability exporter wiring
+- no LKW proof execution
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_regression.py -q
+uv run python scripts/check_token_regression_benchmarks.py
+uv run python scripts/check_token_regression_benchmarks.py --json
+```
+
+**Next step:** **TOKEN-OBS-1** / **TOKEN-OBS-2** observability emission and full regression-gate reporting (per plan ordering).
 
 ---
 
@@ -269,7 +307,7 @@ Done / Closed when:
 - no observability exporter wiring added
 - no runtime event emission added
 - no tokenizer/model calls added
-- next step: **TOKEN-6B** regression benchmark runner according to plan ordering
+- next step: **TOKEN-OBS-1** HOS/domain-signal emission according to plan ordering
 
 **TOKEN-6A-R refinement:**
 
@@ -465,7 +503,7 @@ TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Cl
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
 TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
 TOKEN-5A    MemorySummaryCompressor helper-only first slice — Done / Closed
-TOKEN-6B    token regression benchmark runner + CI scripts
+TOKEN-6B    token regression benchmark runner + CI scripts — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
@@ -698,7 +736,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no RAG retrieval behavior changed
 - no prompt assembly added
 - no telemetry emission added
-- next step: **TOKEN-6B** regression benchmark runner, according to plan ordering
+- next step: **TOKEN-OBS-1** HOS/domain-signal emission, according to plan ordering
 
 ---
 
@@ -742,7 +780,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no HOS emission
 - no runtime hot-path wiring
 - no LKW proof execution
-- next step: **TOKEN-6B** regression benchmark runner according to plan ordering
+- next step: **TOKEN-OBS-1** HOS/domain-signal emission according to plan ordering
 
 **Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
 
@@ -810,7 +848,7 @@ semantic_validation_status   # present only when semantic_validation_hook is use
 - no user facts, dates, IDs, or policy text are silently lost,
 - benchmark-ready result fields populated for TOKEN-6B / LKW-PF6 attribution.
 
-**Semantic validation note:** future semantic validation and LLM-as-a-Judge belong to **TOKEN-6B** / regression/evals work, not to TOKEN-5A. TOKEN-5A may expose an optional `semantic_validation_hook` interface; TOKEN-6B and eval gates may consume it later. TOKEN-5A must not implement or depend on a full LLM-as-a-Judge engine.
+**Semantic validation note:** future semantic validation and LLM-as-a-Judge belong to **TOKEN-OBS-2** / regression/evals work, not to TOKEN-5A or TOKEN-6B. TOKEN-5A may expose an optional `semantic_validation_hook` interface; TOKEN-OBS-2 and eval gates may consume it later. TOKEN-5A and TOKEN-6B must not implement or depend on a full LLM-as-a-Judge engine.
 
 **LKW-PF6 alignment:** TOKEN-5A adds the `memory` / `memory tokens` optimization and proof category so later LKW-PF6 proof runs can attribute measured savings for memory-summary compression alongside tools, context/RAG, and output shaping.
 
@@ -841,7 +879,9 @@ uv run pytest tests/unit/memory/ -q
 - savings attribution model,
 - token-vs-quality benchmark fixtures,
 - `scripts/check_compression_receipts.py`,
-- `scripts/check_token_regression_benchmarks.py`.
+- `scripts/check_token_regression_benchmarks.py` — **Done / Closed** (TOKEN-6B helper-only runner; no HOS wiring).
+
+**TOKEN-6B closeout (Done / Closed):** `intergrax/runtime/token_optimization/regression.py` provides deterministic fixture-based regression benchmarks for `tool_schema`, `context_pack`, and `memory_summary` with receipt/validation/fallback expectation checks and a local `scripts/check_token_regression_benchmarks.py` gate. No model calls, no external tokenizer, no HOS/exporter wiring, no LKW proof execution.
 
 **Acceptance criteria:**
 
