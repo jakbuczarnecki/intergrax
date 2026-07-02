@@ -279,7 +279,7 @@ uv run python scripts/check_token_regression_benchmarks.py
 uv run python scripts/check_token_regression_benchmarks.py --json
 ```
 
-**Next step:** **TOKEN-OBS-1** / **TOKEN-OBS-2** observability emission and full regression-gate reporting (per plan ordering).
+**Next step:** **TOKEN-OBS-1A** domain signal model (first cautious slice of **TOKEN-OBS-1**); then full **TOKEN-OBS-1** / **TOKEN-OBS-2** observability emission and regression-gate reporting (per plan ordering).
 
 **TOKEN-6B-R — strict validation expectation handling (refinement):**
 
@@ -288,6 +288,41 @@ uv run python scripts/check_token_regression_benchmarks.py --json
 - `unknown`, `missing`, `failed`, `runner_error`, or unexpected statuses fail the fixture
 - no HOS/exporter/runtime wiring was added
 - no LLM-as-a-Judge implementation was added
+
+---
+
+## TOKEN-OBS-1A — Token optimization domain signal model (helper-only)
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a helper-only, safe, structured token optimization domain signal layer that turns optimization outcomes and regression benchmark results into redaction-safe observability/domain signals and emits them into in-memory/no-op sinks for tests — without runtime hot-path integration or exporter wiring.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/signals.py` — signal model, metadata sanitizer, builders, sinks, emission helper
+- `tests/unit/runtime/token_optimization/test_signals.py`
+
+**Closeout:**
+
+- token optimization domain signal model added
+- safe metadata sanitizer added
+- builders added for optimization outcome/result and regression result
+- in-memory and no-op signal sinks added
+- no raw content/prompt/context/evidence emitted
+- no HOS/domain-signal bus wiring
+- no observability exporter wiring
+- no runtime hot-path integration
+- no LKW proof execution
+- no LLM-as-a-Judge
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+```
+
+**Next step:** **TOKEN-OBS-1** HOS/domain-signal emission (remaining scope beyond helper-only signal model).
 
 ---
 
@@ -512,6 +547,7 @@ TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
 TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
 TOKEN-5A    MemorySummaryCompressor helper-only first slice — Done / Closed
 TOKEN-6B    token regression benchmark runner + CI scripts — Done / Closed
+TOKEN-OBS-1A domain signal model + safe in-memory emission — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
