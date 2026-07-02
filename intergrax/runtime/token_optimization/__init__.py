@@ -91,6 +91,14 @@ from intergrax.runtime.token_optimization.tool_schema import (
     ToolSchemaOptimizer,
     optimize_tool_schema_catalog,
 )
+from intergrax.runtime.token_optimization.domain_events import (
+    TOKEN_OPTIMIZATION_SIGNAL_EVENT_KIND,
+    TOKEN_OPTIMIZATION_SIGNAL_PAYLOAD_SCHEMA_ID,
+    TokenOptimizationSignalPayloadV1,
+    emit_token_optimization_domain_signal,
+    register_token_optimization_domain_signal,
+    token_optimization_signal_to_payload,
+)
 from intergrax.runtime.token_optimization.signals import (
     InMemoryTokenOptimizationSignalSink,
     NoOpTokenOptimizationSignalSink,
@@ -181,8 +189,11 @@ __all__ = [
     "TokenOptimizationTelemetrySummaryValidationStatus",
     "TokenOptimizationTelemetryValidationResult",
     "TokenOptimizationTelemetryValidationStatus",
+    "TOKEN_OPTIMIZATION_SIGNAL_EVENT_KIND",
+    "TOKEN_OPTIMIZATION_SIGNAL_PAYLOAD_SCHEMA_ID",
     "TokenOptimizationSignal",
     "TokenOptimizationSignalEmissionResult",
+    "TokenOptimizationSignalPayloadV1",
     "TokenOptimizationSignalSink",
     "TokenOptimizationSignalType",
     "InMemoryTokenOptimizationSignalSink",
@@ -190,8 +201,11 @@ __all__ = [
     "build_token_optimization_signal",
     "build_token_regression_signal",
     "build_token_regression_summary_signal",
+    "emit_token_optimization_domain_signal",
     "emit_token_optimization_signal",
+    "register_token_optimization_domain_signal",
     "sanitize_signal_metadata",
+    "token_optimization_signal_to_payload",
     "TokenSavingsClaimConfidence",
     "build_token_optimization_counter_snapshot",
     "build_token_optimization_telemetry_summary",

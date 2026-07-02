@@ -334,6 +334,46 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 ---
 
+## TOKEN-OBS-1B — HOS domain-signal adapter for token optimization signals
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Bridge the safe `TokenOptimizationSignal` model into the existing HOS/domain-signal path through an explicit helper — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/domain_events.py` — typed payload, registration, conversion, emission helper
+- `tests/unit/runtime/token_optimization/test_domain_events.py`
+
+**Closeout:**
+
+- typed token optimization RuntimeEventPayload added
+- token optimization domain event kind registration added
+- safe TokenOptimizationSignal → RuntimeEventPayload conversion added
+- explicit `emit_token_optimization_domain_signal(...)` helper added
+- payload metadata and receipt_ref metadata are sanitized
+- no optimizer auto-emission added
+- no regression runner auto-emission added
+- no runtime subscribers added
+- no observability exporter wiring added
+- no Elasticsearch/Kibana wiring added
+- no LKW proof execution added
+- no LLM-as-a-Judge implementation added
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_domain_events.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run pytest tests/unit/runtime/events/test_domain_signals.py -q
+uv run python scripts/check_token_regression_benchmarks.py
+```
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
 
 **Status:** **Done / Closed**.
@@ -556,6 +596,7 @@ TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
 TOKEN-5A    MemorySummaryCompressor helper-only first slice — Done / Closed
 TOKEN-6B    token regression benchmark runner + CI scripts — Done / Closed
 TOKEN-OBS-1A domain signal model + safe in-memory emission — Done / Closed
+TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
