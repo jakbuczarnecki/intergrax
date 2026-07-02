@@ -254,7 +254,7 @@ Done / Closed when:
 **Deliverables:**
 
 - `intergrax/runtime/token_optimization/regression.py` — fixture contracts, runner, default fixtures, summary/result dataclasses
-- `scripts/check_token_regression_benchmarks.py` — local CI-friendly gate with optional `--json` output
+- `scripts/check_token_regression_benchmarks.py` — local CI-friendly gate with optional `--json`, `--report`, `--report-json`, `--gate`, and `--gate-json` output
 - `tests/unit/runtime/token_optimization/test_regression.py`
 
 **Closeout:**
@@ -558,6 +558,39 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
+## TOKEN-OBS-2D — Benchmark CLI report/gate output
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Expose existing regression report and gate artifacts through the benchmark CLI — without LKW integration, without modifying core runner/report/gate modules, and without writing files.
+
+**Deliverables:**
+
+- `scripts/check_token_regression_benchmarks.py` — `--report`, `--report-json`, `--gate`, `--gate-json`, `--min-total-saved-ratio`, `--min-total-saved-tokens`
+- `tests/unit/runtime/token_optimization/test_regression_cli.py`
+
+**Closeout:**
+
+- default script output and `--json` behavior unchanged
+- `--report` / `--report-json` print redaction-safe report artifacts via existing report helpers
+- `--gate` / `--gate-json` print redaction-safe gate artifacts via existing gate helpers; optional aggregate savings thresholds apply only in gate modes
+- exit code remains non-zero on benchmark summary failures; gate modes also exit non-zero when gate status is `fail`
+- mutually exclusive output mode flags fail fast with a clear CLI error
+- no files written; no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_regression_cli.py -q
+uv run python scripts/check_token_regression_benchmarks.py
+uv run python scripts/check_token_regression_benchmarks.py --report
+uv run python scripts/check_token_regression_benchmarks.py --gate
+```
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
 
 **Status:** **Done / Closed**.
@@ -787,6 +820,7 @@ TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Close
 TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
 TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
 TOKEN-OBS-2C regression gate thresholds — Done / Closed
+TOKEN-OBS-2D benchmark CLI report/gate output — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 

@@ -44,7 +44,7 @@ _EMISSION_MODULE = (
     / "regression_emission.py"
 )
 _BENCHMARK_SCRIPT = _REPO_ROOT / "scripts" / "check_token_regression_benchmarks.py"
-_SCOPE_GUARD_MODULES = (_REGRESSION_MODULE, _EMISSION_MODULE, _BENCHMARK_SCRIPT)
+_SCOPE_GUARD_MODULES = (_REGRESSION_MODULE, _EMISSION_MODULE)
 _SCOPE_GUARD_IMPORT = "regression_report"
 
 _UNSAFE_KEYS = frozenset(
