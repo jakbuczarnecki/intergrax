@@ -480,7 +480,31 @@ uv run python scripts/check_token_regression_benchmarks.py
 - core `regression.py` and `scripts/check_token_regression_benchmarks.py` unchanged
 - no optimizer auto-emission, no exporter wiring, no LKW proof, no LLM-as-a-Judge
 
-**Next step:** **TOKEN-OBS-2A** regression benchmark report artifact, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+**Next step:** **TOKEN-OBS-2B** regression fixture/eval matrix, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-2B — Regression fixture/eval matrix
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Expand deterministic token regression benchmarks with a minimal eval matrix that proves both savings and safety behavior — without LKW integration or changes to the core benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression.py` — eval-matrix default fixtures, extended expectation fields, safe eval metadata on results
+- `tests/unit/runtime/token_optimization/test_regression.py` — eval-matrix coverage for compactable, protected, and fallback cases
+- `tests/unit/runtime/token_optimization/test_regression_report.py` — safe eval metadata on report items
+
+**Closeout:**
+
+- default fixtures now cover compactable, protected, and fallback eval cases across `tool_schema`, `context_pack`, and `memory_summary`
+- expectations are explicit for pass/fail, validation, fallback, savings bounds, and receipt presence where applicable
+- report items expose safe eval metadata (`eval_case`, `expected_behavior`, `expectation_status`) without raw fixture bodies
+- `scripts/check_token_regression_benchmarks.py` unchanged and still exits 0 for the default suite
+- no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
 
 ---
 
@@ -736,6 +760,7 @@ TOKEN-OBS-1C explicit opt-in token optimization emission helpers — Done / Clos
 TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Closed
 TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Closed
 TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
+TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 

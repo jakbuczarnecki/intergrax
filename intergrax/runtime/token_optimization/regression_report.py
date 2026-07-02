@@ -72,6 +72,9 @@ class TokenRegressionReportItem:
     receipt_id: str | None
     passed: bool
     failure_reasons: tuple[str, ...]
+    eval_case: str | None = None
+    expected_behavior: str | None = None
+    expectation_status: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,6 +244,9 @@ def _build_report_item(result: TokenRegressionResult) -> TokenRegressionReportIt
         receipt_id=_extract_receipt_id(result),
         passed=result.passed,
         failure_reasons=result.failure_reasons,
+        eval_case=_extract_eval_metadata(result, "eval_case"),
+        expected_behavior=_extract_eval_metadata(result, "expected_behavior"),
+        expectation_status=_extract_eval_metadata(result, "expectation_status"),
     )
 
 
@@ -256,6 +262,13 @@ def _extract_receipt_id(result: TokenRegressionResult) -> str | None:
     receipt_id = result.metadata.get("receipt_id")
     if isinstance(receipt_id, str) and receipt_id:
         return receipt_id
+    return None
+
+
+def _extract_eval_metadata(result: TokenRegressionResult, key: str) -> str | None:
+    value = result.metadata.get(key)
+    if isinstance(value, str) and value:
+        return value
     return None
 
 
@@ -309,6 +322,9 @@ def _report_item_to_dict(item: TokenRegressionReportItem) -> dict[str, Any]:
         "receipt_id": item.receipt_id,
         "passed": item.passed,
         "failure_reasons": list(item.failure_reasons),
+        "eval_case": item.eval_case,
+        "expected_behavior": item.expected_behavior,
+        "expectation_status": item.expectation_status,
     }
 
 

@@ -181,11 +181,33 @@ def test_human_format_contains_totals_and_per_fixture_lines() -> None:
 
     formatted = format_token_regression_report(report)
 
-    assert "fixtures=3 passed=3 failed=0" in formatted
+    assert "fixtures=7 passed=7 failed=0" in formatted
     assert f"baseline={report.total_baseline_tokens}" in formatted
     for item in report.results:
         assert item.fixture_id in formatted
         assert f"saved={item.saved_tokens}" in formatted
+
+
+def test_report_items_include_safe_eval_metadata() -> None:
+    summary = run_token_regression_benchmarks()
+    report = build_token_regression_report(
+        summary,
+        report_id="report-test-eval",
+        generated_at="2026-07-02T12:00:00+00:00",
+    )
+
+    for item in report.results:
+        assert item.eval_case in {"compactable", "protected", "fallback"}
+        assert item.expected_behavior
+        assert item.expectation_status in {"met", "failed"}
+
+    payload = token_regression_report_to_dict(report)
+    for row in payload["results"]:
+        assert "eval_case" in row
+        assert "expected_behavior" in row
+        assert "expectation_status" in row
+        assert "content" not in row
+        assert "original_content" not in row
 
 
 def test_emission_report_includes_counts_and_statuses() -> None:

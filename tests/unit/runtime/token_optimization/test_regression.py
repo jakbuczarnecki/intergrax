@@ -55,9 +55,11 @@ def test_runner_supports_tool_schema_fixture() -> None:
         for result in summary.results
         if result.source_type == TokenRegressionSourceType.TOOL_SCHEMA.value
     ]
-    assert len(tool_results) == 1
-    assert tool_results[0].passed is True
-    assert tool_results[0].saved_tokens >= 1
+    assert len(tool_results) == 2
+    compact = next(r for r in tool_results if r.fixture_id == "tool_schema.compact_catalog")
+    assert compact.passed is True
+    assert compact.saved_tokens >= 1
+    assert compact.metadata["eval_case"] == "compactable"
 
 
 def test_runner_supports_context_pack_fixture() -> None:
@@ -67,9 +69,11 @@ def test_runner_supports_context_pack_fixture() -> None:
         for result in summary.results
         if result.source_type == TokenRegressionSourceType.CONTEXT_PACK.value
     ]
-    assert len(context_results) == 1
-    assert context_results[0].passed is True
-    assert context_results[0].saved_tokens >= 1
+    assert len(context_results) == 2
+    compact = next(r for r in context_results if r.fixture_id == "context_pack.compact_fragments")
+    assert compact.passed is True
+    assert compact.saved_tokens >= 1
+    assert compact.metadata["eval_case"] == "compactable"
 
 
 def test_runner_supports_memory_summary_fixture() -> None:
@@ -79,8 +83,8 @@ def test_runner_supports_memory_summary_fixture() -> None:
         for result in summary.results
         if result.source_type == TokenRegressionSourceType.MEMORY_SUMMARY.value
     ]
-    assert len(memory_results) == 1
-    result = memory_results[0]
+    assert len(memory_results) == 3
+    result = next(r for r in memory_results if r.fixture_id == "memory_summary.compact_summary")
     assert result.passed is True
     assert result.receipt_present is True
     assert result.validation_status in {"passed", "not_applicable"}
@@ -366,7 +370,7 @@ def test_script_exits_zero_for_default_passing_fixtures() -> None:
         text=True,
     )
     assert completed.returncode == 0
-    assert "fixtures=3 passed=3 failed=0" in completed.stdout
+    assert "fixtures=7 passed=7 failed=0" in completed.stdout
 
 
 def test_script_exits_non_zero_for_failing_fixture() -> None:
@@ -410,9 +414,9 @@ def test_script_json_output_is_valid() -> None:
     )
     assert completed.returncode == 0
     payload = json.loads(completed.stdout)
-    assert payload["total_fixtures"] == 3
+    assert payload["total_fixtures"] == 7
     assert payload["failed"] == 0
-    assert len(payload["results"]) == 3
+    assert len(payload["results"]) == 7
 
 
 def test_runner_failure_path_surfaces_runner_exception() -> None:
@@ -439,6 +443,65 @@ def test_default_fixtures_include_all_source_categories() -> None:
         TokenRegressionSourceType.CONTEXT_PACK,
         TokenRegressionSourceType.MEMORY_SUMMARY,
     }
+    assert len(fixtures) == 7
+
+
+def test_default_eval_matrix_includes_required_categories() -> None:
+    fixtures = default_regression_fixtures()
+    eval_cases = {fixture.metadata["eval_case"] for fixture in fixtures}
+    assert eval_cases == {"compactable", "protected", "fallback"}
+
+
+def test_compactable_fixtures_save_tokens_above_configured_minimum() -> None:
+    summary = run_token_regression_benchmarks()
+    compactable = [
+        result
+        for result in summary.results
+        if result.metadata.get("eval_case") == "compactable"
+    ]
+    assert len(compactable) == 3
+    for result in compactable:
+        fixture = next(
+            item for item in default_regression_fixtures() if item.fixture_id == result.fixture_id
+        )
+        expectation = fixture.expectation
+        if expectation.expected_min_saved_tokens is not None:
+            assert result.saved_tokens >= expectation.expected_min_saved_tokens
+        if (
+            expectation.expected_min_saved_ratio is not None
+            and expectation.expected_min_saved_ratio > 0
+        ):
+            assert result.saved_ratio >= expectation.expected_min_saved_ratio
+
+
+def test_protected_fixtures_preserve_validation_and_block_savings() -> None:
+    summary = run_token_regression_benchmarks()
+    protected = [
+        result
+        for result in summary.results
+        if result.metadata.get("eval_case") == "protected"
+    ]
+    assert len(protected) == 3
+    for result in protected:
+        assert result.passed is True
+        assert result.saved_tokens == 0
+        assert result.fallback_status is False
+        assert result.validation_status in {"passed", "not_applicable"}
+        assert result.metadata["expectation_status"] == "met"
+
+
+def test_fallback_fixture_passes_by_falling_back() -> None:
+    summary = run_token_regression_benchmarks()
+    fallback = next(
+        result
+        for result in summary.results
+        if result.fixture_id == "memory_summary.fallback_validation"
+    )
+    assert fallback.passed is True
+    assert fallback.fallback_status is True
+    assert fallback.saved_tokens == 0
+    assert fallback.validation_status == "failed"
+    assert fallback.metadata["expectation_status"] == "met"
 
 
 class _SyntheticOutcome:

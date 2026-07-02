@@ -22,9 +22,15 @@ from intergrax.runtime.token_optimization.context_pack import (
     optimize_context_pack,
 )
 from intergrax.runtime.token_optimization.contracts import (
+    CompressionLevel,
     ProtectedRegionValidationStatus,
+    TokenOptimizationPolicy,
+    TokenOptimizationProfile,
     TokenOptimizationStrategyRef,
 )
+from intergrax.runtime.token_optimization.tool_schema import ToolSchemaOptimizationConfig
+from intergrax.runtime.token_optimization.context_pack import ContextPackOptimizationConfig
+from intergrax.memory.summary_compressor import MemorySummaryCompressionConfig
 from intergrax.runtime.token_optimization.tool_schema import (
     DEFAULT_TOOL_CATALOG_TOKEN_POLICY,
     ToolSchemaOptimizationOutcome,
@@ -57,6 +63,10 @@ class TokenRegressionExpectation:
 
     expected_min_saved_tokens: int | None = None
     expected_min_saved_ratio: float | None = None
+    expected_max_saved_tokens: int | None = None
+    expected_max_saved_ratio: float | None = None
+    expected_validation_status: str | None = None
+    expect_fallback: bool | None = None
     require_receipt: bool = True
     expect_validation_pass: bool = True
     allow_fallback: bool = False
@@ -176,6 +186,7 @@ class TokenRegressionBenchmarkRunner:
         combined_metadata: dict[str, Any] = dict(fixture.metadata)
         combined_metadata.update(fixture.expectation.metadata)
         combined_metadata["description"] = fixture.description
+        combined_metadata["expectation_status"] = "met" if not failure_reasons else "failed"
 
         return TokenRegressionResult(
             fixture_id=fixture.fixture_id,
@@ -213,12 +224,37 @@ def default_regression_fixtures() -> tuple[TokenRegressionFixture, ...]:
             description="Compact pretty-printed tool catalog JSON with whitespace savings.",
             expectation=TokenRegressionExpectation(
                 expected_min_saved_tokens=1,
+                expected_min_saved_ratio=0.05,
                 require_receipt=True,
                 expect_validation_pass=True,
                 allow_fallback=False,
+                expect_fallback=False,
             ),
             runner=_run_tool_schema_fixture,
-            metadata={"category": "tool_catalog"},
+            metadata=_eval_fixture_metadata(
+                category="tool_catalog",
+                eval_case="compactable",
+                expected_behavior="saves_tokens_with_receipt",
+            ),
+        ),
+        TokenRegressionFixture(
+            fixture_id="tool_schema.protected_description",
+            source_type=TokenRegressionSourceType.TOOL_SCHEMA,
+            description="Protected URL in tool description is preserved without unsafe compaction.",
+            expectation=TokenRegressionExpectation(
+                expected_max_saved_tokens=0,
+                expected_max_saved_ratio=0.0,
+                require_receipt=True,
+                expect_validation_pass=True,
+                allow_fallback=False,
+                expect_fallback=False,
+            ),
+            runner=_run_tool_schema_protected_fixture,
+            metadata=_eval_fixture_metadata(
+                category="tool_catalog",
+                eval_case="protected",
+                expected_behavior="preserves_protected_regions_no_savings",
+            ),
         ),
         TokenRegressionFixture(
             fixture_id="context_pack.compact_fragments",
@@ -226,26 +262,109 @@ def default_regression_fixtures() -> tuple[TokenRegressionFixture, ...]:
             description="Compact context pack fragments with whitespace normalization.",
             expectation=TokenRegressionExpectation(
                 expected_min_saved_tokens=1,
+                expected_min_saved_ratio=0.05,
                 require_receipt=True,
                 expect_validation_pass=True,
                 allow_fallback=False,
+                expect_fallback=False,
             ),
             runner=_run_context_pack_fixture,
-            metadata={"category": "rag_context_pack"},
+            metadata=_eval_fixture_metadata(
+                category="rag_context_pack",
+                eval_case="compactable",
+                expected_behavior="saves_tokens_with_receipt",
+            ),
+        ),
+        TokenRegressionFixture(
+            fixture_id="context_pack.protected_evidence",
+            source_type=TokenRegressionSourceType.CONTEXT_PACK,
+            description="Protected evidence reference fragment is preserved without unsafe compaction.",
+            expectation=TokenRegressionExpectation(
+                expected_max_saved_tokens=0,
+                expected_max_saved_ratio=0.0,
+                require_receipt=True,
+                expect_validation_pass=True,
+                allow_fallback=False,
+                expect_fallback=False,
+            ),
+            runner=_run_context_pack_protected_fixture,
+            metadata=_eval_fixture_metadata(
+                category="rag_context_pack",
+                eval_case="protected",
+                expected_behavior="preserves_protected_evidence_no_savings",
+            ),
         ),
         TokenRegressionFixture(
             fixture_id="memory_summary.compact_summary",
             source_type=TokenRegressionSourceType.MEMORY_SUMMARY,
             description="Compact memory summary with structural whitespace normalization.",
             expectation=TokenRegressionExpectation(
+                expected_min_saved_ratio=0.0,
                 require_receipt=True,
                 expect_validation_pass=True,
                 allow_fallback=False,
+                expect_fallback=False,
             ),
             runner=_run_memory_summary_fixture,
-            metadata={"category": "memory"},
+            metadata=_eval_fixture_metadata(
+                category="memory",
+                eval_case="compactable",
+                expected_behavior="applies_structural_compaction_with_receipt",
+            ),
+        ),
+        TokenRegressionFixture(
+            fixture_id="memory_summary.protected_dates",
+            source_type=TokenRegressionSourceType.MEMORY_SUMMARY,
+            description="Protected dates in memory summary are preserved without fallback.",
+            expectation=TokenRegressionExpectation(
+                expected_max_saved_tokens=0,
+                expected_max_saved_ratio=0.0,
+                require_receipt=True,
+                expect_validation_pass=True,
+                allow_fallback=False,
+                expect_fallback=False,
+            ),
+            runner=_run_memory_summary_protected_fixture,
+            metadata=_eval_fixture_metadata(
+                category="memory",
+                eval_case="protected",
+                expected_behavior="preserves_protected_dates_no_savings",
+            ),
+        ),
+        TokenRegressionFixture(
+            fixture_id="memory_summary.fallback_validation",
+            source_type=TokenRegressionSourceType.MEMORY_SUMMARY,
+            description="Lossy truncation that would break protected dates falls back to original content.",
+            expectation=TokenRegressionExpectation(
+                expected_max_saved_tokens=0,
+                expected_max_saved_ratio=0.0,
+                expected_validation_status=ProtectedRegionValidationStatus.FAILED.value,
+                expect_fallback=True,
+                require_receipt=True,
+                expect_validation_pass=False,
+                allow_fallback=True,
+            ),
+            runner=_run_memory_summary_fallback_fixture,
+            metadata=_eval_fixture_metadata(
+                category="memory",
+                eval_case="fallback",
+                expected_behavior="falls_back_on_validation_failure",
+            ),
         ),
     )
+
+
+def _eval_fixture_metadata(
+    *,
+    category: str,
+    eval_case: str,
+    expected_behavior: str,
+) -> dict[str, str]:
+    return {
+        "category": category,
+        "eval_case": eval_case,
+        "expected_behavior": expected_behavior,
+    }
 
 
 def regression_result_to_dict(result: TokenRegressionResult) -> dict[str, Any]:
@@ -374,6 +493,103 @@ def _run_memory_summary_fixture(token_counter: TokenCounter) -> MemorySummaryCom
         token_policy=DEFAULT_MEMORY_SUMMARY_TOKEN_POLICY,
         token_counter=token_counter,
     )
+
+
+def _run_tool_schema_protected_fixture(
+    token_counter: TokenCounter,
+) -> ToolSchemaOptimizationOutcome:
+    prefix = "context " * 40
+    protected_url = "https://example.com/protected/resource"
+    description = f"{prefix}See {protected_url} for details and more usage notes."
+    catalog = {
+        "tools": [
+            {
+                "name": "search_files",
+                "description": description,
+                "parameters": {"type": "object", "properties": {"query": {"type": "string"}}},
+            }
+        ]
+    }
+    pretty_input = json.dumps(catalog, indent=2)
+    return optimize_tool_schema_catalog(
+        pretty_input,
+        token_policy=DEFAULT_TOOL_CATALOG_TOKEN_POLICY,
+        config=ToolSchemaOptimizationConfig(max_description_chars=120),
+        token_counter=token_counter,
+    )
+
+
+def _run_context_pack_protected_fixture(
+    token_counter: TokenCounter,
+) -> ContextPackOptimizationOutcome:
+    prefix = "context " * 40
+    evidence_ref = "evidence_abcdefgh1234"
+    content = f"{prefix}See {evidence_ref} for audit trail and more notes."
+    fragments = [
+        ContextFragment(
+            fragment_id="evidence_frag",
+            content=content,
+            required=False,
+            metadata={"source": "evidence"},
+        ),
+    ]
+    return optimize_context_pack(
+        fragments,
+        token_policy=DEFAULT_CONTEXT_PACK_TOKEN_POLICY,
+        config=ContextPackOptimizationConfig(max_fragment_chars=120),
+        token_counter=token_counter,
+    )
+
+
+def _run_memory_summary_protected_fixture(
+    token_counter: TokenCounter,
+) -> MemorySummaryCompressionOutcome:
+    summary = "  Meeting   on   2026-07-01   was   scheduled.\n\n\nFollow   up   later.  "
+    return optimize_memory_summary(
+        summary,
+        token_policy=DEFAULT_MEMORY_SUMMARY_TOKEN_POLICY,
+        token_counter=token_counter,
+    )
+
+
+def _run_memory_summary_fallback_fixture(
+    token_counter: TokenCounter,
+) -> MemorySummaryCompressionOutcome:
+    summary = (
+        "User prefers concise answers.\n"
+        "Follow-up scheduled on 2026-07-01.\n"
+        "User does not want runtime memory wiring yet."
+    )
+    lossy_policy = TokenOptimizationPolicy(
+        enabled=True,
+        profile=TokenOptimizationProfile.CONSERVATIVE,
+        compression_level=CompressionLevel.LIGHT,
+        allow_lossy=True,
+        require_validation=True,
+        fallback_on_validation_failure=True,
+        emit_receipts=True,
+    )
+    config = MemorySummaryCompressionConfig(
+        compact_whitespace=False,
+        trim_blank_lines=False,
+        trim_edges=False,
+        max_summary_chars=55,
+    )
+    return optimize_memory_summary(
+        summary,
+        token_policy=lossy_policy,
+        config=config,
+        semantic_validation_hook=_accept_semantic_validation,
+        token_counter=token_counter,
+    )
+
+
+def _accept_semantic_validation(
+    _original_content: str,
+    _optimized_content: str,
+    _metadata: object,
+) -> bool:
+    return True
 
 
 def _resolve_token_metrics(
@@ -527,8 +743,42 @@ def _evaluate_expectations(
             f"({expectation.expected_min_saved_ratio:.4f})"
         )
 
+    if (
+        expectation.expected_max_saved_tokens is not None
+        and saved_tokens > expectation.expected_max_saved_tokens
+    ):
+        failures.append(
+            "saved_tokens "
+            f"({saved_tokens}) above expected_max_saved_tokens "
+            f"({expectation.expected_max_saved_tokens})"
+        )
+
+    if (
+        expectation.expected_max_saved_ratio is not None
+        and saved_ratio > expectation.expected_max_saved_ratio
+    ):
+        failures.append(
+            "saved_ratio "
+            f"({saved_ratio:.4f}) above expected_max_saved_ratio "
+            f"({expectation.expected_max_saved_ratio:.4f})"
+        )
+
     if expectation.require_receipt and not receipt_present:
         failures.append("required receipt missing")
+
+    if expectation.expected_validation_status is not None:
+        if validation_status != expectation.expected_validation_status:
+            failures.append(
+                "validation status "
+                f"({validation_status}) did not match expected_validation_status "
+                f"({expectation.expected_validation_status})"
+            )
+
+    if expectation.expect_fallback is True and not fallback_status:
+        failures.append("expected fallback but fallback was not used")
+
+    if expectation.expect_fallback is False and fallback_status:
+        failures.append("unexpected fallback used")
 
     if (
         expectation.expect_validation_pass
