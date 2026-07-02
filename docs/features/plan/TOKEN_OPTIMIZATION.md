@@ -455,6 +455,31 @@ uv run pytest tests/unit/memory/ -q
 uv run python scripts/check_token_regression_benchmarks.py
 ```
 
+**Next step:** **TOKEN-OBS-1E** regression emission wrapper, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-1E — Policy-gated regression benchmark emission wrapper
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a thin wrapper around the deterministic token regression benchmark runner that optionally emits policy-gated domain signals for per-fixture results and aggregate summary — without modifying the core runner or benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression_emission.py` — `TokenRegressionEmissionRunResult`, `run_token_regression_benchmarks_with_emission`
+- `tests/unit/runtime/token_optimization/test_regression_emission.py`
+
+**Closeout:**
+
+- wrapper calls existing `run_token_regression_benchmarks(...)` unchanged
+- per-result emission via `maybe_emit_token_regression_result(...)` only from wrapper
+- summary emission via `maybe_emit_token_regression_summary(...)` only from wrapper
+- default policy disabled; `emit_results` / `emit_summary` flags gate attempts
+- dry-run policy builds signals without recording events
+- core `regression.py` and `scripts/check_token_regression_benchmarks.py` unchanged
+- no optimizer auto-emission, no exporter wiring, no LKW proof, no LLM-as-a-Judge
+
 **Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
 
 ---
@@ -684,6 +709,7 @@ TOKEN-OBS-1A domain signal model + safe in-memory emission — Done / Closed
 TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals — Done / Closed
 TOKEN-OBS-1C explicit opt-in token optimization emission helpers — Done / Closed
 TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Closed
+TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
