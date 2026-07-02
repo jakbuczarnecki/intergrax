@@ -533,6 +533,31 @@ uv run python scripts/check_token_regression_benchmarks.py
 
 ---
 
+## TOKEN-OBS-2C — Regression gate thresholds
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a formal gate artifact over existing deterministic token regression benchmark results — without LKW integration, without modifying the core runner, and without changing the benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression_gate.py` — `TokenRegressionGateThresholds`, `evaluate_token_regression_gate`, `token_regression_gate_to_dict`, `format_token_regression_gate`
+- `tests/unit/runtime/token_optimization/test_regression_gate.py`
+
+**Closeout:**
+
+- gate evaluates `TokenRegressionSummary` with optional `TokenRegressionReport` cross-checks
+- default thresholds pass the current 7-fixture benchmark suite
+- stable failure reason codes: `fixture_failed`, `missing_receipt`, `expectation_not_met`, `unexpected_fallback`, `total_saved_ratio_below_threshold`, `total_saved_tokens_below_threshold`
+- optional aggregate `min_total_saved_ratio` / `min_total_saved_tokens` thresholds
+- metadata sanitized via existing `sanitize_signal_metadata`; no raw content, prompts, context, evidence, or event payloads in gate dict/formatter output
+- core `regression.py`, `regression_report.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged and do not import the gate module
+- no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
 
 **Status:** **Done / Closed**.
@@ -761,6 +786,7 @@ TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Cl
 TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Closed
 TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
 TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
+TOKEN-OBS-2C regression gate thresholds — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
