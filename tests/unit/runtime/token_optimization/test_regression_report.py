@@ -158,6 +158,39 @@ def test_report_items_preserve_fixture_ids_and_token_savings_fields() -> None:
         assert item.token_category is not None
 
 
+def test_report_breakdowns_separate_eval_case_metrics() -> None:
+    summary = run_token_regression_benchmarks()
+    report = build_token_regression_report(
+        summary,
+        report_id="report-test-breakdowns",
+        generated_at="2026-07-02T12:00:00+00:00",
+    )
+
+    breakdowns = {breakdown.eval_case: breakdown for breakdown in report.breakdowns}
+    assert set(breakdowns) == {"compactable", "protected", "fallback"}
+
+    compactable = breakdowns["compactable"]
+    compactable_items = [item for item in report.results if item.eval_case == "compactable"]
+    assert compactable.total_fixtures == len(compactable_items)
+    assert compactable.baseline_tokens == sum(item.baseline_tokens for item in compactable_items)
+    assert compactable.saved_tokens == sum(item.saved_tokens for item in compactable_items)
+    assert compactable.saved_ratio == pytest.approx(
+        compactable.saved_tokens / compactable.baseline_tokens
+    )
+
+    protected = breakdowns["protected"]
+    assert protected.total_fixtures == 3
+    assert protected.noop_count == 3
+    assert protected.fallback_count == 0
+    assert protected.saved_tokens == 0
+
+    fallback = breakdowns["fallback"]
+    assert fallback.total_fixtures == 1
+    assert fallback.noop_count == 1
+    assert fallback.fallback_count == 1
+    assert fallback.saved_tokens == 0
+
+
 def test_dict_conversion_is_json_serializable() -> None:
     summary = run_token_regression_benchmarks()
     report = build_token_regression_report(
@@ -169,9 +202,14 @@ def test_dict_conversion_is_json_serializable() -> None:
     payload = token_regression_report_to_dict(report)
     serialized = json.dumps(payload, sort_keys=True)
     assert json.loads(serialized) == payload
+    assert {row["eval_case"] for row in payload["breakdowns"]} == {
+        "compactable",
+        "protected",
+        "fallback",
+    }
 
 
-def test_human_format_contains_totals_and_per_fixture_lines() -> None:
+def test_human_format_contains_totals_breakdowns_and_per_fixture_lines() -> None:
     summary = run_token_regression_benchmarks()
     report = build_token_regression_report(
         summary,
@@ -183,6 +221,10 @@ def test_human_format_contains_totals_and_per_fixture_lines() -> None:
 
     assert "fixtures=7 passed=7 failed=0" in formatted
     assert f"baseline={report.total_baseline_tokens}" in formatted
+    assert "breakdown:" in formatted
+    assert "compactable fixtures=3" in formatted
+    assert "protected fixtures=3" in formatted
+    assert "fallback fixtures=1" in formatted
     for item in report.results:
         assert item.fixture_id in formatted
         assert f"saved={item.saved_tokens}" in formatted
