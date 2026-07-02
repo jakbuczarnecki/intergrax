@@ -324,6 +324,14 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Next step:** **TOKEN-OBS-1** HOS/domain-signal emission (remaining scope beyond helper-only signal model).
 
+**TOKEN-OBS-1A-R refinement:**
+
+- `receipt_ref` metadata is sanitized before being attached to signals
+- raw content/prompt/context/evidence cannot bypass the sanitizer through `receipt_ref.metadata`
+- receipt identity fields (`receipt_id`, `run_id`, `step_id`, `strategy_id`, `original_hash`, `optimized_hash`) are preserved
+- no HOS/exporter/runtime wiring was added
+- no LLM-as-a-Judge implementation was added
+
 ---
 
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4

@@ -13,9 +13,12 @@ from intergrax.memory.summary_compressor import (
 )
 from intergrax.runtime.token_optimization.contracts import (
     CompressionLevel,
+    CompressionReceiptRef,
     TokenOptimizationAttribution,
+    TokenOptimizationDecision,
     TokenOptimizationPolicy,
     TokenOptimizationProfile,
+    TokenOptimizationResult,
 )
 from intergrax.runtime.token_optimization.regression import (
     default_token_counter,
@@ -261,3 +264,140 @@ def test_signals_module_has_no_hos_or_exporter_dependencies() -> None:
     assert "RuntimeEvent" not in source
     assert "intergrax.runtime.events" not in source
     assert "intergrax.runtime.observability" not in source
+
+
+def _malicious_receipt_ref() -> CompressionReceiptRef:
+    return CompressionReceiptRef(
+        receipt_id="receipt-malicious-1",
+        run_id="run-ref-1",
+        step_id="step-ref-1",
+        strategy_id="strategy-conservative",
+        original_hash="orig-hash-abc",
+        optimized_hash="opt-hash-xyz",
+        metadata={
+            "run_id": "run-ref-meta",
+            "fixture_id": "fixture-42",
+            "category": "memory_summary",
+            "strategy_id": "strategy-conservative",
+            "original_content": _SECRET_CONTENT,
+            "optimized_content": "optimized secret body",
+            "prompt": "secret prompt",
+            "context": {"fragments": ["secret"]},
+            "evidence": "secret evidence",
+            "payload": {"nested": "secret"},
+            "failure_reasons": ["a", "b"],
+            "unsafe_custom": "drop-me",
+        },
+    )
+
+
+def test_receipt_ref_metadata_unsafe_keys_are_sanitized_before_signal() -> None:
+    receipt_ref = _malicious_receipt_ref()
+    result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=receipt_ref,
+    )
+    signal = build_token_optimization_signal(result)
+
+    assert signal.receipt_ref is not None
+    assert signal.receipt_ref is not receipt_ref
+    assert signal.receipt_ref.receipt_id == "receipt-malicious-1"
+    assert signal.receipt_ref.run_id == "run-ref-1"
+    assert signal.receipt_ref.step_id == "step-ref-1"
+    assert signal.receipt_ref.strategy_id == "strategy-conservative"
+    assert signal.receipt_ref.original_hash == "orig-hash-abc"
+    assert signal.receipt_ref.optimized_hash == "opt-hash-xyz"
+    assert signal.receipt_ref.metadata == {
+        "run_id": "run-ref-meta",
+        "fixture_id": "fixture-42",
+        "category": "memory_summary",
+        "strategy_id": "strategy-conservative",
+    }
+
+
+def test_receipt_ref_metadata_drops_raw_content_prompt_context_evidence() -> None:
+    receipt_ref = _malicious_receipt_ref()
+    result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=receipt_ref,
+    )
+    signal = build_token_optimization_signal(result)
+
+    assert signal.receipt_ref is not None
+    metadata_text = str(signal.receipt_ref.metadata)
+    assert _SECRET_CONTENT not in metadata_text
+    assert "secret prompt" not in metadata_text
+    assert "secret evidence" not in metadata_text
+    assert "optimized secret body" not in metadata_text
+    assert "original_content" not in signal.receipt_ref.metadata
+    assert "optimized_content" not in signal.receipt_ref.metadata
+    assert "prompt" not in signal.receipt_ref.metadata
+    assert "context" not in signal.receipt_ref.metadata
+    assert "evidence" not in signal.receipt_ref.metadata
+
+
+def test_receipt_ref_metadata_preserves_safe_scalar_keys() -> None:
+    receipt_ref = CompressionReceiptRef(
+        receipt_id="receipt-safe-meta",
+        metadata={
+            "run_id": "run-safe-meta",
+            "fixture_id": "fixture-safe",
+            "category": "tool_schema",
+            "strategy_id": "strategy-light",
+        },
+    )
+    result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=receipt_ref,
+    )
+    signal = build_token_optimization_signal(result)
+
+    assert signal.receipt_ref is not None
+    assert signal.receipt_ref.metadata == {
+        "run_id": "run-safe-meta",
+        "fixture_id": "fixture-safe",
+        "category": "tool_schema",
+        "strategy_id": "strategy-light",
+    }
+
+
+def test_receipt_ref_metadata_drops_nested_dict_and_list_payloads() -> None:
+    receipt_ref = CompressionReceiptRef(
+        receipt_id="receipt-nested-meta",
+        metadata={
+            "run_id": "run-nested-meta",
+            "payload": {"nested": "secret"},
+            "failure_reasons": ["a", "b"],
+            "changed": True,
+        },
+    )
+    result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=receipt_ref,
+    )
+    signal = build_token_optimization_signal(result)
+
+    assert signal.receipt_ref is not None
+    assert signal.receipt_ref.metadata == {"run_id": "run-nested-meta", "changed": True}
+
+
+def test_receipt_ref_identity_fields_preserved_after_sanitization() -> None:
+    receipt_ref = _malicious_receipt_ref()
+    result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=receipt_ref,
+    )
+    signal = build_token_optimization_signal(result)
+
+    assert signal.receipt_ref is not None
+    assert signal.receipt_ref.receipt_id == receipt_ref.receipt_id
+    assert signal.receipt_ref.run_id == receipt_ref.run_id
+    assert signal.receipt_ref.step_id == receipt_ref.step_id
+    assert signal.receipt_ref.strategy_id == receipt_ref.strategy_id
+    assert signal.receipt_ref.original_hash == receipt_ref.original_hash
+    assert signal.receipt_ref.optimized_hash == receipt_ref.optimized_hash

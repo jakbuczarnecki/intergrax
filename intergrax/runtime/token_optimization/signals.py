@@ -215,6 +215,30 @@ def sanitize_signal_metadata(metadata: Mapping[str, Any] | None) -> dict[str, An
     return sanitized
 
 
+def _scalar_attr_string(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if "\n" in value or "\r" in value:
+        return None
+    return _limit_string(value)
+
+
+def _sanitize_receipt_ref(
+    receipt_ref: CompressionReceiptRef | None,
+) -> CompressionReceiptRef | None:
+    if receipt_ref is None:
+        return None
+    return CompressionReceiptRef(
+        receipt_id=receipt_ref.receipt_id,
+        run_id=receipt_ref.run_id,
+        step_id=receipt_ref.step_id,
+        strategy_id=receipt_ref.strategy_id,
+        original_hash=receipt_ref.original_hash,
+        optimized_hash=receipt_ref.optimized_hash,
+        metadata=sanitize_signal_metadata(receipt_ref.metadata),
+    )
+
+
 def _derive_signal_id(*parts: str) -> str:
     payload = "|".join(parts)
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:_SIGNAL_ID_HASH_LENGTH]
@@ -262,7 +286,7 @@ def _resolve_receipt_fields(
     receipt: CompressionReceipt | None,
     receipt_ref: CompressionReceiptRef | None,
 ) -> tuple[str | None, CompressionReceiptRef | None, str | None, str | None, str | None]:
-    resolved_ref = receipt_ref
+    resolved_ref = _sanitize_receipt_ref(receipt_ref)
     receipt_id: str | None = None
     run_id: str | None = None
     step_id: str | None = None
@@ -275,16 +299,18 @@ def _resolve_receipt_fields(
         if receipt.attribution is not None:
             tenant_id = receipt.attribution.tenant_id
         if resolved_ref is None and receipt_id:
-            resolved_ref = CompressionReceiptRef(
-                receipt_id=receipt_id,
-                run_id=run_id,
-                step_id=step_id,
-                strategy_id=(
-                    receipt.strategy.strategy_id if receipt.strategy is not None else None
-                ),
-                original_hash=receipt.original_hash,
-                optimized_hash=receipt.optimized_hash,
-                metadata=sanitize_signal_metadata(receipt.metadata),
+            resolved_ref = _sanitize_receipt_ref(
+                CompressionReceiptRef(
+                    receipt_id=receipt_id,
+                    run_id=run_id,
+                    step_id=step_id,
+                    strategy_id=(
+                        receipt.strategy.strategy_id if receipt.strategy is not None else None
+                    ),
+                    original_hash=receipt.original_hash,
+                    optimized_hash=receipt.optimized_hash,
+                    metadata=receipt.metadata,
+                )
             )
 
     if resolved_ref is not None:
@@ -292,7 +318,7 @@ def _resolve_receipt_fields(
         run_id = run_id or resolved_ref.run_id
         step_id = step_id or resolved_ref.step_id
 
-    return receipt_id, resolved_ref, run_id, step_id, tenant_id
+    return receipt_id, _sanitize_receipt_ref(resolved_ref), run_id, step_id, tenant_id
 
 
 def _resolve_attribution_fields(
@@ -534,9 +560,9 @@ def build_token_regression_signal(
         fallback_status=result.fallback_status,
         receipt_id=None,
         receipt_ref=None,
-        run_id=run_id if isinstance(run_id, str) else None,
-        step_id=step_id if isinstance(step_id, str) else None,
-        tenant_id=tenant_id if isinstance(tenant_id, str) else None,
+        run_id=_scalar_attr_string(run_id),
+        step_id=_scalar_attr_string(step_id),
+        tenant_id=_scalar_attr_string(tenant_id),
         fixture_id=result.fixture_id,
         created_at=created_at or datetime.now(UTC).isoformat(),
         metadata=_merge_metadata(
