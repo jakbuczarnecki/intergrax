@@ -480,6 +480,31 @@ uv run python scripts/check_token_regression_benchmarks.py
 - core `regression.py` and `scripts/check_token_regression_benchmarks.py` unchanged
 - no optimizer auto-emission, no exporter wiring, no LKW proof, no LLM-as-a-Judge
 
+**Next step:** **TOKEN-OBS-2A** regression benchmark report artifact, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-2A — Token regression benchmark report artifact
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a small redaction-safe report builder for existing deterministic token regression benchmark results — without LKW integration, without modifying the core runner, and without changing the benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression_report.py` — `TokenRegressionReport`, `build_token_regression_report`, `token_regression_report_to_dict`, `format_token_regression_report`
+- `tests/unit/runtime/token_optimization/test_regression_report.py`
+
+**Closeout:**
+
+- report builder consumes `TokenRegressionSummary` and optional `TokenRegressionEmissionRunResult`
+- report items include only safe scalar benchmark fields (fixture id, source/category, strategy, token savings, validation/fallback, receipt id, pass/fail)
+- emission section aggregates attempted emissions and status counts (`emitted`, `skipped_disabled`, `skipped_kind_disabled`, `dry_run`)
+- metadata sanitized via existing `sanitize_signal_metadata`; no raw content, prompts, context fragments, evidence, fixture bodies, or event payloads
+- deterministic output when `report_id` and `generated_at` are provided
+- core `regression.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged and do not import the report module
+- no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
 **Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
 
 ---
@@ -710,6 +735,7 @@ TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals — Done /
 TOKEN-OBS-1C explicit opt-in token optimization emission helpers — Done / Closed
 TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Closed
 TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Closed
+TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
