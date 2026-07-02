@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TOKEN-OBS-1C: explicit opt-in token optimization emission helpers."""
+"""TOKEN-OBS-1C/1D: explicit opt-in and policy-gated token optimization emission helpers."""
 
 from __future__ import annotations
 
@@ -30,10 +30,15 @@ from intergrax.runtime.token_optimization.domain_events import (
     register_token_optimization_domain_signal,
 )
 from intergrax.runtime.token_optimization.emission import (
+    TokenOptimizationEmissionPolicy,
     TokenOptimizationEmissionResult,
+    TokenOptimizationEmissionStatus,
     emit_token_optimization_outcome,
     emit_token_regression_result,
     emit_token_regression_summary,
+    maybe_emit_token_optimization_outcome,
+    maybe_emit_token_regression_result,
+    maybe_emit_token_regression_summary,
 )
 from intergrax.runtime.token_optimization.regression import (
     default_token_counter,
@@ -78,6 +83,9 @@ _EMISSION_HELPER_NAMES = (
     "emit_token_optimization_outcome",
     "emit_token_regression_result",
     "emit_token_regression_summary",
+    "maybe_emit_token_optimization_outcome",
+    "maybe_emit_token_regression_result",
+    "maybe_emit_token_regression_summary",
 )
 
 
@@ -359,3 +367,244 @@ def test_emission_module_has_no_exporter_dependencies() -> None:
     assert "ObservabilityExporter" not in source
     assert "elasticsearch" not in source.lower()
     assert "kibana" not in source.lower()
+
+
+def _enabled_emission_policy() -> TokenOptimizationEmissionPolicy:
+    return TokenOptimizationEmissionPolicy(enabled=True)
+
+
+def test_maybe_emit_token_optimization_outcome_default_policy_does_not_emit() -> None:
+    ctx, bus = _emit_context()
+    outcome = _optimization_outcome()
+
+    result = maybe_emit_token_optimization_outcome(ctx, outcome)
+
+    assert result.emitted is False
+    assert result.event is None
+    assert result.status == TokenOptimizationEmissionStatus.SKIPPED_DISABLED
+    assert result.skip_reason is not None
+    assert isinstance(result.payload, TokenOptimizationSignalPayloadV1)
+    assert result.signal.signal_id
+    assert len(bus.history) == 0
+
+
+def test_maybe_emit_token_regression_result_default_policy_does_not_emit() -> None:
+    ctx, bus = _emit_context()
+    summary = run_token_regression_benchmarks(token_counter=default_token_counter)
+
+    result = maybe_emit_token_regression_result(ctx, summary.results[0])
+
+    assert result.emitted is False
+    assert result.event is None
+    assert result.status == TokenOptimizationEmissionStatus.SKIPPED_DISABLED
+    assert result.skip_reason is not None
+    assert isinstance(result.payload, TokenOptimizationSignalPayloadV1)
+    assert len(bus.history) == 0
+
+
+def test_maybe_emit_token_optimization_outcome_enabled_policy_emits_domain_signal() -> None:
+    ctx, bus = _emit_context()
+    outcome = _optimization_outcome()
+
+    result = maybe_emit_token_optimization_outcome(
+        ctx,
+        outcome,
+        policy=_enabled_emission_policy(),
+    )
+
+    assert result.emitted is True
+    assert result.event is not None
+    assert result.event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert result.event.event_kind == TOKEN_OPTIMIZATION_SIGNAL_EVENT_KIND
+    assert result.status == TokenOptimizationEmissionStatus.EMITTED
+    assert result.skip_reason is None
+    assert len(bus.history) == 1
+
+
+def test_maybe_emit_token_regression_result_enabled_policy_emits_domain_signal() -> None:
+    ctx, bus = _emit_context()
+    summary = run_token_regression_benchmarks(token_counter=default_token_counter)
+    regression_result = summary.results[0]
+
+    result = maybe_emit_token_regression_result(
+        ctx,
+        regression_result,
+        policy=_enabled_emission_policy(),
+    )
+
+    assert result.emitted is True
+    assert result.event is not None
+    assert result.event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert result.signal.signal_type is TokenOptimizationSignalType.REGRESSION_RESULT
+    assert result.status == TokenOptimizationEmissionStatus.EMITTED
+    assert len(bus.history) == 1
+
+
+def test_maybe_emit_token_regression_summary_enabled_policy_emits_domain_signal() -> None:
+    ctx, bus = _emit_context()
+    summary = run_token_regression_benchmarks(token_counter=default_token_counter)
+
+    result = maybe_emit_token_regression_summary(
+        ctx,
+        summary,
+        policy=_enabled_emission_policy(),
+    )
+
+    assert result.emitted is True
+    assert result.event is not None
+    assert result.event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert result.signal.signal_type is TokenOptimizationSignalType.REGRESSION_SUMMARY
+    assert result.status == TokenOptimizationEmissionStatus.EMITTED
+    assert len(bus.history) == 1
+
+
+def test_maybe_emit_token_optimization_outcome_kind_gate_disables_emission() -> None:
+    ctx, bus = _emit_context()
+    outcome = _optimization_outcome()
+    policy = TokenOptimizationEmissionPolicy(
+        enabled=True,
+        emit_optimization_outcomes=False,
+    )
+
+    result = maybe_emit_token_optimization_outcome(ctx, outcome, policy=policy)
+
+    assert result.emitted is False
+    assert result.event is None
+    assert result.status == TokenOptimizationEmissionStatus.SKIPPED_KIND_DISABLED
+    assert result.skip_reason is not None
+    assert isinstance(result.payload, TokenOptimizationSignalPayloadV1)
+    assert len(bus.history) == 0
+
+
+def test_maybe_emit_token_regression_result_kind_gate_disables_emission() -> None:
+    ctx, bus = _emit_context()
+    summary = run_token_regression_benchmarks(token_counter=default_token_counter)
+    policy = TokenOptimizationEmissionPolicy(
+        enabled=True,
+        emit_regression_results=False,
+    )
+
+    result = maybe_emit_token_regression_result(ctx, summary.results[0], policy=policy)
+
+    assert result.emitted is False
+    assert result.event is None
+    assert result.status == TokenOptimizationEmissionStatus.SKIPPED_KIND_DISABLED
+    assert len(bus.history) == 0
+
+
+def test_maybe_emit_token_regression_summary_kind_gate_disables_emission() -> None:
+    ctx, bus = _emit_context()
+    summary = run_token_regression_benchmarks(token_counter=default_token_counter)
+    policy = TokenOptimizationEmissionPolicy(
+        enabled=True,
+        emit_regression_summaries=False,
+    )
+
+    result = maybe_emit_token_regression_summary(ctx, summary, policy=policy)
+
+    assert result.emitted is False
+    assert result.event is None
+    assert result.status == TokenOptimizationEmissionStatus.SKIPPED_KIND_DISABLED
+    assert len(bus.history) == 0
+
+
+def test_maybe_emit_token_optimization_outcome_dry_run_builds_signal_without_event() -> None:
+    ctx, bus = _emit_context()
+    outcome = _optimization_outcome()
+    policy = TokenOptimizationEmissionPolicy(enabled=True, dry_run=True)
+
+    result = maybe_emit_token_optimization_outcome(ctx, outcome, policy=policy)
+
+    assert isinstance(result.payload, TokenOptimizationSignalPayloadV1)
+    assert result.event is None
+    assert result.emitted is False
+    assert result.status == TokenOptimizationEmissionStatus.DRY_RUN
+    assert result.skip_reason is not None
+    assert result.signal.signal_id
+    assert len(bus.history) == 0
+
+
+def test_maybe_emit_token_optimization_outcome_sanitizes_metadata() -> None:
+    ctx, _bus = _emit_context()
+    outcome = _optimization_outcome()
+
+    result = maybe_emit_token_optimization_outcome(
+        ctx,
+        outcome,
+        policy=_enabled_emission_policy(),
+        metadata={
+            "run_id": "run-safe",
+            "content": _SECRET_CONTENT,
+            "prompt": "secret prompt",
+            "profile": "conservative",
+            "unsafe_custom": "drop-me",
+        },
+    )
+
+    assert result.metadata.get("run_id") == "run-safe"
+    assert result.metadata.get("profile") == "conservative"
+    assert "content" not in result.metadata
+    assert "prompt" not in result.metadata
+    assert "unsafe_custom" not in result.metadata
+    assert result.event is not None
+    assert _SECRET_CONTENT not in str(result.event.payload)
+
+
+def test_maybe_emit_token_optimization_outcome_receipt_ref_metadata_is_sanitized() -> None:
+    ctx, _bus = _emit_context()
+    token_result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=_malicious_receipt_ref(),
+    )
+
+    result = maybe_emit_token_optimization_outcome(
+        ctx,
+        token_result,
+        policy=_enabled_emission_policy(),
+    )
+
+    assert result.payload.receipt_metadata == {
+        "run_id": "run-ref-meta",
+        "fixture_id": "fixture-42",
+        "category": "memory_summary",
+        "strategy_id": "strategy-conservative",
+    }
+    metadata_text = str(result.payload.receipt_metadata)
+    assert _SECRET_CONTENT not in metadata_text
+    assert "secret prompt" not in metadata_text
+    assert "secret evidence" not in metadata_text
+
+
+def test_maybe_emit_token_optimization_outcome_raw_content_cannot_appear_in_event_payload() -> None:
+    ctx, _bus = _emit_context()
+    token_result = TokenOptimizationResult(
+        content="optimized",
+        decision=TokenOptimizationDecision.APPLY,
+        receipt_ref=_malicious_receipt_ref(),
+        metadata={
+            "original_content": _SECRET_CONTENT,
+            "optimized_content": "optimized secret",
+            "prompt": "do not emit",
+            "context": {"fragments": ["secret"]},
+            "evidence": "secret evidence",
+            "run_id": "run-safe-2",
+        },
+    )
+
+    result = maybe_emit_token_optimization_outcome(
+        ctx,
+        token_result,
+        policy=_enabled_emission_policy(),
+    )
+    assert result.event is not None
+    envelope_text = str(result.event.payload)
+
+    assert _SECRET_CONTENT not in envelope_text
+    assert "do not emit" not in envelope_text
+    assert "secret evidence" not in envelope_text
+    assert "optimized secret" not in envelope_text
+    assert "original_content" not in result.payload.metadata
+    assert "prompt" not in result.payload.metadata
+    assert "context" not in result.payload.metadata
+    assert "evidence" not in result.payload.metadata

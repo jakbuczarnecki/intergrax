@@ -412,6 +412,49 @@ uv run pytest tests/unit/memory/ -q
 uv run python scripts/check_token_regression_benchmarks.py
 ```
 
+**Next step:** **TOKEN-OBS-1D** policy-gated runtime emission hook, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-1D — Policy-gated token optimization runtime emission hook
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a small policy-gated runtime emission hook layer that future runtime call sites can use to emit token optimization signals safely — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/emission.py` — policy, status, and `maybe_emit_*` helpers
+- `tests/unit/runtime/token_optimization/test_emission.py`
+
+**Closeout:**
+
+- policy-gated maybe_emit helpers added
+- emission policy defaults to disabled
+- enabled policy emits through the existing safe domain-signal adapter
+- kind-level gates added for outcomes, regression results, and regression summaries
+- dry-run policy mode added
+- metadata and receipt_ref metadata remain sanitized
+- no optimizer auto-emission added
+- no regression runner auto-emission added
+- no runtime subscribers added
+- no observability exporter wiring added
+- no Elasticsearch/Kibana wiring added
+- no LKW proof execution added
+- no LLM-as-a-Judge implementation added
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_emission.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_domain_events.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run pytest tests/unit/runtime/events/test_domain_signals.py -q
+uv run pytest tests/unit/memory/ -q
+uv run python scripts/check_token_regression_benchmarks.py
+```
+
 **Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
 
 ---
@@ -640,6 +683,7 @@ TOKEN-6B    token regression benchmark runner + CI scripts — Done / Closed
 TOKEN-OBS-1A domain signal model + safe in-memory emission — Done / Closed
 TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals — Done / Closed
 TOKEN-OBS-1C explicit opt-in token optimization emission helpers — Done / Closed
+TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 

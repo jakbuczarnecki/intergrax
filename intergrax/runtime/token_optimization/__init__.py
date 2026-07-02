@@ -100,10 +100,15 @@ from intergrax.runtime.token_optimization.domain_events import (
     token_optimization_signal_to_payload,
 )
 from intergrax.runtime.token_optimization.emission import (
+    TokenOptimizationEmissionPolicy,
     TokenOptimizationEmissionResult,
+    TokenOptimizationEmissionStatus,
     emit_token_optimization_outcome,
     emit_token_regression_result,
     emit_token_regression_summary,
+    maybe_emit_token_optimization_outcome,
+    maybe_emit_token_regression_result,
+    maybe_emit_token_regression_summary,
 )
 from intergrax.runtime.token_optimization.signals import (
     InMemoryTokenOptimizationSignalSink,
@@ -197,7 +202,9 @@ __all__ = [
     "TokenOptimizationTelemetryValidationStatus",
     "TOKEN_OPTIMIZATION_SIGNAL_EVENT_KIND",
     "TOKEN_OPTIMIZATION_SIGNAL_PAYLOAD_SCHEMA_ID",
+    "TokenOptimizationEmissionPolicy",
     "TokenOptimizationEmissionResult",
+    "TokenOptimizationEmissionStatus",
     "TokenOptimizationSignal",
     "TokenOptimizationSignalEmissionResult",
     "TokenOptimizationSignalPayloadV1",
@@ -213,6 +220,9 @@ __all__ = [
     "emit_token_optimization_signal",
     "emit_token_regression_result",
     "emit_token_regression_summary",
+    "maybe_emit_token_optimization_outcome",
+    "maybe_emit_token_regression_result",
+    "maybe_emit_token_regression_summary",
     "register_token_optimization_domain_signal",
     "sanitize_signal_metadata",
     "token_optimization_signal_to_payload",
