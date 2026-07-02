@@ -174,7 +174,145 @@ def test_fixture_fails_when_validation_fails_unexpectedly() -> None:
     summary = run_token_regression_benchmarks(fixtures=[failing_fixture])
 
     assert summary.results[0].passed is False
-    assert any("validation failed" in reason for reason in summary.results[0].failure_reasons)
+    assert any(
+        "validation status was not pass-like" in reason
+        for reason in summary.results[0].failure_reasons
+    )
+
+
+def test_fixture_fails_when_validation_status_is_unknown_and_pass_expected() -> None:
+    failing_fixture = TokenRegressionFixture(
+        fixture_id="synthetic.validation_unknown",
+        source_type=TokenRegressionSourceType.MEMORY_SUMMARY,
+        description="Synthetic fixture with unknown validation status.",
+        expectation=TokenRegressionExpectation(
+            expected_min_saved_tokens=0,
+            require_receipt=False,
+            expect_validation_pass=True,
+            allow_fallback=True,
+        ),
+        runner=lambda counter: _SyntheticOutcome(
+            original_content="alpha beta gamma",
+            optimized_content="alpha beta",
+            token_counter=counter,
+            validation_status="unknown",
+        ),
+    )
+    summary = run_token_regression_benchmarks(fixtures=[failing_fixture])
+
+    assert summary.results[0].passed is False
+    assert summary.results[0].validation_status == "unknown"
+    assert any(
+        "validation status was not pass-like (status=unknown)" in reason
+        for reason in summary.results[0].failure_reasons
+    )
+
+
+def test_fixture_fails_when_validation_metadata_is_missing_and_pass_expected() -> None:
+    failing_fixture = TokenRegressionFixture(
+        fixture_id="synthetic.validation_missing",
+        source_type=TokenRegressionSourceType.CONTEXT_PACK,
+        description="Synthetic fixture without validation metadata.",
+        expectation=TokenRegressionExpectation(
+            expected_min_saved_tokens=0,
+            require_receipt=False,
+            expect_validation_pass=True,
+            allow_fallback=True,
+        ),
+        runner=lambda counter: _SyntheticOutcomeNoValidation(
+            original_content="alpha beta gamma delta",
+            optimized_content="alpha beta",
+            token_counter=counter,
+        ),
+    )
+    summary = run_token_regression_benchmarks(fixtures=[failing_fixture])
+
+    assert summary.results[0].passed is False
+    assert summary.results[0].validation_status == "missing"
+    assert any(
+        "validation status was not pass-like (status=missing)" in reason
+        for reason in summary.results[0].failure_reasons
+    )
+
+
+def test_fixture_fails_when_validation_status_is_unexpected_and_pass_expected() -> None:
+    failing_fixture = TokenRegressionFixture(
+        fixture_id="synthetic.validation_unexpected",
+        source_type=TokenRegressionSourceType.TOOL_SCHEMA,
+        description="Synthetic fixture with unexpected validation status.",
+        expectation=TokenRegressionExpectation(
+            expected_min_saved_tokens=0,
+            require_receipt=False,
+            expect_validation_pass=True,
+            allow_fallback=True,
+        ),
+        runner=lambda counter: _SyntheticOutcome(
+            original_content="alpha beta gamma",
+            optimized_content="alpha beta",
+            token_counter=counter,
+            validation_status="unexpected_status",
+        ),
+    )
+    summary = run_token_regression_benchmarks(fixtures=[failing_fixture])
+
+    assert summary.results[0].passed is False
+    assert summary.results[0].validation_status == "unexpected_status"
+    assert any(
+        "validation status was not pass-like (status=unexpected_status)" in reason
+        for reason in summary.results[0].failure_reasons
+    )
+
+
+def test_fixture_passes_when_validation_status_is_not_applicable_and_pass_expected() -> None:
+    passing_fixture = TokenRegressionFixture(
+        fixture_id="synthetic.validation_not_applicable",
+        source_type=TokenRegressionSourceType.MEMORY_SUMMARY,
+        description="Synthetic fixture with not_applicable validation.",
+        expectation=TokenRegressionExpectation(
+            expected_min_saved_tokens=0,
+            require_receipt=False,
+            expect_validation_pass=True,
+            allow_fallback=True,
+        ),
+        runner=lambda counter: _SyntheticOutcome(
+            original_content="alpha beta gamma",
+            optimized_content="alpha beta",
+            token_counter=counter,
+            validation_status=ProtectedRegionValidationStatus.NOT_APPLICABLE,
+        ),
+    )
+    summary = run_token_regression_benchmarks(fixtures=[passing_fixture])
+
+    assert summary.results[0].passed is True
+    assert summary.results[0].validation_status == ProtectedRegionValidationStatus.NOT_APPLICABLE.value
+
+
+def test_fixture_does_not_fail_on_unknown_validation_when_pass_not_expected() -> None:
+    passing_fixture = TokenRegressionFixture(
+        fixture_id="synthetic.validation_unknown_allowed",
+        source_type=TokenRegressionSourceType.TOOL_SCHEMA,
+        description="Unknown validation allowed when pass not expected.",
+        expectation=TokenRegressionExpectation(
+            expected_min_saved_tokens=0,
+            require_receipt=False,
+            expect_validation_pass=False,
+            allow_fallback=True,
+        ),
+        runner=lambda counter: _SyntheticOutcome(
+            original_content="alpha beta gamma",
+            optimized_content="alpha beta",
+            token_counter=counter,
+            validation_status="unknown",
+        ),
+    )
+    summary = run_token_regression_benchmarks(fixtures=[passing_fixture])
+
+    assert summary.results[0].passed is True
+    assert summary.results[0].validation_status == "unknown"
+    assert not any(
+        "validation status was not pass-like" in reason
+        for reason in summary.results[0].failure_reasons
+    )
 
 
 def test_fallback_allowed_or_rejected_by_fixture_expectation() -> None:
@@ -312,15 +450,16 @@ class _SyntheticOutcome:
         original_content: str,
         optimized_content: str,
         token_counter: Callable[[str], int] | None = None,
-        validation_status: ProtectedRegionValidationStatus = ProtectedRegionValidationStatus.PASSED,
+        validation_status: ProtectedRegionValidationStatus | str = ProtectedRegionValidationStatus.PASSED,
         fallback_status: bool = False,
         receipt: object | None = None,
     ) -> None:
         self.original_content = original_content
         self.optimized_content = optimized_content
-        self.protected_region_validation = ProtectedRegionValidationResult(
-            status=validation_status,
-        )
+        if isinstance(validation_status, ProtectedRegionValidationStatus):
+            self.protected_region_validation = ProtectedRegionValidationResult(
+                status=validation_status,
+            )
         self.receipt = receipt
         self.receipt_ref = None
         counter = token_counter or default_token_counter
@@ -332,7 +471,44 @@ class _SyntheticOutcome:
         self.optimized_tokens = optimized
         self.saved_tokens = saved
         self.saved_ratio = ratio
-        self.validation_status = validation_status
+        self.validation_status = (
+            validation_status.value
+            if isinstance(validation_status, ProtectedRegionValidationStatus)
+            else validation_status
+        )
+        self.fallback_status = fallback_status
+        self.result = TokenOptimizationResult(
+            content=optimized_content,
+            decision=TokenOptimizationDecision.APPLY,
+            fallback_used=fallback_status,
+        )
+
+
+class _SyntheticOutcomeNoValidation:
+    """Minimal outcome stand-in without validation metadata."""
+
+    def __init__(
+        self,
+        *,
+        original_content: str,
+        optimized_content: str,
+        token_counter: Callable[[str], int] | None = None,
+        fallback_status: bool = False,
+        receipt: object | None = None,
+    ) -> None:
+        self.original_content = original_content
+        self.optimized_content = optimized_content
+        self.receipt = receipt
+        self.receipt_ref = None
+        counter = token_counter or default_token_counter
+        baseline = counter(original_content)
+        optimized = counter(optimized_content)
+        saved = baseline - optimized
+        ratio = saved / baseline if baseline > 0 else 0.0
+        self.original_tokens = baseline
+        self.optimized_tokens = optimized
+        self.saved_tokens = saved
+        self.saved_ratio = ratio
         self.fallback_status = fallback_status
         self.result = TokenOptimizationResult(
             content=optimized_content,

@@ -281,6 +281,14 @@ uv run python scripts/check_token_regression_benchmarks.py --json
 
 **Next step:** **TOKEN-OBS-1** / **TOKEN-OBS-2** observability emission and full regression-gate reporting (per plan ordering).
 
+**TOKEN-6B-R — strict validation expectation handling (refinement):**
+
+- benchmark validation expectations now fail closed
+- `expect_validation_pass=True` accepts only `passed` / `not_applicable` validation statuses
+- `unknown`, `missing`, `failed`, `runner_error`, or unexpected statuses fail the fixture
+- no HOS/exporter/runtime wiring was added
+- no LLM-as-a-Judge implementation was added
+
 ---
 
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4

@@ -438,7 +438,15 @@ def _resolve_validation_status(outcome: object) -> str:
             return status.value
         if isinstance(status, str):
             return status
-    return "unknown"
+    return "missing"
+
+
+_PASS_LIKE_VALIDATION_STATUSES = frozenset(
+    {
+        ProtectedRegionValidationStatus.PASSED.value,
+        ProtectedRegionValidationStatus.NOT_APPLICABLE.value,
+    }
+)
 
 
 def _resolve_fallback_status(outcome: object) -> bool:
@@ -522,8 +530,13 @@ def _evaluate_expectations(
     if expectation.require_receipt and not receipt_present:
         failures.append("required receipt missing")
 
-    if expectation.expect_validation_pass and validation_status == ProtectedRegionValidationStatus.FAILED.value:
-        failures.append(f"validation failed (status={validation_status})")
+    if (
+        expectation.expect_validation_pass
+        and validation_status not in _PASS_LIKE_VALIDATION_STATUSES
+    ):
+        failures.append(
+            f"validation status was not pass-like (status={validation_status})"
+        )
 
     if not expectation.allow_fallback and fallback_status:
         failures.append("fallback used but allow_fallback=False")
