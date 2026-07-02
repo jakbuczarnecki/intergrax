@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -22,6 +22,7 @@ from intergrax.runtime.token_optimization.signals import sanitize_signal_metadat
 
 _REPORT_ID_PREFIX = "token_regression_report_"
 _REPORT_ID_HASH_LENGTH = 16
+_EVAL_CASE_ORDER = ("compactable", "protected", "fallback")
 
 _UNSAFE_OUTPUT_KEYS: frozenset[str] = frozenset(
     {
@@ -78,6 +79,22 @@ class TokenRegressionReportItem:
 
 
 @dataclass(frozen=True, slots=True)
+class TokenRegressionReportBreakdown:
+    """Aggregate safe metrics for one eval-case bucket."""
+
+    eval_case: str
+    total_fixtures: int
+    passed: int
+    failed: int
+    baseline_tokens: int
+    optimized_tokens: int
+    saved_tokens: int
+    saved_ratio: float | None
+    noop_count: int
+    fallback_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class TokenRegressionEmissionReport:
     """Aggregate emission disposition counts for a regression benchmark run."""
 
@@ -104,6 +121,7 @@ class TokenRegressionReport:
     total_saved_tokens: int
     total_saved_ratio: float | None
     results: tuple[TokenRegressionReportItem, ...]
+    breakdowns: tuple[TokenRegressionReportBreakdown, ...]
     emission: TokenRegressionEmissionReport | None
     metadata: Mapping[str, Any]
 
@@ -126,6 +144,7 @@ def build_token_regression_report(
         if summary.total_baseline_tokens <= 0
         else summary.total_saved_ratio
     )
+    items = tuple(_build_report_item(result) for result in summary.results)
 
     return TokenRegressionReport(
         report_id=report_id or _derive_report_id(summary),
@@ -137,7 +156,8 @@ def build_token_regression_report(
         total_optimized_tokens=summary.total_optimized_tokens,
         total_saved_tokens=summary.total_saved_tokens,
         total_saved_ratio=total_saved_ratio,
-        results=tuple(_build_report_item(result) for result in summary.results),
+        results=items,
+        breakdowns=_build_report_breakdowns(items),
         emission=_build_emission_report(emission_run) if emission_run is not None else None,
         metadata=sanitize_signal_metadata(combined_metadata),
     )
@@ -155,6 +175,7 @@ def token_regression_report_to_dict(report: TokenRegressionReport) -> dict[str, 
         "total_optimized_tokens": report.total_optimized_tokens,
         "total_saved_tokens": report.total_saved_tokens,
         "total_saved_ratio": report.total_saved_ratio,
+        "breakdowns": [_breakdown_to_dict(breakdown) for breakdown in report.breakdowns],
         "results": [_report_item_to_dict(item) for item in report.results],
         "metadata": dict(report.metadata),
     }
@@ -186,6 +207,26 @@ def format_token_regression_report(report: TokenRegressionReport) -> str:
             f"ratio={ratio_text}"
         ),
     ]
+    if report.breakdowns:
+        lines.append("breakdown:")
+        for breakdown in report.breakdowns:
+            ratio = (
+                "n/a"
+                if breakdown.saved_ratio is None
+                else f"{breakdown.saved_ratio:.4f}"
+            )
+            lines.append(
+                f"  {breakdown.eval_case} "
+                f"fixtures={breakdown.total_fixtures} "
+                f"passed={breakdown.passed} "
+                f"failed={breakdown.failed} "
+                f"baseline={breakdown.baseline_tokens} "
+                f"optimized={breakdown.optimized_tokens} "
+                f"saved={breakdown.saved_tokens} "
+                f"ratio={ratio} "
+                f"noop={breakdown.noop_count} "
+                f"fallback={breakdown.fallback_count}"
+            )
     for item in report.results:
         status = "PASS" if item.passed else "FAIL"
         source = item.source_type or "unknown"
@@ -247,6 +288,53 @@ def _build_report_item(result: TokenRegressionResult) -> TokenRegressionReportIt
         eval_case=_extract_eval_metadata(result, "eval_case"),
         expected_behavior=_extract_eval_metadata(result, "expected_behavior"),
         expectation_status=_extract_eval_metadata(result, "expectation_status"),
+    )
+
+
+def _build_report_breakdowns(
+    items: Sequence[TokenRegressionReportItem],
+) -> tuple[TokenRegressionReportBreakdown, ...]:
+    ordered_eval_cases = [case for case in _EVAL_CASE_ORDER if _items_for_eval_case(items, case)]
+    ordered_eval_cases.extend(
+        sorted(
+            {
+                item.eval_case
+                for item in items
+                if item.eval_case is not None and item.eval_case not in _EVAL_CASE_ORDER
+            }
+        )
+    )
+    return tuple(
+        _build_single_breakdown(case, _items_for_eval_case(items, case))
+        for case in ordered_eval_cases
+    )
+
+
+def _items_for_eval_case(
+    items: Sequence[TokenRegressionReportItem],
+    eval_case: str,
+) -> tuple[TokenRegressionReportItem, ...]:
+    return tuple(item for item in items if item.eval_case == eval_case)
+
+
+def _build_single_breakdown(
+    eval_case: str,
+    items: Sequence[TokenRegressionReportItem],
+) -> TokenRegressionReportBreakdown:
+    baseline = sum(item.baseline_tokens for item in items)
+    optimized = sum(item.optimized_tokens for item in items)
+    saved = sum(item.saved_tokens for item in items)
+    return TokenRegressionReportBreakdown(
+        eval_case=eval_case,
+        total_fixtures=len(items),
+        passed=sum(1 for item in items if item.passed),
+        failed=sum(1 for item in items if not item.passed),
+        baseline_tokens=baseline,
+        optimized_tokens=optimized,
+        saved_tokens=saved,
+        saved_ratio=None if baseline <= 0 else saved / baseline,
+        noop_count=sum(1 for item in items if item.saved_tokens == 0),
+        fallback_count=sum(1 for item in items if item.fallback_status),
     )
 
 
@@ -325,6 +413,21 @@ def _report_item_to_dict(item: TokenRegressionReportItem) -> dict[str, Any]:
         "eval_case": item.eval_case,
         "expected_behavior": item.expected_behavior,
         "expectation_status": item.expectation_status,
+    }
+
+
+def _breakdown_to_dict(breakdown: TokenRegressionReportBreakdown) -> dict[str, Any]:
+    return {
+        "eval_case": breakdown.eval_case,
+        "total_fixtures": breakdown.total_fixtures,
+        "passed": breakdown.passed,
+        "failed": breakdown.failed,
+        "baseline_tokens": breakdown.baseline_tokens,
+        "optimized_tokens": breakdown.optimized_tokens,
+        "saved_tokens": breakdown.saved_tokens,
+        "saved_ratio": breakdown.saved_ratio,
+        "noop_count": breakdown.noop_count,
+        "fallback_count": breakdown.fallback_count,
     }
 
 
