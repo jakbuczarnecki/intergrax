@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "fixture_id": "tool_schema.protected_description",
+  "source_type": "tool_schema",
+  "eval_case": "protected",
+  "category": "tool_catalog",
+  "expected_behavior": "preserves_url_no_savings",
+  "description": "URL in tool description is preserved without unsafe compaction.",
+  "input": {
+    "file": "input.json",
+    "format": "tool_schema_catalog_json"
+  },
+  "optimizer": {
+    "kind": "tool_schema",
+    "config": {
+      "max_description_chars": 120
+    }
+  },
+  "protected_values": [
+    "https://docs.example.test/token-fixture"
+  ],
+  "expected": {
+    "max_saved_tokens": 0,
+    "max_saved_ratio": 0.0,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}
