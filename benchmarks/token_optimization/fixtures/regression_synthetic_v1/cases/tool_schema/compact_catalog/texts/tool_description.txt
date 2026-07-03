@@ -1,1 +1,1 @@
-  Find   items   in   the   workspace
+  Search   indexed workspace content   across local notes, project documents, and imported files to retrieve evidence for a grounded answer.

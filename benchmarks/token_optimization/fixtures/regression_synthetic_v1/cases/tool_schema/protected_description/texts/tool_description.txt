@@ -1,1 +1,1 @@
-context context context context context context context context context context context context context context context context context context context context See https://example.com/docs/token-fixture for usage notes.
+  Search   indexed workspace content for project notes, imported documents, and evidence fragments. Before using this tool in production workflows, review the integration guide at https://example.com/docs/token-fixture for usage limits, audit requirements, and expected input format.
