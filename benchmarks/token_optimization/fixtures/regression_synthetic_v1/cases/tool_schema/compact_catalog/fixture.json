@@ -5,10 +5,14 @@
   "eval_case": "compactable",
   "category": "tool_catalog",
   "expected_behavior": "saves_tokens_with_receipt",
-  "description": "Compact pretty-printed tool catalog JSON with whitespace savings.",
+  "description": "Compact tool catalog with whitespace-heavy descriptions.",
   "input": {
-    "file": "input.json",
-    "format": "tool_schema_catalog_json"
+    "format": "tool_schema_catalog",
+    "schema_file": "schema.json",
+    "text_fields": {
+      "$.tools[0].description": "texts/tool_description.txt",
+      "$.tools[0].parameters.properties.query.description": "texts/query_description.txt"
+    }
   },
   "optimizer": {
     "kind": "tool_schema",

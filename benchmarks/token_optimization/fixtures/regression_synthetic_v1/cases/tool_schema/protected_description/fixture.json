@@ -5,10 +5,13 @@
   "eval_case": "protected",
   "category": "tool_catalog",
   "expected_behavior": "preserves_url_no_savings",
-  "description": "URL in tool description is preserved without unsafe compaction.",
+  "description": "Tool description containing a protected URL must not be unsafely compacted.",
   "input": {
-    "file": "input.json",
-    "format": "tool_schema_catalog_json"
+    "format": "tool_schema_catalog",
+    "schema_file": "schema.json",
+    "text_fields": {
+      "$.tools[0].description": "texts/tool_description.txt"
+    }
   },
   "optimizer": {
     "kind": "tool_schema",
@@ -16,7 +19,9 @@
       "max_description_chars": 120
     }
   },
-  "protected_values": [],
+  "protected_values": [
+    "https://example.com/docs/token-fixture"
+  ],
   "expected": {
     "max_saved_tokens": 0,
     "max_saved_ratio": 0.0,

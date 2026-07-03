@@ -6,8 +6,7 @@
   "token_counter": "default_word_count",
   "case_discovery": {
     "strategy": "recursive_fixture_json",
-    "root": "cases",
-    "skip_marker": ".disabled"
+    "root": "cases"
   },
   "data_safety": "synthetic_only"
 }

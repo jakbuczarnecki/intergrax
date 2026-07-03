@@ -5,10 +5,19 @@
   "eval_case": "protected",
   "category": "rag_context_pack",
   "expected_behavior": "preserves_protected_evidence_no_savings",
-  "description": "Evidence reference fragment is preserved without unsafe compaction.",
+  "description": "Context fragment containing a protected evidence reference must not be unsafely compacted.",
   "input": {
-    "file": "input.json",
-    "format": "context_pack_fragments_json"
+    "format": "context_pack_fragments",
+    "fragments": [
+      {
+        "fragment_id": "evidence_frag",
+        "file": "fragments/evidence_frag.txt",
+        "required": false,
+        "metadata": {
+          "source": "evidence"
+        }
+      }
+    ]
   },
   "optimizer": {
     "kind": "context_pack",
@@ -17,7 +26,7 @@
     }
   },
   "protected_values": [
-    "evidence_ref_demo_001"
+    "evidence_abcdefgh1234"
   ],
   "expected": {
     "max_saved_tokens": 0,

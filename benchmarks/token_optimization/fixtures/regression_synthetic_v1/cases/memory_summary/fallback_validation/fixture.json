@@ -5,7 +5,7 @@
   "eval_case": "fallback",
   "category": "memory",
   "expected_behavior": "falls_back_on_validation_failure",
-  "description": "Lossy truncation should fall back to original content when validation fails.",
+  "description": "Lossy truncation that would break protected dates falls back to original content.",
   "input": {
     "file": "input.txt",
     "format": "plain_text"
