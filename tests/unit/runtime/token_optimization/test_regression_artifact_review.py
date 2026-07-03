@@ -17,6 +17,7 @@ from intergrax.runtime.token_optimization.regression import (
     run_token_regression_benchmark_execution,
 )
 from intergrax.runtime.token_optimization.regression_artifact_review import (
+    format_token_regression_artifact_review,
     review_token_regression_artifacts,
 )
 from intergrax.runtime.token_optimization.regression_diagnostics import (
@@ -269,3 +270,14 @@ def test_review_json_is_serializable(tmp_path: Path) -> None:
 
     serialized = json.dumps(review, sort_keys=True)
     assert serialized
+
+
+def test_format_top_savings_labels_ok_and_warn_entries(tmp_path: Path) -> None:
+    artifact_dir = _generate_artifact_folder(tmp_path)
+    review = review_token_regression_artifacts(artifact_dir)
+
+    formatted = format_token_regression_artifact_review(review)
+
+    assert "[WARN] context_pack.long_workspace_document" in formatted
+    assert "[OK] context_pack.compact_fragments" in formatted
+    assert "[OK] tool_schema.compact_catalog" in formatted

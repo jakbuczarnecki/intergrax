@@ -206,15 +206,17 @@ def format_token_regression_artifact_review(review: Mapping[str, Any]) -> str:
         for index, entry in enumerate(review["top_savings"]):
             if index > 0:
                 lines.append("")
-            prefix = "[WARN]" if entry.get("has_warning") else "      "
+            has_warning = entry.get("has_warning")
+            prefix = "[WARN]" if has_warning else "[OK]"
+            detail_indent = "         " if has_warning else "       "
             lines.append(f"  {prefix} {entry['fixture_id']}")
             lines.append(
-                "         "
+                f"{detail_indent}"
                 f"{entry['baseline_tokens']} -> {entry['optimized_tokens']} tokens, "
                 f"saved={entry['saved_tokens']}, "
                 f"ratio={entry['saved_ratio'] * 100:.2f}%"
             )
-            lines.append(f"         change_type={entry['change_type']}")
+            lines.append(f"{detail_indent}change_type={entry['change_type']}")
     else:
         lines.append("  (none)")
 

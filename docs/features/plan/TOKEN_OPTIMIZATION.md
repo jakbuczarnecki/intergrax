@@ -591,6 +591,34 @@ uv run python scripts/check_token_regression_benchmarks.py --gate
 
 ---
 
+## Diagnostic benchmark one-command flow
+
+**Purpose:** Regenerate synthetic regression diagnostic artifacts, run the benchmark, and review results in one local step — without LKW integration or optimizer changes.
+
+**Windows:**
+
+```bat
+scripts\token_optimization\run_token_regression_diagnostics.bat
+```
+
+**Shell:**
+
+```sh
+sh scripts/token_optimization/run_token_regression_diagnostics.sh
+```
+
+The wrapper:
+
+1. Regenerates `.artifacts/token_optimization/regression_synthetic_v1`.
+2. Runs the synthetic regression benchmark (`regression_synthetic_v1` fixture dataset).
+3. Immediately runs the diagnostic artifact reviewer (`scripts/review_token_regression_artifacts.py`).
+
+**Expected review status for `regression_synthetic_v1`:** `PASS WITH WARNINGS`. The `context_pack.long_workspace_document` fixture intentionally triggers truncation and dominant-savings warnings in the Top savings section (`[WARN]` on that case; smaller compaction cases show `[OK]`).
+
+**Marketing note:** Do not describe the aggregate ~69–70% saved-token ratio as global compression quality. Most aggregate savings come from one long truncation case; use the reviewer’s per-case breakdown and safety checks for claims.
+
+---
+
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
 
 **Status:** **Done / Closed**.
