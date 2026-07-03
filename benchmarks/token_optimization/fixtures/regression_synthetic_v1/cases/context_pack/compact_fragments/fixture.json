@@ -10,8 +10,8 @@
     "format": "context_pack_fragments",
     "fragments": [
       {
-        "fragment_id": "evidence_1",
-        "file": "fragments/evidence_1.txt",
+        "fragment_id": "context_1",
+        "file": "fragments/context_1.txt",
         "required": false,
         "metadata": {
           "source": "rag",
