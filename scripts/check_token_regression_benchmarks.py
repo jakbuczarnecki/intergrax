@@ -9,6 +9,9 @@ from __future__ import annotations
 import argparse
 import json
 
+from intergrax.runtime.token_optimization.fixture_dataset import (
+    load_token_regression_fixture_dataset,
+)
 from intergrax.runtime.token_optimization.regression import (
     format_regression_summary,
     regression_summary_to_dict,
@@ -81,9 +84,20 @@ def main(argv: list[str] | None = None) -> int:
         metavar="INT",
         help="Gate-only: require aggregate saved tokens to be at least INT.",
     )
+    parser.add_argument(
+        "--fixture-dataset",
+        default=None,
+        metavar="PATH",
+        help="Load regression fixtures from a file-backed dataset directory.",
+    )
     args = parser.parse_args(argv)
 
-    summary = run_token_regression_benchmarks()
+    fixtures = None
+    if args.fixture_dataset is not None:
+        dataset = load_token_regression_fixture_dataset(args.fixture_dataset)
+        fixtures = dataset.fixtures
+
+    summary = run_token_regression_benchmarks(fixtures=fixtures)
     benchmark_failed = summary.failed > 0
 
     if args.report:

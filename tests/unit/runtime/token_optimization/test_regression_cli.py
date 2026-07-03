@@ -16,6 +16,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _SCRIPT_PATH = _REPO_ROOT / "scripts" / "check_token_regression_benchmarks.py"
+_FIXTURE_DATASET = (
+    "benchmarks/token_optimization/fixtures/regression_synthetic_v1"
+)
 
 _UNSAFE_KEYS = frozenset(
     {
@@ -130,3 +133,33 @@ def test_threshold_flags_are_ignored_outside_gate_modes() -> None:
     completed = _run_script("--report", "--min-total-saved-ratio", "1.0")
     assert completed.returncode == 0
     assert "total_saved_ratio_below_threshold" not in completed.stdout
+
+
+def test_report_with_fixture_dataset_exits_zero() -> None:
+    completed = _run_script("--report", "--fixture-dataset", _FIXTURE_DATASET)
+    assert completed.returncode == 0
+    assert "Token regression benchmark report" in completed.stdout
+
+
+def test_gate_with_fixture_dataset_exits_zero() -> None:
+    completed = _run_script("--gate", "--fixture-dataset", _FIXTURE_DATASET)
+    assert completed.returncode == 0
+    assert "status=pass" in completed.stdout
+
+
+def test_report_json_with_fixture_dataset_is_safe() -> None:
+    completed = _run_script("--report-json", "--fixture-dataset", _FIXTURE_DATASET)
+    assert completed.returncode == 0
+    payload = json.loads(completed.stdout)
+    assert payload["failed"] == 0
+    assert len(payload["results"]) in {7, 8}
+    assert _collect_keys(payload).isdisjoint(_UNSAFE_KEYS)
+
+
+def test_gate_json_with_fixture_dataset_passes_and_is_safe() -> None:
+    completed = _run_script("--gate-json", "--fixture-dataset", _FIXTURE_DATASET)
+    assert completed.returncode == 0
+    payload = json.loads(completed.stdout)
+    assert payload["status"] == "pass"
+    assert payload["failed"] == 0
+    assert _collect_keys(payload).isdisjoint(_UNSAFE_KEYS)
