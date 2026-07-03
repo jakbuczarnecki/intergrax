@@ -1,0 +1,74 @@
+{
+  "dataset_id": "regression_synthetic_v1",
+  "expectations": [
+    {
+      "fixture_id": "tool_schema.compact_catalog",
+      "checks": {
+        "min_saved_tokens": 1,
+        "min_saved_ratio": 0.05,
+        "receipt": "required",
+        "validation": "pass_like",
+        "fallback": "forbidden"
+      }
+    },
+    {
+      "fixture_id": "tool_schema.protected_description",
+      "checks": {
+        "max_saved_tokens": 0,
+        "max_saved_ratio": 0.0,
+        "receipt": "required",
+        "validation": "pass_like",
+        "fallback": "forbidden"
+      }
+    },
+    {
+      "fixture_id": "context_pack.compact_fragments",
+      "checks": {
+        "min_saved_tokens": 1,
+        "min_saved_ratio": 0.05,
+        "receipt": "required",
+        "validation": "pass_like",
+        "fallback": "forbidden"
+      }
+    },
+    {
+      "fixture_id": "context_pack.protected_evidence",
+      "checks": {
+        "max_saved_tokens": 0,
+        "max_saved_ratio": 0.0,
+        "receipt": "required",
+        "validation": "pass_like",
+        "fallback": "forbidden"
+      }
+    },
+    {
+      "fixture_id": "memory_summary.compact_summary",
+      "checks": {
+        "min_saved_ratio": 0.0,
+        "receipt": "required",
+        "validation": "pass_like",
+        "fallback": "forbidden"
+      }
+    },
+    {
+      "fixture_id": "memory_summary.protected_dates",
+      "checks": {
+        "max_saved_tokens": 0,
+        "max_saved_ratio": 0.0,
+        "receipt": "required",
+        "validation": "pass_like",
+        "fallback": "forbidden"
+      }
+    },
+    {
+      "fixture_id": "memory_summary.fallback_validation",
+      "checks": {
+        "max_saved_tokens": 0,
+        "max_saved_ratio": 0.0,
+        "receipt": "required",
+        "validation": "failed",
+        "fallback": "required"
+      }
+    }
+  ]
+}
