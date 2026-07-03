@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "fixture_id": "memory_summary.fallback_validation",
+  "source_type": "memory_summary",
+  "eval_case": "fallback",
+  "category": "memory",
+  "expected_behavior": "falls_back_on_validation_failure",
+  "description": "Lossy truncation should fall back to original content when validation fails.",
+  "input": {
+    "file": "input.txt",
+    "format": "plain_text"
+  },
+  "optimizer": {
+    "kind": "memory_summary",
+    "policy_override": {
+      "enabled": true,
+      "profile": "conservative",
+      "compression_level": "light",
+      "allow_lossy": true,
+      "require_validation": true,
+      "fallback_on_validation_failure": true,
+      "emit_receipts": true
+    },
+    "config": {
+      "compact_whitespace": false,
+      "trim_blank_lines": false,
+      "trim_edges": false,
+      "max_summary_chars": 55
+    },
+    "semantic_validation_hook": "accept"
+  },
+  "protected_values": [
+    "2026-07-01"
+  ],
+  "expected": {
+    "max_saved_tokens": 0,
+    "max_saved_ratio": 0.0,
+    "receipt": "required",
+    "validation": "failed",
+    "fallback": "required"
+  }
+}
