@@ -6,7 +6,7 @@ The dataset is intentionally synthetic. It mirrors the current hard-coded benchm
 
 ## Dataset
 
-- Dataset id: `token_optimization_regression_synthetic_v1`
+- Dataset id: `regression_synthetic_v1`
 - Version: `1.0.0`
 - Token counter: `default_word_count`
 - Scope: helper-only token optimization regression and safety checks
@@ -19,7 +19,8 @@ The dataset is intentionally synthetic. It mirrors the current hard-coded benchm
 
 ## Files
 
-- `manifest.json` describes fixture metadata, optimizer dispatch, configuration, and expectations.
+- `manifest.json` describes fixture metadata, optimizer dispatch, input paths, input formats, configs, and protected values.
+- `expectations.json` describes pass/fail checks for each fixture.
 - `inputs/` contains the raw fixture inputs consumed by the benchmark loader.
 
 This dataset should remain redaction-safe and deterministic. Do not add real user data, production documents, secrets, tokens, or private evidence payloads.
