@@ -1,0 +1,25 @@
+{
+  "tools": [
+    {
+      "name": "search_files",
+      "description": "  Search   the   workspace  ",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "  Search   query  ",
+            "enum": [
+              "name",
+              "content",
+              "path"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "tools": [
+    {
+      "name": "search_files",
+      "description": "context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context context See https://example.com/protected/resource for details and more usage notes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

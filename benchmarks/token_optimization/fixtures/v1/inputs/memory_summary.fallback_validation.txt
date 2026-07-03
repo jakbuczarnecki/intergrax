@@ -1,0 +1,3 @@
+User prefers concise answers.
+Follow-up scheduled on 2026-07-01.
+User does not want runtime memory wiring yet.
