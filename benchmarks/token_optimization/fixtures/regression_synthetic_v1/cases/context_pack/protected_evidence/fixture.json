@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "fixture_id": "context_pack.protected_evidence",
+  "source_type": "context_pack",
+  "eval_case": "protected",
+  "category": "rag_context_pack",
+  "expected_behavior": "preserves_protected_evidence_no_savings",
+  "description": "Evidence reference fragment is preserved without unsafe compaction.",
+  "input": {
+    "file": "input.json",
+    "format": "context_pack_fragments_json"
+  },
+  "optimizer": {
+    "kind": "context_pack",
+    "config": {
+      "max_fragment_chars": 120
+    }
+  },
+  "protected_values": [
+    "evidence_ref_demo_001"
+  ],
+  "expected": {
+    "max_saved_tokens": 0,
+    "max_saved_ratio": 0.0,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}
