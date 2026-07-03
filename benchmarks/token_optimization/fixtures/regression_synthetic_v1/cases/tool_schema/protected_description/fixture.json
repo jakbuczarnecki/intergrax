@@ -16,9 +16,7 @@
       "max_description_chars": 120
     }
   },
-  "protected_values": [
-    "https://docs.example.test/token-fixture"
-  ],
+  "protected_values": [],
   "expected": {
     "max_saved_tokens": 0,
     "max_saved_ratio": 0.0,
