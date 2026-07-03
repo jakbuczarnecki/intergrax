@@ -1,0 +1,25 @@
+{
+  "tools": [
+    {
+      "name": "workspace_lookup",
+      "description": "  Find   items   in   the   workspace  ",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "  Lookup   query  ",
+            "enum": [
+              "name",
+              "content",
+              "path"
+            ]
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    }
+  ]
+}
