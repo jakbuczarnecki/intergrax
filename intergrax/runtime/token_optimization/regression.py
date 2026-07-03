@@ -119,6 +119,26 @@ class TokenRegressionSummary:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
+class TokenRegressionCaseExecution:
+    """Single fixture execution with retained optimizer outcome."""
+
+    fixture_id: str
+    source_type: str
+    result: TokenRegressionResult
+    outcome: object | None
+    runner_error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TokenRegressionExecution:
+    """Full benchmark execution with summary and per-case outcomes."""
+
+    summary: TokenRegressionSummary
+    cases: tuple[TokenRegressionCaseExecution, ...]
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
 class TokenRegressionBenchmarkRunner:
     """Execute deterministic token optimization regression fixtures."""
 
@@ -140,14 +160,23 @@ class TokenRegressionBenchmarkRunner:
         return self._fixtures
 
     def run(self) -> TokenRegressionSummary:
-        results = tuple(self._run_fixture(fixture) for fixture in self._fixtures)
-        return _build_summary(results, metadata={"token_counter": "default_word_count"})
+        return self.run_execution().summary
 
-    def _run_fixture(self, fixture: TokenRegressionFixture) -> TokenRegressionResult:
+    def run_execution(self) -> TokenRegressionExecution:
+        cases = tuple(self._execute_fixture(fixture) for fixture in self._fixtures)
+        results = tuple(case.result for case in cases)
+        summary = _build_summary(results, metadata={"token_counter": "default_word_count"})
+        return TokenRegressionExecution(
+            summary=summary,
+            cases=cases,
+            metadata=dict(summary.metadata),
+        )
+
+    def _execute_fixture(self, fixture: TokenRegressionFixture) -> TokenRegressionCaseExecution:
         try:
             outcome = fixture.runner(self._token_counter)
         except Exception as exc:  # noqa: BLE001 — benchmark gate must surface runner failures
-            return TokenRegressionResult(
+            result = TokenRegressionResult(
                 fixture_id=fixture.fixture_id,
                 source_type=fixture.source_type.value,
                 strategy=None,
@@ -162,7 +191,28 @@ class TokenRegressionBenchmarkRunner:
                 failure_reasons=(f"runner_failed: {exc}",),
                 metadata=dict(fixture.metadata),
             )
+            return TokenRegressionCaseExecution(
+                fixture_id=fixture.fixture_id,
+                source_type=fixture.source_type.value,
+                result=result,
+                outcome=None,
+                runner_error=str(exc),
+            )
 
+        result = self._build_result_from_outcome(fixture, outcome)
+        return TokenRegressionCaseExecution(
+            fixture_id=fixture.fixture_id,
+            source_type=fixture.source_type.value,
+            result=result,
+            outcome=outcome,
+            runner_error=None,
+        )
+
+    def _build_result_from_outcome(
+        self,
+        fixture: TokenRegressionFixture,
+        outcome: object,
+    ) -> TokenRegressionResult:
         baseline_tokens, optimized_tokens, saved_tokens, saved_ratio = _resolve_token_metrics(
             outcome,
             self._token_counter,
@@ -203,6 +253,16 @@ class TokenRegressionBenchmarkRunner:
             failure_reasons=failure_reasons,
             metadata=combined_metadata,
         )
+
+
+def run_token_regression_benchmark_execution(
+    *,
+    token_counter: TokenCounter | None = None,
+    fixtures: Sequence[TokenRegressionFixture] | None = None,
+) -> TokenRegressionExecution:
+    """Run regression benchmarks and retain per-case optimizer outcomes."""
+    runner = TokenRegressionBenchmarkRunner(token_counter=token_counter, fixtures=fixtures)
+    return runner.run_execution()
 
 
 def run_token_regression_benchmarks(

@@ -15,7 +15,11 @@ from intergrax.runtime.token_optimization.fixture_dataset import (
 from intergrax.runtime.token_optimization.regression import (
     format_regression_summary,
     regression_summary_to_dict,
+    run_token_regression_benchmark_execution,
     run_token_regression_benchmarks,
+)
+from intergrax.runtime.token_optimization.regression_diagnostics import (
+    write_token_regression_diagnostic_artifacts,
 )
 from intergrax.runtime.token_optimization.regression_gate import (
     TokenRegressionGateStatus,
@@ -90,6 +94,12 @@ def main(argv: list[str] | None = None) -> int:
         metavar="PATH",
         help="Load regression fixtures from a file-backed dataset directory.",
     )
+    parser.add_argument(
+        "--diagnostic-artifact-dir",
+        default=None,
+        metavar="PATH",
+        help="Write self-contained diagnostic artifacts (summary + per-case JSON) to PATH.",
+    )
     args = parser.parse_args(argv)
 
     fixtures = None
@@ -97,7 +107,16 @@ def main(argv: list[str] | None = None) -> int:
         dataset = load_token_regression_fixture_dataset(args.fixture_dataset)
         fixtures = dataset.fixtures
 
-    summary = run_token_regression_benchmarks(fixtures=fixtures)
+    if args.diagnostic_artifact_dir is not None:
+        execution = run_token_regression_benchmark_execution(fixtures=fixtures)
+        summary = execution.summary
+        write_token_regression_diagnostic_artifacts(
+            execution,
+            args.diagnostic_artifact_dir,
+        )
+        print(f"Diagnostic artifacts written to: {args.diagnostic_artifact_dir}")
+    else:
+        summary = run_token_regression_benchmarks(fixtures=fixtures)
     benchmark_failed = summary.failed > 0
 
     if args.report:
