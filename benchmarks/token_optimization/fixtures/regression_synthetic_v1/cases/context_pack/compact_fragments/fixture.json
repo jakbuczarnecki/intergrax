@@ -7,8 +7,26 @@
   "expected_behavior": "saves_tokens_with_receipt",
   "description": "Compact context pack fragments with whitespace normalization.",
   "input": {
-    "file": "input.json",
-    "format": "context_pack_fragments_json"
+    "format": "context_pack_fragments",
+    "fragments": [
+      {
+        "fragment_id": "evidence_1",
+        "file": "fragments/evidence_1.txt",
+        "required": false,
+        "metadata": {
+          "source": "rag",
+          "rank": 1
+        }
+      },
+      {
+        "fragment_id": "policy_1",
+        "file": "fragments/policy_1.txt",
+        "required": true,
+        "metadata": {
+          "source": "policy"
+        }
+      }
+    ]
   },
   "optimizer": {
     "kind": "context_pack",
