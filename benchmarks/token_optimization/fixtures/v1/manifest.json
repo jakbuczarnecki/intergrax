@@ -70,7 +70,12 @@
       "input_path": "inputs/memory_summary.fallback_validation.txt",
       "input_format": "plain_text",
       "optimizer_kind": "memory_summary",
-      "config": {"max_summary_chars": 55},
+      "config": {
+        "compact_whitespace": false,
+        "trim_blank_lines": false,
+        "trim_edges": false,
+        "max_summary_chars": 55
+      },
       "protected_values": ["2026-07-01"]
     }
   ]
