@@ -1,0 +1,12 @@
+{
+  "dataset_id": "regression_synthetic_v1",
+  "dataset_version": "1.0.0",
+  "fixtures": [
+    {
+      "fixture_id": "tool_schema.compact_catalog",
+      "source_type": "tool_schema",
+      "eval_case": "compactable",
+      "input_path": "inputs/tool_schema.compact_catalog.json"
+    }
+  ]
+}
