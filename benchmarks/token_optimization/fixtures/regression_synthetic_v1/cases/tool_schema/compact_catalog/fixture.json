@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "fixture_id": "tool_schema.compact_catalog",
+  "source_type": "tool_schema",
+  "eval_case": "compactable",
+  "category": "tool_catalog",
+  "expected_behavior": "saves_tokens_with_receipt",
+  "description": "Compact pretty-printed tool catalog JSON with whitespace savings.",
+  "input": {
+    "file": "input.json",
+    "format": "tool_schema_catalog_json"
+  },
+  "optimizer": {
+    "kind": "tool_schema",
+    "config": {}
+  },
+  "protected_values": [],
+  "expected": {
+    "min_saved_tokens": 1,
+    "min_saved_ratio": 0.05,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}
