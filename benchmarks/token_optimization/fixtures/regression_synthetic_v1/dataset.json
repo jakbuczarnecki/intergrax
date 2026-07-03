@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "dataset_id": "regression_synthetic_v1",
+  "dataset_version": "1.0.0",
+  "description": "Synthetic file-backed regression dataset for token optimization safety and savings checks.",
+  "token_counter": "default_word_count",
+  "case_discovery": {
+    "strategy": "recursive_fixture_json",
+    "root": "cases"
+  },
+  "data_safety": "synthetic_only"
+}
