@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "fixture_id": "memory_summary.compact_summary",
+  "source_type": "memory_summary",
+  "eval_case": "compactable",
+  "category": "memory",
+  "expected_behavior": "applies_structural_compaction_with_receipt",
+  "description": "Compact memory summary with structural whitespace normalization.",
+  "input": {
+    "file": "input.txt",
+    "format": "plain_text"
+  },
+  "optimizer": {
+    "kind": "memory_summary",
+    "config": {}
+  },
+  "protected_values": [],
+  "expected": {
+    "min_saved_ratio": 0.0,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}
