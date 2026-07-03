@@ -1,0 +1,120 @@
+{
+  "artifact_kind": "token_regression_diagnostic_summary",
+  "cases": [
+    {
+      "baseline_tokens": 43,
+      "case_artifact": "cases/context_pack.compact_fragments.json",
+      "fallback_status": false,
+      "fixture_id": "context_pack.compact_fragments",
+      "optimized_tokens": 41,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.046511627906976744,
+      "saved_tokens": 2,
+      "source_type": "context_pack",
+      "validation_status": "not_applicable"
+    },
+    {
+      "baseline_tokens": 1121,
+      "case_artifact": "cases/context_pack.long_workspace_document.json",
+      "fallback_status": false,
+      "fixture_id": "context_pack.long_workspace_document",
+      "optimized_tokens": 160,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.8572702943800179,
+      "saved_tokens": 961,
+      "source_type": "context_pack",
+      "validation_status": "not_applicable"
+    },
+    {
+      "baseline_tokens": 34,
+      "case_artifact": "cases/context_pack.protected_evidence.json",
+      "fallback_status": false,
+      "fixture_id": "context_pack.protected_evidence",
+      "optimized_tokens": 34,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.0,
+      "saved_tokens": 0,
+      "source_type": "context_pack",
+      "validation_status": "passed"
+    },
+    {
+      "baseline_tokens": 37,
+      "case_artifact": "cases/memory_summary.compact_summary.json",
+      "fallback_status": false,
+      "fixture_id": "memory_summary.compact_summary",
+      "optimized_tokens": 37,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.0,
+      "saved_tokens": 0,
+      "source_type": "memory_summary",
+      "validation_status": "not_applicable"
+    },
+    {
+      "baseline_tokens": 35,
+      "case_artifact": "cases/memory_summary.fallback_validation.json",
+      "fallback_status": true,
+      "fixture_id": "memory_summary.fallback_validation",
+      "optimized_tokens": 35,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.0,
+      "saved_tokens": 0,
+      "source_type": "memory_summary",
+      "validation_status": "failed"
+    },
+    {
+      "baseline_tokens": 44,
+      "case_artifact": "cases/memory_summary.protected_dates.json",
+      "fallback_status": false,
+      "fixture_id": "memory_summary.protected_dates",
+      "optimized_tokens": 44,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.0,
+      "saved_tokens": 0,
+      "source_type": "memory_summary",
+      "validation_status": "passed"
+    },
+    {
+      "baseline_tokens": 34,
+      "case_artifact": "cases/tool_schema.compact_catalog.json",
+      "fallback_status": false,
+      "fixture_id": "tool_schema.compact_catalog",
+      "optimized_tokens": 32,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.058823529411764705,
+      "saved_tokens": 2,
+      "source_type": "tool_schema",
+      "validation_status": "not_applicable"
+    },
+    {
+      "baseline_tokens": 35,
+      "case_artifact": "cases/tool_schema.protected_description.json",
+      "fallback_status": false,
+      "fixture_id": "tool_schema.protected_description",
+      "optimized_tokens": 35,
+      "passed": true,
+      "receipt_present": true,
+      "saved_ratio": 0.0,
+      "saved_tokens": 0,
+      "source_type": "tool_schema",
+      "validation_status": "passed"
+    }
+  ],
+  "failed": 0,
+  "metadata": {
+    "token_counter": "default_word_count"
+  },
+  "passed": 8,
+  "schema_version": 1,
+  "total_baseline_tokens": 1383,
+  "total_fixtures": 8,
+  "total_optimized_tokens": 418,
+  "total_saved_ratio": 0.6977584960231381,
+  "total_saved_tokens": 965
+}

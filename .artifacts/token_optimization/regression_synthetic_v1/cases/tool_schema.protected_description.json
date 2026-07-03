@@ -1,0 +1,42 @@
+{
+  "artifact_kind": "token_regression_diagnostic_case",
+  "expectation": {
+    "failure_reasons": [],
+    "passed": true
+  },
+  "fixture_id": "tool_schema.protected_description",
+  "input": {
+    "original_tool_catalog": "{\"tools\":[{\"name\":\"workspace_lookup\",\"description\":\"  Search   indexed workspace content for project notes, imported documents, and evidence fragments. Before using this tool in production workflows, review the integration guide at https://example.com/docs/token-fixture for usage limits, audit requirements, and expected input format.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}}]}"
+  },
+  "metadata": {
+    "category": "tool_catalog",
+    "dataset_id": "regression_synthetic_v1",
+    "dataset_version": "1.0.0",
+    "description": "Tool description containing a protected URL must not be unsafely compacted.",
+    "eval_case": "protected",
+    "expectation_status": "met",
+    "expected_behavior": "preserves_url_no_savings",
+    "fixture_path": "cases/tool_schema/protected_description/fixture.json",
+    "input_format": "tool_schema_catalog",
+    "optimizer_kind": "tool_schema",
+    "protected_value_count": 1
+  },
+  "metrics": {
+    "baseline_tokens": 35,
+    "optimized_tokens": 35,
+    "saved_ratio": 0.0,
+    "saved_tokens": 0
+  },
+  "output": {
+    "optimized_tool_catalog": "{\"tools\":[{\"name\":\"workspace_lookup\",\"description\":\"  Search   indexed workspace content for project notes, imported documents, and evidence fragments. Before using this tool in production workflows, review the integration guide at https://example.com/docs/token-fixture for usage limits, audit requirements, and expected input format.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}}]}"
+  },
+  "passed": true,
+  "schema_version": 1,
+  "source_type": "tool_schema",
+  "validation": {
+    "fallback_used": false,
+    "receipt_present": true,
+    "strategy": "tool_catalog.light_compaction",
+    "validation_status": "passed"
+  }
+}

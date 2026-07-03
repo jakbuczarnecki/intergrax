@@ -1,0 +1,42 @@
+{
+  "artifact_kind": "token_regression_diagnostic_case",
+  "expectation": {
+    "failure_reasons": [],
+    "passed": true
+  },
+  "fixture_id": "memory_summary.fallback_validation",
+  "input": {
+    "original_summary": "User prefers repository changes to be implemented in narrow, reviewable slices.\nThe dataset-backed regression runner review is scheduled for 2026-07-01.\nDo not enable runtime token optimization wiring until benchmark gates and report artifacts are stable."
+  },
+  "metadata": {
+    "category": "memory",
+    "dataset_id": "regression_synthetic_v1",
+    "dataset_version": "1.0.0",
+    "description": "Lossy truncation that would break protected dates falls back to original content.",
+    "eval_case": "fallback",
+    "expectation_status": "met",
+    "expected_behavior": "falls_back_on_validation_failure",
+    "fixture_path": "cases/memory_summary/fallback_validation/fixture.json",
+    "input_format": "plain_text",
+    "optimizer_kind": "memory_summary",
+    "protected_value_count": 1
+  },
+  "metrics": {
+    "baseline_tokens": 35,
+    "optimized_tokens": 35,
+    "saved_ratio": 0.0,
+    "saved_tokens": 0
+  },
+  "output": {
+    "optimized_summary": "User prefers repository changes to be implemented in narrow, reviewable slices.\nThe dataset-backed regression runner review is scheduled for 2026-07-01.\nDo not enable runtime token optimization wiring until benchmark gates and report artifacts are stable."
+  },
+  "passed": true,
+  "schema_version": 1,
+  "source_type": "memory_summary",
+  "validation": {
+    "fallback_used": true,
+    "receipt_present": true,
+    "strategy": "memory_summary.light_structural_compaction",
+    "validation_status": "failed"
+  }
+}

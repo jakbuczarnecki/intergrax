@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from intergrax.runtime.token_optimization.fixture_dataset import (
     load_token_regression_fixture_dataset,
@@ -114,7 +115,10 @@ def main(argv: list[str] | None = None) -> int:
             execution,
             args.diagnostic_artifact_dir,
         )
-        print(f"Diagnostic artifacts written to: {args.diagnostic_artifact_dir}")
+        print(
+            f"Diagnostic artifacts written to: {args.diagnostic_artifact_dir}",
+            file=sys.stderr,
+        )
     else:
         summary = run_token_regression_benchmarks(fixtures=fixtures)
     benchmark_failed = summary.failed > 0

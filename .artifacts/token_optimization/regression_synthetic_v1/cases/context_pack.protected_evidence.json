@@ -1,0 +1,62 @@
+{
+  "artifact_kind": "token_regression_diagnostic_case",
+  "expectation": {
+    "failure_reasons": [],
+    "passed": true
+  },
+  "fixture_id": "context_pack.protected_evidence",
+  "input": {
+    "fragments": [
+      {
+        "fragment_id": "evidence_frag",
+        "metadata": {
+          "source": "evidence"
+        },
+        "original_content": "  The synthesis step must preserve the source attribution chain for every grounded claim. This fragment links the current answer back to evidence_abcdefgh1234, which should remain available for audit, receipt validation, and regression review.",
+        "required": false
+      }
+    ],
+    "original_content": "{\"fragments\":[{\"fragment_id\":\"evidence_frag\",\"content\":\"  The synthesis step must preserve the source attribution chain for every grounded claim. This fragment links the current answer back to evidence_abcdefgh1234, which should remain available for audit, receipt validation, and regression review.\",\"source_type\":\"rag_context_pack\",\"required\":false,\"metadata\":{\"source\":\"evidence\"}}]}"
+  },
+  "metadata": {
+    "category": "rag_context_pack",
+    "dataset_id": "regression_synthetic_v1",
+    "dataset_version": "1.0.0",
+    "description": "Context fragment containing a protected evidence reference must not be unsafely compacted.",
+    "eval_case": "protected",
+    "expectation_status": "met",
+    "expected_behavior": "preserves_protected_evidence_no_savings",
+    "fixture_path": "cases/context_pack/protected_evidence/fixture.json",
+    "input_format": "context_pack_fragments",
+    "optimizer_kind": "context_pack",
+    "protected_value_count": 1
+  },
+  "metrics": {
+    "baseline_tokens": 34,
+    "optimized_tokens": 34,
+    "saved_ratio": 0.0,
+    "saved_tokens": 0
+  },
+  "output": {
+    "fragments": [
+      {
+        "fragment_id": "evidence_frag",
+        "metadata": {
+          "source": "evidence"
+        },
+        "optimized_content": "  The synthesis step must preserve the source attribution chain for every grounded claim. This fragment links the current answer back to evidence_abcdefgh1234, which should remain available for audit, receipt validation, and regression review.",
+        "required": false
+      }
+    ],
+    "optimized_content": "{\"fragments\":[{\"fragment_id\":\"evidence_frag\",\"content\":\"  The synthesis step must preserve the source attribution chain for every grounded claim. This fragment links the current answer back to evidence_abcdefgh1234, which should remain available for audit, receipt validation, and regression review.\",\"source_type\":\"rag_context_pack\",\"required\":false,\"metadata\":{\"source\":\"evidence\"}}]}"
+  },
+  "passed": true,
+  "schema_version": 1,
+  "source_type": "context_pack",
+  "validation": {
+    "fallback_used": false,
+    "receipt_present": true,
+    "strategy": "context_pack.light_structural_compaction",
+    "validation_status": "passed"
+  }
+}
