@@ -26,6 +26,7 @@ from intergrax.runtime.token_optimization.regression import (
     TokenRegressionSourceType,
     default_regression_fixtures,
     default_token_counter,
+    run_token_regression_benchmark_execution,
     run_token_regression_benchmarks,
 )
 
@@ -33,6 +34,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _SCRIPT_PATH = _REPO_ROOT / "scripts" / "check_token_regression_benchmarks.py"
+
+
+def test_run_token_regression_benchmark_execution_returns_summary_plus_cases() -> None:
+    execution = run_token_regression_benchmark_execution()
+
+    assert len(execution.cases) == execution.summary.total_fixtures
+    for case in execution.cases:
+        assert case.result.fixture_id == case.fixture_id
+        if case.runner_error is None:
+            assert case.outcome is not None
 
 
 def test_runner_measures_baseline_optimized_saved_and_ratio() -> None:

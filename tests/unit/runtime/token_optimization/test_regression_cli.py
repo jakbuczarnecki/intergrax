@@ -163,3 +163,53 @@ def test_gate_json_with_fixture_dataset_passes_and_is_safe() -> None:
     assert payload["status"] == "pass"
     assert payload["failed"] == 0
     assert _collect_keys(payload).isdisjoint(_UNSAFE_KEYS)
+
+
+def test_diagnostic_artifact_dir_with_fixture_dataset(tmp_path: Path) -> None:
+    artifact_dir = tmp_path / "diagnostics"
+    completed = _run_script(
+        "--report",
+        "--fixture-dataset",
+        _FIXTURE_DATASET,
+        "--diagnostic-artifact-dir",
+        str(artifact_dir),
+    )
+    assert completed.returncode == 0
+    assert "Diagnostic artifacts written to:" in completed.stderr
+    assert (artifact_dir / "summary.json").is_file()
+    case_files = list((artifact_dir / "cases").glob("*.json"))
+    assert case_files
+
+
+def test_diagnostic_artifact_dir_with_report_json_keeps_stdout_pure_json(tmp_path: Path) -> None:
+    artifact_dir = tmp_path / "diagnostics"
+    completed = _run_script(
+        "--report-json",
+        "--fixture-dataset",
+        _FIXTURE_DATASET,
+        "--diagnostic-artifact-dir",
+        str(artifact_dir),
+    )
+    assert completed.returncode == 0
+    assert "Diagnostic artifacts written to:" not in completed.stdout
+    assert "Diagnostic artifacts written to:" in completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["failed"] == 0
+    assert _collect_keys(payload).isdisjoint(_UNSAFE_KEYS)
+
+
+def test_diagnostic_artifact_dir_with_gate_json_keeps_stdout_pure_json(tmp_path: Path) -> None:
+    artifact_dir = tmp_path / "diagnostics"
+    completed = _run_script(
+        "--gate-json",
+        "--fixture-dataset",
+        _FIXTURE_DATASET,
+        "--diagnostic-artifact-dir",
+        str(artifact_dir),
+    )
+    assert completed.returncode == 0
+    assert "Diagnostic artifacts written to:" not in completed.stdout
+    assert "Diagnostic artifacts written to:" in completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["status"] == "pass"
+    assert _collect_keys(payload).isdisjoint(_UNSAFE_KEYS)

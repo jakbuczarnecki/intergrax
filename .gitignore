@@ -33,3 +33,4 @@ _external_apps/
 docs/_external/
 
 applications/local_workspace_application/.observability/
+.artifacts/
