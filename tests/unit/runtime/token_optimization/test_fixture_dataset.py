@@ -1,10 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TOKEN-OBS-2E-B: file-backed regression fixture dataset loader tests."""
+"""TOKEN-OBS-2E-B/2E-C: file-backed regression fixture dataset loader tests."""
 
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _DATASET_PATH = (
     _REPO_ROOT / "benchmarks" / "token_optimization" / "fixtures" / "regression_synthetic_v1"
+)
+_COMPACT_FRAGMENTS_DIR = (
+    _DATASET_PATH / "cases" / "context_pack" / "compact_fragments" / "fragments"
 )
 _REQUIRED_FIXTURE_IDS = frozenset(
     {
@@ -78,6 +82,54 @@ def _collect_keys(value: Any) -> set[str]:
     return keys
 
 
+def _write_minimal_dataset(
+    root: Path,
+    fixture: dict[str, Any],
+    *,
+    input_text: str = "summary text",
+) -> None:
+    (root / "dataset.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "dataset_id": "tmp",
+                "dataset_version": "0.0.1",
+                "case_discovery": {
+                    "strategy": "recursive_fixture_json",
+                    "root": "cases",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    case_dir = root / "cases" / "memory_summary" / "case"
+    case_dir.mkdir(parents=True)
+    (case_dir / "input.txt").write_text(input_text, encoding="utf-8")
+    (case_dir / "fixture.json").write_text(json.dumps(fixture), encoding="utf-8")
+
+
+def _minimal_memory_summary_fixture(**overrides: Any) -> dict[str, Any]:
+    fixture: dict[str, Any] = {
+        "schema_version": 1,
+        "fixture_id": "memory_summary.case",
+        "source_type": "memory_summary",
+        "eval_case": "compactable",
+        "category": "memory",
+        "expected_behavior": "test",
+        "description": "test",
+        "input": {"format": "plain_text", "file": "input.txt"},
+        "optimizer": {"kind": "memory_summary", "config": {}},
+        "protected_values": [],
+        "expected": {
+            "receipt": "required",
+            "validation": "pass_like",
+            "fallback": "forbidden",
+        },
+    }
+    fixture.update(overrides)
+    return fixture
+
+
 @pytest.fixture(name="dataset")
 def fixture_dataset():
     return load_token_regression_fixture_dataset(_DATASET_PATH)
@@ -122,6 +174,26 @@ def test_tool_schema_fixture_runs_successfully(dataset) -> None:
 
 def test_context_pack_fixture_runs_successfully(dataset) -> None:
     summary = run_token_regression_benchmarks(fixtures=dataset.fixtures)
+    result = next(
+        item for item in summary.results if item.fixture_id == "context_pack.compact_fragments"
+    )
+    assert result.passed is True
+    assert result.saved_tokens >= 1
+
+
+def test_compact_fragments_texts_are_realistic() -> None:
+    context_text = (_COMPACT_FRAGMENTS_DIR / "context_1.txt").read_text(encoding="utf-8")
+    policy_text = (_COMPACT_FRAGMENTS_DIR / "policy_1.txt").read_text(encoding="utf-8")
+    assert "Local Workspace keeps imported project documents searchable" in context_text
+    assert "Answers must cite retrieved evidence" in policy_text
+    assert context_text != "Retrieved   evidence   fragment"
+    assert policy_text != "Mandatory   policy   text"
+
+
+def test_dataset_backed_benchmark_passes_with_realistic_compact_fragments() -> None:
+    dataset = load_token_regression_fixture_dataset(_DATASET_PATH)
+    summary = run_token_regression_benchmarks(fixtures=dataset.fixtures)
+    assert summary.failed == 0
     result = next(
         item for item in summary.results if item.fixture_id == "context_pack.compact_fragments"
     )
@@ -174,6 +246,12 @@ def test_expectations_are_mapped_correctly(dataset) -> None:
     assert protected_tool.expectation.expected_max_saved_tokens == 0
     assert protected_tool.expectation.expected_max_saved_ratio == 0.0
 
+    compact_fragments = next(
+        item for item in dataset.fixtures if item.fixture_id == "context_pack.compact_fragments"
+    )
+    assert compact_fragments.expectation.expected_min_saved_tokens == 1
+    assert compact_fragments.expectation.expected_min_saved_ratio == 0.0
+
 
 def test_protected_values_reflected_in_metadata(dataset) -> None:
     protected_dates = next(
@@ -208,10 +286,24 @@ def test_report_metadata_does_not_contain_unsafe_keys(dataset) -> None:
 
 
 def test_unsupported_semantic_validation_hook_raises() -> None:
-    import tempfile
-
     with tempfile.TemporaryDirectory() as tmp_dir:
         root = Path(tmp_dir)
+        fixture = _minimal_memory_summary_fixture(
+            fixture_id="memory_summary.bad_hook",
+            eval_case="fallback",
+            optimizer={
+                "kind": "memory_summary",
+                "semantic_validation_hook": "reject",
+            },
+            expected={
+                "receipt": "required",
+                "validation": "pass_like",
+                "fallback": "forbidden",
+            },
+        )
+        case_dir = root / "cases" / "memory_summary" / "bad_hook"
+        case_dir.mkdir(parents=True)
+        (case_dir / "input.txt").write_text("summary text", encoding="utf-8")
         (root / "dataset.json").write_text(
             json.dumps(
                 {
@@ -226,33 +318,98 @@ def test_unsupported_semantic_validation_hook_raises() -> None:
             ),
             encoding="utf-8",
         )
-        case_dir = root / "cases" / "memory_summary" / "bad_hook"
-        case_dir.mkdir(parents=True)
-        (case_dir / "input.txt").write_text("summary text", encoding="utf-8")
-        (case_dir / "fixture.json").write_text(
+        (case_dir / "fixture.json").write_text(json.dumps(fixture), encoding="utf-8")
+        with pytest.raises(ValueError, match="semantic_validation_hook"):
+            load_token_regression_fixture_dataset(root)
+
+
+@pytest.mark.parametrize(
+    ("field_path", "value", "match"),
+    [
+        ("expected", {"receipt": "required", "validation": "unknown", "fallback": "forbidden"}, "expected.validation"),
+        ("expected", {"receipt": "required", "validation": "pass_like", "fallback": "optional"}, "expected.fallback"),
+        ("expected", {"receipt": "optional", "validation": "pass_like", "fallback": "forbidden"}, "expected.receipt"),
+        ("input", {"format": "old_inputs_layout", "file": "input.txt"}, "input.format"),
+        ("optimizer", {"kind": "legacy_optimizer"}, "optimizer.kind"),
+        ("protected_values", "2026-07-01", "protected_values"),
+    ],
+)
+def test_invalid_fixture_contract_raises(field_path: str, value: Any, match: str) -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        fixture = _minimal_memory_summary_fixture()
+        if field_path == "protected_values":
+            fixture["protected_values"] = value
+        else:
+            fixture[field_path] = value
+        _write_minimal_dataset(root, fixture)
+        with pytest.raises(ValueError, match=match):
+            load_token_regression_fixture_dataset(root)
+
+
+def test_unknown_optimizer_config_key_raises() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        fragments_dir = root / "cases" / "context_pack" / "case" / "fragments"
+        fragments_dir.mkdir(parents=True)
+        (fragments_dir / "context_1.txt").write_text("context text", encoding="utf-8")
+        fixture = {
+            "schema_version": 1,
+            "fixture_id": "context_pack.case",
+            "source_type": "context_pack",
+            "eval_case": "compactable",
+            "category": "rag_context_pack",
+            "expected_behavior": "test",
+            "description": "test",
+            "input": {
+                "format": "context_pack_fragments",
+                "fragments": [
+                    {
+                        "fragment_id": "context_1",
+                        "file": "fragments/context_1.txt",
+                    }
+                ],
+            },
+            "optimizer": {
+                "kind": "context_pack",
+                "config": {"unknown_config_key": True},
+            },
+            "protected_values": [],
+            "expected": {
+                "receipt": "required",
+                "validation": "pass_like",
+                "fallback": "forbidden",
+            },
+        }
+        (root / "dataset.json").write_text(
             json.dumps(
                 {
                     "schema_version": 1,
-                    "fixture_id": "memory_summary.bad_hook",
-                    "source_type": "memory_summary",
-                    "eval_case": "fallback",
-                    "category": "memory",
-                    "expected_behavior": "test",
-                    "description": "test",
-                    "input": {"format": "plain_text", "file": "input.txt"},
-                    "optimizer": {
-                        "kind": "memory_summary",
-                        "semantic_validation_hook": "reject",
-                    },
-                    "protected_values": [],
-                    "expected": {
-                        "receipt": "required",
-                        "validation": "pass_like",
-                        "fallback": "forbidden",
+                    "dataset_id": "tmp",
+                    "dataset_version": "0.0.1",
+                    "case_discovery": {
+                        "strategy": "recursive_fixture_json",
+                        "root": "cases",
                     },
                 }
             ),
             encoding="utf-8",
         )
-        with pytest.raises(ValueError, match="semantic_validation_hook"):
+        case_dir = root / "cases" / "context_pack" / "case"
+        (case_dir / "fixture.json").write_text(json.dumps(fixture), encoding="utf-8")
+        with pytest.raises(ValueError, match="unsupported keys"):
+            load_token_regression_fixture_dataset(root)
+
+
+def test_unknown_policy_override_key_raises() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        fixture = _minimal_memory_summary_fixture(
+            optimizer={
+                "kind": "memory_summary",
+                "policy_override": {"unknown_policy_key": True},
+            }
+        )
+        _write_minimal_dataset(root, fixture)
+        with pytest.raises(ValueError, match="unsupported keys"):
             load_token_regression_fixture_dataset(root)

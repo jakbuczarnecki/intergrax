@@ -60,6 +60,25 @@ _REQUIRED_FIXTURE_KEYS = frozenset(
         "expected",
     }
 )
+_ALLOWED_EVAL_CASES = frozenset({"compactable", "protected", "fallback"})
+_ALLOWED_INPUT_FORMATS = frozenset(
+    {
+        "tool_schema_catalog",
+        "context_pack_fragments",
+        "plain_text",
+    }
+)
+_ALLOWED_OPTIMIZER_KINDS = frozenset(
+    {
+        "tool_schema",
+        "context_pack",
+        "memory_summary",
+    }
+)
+_ALLOWED_EXPECTED_RECEIPTS = frozenset({"required"})
+_ALLOWED_EXPECTED_VALIDATIONS = frozenset({"pass_like", "failed"})
+_ALLOWED_EXPECTED_FALLBACKS = frozenset({"forbidden", "required"})
+_ALLOWED_SOURCE_TYPES = frozenset(member.value for member in TokenRegressionSourceType)
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,12 +189,64 @@ def _validate_dataset_contract(dataset_spec: Mapping[str, Any]) -> None:
 
 
 def _validate_fixture_contract(fixture_spec: Mapping[str, Any]) -> None:
+    fixture_id = str(fixture_spec.get("fixture_id", "<unknown>"))
     missing = _REQUIRED_FIXTURE_KEYS - set(fixture_spec)
     if missing:
         raise ValueError(
-            f"fixture {fixture_spec.get('fixture_id', '<unknown>')} "
-            f"missing required keys: {sorted(missing)}"
+            f"fixture {fixture_id} missing required keys: {sorted(missing)}"
         )
+    if fixture_spec["schema_version"] != 1:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported schema_version: "
+            f"{fixture_spec['schema_version']!r}"
+        )
+    source_type = fixture_spec["source_type"]
+    if source_type not in _ALLOWED_SOURCE_TYPES:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported source_type: {source_type!r}"
+        )
+    eval_case = fixture_spec["eval_case"]
+    if eval_case not in _ALLOWED_EVAL_CASES:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported eval_case: {eval_case!r}"
+        )
+    input_spec = fixture_spec["input"]
+    if not isinstance(input_spec, Mapping):
+        raise ValueError(f"fixture {fixture_id} input must be an object")
+    input_format = input_spec.get("format")
+    if input_format not in _ALLOWED_INPUT_FORMATS:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported input.format: {input_format!r}"
+        )
+    optimizer_spec = fixture_spec["optimizer"]
+    if not isinstance(optimizer_spec, Mapping):
+        raise ValueError(f"fixture {fixture_id} optimizer must be an object")
+    optimizer_kind = optimizer_spec.get("kind")
+    if optimizer_kind not in _ALLOWED_OPTIMIZER_KINDS:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported optimizer.kind: {optimizer_kind!r}"
+        )
+    expected_spec = fixture_spec["expected"]
+    if not isinstance(expected_spec, Mapping):
+        raise ValueError(f"fixture {fixture_id} expected must be an object")
+    receipt = expected_spec.get("receipt")
+    if receipt not in _ALLOWED_EXPECTED_RECEIPTS:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported expected.receipt: {receipt!r}"
+        )
+    validation = expected_spec.get("validation")
+    if validation not in _ALLOWED_EXPECTED_VALIDATIONS:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported expected.validation: {validation!r}"
+        )
+    fallback = expected_spec.get("fallback")
+    if fallback not in _ALLOWED_EXPECTED_FALLBACKS:
+        raise ValueError(
+            f"fixture {fixture_id} has unsupported expected.fallback: {fallback!r}"
+        )
+    protected_values = fixture_spec["protected_values"]
+    if not isinstance(protected_values, list):
+        raise ValueError(f"fixture {fixture_id} protected_values must be a list")
 
 
 def _safe_fixture_metadata(
@@ -348,16 +419,24 @@ def _build_dataclass_config(
     if not isinstance(config_data, Mapping):
         raise ValueError(f"{config_cls.__name__} config must be an object")
     allowed = {field.name for field in fields(config_cls)}
-    kwargs = {key: value for key, value in config_data.items() if key in allowed}
-    return config_cls(**kwargs)
+    unknown = set(config_data) - allowed
+    if unknown:
+        raise ValueError(
+            f"{config_cls.__name__} config contains unsupported keys: {sorted(unknown)}"
+        )
+    return config_cls(**dict(config_data))
 
 
 def _build_token_policy(policy_data: Mapping[str, Any]) -> TokenOptimizationPolicy:
     allowed = {field.name for field in fields(TokenOptimizationPolicy)}
+    unknown = set(policy_data) - allowed
+    if unknown:
+        raise ValueError(
+            "TokenOptimizationPolicy override contains unsupported keys: "
+            f"{sorted(unknown)}"
+        )
     kwargs: dict[str, Any] = {}
     for key, value in policy_data.items():
-        if key not in allowed:
-            continue
         if key == "profile":
             kwargs[key] = TokenOptimizationProfile(str(value))
         elif key == "compression_level":

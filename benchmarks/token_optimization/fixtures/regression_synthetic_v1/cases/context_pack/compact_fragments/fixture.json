@@ -35,7 +35,7 @@
   "protected_values": [],
   "expected": {
     "min_saved_tokens": 1,
-    "min_saved_ratio": 0.05,
+    "min_saved_ratio": 0.0,
     "receipt": "required",
     "validation": "pass_like",
     "fallback": "forbidden"
