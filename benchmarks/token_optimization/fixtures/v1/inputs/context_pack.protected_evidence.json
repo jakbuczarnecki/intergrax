@@ -1,0 +1,12 @@
+{
+  "fragments": [
+    {
+      "fragment_id": "evidence_frag",
+      "content": "context context context context context context context context context context context context context context context context context context context context See evidence_ref_demo_001 for audit trail and more notes.",
+      "required": false,
+      "metadata": {
+        "source": "evidence"
+      }
+    }
+  ]
+}
