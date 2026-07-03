@@ -329,6 +329,8 @@ Not every mechanism belongs in the first public proof. The first proof should pr
 
 ### 8.3 Strategy / algorithm taxonomy
 
+**Sequencing roadmap:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-OPT-3A defines the stronger-optimizer rollout order, per-algorithm measurement expectations, and savings attribution rules. Do not build one monolithic stronger optimizer; introduce each strategy as a separate measurable platform step.
+
 Strategies are the algorithms a mechanism may apply. A single mechanism may compose multiple strategies under policy control.
 
 | Strategy type | Lossless | Lossy | Reversible | Measurement-only | Policy-only | Requires protected-region validation | Requires quality/regression benchmark | Safe for initial proof | Experimental |
