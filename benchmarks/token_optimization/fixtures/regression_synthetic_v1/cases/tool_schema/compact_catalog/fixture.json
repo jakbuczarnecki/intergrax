@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "fixture_id": "tool_schema.compact_catalog",
+  "source_type": "tool_schema",
+  "eval_case": "compactable",
+  "category": "tool_catalog",
+  "expected_behavior": "saves_tokens_with_receipt",
+  "description": "Compact tool catalog with whitespace-heavy descriptions.",
+  "input": {
+    "format": "tool_schema_catalog",
+    "schema_file": "schema.json",
+    "text_fields": {
+      "$.tools[0].description": "texts/tool_description.txt",
+      "$.tools[0].parameters.properties.query.description": "texts/query_description.txt"
+    }
+  },
+  "optimizer": {
+    "kind": "tool_schema",
+    "config": {}
+  },
+  "protected_values": [],
+  "expected": {
+    "min_saved_tokens": 1,
+    "min_saved_ratio": 0.05,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}

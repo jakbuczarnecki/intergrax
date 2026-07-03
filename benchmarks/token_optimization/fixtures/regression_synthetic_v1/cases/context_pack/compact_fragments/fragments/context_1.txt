@@ -1,0 +1,1 @@
+  Local Workspace keeps imported project documents searchable and returns evidence fragments that can be attached to synthesized answers, review reports, and shadow artifacts.  

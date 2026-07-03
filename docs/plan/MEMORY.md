@@ -53,7 +53,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-MEM-1** | Code | P2 | Planned | `intergrax/memory/summary_compressor.py` — conservative helper-only `MemorySummaryCompressor` with staged candidate/result model, protected-region validation, compression receipt, rollback metadata, optional `token_counter`, optional `semantic_validation_hook` interface, deterministic light/structural compression only, and benchmark-ready result fields aligned with TOKEN-5A / future TOKEN-6B / LKW-PF6 | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; rollback metadata required on every result; original/compressed hashes stored; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; benchmark-ready result fields (`source_type`, `strategy`, `original_hash`, `optimized_hash`, `original_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`, `receipt`/`receipt_ref`, `rollback_metadata`, `semantic_validation_status` when hook used); `uv run pytest tests/unit/memory/ -q` |
+| **TOKEN-MEM-1** | Code | P2 | **Done / Closed** | `intergrax/memory/summary_compressor.py` — conservative helper-only `MemorySummaryCompressor` with staged candidate/result model, protected-region validation, compression receipt, rollback metadata, optional `token_counter`, optional `semantic_validation_hook` interface, deterministic light/structural compression only, and benchmark-ready result fields aligned with TOKEN-5A / future TOKEN-6B / LKW-PF6 | Live source never overwritten before validation; failed compression cannot corrupt persistent memory; rollback metadata required on every result; original/compressed hashes stored; memory compression opt-in by policy/profile; no user facts/dates/IDs/policy text silently lost; benchmark-ready result fields (`source_type`, `strategy`, `original_hash`, `optimized_hash`, `original_tokens`, `optimized_tokens`, `saved_tokens`, `saved_ratio`, `validation_status`, `fallback_status`, `receipt`/`receipt_ref`, `rollback_metadata`, `semantic_validation_status` when hook used); `uv run pytest tests/unit/memory/ -q` — **closeout:** helper-only compressor, staged result/rollback metadata, protected-region validation, compression receipts, optional `token_counter` and `semantic_validation_hook`, benchmark-ready result shape; no live memory-store overwrite, vector index mutation, embedding regeneration, LLM rewriting, HOS/runtime wiring, or LKW proof execution |
 
 **Safety rules (TOKEN-MEM-1 / TOKEN-5A):**
 
@@ -65,6 +65,14 @@ Load **only** the satellite matching your task or cited gap ID.
 - no compression of primary memory store records in the helper-only slice,
 - no vector index mutation without primary-store source of truth,
 - no lossy compression of legal/security/policy text unless explicitly allowed by policy.
+
+**Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
+
+- `max_summary_chars` is treated as **lossy** compression
+- no truncation under default `allow_lossy=False` policy
+- lossy truncation requires explicit `allow_lossy=True` **and** `semantic_validation_hook` acceptance
+- no LLM-as-a-Judge implementation was added in TOKEN-5A-R
+- no live memory-store wiring was added in TOKEN-5A-R
 
 **Explicit exclusions:** no live memory-store overwrite, no automatic memory compaction job, no vector index mutation, no embedding regeneration, no LLM/model-based semantic rewriting, no full LLM-as-a-Judge eval engine (belongs to TOKEN-6B / regression/evals), no runtime hot-path wiring, no HOS emission, no observability exporter wiring, no token regression benchmark runner, no LKW proof execution in TOKEN-MEM-1.
 

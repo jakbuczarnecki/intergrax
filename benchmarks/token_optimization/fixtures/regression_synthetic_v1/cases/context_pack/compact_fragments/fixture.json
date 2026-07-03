@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "fixture_id": "context_pack.compact_fragments",
+  "source_type": "context_pack",
+  "eval_case": "compactable",
+  "category": "rag_context_pack",
+  "expected_behavior": "saves_tokens_with_receipt",
+  "description": "Compact context pack fragments with whitespace normalization.",
+  "input": {
+    "format": "context_pack_fragments",
+    "fragments": [
+      {
+        "fragment_id": "context_1",
+        "file": "fragments/context_1.txt",
+        "required": false,
+        "metadata": {
+          "source": "rag",
+          "rank": 1
+        }
+      },
+      {
+        "fragment_id": "policy_1",
+        "file": "fragments/policy_1.txt",
+        "required": true,
+        "metadata": {
+          "source": "policy"
+        }
+      }
+    ]
+  },
+  "optimizer": {
+    "kind": "context_pack",
+    "config": {}
+  },
+  "protected_values": [],
+  "expected": {
+    "min_saved_tokens": 1,
+    "min_saved_ratio": 0.0,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}

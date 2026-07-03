@@ -1,0 +1,8 @@
+  User prefers concise, direct answers for repository work.
+
+
+User wants implementation tasks to stay narrow, measurable, and tied to the current plan.
+
+
+
+Next step: review the token optimization benchmark loader design before wiring it into the CLI.

@@ -241,7 +241,353 @@ Done / Closed when:
 - [x] **TOKEN-1A** shared contracts — Done / Closed (§TOKEN-1A below)
 - [x] no runtime/code/test/CI/dependency changes (TOKEN-ARCH-0 docs-only scope)
 
-**Next step:** **TOKEN-5A** — MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner (per plan ordering).
+**Next step:** **TOKEN-OBS-1** HOS/domain-signal emission (per plan ordering).
+
+---
+
+## TOKEN-6B — Deterministic token regression benchmark runner
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add the first cross-source deterministic regression benchmark scaffold for helper-only Token Optimization optimizers.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression.py` — fixture contracts, runner, default fixtures, summary/result dataclasses
+- `scripts/check_token_regression_benchmarks.py` — local CI-friendly gate with optional `--json`, `--report`, `--report-json`, `--gate`, and `--gate-json` output
+- `tests/unit/runtime/token_optimization/test_regression.py`
+
+**Closeout:**
+
+- deterministic token regression benchmark runner added
+- default helper-only fixtures added for `tool_schema`, `context_pack`, and `memory_summary`
+- CI-friendly local check script added
+- summary/result dataclasses added
+- receipt/validation/fallback expectations checked
+- deterministic injected token counter used
+- no model calls
+- no external tokenizer dependency
+- no HOS/domain-signal emission
+- no observability exporter wiring
+- no LKW proof execution
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_regression.py -q
+uv run python scripts/check_token_regression_benchmarks.py
+uv run python scripts/check_token_regression_benchmarks.py --json
+```
+
+**Next step:** **TOKEN-OBS-1A** domain signal model (first cautious slice of **TOKEN-OBS-1**); then full **TOKEN-OBS-1** / **TOKEN-OBS-2** observability emission and regression-gate reporting (per plan ordering).
+
+**TOKEN-6B-R — strict validation expectation handling (refinement):**
+
+- benchmark validation expectations now fail closed
+- `expect_validation_pass=True` accepts only `passed` / `not_applicable` validation statuses
+- `unknown`, `missing`, `failed`, `runner_error`, or unexpected statuses fail the fixture
+- no HOS/exporter/runtime wiring was added
+- no LLM-as-a-Judge implementation was added
+
+---
+
+## TOKEN-OBS-1A — Token optimization domain signal model (helper-only)
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a helper-only, safe, structured token optimization domain signal layer that turns optimization outcomes and regression benchmark results into redaction-safe observability/domain signals and emits them into in-memory/no-op sinks for tests — without runtime hot-path integration or exporter wiring.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/signals.py` — signal model, metadata sanitizer, builders, sinks, emission helper
+- `tests/unit/runtime/token_optimization/test_signals.py`
+
+**Closeout:**
+
+- token optimization domain signal model added
+- safe metadata sanitizer added
+- builders added for optimization outcome/result and regression result
+- in-memory and no-op signal sinks added
+- no raw content/prompt/context/evidence emitted
+- no HOS/domain-signal bus wiring
+- no observability exporter wiring
+- no runtime hot-path integration
+- no LKW proof execution
+- no LLM-as-a-Judge
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+```
+
+**Next step:** **TOKEN-OBS-1** HOS/domain-signal emission (remaining scope beyond helper-only signal model).
+
+**TOKEN-OBS-1A-R refinement:**
+
+- `receipt_ref` metadata is sanitized before being attached to signals
+- raw content/prompt/context/evidence cannot bypass the sanitizer through `receipt_ref.metadata`
+- receipt identity fields (`receipt_id`, `run_id`, `step_id`, `strategy_id`, `original_hash`, `optimized_hash`) are preserved
+- no HOS/exporter/runtime wiring was added
+- no LLM-as-a-Judge implementation was added
+
+---
+
+## TOKEN-OBS-1B — HOS domain-signal adapter for token optimization signals
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Bridge the safe `TokenOptimizationSignal` model into the existing HOS/domain-signal path through an explicit helper — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/domain_events.py` — typed payload, registration, conversion, emission helper
+- `tests/unit/runtime/token_optimization/test_domain_events.py`
+
+**Closeout:**
+
+- typed token optimization RuntimeEventPayload added
+- token optimization domain event kind registration added
+- safe TokenOptimizationSignal → RuntimeEventPayload conversion added
+- explicit `emit_token_optimization_domain_signal(...)` helper added
+- payload metadata and receipt_ref metadata are sanitized
+- no optimizer auto-emission added
+- no regression runner auto-emission added
+- no runtime subscribers added
+- no observability exporter wiring added
+- no Elasticsearch/Kibana wiring added
+- no LKW proof execution added
+- no LLM-as-a-Judge implementation added
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_domain_events.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run pytest tests/unit/runtime/events/test_domain_signals.py -q
+uv run python scripts/check_token_regression_benchmarks.py
+```
+
+**Next step:** **TOKEN-OBS-1C** explicit opt-in emission helpers, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-1C — Explicit opt-in token optimization emission helpers
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Combine the safe signal builders with the HOS domain-signal adapter through explicit opt-in helpers — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/emission.py` — explicit emission helpers and result type
+- `tests/unit/runtime/token_optimization/test_emission.py`
+
+**Closeout:**
+
+- explicit opt-in emission helpers added
+- optimization outcomes/results can be explicitly emitted through the safe domain-signal adapter
+- regression results can be explicitly emitted through the safe domain-signal adapter
+- optional dry-run/no-emit mode added
+- metadata and receipt_ref metadata remain sanitized
+- no optimizer auto-emission added
+- no regression runner auto-emission added
+- no runtime subscribers added
+- no observability exporter wiring added
+- no Elasticsearch/Kibana wiring added
+- no LKW proof execution added
+- no LLM-as-a-Judge implementation added
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_emission.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_domain_events.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run pytest tests/unit/runtime/events/test_domain_signals.py -q
+uv run pytest tests/unit/memory/ -q
+uv run python scripts/check_token_regression_benchmarks.py
+```
+
+**Next step:** **TOKEN-OBS-1D** policy-gated runtime emission hook, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-1D — Policy-gated token optimization runtime emission hook
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a small policy-gated runtime emission hook layer that future runtime call sites can use to emit token optimization signals safely — without runtime hot-path integration, exporter wiring, or auto-emission from optimizers or regression runners.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/emission.py` — policy, status, and `maybe_emit_*` helpers
+- `tests/unit/runtime/token_optimization/test_emission.py`
+
+**Closeout:**
+
+- policy-gated maybe_emit helpers added
+- emission policy defaults to disabled
+- enabled policy emits through the existing safe domain-signal adapter
+- kind-level gates added for outcomes, regression results, and regression summaries
+- dry-run policy mode added
+- metadata and receipt_ref metadata remain sanitized
+- no optimizer auto-emission added
+- no regression runner auto-emission added
+- no runtime subscribers added
+- no observability exporter wiring added
+- no Elasticsearch/Kibana wiring added
+- no LKW proof execution added
+- no LLM-as-a-Judge implementation added
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_emission.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_domain_events.py -q
+uv run pytest tests/unit/runtime/token_optimization/test_signals.py -q
+uv run pytest tests/unit/runtime/token_optimization/ -q
+uv run pytest tests/unit/runtime/events/test_domain_signals.py -q
+uv run pytest tests/unit/memory/ -q
+uv run python scripts/check_token_regression_benchmarks.py
+```
+
+**Next step:** **TOKEN-OBS-1E** regression emission wrapper, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-1E — Policy-gated regression benchmark emission wrapper
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a thin wrapper around the deterministic token regression benchmark runner that optionally emits policy-gated domain signals for per-fixture results and aggregate summary — without modifying the core runner or benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression_emission.py` — `TokenRegressionEmissionRunResult`, `run_token_regression_benchmarks_with_emission`
+- `tests/unit/runtime/token_optimization/test_regression_emission.py`
+
+**Closeout:**
+
+- wrapper calls existing `run_token_regression_benchmarks(...)` unchanged
+- per-result emission via `maybe_emit_token_regression_result(...)` only from wrapper
+- summary emission via `maybe_emit_token_regression_summary(...)` only from wrapper
+- default policy disabled; `emit_results` / `emit_summary` flags gate attempts
+- dry-run policy builds signals without recording events
+- core `regression.py` and `scripts/check_token_regression_benchmarks.py` unchanged
+- no optimizer auto-emission, no exporter wiring, no LKW proof, no LLM-as-a-Judge
+
+**Next step:** **TOKEN-OBS-2B** regression fixture/eval matrix, then full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-2B — Regression fixture/eval matrix
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Expand deterministic token regression benchmarks with a minimal eval matrix that proves both savings and safety behavior — without LKW integration or changes to the core benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression.py` — eval-matrix default fixtures, extended expectation fields, safe eval metadata on results
+- `tests/unit/runtime/token_optimization/test_regression.py` — eval-matrix coverage for compactable, protected, and fallback cases
+- `tests/unit/runtime/token_optimization/test_regression_report.py` — safe eval metadata on report items
+
+**Closeout:**
+
+- default fixtures now cover compactable, protected, and fallback eval cases across `tool_schema`, `context_pack`, and `memory_summary`
+- expectations are explicit for pass/fail, validation, fallback, savings bounds, and receipt presence where applicable
+- report items expose safe eval metadata (`eval_case`, `expected_behavior`, `expectation_status`) without raw fixture bodies
+- `scripts/check_token_regression_benchmarks.py` unchanged and still exits 0 for the default suite
+- no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-2A — Token regression benchmark report artifact
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a small redaction-safe report builder for existing deterministic token regression benchmark results — without LKW integration, without modifying the core runner, and without changing the benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression_report.py` — `TokenRegressionReport`, `build_token_regression_report`, `token_regression_report_to_dict`, `format_token_regression_report`
+- `tests/unit/runtime/token_optimization/test_regression_report.py`
+
+**Closeout:**
+
+- report builder consumes `TokenRegressionSummary` and optional `TokenRegressionEmissionRunResult`
+- report items include only safe scalar benchmark fields (fixture id, source/category, strategy, token savings, validation/fallback, receipt id, pass/fail)
+- emission section aggregates attempted emissions and status counts (`emitted`, `skipped_disabled`, `skipped_kind_disabled`, `dry_run`)
+- metadata sanitized via existing `sanitize_signal_metadata`; no raw content, prompts, context fragments, evidence, fixture bodies, or event payloads
+- deterministic output when `report_id` and `generated_at` are provided
+- core `regression.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged and do not import the report module
+- no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-2C — Regression gate thresholds
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a formal gate artifact over existing deterministic token regression benchmark results — without LKW integration, without modifying the core runner, and without changing the benchmark script.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/regression_gate.py` — `TokenRegressionGateThresholds`, `evaluate_token_regression_gate`, `token_regression_gate_to_dict`, `format_token_regression_gate`
+- `tests/unit/runtime/token_optimization/test_regression_gate.py`
+
+**Closeout:**
+
+- gate evaluates `TokenRegressionSummary` with optional `TokenRegressionReport` cross-checks
+- default thresholds pass the current 7-fixture benchmark suite
+- stable failure reason codes: `fixture_failed`, `missing_receipt`, `expectation_not_met`, `unexpected_fallback`, `total_saved_ratio_below_threshold`, `total_saved_tokens_below_threshold`
+- optional aggregate `min_total_saved_ratio` / `min_total_saved_tokens` thresholds
+- metadata sanitized via existing `sanitize_signal_metadata`; no raw content, prompts, context, evidence, or event payloads in gate dict/formatter output
+- core `regression.py`, `regression_report.py`, `regression_emission.py`, and `scripts/check_token_regression_benchmarks.py` unchanged and do not import the gate module
+- no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
+
+---
+
+## TOKEN-OBS-2D — Benchmark CLI report/gate output
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Expose existing regression report and gate artifacts through the benchmark CLI — without LKW integration, without modifying core runner/report/gate modules, and without writing files.
+
+**Deliverables:**
+
+- `scripts/check_token_regression_benchmarks.py` — `--report`, `--report-json`, `--gate`, `--gate-json`, `--min-total-saved-ratio`, `--min-total-saved-tokens`
+- `tests/unit/runtime/token_optimization/test_regression_cli.py`
+
+**Closeout:**
+
+- default script output and `--json` behavior unchanged
+- `--report` / `--report-json` print redaction-safe report artifacts via existing report helpers
+- `--gate` / `--gate-json` print redaction-safe gate artifacts via existing gate helpers; optional aggregate savings thresholds apply only in gate modes
+- exit code remains non-zero on benchmark summary failures; gate modes also exit non-zero when gate status is `fail`
+- mutually exclusive output mode flags fail fast with a clear CLI error
+- no files written; no LKW integration, no exporter wiring, no LLM-as-a-Judge
+
+**Required tests/checks:**
+
+```bash
+uv run pytest tests/unit/runtime/token_optimization/test_regression_cli.py -q
+uv run python scripts/check_token_regression_benchmarks.py
+uv run python scripts/check_token_regression_benchmarks.py --report
+uv run python scripts/check_token_regression_benchmarks.py --gate
+```
+
+**Next step:** full **TOKEN-OBS-1** hot-path wiring and **TOKEN-OBS-2** regression-gate reporting (per plan ordering).
 
 ---
 
@@ -269,7 +615,7 @@ Done / Closed when:
 - no observability exporter wiring added
 - no runtime event emission added
 - no tokenizer/model calls added
-- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner according to plan ordering
+- next step: **TOKEN-OBS-1** HOS/domain-signal emission according to plan ordering
 
 **TOKEN-6A-R refinement:**
 
@@ -464,8 +810,17 @@ TOKEN-3     ToolSchemaOptimizer compact catalog view — Done / Closed
 TOKEN-4     ContextPackOptimizer light/structural compression only — Done / Closed
 TOKEN-6A    telemetry payloads/counters for TOKEN-2..4 — Done / Closed
 TOKEN-5     MemorySummaryCompressor with staging/rollback — Planned
-TOKEN-5A    MemorySummaryCompressor helper-only first slice — Planned
-TOKEN-6B    token regression benchmark runner + CI scripts
+TOKEN-5A    MemorySummaryCompressor helper-only first slice — Done / Closed
+TOKEN-6B    token regression benchmark runner + CI scripts — Done / Closed
+TOKEN-OBS-1A domain signal model + safe in-memory emission — Done / Closed
+TOKEN-OBS-1B HOS domain-signal adapter for token optimization signals — Done / Closed
+TOKEN-OBS-1C explicit opt-in token optimization emission helpers — Done / Closed
+TOKEN-OBS-1D policy-gated token optimization runtime emission hook — Done / Closed
+TOKEN-OBS-1E policy-gated regression benchmark emission wrapper — Done / Closed
+TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
+TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
+TOKEN-OBS-2C regression gate thresholds — Done / Closed
+TOKEN-OBS-2D benchmark CLI report/gate output — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
@@ -698,7 +1053,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 - no RAG retrieval behavior changed
 - no prompt assembly added
 - no telemetry emission added
-- next step: **TOKEN-5A** MemorySummaryCompressor helper-only slice or **TOKEN-6B** regression benchmark runner, according to plan ordering
+- next step: **TOKEN-OBS-1** HOS/domain-signal emission, according to plan ordering
 
 ---
 
@@ -710,7 +1065,7 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 **Dependencies:** TOKEN-1 contracts/receipts/protected regions; recommended after TOKEN-4 proves runtime receipts.
 
-**Status:** Planned.
+**Status:** Planned (helper-only first slice **TOKEN-5A** — Done / Closed; see §TOKEN-5A).
 
 **First slice:** **TOKEN-5A** — helper-only `MemorySummaryCompressor` with staging, receipts, validation, rollback metadata, and benchmark-ready result shape. See §TOKEN-5A below.
 
@@ -722,9 +1077,36 @@ uv run pytest tests/unit/runtime/token_optimization/ -q
 
 ## TOKEN-5A — MemorySummaryCompressor helper-only first slice
 
-**Status:** Planned.
+**Status:** **Done / Closed**.
 
 **Purpose:** Add a conservative MEMORY-owned `MemorySummaryCompressor` helper that compresses memory-summary candidates deterministically, records receipts and rollback metadata, and returns a benchmark-ready result shape — without live memory-store mutation, LLM-based semantic rewriting, or runtime hot-path wiring.
+
+**Closeout notes:**
+
+- helper-only `MemorySummaryCompressor` added (`intergrax/memory/summary_compressor.py`)
+- staged result / rollback metadata added
+- protected-region validation integrated
+- compression receipts integrated
+- optional `token_counter` supported
+- optional `semantic_validation_hook` supported
+- benchmark-ready result shape added
+- no live memory-store overwrite
+- no vector index mutation
+- no embedding regeneration
+- no LLM/model-based semantic rewriting
+- no HOS emission
+- no runtime hot-path wiring
+- no LKW proof execution
+- next step: **TOKEN-OBS-1** HOS/domain-signal emission according to plan ordering
+
+**Refinement TOKEN-5A-R — unsafe lossy truncation guard:**
+
+- `max_summary_chars` is treated as **lossy** compression, not lossless structural compaction
+- no truncation under default `allow_lossy=False` policy
+- lossy truncation requires explicit `allow_lossy=True` **and** `semantic_validation_hook` acceptance
+- protected-region validation still guards truncation candidates; semantic-hook rejection falls back to original
+- no LLM-as-a-Judge implementation was added
+- no live memory-store wiring was added
 
 **Deliverables (implementation task, not this docs-only slice):**
 
@@ -783,7 +1165,7 @@ semantic_validation_status   # present only when semantic_validation_hook is use
 - no user facts, dates, IDs, or policy text are silently lost,
 - benchmark-ready result fields populated for TOKEN-6B / LKW-PF6 attribution.
 
-**Semantic validation note:** future semantic validation and LLM-as-a-Judge belong to **TOKEN-6B** / regression/evals work, not to TOKEN-5A. TOKEN-5A may expose an optional `semantic_validation_hook` interface; TOKEN-6B and eval gates may consume it later. TOKEN-5A must not implement or depend on a full LLM-as-a-Judge engine.
+**Semantic validation note:** future semantic validation and LLM-as-a-Judge belong to **TOKEN-OBS-2** / regression/evals work, not to TOKEN-5A or TOKEN-6B. TOKEN-5A may expose an optional `semantic_validation_hook` interface; TOKEN-OBS-2 and eval gates may consume it later. TOKEN-5A and TOKEN-6B must not implement or depend on a full LLM-as-a-Judge engine.
 
 **LKW-PF6 alignment:** TOKEN-5A adds the `memory` / `memory tokens` optimization and proof category so later LKW-PF6 proof runs can attribute measured savings for memory-summary compression alongside tools, context/RAG, and output shaping.
 
@@ -814,7 +1196,9 @@ uv run pytest tests/unit/memory/ -q
 - savings attribution model,
 - token-vs-quality benchmark fixtures,
 - `scripts/check_compression_receipts.py`,
-- `scripts/check_token_regression_benchmarks.py`.
+- `scripts/check_token_regression_benchmarks.py` — **Done / Closed** (TOKEN-6B helper-only runner; no HOS wiring).
+
+**TOKEN-6B closeout (Done / Closed):** `intergrax/runtime/token_optimization/regression.py` provides deterministic fixture-based regression benchmarks for `tool_schema`, `context_pack`, and `memory_summary` with receipt/validation/fallback expectation checks and a local `scripts/check_token_regression_benchmarks.py` gate. No model calls, no external tokenizer, no HOS/exporter wiring, no LKW proof execution.
 
 **Acceptance criteria:**
 
@@ -919,7 +1303,7 @@ Edit scope:
 Do not wire behavior into LLM call path yet.
 Do not implement ToolSchemaOptimizer yet.
 Do not implement ContextPackOptimizer yet.
-Do not implement MemorySummaryCompressor yet.
+TOKEN-5A helper-only `MemorySummaryCompressor` implemented; do not wire live memory flows yet.
 Do not create docs/plan/TOKEN_OPTIMIZATION.md.
 
 Acceptance:

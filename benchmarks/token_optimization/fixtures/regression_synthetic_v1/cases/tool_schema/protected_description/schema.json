@@ -1,0 +1,16 @@
+{
+  "tools": [
+    {
+      "name": "workspace_lookup",
+      "description": "",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

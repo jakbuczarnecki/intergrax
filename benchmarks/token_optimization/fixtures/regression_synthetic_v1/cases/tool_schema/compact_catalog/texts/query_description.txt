@@ -1,0 +1,1 @@
+  User search query   used to find matching workspace documents, notes, or indexed evidence fragments.

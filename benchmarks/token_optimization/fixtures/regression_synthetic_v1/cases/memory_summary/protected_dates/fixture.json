@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "fixture_id": "memory_summary.protected_dates",
+  "source_type": "memory_summary",
+  "eval_case": "protected",
+  "category": "memory",
+  "expected_behavior": "preserves_protected_dates_no_savings",
+  "description": "Protected dates in memory summary are preserved without fallback.",
+  "input": {
+    "file": "input.txt",
+    "format": "plain_text"
+  },
+  "optimizer": {
+    "kind": "memory_summary",
+    "config": {}
+  },
+  "protected_values": [
+    "2026-07-01"
+  ],
+  "expected": {
+    "max_saved_tokens": 0,
+    "max_saved_ratio": 0.0,
+    "receipt": "required",
+    "validation": "pass_like",
+    "fallback": "forbidden"
+  }
+}

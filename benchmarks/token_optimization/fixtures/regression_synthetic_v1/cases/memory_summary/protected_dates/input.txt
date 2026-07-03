@@ -1,0 +1,8 @@
+  The user asked to keep token optimization work separated from Local Workspace integration until deterministic benchmarks are in place.
+
+
+A follow-up review for the dataset-backed regression runner was scheduled on 2026-07-01.
+
+
+
+Do not treat the benchmark as production proof until the gate report passes.
