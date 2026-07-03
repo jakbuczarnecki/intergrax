@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TOKEN-1A: Token Optimization contract validation tests."""
+"""Token Optimization contract validation tests."""
 
 from __future__ import annotations
 
@@ -8,6 +8,13 @@ import pytest
 
 from intergrax.runtime.token_optimization.contracts import (
     CompressionLevel,
+    ContextDeduplicationMetadata,
+    ContextFragmentPackingMetadata,
+    ContextFragmentPriority,
+    ContextPackingBudget,
+    ContextPackingDecision,
+    ContextPackingDecisionKind,
+    ContextPackingReceiptMetadata,
     OutputProfile,
     ProtectedRegionKind,
     ProtectedRegionValidationResult,
@@ -186,3 +193,111 @@ def test_protected_region_validation_result_pass_and_fail_states() -> None:
     assert passed.status is ProtectedRegionValidationStatus.PASSED
     assert failed.status is ProtectedRegionValidationStatus.FAILED
     assert failed.regions_failed == 1
+
+
+def test_context_fragment_priority_enum_values() -> None:
+    assert ContextFragmentPriority.MUST_KEEP.value == "must_keep"
+    assert ContextFragmentPriority.HIGH_PRIORITY.value == "high_priority"
+    assert ContextFragmentPriority.COMPRESSIBLE.value == "compressible"
+    assert ContextFragmentPriority.DROPPABLE.value == "droppable"
+
+
+def test_context_packing_budget_accepts_valid_budgets() -> None:
+    budget = ContextPackingBudget(
+        max_input_tokens=8000,
+        reserved_output_tokens=1000,
+        target_context_tokens=6000,
+        hard_context_limit=7000,
+    )
+    assert budget.max_input_tokens == 8000
+    assert budget.target_context_tokens == 6000
+
+
+def test_context_packing_budget_rejects_negative_values() -> None:
+    with pytest.raises(ValueError, match="max_input_tokens cannot be negative"):
+        ContextPackingBudget(max_input_tokens=-1)
+
+
+def test_context_packing_budget_rejects_target_exceeding_hard_limit() -> None:
+    with pytest.raises(ValueError, match="target_context_tokens cannot exceed"):
+        ContextPackingBudget(target_context_tokens=9000, hard_context_limit=8000)
+
+
+def test_context_packing_budget_rejects_reserved_output_exceeding_max_input() -> None:
+    with pytest.raises(ValueError, match="reserved_output_tokens cannot exceed"):
+        ContextPackingBudget(max_input_tokens=1000, reserved_output_tokens=1500)
+
+
+def test_context_packing_decision_validates_fragment_id() -> None:
+    with pytest.raises(ValueError, match="fragment_id cannot be empty"):
+        ContextPackingDecision(
+            fragment_id="",
+            decision=ContextPackingDecisionKind.KEEP,
+            priority=ContextFragmentPriority.MUST_KEEP,
+        )
+
+
+def test_context_packing_decision_validates_token_math() -> None:
+    decision = ContextPackingDecision(
+        fragment_id="frag-1",
+        decision=ContextPackingDecisionKind.COMPACT,
+        priority=ContextFragmentPriority.COMPRESSIBLE,
+        original_tokens=100,
+        optimized_tokens=80,
+        saved_tokens=20,
+    )
+    assert decision.saved_tokens == 20
+
+    with pytest.raises(ValueError, match="saved_tokens must equal"):
+        ContextPackingDecision(
+            fragment_id="frag-1",
+            decision=ContextPackingDecisionKind.COMPACT,
+            priority=ContextFragmentPriority.COMPRESSIBLE,
+            original_tokens=100,
+            optimized_tokens=80,
+            saved_tokens=10,
+        )
+
+
+def test_context_deduplication_metadata_rejects_empty_duplicate_ids() -> None:
+    with pytest.raises(ValueError, match="duplicate_fragment_ids cannot contain"):
+        ContextDeduplicationMetadata(duplicate_fragment_ids=("dup-1", ""))
+
+    with pytest.raises(ValueError, match="dedupe_key cannot be empty"):
+        ContextDeduplicationMetadata(dedupe_key="")
+
+
+def test_context_fragment_packing_metadata_rejects_required_and_droppable() -> None:
+    with pytest.raises(ValueError, match="required fragments cannot have droppable"):
+        ContextFragmentPackingMetadata(
+            required=True,
+            priority=ContextFragmentPriority.DROPPABLE,
+        )
+
+
+def test_context_fragment_packing_metadata_rejects_protected_and_droppable() -> None:
+    with pytest.raises(ValueError, match="protected fragments cannot have droppable"):
+        ContextFragmentPackingMetadata(
+            protected=True,
+            priority=ContextFragmentPriority.DROPPABLE,
+        )
+
+
+def test_context_packing_receipt_metadata_validates_totals_and_strategy_breakdown() -> None:
+    receipt = ContextPackingReceiptMetadata(
+        total_original_tokens=200,
+        total_optimized_tokens=150,
+        total_saved_tokens=50,
+        strategy_breakdown={"context_pack.compact": 30, "context_pack.drop": 20},
+    )
+    assert receipt.total_saved_tokens == 50
+
+    with pytest.raises(ValueError, match="total_saved_tokens must equal"):
+        ContextPackingReceiptMetadata(
+            total_original_tokens=200,
+            total_optimized_tokens=150,
+            total_saved_tokens=40,
+        )
+
+    with pytest.raises(ValueError, match="strategy_breakdown"):
+        ContextPackingReceiptMetadata(strategy_breakdown={"context_pack.drop": -1})

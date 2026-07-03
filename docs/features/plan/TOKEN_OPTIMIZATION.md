@@ -662,7 +662,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | Order | Task | Scope |
 |-------|------|-------|
 | 1 | **TOKEN-OPT-3A** | Roadmap and sequencing design (this section) — **Done / Closed** |
-| 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) |
+| 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) — **Done / Closed** |
 | 3 | **TOKEN-OPT-3C** | Deterministic exact deduplication prototype |
 | 4 | **TOKEN-OPT-3D** | Budget-aware context packing prototype |
 | 5 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer |
@@ -683,7 +683,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Schema minimization | `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-3 (shipped) | **Implemented** |
 | Exact deduplication | `rag_context_pack`, `conversation_history`, `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3C** | Planned |
 | Near-deduplication | `rag_context_pack`, `conversation_history` | `lossless` / `experimental` | `balanced` | Yes | Yes | Yes | Post-3C eval | Deferred |
-| Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | Planned |
+| Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | Planned |
 | Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | TOKEN-2 / TOKEN-6 extension | Deferred |
@@ -744,18 +744,28 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Purpose:** Define the data contract for priority-tiered context packing **before** implementing packing behavior.
 
-**Planned concepts (contract only — no implementation):**
+**Contracts added** (`intergrax/runtime/token_optimization/contracts.py`):
 
-- `must_keep` — fragments that must survive any packing decision
-- `high_priority` — preferred under budget pressure
-- `compressible` — eligible for structural compaction under policy
-- `droppable` — removed first when budget cannot be met safely
-- Token budget metadata — explicit per-pack token ceiling
-- Packing decision metadata — which tier actions were taken per fragment
-- Dedup metadata — cross-fragment duplicate linkage without silent removal
-- Receipt explanation fields — human/operator-readable packing rationale in receipt metadata
+- `ContextFragmentPriority` — strongly typed priority tiers (`must_keep`, `high_priority`, `compressible`, `droppable`)
+- `ContextPackingBudget` — token budget envelope with invariant validation
+- `ContextPackingDecisionKind` — per-fragment action vocabulary (`keep`, `compact`, `deduplicate`, `drop`, `truncate`, `bypass`, `fallback`)
+- `ContextPackingDecision` — per-fragment packing decision with token math validation
+- `ContextDeduplicationMetadata` — cross-fragment duplicate linkage (contract only)
+- `ContextFragmentPackingMetadata` — per-fragment packing metadata with fail-fast priority consistency checks
+- `ContextPackingReceiptMetadata` — receipt explanation metadata for future receipt builders
 
-**Status:** Planned. **No implementation yet.**
+**Closeout:**
+
+- contracts added; no optimizer behavior changed
+- no dedupe behavior added; no budget-aware packing behavior added
+- `required=True` on existing `ContextFragment` remains compatible with future `must_keep` (conceptual predecessor; no migration in this task)
+- priority tiers are strongly typed enums, not loose metadata strings
+- contracts are plugin-friendly and application-independent (optional `TokenOptimizationStrategyRef`, extension metadata only in explicit `metadata` fields)
+- vocabulary defined here is used by future **TOKEN-OPT-3C** (exact dedupe) and **TOKEN-OPT-3D** (budget-aware packing)
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OPT-3C** — deterministic exact deduplication prototype.
 
 #### TOKEN-OPT-3C — deterministic exact deduplication prototype
 
@@ -795,7 +805,7 @@ Done / Closed when:
 - [x] LKW described as proof workload only.
 - [x] No runtime/code/test/benchmark/script/application changes.
 
-**Next step:** **TOKEN-OPT-3B** — priority-tiered context packing contract.
+**Next step:** **TOKEN-OPT-3C** — deterministic exact deduplication prototype.
 
 ---
 
@@ -1030,7 +1040,7 @@ TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
 TOKEN-OBS-2C regression gate thresholds — Done / Closed
 TOKEN-OBS-2D benchmark CLI report/gate output — Done / Closed
 TOKEN-OPT-3A stronger optimizer roadmap, algorithm inventory, measurement sequencing — Done / Closed
-TOKEN-OPT-3B priority-tiered context packing contract — Planned
+TOKEN-OPT-3B priority-tiered context packing contract — Done / Closed
 TOKEN-OPT-3C deterministic exact deduplication prototype — Planned
 TOKEN-OPT-3D budget-aware context packing prototype — Planned
 TOKEN-OBS-3E realistic corpus for stronger optimizer — Planned

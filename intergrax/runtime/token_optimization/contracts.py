@@ -377,3 +377,182 @@ class TokenOptimizationResult:
     fallback_used: bool = False
     bypass_reason: TokenOptimizationBypassReason | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def _validate_non_negative_optional_token(
+    value: int | None,
+    field_name: str,
+) -> None:
+    if value is not None and value < 0:
+        raise ValueError(f"{field_name} cannot be negative")
+
+
+class ContextFragmentPriority(StrEnum):
+    """Priority tier for context packing decisions."""
+
+    MUST_KEEP = "must_keep"
+    HIGH_PRIORITY = "high_priority"
+    COMPRESSIBLE = "compressible"
+    DROPPABLE = "droppable"
+
+
+class ContextPackingDecisionKind(StrEnum):
+    """Per-fragment packing action aligned with receipt/report language."""
+
+    KEEP = "keep"
+    COMPACT = "compact"
+    DEDUPLICATE = "deduplicate"
+    DROP = "drop"
+    TRUNCATE = "truncate"
+    BYPASS = "bypass"
+    FALLBACK = "fallback"
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPackingBudget:
+    """Token budget envelope for context packing without counting logic."""
+
+    max_input_tokens: int | None = None
+    reserved_output_tokens: int | None = None
+    target_context_tokens: int | None = None
+    hard_context_limit: int | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_negative_optional_token(self.max_input_tokens, "max_input_tokens")
+        _validate_non_negative_optional_token(
+            self.reserved_output_tokens, "reserved_output_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.target_context_tokens, "target_context_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.hard_context_limit, "hard_context_limit"
+        )
+        if (
+            self.target_context_tokens is not None
+            and self.hard_context_limit is not None
+            and self.target_context_tokens > self.hard_context_limit
+        ):
+            raise ValueError(
+                "target_context_tokens cannot exceed hard_context_limit"
+            )
+        if (
+            self.reserved_output_tokens is not None
+            and self.max_input_tokens is not None
+            and self.reserved_output_tokens > self.max_input_tokens
+        ):
+            raise ValueError(
+                "reserved_output_tokens cannot exceed max_input_tokens"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPackingDecision:
+    """Per-fragment packing decision for dedupe and budget-aware packing."""
+
+    fragment_id: str
+    decision: ContextPackingDecisionKind
+    priority: ContextFragmentPriority
+    reason: str | None = None
+    original_tokens: int | None = None
+    optimized_tokens: int | None = None
+    saved_tokens: int | None = None
+    related_fragment_ids: tuple[str, ...] = ()
+    strategy: TokenOptimizationStrategyRef | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.fragment_id:
+            raise ValueError("fragment_id cannot be empty")
+        _validate_non_negative_optional_token(self.original_tokens, "original_tokens")
+        _validate_non_negative_optional_token(self.optimized_tokens, "optimized_tokens")
+        _validate_non_negative_optional_token(self.saved_tokens, "saved_tokens")
+        if (
+            self.original_tokens is not None
+            and self.optimized_tokens is not None
+            and self.saved_tokens is not None
+            and self.saved_tokens != self.original_tokens - self.optimized_tokens
+        ):
+            raise ValueError(
+                "saved_tokens must equal original_tokens - optimized_tokens"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextDeduplicationMetadata:
+    """Cross-fragment duplicate linkage without dedupe execution logic."""
+
+    duplicate_of_fragment_id: str | None = None
+    duplicate_fragment_ids: tuple[str, ...] = ()
+    dedupe_key: str | None = None
+    exact: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.dedupe_key is not None and not self.dedupe_key:
+            raise ValueError("dedupe_key cannot be empty")
+        if any(not fragment_id for fragment_id in self.duplicate_fragment_ids):
+            raise ValueError("duplicate_fragment_ids cannot contain empty strings")
+
+
+@dataclass(frozen=True, slots=True)
+class ContextFragmentPackingMetadata:
+    """Per-fragment packing metadata for priority-tiered context packing."""
+
+    priority: ContextFragmentPriority = ContextFragmentPriority.COMPRESSIBLE
+    required: bool = False
+    protected: bool = False
+    budget: ContextPackingBudget | None = None
+    deduplication: ContextDeduplicationMetadata | None = None
+    decisions: tuple[ContextPackingDecision, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.required and self.priority is ContextFragmentPriority.DROPPABLE:
+            raise ValueError(
+                "required fragments cannot have droppable priority"
+            )
+        if self.protected and self.priority is ContextFragmentPriority.DROPPABLE:
+            raise ValueError(
+                "protected fragments cannot have droppable priority"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPackingReceiptMetadata:
+    """Receipt explanation metadata for context packing without receipt builders."""
+
+    budget: ContextPackingBudget | None = None
+    decisions: tuple[ContextPackingDecision, ...] = ()
+    total_original_tokens: int | None = None
+    total_optimized_tokens: int | None = None
+    total_saved_tokens: int | None = None
+    strategy_breakdown: Mapping[str, int] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_negative_optional_token(
+            self.total_original_tokens, "total_original_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.total_optimized_tokens, "total_optimized_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.total_saved_tokens, "total_saved_tokens"
+        )
+        if (
+            self.total_original_tokens is not None
+            and self.total_optimized_tokens is not None
+            and self.total_saved_tokens is not None
+            and self.total_saved_tokens
+            != self.total_original_tokens - self.total_optimized_tokens
+        ):
+            raise ValueError(
+                "total_saved_tokens must equal total_original_tokens - total_optimized_tokens"
+            )
+        for strategy_id, saved in self.strategy_breakdown.items():
+            if saved < 0:
+                raise ValueError(
+                    f"strategy_breakdown[{strategy_id!r}] cannot be negative"
+                )
