@@ -70,6 +70,8 @@ LKW is the **primary product workload** used to discover missing platform capabi
 
 **ID note:** `LKW-PF0`–`LKW-PF7` below are the **strategic platform-proof roadmap**. Closed H1 follow-up rows **`LKW-PF1`**/**`LKW-PF2`** (RuntimeEvent `TOOL_*`, `RunArtifactBundle` / `shadow_workspace_id`) in §5 Platform follow-ups are a separate historical track — same prefix family, different scope.
 
+**LKW-PF-ERR-1 (Done):** Completed as a platform proof workload — `intergrax/runtime/observability/problem_reporter.py` plus `tests/test_lkw_problem_signal_failure_proof.py`. Does **not** change LKW product runtime behavior or implement endpoint failure handling. Proves LKW-shaped `lkw.retrieve_failed` problem signals through the platform helper (`report_problem` / `ProblemReporter`), not manual `PlatformProblemSignal` / `ObservabilityExportEnvelope` / policy construction.
+
 | ID | Status | Meaning |
 |----|--------|---------|
 | **LKW-PF0** | **Done / Closed** | **Platform proof maturity bar** — defines platform proof, operational proof, production-grade readiness, and production hardening backlog. Canonical definitions: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. |

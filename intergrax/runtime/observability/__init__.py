@@ -64,6 +64,13 @@ from intergrax.runtime.observability.problem_export import (
     envelope_from_problem_signal,
     problem_signal_export_status,
 )
+from intergrax.runtime.observability.problem_reporter import (
+    ProblemReportContext,
+    ProblemReporter,
+    build_problem_export_envelope,
+    build_problem_signal,
+    report_problem,
+)
 from intergrax.runtime.observability.problem_signal import (
     PLATFORM_PROBLEM_SIGNAL_SCHEMA,
     PROBLEM_KIND_PLATFORM_ARTIFACT_FAILURE,
@@ -232,6 +239,11 @@ __all__ = [
     "PROBLEM_STATUS_IGNORED",
     "PROBLEM_STATUS_RESOLVED",
     "PlatformProblemSignal",
+    "ProblemReportContext",
+    "ProblemReporter",
+    "build_problem_export_envelope",
+    "build_problem_signal",
+    "report_problem",
     "ExtensionSchemaError",
     "ObservabilityEmitter",
     "PayloadSchemaRegistry",
