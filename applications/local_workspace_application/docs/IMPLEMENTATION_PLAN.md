@@ -794,5 +794,7 @@ Not a Sentry, vendor observability, token optimization, or exporter step.
 
 **OBS-VENDOR-0 (platform plan):** LKW-OBS-VIEW-1A closeout recorded here; next steps tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-1` … `OBS-VENDOR-8`).
 
+**Platform proof candidate — OBS-PROBLEM:** before `LKW-OBS-SENTRY`, the platform must define a plugin-extensible problem/error signal contract in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase `OBS-PROBLEM`. LKW is only the controlled failure proof workload; LKW must not own a custom issue model or call Sentry/vendor SDKs directly.
+
 **Platform proof candidate — OBS-SENTRY:** future Sentry error-monitoring proof tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-SENTRY; LKW is not the integration owner.
 

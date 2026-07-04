@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-06-30 — **OBS-VENDOR-5** Elasticsearch backend selection wired into operator config; LKW OTLP proof path closed.
+**Last updated:** 2026-07-04 — **OBS-PROBLEM-0** plugin-extensible platform problem/error signal contract defined; Sentry remains later vendor projection.
 
 ---
 
@@ -494,6 +494,91 @@ Rationale: current export records are event/log-oriented (`run_id`, `event_type`
 | Operator / bootstrap wiring | **OBS-VENDOR-2** **Done**; **OBS-VENDOR-5** **Done** |
 | Production export end-to-end | **OBS-VENDOR-7** |
 | LLM-trace semantic vendors | **OBS-VENDOR-8** (later) |
+
+---
+
+## Phase OBS-PROBLEM — Plugin-extensible problem/error signal contract (Planned)
+
+**Purpose:** Define a vendor-neutral platform contract for problem/error/issue signals before implementing Sentry or other issue-monitoring providers.
+
+**Why:** Event/log timeline answers “what happened”. Problem/error signal answers “what broke and needs attention”. The LKW proof path already validates normal event/log timeline export through the observability spine; the missing platform proof is problem classification, safe error context, plugin-defined application/agent-specific problem metadata, reference-only problem artifacts, and future vendor mapping (especially Sentry-style issue triage).
+
+**Relationship to existing observability:** Problem signals must flow through the same observability spine:
+
+```text
+ObservabilityExportEnvelope
+→ ObservabilityExportPolicy
+→ ObservabilityVendorIntegrationContract.export()
+→ vendor deliver_payload()
+```
+
+**Vendor boundary:** Sentry is a later vendor projection for issue triage. Sentry must not define the platform problem model. LKW, agents, runtime loops, and application code must not call Sentry SDK/API directly.
+
+**Plugin extensibility:** The problem signal must support typed application/agent/plugin-specific extensions. Platform owns the core problem/error signal contract; application/agent/plugin code may define typed custom extensions; policy owns sanitization and redaction; vendor providers own delivery/projection.
+
+**Reuse / alignment:** Custom problem metadata should reuse or explicitly align with:
+
+- **`ApplicationObservabilityAttributes`** — typed, namespaced, declared custom fields
+- **`SanitizedApplicationObservabilityAttributes`** — policy-sanitized export surface
+- **`ObservabilityArtifactReference`** — reference-only artifact metadata
+
+Custom fields must be typed, namespaced, declared, and sanitized. No arbitrary raw `dict` payloads.
+
+**Core platform fields (non-final candidate list):**
+
+| Field | Role |
+|-------|------|
+| `problem_id` | Stable problem/issue identity |
+| `problem_kind` | Classification (e.g. exception, policy_violation, tool_failure) |
+| `severity` | Operator triage priority |
+| `source_layer` | Tier/layer origin (runtime, agent, application) |
+| `source_component` | Component within layer |
+| `status` | Problem lifecycle status |
+| `safe_message` | Redacted human-readable summary |
+| `error_code` | Stable machine-readable code |
+| `exception_type` | Exception class name when applicable |
+| `run_id` | Correlation to run |
+| `task_id` | Correlation to task |
+| `event_id` | Correlation to spine event |
+| `agent_id` | Originating agent |
+| `tool_id` | Originating tool when applicable |
+| `capability` | Capability context |
+| `correlation_id` | Cross-signal correlation |
+| `occurred_at` | Problem timestamp |
+
+**Extension fields:** Applications/agents may define typed custom attributes through inheritance, for example:
+
+- `LkwProblemAttributes(ApplicationObservabilityAttributes)`
+- `AgentProblemAttributes(ApplicationObservabilityAttributes)`
+
+**Artifact refs:** Problem artifacts must be reference-only using **`ObservabilityArtifactReference`** or a directly compatible model (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`). No raw artifact bodies in problem signals.
+
+**Redaction / safety — explicitly forbidden in problem signals and export:**
+
+- raw prompts
+- raw queries
+- raw documents
+- raw chunks
+- raw completions
+- raw tool args
+- secrets
+- absolute paths
+- full local paths
+- arbitrary raw payload dictionaries
+
+Policy owns sanitization before export; forbidden fields are dropped or hashed.
+
+**LKW role:** LKW is the proof workload for controlled failure scenarios. LKW is not the owner of the problem/error integration. LKW must not create an LKW-only issue model.
+
+### OBS-PROBLEM task register
+
+| ID | Type | Priority | Status | Deliverable | Acceptance |
+|----|------|----------|--------|-------------|------------|
+| **OBS-PROBLEM-0** | Docs/Architecture | P1 | **Done** | Define plugin-extensible platform problem/error signal contract | Plan states core platform fields, plugin extension model, policy/redaction boundary, reference-only artifacts, vendor boundary, and LKW proof workload role |
+| **OBS-PROBLEM-1** | Code | P1 | Planned | Minimal vendor-neutral `ProblemSignal` model | Core fields are typed; application/agent attributes use typed extension contract; artifact refs are reference-only; no vendor SDK; tests cover unsafe custom fields |
+| **OBS-PROBLEM-2** | Code | P1 | Planned | Map problem signals through observability export policy/envelope | Problem signals become policy-safe export payloads; forbidden fields are dropped/hashed; exporter failure does not fail product runs |
+| **LKW-PF-ERR-1** | Test/Docs | P1 | Planned | Controlled LKW failure proof for platform problem signals | LKW triggers a controlled failure and proves a sanitized problem signal is emitted/exported without raw content leakage |
+| **OBS-SENTRY-1** | Code | P2 | Planned / Later | Sentry provider maps sanitized problem signals to Sentry issues | Sentry provider lives under observability backend provider package; runtime/LKW/agents do not call Sentry SDK directly |
 
 ---
 
