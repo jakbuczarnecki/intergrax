@@ -722,6 +722,44 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 - No vendor integration, no Sentry, no token optimizer, no new exporter or telemetry bus.
 - **Platform propagation classification:** current implementation is **LKW-specific proof projection** (`serving/proof_summary.py`); possible future platform follow-up: generic application proof summary if reused by another Tier-3 app.
 
+#### LKW-3D — proof summary verification closeout
+
+**Status:** **Passed** — verification-only proof refresh after LKW-3C.
+
+Focused verification:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_lkw_proof_summary.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+Result: 9 passed in 31.84s
+```
+
+Verified:
+
+```text
+local.workspace.pipeline still runs local_indexer -> local_search -> local_synthesizer.
+Required metadata keys are present:
+application_run_summary.v1
+lkw_evidence.v1
+runtime_event_summary.v1
+run_artifact_bundle.v1
+lkw_proof_summary.v1
+lkw_proof_summary.v1.status == "passed".
+Evidence, synthesis, artifact, and safety blocks are present in the proof summary.
+content_missing is not exposed as a successful pipeline failure.
+Shadow artifact is present.
+Original source file remains unchanged.
+Raw fixture text, raw query, full trace, and unsafe diagnostic keys are not exposed.
+```
+
+**Classification:**
+
+```text
+Verification-only closeout.
+lkw_proof_summary.v1 remains an LKW-specific proof UX / inspectability projection.
+No new platform mechanism was introduced.
+Not a Sentry, vendor observability, token optimization, or exporter step.
+```
+
 ---
 
 ## 6. Post-LKW.1 hardening and adoption waves
