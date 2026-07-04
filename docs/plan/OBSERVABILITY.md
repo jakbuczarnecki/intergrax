@@ -12,7 +12,7 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). OBSERVABILITY owns token savings attribution, optimization receipts visibility, typed diagnostic payloads, metrics, and regression-gate reporting through the Harness Observability Spine. Token Optimization telemetry must be observable through the same observability spine — do not create a private telemetry bus for token optimization. **TOKEN-6A-lite** is an early telemetry-shape slice for savings attribution through the existing observability spine; it must not create a private telemetry bus. **OBS-HEALTH-lite** is a minimal operator-visible status slice for exporter/token telemetry health, not full observability production hardening. Full **OBS-VENDOR** production hardening remains **Planned**. **LKW-PF6** ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF) is the platform proof workload for token savings telemetry and regression gates.
 
-**Last updated:** 2026-07-04 — **OBS-PROBLEM-0** plugin-extensible platform problem/error signal contract defined; Sentry remains later vendor projection.
+**Last updated:** 2026-07-04 — **OBS-PROBLEM-1** minimal `PlatformProblemSignal` model implemented; export mapping deferred to OBS-PROBLEM-2.
 
 ---
 
@@ -575,7 +575,7 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
 | **OBS-PROBLEM-0** | Docs/Architecture | P1 | **Done** | Define plugin-extensible platform problem/error signal contract | Plan states core platform fields, plugin extension model, policy/redaction boundary, reference-only artifacts, vendor boundary, and LKW proof workload role |
-| **OBS-PROBLEM-1** | Code | P1 | Planned | Minimal vendor-neutral `ProblemSignal` model | Core fields are typed; application/agent attributes use typed extension contract; artifact refs are reference-only; no vendor SDK; tests cover unsafe custom fields |
+| **OBS-PROBLEM-1** | Code | P1 | **Done** | Minimal vendor-neutral `ProblemSignal` model | `intergrax/runtime/observability/problem_signal.py` — `PlatformProblemSignal`; plugin-extensible taxonomy is string-based (well-known constants, not closed enums); typed app/agent attributes reuse `ApplicationObservabilityAttributes`; artifacts reuse `ObservabilityArtifactReference`; export mapping deferred to OBS-PROBLEM-2 |
 | **OBS-PROBLEM-2** | Code | P1 | Planned | Map problem signals through observability export policy/envelope | Problem signals become policy-safe export payloads; forbidden fields are dropped/hashed; exporter failure does not fail product runs |
 | **LKW-PF-ERR-1** | Test/Docs | P1 | Planned | Controlled LKW failure proof for platform problem signals | LKW triggers a controlled failure and proves a sanitized problem signal is emitted/exported without raw content leakage |
 | **OBS-SENTRY-1** | Code | P2 | Planned / Later | Sentry provider maps sanitized problem signals to Sentry issues | Sentry provider lives under observability backend provider package; runtime/LKW/agents do not call Sentry SDK directly |
