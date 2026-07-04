@@ -10,6 +10,7 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from local_workspace_application.serving.proof_summary import attach_lkw_proof_summary_metadata
 from local_workspace_application.serving.run_artifact_metadata import ensure_run_artifact_bundle_metadata
 from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
 from local_workspace_application.serving.runtime_event_metadata import attach_runtime_event_summary_metadata
@@ -60,6 +61,10 @@ class LocalWorkspaceRunService:
             task_result=result,
             nexus_loop=self.nexus_loop,
             tenant_id=body.tenant_id or "default",
+        )
+        attach_lkw_proof_summary_metadata(
+            metadata,
+            capability=body.capability or "local.workspace.search",
         )
         return LocalWorkspaceRunResponseV1(
             task_id=result.task_id,

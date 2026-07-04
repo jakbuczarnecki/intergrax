@@ -713,6 +713,15 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 | Policy/raw tool reason at RuntimeEvent layer | Platform deferred | — |
 | Developer first-run/adoption simplification | LKW-H3 | Helper/template/docs ergonomics |
 
+### LKW-3C — pipeline proof summary metadata (post-LKW.2)
+
+**Status:** **Done** — `lkw_proof_summary.v1` added as LKW proof usability / inspectability increment.
+
+- Built from existing metadata only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`.
+- Redacted reviewer-facing proof verdict on `POST /v1/local_workspace/run` when `capability=local.workspace.pipeline`.
+- No vendor integration, no Sentry, no token optimizer, no new exporter or telemetry bus.
+- **Platform propagation classification:** current implementation is **LKW-specific proof projection** (`serving/proof_summary.py`); possible future platform follow-up: generic application proof summary if reused by another Tier-3 app.
+
 ---
 
 ## 6. Post-LKW.1 hardening and adoption waves

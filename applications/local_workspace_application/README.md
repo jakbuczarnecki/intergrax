@@ -238,8 +238,9 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 | `lkw_evidence.v1` | Search evidence and synthesis diagnostics |
 | `runtime_event_summary.v1` | Redacted runtime events per run |
 | `run_artifact_bundle.v1` | References to shadow artifacts produced |
+| `lkw_proof_summary.v1` | Redacted reviewer-facing proof verdict; built from existing platform/application metadata above — not an observability exporter, not a vendor integration |
 
-All four are present in a successful pipeline run.
+All four platform/application keys plus `lkw_proof_summary.v1` are present in a successful pipeline run.
 
 ### Troubleshooting
 

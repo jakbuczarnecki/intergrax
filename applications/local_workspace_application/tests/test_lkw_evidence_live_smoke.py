@@ -28,6 +28,7 @@ _APP_SUMMARY_KEY = "application_run_summary.v1"
 _EVIDENCE_KEY = "lkw_evidence.v1"
 _RUNTIME_EVENT_SUMMARY_KEY = "runtime_event_summary.v1"
 _ARTIFACT_BUNDLE_KEY = "run_artifact_bundle.v1"
+_PROOF_SUMMARY_KEY = "lkw_proof_summary.v1"
 _PIPELINE_AGENTS = ("local_indexer", "local_search", "local_synthesizer")
 _PIPELINE_TENANT_ID = "tenant-lkw-pipeline"
 
@@ -44,6 +45,8 @@ _UNSAFE_DIAGNOSTIC_KEYS = frozenset(
         "chunks",
         "document",
         "documents",
+        "full_trace",
+        "agent_run_trace",
     }
 )
 
@@ -249,6 +252,56 @@ def _assert_runtime_event_tools(metadata: dict[str, Any], expected_tool_ids: set
     seen = {str(entry.get("tool_id")) for entry in tools if isinstance(entry, dict)}
     missing = expected_tool_ids - seen
     assert not missing, f"missing tool visibility: {sorted(missing)}; seen={sorted(seen)}"
+
+
+def _assert_proof_summary(metadata: dict[str, Any]) -> dict[str, Any]:
+    assert _PROOF_SUMMARY_KEY in metadata
+    proof = metadata[_PROOF_SUMMARY_KEY]
+    assert isinstance(proof, dict)
+    assert proof.get("schema_version") == _PROOF_SUMMARY_KEY
+    assert proof.get("capability") == "local.workspace.pipeline"
+    assert proof.get("status") == "passed"
+    assert proof.get("agent_order") == list(_PIPELINE_AGENTS)
+
+    tool_calls = proof.get("tool_calls_by_agent")
+    assert isinstance(tool_calls, dict)
+    assert tool_calls.get("local_indexer", 0) >= 1
+    assert tool_calls.get("local_search", 0) >= 1
+    assert tool_calls.get("local_synthesizer", 0) >= 1
+
+    evidence = proof.get("evidence")
+    assert isinstance(evidence, dict)
+    assert evidence.get("present") is True
+    assert int(evidence.get("count", 0)) >= 1
+    if evidence.get("source_refs_present") is not None:
+        assert evidence.get("source_refs_present") is True
+
+    synthesis = proof.get("synthesis")
+    assert isinstance(synthesis, dict)
+    assert synthesis.get("shadow_write") is True
+    assert synthesis.get("content_missing") is not True
+    assert synthesis.get("artifact_present") is True
+
+    artifact = proof.get("artifact")
+    assert isinstance(artifact, dict)
+    assert artifact.get("bundle_present") is True
+
+    safety = proof.get("safety")
+    assert isinstance(safety, dict)
+    assert safety.get("raw_trace_exposed") is False
+    assert safety.get("raw_content_exposed") is False
+
+    serialized = json.dumps(proof)
+    assert _FIXTURE_TEXT not in serialized
+    assert _QUERY not in serialized
+    for key in _UNSAFE_DIAGNOSTIC_KEYS:
+        assert f'"{key}"' not in serialized
+
+    assert _APP_SUMMARY_KEY in metadata
+    assert _EVIDENCE_KEY in metadata
+    assert _RUNTIME_EVENT_SUMMARY_KEY in metadata
+    assert _ARTIFACT_BUNDLE_KEY in metadata
+    return proof
 
 
 def test_lkw_evidence_live_smoke_index(
@@ -469,6 +522,7 @@ def test_lkw_evidence_live_smoke_pipeline(
     _assert_raw_text_not_in_evidence(evidence, _FIXTURE_TEXT)
     _assert_artifact_bundle(metadata)
     _assert_runtime_event_summary_present_and_redacted(metadata)
+    _assert_proof_summary(metadata)
     _assert_companion_metadata_unchanged(metadata)
 
     assert fixture_doc.read_bytes() == original_bytes
