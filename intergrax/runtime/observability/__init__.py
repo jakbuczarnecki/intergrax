@@ -60,6 +60,10 @@ from intergrax.runtime.observability.otlp_exporter import (
     OtlpObservabilityExporterConfig,
     OtlpTransport,
 )
+from intergrax.runtime.observability.problem_export import (
+    envelope_from_problem_signal,
+    problem_signal_export_status,
+)
 from intergrax.runtime.observability.problem_signal import (
     PLATFORM_PROBLEM_SIGNAL_SCHEMA,
     PROBLEM_KIND_PLATFORM_ARTIFACT_FAILURE,
@@ -170,6 +174,7 @@ __all__ = [
     "build_otlp_observability_exporter",
     "build_otlp_observability_integration",
     "parse_observability_export_backend_id",
+    "problem_signal_export_status",
     "problem_signal_is_content_safe",
     "RuntimeEventExportSource",
     "SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
@@ -181,6 +186,7 @@ __all__ = [
     "EmittedDiagnostic",
     "ExportPolicyResult",
     "envelope_from_gateway_call_source",
+    "envelope_from_problem_signal",
     "envelope_from_journal_ref",
     "envelope_from_rag_call",
     "envelope_from_runtime_event",

@@ -81,6 +81,7 @@ class ExportRecordKind(StrEnum):
     LLM_CALL = "llm_call"
     DIAGNOSTIC = "diagnostic"
     JOURNAL_REF = "journal_ref"
+    PROBLEM_SIGNAL = "problem_signal"
 
 
 class ExportStatus(StrEnum):
@@ -122,6 +123,10 @@ class ObservabilityExportEnvelope(BaseModel):
     source_schema_id: str = ""
     correlation_id: str = ""
     event_id: str = ""
+
+    problem_kind: str = ""
+    problem_severity: str = ""
+    problem_error_code: str = ""
 
     application_attributes: ApplicationObservabilityAttributes | None = None
     sanitized_application_attributes: SanitizedApplicationObservabilityAttributes | None = None
