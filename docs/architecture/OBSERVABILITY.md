@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../audit/OBSERVABILITY.md)  
-**Last updated:** 2026-06-24 — **OECP** architecture canon; OBS-BUS + event catalog spine **Done**
+**Last updated:** 2026-07-05 — **OBS-PROBLEM-3** problem signal emission boundary canon
 
 ---
 
@@ -170,6 +170,147 @@ OECP transforms spine data into eval-grade artifacts: **evidence ledger** record
 | Domain extension | Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily (§4.4). |
 
 Audit stores (`RuntimeEventPersistence`, `RunTraceWriter`) persist spine-normalized records — they are **not** alternate semantic owners. Custom `RuntimeEventBus` handlers and journal export plugins are subscribers/sinks, not parallel buses.
+
+---
+
+## Problem signal emission boundary
+
+**Normative rule:** `RuntimeEvent` answers **what happened**; `PlatformProblemSignal` answers **what broke and requires attention**. Problem signals are an explicit semantic classification at an **owned emission boundary** — not an automatic conversion from every `RuntimeEvent` or exception.
+
+`ProblemReporter` / `report_problem` (`intergrax/runtime/observability/problem_reporter.py`) is the developer-facing helper for building and exporting problems through the existing observability export path (`PlatformProblemSignal` → `ObservabilityExportEnvelope` → `ObservabilityExportPolicy` → `try_export_observability_envelope`). This section defines **where** that helper may be called. It does **not** add automatic runtime emission, routing/fanout, Sentry, Elastic, OTLP, or vendor-specific behavior.
+
+### A. ProblemSignal role
+
+| Property | Requirement |
+|----------|-------------|
+| Semantic model | `PlatformProblemSignal` is the vendor-neutral problem/error signal model (`problem_signal.py`). |
+| Not a replacement for `RuntimeEvent` | Execution/audit history remains on the spine; problems are a separate explicit plane. |
+| Not a generic log record | Problems require classified taxonomy fields — not unstructured diagnostic text. |
+| Not vendor-specific | No Sentry/Elastic/OTLP semantics in the platform model; vendors project sanitized envelopes only. |
+| Attention signal | Represents a classified failure/problem requiring operator or developer attention. |
+
+### B. Allowed emitters
+
+Problem signals **MAY** be emitted only from boundaries that **own failure classification** for a run/task and can preserve correlation identifiers:
+
+| Boundary | Examples |
+|----------|----------|
+| **Application** | Tier-3 endpoint handler, command handler, pipeline boundary, or composition root that owns product-level failure classification. |
+| **Runtime** | Runtime executor, graph boundary, agent run boundary, tool runtime wrapper, or policy-enforced runtime boundary. |
+| **Integration** | Platform integration wrapper that classifies a provider/backend failure into a platform problem without leaking vendor SDK details. |
+| **Explicit tool wrapper** | `ToolRuntime` or an approved wrapper around tool execution — **not** arbitrary tool internals. |
+
+The owning boundary **SHOULD** call `report_problem(...)` or `ProblemReporter(...).report(...)` once it has decided the failure is reportable and has stable `problem_kind`, `severity`, `source_layer`, `source_component`, and `error_code` when available.
+
+### C. Discouraged or forbidden emitters
+
+| Location | Rule |
+|----------|------|
+| Low-level utility functions | **MUST NOT** own platform problem taxonomy. |
+| Raw model/provider client code | **MUST NOT** emit `PlatformProblemSignal`; raise typed errors or return structured failures instead. |
+| Ad-hoc agent helper functions | **MUST NOT** report problems outside an agent run boundary that owns classification. |
+| LKW-only private logging code | **MUST NOT** define an LKW-only issue model or bypass the platform helper. |
+| Vendor provider internals | **MUST NOT** be semantic owners of platform problems or platform taxonomy. |
+| External sink/provider code | **MUST NOT** define Intergrax problem kinds or severities. |
+| Code without run/task/correlation ownership | **MUST NOT** call `report_problem` — use `ProblemReportContext` with available correlation fields at the owning boundary. |
+
+### D. Duplicate prevention
+
+| Rule | Detail |
+|------|--------|
+| One owner per failure | One failure **SHOULD** have one owning emission boundary. |
+| Lower layers raise, upper layers classify | Lower layers **MAY** raise typed errors or attach typed context; they **SHOULD NOT** double-report if a higher boundary owns classification. |
+| Correlation preservation | The boundary that reports **MUST** populate `run_id`, `task_id`, `correlation_id`, and related fields when available (`ProblemReportContext`). |
+| Export failure isolation | `try_export_observability_envelope` failure isolation **MUST NOT** recursively create an unbounded chain of problem signals — export failures are isolated; optional single observability-plane report is a separate explicit decision at an observability boundary. |
+
+### E. RuntimeEvent relationship
+
+| Rule | Detail |
+|------|--------|
+| No automatic conversion | Not every `RuntimeEvent` becomes a `PlatformProblemSignal`. |
+| No automatic exception mapping | Not every exception automatically becomes a problem signal. |
+| Retries/fallbacks | Not every retry or fallback is a problem — only semantically classified failures. |
+| Required classification | A problem signal **MUST** include explicit taxonomy: `problem_kind`, `severity`, `source_layer`, `source_component`, and `error_code` when available. |
+| Spine remains canonical | `RuntimeEvent` remains the canonical execution/audit history on `RuntimeEventBus`. |
+| Export plane | `PlatformProblemSignal` is the explicit problem/error plane exported via `ObservabilityExportPolicy` and existing envelope mapping (`problem_export.py`). |
+
+A boundary **MAY** correlate a problem to a spine `event_id` when both exist; correlation does **not** imply automatic creation from the event.
+
+### F. Safety rules
+
+Problem signals and their export envelopes **MUST** follow the same content-safety posture as observability export:
+
+| Forbidden | Required alternative |
+|-----------|---------------------|
+| Raw exception serialization (stack traces, `str(exc)` bodies) | `error_code`, `exception_type` (class name only) when applicable |
+| Raw prompt/query/content/chunks/tool_args | Typed `ApplicationObservabilityAttributes` with declared safe fields only |
+| Raw local file paths | `ObservabilityArtifactReference` (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) |
+| Raw `dict` payload/context/details/metadata | Typed attributes and reference-only artifacts |
+| Secrets | Never — policy drops or hashes forbidden fields |
+
+`ObservabilityExportPolicy` owns redaction/sanitization before export. Vendor providers receive **only** policy-safe envelopes.
+
+### G. Developer-facing examples
+
+**Application boundary — explicit classification:**
+
+```python
+from intergrax.runtime.observability.problem_reporter import ProblemReportContext, report_problem
+from intergrax.runtime.observability.problem_signal import PROBLEM_SOURCE_LAYER_APPLICATION
+
+context = ProblemReportContext(
+    run_id="run-fake-001",
+    task_id="task-fake-001",
+    correlation_id="corr-fake-001",
+    agent_id="agent-lkw",
+    capability="local.workspace.search",
+)
+
+await report_problem(
+    context=context,
+    problem_kind="lkw.retrieve_failed",
+    severity="error",
+    error_code="LKW_RETRIEVE_FAILED",
+    source_layer=PROBLEM_SOURCE_LAYER_APPLICATION,
+    source_component="local_workspace_search_handler",
+    tool_id="rag.retrieve",
+)
+```
+
+**Runtime/tool boundary — bound reporter:**
+
+```python
+from intergrax.runtime.observability.problem_reporter import ProblemReportContext, ProblemReporter
+from intergrax.runtime.observability.problem_signal import PROBLEM_SOURCE_LAYER_TOOL
+
+reporter = ProblemReporter(
+    context=ProblemReportContext(
+        run_id="run-fake-002",
+        task_id="task-fake-002",
+        correlation_id="corr-fake-002",
+    ),
+)
+
+await reporter.report(
+    problem_kind="platform.tool_failure",
+    severity="error",
+    error_code="TOOL_EXECUTION_FAILED",
+    source_layer=PROBLEM_SOURCE_LAYER_TOOL,
+    source_component="tool_runtime_wrapper",
+    tool_id="web.search",
+)
+```
+
+### H. Anti-examples (do not)
+
+- Do **not** call `sentry_sdk` (or any vendor SDK) from runtime, application, agent, or tool code.
+- Do **not** map LKW or domain code directly to Sentry, Elastic, or OTLP — use the platform export envelope and policy.
+- Do **not** emit the same failure from tool internals, agent helper, **and** endpoint (pick one owning boundary).
+- Do **not** serialize raw exception objects, raw context dicts, or query/content into problem fields.
+- Do **not** turn every `RuntimeEvent` (or every `ObservabilityEmitter.emit_step`) into a `PlatformProblemSignal`.
+- Do **not** add `ObservabilityEmitter.emit_problem`, automatic global exception hooks, or `RuntimeEventBus` subscribers that auto-emit problems (deferred / out of scope for OBS-PROBLEM-3).
+
+**Code references:** `problem_signal.py` · `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../plan/OBSERVABILITY.md).
 
 ---
 
