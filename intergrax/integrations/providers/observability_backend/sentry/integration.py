@@ -32,6 +32,7 @@ _SENTRY_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
     ObservabilityVendorSignal.LOGS,
     ObservabilityVendorSignal.TRACES,
     ObservabilityVendorSignal.METRICS,
+    ObservabilityVendorSignal.PROBLEMS,
 )
 
 SENTRY_SUPPORTED_SIGNALS = _SENTRY_SUPPORTED_SIGNALS

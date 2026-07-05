@@ -369,6 +369,8 @@ Platform contract: `FanoutObservabilityExporter` + `ObservabilityExportRoute` (`
 
 Sentry, Elastic, OTLP, Langfuse, and similar backends are **future provider projections** that receive policy-safe envelopes from configured route exporters. Runtime, application, agent, tool, and LKW code **MUST NOT** choose vendor destinations directly.
 
+Problem/error/issue information flows through the shared `ObservabilityVendorIntegrationContract`: vendors receive policy-safe `ObservabilityVendorPayload` with platform problem metadata (`problem_kind`, `problem_severity`, `problem_error_code`). Sentry may project problems to Sentry issues; Elasticsearch may project problems to indexed error/problem documents. The producer does not choose the backend — operator routing decides the destination; the vendor provider decides delivery projection.
+
 ### F. Out of scope (this boundary)
 
 - No Sentry, Elastic, or OTLP provider implementation.
