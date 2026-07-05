@@ -92,6 +92,18 @@ def test_sentry_bootstrap_team_creation_compatible_with_sentry_24() -> None:
     assert "os.replace" in bootstrap
 
 
+def test_sentry_bootstrap_membership_compatible_with_sentry_24() -> None:
+    bootstrap = _BOOTSTRAP_SH.read_text(encoding="utf-8")
+    assert "user=user" not in bootstrap
+    assert "user_id=user.id" in bootstrap
+    assert "user_email" in bootstrap
+    assert "user_is_active" in bootstrap
+    assert "role" in bootstrap
+    assert "Team.objects.get_or_create" in bootstrap
+    assert "Project.objects.get_or_create" in bootstrap
+    assert "os.replace" in bootstrap
+
+
 def test_sentry_bootstrap_sh_has_lf_line_endings_only() -> None:
     content = _BOOTSTRAP_SH.read_bytes()
     assert b"\r\n" not in content

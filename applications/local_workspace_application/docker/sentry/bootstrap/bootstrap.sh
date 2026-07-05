@@ -61,11 +61,20 @@ team, _ = Team.objects.get_or_create(
     slug=org_slug,
     defaults={'name': 'Intergrax Local Proof'},
 )
-OrganizationMember.objects.get_or_create(
+member, _ = OrganizationMember.objects.get_or_create(
     organization=org,
-    user=user,
-    defaults={'role': 'owner'},
+    user_id=user.id,
+    defaults={
+        'role': 'owner',
+        'user_email': email,
+        'user_is_active': True,
+    },
 )
+if member.role != 'owner' or member.user_email != email or not member.user_is_active:
+    member.role = 'owner'
+    member.user_email = email
+    member.user_is_active = True
+    member.save(update_fields=['role', 'user_email', 'user_is_active'])
 project, _ = Project.objects.get_or_create(
     organization=org,
     slug=project_slug,
