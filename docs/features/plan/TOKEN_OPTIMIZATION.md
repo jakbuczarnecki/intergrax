@@ -665,7 +665,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) — **Done / Closed** |
 | 3 | **TOKEN-OPT-3C-A** | Optimization layer and pipeline composition **contract** — **Done / Closed** |
 | 4 | **TOKEN-OPT-3C-B** | Deterministic exact deduplication layer — **Done / Closed** |
-| 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype |
+| 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype — **Done / Closed** |
 | 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer |
 | 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison |
 | 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims |
@@ -685,7 +685,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Exact deduplication | `rag_context_pack`, `conversation_history`, `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3C-B** | **Implemented** |
 | Near-deduplication | `rag_context_pack`, `conversation_history` | `lossless` / `experimental` | `balanced` | Yes | Yes | Yes | Post-3C eval | Deferred |
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
-| Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | Planned |
+| Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
 | Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | TOKEN-2 / TOKEN-6 extension | Deferred |
 | Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
@@ -839,18 +839,41 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 #### TOKEN-OPT-3D — budget-aware context packing prototype
 
-**Purpose:** Pack context into an explicit token budget while preserving `must_keep` and `high_priority` fragments.
+**Purpose:** Pack structured context fragments into an explicit **estimated character budget** while preserving `must_keep` and preferring `high_priority` fragments. This is a **char-budget prototype** packing layer, not provider-aware token-budget optimization.
+
+> **Important:** TOKEN-OPT-3D is a **char-budget prototype**. It must not be described as token-accurate optimization until a provider-aware tokenizer/counting adapter is introduced and measured.
 
 **Rules:**
 
-- `must_keep` survives
-- `high_priority` preferred
-- `compressible` compacted only under policy
-- `droppable` removed first
-- Fallback if budget cannot be satisfied safely
-- Packing savings measured **separately** from dedupe and truncation
+- `must_keep` survives; never dropped or truncated
+- `high_priority` preferred over `compressible` and `droppable`
+- `compressible` compacted only via safe whitespace normalization under budget pressure
+- `droppable` removed first under pressure; excluded by default even when budget remains
+- fallback if `must_keep` alone exceeds `max_chars` or protected-region validation fails
+- packing savings reported at character level only (`budget_unit = "chars"`); no token counter
 
-**Status:** Planned.
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/layers/budget_aware_packing.py` — `BudgetAwareContextPackingLayer`, `BudgetAwareContextPackingLayerConfig`, layer-local `BudgetAwarePackingInput` / `BudgetAwarePackingFragment`
+- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `tests/unit/runtime/token_optimization/test_budget_aware_packing_layer.py`
+
+**Closeout:**
+
+- standalone `BudgetAwareContextPackingLayer` implemented in its own file (no generic `layers.py`)
+- char-budget prototype only; `budget_unit = "chars"`; `max_chars` is an estimated character budget, not a token budget
+- no provider tokenizer / no model-specific token counter
+- operates on typed layer-local `BudgetAwarePackingInput` / `BudgetAwarePackingFragment`
+- temporary prototype payload passed through `request.metadata["packing_input"]` until a future engine routes structured layer payloads directly
+- `must_keep` fragments are never dropped
+- `droppable` fragments are dropped first under pressure
+- `compressible` fragments may only use safe whitespace compaction (no semantic summarization, no partial truncation)
+- no pipeline runtime engine added; no `ContextPackOptimizer` behavior changed
+- no benchmark/public claim update
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OBS-3E** — realistic corpus for stronger optimizer (or a small 3D refinement only if needed).
 
 ### TOKEN-OPT-3A acceptance
 
@@ -1100,7 +1123,7 @@ TOKEN-OPT-3A stronger optimizer roadmap, algorithm inventory, measurement sequen
 TOKEN-OPT-3B priority-tiered context packing contract — Done / Closed
 TOKEN-OPT-3C-A optimization layer and pipeline composition contract — Done / Closed
 TOKEN-OPT-3C-B deterministic exact deduplication layer — Done / Closed
-TOKEN-OPT-3D budget-aware context packing prototype — Planned
+TOKEN-OPT-3D budget-aware context packing prototype — Done / Closed
 TOKEN-OBS-3E realistic corpus for stronger optimizer — Planned
 TOKEN-OBS-3F baseline vs stronger optimizer comparison — Planned
 TOKEN-OBS-3G safe public wording / proof claims — Planned
