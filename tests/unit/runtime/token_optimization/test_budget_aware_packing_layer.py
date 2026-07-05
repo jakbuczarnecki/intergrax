@@ -360,6 +360,60 @@ def test_packing_decisions_contain_no_raw_fragment_content() -> None:
         }
 
 
+_TOKEN_NAMED_METADATA_FIELDS = (
+    "original_tokens",
+    "optimized_tokens",
+    "saved_tokens",
+    "total_original_tokens",
+    "total_optimized_tokens",
+    "total_saved_tokens",
+)
+
+_CHAR_LEVEL_METADATA_FIELDS = (
+    "budget_unit",
+    "max_chars",
+    "input_fragment_count",
+    "selected_fragment_count",
+    "dropped_fragment_count",
+    "compacted_fragment_count",
+    "must_keep_chars",
+    "final_chars",
+    "char_budget_satisfied",
+    "packing_decisions",
+    "saved_chars",
+    "dropped_chars",
+    "compacted_chars",
+)
+
+
+def test_metadata_excludes_context_packing_receipt_and_token_named_fields() -> None:
+    layer = _layer(100)
+    packing_input = _packing_input(
+        _fragment("mk", "alpha", ContextFragmentPriority.MUST_KEEP),
+        _fragment("drop", "droppable", ContextFragmentPriority.DROPPABLE),
+    )
+    result = layer.optimize(_request(packing_input=packing_input))
+
+    assert "context_packing_receipt" not in result.metadata
+    metadata_blob = str(result.metadata)
+    for field_name in _TOKEN_NAMED_METADATA_FIELDS:
+        assert field_name not in metadata_blob
+    for field_name in _CHAR_LEVEL_METADATA_FIELDS:
+        assert field_name in result.metadata
+
+
+def test_packing_decisions_retain_char_level_fields() -> None:
+    layer = _layer(100)
+    packing_input = _packing_input(
+        _fragment("mk", "alpha", ContextFragmentPriority.MUST_KEEP),
+    )
+    result = layer.optimize(_request(packing_input=packing_input))
+
+    for decision in result.metadata["packing_decisions"]:
+        assert "original_chars" in decision
+        assert "output_chars" in decision
+
+
 def test_normal_packing_does_not_override_previous_changes() -> None:
     layer = _layer(100)
     packing_input = _packing_input(

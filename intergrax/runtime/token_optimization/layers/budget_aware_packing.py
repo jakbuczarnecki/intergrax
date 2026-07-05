@@ -16,7 +16,6 @@ from typing import Any
 
 from intergrax.runtime.token_optimization.contracts import (
     ContextFragmentPriority,
-    ContextPackingDecision,
     ContextPackingDecisionKind,
     ProtectedRegionValidationStatus,
     StrategySafetyClass,
@@ -594,21 +593,6 @@ def _outcome_to_decision_dict(outcome: _FragmentOutcome) -> dict[str, Any]:
     }
 
 
-def _outcome_to_contract_decision(outcome: _FragmentOutcome) -> ContextPackingDecision:
-    # Char counts are stored in token fields for prototype receipt compatibility.
-    return ContextPackingDecision(
-        fragment_id=outcome.fragment_id,
-        decision=outcome.decision,
-        priority=outcome.priority,
-        reason=outcome.reason,
-        original_tokens=outcome.original_chars,
-        optimized_tokens=outcome.output_chars,
-        saved_tokens=outcome.original_chars - outcome.output_chars,
-        strategy=_BUILTIN_STRATEGY,
-        metadata={"budget_unit": _BUDGET_UNIT},
-    )
-
-
 def _build_metadata(
     *,
     base_config: BudgetAwareContextPackingLayerConfig,
@@ -649,9 +633,6 @@ def _build_metadata(
     saved_chars = max(0, total_input_chars - final_chars)
 
     packing_decisions = [_outcome_to_decision_dict(outcome) for outcome in outcomes]
-    contract_decisions = tuple(
-        _outcome_to_contract_decision(outcome) for outcome in outcomes
-    )
 
     metadata: dict[str, Any] = {
         "base_config": _config_mapping(base_config),
@@ -670,13 +651,6 @@ def _build_metadata(
         "saved_chars": saved_chars,
         "dropped_chars": dropped_chars,
         "compacted_chars": compacted_chars,
-        "context_packing_receipt": {
-            "decisions": contract_decisions,
-            "total_original_tokens": total_input_chars,
-            "total_optimized_tokens": final_chars,
-            "total_saved_tokens": saved_chars,
-            "metadata": {"budget_unit": _BUDGET_UNIT},
-        },
     }
     if fallback_reason is not None:
         metadata["fallback_reason"] = fallback_reason

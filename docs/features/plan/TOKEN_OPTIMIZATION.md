@@ -875,6 +875,21 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Next step:** **TOKEN-OBS-3E** — realistic corpus for stronger optimizer (or a small 3D refinement only if needed).
 
+#### TOKEN-OPT-3D-R — char-budget metadata naming refinement
+
+**Purpose:** Remove misleading token-named receipt fields from the char-budget prototype metadata.
+
+**Closeout:**
+
+- removed token-named receipt fields from char-budget prototype metadata (`context_packing_receipt` and token-named totals/decision fields)
+- retained char-level metadata only (`budget_unit`, `max_chars`, `packing_decisions` with `original_chars` / `output_chars`, etc.)
+- no algorithm change
+- no token counter / provider-aware tokenizer added
+
+> **Important:** TOKEN-OPT-3D remains a **char-budget prototype**. It must not be described as token-accurate optimization until a provider-aware tokenizer/counting adapter is introduced and measured.
+
+**Status:** **Done / Closed**.
+
 ### TOKEN-OPT-3A acceptance
 
 Done / Closed when:
