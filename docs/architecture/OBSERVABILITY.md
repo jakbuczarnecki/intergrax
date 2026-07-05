@@ -314,6 +314,73 @@ await reporter.report(
 
 ---
 
+## Problem signal routing/fanout boundary
+
+**Normative rule:** routing operates only on **policy-safe** `ObservabilityExportEnvelope` records — typically after `ObservabilityExportPolicy` and `try_export_observability_envelope`. Routing selects logical destinations; it does **not** decide problem semantics, sanitize raw data, or call vendor SDKs.
+
+### A. Routing role
+
+| Property | Requirement |
+|----------|-------------|
+| Input plane | Policy-safe envelopes only — not raw `PlatformProblemSignal`, exceptions, or unsanitized attributes. |
+| No semantic classification | Routing **MUST NOT** decide `problem_kind`, severity, or error taxonomy. |
+| No sanitization | Routing **MUST NOT** apply redaction or replace `ObservabilityExportPolicy`. |
+| No vendor SDKs | Routing **MUST NOT** import or call Sentry, Elastic, OTLP, or other vendor clients. |
+| Post-policy selection | Operator/platform wiring selects destinations **after** policy has allowed export. |
+
+### B. Ownership split
+
+| Owner | Responsibility |
+|-------|----------------|
+| **Producer** | Semantic signal — `problem_kind`, severity, source context, correlation. |
+| **Policy** | Safety/redaction — `ObservabilityExportPolicy`, sanitized attributes, forbidden-field drops. |
+| **Operator routing** | Destination selection — which logical routes receive a policy-safe envelope. |
+| **Vendor provider** | Delivery format/projection — Sentry issue, Elastic document, OTLP span, etc. (future tasks). |
+
+### C. Routing criteria
+
+Allowed route filters (empty filter tuple = match all):
+
+| Criterion | Source |
+|-----------|--------|
+| `record_kind` | Envelope `record_kind` (e.g. `problem_signal`). |
+| `problem_kind` | Envelope `problem_kind`. |
+| `problem_severity` | Envelope `problem_severity`. |
+| `problem_error_code` | Envelope `problem_error_code`. |
+| Source fields | Envelope fields already present (`run_id`, `agent_id`, `capability`, `tool_id`, …). |
+| `source_layer` / `source_component` | Only when present on envelope or a future envelope extension. |
+| `tenant_id` / `workspace_id` | Only after policy allows them. |
+| Operator config flags | Later tasks — not routing module construction. |
+
+### D. Fanout behavior
+
+| Rule | Detail |
+|------|--------|
+| One input | One policy-safe envelope fans out to zero/one/many selected routes. |
+| Disabled routes | `enabled=False` routes are skipped. |
+| Filter skip | Non-matching filters skip a route without error. |
+| Per-route isolation | Exporter failure on one route **MUST NOT** block other routes. |
+| No propagation | Fanout exporter failures **MUST NOT** raise to callers by default. |
+| No recursive problems | Fanout **MUST NOT** recursively emit new `problem_signal` records by default. |
+
+Platform contract: `FanoutObservabilityExporter` + `ObservabilityExportRoute` (`export_routing.py`).
+
+### E. Vendor boundary
+
+Sentry, Elastic, OTLP, Langfuse, and similar backends are **future provider projections** that receive policy-safe envelopes from configured route exporters. Runtime, application, agent, tool, and LKW code **MUST NOT** choose vendor destinations directly.
+
+### F. Out of scope (this boundary)
+
+- No Sentry, Elastic, or OTLP provider implementation.
+- No runtime automatic problem emission.
+- No `ObservabilityEmitter.emit_problem`.
+- No `RuntimeEventBus` subscriber for problems.
+- No LKW endpoint wiring or operator bootstrap config.
+
+**Code references:** `export_routing.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-ROUTING-0 in [`plan/OBSERVABILITY.md`](../plan/OBSERVABILITY.md).
+
+---
+
 ## Required correlation fields
 
 Meaningful runtime events **SHOULD** preserve all correlation identifiers available at the emission boundary:

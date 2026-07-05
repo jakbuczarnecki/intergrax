@@ -53,6 +53,13 @@ from intergrax.runtime.observability.export_policy import (
     apply_observability_export_policy,
     try_export_observability_envelope,
 )
+from intergrax.runtime.observability.export_routing import (
+    FanoutObservabilityExporter,
+    ObservabilityExportRoute,
+    ObservabilityFanoutResult,
+    ObservabilityRouteDeliveryResult,
+    route_matches_envelope,
+)
 from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
 from intergrax.runtime.observability.jsonl_exporter import JsonlObservabilityExporter
 from intergrax.runtime.observability.otlp_exporter import (
@@ -170,9 +177,12 @@ __all__ = [
     "ObservabilityExportBackendRegistry",
     "ObservabilityExportBackendRegistryError",
     "ObservabilityExportEnvelope",
+    "ObservabilityExportRoute",
     "ObservabilityExportOperatorConfig",
     "ObservabilityExportOperatorConfigError",
     "ObservabilityExporter",
+    "ObservabilityFanoutResult",
+    "ObservabilityRouteDeliveryResult",
     "OtlpExportOperatorConfig",
     "DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY",
     "build_observability_export_integration",
@@ -192,6 +202,7 @@ __all__ = [
     "build_journal_ref_payload",
     "EmittedDiagnostic",
     "ExportPolicyResult",
+    "FanoutObservabilityExporter",
     "envelope_from_gateway_call_source",
     "envelope_from_problem_signal",
     "envelope_from_journal_ref",
@@ -204,6 +215,7 @@ __all__ = [
     "gateway_call_export_source_from_rag_call",
     "gateway_call_export_source_from_tool_call",
     "runtime_event_export_source_from_event",
+    "route_matches_envelope",
     "is_journal_export_enabled",
     "apply_observability_export_policy",
     "JournalExportSnapshot",
