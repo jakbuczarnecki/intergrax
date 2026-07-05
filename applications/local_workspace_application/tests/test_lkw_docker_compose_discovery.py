@@ -83,6 +83,20 @@ def test_sentry_bootstrap_does_not_run_upgrade() -> None:
     assert "sentry upgrade" not in bootstrap
 
 
+def test_sentry_bootstrap_sh_has_lf_line_endings_only() -> None:
+    content = _BOOTSTRAP_SH.read_bytes()
+    assert b"\r\n" not in content
+    assert b"\r" not in content
+    assert content.split(b"\n", 1)[0] == b"#!/usr/bin/env bash"
+
+
+def test_sentry_relay_uses_config_directory_not_file() -> None:
+    services = _SENTRY_SERVICES_FRAGMENT.read_text(encoding="utf-8")
+    assert "sentry-relay:" in services
+    assert "command: run -c /work/.relay" in services
+    assert "command: run -c /work/.relay/config.yml" not in services
+
+
 def test_sentry_secret_key_in_shared_env() -> None:
     services = _SENTRY_SERVICES_FRAGMENT.read_text(encoding="utf-8")
     assert "SENTRY_SECRET_KEY:" in services

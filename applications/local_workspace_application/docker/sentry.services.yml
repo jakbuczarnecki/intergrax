@@ -223,7 +223,7 @@ services:
 
   sentry-relay:
     image: getsentry/relay:24.8.0
-    command: run -c /work/.relay/config.yml
+    command: run -c /work/.relay
     volumes:
       - ./sentry/relay:/work/.relay:ro
     depends_on:
