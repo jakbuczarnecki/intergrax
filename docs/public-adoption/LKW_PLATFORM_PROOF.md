@@ -70,9 +70,9 @@ applications/local_workspace_application/scripts/run-elasticsearch-observability
 
 This is a **local Docker-based proof path**. You do not need code changes or a hosted service.
 
-- **Canonical start:** explicit `docker compose` from repository root (cross-platform, readable in public docs).
-- **Windows helpers:** `.bat` scripts are convenience wrappers around the same Compose stack; the maintainer team validates them on Windows, but they are not the only path.
-- **Linux/macOS:** use the same Compose command and `.sh` proof helpers shown in the steps below.
+- **Canonical start:** one-command helpers from repository root — `run-local-docker-all.bat` (Windows) or `run-local-docker-all.sh` (Linux/macOS). They auto-discover all `docker-compose.*.yml` overlays (Elasticsearch, Kibana, Sentry, etc.).
+- **Manual alternative:** explicit `docker compose -f ...` flags remain supported for operators who prefer manual control (see Step 1).
+- **Proof helpers:** `.bat` / `.sh` scripts for Elasticsearch and Sentry observability proofs call LKW endpoints after the stack is up.
 - **Public review assets:** screenshots or a short demo video are optional promotion assets, not requirements for the proof to pass.
 
 ---
@@ -94,7 +94,7 @@ PowerShell (for .bat convenience helpers)
 Docker Desktop
 ```
 
-The **canonical external reviewer path** is Docker Compose from repository root. Windows `.bat` helpers are the maintainer-validated convenience path on that platform; Linux and macOS reviewers should use the explicit Compose and shell commands documented here.
+The **canonical external reviewer path** is the one-command startup (`run-local-docker-all.bat` or `run-local-docker-all.sh`) from repository root. Explicit `docker compose -f ...` commands are documented as a manual alternative in Step 1.
 
 ---
 
