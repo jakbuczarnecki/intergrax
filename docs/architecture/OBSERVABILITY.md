@@ -367,13 +367,16 @@ Platform contract: `FanoutObservabilityExporter` + `ObservabilityExportRoute` (`
 
 ### E. Vendor boundary
 
-Sentry, Elastic, OTLP, Langfuse, and similar backends are **future provider projections** that receive policy-safe envelopes from configured route exporters. Runtime, application, agent, tool, and LKW code **MUST NOT** choose vendor destinations directly.
+Sentry is a **provider-owned projection** for `ObservabilityVendorPayload` with `ObservabilityVendorSignal.PROBLEMS`: the Sentry provider maps policy-safe problem metadata to Sentry issue-shaped events. **Sentry SDK is used only inside Sentry provider transport/client/factory code** (`intergrax/integrations/providers/observability_backend/sentry/`). Runtime, LKW, agents, and tools **MUST NOT** import or call `sentry_sdk`.
 
-Problem/error/issue information flows through the shared `ObservabilityVendorIntegrationContract`: vendors receive policy-safe `ObservabilityVendorPayload` with platform problem metadata (`problem_kind`, `problem_severity`, `problem_error_code`). Sentry may project problems to Sentry issues; Elasticsearch may project problems to indexed error/problem documents. The producer does not choose the backend — operator routing decides the destination; the vendor provider decides delivery projection.
+Elastic, OTLP, Langfuse, and similar backends are operator-selectable projections that receive policy-safe envelopes from configured route exporters. Runtime, application, agent, tool, and LKW code **MUST NOT** choose vendor destinations directly.
+
+Problem/error/issue information flows through the shared `ObservabilityVendorIntegrationContract`: vendors receive policy-safe `ObservabilityVendorPayload` with platform problem metadata (`problem_kind`, `problem_severity`, `problem_error_code`). Sentry projects problems to Sentry issues; Elasticsearch projects problems to indexed error/problem documents. The producer does not choose the backend — operator routing decides whether `problem_signal` goes to Sentry, Elasticsearch, both, or another backend; the vendor provider decides delivery projection.
+
+**Deferred:** LKW endpoint proof, docker compose, live Sentry proof, and operator bootstrap wiring are separate follow-on tasks.
 
 ### F. Out of scope (this boundary)
 
-- No Sentry, Elastic, or OTLP provider implementation.
 - No runtime automatic problem emission.
 - No `ObservabilityEmitter.emit_problem`.
 - No `RuntimeEventBus` subscriber for problems.

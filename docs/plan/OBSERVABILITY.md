@@ -581,13 +581,17 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 | **OBS-PROBLEM-3** | Docs | P1 | **Done** | Runtime/application problem emission boundary | Architecture canon defines allowed/discouraged emission boundaries, duplicate prevention, `RuntimeEvent` relationship, safety rules, and developer examples; boundary/contract only — no Sentry, Elastic, OTLP, routing/fanout, automatic exception catching, `ObservabilityEmitter.emit_problem`, or LKW endpoint wiring |
 | **OBS-ROUTING-0** | Code/Docs | P1 | **Done** | Routing/fanout design for `problem_signal` | Vendor-neutral `FanoutObservabilityExporter` operates on policy-safe `ObservabilityExportEnvelope`; route filters for `record_kind` / `problem_kind` / `problem_severity` / `problem_error_code`; per-route failure isolation; `export_with_result(...)` for explicit fanout diagnostics; `export(...)` remains protocol-compatible; no Sentry/Elastic/OTLP provider; no runtime auto-emission; no `ObservabilityEmitter.emit_problem`; no `RuntimeEventBus` subscriber; no LKW endpoint wiring; no operator bootstrap |
 | **OBS-VENDOR-PROBLEM-0** | Code | P1 | **Done** | Shared problem signal fields in observability vendor contract | `ObservabilityVendorSignal.PROBLEMS` added; `ObservabilityVendorPayload` preserves `problem_kind` / `problem_severity` / `problem_error_code`; `problem_signal` maps to `PROBLEMS`; Sentry and Elasticsearch declare `PROBLEMS` in `supported_signals` through the same base contract; no Sentry SDK; no Elasticsearch transport changes; no runtime auto-emission; no LKW wiring; no operator bootstrap |
-| **OBS-SENTRY-1** | Code | P2 | Planned / Later | Sentry provider maps sanitized problem signals to Sentry issues | Sentry provider lives under observability backend provider package; runtime/LKW/agents do not call Sentry SDK directly |
+| **OBS-SENTRY-1** | Code | P2 | **Done** | Sentry provider maps sanitized problem signals to Sentry issues | Sentry SDK-backed provider transport added under observability backend provider package; `ObservabilityVendorPayload(PROBLEMS)` maps to Sentry issue-shaped event; `sentry_sdk` imported lazily only in provider transport/client; runtime/LKW/agents do not call Sentry SDK; no LKW proof/docker compose/operator bootstrap yet |
 
 ---
 
 ## Phase OBS-SENTRY — Sentry error-monitoring integration proof (Planned)
 
-**OBS-SENTRY status:**
+**OBS-SENTRY-1 status:** **Done** — platform-level Sentry SDK-backed provider transport; `ObservabilityVendorPayload(PROBLEMS)` → Sentry issue-shaped event via `ObservabilityVendorIntegrationContract`; lazy/provider-owned `sentry_sdk` import; registry construction remains SDK-free.
+
+**Next (deferred):** LKW proof, docker compose, live Sentry proof, evals, product proof docs, operator bootstrap, and “how to view errors in Sentry” documentation.
+
+**OBS-SENTRY live proof status:**
 
 **Planned** — Add a provider-owned Sentry error-monitoring integration proof for safe exception capture and issue triage. **Sentry** is an error-monitoring projection; **Elasticsearch/Kibana** is the structured event/log timeline projection; **Prometheus/Grafana** covers metrics/SLO dashboards; **Tempo** (or equivalent) covers traces/spans. These projections complement each other — none replaces the others. The proof must capture only safe diagnostic metadata and tags, never prompts, chunks, tool arguments, secrets, raw documents, file contents, or absolute payload paths.
 
