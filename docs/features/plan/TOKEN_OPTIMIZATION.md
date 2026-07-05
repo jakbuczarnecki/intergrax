@@ -663,11 +663,12 @@ where each algorithm/strategy is introduced as a separate measurable step.
 |-------|------|-------|
 | 1 | **TOKEN-OPT-3A** | Roadmap and sequencing design (this section) — **Done / Closed** |
 | 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) — **Done / Closed** |
-| 3 | **TOKEN-OPT-3C** | Deterministic exact deduplication prototype |
-| 4 | **TOKEN-OPT-3D** | Budget-aware context packing prototype |
-| 5 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer |
-| 6 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison |
-| 7 | **TOKEN-OBS-3G** | Safe public wording / proof claims |
+| 3 | **TOKEN-OPT-3C-A** | Optimization layer and pipeline composition **contract** — **Done / Closed** |
+| 4 | **TOKEN-OPT-3C-B** | Deterministic exact deduplication layer |
+| 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype |
+| 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer |
+| 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison |
+| 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -681,7 +682,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Lossless normalization | `prompt`, `tool_catalog`, `rag_context_pack`, `memory` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-3/4 (shipped) | **Implemented** (partial) |
 | Lossless structural compaction | `rag_context_pack`, `retrieved_evidence`, `memory` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-4 (shipped) | **Implemented** |
 | Schema minimization | `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-3 (shipped) | **Implemented** |
-| Exact deduplication | `rag_context_pack`, `conversation_history`, `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3C** | Planned |
+| Exact deduplication | `rag_context_pack`, `conversation_history`, `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3C-B** | Planned |
 | Near-deduplication | `rag_context_pack`, `conversation_history` | `lossless` / `experimental` | `balanced` | Yes | Yes | Yes | Post-3C eval | Deferred |
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | Planned |
@@ -761,13 +762,42 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - `required=True` on existing `ContextFragment` remains compatible with future `must_keep` (conceptual predecessor; no migration in this task)
 - priority tiers are strongly typed enums, not loose metadata strings
 - contracts are plugin-friendly and application-independent (optional `TokenOptimizationStrategyRef`, extension metadata only in explicit `metadata` fields)
-- vocabulary defined here is used by future **TOKEN-OPT-3C** (exact dedupe) and **TOKEN-OPT-3D** (budget-aware packing)
+- vocabulary defined here is used by future **TOKEN-OPT-3C-B** (exact dedupe) and **TOKEN-OPT-3D** (budget-aware packing)
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OPT-3C** — deterministic exact deduplication prototype.
+**Next step:** **TOKEN-OPT-3C-B** — deterministic exact deduplication layer (after **TOKEN-OPT-3C-A** contract).
 
-#### TOKEN-OPT-3C — deterministic exact deduplication prototype
+#### TOKEN-OPT-3C-A — optimization layer and pipeline composition contract
+
+**Purpose:** Define strongly typed, extensible, plugin-friendly contracts for optimization layers and pipeline composition before implementing deduplication or a runtime engine.
+
+**Contracts added** (`intergrax/runtime/token_optimization/contracts.py`):
+
+- `TokenOptimizationLayerDecision` — per-layer outcome (`apply`, `bypass`, `fallback`, `override_previous`, `revert_to_original`, `failed`)
+- `TokenOptimizationLayerDescriptor` — built-in/custom/plugin layer metadata
+- `TokenOptimizationLayerContext` — pipeline position and layer lineage
+- `TokenOptimizationLayerRequest` — `original_content` (immutable baseline) + `current_content` (working state after prior layers)
+- `TokenOptimizationLayerResult` — explicit override metadata (`previous_changes_overridden`, `overridden_layer_ids`, `override_reason`)
+- `TokenOptimizationLayer` — optional `Protocol` for layer implementations
+- `TokenOptimizationLayerRef` — ordered layer reference for pipeline config
+- `TokenOptimizationPipelineMode` — `default` (platform order) or `replace` (developer-provided list)
+- `TokenOptimizationPipelineConfig` — composable pipeline of built-in and plugin/custom layers
+- `TokenOptimizationPipelineResult` — aggregate pipeline outcome without execution logic
+
+**Closeout:**
+
+- contracts added; no dedupe implementation yet
+- no pipeline runtime engine yet; no `ContextPackOptimizer` behavior changed
+- every layer receives `original_content` and `current_content`; custom layers may override previous changes only explicitly
+- pipeline order configurable via `DEFAULT` or `REPLACE`; developers can compose built-in and plugin/custom layer refs (e.g. `builtin.structural_compaction`, `custom.company.domain_dedupe`)
+- deduplication will become the first concrete optimization layer in **TOKEN-OPT-3C-B**, not an ad-hoc flag in `ContextPackOptimizer`
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OPT-3C-B** — deterministic exact deduplication layer.
+
+#### TOKEN-OPT-3C-B — deterministic exact deduplication layer
 
 **Purpose:** Add the first stronger real reduction mechanism using deterministic exact deduplication.
 
@@ -805,7 +835,7 @@ Done / Closed when:
 - [x] LKW described as proof workload only.
 - [x] No runtime/code/test/benchmark/script/application changes.
 
-**Next step:** **TOKEN-OPT-3C** — deterministic exact deduplication prototype.
+**Next step:** **TOKEN-OPT-3C-B** — deterministic exact deduplication layer.
 
 ---
 
@@ -1041,7 +1071,8 @@ TOKEN-OBS-2C regression gate thresholds — Done / Closed
 TOKEN-OBS-2D benchmark CLI report/gate output — Done / Closed
 TOKEN-OPT-3A stronger optimizer roadmap, algorithm inventory, measurement sequencing — Done / Closed
 TOKEN-OPT-3B priority-tiered context packing contract — Done / Closed
-TOKEN-OPT-3C deterministic exact deduplication prototype — Planned
+TOKEN-OPT-3C-A optimization layer and pipeline composition contract — Done / Closed
+TOKEN-OPT-3C-B deterministic exact deduplication layer — Planned
 TOKEN-OPT-3D budget-aware context packing prototype — Planned
 TOKEN-OBS-3E realistic corpus for stronger optimizer — Planned
 TOKEN-OBS-3F baseline vs stronger optimizer comparison — Planned
