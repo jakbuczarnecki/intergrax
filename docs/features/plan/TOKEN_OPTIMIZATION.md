@@ -668,7 +668,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype — **Done / Closed** |
 | 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
 | 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
-| 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims |
+| 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims — **Done / Closed** |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -873,7 +873,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OBS-3G** — safe public wording / proof claims.
+**Next step:** public wording follows [`docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) (**TOKEN-OBS-3G** — Done / Closed).
 
 #### TOKEN-OBS-3E-F — stronger optimizer evaluation pack
 
@@ -902,7 +902,21 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OBS-3G** — safe public wording / proof claims.
+**Next step:** follow [`docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) for any public wording derived from this proof.
+
+#### TOKEN-OBS-3G — safe public wording / proof claims
+
+**Purpose:** Add safe, bounded, non-marketing public claim guardrails for the stronger optimizer proof (TOKEN-OPT-3C-B, TOKEN-OPT-3D, TOKEN-OBS-3E-F).
+
+**Closeout:**
+
+- public claim guardrails added in `docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`
+- approved / conditional / forbidden wording documented
+- numeric claims require explicit evidence checklist
+- current proof remains synthetic-corpus and char-level only
+- no runtime, benchmark, script, application, or layer changes
+
+**Status:** **Done / Closed**.
 
 #### TOKEN-OPT-3D-R — char-budget metadata naming refinement
 
@@ -1170,7 +1184,7 @@ TOKEN-OPT-3C-B deterministic exact deduplication layer — Done / Closed
 TOKEN-OPT-3D budget-aware context packing prototype — Done / Closed
 TOKEN-OBS-3E realistic corpus for stronger optimizer — Done / Closed as part of TOKEN-OBS-3E-F
 TOKEN-OBS-3F baseline vs stronger optimizer comparison — Done / Closed as part of TOKEN-OBS-3E-F
-TOKEN-OBS-3G safe public wording / proof claims — Planned
+TOKEN-OBS-3G safe public wording / proof claims — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 

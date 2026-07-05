@@ -423,6 +423,8 @@ commercial-use permission
 
 Those are separate hardening and adoption tracks.
 
+Token optimization proof claims must follow the claim guardrails in [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md).
+
 ---
 
 ## Optional — Sentry controlled problem proof

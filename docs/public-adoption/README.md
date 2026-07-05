@@ -157,6 +157,10 @@ Public-adoption issues are not for:
 
 For commercial licensing, production use, partnerships, redistribution, derivative works, or substantial implementation permission, contact the maintainer directly.
 
+## Token optimization claim guardrails
+
+For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md).
+
 ## Related root documents
 
 - [README.md](../../README.md)
