@@ -11,7 +11,7 @@
 # External SaaS DSN is optional override only — not required for canonical proof.
 
 include:
-  - docker-compose.sentry.services.yml
+  - sentry.services.yml
 
 services:
   local_workspace:

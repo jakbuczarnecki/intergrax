@@ -41,7 +41,7 @@ _SENTRY_SERVICES_FRAGMENT = (
     / "applications"
     / "local_workspace_application"
     / "docker"
-    / "docker-compose.sentry.services.yml"
+    / "sentry.services.yml"
 )
 
 _FORBIDDEN_EXPORT_SAMPLES = (
@@ -100,6 +100,8 @@ def test_sentry_compose_overlay_is_local_docker_proof() -> None:
     assert "9000:80" in services
     assert "getsentry/sentry:24.8.0" in services
     assert "sentry-bootstrap" in services
+    assert "sentry-upgrade" in services
+    assert "SENTRY_SECRET_KEY" in services
     assert "sentry-proof/generated.env" in overlay
 
 

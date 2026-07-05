@@ -593,6 +593,8 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 
 **LKW-OBS-SENTRY-1 status:** **Done** — repo-owned local Sentry Docker Compose proof stack (trimmed self-hosted **24.8.0** services, UI `http://127.0.0.1:9000`, bootstrap local DSN into `docker/sentry-proof/generated.env`), LKW app-level proof endpoint (`POST /v1/local_workspace/proof/sentry-error`), proof helper calls LKW over HTTP.
 
+**LKW-OBS-SENTRY-1F status:** **Done** — all-in-one startup fixed: `sentry.services.yml` internal fragment (no `docker-compose.*.yml` double-discovery), `run-local-docker-all.sh`, `sentry-upgrade` lifecycle, local-proof `SENTRY_SECRET_KEY`, atomic `generated.env`, canonical one-script docs.
+
 **OBS-SENTRY live proof status:**
 
 **Done (controlled proof path)** — LKW can emit a controlled platform problem signal through the shared observability vendor contract into **local Docker Sentry** using operator configuration and the Sentry overlay. Canonical proof does not require external SaaS DSN. Deterministic unit tests and the proof helper validate the shared export path.

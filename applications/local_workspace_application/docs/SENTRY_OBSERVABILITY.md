@@ -28,7 +28,7 @@ The Sentry overlay is repo-owned and starts a trimmed self-hosted Sentry **24.8.
 
 ```text
 applications/local_workspace_application/docker/docker-compose.sentry.yml
-applications/local_workspace_application/docker/docker-compose.sentry.services.yml
+applications/local_workspace_application/docker/sentry.services.yml
 ```
 
 Services (pinned images):
@@ -38,14 +38,39 @@ sentry-nginx      → http://127.0.0.1:9000   (Sentry UI)
 sentry-relay      → internal ingest (DSN target for LKW container)
 sentry-web        → Sentry application
 postgres/redis/kafka/clickhouse/snuba → required Sentry backend
-sentry-bootstrap → migrations + proof org/project + local DSN env
+sentry-upgrade    → DB migrations (runs once before sentry-web)
+sentry-bootstrap  → proof org/project + local DSN env (after sentry-web healthy)
 ```
 
 Canonical proof does **not** require an external SaaS DSN or `INTERGRAX_SENTRY_DSN` on the host.
 
-## Start LKW + local Sentry
+## Start LKW + local Sentry (canonical one-script path)
 
-From repository root:
+From repository root, start **all** local proof services (base LKW, Qdrant, Ollama, OTel, Elasticsearch, Kibana, and local Sentry):
+
+Windows:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-local-docker-all.sh
+applications/local_workspace_application/scripts/run-local-docker-all.sh
+```
+
+These helpers auto-discover every top-level overlay matching `docker-compose.*.yml` in `applications/local_workspace_application/docker/`. Internal fragments such as `sentry.services.yml` are included by `docker-compose.sentry.yml` and are **not** discovered directly.
+
+Pass through Docker Compose commands when needed, for example:
+
+```bash
+applications/local_workspace_application/scripts/run-local-docker-all.sh down -v
+applications/local_workspace_application/scripts/run-local-docker-all.sh ps
+```
+
+### Manual compose path (alternative)
 
 ```bash
 docker compose \
@@ -63,7 +88,17 @@ docker compose ^
   up --build
 ```
 
-First start may take several minutes while Sentry migrations and bootstrap complete.
+## First start
+
+First start can take **several minutes**. The Sentry stack is resource-heavy (Postgres, Redis, Kafka, ClickHouse, Snuba, Relay, workers). Startup order:
+
+```text
+postgres/redis/kafka/clickhouse healthy
+→ sentry-upgrade (migrations)
+→ sentry-web healthy
+→ sentry-bootstrap (proof account + generated.env)
+→ local_workspace (reads bootstrap DSN)
+```
 
 ## Sentry UI URL
 
@@ -73,7 +108,7 @@ http://127.0.0.1:9000
 
 ## Initial login/bootstrap
 
-`sentry-bootstrap` creates a local proof account and project:
+`sentry-bootstrap` creates a local proof account and project after `sentry-upgrade` has run migrations and `sentry-web` is healthy:
 
 ```text
 email:    admin@intergrax.local
@@ -84,13 +119,15 @@ project:  lkw-proof
 
 These credentials are for **local proof only**. Do not reuse in production.
 
+The shared Sentry services use a deterministic local-proof secret key (`SENTRY_SECRET_KEY` default: `intergrax-local-sentry-proof-secret-key-not-for-production`). This is **not production-safe** and must not be reused outside this local proof stack.
+
 Bootstrap writes the local DSN for the LKW container to:
 
 ```text
 applications/local_workspace_application/docker/sentry-proof/generated.env
 ```
 
-Do not commit real external DSNs. The generated file contains only the local proof DSN.
+This file is **local proof state** — a placeholder until bootstrap completes, then overwritten atomically (`generated.env.tmp` → `generated.env`). Do not commit real external DSNs.
 
 ## Run controlled LKW error proof
 

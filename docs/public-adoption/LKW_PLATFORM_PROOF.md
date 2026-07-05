@@ -100,7 +100,22 @@ The **canonical external reviewer path** is Docker Compose from repository root.
 
 ## Step 1 — Start the local platform proof stack
 
-Both options below start the same proof services:
+Canonical one-command startup from repository root:
+
+Windows:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-local-docker-all.sh
+applications/local_workspace_application/scripts/run-local-docker-all.sh
+```
+
+This starts all local proof services:
 
 ```text
 local_workspace
@@ -109,30 +124,26 @@ ollama
 otel-collector
 elasticsearch
 kibana
+local Sentry proof stack (UI http://127.0.0.1:9000)
 ```
 
-### Option A — Cross-platform Docker Compose (preferred)
+First Sentry start can take several minutes while migrations and bootstrap complete.
 
-From repository root:
+### Manual compose path (alternative)
+
+Explicit `-f` flags remain supported for operators who prefer manual control:
 
 ```bash
 docker compose \
   -f applications/local_workspace_application/docker/docker-compose.yml \
   -f applications/local_workspace_application/docker/docker-compose.elasticsearch.yml \
+  -f applications/local_workspace_application/docker/docker-compose.sentry.yml \
   up --build
 ```
 
-This is the preferred public-docs path: explicit, readable, and identical on Linux, macOS, and Windows.
+### Legacy Windows-only note
 
-### Option B — Windows convenience helper
-
-From repository root:
-
-```powershell
-applications\local_workspace_application\scripts\run-local-docker-all.bat
-```
-
-This wrapper runs the base `docker-compose.yml` plus every optional overlay in `applications/local_workspace_application/docker/`, including Elasticsearch/Kibana, without listing each `-f` file manually.
+The `.bat` helper was the original convenience wrapper; the `.sh` script mirrors it on Linux/macOS. Both discover the same `docker-compose.*.yml` overlays.
 
 ---
 
@@ -447,7 +458,15 @@ LKW controlled failure
 → local Sentry issue
 ```
 
-### Start local Sentry overlay
+### Start local Sentry (included in one-script startup)
+
+When using `run-local-docker-all.bat` or `run-local-docker-all.sh`, the Sentry overlay is started automatically. Sentry UI:
+
+```text
+http://127.0.0.1:9000
+```
+
+Manual alternative:
 
 ```bash
 docker compose \
@@ -456,13 +475,7 @@ docker compose \
   up --build
 ```
 
-Local Sentry UI:
-
-```text
-http://127.0.0.1:9000
-```
-
-Bootstrap creates local proof login (`admin@intergrax.local` / `proof-local-only`) and writes the local DSN into `docker/sentry-proof/generated.env` for the LKW container. No external SaaS DSN is required.
+Bootstrap creates local proof login (`admin@intergrax.local` / `proof-local-only`) and writes the local DSN into `docker/sentry-proof/generated.env` for the LKW container. No external SaaS DSN is required. The local proof `SENTRY_SECRET_KEY` is not production-safe.
 
 ### Run controlled LKW problem proof
 
