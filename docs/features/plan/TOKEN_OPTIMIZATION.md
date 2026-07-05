@@ -666,8 +666,8 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 3 | **TOKEN-OPT-3C-A** | Optimization layer and pipeline composition **contract** — **Done / Closed** |
 | 4 | **TOKEN-OPT-3C-B** | Deterministic exact deduplication layer — **Done / Closed** |
 | 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype — **Done / Closed** |
-| 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer |
-| 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison |
+| 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
+| 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
 | 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
@@ -873,7 +873,36 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Status:** **Done / Closed**.
 
-**Next step:** **TOKEN-OBS-3E** — realistic corpus for stronger optimizer (or a small 3D refinement only if needed).
+**Next step:** **TOKEN-OBS-3G** — safe public wording / proof claims.
+
+#### TOKEN-OBS-3E-F — stronger optimizer evaluation pack
+
+**Purpose:** Combine realistic synthetic corpus and deterministic baseline-vs-stronger comparison for the stronger optimizer mechanisms already implemented (`ExactDeduplicationLayer`, `BudgetAwareContextPackingLayer`).
+
+**Scope:**
+
+- internal evaluation only; synthetic data only; no private/real customer data
+- direct evaluation of `ExactDeduplicationLayer` and `BudgetAwareContextPackingLayer` (no production pipeline engine)
+- no benchmark CLI / no CI gate
+- char-level metrics only (`baseline_chars`, `stronger_chars`, `saved_chars`, `strategy_savings_chars`)
+- strategy-separated attribution (`deduplication`, `budget_aware_packing`, `fallback`, `no_op`)
+- no token-accurate claims; no public wording / marketing claims
+- prepares inputs for **TOKEN-OBS-3G**
+
+**Deliverables:**
+
+- `tests/fixtures/token_optimization/stronger_optimizer_corpus.py` — synthetic corpus + evaluation-only helper
+- `tests/unit/runtime/token_optimization/test_stronger_optimizer_evaluation_pack.py` — corpus validation and behavior tests
+
+**Closeout:**
+
+- combines **TOKEN-OBS-3E** (realistic synthetic corpus) and **TOKEN-OBS-3F** (baseline vs stronger comparison) into one internal evaluation pack
+- evaluation report is raw-content-safe (no case content in report fields)
+- no `TokenOptimizationEngine`, layer registry, or benchmark CLI added
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OBS-3G** — safe public wording / proof claims.
 
 #### TOKEN-OPT-3D-R — char-budget metadata naming refinement
 
@@ -1139,8 +1168,8 @@ TOKEN-OPT-3B priority-tiered context packing contract — Done / Closed
 TOKEN-OPT-3C-A optimization layer and pipeline composition contract — Done / Closed
 TOKEN-OPT-3C-B deterministic exact deduplication layer — Done / Closed
 TOKEN-OPT-3D budget-aware context packing prototype — Done / Closed
-TOKEN-OBS-3E realistic corpus for stronger optimizer — Planned
-TOKEN-OBS-3F baseline vs stronger optimizer comparison — Planned
+TOKEN-OBS-3E realistic corpus for stronger optimizer — Done / Closed as part of TOKEN-OBS-3E-F
+TOKEN-OBS-3F baseline vs stronger optimizer comparison — Done / Closed as part of TOKEN-OBS-3E-F
 TOKEN-OBS-3G safe public wording / proof claims — Planned
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
