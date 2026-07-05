@@ -7,7 +7,6 @@ from typing import Sequence
 
 from intergrax.integrations.contracts.document_parser import DocumentParser, ParsedDocumentFragment
 from intergrax.integrations.providers.document_parser.python_docx.config import PythonDocxIntegrationConfig
-from intergrax.integrations.providers.document_parser.python_docx.opens import parse_python_docx_file
 
 
 class PythonDocxDocumentParser:
@@ -21,6 +20,8 @@ class PythonDocxDocumentParser:
         return True
 
     def parse_file(self, source: str) -> Sequence[ParsedDocumentFragment]:
+        from intergrax.integrations.providers.document_parser.python_docx.opens import parse_python_docx_file
+
         return parse_python_docx_file(self._config, source)
 
 
