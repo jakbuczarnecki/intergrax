@@ -3,6 +3,14 @@
 
 from sentry.conf.server import *  # NOQA
 
+# Local proof only — unsafe for production; do not reuse outside this stack.
+LOCAL_PROOF_SECRET_KEY = env(
+    "SENTRY_SECRET_KEY",
+    "intergrax-local-sentry-proof-secret-key-not-for-production",
+)  # noqa: F405
+SECRET_KEY = LOCAL_PROOF_SECRET_KEY
+SENTRY_OPTIONS["system.secret-key"] = LOCAL_PROOF_SECRET_KEY
+
 DATABASES = {
     "default": {
         "ENGINE": "sentry.db.postgres",

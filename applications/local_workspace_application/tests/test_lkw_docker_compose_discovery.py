@@ -17,6 +17,7 @@ _DOCS_DIR = _LKW_ROOT / "docs"
 
 _SENTRY_OVERLAY = _DOCKER_DIR / "docker-compose.sentry.yml"
 _SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "sentry.services.yml"
+_SENTRY_CONF = _DOCKER_DIR / "sentry" / "sentry.conf.py"
 _OLD_SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "docker-compose.sentry.services.yml"
 _RUN_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "run-local-docker-all.bat"
 _RUN_LOCAL_DOCKER_ALL_SH = _SCRIPTS_DIR / "run-local-docker-all.sh"
@@ -87,6 +88,23 @@ def test_sentry_secret_key_in_shared_env() -> None:
     assert "SENTRY_SECRET_KEY:" in services
     assert _LOCAL_PROOF_SECRET in services
     assert "INTERGRAX_LOCAL_SENTRY_SECRET_KEY" in services
+
+
+def test_sentry_conf_wires_secret_key_from_env() -> None:
+    conf = _SENTRY_CONF.read_text(encoding="utf-8")
+    assert "SECRET_KEY" in conf
+    assert "SENTRY_SECRET_KEY" in conf
+    assert 'SENTRY_OPTIONS["system.secret-key"]' in conf
+    assert _LOCAL_PROOF_SECRET in conf or _LOCAL_PROOF_SECRET in _SENTRY_SERVICES_FRAGMENT.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_sentry_conf_secret_key_not_empty_literal() -> None:
+    conf = _SENTRY_CONF.read_text(encoding="utf-8")
+    assert 'SECRET_KEY = ""' not in conf
+    assert "SECRET_KEY = ''" not in conf
+    assert re.search(r"SECRET_KEY\s*=\s*LOCAL_PROOF_SECRET_KEY", conf)
 
 
 def test_docs_mention_canonical_all_in_one_startup() -> None:
