@@ -80,6 +80,12 @@ class FanoutObservabilityExporter:
         self.last_result: ObservabilityFanoutResult | None = None
 
     async def export(self, envelope: ObservabilityExportEnvelope) -> None:
+        await self.export_with_result(envelope)
+
+    async def export_with_result(
+        self,
+        envelope: ObservabilityExportEnvelope,
+    ) -> ObservabilityFanoutResult:
         deliveries: list[ObservabilityRouteDeliveryResult] = []
         selected_count = 0
         exported_count = 0
@@ -125,10 +131,12 @@ class FanoutObservabilityExporter:
                 )
             )
 
-        self.last_result = ObservabilityFanoutResult(
+        result = ObservabilityFanoutResult(
             selected_count=selected_count,
             exported_count=exported_count,
             failed_count=failed_count,
             skipped_count=skipped_count,
             deliveries=tuple(deliveries),
         )
+        self.last_result = result
+        return result

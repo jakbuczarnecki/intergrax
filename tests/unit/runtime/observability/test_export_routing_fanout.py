@@ -103,6 +103,66 @@ class _FailingObservabilityExporter:
 
 
 @pytest.mark.asyncio
+async def test_export_with_result_returns_fanout_result() -> None:
+    inner = InMemoryObservabilityExporter()
+    fanout = FanoutObservabilityExporter(
+        [
+            _route(
+                route_id="problem-errors",
+                exporter=inner,
+                record_kinds=(ExportRecordKind.PROBLEM_SIGNAL,),
+                problem_kinds=("lkw.retrieve_failed",),
+                problem_severities=("error",),
+                problem_error_codes=("LKW_RETRIEVE_FAILED",),
+            )
+        ]
+    )
+
+    envelope = _problem_signal_envelope()
+    result = await fanout.export_with_result(envelope)
+
+    assert result is fanout.last_result
+    assert result.exported_count == 1
+    assert len(inner.envelopes) == 1
+    assert inner.envelopes[0] == envelope
+
+
+@pytest.mark.asyncio
+async def test_export_remains_protocol_compatible() -> None:
+    inner = InMemoryObservabilityExporter()
+    fanout = FanoutObservabilityExporter(
+        [_route(route_id="memory-route", exporter=inner)]
+    )
+
+    envelope = _problem_signal_envelope()
+    returned = await fanout.export(envelope)
+
+    assert returned is None
+    assert fanout.last_result is not None
+    assert fanout.last_result.exported_count == 1
+
+
+@pytest.mark.asyncio
+async def test_export_with_result_preserves_failure_isolation() -> None:
+    failing = _FailingObservabilityExporter()
+    inner = InMemoryObservabilityExporter()
+    fanout = FanoutObservabilityExporter(
+        [
+            ObservabilityExportRoute(route_id="failing-route", exporter=failing),
+            _route(route_id="memory-route", exporter=inner),
+        ]
+    )
+
+    envelope = _problem_signal_envelope()
+    result = await fanout.export_with_result(envelope)
+
+    assert result is fanout.last_result
+    assert result.failed_count == 1
+    assert result.exported_count == 1
+    assert len(inner.envelopes) == 1
+
+
+@pytest.mark.asyncio
 async def test_matching_problem_signal_route_receives_envelope() -> None:
     inner = InMemoryObservabilityExporter()
     fanout = FanoutObservabilityExporter(

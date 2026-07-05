@@ -363,7 +363,7 @@ Allowed route filters (empty filter tuple = match all):
 | No propagation | Fanout exporter failures **MUST NOT** raise to callers by default. |
 | No recursive problems | Fanout **MUST NOT** recursively emit new `problem_signal` records by default. |
 
-Platform contract: `FanoutObservabilityExporter` + `ObservabilityExportRoute` (`export_routing.py`).
+Platform contract: `FanoutObservabilityExporter` + `ObservabilityExportRoute` (`export_routing.py`). Operators that need per-route diagnostics may call `FanoutObservabilityExporter.export_with_result(...)`; `export(...)` remains the `ObservabilityExporter`-compatible method.
 
 ### E. Vendor boundary
 
