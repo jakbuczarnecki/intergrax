@@ -36,6 +36,8 @@ pushd "%REPO_ROOT%" >nul
 
 echo LKW Sentry observability proof helper
 echo Repository root: %CD%
+echo Target: LOCAL_WORKSPACE_BACKEND_BASE_URL=%LOCAL_WORKSPACE_BACKEND_BASE_URL%
+if "%LOCAL_WORKSPACE_BACKEND_BASE_URL%"=="" echo Target default: http://127.0.0.1:8020
 echo.
 
 set "ARGS="
@@ -47,6 +49,7 @@ set "STATUS=%ERRORLEVEL%"
 
 echo.
 if "%STATUS%"=="0" (
+    echo Local Sentry UI: http://127.0.0.1:9000
     echo Sentry search filters:
     echo   tag:intergrax.problem_kind=lkw.proof_controlled_failure
     echo   tag:intergrax.problem_error_code=LKW_PROOF_CONTROLLED_FAILURE

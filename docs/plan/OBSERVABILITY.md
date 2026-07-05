@@ -589,11 +589,13 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 
 **OBS-SENTRY-1 status:** **Done** — platform-level Sentry SDK-backed provider transport; `ObservabilityVendorPayload(PROBLEMS)` → Sentry issue-shaped event via `ObservabilityVendorIntegrationContract`; lazy/provider-owned `sentry_sdk` import; registry construction remains SDK-free.
 
-**LKW-OBS-SENTRY-0 status:** **Done** — LKW controlled problem proof through platform operator wiring (`SentryExportOperatorConfig`, `sentry_export_wiring`), DSN-based Docker Compose overlay, proof helper scripts, and `SENTRY_OBSERVABILITY.md`.
+**LKW-OBS-SENTRY-0 status:** **Done** — LKW controlled problem proof through platform operator wiring (`SentryExportOperatorConfig`, `sentry_export_wiring`), proof helper scripts, and `SENTRY_OBSERVABILITY.md`.
+
+**LKW-OBS-SENTRY-1 status:** **Done** — repo-owned local Sentry Docker Compose proof stack (trimmed self-hosted **24.8.0** services, UI `http://127.0.0.1:9000`, bootstrap local DSN into `docker/sentry-proof/generated.env`), LKW app-level proof endpoint (`POST /v1/local_workspace/proof/sentry-error`), proof helper calls LKW over HTTP.
 
 **OBS-SENTRY live proof status:**
 
-**Done (controlled proof path)** — LKW can emit a controlled platform problem signal through the shared observability vendor contract into Sentry using operator configuration and DSN-based Compose wiring. Live DSN proof is operator-optional; deterministic unit tests and the proof helper validate the shared export path without requiring self-hosted Sentry.
+**Done (controlled proof path)** — LKW can emit a controlled platform problem signal through the shared observability vendor contract into **local Docker Sentry** using operator configuration and the Sentry overlay. Canonical proof does not require external SaaS DSN. Deterministic unit tests and the proof helper validate the shared export path.
 
 **Remaining out of scope (production / hardening):**
 
@@ -605,7 +607,7 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 - PII/default user capture
 - stacktrace/raw exception capture unless separately approved
 
-**LKW relationship:** LKW is the proof workload ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) **LKW-OBS-SENTRY-0**); platform owns the provider integration and operator wiring.
+**LKW relationship:** LKW is the proof workload ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) **LKW-OBS-SENTRY-1**); platform owns the provider integration and operator wiring.
 
 ---
 

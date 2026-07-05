@@ -427,25 +427,27 @@ Token optimization proof claims must follow the claim guardrails in [`TOKEN_OPTI
 
 ---
 
-## Optional — Sentry controlled problem proof
+## Sentry controlled problem proof (local Docker stack)
 
-Intergrax also supports error issue triage via Sentry. This proof is **optional** because it requires a Sentry project DSN.
+The LKW platform proof can show two complementary observability views:
 
-It demonstrates:
+- **Elasticsearch/Kibana:** structured run timeline and event inspection
+- **Sentry:** error issue triage for controlled platform problem signals
 
-```text
-ProblemSignal → shared observability vendor contract → Sentry provider → Sentry issue
-```
-
-### Prerequisites
+Architecture:
 
 ```text
-INTERGRAX_SENTRY_DSN=<your project DSN>
+LKW controlled failure
+→ platform ProblemReporter
+→ ObservabilityExportEnvelope
+→ ObservabilityExportPolicy
+→ ObservabilityVendorIntegrationContract
+→ ObservabilityVendorPayload (PROBLEMS)
+→ Sentry provider
+→ local Sentry issue
 ```
 
-Do not commit real DSNs.
-
-### Start Compose Sentry overlay
+### Start local Sentry overlay
 
 ```bash
 docker compose \
@@ -454,7 +456,15 @@ docker compose \
   up --build
 ```
 
-### Run Sentry proof helper
+Local Sentry UI:
+
+```text
+http://127.0.0.1:9000
+```
+
+Bootstrap creates local proof login (`admin@intergrax.local` / `proof-local-only`) and writes the local DSN into `docker/sentry-proof/generated.env` for the LKW container. No external SaaS DSN is required.
+
+### Run controlled LKW problem proof
 
 ```bat
 applications\local_workspace_application\scripts\run-sentry-observability-proof.bat
@@ -464,19 +474,26 @@ Expected:
 
 ```text
 proof_result=PASS
+backend=sentry
+sentry_mode=local_docker
+sentry_ui=http://127.0.0.1:9000
 problem_kind=lkw.proof_controlled_failure
 problem_error_code=LKW_PROOF_CONTROLLED_FAILURE
 safety_check=passed
 ```
 
-### View issue in Sentry
-
-Search by tags:
+### Search issue by tags
 
 ```text
 tag:intergrax.problem_kind:lkw.proof_controlled_failure
 tag:intergrax.problem_error_code:LKW_PROOF_CONTROLLED_FAILURE
 tag:intergrax.run_id:<run_id from helper output>
+```
+
+Expected issue title:
+
+```text
+Intergrax problem: lkw.proof_controlled_failure
 ```
 
 Optional screenshot placeholders (not required for proof):

@@ -36,6 +36,7 @@ from local_workspace_application.host.observability_wiring import build_local_wo
 from local_workspace_application.host.run_task_enricher import build_lkw_http_run_task_enricher
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
+from local_workspace_application.serving.sentry_proof_routes import mount_local_workspace_sentry_proof_routes
 
 
 def create_local_workspace_backend_app(
@@ -126,6 +127,12 @@ def create_local_workspace_backend_app(
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
         task_runner=lkw_run_task_runner,
+    )
+    mount_local_workspace_sentry_proof_routes(
+        app,
+        settings=settings,
+        observability_export=observability_export,
+        prefix=settings.route_prefix,
     )
 
     if settings.include_task_control:
