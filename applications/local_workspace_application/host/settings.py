@@ -15,6 +15,7 @@ from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportOperatorConfig,
     ObservabilityExportOperatorConfigError,
     OtlpExportOperatorConfig,
+    SentryExportOperatorConfig,
     parse_observability_export_backend_id,
 )
 
@@ -89,6 +90,13 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_elasticsearch_retry_initial_backoff_seconds: float = 0.25
     observability_elasticsearch_retry_max_backoff_seconds: float = 2.0
     observability_elasticsearch_failed_delivery_file_path: str = ""
+    observability_sentry_dsn: str = ""
+    observability_sentry_environment: str = ""
+    observability_sentry_release: str = ""
+    observability_sentry_server_name: str = ""
+    observability_sentry_shutdown_timeout_seconds: float = 2.0
+    observability_sentry_debug: bool = False
+    observability_sentry_flush_after_capture: bool = False
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -117,6 +125,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
 
         otlp: OtlpExportOperatorConfig | None
         elasticsearch: ElasticsearchExportOperatorConfig | None
+        sentry: SentryExportOperatorConfig | None
         if backend_id == "otlp":
             endpoint = self.observability_otlp_endpoint.strip()
             if not endpoint:
@@ -133,8 +142,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                 headers=None,
             )
             elasticsearch = None
+            sentry = None
         elif backend_id == "elasticsearch":
             otlp = None
+            sentry = None
             base_url = self.observability_elasticsearch_url.strip()
             if not base_url:
                 raise ValueError(
@@ -160,9 +171,28 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                 retry_max_backoff_seconds=self.observability_elasticsearch_retry_max_backoff_seconds,
                 failed_delivery_file_path=failed_delivery_file_path,
             )
+        elif backend_id == "sentry":
+            otlp = None
+            elasticsearch = None
+            dsn = self.observability_sentry_dsn.strip()
+            if not dsn:
+                raise ValueError(
+                    "LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN is required when "
+                    "observability export is enabled with backend_id=sentry"
+                )
+            sentry = SentryExportOperatorConfig(
+                dsn=dsn,
+                environment=self.observability_sentry_environment or None,
+                release=self.observability_sentry_release or None,
+                server_name=self.observability_sentry_server_name or None,
+                shutdown_timeout_seconds=self.observability_sentry_shutdown_timeout_seconds,
+                debug=self.observability_sentry_debug,
+                flush_after_capture=self.observability_sentry_flush_after_capture,
+            )
         else:
             otlp = None
             elasticsearch = None
+            sentry = None
 
         # Safety: never export raw content regardless of env value
         return ObservabilityExportOperatorConfig(
@@ -171,6 +201,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             backend_id=backend_id,
             otlp=otlp,
             elasticsearch=elasticsearch,
+            sentry=sentry,
         )
 
     # Application-specific settings
@@ -316,6 +347,34 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH",
             default=cls._field_default("observability_elasticsearch_failed_delivery_file_path"),  # type: ignore[arg-type]
         )
+        observability_sentry_dsn = env.str(
+            "OBSERVABILITY_SENTRY_DSN",
+            default=cls._field_default("observability_sentry_dsn"),  # type: ignore[arg-type]
+        )
+        observability_sentry_environment = env.str(
+            "OBSERVABILITY_SENTRY_ENVIRONMENT",
+            default=cls._field_default("observability_sentry_environment"),  # type: ignore[arg-type]
+        )
+        observability_sentry_release = env.str(
+            "OBSERVABILITY_SENTRY_RELEASE",
+            default=cls._field_default("observability_sentry_release"),  # type: ignore[arg-type]
+        )
+        observability_sentry_server_name = env.str(
+            "OBSERVABILITY_SENTRY_SERVER_NAME",
+            default=cls._field_default("observability_sentry_server_name"),  # type: ignore[arg-type]
+        )
+        observability_sentry_shutdown_timeout_seconds = env.float(
+            "OBSERVABILITY_SENTRY_SHUTDOWN_TIMEOUT_SECONDS",
+            default=cls._field_default("observability_sentry_shutdown_timeout_seconds"),  # type: ignore[arg-type]
+        )
+        observability_sentry_debug = env.bool(
+            "OBSERVABILITY_SENTRY_DEBUG",
+            default=cls._field_default("observability_sentry_debug"),  # type: ignore[arg-type]
+        )
+        observability_sentry_flush_after_capture = env.bool(
+            "OBSERVABILITY_SENTRY_FLUSH_AFTER_CAPTURE",
+            default=cls._field_default("observability_sentry_flush_after_capture"),  # type: ignore[arg-type]
+        )
         read_roots_raw = (os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS") or "").strip()
         allowed_read_roots = frozenset(
             part.strip() for part in read_roots_raw.split(",") if part.strip()
@@ -351,4 +410,11 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_elasticsearch_retry_initial_backoff_seconds": observability_elasticsearch_retry_initial_backoff_seconds,
             "observability_elasticsearch_retry_max_backoff_seconds": observability_elasticsearch_retry_max_backoff_seconds,
             "observability_elasticsearch_failed_delivery_file_path": observability_elasticsearch_failed_delivery_file_path,
+            "observability_sentry_dsn": observability_sentry_dsn,
+            "observability_sentry_environment": observability_sentry_environment,
+            "observability_sentry_release": observability_sentry_release,
+            "observability_sentry_server_name": observability_sentry_server_name,
+            "observability_sentry_shutdown_timeout_seconds": observability_sentry_shutdown_timeout_seconds,
+            "observability_sentry_debug": observability_sentry_debug,
+            "observability_sentry_flush_after_capture": observability_sentry_flush_after_capture,
         }

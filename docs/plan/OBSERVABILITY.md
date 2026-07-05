@@ -585,19 +585,27 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 
 ---
 
-## Phase OBS-SENTRY — Sentry error-monitoring integration proof (Planned)
+## Phase OBS-SENTRY — Sentry error-monitoring integration proof (Done — LKW wiring)
 
 **OBS-SENTRY-1 status:** **Done** — platform-level Sentry SDK-backed provider transport; `ObservabilityVendorPayload(PROBLEMS)` → Sentry issue-shaped event via `ObservabilityVendorIntegrationContract`; lazy/provider-owned `sentry_sdk` import; registry construction remains SDK-free.
 
-**Next (deferred):** LKW proof, docker compose, live Sentry proof, evals, product proof docs, operator bootstrap, and “how to view errors in Sentry” documentation.
+**LKW-OBS-SENTRY-0 status:** **Done** — LKW controlled problem proof through platform operator wiring (`SentryExportOperatorConfig`, `sentry_export_wiring`), DSN-based Docker Compose overlay, proof helper scripts, and `SENTRY_OBSERVABILITY.md`.
 
 **OBS-SENTRY live proof status:**
 
-**Planned** — Add a provider-owned Sentry error-monitoring integration proof for safe exception capture and issue triage. **Sentry** is an error-monitoring projection; **Elasticsearch/Kibana** is the structured event/log timeline projection; **Prometheus/Grafana** covers metrics/SLO dashboards; **Tempo** (or equivalent) covers traces/spans. These projections complement each other — none replaces the others. The proof must capture only safe diagnostic metadata and tags, never prompts, chunks, tool arguments, secrets, raw documents, file contents, or absolute payload paths.
+**Done (controlled proof path)** — LKW can emit a controlled platform problem signal through the shared observability vendor contract into Sentry using operator configuration and DSN-based Compose wiring. Live DSN proof is operator-optional; deterministic unit tests and the proof helper validate the shared export path without requiring self-hosted Sentry.
 
-**Out of scope (this phase):** Sentry implementation; `sentry-sdk` dependency; env vars; runtime wiring; LKW wiring; live proof; tracing/profiling; PII/default user data capture.
+**Remaining out of scope (production / hardening):**
 
-**LKW relationship:** LKW may act as the proof workload later ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) **LKW-OBS-SENTRY**); platform owns the provider integration.
+- production alert policy
+- production Sentry org/project provisioning
+- production secret management
+- production auth/compliance posture
+- global exception catching
+- PII/default user capture
+- stacktrace/raw exception capture unless separately approved
+
+**LKW relationship:** LKW is the proof workload ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) **LKW-OBS-SENTRY-0**); platform owns the provider integration and operator wiring.
 
 ---
 

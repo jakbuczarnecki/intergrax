@@ -1,0 +1,24 @@
+# © Artur Czarnecki. All rights reserved.
+# Optional Sentry DSN-based observability backend overlay for LKW.
+# Run from repository root:
+# docker compose \
+#   -f applications/local_workspace_application/docker/docker-compose.yml \
+#   -f applications/local_workspace_application/docker/docker-compose.sentry.yml \
+#   up --build
+#
+# Requires INTERGRAX_SENTRY_DSN in environment or .env.
+# Does not start self-hosted Sentry.
+# Sends safe problem metadata only (export_content=false).
+
+services:
+  local_workspace:
+    environment:
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: sentry
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN: ${INTERGRAX_SENTRY_DSN:-}
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_ENVIRONMENT: local-proof
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_RELEASE: lkw-sentry-proof
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SERVER_NAME: intergrax-lkw-local
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SHUTDOWN_TIMEOUT_SECONDS: "2"
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_FLUSH_AFTER_CAPTURE: "true"
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT: "false"

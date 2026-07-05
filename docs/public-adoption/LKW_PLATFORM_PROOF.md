@@ -425,6 +425,67 @@ Those are separate hardening and adoption tracks.
 
 ---
 
+## Optional — Sentry controlled problem proof
+
+Intergrax also supports error issue triage via Sentry. This proof is **optional** because it requires a Sentry project DSN.
+
+It demonstrates:
+
+```text
+ProblemSignal → shared observability vendor contract → Sentry provider → Sentry issue
+```
+
+### Prerequisites
+
+```text
+INTERGRAX_SENTRY_DSN=<your project DSN>
+```
+
+Do not commit real DSNs.
+
+### Start Compose Sentry overlay
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.yml \
+  -f applications/local_workspace_application/docker/docker-compose.sentry.yml \
+  up --build
+```
+
+### Run Sentry proof helper
+
+```bat
+applications\local_workspace_application\scripts\run-sentry-observability-proof.bat
+```
+
+Expected:
+
+```text
+proof_result=PASS
+problem_kind=lkw.proof_controlled_failure
+problem_error_code=LKW_PROOF_CONTROLLED_FAILURE
+safety_check=passed
+```
+
+### View issue in Sentry
+
+Search by tags:
+
+```text
+tag:intergrax.problem_kind:lkw.proof_controlled_failure
+tag:intergrax.problem_error_code:LKW_PROOF_CONTROLLED_FAILURE
+tag:intergrax.run_id:<run_id from helper output>
+```
+
+Optional screenshot placeholders (not required for proof):
+
+- `sentry-issue-lkw-controlled-failure.png`
+- `sentry-tags-lkw-proof.png`
+
+This does not claim production Sentry readiness. See [`applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md`](../../applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md).
+
+---
+
 ## Troubleshooting
 
 ### Kibana shows no results
@@ -479,6 +540,7 @@ Then use one of the listed run ids.
 
 - LKW build/deploy runbook: [`applications/local_workspace_application/docs/BUILD_AND_DEPLOY.md`](../../applications/local_workspace_application/docs/BUILD_AND_DEPLOY.md)
 - Kibana guide: [`applications/local_workspace_application/docs/KIBANA_OBSERVABILITY.md`](../../applications/local_workspace_application/docs/KIBANA_OBSERVABILITY.md)
+- Sentry guide: [`applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md`](../../applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md)
 - Recorded Elasticsearch proof: [`applications/local_workspace_application/docs/ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md`](../../applications/local_workspace_application/docs/ELASTICSEARCH_OBSERVABILITY_PROOF_2026_06_30.md)
 - LKW product-validation narrative: [`docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md`](../product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 - Observability architecture: [`docs/architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md)

@@ -214,6 +214,86 @@ def test_invalid_backend_id_raises() -> None:
         settings.build_observability_export_config()
 
 
+def test_sentry_env_builds_sentry_export_operator_config() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "sentry"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN"] = "https://example@sentry.io/1"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_ENVIRONMENT"] = "dev"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_RELEASE"] = "lkw-test"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SERVER_NAME"] = "local-lkw"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SHUTDOWN_TIMEOUT_SECONDS"] = "1.5"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DEBUG"] = "false"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_FLUSH_AFTER_CAPTURE"] = "true"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.backend_id == "sentry"
+    assert config.sentry is not None
+    assert config.sentry.dsn == "https://example@sentry.io/1"
+    assert config.sentry.environment == "dev"
+    assert config.sentry.release == "lkw-test"
+    assert config.sentry.server_name == "local-lkw"
+    assert config.sentry.shutdown_timeout_seconds == 1.5
+    assert config.sentry.flush_after_capture is True
+    assert config.export_content is False
+    assert config.otlp is None
+    assert config.elasticsearch is None
+
+
+def test_sentry_backend_without_dsn_raises() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "sentry"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN"):
+        settings.build_observability_export_config()
+
+
+@pytest.mark.parametrize("raw_dsn", ["", "   "])
+def test_sentry_whitespace_dsn_raises(raw_dsn: str) -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "sentry"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN"] = raw_dsn
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    with pytest.raises(ValueError, match="LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN"):
+        settings.build_observability_export_config()
+
+
+def test_sentry_backend_normalizes_in_config() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = " SENTRY "
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN"] = "https://example@sentry.io/1"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+
+    assert config is not None
+    assert config.backend_id == "sentry"
+    assert config.sentry is not None
+
+
+def test_enabled_sentry_config_builds_runtime_plugin() -> None:
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED"] = "true"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND"] = "sentry"
+    os.environ["LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN"] = "https://example@sentry.io/1"
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    config = settings.build_observability_export_config()
+    assert config is not None
+
+    with patch(
+        "intergrax.integrations.providers.observability_backend.sentry.bundle.create_sentry_observability_transport",
+    ) as create_transport:
+        create_transport.return_value = object()
+        plugin = build_observability_export_runtime_plugin(config)
+
+    assert plugin is not None
+    assert plugin.plugin_id == "runtime.observability_export"
+
+
 def test_factory_explicit_config_wins(tmp_path, monkeypatch) -> None:
     """When explicit observability_export is passed to factory, it takes precedence
     over settings-derived config."""

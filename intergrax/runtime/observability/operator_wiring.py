@@ -88,12 +88,24 @@ class ElasticsearchExportOperatorConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SentryExportOperatorConfig:
+    dsn: str
+    environment: str | None = None
+    release: str | None = None
+    server_name: str | None = None
+    shutdown_timeout_seconds: float | None = None
+    debug: bool = False
+    flush_after_capture: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class ObservabilityExportOperatorConfig:
     enabled: bool = False
     export_content: bool = False
     backend_id: str = "otlp"
     otlp: OtlpExportOperatorConfig | None = None
     elasticsearch: ElasticsearchExportOperatorConfig | None = None
+    sentry: SentryExportOperatorConfig | None = None
 
 
 ObservabilityExportBackendBuilder = Callable[[ObservabilityExportOperatorConfig], object]
@@ -162,6 +174,20 @@ def _register_default_elasticsearch_backend() -> None:
 
 
 _register_default_elasticsearch_backend()
+
+
+def _register_default_sentry_backend() -> None:
+    from intergrax.runtime.observability.sentry_export_wiring import (
+        _build_default_sentry_observability_integration,
+    )
+
+    DEFAULT_OBSERVABILITY_EXPORT_BACKEND_REGISTRY.register(
+        "sentry",
+        _build_default_sentry_observability_integration,
+    )
+
+
+_register_default_sentry_backend()
 
 
 def build_observability_export_integration(
