@@ -68,6 +68,34 @@ def test_run_local_docker_all_bat_exists() -> None:
     assert "docker-compose.*.yml" in script
 
 
+def test_sentry_snuba_bootstrap_before_api_and_upgrade() -> None:
+    services = _SENTRY_SERVICES_FRAGMENT.read_text(encoding="utf-8")
+    assert "sentry-snuba-bootstrap:" in services
+
+    bootstrap_block = services.split("sentry-snuba-bootstrap:", 1)[1].split(
+        "\n  sentry-snuba-api:", 1
+    )[0]
+    assert "command: bootstrap --force" in bootstrap_block
+    assert "sentry-clickhouse:" in bootstrap_block
+    assert "sentry-kafka:" in bootstrap_block
+    assert "sentry-redis:" in bootstrap_block
+    assert 'restart: "no"' in bootstrap_block
+
+    api_block = services.split("sentry-snuba-api:", 1)[1].split(
+        "\n  sentry-snuba-errors-consumer:", 1
+    )[0]
+    assert "sentry-snuba-bootstrap:" in api_block
+    assert "condition: service_completed_successfully" in api_block
+
+    upgrade_block = services.split("sentry-upgrade:", 1)[1].split("\n  sentry-web:", 1)[0]
+    assert "sentry-snuba-api:" in upgrade_block or "sentry-snuba-bootstrap:" in upgrade_block
+
+    worker_block = services.split("sentry-worker:", 1)[1].split("\n  sentry-cron:", 1)[0]
+    assert "sentry-web:" in worker_block
+    assert "sentry-snuba-bootstrap:" not in worker_block
+    assert "sentry-snuba-api:" not in worker_block
+
+
 def test_sentry_upgrade_runs_before_web() -> None:
     services = _SENTRY_SERVICES_FRAGMENT.read_text(encoding="utf-8")
     assert "sentry-upgrade:" in services

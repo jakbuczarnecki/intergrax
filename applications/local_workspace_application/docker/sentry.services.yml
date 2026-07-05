@@ -94,9 +94,23 @@ services:
       timeout: 10s
       retries: 30
 
+  sentry-snuba-bootstrap:
+    <<: *snuba_image
+    command: bootstrap --force
+    depends_on:
+      sentry-clickhouse:
+        condition: service_healthy
+      sentry-kafka:
+        condition: service_healthy
+      sentry-redis:
+        condition: service_healthy
+    restart: "no"
+
   sentry-snuba-api:
     <<: *snuba_image
     depends_on:
+      sentry-snuba-bootstrap:
+        condition: service_completed_successfully
       sentry-clickhouse:
         condition: service_healthy
       sentry-kafka:
@@ -151,6 +165,8 @@ services:
         condition: service_healthy
       sentry-clickhouse:
         condition: service_healthy
+      sentry-snuba-api:
+        condition: service_started
     restart: "no"
 
   sentry-web:

@@ -37,7 +37,9 @@ Services (pinned images):
 sentry-nginx      → http://127.0.0.1:9000   (Sentry UI)
 sentry-relay      → internal ingest (DSN target for LKW container)
 sentry-web        → Sentry application
-postgres/redis/kafka/clickhouse/snuba → required Sentry backend
+postgres/redis/kafka/clickhouse → required Sentry backend
+sentry-snuba-bootstrap → Snuba/ClickHouse storage bootstrap (one-shot)
+sentry-snuba-api  → Snuba query API (after bootstrap)
 sentry-upgrade    → DB migrations (runs once before sentry-web)
 sentry-bootstrap  → proof org/project + local DSN env (after sentry-web healthy)
 ```
@@ -94,11 +96,15 @@ First start can take **several minutes**. The Sentry stack is resource-heavy (Po
 
 ```text
 postgres/redis/kafka/clickhouse healthy
+→ sentry-snuba-bootstrap (Snuba/ClickHouse storage bootstrap)
+→ sentry-snuba-api
 → sentry-upgrade (migrations)
 → sentry-web healthy
 → sentry-bootstrap (proof account + generated.env)
 → local_workspace (reads bootstrap DSN)
 ```
+
+ClickHouse/Snuba may emit noisy background warnings during warm-up. Missing-table errors (for example `generic_metric_counters_aggregated_local` or `metrics_counters_v2_local`) should **not** persist after `sentry-snuba-bootstrap` completes successfully.
 
 ## Sentry UI URL
 
