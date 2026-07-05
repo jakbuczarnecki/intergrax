@@ -130,10 +130,10 @@ class ExactDeduplicationLayer:
                 bypass_reason=TokenOptimizationBypassReason.NOT_APPLICABLE,
             )
 
-        lines = current_content.splitlines()
-        original_line_count = len(lines)
-        kept_lines, duplicate_groups, duplicates_removed = _dedupe_lines(
-            lines,
+        raw_lines = current_content.splitlines(keepends=True)
+        original_line_count = len(raw_lines)
+        kept_lines, duplicate_groups, duplicates_removed, dedupe_saved_chars = _dedupe_lines(
+            raw_lines,
             effective_config,
         )
 
@@ -147,8 +147,7 @@ class ExactDeduplicationLayer:
                 original_line_count=original_line_count,
             )
 
-        output_content = "\n".join(kept_lines)
-        dedupe_saved_chars = len(current_content) - len(output_content)
+        output_content = "".join(kept_lines)
 
         validation = validate_protected_regions(
             request.original_content,
@@ -245,8 +244,17 @@ def _policy_bypass_reason(
     return TokenOptimizationBypassReason.POLICY_DISALLOWED
 
 
-def _dedupe_key(line: str, config: ExactDeduplicationLayerConfig) -> str:
-    key = line.strip()
+def _line_body(raw_line: str) -> str:
+    """Logical line body without trailing line ending (CRLF, LF, or CR)."""
+    if raw_line.endswith("\r\n"):
+        return raw_line[:-2]
+    if raw_line.endswith("\n") or raw_line.endswith("\r"):
+        return raw_line[:-1]
+    return raw_line
+
+
+def _dedupe_key(raw_line: str, config: ExactDeduplicationLayerConfig) -> str:
+    key = _line_body(raw_line).strip()
     if config.normalize_whitespace:
         key = _WHITESPACE_RE.sub(" ", key)
     if not config.case_sensitive:
@@ -268,29 +276,31 @@ def _is_meaningful_for_dedupe(
 
 
 def _dedupe_lines(
-    lines: list[str],
+    raw_lines: list[str],
     config: ExactDeduplicationLayerConfig,
-) -> tuple[list[str], tuple[_DuplicateGroup, ...], int]:
+) -> tuple[list[str], tuple[_DuplicateGroup, ...], int, int]:
     seen_keys: set[str] = set()
     key_to_representative: dict[str, int] = {}
     group_duplicates: dict[str, list[int]] = {}
     kept_lines: list[str] = []
     duplicates_removed = 0
+    dedupe_saved_chars = 0
 
-    for index, line in enumerate(lines):
-        key = _dedupe_key(line, config)
+    for index, raw_line in enumerate(raw_lines):
+        key = _dedupe_key(raw_line, config)
         if not _is_meaningful_for_dedupe(key, config):
-            kept_lines.append(line)
+            kept_lines.append(raw_line)
             continue
 
         if key in seen_keys:
             duplicates_removed += 1
+            dedupe_saved_chars += len(raw_line)
             group_duplicates.setdefault(key, []).append(index)
             continue
 
         seen_keys.add(key)
         key_to_representative[key] = index
-        kept_lines.append(line)
+        kept_lines.append(raw_line)
 
     duplicate_groups = tuple(
         _DuplicateGroup(
@@ -303,7 +313,7 @@ def _dedupe_lines(
             key=lambda item: key_to_representative[item[0]],
         )
     )
-    return kept_lines, duplicate_groups, duplicates_removed
+    return kept_lines, duplicate_groups, duplicates_removed, dedupe_saved_chars
 
 
 def _config_mapping(config: ExactDeduplicationLayerConfig) -> dict[str, Any]:

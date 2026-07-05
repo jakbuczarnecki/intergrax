@@ -119,7 +119,7 @@ def test_first_occurrence_is_preserved() -> None:
     result = layer.optimize(_request(content))
 
     assert result.decision is TokenOptimizationLayerDecision.APPLY
-    assert result.output_content == "first variant\nsecond line"
+    assert result.output_content == "first variant\nsecond line\n"
     groups = result.metadata["duplicate_groups"]
     assert len(groups) == 1
     assert groups[0]["representative_line_index"] == 0
@@ -144,7 +144,7 @@ def test_case_insensitive_behavior_works_only_when_configured() -> None:
     result = layer.optimize(_request(content))
 
     assert result.decision is TokenOptimizationLayerDecision.APPLY
-    assert result.output_content == "Hello"
+    assert result.output_content == "Hello\n"
     assert result.metadata["duplicates_removed"] == 2
 
 
@@ -156,7 +156,7 @@ def test_whitespace_normalization_affects_dedupe_key_when_enabled() -> None:
     result = layer.optimize(_request(content))
 
     assert result.decision is TokenOptimizationLayerDecision.APPLY
-    assert result.output_content == "foo   bar"
+    assert result.output_content == "foo   bar\n"
     assert result.metadata["duplicates_removed"] == 1
 
 
@@ -175,7 +175,76 @@ def test_metadata_reports_dedupe_saved_chars() -> None:
     result = layer.optimize(_request(content))
 
     assert result.decision is TokenOptimizationLayerDecision.APPLY
+    assert result.metadata["dedupe_saved_chars"] == len("repeat\n")
+
+
+def test_trailing_newline_preserved_when_duplicate_removed() -> None:
+    layer = ExactDeduplicationLayer()
+    content = "alpha\nbeta\nalpha\n"
+    result = layer.optimize(_request(content))
+
+    assert result.decision is TokenOptimizationLayerDecision.APPLY
+    assert result.output_content == "alpha\nbeta\n"
+    assert result.metadata["dedupe_saved_chars"] == len("alpha\n")
+
+
+def test_crlf_line_endings_preserved_for_kept_lines() -> None:
+    layer = ExactDeduplicationLayer()
+    content = "alpha\r\nbeta\r\nalpha\r\n"
+    result = layer.optimize(_request(content))
+
+    assert result.decision is TokenOptimizationLayerDecision.APPLY
+    assert result.output_content == "alpha\r\nbeta\r\n"
+    assert result.metadata["dedupe_saved_chars"] == len("alpha\r\n")
+
+
+def test_mixed_line_endings_preserved_for_kept_lines() -> None:
+    layer = ExactDeduplicationLayer()
+    content = "alpha\nbeta\r\nalpha\n"
+    result = layer.optimize(_request(content))
+
+    assert result.decision is TokenOptimizationLayerDecision.APPLY
+    assert result.output_content == "alpha\nbeta\r\n"
+    assert result.metadata["dedupe_saved_chars"] == len("alpha\n")
+
+
+def test_dedupe_saved_chars_equals_removed_raw_duplicate_line_length() -> None:
+    layer = ExactDeduplicationLayer()
+    content = "short\nlonger line\nshort\nlonger line\r\n"
+    result = layer.optimize(_request(content))
+
+    assert result.decision is TokenOptimizationLayerDecision.APPLY
+    expected_saved = len("short\n") + len("longer line\r\n")
+    assert result.metadata["dedupe_saved_chars"] == expected_saved
     assert result.metadata["dedupe_saved_chars"] == len(content) - len(result.output_content)
+
+
+def test_dedupe_key_ignores_line_ending_but_output_keeps_original_ending() -> None:
+    layer = ExactDeduplicationLayer()
+    content = "alpha\nalpha\r\n"
+    result = layer.optimize(_request(content))
+
+    assert result.decision is TokenOptimizationLayerDecision.APPLY
+    assert result.output_content == "alpha\n"
+    assert result.metadata["duplicates_removed"] == 1
+    assert result.metadata["dedupe_saved_chars"] == len("alpha\r\n")
+
+
+def test_duplicate_groups_metadata_contains_no_raw_content() -> None:
+    layer = ExactDeduplicationLayer()
+    secret_line = "secret-token-abc123"
+    content = f"{secret_line}\nother\n{secret_line}\n"
+    result = layer.optimize(_request(content))
+
+    assert result.decision is TokenOptimizationLayerDecision.APPLY
+    metadata_blob = str(result.metadata["duplicate_groups"])
+    assert secret_line not in metadata_blob
+    for group in result.metadata["duplicate_groups"]:
+        assert set(group.keys()) == {
+            "representative_line_index",
+            "duplicate_line_indices",
+            "dedupe_key_hash",
+        }
 
 
 def test_metadata_contains_base_config_and_effective_config() -> None:

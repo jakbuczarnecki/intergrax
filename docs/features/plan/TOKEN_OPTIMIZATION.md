@@ -826,6 +826,13 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - dedupe attribution is separated from truncation and structural compaction (`dedupe_saved_chars`, `duplicates_removed` in metadata)
 - metadata exposes `base_config`, `effective_config`, `config_overrides`; `duplicate_groups` uses indices and key hashes only
 
+**TOKEN-OPT-3C-B-R — formatting preservation refinement — Done / Closed**
+
+- kept line endings are preserved (`splitlines(keepends=True)` + `"".join(kept_raw_lines)`)
+- trailing newline is preserved when the final kept line originally ended with one
+- `dedupe_saved_chars` is based on removed raw duplicate line lengths, not incidental newline normalization
+- dedupe key ignores line ending; no algorithm expansion
+
 **Status:** **Done / Closed**.
 
 **Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
