@@ -83,6 +83,15 @@ def test_sentry_bootstrap_does_not_run_upgrade() -> None:
     assert "sentry upgrade" not in bootstrap
 
 
+def test_sentry_bootstrap_team_creation_compatible_with_sentry_24() -> None:
+    bootstrap = _BOOTSTRAP_SH.read_text(encoding="utf-8")
+    assert "create_default_team" not in bootstrap
+    assert "Team.objects.get_or_create" in bootstrap
+    assert "Project.objects.get_or_create" in bootstrap
+    assert "ProjectKey.objects" in bootstrap
+    assert "os.replace" in bootstrap
+
+
 def test_sentry_bootstrap_sh_has_lf_line_endings_only() -> None:
     content = _BOOTSTRAP_SH.read_bytes()
     assert b"\r\n" not in content

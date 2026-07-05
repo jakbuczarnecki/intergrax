@@ -52,10 +52,15 @@ tmp_path = '${GENERATED_ENV_TMP}'
 final_path = '${GENERATED_ENV}'
 
 user = User.objects.get(email=email)
-org, created = Organization.objects.get_or_create(slug=org_slug, defaults={'name': 'Intergrax Local Proof'})
-if created:
-    org.create_default_team()
-team = Team.objects.get(organization=org, slug=org_slug)
+org, _ = Organization.objects.get_or_create(
+    slug=org_slug,
+    defaults={'name': 'Intergrax Local Proof'},
+)
+team, _ = Team.objects.get_or_create(
+    organization=org,
+    slug=org_slug,
+    defaults={'name': 'Intergrax Local Proof'},
+)
 OrganizationMember.objects.get_or_create(
     organization=org,
     user=user,
