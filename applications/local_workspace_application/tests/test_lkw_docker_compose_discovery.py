@@ -84,7 +84,7 @@ def test_hard_reset_local_docker_all_bat_resets_runtime_state_and_starts_stack()
     assert ".bootstrapped" in script
     assert "up --build" in script
     assert "del /f /q" in script
-    assert ".env" not in script
+    assert "APP_DIR%\\.env" not in script
     assert "credentials.json" not in script
 
 
