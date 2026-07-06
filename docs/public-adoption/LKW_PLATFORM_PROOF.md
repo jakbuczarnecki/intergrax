@@ -1,24 +1,33 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
-This document is the **guided reviewer path** for verifying that Intergrax works as a real platform, not only as architecture documentation.
+This is the guided reviewer path for verifying that Intergrax works as a real platform, not only as architecture documentation.
 
-It uses the **Local Knowledge Workspace (LKW)** application as the proof target. You will start the local proof stack, run one proof event into Sentry, run one LKW workflow into Elasticsearch/Kibana, and verify the results in the browser.
+You will verify the proof from this document only:
+
+```text
+1. Start the local proof stack.
+2. Verify the stack is ready.
+3. Emit one controlled problem signal into local Sentry.
+4. Open the generated Sentry issue in the browser.
+5. Run one real LKW workflow and validate Elasticsearch output.
+6. Open Kibana and inspect the generated run timeline.
+```
 
 > Scope: local technical proof only. This is not a production readiness, security, compliance, SLA, hosting, or commercial-use claim. See [`COLLABORATION.md`](../../COLLABORATION.md) and [`LICENSE`](../../LICENSE).
 
 ---
 
-## What you are proving
+## What this proves
 
-A reviewer should be able to verify three things without reading the whole repository:
+A reviewer should be able to verify three platform behaviors without reading the whole repository:
 
 ```text
 1. LKW starts as a real Tier-3 Intergrax application.
-2. LKW emits platform observability records into Elasticsearch/Kibana.
+2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
 3. LKW emits controlled problem signals into local Sentry.
 ```
 
-The important platform path is:
+The important path is:
 
 ```text
 LKW HTTP API
@@ -30,13 +39,11 @@ LKW HTTP API
 → local proof backend UI
 ```
 
-The proof intentionally uses local Docker services. You do **not** need an external Sentry account, SaaS DSN, cloud account, or hosted service.
+The proof uses local Docker services only. You do not need an external Sentry account, SaaS DSN, cloud account, or hosted service.
 
 ---
 
-## What will be started locally
-
-The canonical local stack starts all current proof backends:
+## Local services used by the proof
 
 ```text
 local_workspace   LKW API host              http://127.0.0.1:8020
@@ -52,9 +59,9 @@ First start can take several minutes, especially the local Sentry stack.
 
 ---
 
-## Before you start
+## Prerequisites
 
-Recommended environment:
+Recommended local environment:
 
 ```text
 Docker Desktop / Docker Compose
@@ -63,19 +70,13 @@ uv
 PowerShell on Windows
 ```
 
-Run commands from the repository root.
-
-On Windows the repository root looks like:
-
-```text
-D:\Projekty\intergrax
-```
+Run all commands from the repository root.
 
 ---
 
 ## Step 1 — Hard reset and start the full local proof stack
 
-Use this when you want a clean, reproducible proof from scratch.
+Use this for a clean proof from scratch.
 
 Windows:
 
@@ -89,29 +90,37 @@ What this script does:
 1. stops the local proof stack
 2. removes Docker volumes and orphan containers
 3. removes generated local Sentry proof runtime state
-4. starts the full proof stack again with up --build
+4. starts the full proof stack in detached mode with up -d --build
 ```
 
-It does **not** delete source files, `.env`, committed local Relay credentials, sample documents, or Docker images.
+Expected terminal behavior:
+
+```text
+The script should finish and return you to the command prompt.
+It should not leave you watching a live stream of Sentry/Kafka/Elasticsearch logs.
+The last lines should point you to the next ps -a check.
+```
+
+It does not delete source files, `.env`, committed local Relay credentials, sample documents, or Docker images.
 
 If you only want to start without cleaning state, use:
 
 ```bat
-applications\local_workspace_application\scripts\run-local-docker-all.bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat up -d --build
 ```
 
 Linux/macOS startup helper:
 
 ```bash
 chmod +x applications/local_workspace_application/scripts/run-local-docker-all.sh
-applications/local_workspace_application/scripts/run-local-docker-all.sh
+applications/local_workspace_application/scripts/run-local-docker-all.sh up -d --build
 ```
 
 ---
 
-## Step 2 — Wait until the stack is ready
+## Step 2 — Verify the stack is ready
 
-Open a second terminal and run:
+Run:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat ps -a
@@ -155,7 +164,7 @@ Run one controlled Sentry proof event:
 applications\local_workspace_application\scripts\run-sentry-observability-proof.bat --run-id lkw-sentry-live-001 --correlation-id lkw-sentry-live-001
 ```
 
-Expected result in the terminal:
+Expected terminal result:
 
 ```text
 proof_result=PASS
@@ -165,13 +174,13 @@ safety_check=passed
 sentry_event_sent=true
 ```
 
-This means LKW successfully emitted a controlled platform problem signal through the shared observability path into the local Sentry backend.
+This means LKW emitted a controlled platform problem signal through the shared observability path into the local Sentry backend.
 
 ---
 
 ## Step 4 — Open the generated Sentry issue
 
-Open local Sentry in your browser:
+Open local Sentry:
 
 ```text
 http://127.0.0.1:9000
@@ -190,9 +199,7 @@ Open the LKW proof organization/project directly:
 http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
 ```
 
-If the issue list is empty, wait a few seconds and refresh. The local consumer may need a short moment after Kafka topics are created.
-
-Expected issue details include tags like:
+Expected issue tags include:
 
 ```text
 intergrax.problem_kind        lkw.proof_controlled_failure
@@ -203,21 +210,11 @@ intergrax.provider_id         sentry
 intergrax.record_type         problem_signal
 ```
 
-Expected architectural meaning:
-
-```text
-LKW controlled failure
-→ platform ProblemReporter
-→ ObservabilityExportPolicy
-→ Sentry vendor provider
-→ local Sentry issue
-```
+If the issue list is empty, wait a few seconds and refresh.
 
 ---
 
 ## Step 5 — Prove Elasticsearch/Kibana observability in one command
-
-Run the one-command Elasticsearch/Kibana proof helper:
 
 Windows:
 
@@ -251,7 +248,7 @@ kibana_url=http://127.0.0.1:5601
 elasticsearch_validation=passed
 ```
 
-Copy the printed `run_id`. You will use it in Kibana in the next step.
+Copy the printed `run_id`. You will use it in Kibana.
 
 ---
 
@@ -277,19 +274,19 @@ Then open:
 Analytics → Discover
 ```
 
-Set the time range to:
+Set time range to:
 
 ```text
 Last 24 hours
 ```
 
-Search for your run using the filter printed by the helper:
+Search for the run using the filter printed by the helper:
 
 ```text
 intergrax.run_id: "<generated_run_id>"
 ```
 
-Expected records include event types such as:
+Expected event types include:
 
 ```text
 tool_requested
@@ -297,7 +294,7 @@ tool_completed
 task_completed
 ```
 
-Useful columns to add:
+Useful columns:
 
 ```text
 @timestamp
@@ -324,9 +321,7 @@ intergrax.status
 
 ---
 
-## If something is not visible yet
-
-Use one check at a time.
+## Troubleshooting one step at a time
 
 ### Sentry UI opens but no issue appears
 
@@ -342,11 +337,7 @@ If `sentry-events-consumer` is not `Up`, inspect it:
 applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 sentry-events-consumer
 ```
 
-The local stack is configured to restart this consumer on failure because the Kafka `ingest-events` topic may be created shortly after the first consumer start.
-
 ### LKW is not healthy
-
-Run:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 local_workspace
@@ -354,14 +345,12 @@ applications\local_workspace_application\scripts\run-local-docker-all.bat logs -
 
 ### Elasticsearch proof helper fails
 
-First check LKW and Elasticsearch:
-
 ```powershell
 curl -i http://127.0.0.1:8020/health
 curl -i http://127.0.0.1:9200/_cluster/health
 ```
 
-Then inspect recent logs one service at a time:
+Then inspect one service at a time:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 local_workspace
@@ -370,39 +359,6 @@ applications\local_workspace_application\scripts\run-local-docker-all.bat logs -
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 elasticsearch
 ```
-
-### Sentry login
-
-Use exactly:
-
-```text
-admin@intergrax.local
-proof-local-only
-```
-
-### Wrong Sentry organization/project
-
-Use the direct URL:
-
-```text
-http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
-```
-
-The default Sentry organization may show an `internal` project. The LKW proof project is `lkw-proof` in organization `intergrax-local`.
-
----
-
-## What this proves architecturally
-
-| Platform concern | What the proof demonstrates |
-|------------------|-----------------------------|
-| Tier-3 application boundary | LKW exposes a real HTTP product boundary |
-| Runtime execution | A real LKW request creates a run through the platform path |
-| Agent/tool path | `local.workspace.search` reaches the `local_search` / retrieval path |
-| Observability envelope | Runtime records are exported through platform observability envelopes |
-| Export safety | Proof helpers check duplicate records and forbidden/sensitive keys |
-| Vendor integration | Elasticsearch/Kibana and Sentry are reached through provider integrations |
-| Problem signaling | Controlled LKW failures become Sentry problem issues |
 
 ---
 
