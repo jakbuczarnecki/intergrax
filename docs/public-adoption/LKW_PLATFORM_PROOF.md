@@ -50,9 +50,11 @@ Expected result:
 
 ```text
 The script finishes and returns to the command prompt.
-It does not leave you watching a live Docker log stream.
+It launches Docker startup separately instead of keeping this terminal inside a live startup stream.
 The last lines point to the next status check.
 ```
+
+Do not wait on Docker progress output manually. Step 2 is the readiness check.
 
 ---
 
@@ -70,6 +72,14 @@ Expected result:
 proof_status=PASS
 next_step=run-sentry-observability-proof
 ```
+
+If you get:
+
+```text
+proof_status=WAIT
+```
+
+wait 30-60 seconds and run the same command again.
 
 Then verify LKW health:
 
