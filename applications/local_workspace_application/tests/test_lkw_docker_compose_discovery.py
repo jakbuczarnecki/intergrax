@@ -26,6 +26,7 @@ _ROOT_GITIGNORE = _PROJECT_ROOT / ".gitignore"
 _OLD_SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "docker-compose.sentry.services.yml"
 _RUN_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "run-local-docker-all.bat"
 _RUN_LOCAL_DOCKER_ALL_SH = _SCRIPTS_DIR / "run-local-docker-all.sh"
+_HARD_RESET_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "hard-reset-local-docker-all.bat"
 _BOOTSTRAP_SH = _DOCKER_DIR / "sentry" / "bootstrap" / "bootstrap.sh"
 
 _TOP_LEVEL_OVERLAY_PATTERN = re.compile(r"^docker-compose\..+\.yml$")
@@ -71,6 +72,20 @@ def test_run_local_docker_all_bat_exists() -> None:
     assert _RUN_LOCAL_DOCKER_ALL_BAT.exists()
     script = _RUN_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
     assert "docker-compose.*.yml" in script
+
+
+def test_hard_reset_local_docker_all_bat_resets_runtime_state_and_starts_stack() -> None:
+    assert _HARD_RESET_LOCAL_DOCKER_ALL_BAT.exists()
+    script = _HARD_RESET_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
+    assert "run-local-docker-all.bat" in script
+    assert "down -v --remove-orphans" in script
+    assert "generated.env" in script
+    assert "generated.env.tmp" in script
+    assert ".bootstrapped" in script
+    assert "up --build" in script
+    assert "del /f /q" in script
+    assert ".env" not in script
+    assert "credentials.json" not in script
 
 
 def test_sentry_snuba_bootstrap_before_api_and_upgrade() -> None:
