@@ -59,9 +59,25 @@ if exist "%SENTRY_PROOF_DIR%\.bootstrapped" (
 )
 
 echo.
-echo [3/3] Starting clean local Docker stack...
-call "%RUN_ALL%" up --build
+echo [3/3] Starting clean local Docker stack in detached mode...
+call "%RUN_ALL%" up -d --build
 set "EXIT_CODE=%ERRORLEVEL%"
 
+if not "%EXIT_CODE%"=="0" (
+    echo Docker compose startup failed with exit code %EXIT_CODE%.
+    popd >nul
+    exit /b %EXIT_CODE%
+)
+
+echo.
+echo LKW local Docker hard reset complete.
+echo.
+echo Next step:
+echo   applications\local_workspace_application\scripts\run-local-docker-all.bat ps -a
+echo.
+echo Expected: local_workspace, elasticsearch, kibana, sentry-web, sentry-relay, and sentry-nginx should be Up.
+echo Note: one-shot setup containers such as sentry-bootstrap and sentry-upgrade may show Exited (0).
+echo.
+
 popd >nul
-exit /b %EXIT_CODE%
+exit /b 0
