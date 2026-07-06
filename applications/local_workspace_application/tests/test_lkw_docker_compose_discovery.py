@@ -27,6 +27,8 @@ _OLD_SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "docker-compose.sentry.services.ym
 _RUN_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "run-local-docker-all.bat"
 _RUN_LOCAL_DOCKER_ALL_SH = _SCRIPTS_DIR / "run-local-docker-all.sh"
 _HARD_RESET_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "hard-reset-local-docker-all.bat"
+_RUN_LKW_ES_PROOF_BAT = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.bat"
+_RUN_LKW_ES_PROOF_SH = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.sh"
 _BOOTSTRAP_SH = _DOCKER_DIR / "sentry" / "bootstrap" / "bootstrap.sh"
 
 _TOP_LEVEL_OVERLAY_PATTERN = re.compile(r"^docker-compose\..+\.yml$")
@@ -86,6 +88,26 @@ def test_hard_reset_local_docker_all_bat_resets_runtime_state_and_starts_stack()
     assert "del /f /q" in script
     assert "APP_DIR%\\.env" not in script
     assert "credentials.json" not in script
+
+
+def test_lkw_elasticsearch_proof_helpers_create_run_and_validate_observability() -> None:
+    for path in (_RUN_LKW_ES_PROOF_BAT, _RUN_LKW_ES_PROOF_SH):
+        assert path.exists()
+        script = path.read_text(encoding="utf-8")
+        assert "/v1/local_workspace/run" in script
+        assert "local.workspace.search" in script
+        assert "LKW_PLATFORM_PROOF" in script
+        assert "run-elasticsearch-observability-proof" in script
+        assert "intergrax.run_id" in script
+        assert "http://127.0.0.1:5601" in script
+        assert "Proof result: PASS" in script
+
+
+def test_lkw_elasticsearch_proof_sh_has_lf_line_endings_only() -> None:
+    content = _RUN_LKW_ES_PROOF_SH.read_bytes()
+    assert b"\r\n" not in content
+    assert b"\r" not in content
+    assert content.split(b"\n", 1)[0] == b"#!/usr/bin/env bash"
 
 
 def test_sentry_snuba_bootstrap_before_api_and_upgrade() -> None:
