@@ -127,6 +127,14 @@ These credentials are for **local proof only**. Do not reuse in production.
 
 The shared Sentry services use a deterministic local-proof secret key (`SENTRY_SECRET_KEY` default: `intergrax-local-sentry-proof-secret-key-not-for-production`). This is **not production-safe** and must not be reused outside this local proof stack.
 
+`sentry-relay` runs in managed mode and requires `credentials.json` beside `config.yml`. The repo ships a **local-proof-only** Relay credential at:
+
+```text
+applications/local_workspace_application/docker/sentry/relay/credentials.json
+```
+
+It was generated once with `getsentry/relay:24.8.0 credentials generate` and is mounted read-only into the relay container. **Not production-safe** — do not reuse outside this stack. To regenerate (only if needed): run the same command against that directory with `--overwrite`.
+
 Bootstrap writes the local DSN for the LKW container to:
 
 ```text

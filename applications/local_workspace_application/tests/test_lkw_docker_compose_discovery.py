@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -144,6 +145,15 @@ def test_sentry_relay_uses_config_directory_not_file() -> None:
     assert "sentry-relay:" in services
     assert "command: run -c /work/.relay" in services
     assert "command: run -c /work/.relay/config.yml" not in services
+
+
+def test_sentry_relay_has_local_proof_credentials_json() -> None:
+    credentials_path = _DOCKER_DIR / "sentry" / "relay" / "credentials.json"
+    assert credentials_path.is_file()
+    payload = json.loads(credentials_path.read_text(encoding="utf-8"))
+    for key in ("secret_key", "public_key", "id"):
+        assert key in payload
+        assert isinstance(payload[key], str) and payload[key]
 
 
 def test_sentry_secret_key_in_shared_env() -> None:
