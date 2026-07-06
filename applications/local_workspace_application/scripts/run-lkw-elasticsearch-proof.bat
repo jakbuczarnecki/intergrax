@@ -3,6 +3,9 @@ setlocal enabledelayedexpansion
 
 set "SCRIPT_DIR=%~dp0"
 set "REPO_ROOT=%SCRIPT_DIR%..\..\.."
+set "DOCKER_DIR=%REPO_ROOT%\applications\local_workspace_application\docker"
+set "BASE_COMPOSE=%DOCKER_DIR%\docker-compose.yml"
+set "ES_COMPOSE=%DOCKER_DIR%\docker-compose.elasticsearch.yml"
 set "VALIDATOR=%SCRIPT_DIR%run-elasticsearch-observability-proof.bat"
 set "RUN_ID_FILE=%TEMP%\intergrax_lkw_es_run_id_%RANDOM%%RANDOM%.txt"
 
@@ -28,7 +31,12 @@ echo Repository root: %CD%
 echo LKW base URL: %LKW_BASE_URL%
 echo Kibana URL: %KIBANA_URL%
 echo.
-echo Step 1/3: executing a real LKW run...
+echo Step 1/4: switching local_workspace to Elasticsearch observability backend...
+docker compose -f "%BASE_COMPOSE%" -f "%ES_COMPOSE%" up -d --build local_workspace
+if errorlevel 1 goto proof_fail
+
+echo.
+echo Step 2/4: executing a real LKW run...
 
 set "LKW_RUN_ID_FILE=%RUN_ID_FILE%"
 set "LKW_PROOF_BASE_URL=%LKW_BASE_URL%"
@@ -43,12 +51,12 @@ del /f /q "%RUN_ID_FILE%" >nul 2>nul
 if "%RUN_ID%"=="" goto missing_run_id
 
 echo.
-echo Step 2/3: validating Elasticsearch observability for run_id=%RUN_ID%...
+echo Step 3/4: validating Elasticsearch observability for run_id=%RUN_ID%...
 call "%VALIDATOR%" "%RUN_ID%"
 if errorlevel 1 goto proof_fail
 
 echo.
-echo Step 3/3: open Kibana and inspect this run.
+echo Step 4/4: open Kibana and inspect this run.
 echo Kibana URL:
 echo   %KIBANA_URL%
 echo.
