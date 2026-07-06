@@ -35,6 +35,11 @@ echo Step 1/4: switching local_workspace to Elasticsearch observability backend.
 docker compose -f "%BASE_COMPOSE%" -f "%ES_COMPOSE%" up -d --build local_workspace
 if errorlevel 1 goto proof_fail
 
+echo Waiting for LKW health after backend switch...
+set "LKW_HEALTH_URL=%LKW_BASE_URL%/health"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; $url = $env:LKW_HEALTH_URL; $deadline = (Get-Date).AddSeconds(120); do { try { $response = Invoke-RestMethod -Method Get -Uri $url -TimeoutSec 5; if ($response.status -eq 'ok') { Write-Host 'lkw_health=ok'; exit 0 } } catch { Start-Sleep -Seconds 2 } Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); throw 'LKW health check did not pass before timeout'"
+if errorlevel 1 goto proof_fail
+
 echo.
 echo Step 2/4: executing a real LKW run...
 
