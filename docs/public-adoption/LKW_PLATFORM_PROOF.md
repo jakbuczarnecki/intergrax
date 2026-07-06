@@ -126,7 +126,12 @@ Open local Sentry:
 http://127.0.0.1:9000
 ```
 
-Use the local proof credentials from `applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md`.
+Use this local proof login:
+
+```text
+email:    admin@intergrax.local
+password: proof-local-only
+```
 
 Open the LKW proof project directly:
 
