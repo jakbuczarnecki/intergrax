@@ -222,6 +222,9 @@ services:
     depends_on:
       sentry-web:
         condition: service_healthy
+    # Local proof race: the ingest-events Kafka topic may be created shortly after
+    # the consumer first starts. Retry instead of requiring a manual restart.
+    restart: on-failure
 
   sentry-post-process-forwarder-errors:
     <<: *sentry_image
