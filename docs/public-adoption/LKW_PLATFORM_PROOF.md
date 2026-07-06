@@ -68,7 +68,7 @@ Run commands from the repository root.
 On Windows the repository root looks like:
 
 ```text
-D:\Projekty\intergrax
+C:\intergrax
 ```
 
 ---
