@@ -215,64 +215,47 @@ LKW controlled failure
 
 ---
 
-## Step 5 — Run a real LKW workflow for Elasticsearch/Kibana
+## Step 5 — Prove Elasticsearch/Kibana observability in one command
 
-The Elasticsearch proof is based on a real LKW run. Submit one LKW request:
+Run the one-command Elasticsearch/Kibana proof helper:
 
-PowerShell:
-
-```powershell
-$body = @{
-  message = "Find documents about local workspace observability proof"
-  capability = "local.workspace.search"
-  metadata = @{
-    proof = "LKW_PLATFORM_PROOF"
-  }
-} | ConvertTo-Json -Depth 5
-
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "http://127.0.0.1:8020/v1/local_workspace/run" `
-  -ContentType "application/json" `
-  -Body $body
-```
-
-Copy the returned `run_id`.
-
-Example shape:
-
-```text
-run_id=run_d28d5f36f5ca4240b8693ae46eaa5946
-state=completed
-agent_id=local_search
-```
-
----
-
-## Step 6 — Validate Elasticsearch observability for that run
-
-Replace `<run_id>` with the value from Step 5:
+Windows:
 
 ```bat
-applications\local_workspace_application\scripts\run-elasticsearch-observability-proof.bat <run_id>
+applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-lkw-elasticsearch-proof.sh
+applications/local_workspace_application/scripts/run-lkw-elasticsearch-proof.sh
+```
+
+What this helper does:
+
+```text
+1. executes a real LKW run through POST /v1/local_workspace/run
+2. captures the returned run_id
+3. validates Elasticsearch records for that run_id
+4. runs duplicate and safety checks
+5. prints the Kibana URL and Discover filter to use in the browser
 ```
 
 Expected result:
 
 ```text
 Proof result: PASS
-run_id=<run_id>
-elasticsearch_url=http://127.0.0.1:9200
-elasticsearch_index=intergrax-lkw-observability
-duplicate_check=0
-safety_check=passed
+run_id=<generated_run_id>
+kibana_url=http://127.0.0.1:5601
+elasticsearch_validation=passed
 ```
 
-This proves that the LKW run produced policy-safe observability documents in Elasticsearch.
+Copy the printed `run_id`. You will use it in Kibana in the next step.
 
 ---
 
-## Step 7 — Open Kibana and inspect the run timeline
+## Step 6 — Open Kibana and inspect the run timeline
 
 Open Kibana:
 
@@ -300,10 +283,10 @@ Set the time range to:
 Last 24 hours
 ```
 
-Search for your run:
+Search for your run using the filter printed by the helper:
 
 ```text
-intergrax.run_id: "<run_id>"
+intergrax.run_id: "<generated_run_id>"
 ```
 
 Expected records include event types such as:
@@ -336,7 +319,7 @@ intergrax.status
 | LKW health | `curl -i http://127.0.0.1:8020/health` | HTTP 200 and `{"status":"ok"}` |
 | Sentry proof helper | `run-sentry-observability-proof.bat` | `proof_result=PASS`, `sentry_event_sent=true` |
 | Sentry UI | `http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2` | Issue visible with `lkw.proof_controlled_failure` tags |
-| Elasticsearch proof helper | `run-elasticsearch-observability-proof.bat <run_id>` | `Proof result: PASS`, `duplicate_check=0`, `safety_check=passed` |
+| Elasticsearch/Kibana proof helper | `run-lkw-elasticsearch-proof.bat` | `Proof result: PASS`, generated `run_id`, `elasticsearch_validation=passed` |
 | Kibana UI | `http://127.0.0.1:5601` Discover | Documents visible for the selected `run_id` |
 
 ---
@@ -367,6 +350,25 @@ Run:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 local_workspace
+```
+
+### Elasticsearch proof helper fails
+
+First check LKW and Elasticsearch:
+
+```powershell
+curl -i http://127.0.0.1:8020/health
+curl -i http://127.0.0.1:9200/_cluster/health
+```
+
+Then inspect recent logs one service at a time:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 local_workspace
+```
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat logs --tail=200 elasticsearch
 ```
 
 ### Sentry login
@@ -404,15 +406,22 @@ The default Sentry organization may show an `internal` project. The LKW proof pr
 
 ---
 
-## Current reviewer UX note
+## Reviewer shortcut summary
 
-The Sentry proof is already one-script after stack startup:
+After prerequisites are installed, the intended fast path is:
 
-```text
-run-sentry-observability-proof.bat
+```bat
+applications\local_workspace_application\scripts\hard-reset-local-docker-all.bat
+applications\local_workspace_application\scripts\run-sentry-observability-proof.bat --run-id lkw-sentry-live-001 --correlation-id lkw-sentry-live-001
+applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
 ```
 
-The Elasticsearch proof currently requires one manual LKW request to obtain a `run_id`, then one proof helper call. The intended next UX improvement is an all-in-one Elasticsearch proof helper that creates the LKW run and validates Elasticsearch/Kibana output in a single command.
+Then open:
+
+```text
+Sentry: http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
+Kibana: http://127.0.0.1:5601
+```
 
 ---
 
