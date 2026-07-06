@@ -1,1 +1,4 @@
 *.ipynb linguist-documentation=true
+
+applications/local_workspace_application/docker/sentry/bootstrap/*.sh text eol=lf
+applications/local_workspace_application/scripts/*.sh text eol=lf

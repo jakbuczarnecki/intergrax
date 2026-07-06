@@ -619,6 +619,334 @@ The wrapper:
 
 ---
 
+## TOKEN-OPT-3A — Stronger optimizer roadmap, algorithm inventory, and measurement sequencing
+
+**Status:** **Done / Closed** (docs-only).
+
+**Purpose:** Turn the next optimization phase into a sequential, measurable, platform-level roadmap. Do **not** build one large stronger optimizer. Build a sequential, plugin-friendly, policy-governed **Token Optimization Engine** where each algorithm/strategy is introduced as a separate measurable step.
+
+**Canonical architecture:** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md) §8 Token Optimization Engine lifecycle, mechanisms, and extensibility.
+
+**Out of scope for TOKEN-OPT-3A:** runtime optimizers, new mechanisms, corpus fixtures, benchmark changes, telemetry wiring, and any `TOKEN-OPT-3B+` implementation.
+
+### Why this phase exists
+
+**TOKEN-OBS-2** (diagnostic benchmark flow, regression report/gate artifacts, synthetic `regression_synthetic_v1` reviewer) proved the **diagnostic and measurement UX**: deterministic fixtures, receipt/validation/fallback expectations, per-case savings breakdown, and dominant-savings warnings. It did **not** yet prove advanced real-world optimization quality.
+
+The current `ContextPackOptimizer` remains a conservative helper-only baseline: structural/light compaction, protected-region validation, receipts, fallback, and optional token counter. Aggregate savings from synthetic diagnostics must not be used as a broad public claim because they are dominated by one long truncation case (`context_pack.long_workspace_document`).
+
+**The next phase should not jump directly to a large realistic corpus.** A realistic corpus is useful only after stronger mechanisms exist and can be measured separately.
+
+### Existing implemented surfaces (baseline)
+
+| Surface | Status | Notes |
+|---------|--------|-------|
+| **OutputPolicy runtime** | Done | `OutputPolicyResolver`; policy-only output shaping (`TOKEN-2`). |
+| **ToolSchemaOptimizer** | Done | Helper-only schema/catalog compaction (`TOKEN-3`). |
+| **ContextPackOptimizer** | Done | Light/structural compression only; no dedupe or budget packing (`TOKEN-4`). |
+| **MemorySummaryCompressor** | Done | Helper-only first slice; staging, receipts, rollback metadata (`TOKEN-5A`). |
+| **Telemetry / receipts / regression diagnostics** | Done | Contracts, receipts, protected regions, regression runner, report/gate CLI, synthetic diagnostic reviewer (`TOKEN-1*`, `TOKEN-6*`, `TOKEN-OBS-2*`). |
+
+### Core sequencing decision
+
+```text
+Do not build one large stronger optimizer.
+Build a sequential, plugin-friendly, policy-governed Token Optimization Engine
+where each algorithm/strategy is introduced as a separate measurable step.
+```
+
+**Rule:** One optimization algorithm per task. Every algorithmic task must produce measurable attribution before the next algorithm is added.
+
+**Recommended implementation order** (after current diagnostic baseline):
+
+| Order | Task | Scope |
+|-------|------|-------|
+| 1 | **TOKEN-OPT-3A** | Roadmap and sequencing design (this section) — **Done / Closed** |
+| 2 | **TOKEN-OPT-3B** | Priority-tiered context packing **contract** (data model only) — **Done / Closed** |
+| 3 | **TOKEN-OPT-3C-A** | Optimization layer and pipeline composition **contract** — **Done / Closed** |
+| 4 | **TOKEN-OPT-3C-B** | Deterministic exact deduplication layer — **Done / Closed** |
+| 5 | **TOKEN-OPT-3D** | Budget-aware context packing prototype — **Done / Closed** |
+| 6 | **TOKEN-OBS-3E** | Realistic corpus for stronger optimizer — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
+| 7 | **TOKEN-OBS-3F** | Baseline vs stronger optimizer comparison — **Done / Closed** (as part of **TOKEN-OBS-3E-F**) |
+| 8 | **TOKEN-OBS-3G** | Safe public wording / proof claims — **Done / Closed** |
+
+Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
+
+### Algorithm inventory
+
+Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`TokenOptimizationStrategyKind`, `StrategySafetyClass`, `TokenOptimizationProfile`, `TokenOptimizationSourceType`, `TokenOptimizationMechanism`).
+
+| Algorithm / strategy | Primary source categories | Safety class | First allowed profile | Receipt | Protected-region validation | Regression measurement | Recommended phase | Initial status |
+|----------------------|---------------------------|--------------|----------------------|---------|----------------------------|------------------------|-------------------|----------------|
+| Measurement-only baseline | All (`TokenOptimizationSourceType`) | `measurement_only` | `measure_only` | Yes (bypass/fallback) | When content present | Yes | Baseline (shipped) | **Implemented** |
+| Lossless normalization | `prompt`, `tool_catalog`, `rag_context_pack`, `memory` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-3/4 (shipped) | **Implemented** (partial) |
+| Lossless structural compaction | `rag_context_pack`, `retrieved_evidence`, `memory` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-4 (shipped) | **Implemented** |
+| Schema minimization | `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | TOKEN-3 (shipped) | **Implemented** |
+| Exact deduplication | `rag_context_pack`, `conversation_history`, `tool_catalog` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3C-B** | **Implemented** |
+| Near-deduplication | `rag_context_pack`, `conversation_history` | `lossless` / `experimental` | `balanced` | Yes | Yes | Yes | Post-3C eval | Deferred |
+| Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
+| Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
+| Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
+| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | TOKEN-2 / TOKEN-6 extension | Deferred |
+| Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
+| Retrieval-on-demand | `rag_context_pack`, `retrieved_evidence` | `reversible` / `lossy` (partial) | `balanced` | Yes | Yes | Yes | RAG integration slice | Deferred |
+| Safe lossy summarization | `memory`, `rag_context_pack` | `lossy` | `aggressive` (explicit `allow_lossy`) | Yes | Yes | Yes | Post-3D eval | **Excluded** from next slice |
+| Semantic compression | `memory`, `rag_context_pack`, `conversation_history` | `lossy` / `experimental` | `experimental` | Yes | Yes | Yes | TOKEN-7+ | **Excluded** from next slice |
+| Adaptive strategy recommendation | All (telemetry input) | `policy_only` | `balanced` | No (recommendation only) | N/A | Yes | **TOKEN-7** | Frozen |
+
+### Measurement model — savings attribution by source and strategy
+
+Aggregate savings alone are **not** enough. Every optimization task must report savings attributable to a single primary strategy (or explicit multi-strategy breakdown in receipt metadata when composition is unavoidable).
+
+**Required separate attribution dimensions** (per run/step/source):
+
+| Attribution bucket | Strategy kind / mechanism | Must not be mixed with |
+|--------------------|----------------------------|------------------------|
+| Whitespace / structural compaction savings | `lossless_structural_compression` | Truncation, dedupe, packing |
+| Schema minimization savings | `schema_minimization` | Context packing, dedupe |
+| Deduplication savings | `deduplication` | Truncation, packing |
+| Budget-aware packing savings | `ranking_pruning` (packing tier drops) | Dedupe, truncation |
+| Truncation savings | Lossy length cap (explicit `allow_lossy`) | Dedupe, packing, structural compaction |
+| Output policy savings | `output_verbosity_shaping` | Source compression |
+| Tool output / log filtering savings | `extractive_filtering` | RAG/context packing |
+| Memory compression savings | `lossless_structural_compression` / future `safe_lossy_summarization` | Context dedupe |
+| Cache / prefix savings | `cache_prefix_stabilization` | Content removal strategies |
+
+**Public-claims rule:** Truncation-driven savings must **not** be mixed with deduplication or packing savings in public claims. Use per-case reviewer breakdown and strategy-attributed receipts (see §Diagnostic benchmark one-command flow marketing note).
+
+Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOptimizationStrategyRef`), `source_type`, and `category` so observability and regression gates can gate on attribution, not totals alone.
+
+### Platform / plugin / application boundaries
+
+| Principle | Rule |
+|-----------|------|
+| Engine ownership | **Token Optimization Engine** is platform-owned (`intergrax/runtime/token_optimization/`). |
+| Application role | Applications provide workload, evidence, profiles, and validation expectations. Applications **do not** own optimizer algorithms. |
+| LKW | LKW remains the **primary proof workload**, not the owner of the optimization engine. |
+| Plugins | Strategies must be replaceable through platform/plugin contracts (`TokenOptimizationPluginDescriptor`, `TokenOptimizationPluginCapability`). |
+| Plugin guardrails | Plugins must **not** bypass policy, protected-region validation, receipts, fallback, or observability. |
+| Telemetry | No private telemetry bus. Emission through HOS or approved domain-signal path only. |
+| Redaction | No raw prompts, raw documents, raw RAG chunks, tool args, secrets, or large raw artifacts in telemetry/receipts/reports. |
+
+### Safety decisions (next implementation slices)
+
+| Decision | Rule |
+|----------|------|
+| Semantic compression | **No** semantic compression in the next implementation slice. |
+| LLM summarization | **No** LLM summarization in the next implementation slice. |
+| Default lossiness | **No** lossy optimization by default (`allow_lossy=False` unless explicit). |
+| Protected values | Protected values remain **must-keep**; `required=True` / `must_keep` fragments cannot disappear. |
+| Receipts | Receipts are part of the product, not optional debug output (`emit_receipts` default on). |
+| Validation failure | Validation failure must **fallback** to original or safer/lower optimization. |
+
+### Next task definitions
+
+#### TOKEN-OPT-3B — priority-tiered context packing contract
+
+**Purpose:** Define the data contract for priority-tiered context packing **before** implementing packing behavior.
+
+**Contracts added** (`intergrax/runtime/token_optimization/contracts.py`):
+
+- `ContextFragmentPriority` — strongly typed priority tiers (`must_keep`, `high_priority`, `compressible`, `droppable`)
+- `ContextPackingBudget` — token budget envelope with invariant validation
+- `ContextPackingDecisionKind` — per-fragment action vocabulary (`keep`, `compact`, `deduplicate`, `drop`, `truncate`, `bypass`, `fallback`)
+- `ContextPackingDecision` — per-fragment packing decision with token math validation
+- `ContextDeduplicationMetadata` — cross-fragment duplicate linkage (contract only)
+- `ContextFragmentPackingMetadata` — per-fragment packing metadata with fail-fast priority consistency checks
+- `ContextPackingReceiptMetadata` — receipt explanation metadata for future receipt builders
+
+**Closeout:**
+
+- contracts added; no optimizer behavior changed
+- no dedupe behavior added; no budget-aware packing behavior added
+- `required=True` on existing `ContextFragment` remains compatible with future `must_keep` (conceptual predecessor; no migration in this task)
+- priority tiers are strongly typed enums, not loose metadata strings
+- contracts are plugin-friendly and application-independent (optional `TokenOptimizationStrategyRef`, extension metadata only in explicit `metadata` fields)
+- vocabulary defined here is used by **TOKEN-OPT-3C-B** (exact dedupe, implemented) and **TOKEN-OPT-3D** (budget-aware packing)
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+
+#### TOKEN-OPT-3C-A — optimization layer and pipeline composition contract
+
+**Purpose:** Define strongly typed, extensible, plugin-friendly contracts for optimization layers and pipeline composition before implementing deduplication or a runtime engine.
+
+**Contracts added** (`intergrax/runtime/token_optimization/contracts.py`):
+
+- `TokenOptimizationLayerDecision` — per-layer outcome (`apply`, `bypass`, `fallback`, `override_previous`, `revert_to_original`, `failed`)
+- `TokenOptimizationLayerDescriptor` — built-in/custom/plugin layer metadata
+- `TokenOptimizationLayerContext` — pipeline position and layer lineage
+- `TokenOptimizationLayerRequest` — `original_content` (immutable baseline) + `current_content` (working state after prior layers)
+- `TokenOptimizationLayerResult` — explicit override metadata (`previous_changes_overridden`, `overridden_layer_ids`, `override_reason`)
+- `TokenOptimizationLayer` — optional `Protocol` for layer implementations
+- `TokenOptimizationLayerRef` — ordered layer reference for pipeline config
+- `TokenOptimizationPipelineMode` — `default` (platform order) or `replace` (developer-provided list)
+- `TokenOptimizationPipelineConfig` — composable pipeline of built-in and plugin/custom layers
+- `TokenOptimizationPipelineResult` — aggregate pipeline outcome without execution logic
+
+**Closeout:**
+
+- contracts added; no dedupe implementation yet
+- no pipeline runtime engine yet; no `ContextPackOptimizer` behavior changed
+- every layer receives `original_content` and `current_content`; custom layers may override previous changes only explicitly
+- pipeline order configurable via `DEFAULT` or `REPLACE`; developers can compose built-in and plugin/custom layer refs (e.g. `builtin.structural_compaction`, `custom.company.domain_dedupe`)
+- deduplication will become the first concrete optimization layer in **TOKEN-OPT-3C-B**, not an ad-hoc flag in `ContextPackOptimizer`
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+
+#### TOKEN-OPT-3C-B — deterministic exact deduplication layer
+
+**Purpose:** Add the first stronger real reduction mechanism using deterministic exact deduplication.
+
+**Rules:**
+
+- Exact dedupe first; **no** semantic near-dedupe yet
+- Required / `must_keep` fragments cannot disappear
+- Receipt must explain suppressed/removed duplicates
+- Dedupe savings measured **separately** from truncation
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/layers/exact_deduplication.py` — `ExactDeduplicationLayer`, `ExactDeduplicationLayerConfig`
+- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `tests/unit/runtime/token_optimization/test_exact_deduplication_layer.py`
+
+**Closeout:**
+
+- first concrete built-in `TokenOptimizationLayer` implementation
+- layer implemented in its own file (no generic `layers.py`)
+- exact line-based dedupe only; case-sensitive by default
+- constructor config represents pipeline-level defaults; dynamic config override belongs to custom subclasses/implementations
+- no env/config resolver added; no hidden env reads inside `optimize()`
+- no semantic or near dedupe
+- no pipeline runtime engine added; no `ContextPackOptimizer` behavior changed
+- dedupe attribution is separated from truncation and structural compaction (`dedupe_saved_chars`, `duplicates_removed` in metadata)
+- metadata exposes `base_config`, `effective_config`, `config_overrides`; `duplicate_groups` uses indices and key hashes only
+
+**TOKEN-OPT-3C-B-R — formatting preservation refinement — Done / Closed**
+
+- kept line endings are preserved (`splitlines(keepends=True)` + `"".join(kept_raw_lines)`)
+- trailing newline is preserved when the final kept line originally ended with one
+- `dedupe_saved_chars` is based on removed raw duplicate line lengths, not incidental newline normalization
+- dedupe key ignores line ending; no algorithm expansion
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+
+#### TOKEN-OPT-3D — budget-aware context packing prototype
+
+**Purpose:** Pack structured context fragments into an explicit **estimated character budget** while preserving `must_keep` and preferring `high_priority` fragments. This is a **char-budget prototype** packing layer, not provider-aware token-budget optimization.
+
+> **Important:** TOKEN-OPT-3D is a **char-budget prototype**. It must not be described as token-accurate optimization until a provider-aware tokenizer/counting adapter is introduced and measured.
+
+**Rules:**
+
+- `must_keep` survives; never dropped or truncated
+- `high_priority` preferred over `compressible` and `droppable`
+- `compressible` compacted only via safe whitespace normalization under budget pressure
+- `droppable` removed first under pressure; excluded by default even when budget remains
+- fallback if `must_keep` alone exceeds `max_chars` or protected-region validation fails
+- packing savings reported at character level only (`budget_unit = "chars"`); no token counter
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/layers/budget_aware_packing.py` — `BudgetAwareContextPackingLayer`, `BudgetAwareContextPackingLayerConfig`, layer-local `BudgetAwarePackingInput` / `BudgetAwarePackingFragment`
+- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `tests/unit/runtime/token_optimization/test_budget_aware_packing_layer.py`
+
+**Closeout:**
+
+- standalone `BudgetAwareContextPackingLayer` implemented in its own file (no generic `layers.py`)
+- char-budget prototype only; `budget_unit = "chars"`; `max_chars` is an estimated character budget, not a token budget
+- no provider tokenizer / no model-specific token counter
+- operates on typed layer-local `BudgetAwarePackingInput` / `BudgetAwarePackingFragment`
+- temporary prototype payload passed through `request.metadata["packing_input"]` until a future engine routes structured layer payloads directly
+- `must_keep` fragments are never dropped
+- `droppable` fragments are dropped first under pressure
+- `compressible` fragments may only use safe whitespace compaction (no semantic summarization, no partial truncation)
+- no pipeline runtime engine added; no `ContextPackOptimizer` behavior changed
+- no benchmark/public claim update
+
+**Status:** **Done / Closed**.
+
+**Next step:** public wording follows [`docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) (**TOKEN-OBS-3G** — Done / Closed).
+
+#### TOKEN-OBS-3E-F — stronger optimizer evaluation pack
+
+**Purpose:** Combine realistic synthetic corpus and deterministic baseline-vs-stronger comparison for the stronger optimizer mechanisms already implemented (`ExactDeduplicationLayer`, `BudgetAwareContextPackingLayer`).
+
+**Scope:**
+
+- internal evaluation only; synthetic data only; no private/real customer data
+- direct evaluation of `ExactDeduplicationLayer` and `BudgetAwareContextPackingLayer` (no production pipeline engine)
+- no benchmark CLI / no CI gate
+- char-level metrics only (`baseline_chars`, `stronger_chars`, `saved_chars`, `strategy_savings_chars`)
+- strategy-separated attribution (`deduplication`, `budget_aware_packing`, `fallback`, `no_op`)
+- no token-accurate claims; no public wording / marketing claims
+- prepares inputs for **TOKEN-OBS-3G**
+
+**Deliverables:**
+
+- `tests/fixtures/token_optimization/stronger_optimizer_corpus.py` — synthetic corpus + evaluation-only helper
+- `tests/unit/runtime/token_optimization/test_stronger_optimizer_evaluation_pack.py` — corpus validation and behavior tests
+
+**Closeout:**
+
+- combines **TOKEN-OBS-3E** (realistic synthetic corpus) and **TOKEN-OBS-3F** (baseline vs stronger comparison) into one internal evaluation pack
+- evaluation report is raw-content-safe (no case content in report fields)
+- no `TokenOptimizationEngine`, layer registry, or benchmark CLI added
+
+**Status:** **Done / Closed**.
+
+**Next step:** follow [`docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) for any public wording derived from this proof.
+
+#### TOKEN-OBS-3G — safe public wording / proof claims
+
+**Purpose:** Add safe, bounded, non-marketing public claim guardrails for the stronger optimizer proof (TOKEN-OPT-3C-B, TOKEN-OPT-3D, TOKEN-OBS-3E-F).
+
+**Closeout:**
+
+- public claim guardrails added in `docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`
+- approved / conditional / forbidden wording documented
+- numeric claims require explicit evidence checklist
+- current proof remains synthetic-corpus and char-level only
+- no runtime, benchmark, script, application, or layer changes
+
+**Status:** **Done / Closed**.
+
+#### TOKEN-OPT-3D-R — char-budget metadata naming refinement
+
+**Purpose:** Remove misleading token-named receipt fields from the char-budget prototype metadata.
+
+**Closeout:**
+
+- removed token-named receipt fields from char-budget prototype metadata (`context_packing_receipt` and token-named totals/decision fields)
+- retained char-level metadata only (`budget_unit`, `max_chars`, `packing_decisions` with `original_chars` / `output_chars`, etc.)
+- no algorithm change
+- no token counter / provider-aware tokenizer added
+
+> **Important:** TOKEN-OPT-3D remains a **char-budget prototype**. It must not be described as token-accurate optimization until a provider-aware tokenizer/counting adapter is introduced and measured.
+
+**Status:** **Done / Closed**.
+
+### TOKEN-OPT-3A acceptance
+
+Done / Closed when:
+
+- [x] §Why this phase exists, §Existing surfaces, §Algorithm inventory, §Sequencing, §Measurement model, §Boundaries, §Safety decisions, and §Next task definitions are documented above.
+- [x] Aligns with feature architecture §8 and `contracts.py` vocabulary.
+- [x] Each future algorithm is a separate task with measurement/review expectation.
+- [x] LKW described as proof workload only.
+- [x] No runtime/code/test/benchmark/script/application changes.
+
+**Next step:** **TOKEN-OPT-3D** — budget-aware context packing prototype.
+
+---
+
 ## TOKEN-6A — Telemetry payloads/counters for TOKEN-2..4
 
 **Status:** **Done / Closed**.
@@ -849,10 +1177,18 @@ TOKEN-OBS-2A token regression benchmark report artifact — Done / Closed
 TOKEN-OBS-2B regression fixture/eval matrix — Done / Closed
 TOKEN-OBS-2C regression gate thresholds — Done / Closed
 TOKEN-OBS-2D benchmark CLI report/gate output — Done / Closed
+TOKEN-OPT-3A stronger optimizer roadmap, algorithm inventory, measurement sequencing — Done / Closed
+TOKEN-OPT-3B priority-tiered context packing contract — Done / Closed
+TOKEN-OPT-3C-A optimization layer and pipeline composition contract — Done / Closed
+TOKEN-OPT-3C-B deterministic exact deduplication layer — Done / Closed
+TOKEN-OPT-3D budget-aware context packing prototype — Done / Closed
+TOKEN-OBS-3E realistic corpus for stronger optimizer — Done / Closed as part of TOKEN-OBS-3E-F
+TOKEN-OBS-3F baseline vs stronger optimizer comparison — Done / Closed as part of TOKEN-OBS-3E-F
+TOKEN-OBS-3G safe public wording / proof claims — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
-Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist.
+Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 
 ---
 

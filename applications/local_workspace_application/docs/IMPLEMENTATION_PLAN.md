@@ -70,6 +70,8 @@ LKW is the **primary product workload** used to discover missing platform capabi
 
 **ID note:** `LKW-PF0`–`LKW-PF7` below are the **strategic platform-proof roadmap**. Closed H1 follow-up rows **`LKW-PF1`**/**`LKW-PF2`** (RuntimeEvent `TOOL_*`, `RunArtifactBundle` / `shadow_workspace_id`) in §5 Platform follow-ups are a separate historical track — same prefix family, different scope.
 
+**LKW-PF-ERR-1 (Done):** Completed as a platform proof workload — `intergrax/runtime/observability/problem_reporter.py` plus `tests/test_lkw_problem_signal_failure_proof.py`. Does **not** change LKW product runtime behavior or implement endpoint failure handling. Proves LKW-shaped `lkw.retrieve_failed` problem signals through the platform helper (`report_problem` / `ProblemReporter`), not manual `PlatformProblemSignal` / `ObservabilityExportEnvelope` / policy construction.
+
 | ID | Status | Meaning |
 |----|--------|---------|
 | **LKW-PF0** | **Done / Closed** | **Platform proof maturity bar** — defines platform proof, operational proof, production-grade readiness, and production hardening backlog. Canonical definitions: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. |
@@ -713,6 +715,53 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 | Policy/raw tool reason at RuntimeEvent layer | Platform deferred | — |
 | Developer first-run/adoption simplification | LKW-H3 | Helper/template/docs ergonomics |
 
+### LKW-3C — pipeline proof summary metadata (post-LKW.2)
+
+**Status:** **Done** — `lkw_proof_summary.v1` added as LKW proof usability / inspectability increment.
+
+- Built from existing metadata only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`.
+- Redacted reviewer-facing proof verdict on `POST /v1/local_workspace/run` when `capability=local.workspace.pipeline`.
+- No vendor integration, no Sentry, no token optimizer, no new exporter or telemetry bus.
+- **Platform propagation classification:** current implementation is **LKW-specific proof projection** (`serving/proof_summary.py`); possible future platform follow-up: generic application proof summary if reused by another Tier-3 app.
+
+#### LKW-3D — proof summary verification closeout
+
+**Status:** **Passed** — verification-only proof refresh after LKW-3C.
+
+Focused verification:
+
+```text
+uv run pytest applications/local_workspace_application/tests/test_lkw_proof_summary.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
+Result: 9 passed in 31.84s
+```
+
+Verified:
+
+```text
+local.workspace.pipeline still runs local_indexer -> local_search -> local_synthesizer.
+Required metadata keys are present:
+application_run_summary.v1
+lkw_evidence.v1
+runtime_event_summary.v1
+run_artifact_bundle.v1
+lkw_proof_summary.v1
+lkw_proof_summary.v1.status == "passed".
+Evidence, synthesis, artifact, and safety blocks are present in the proof summary.
+content_missing is not exposed as a successful pipeline failure.
+Shadow artifact is present.
+Original source file remains unchanged.
+Raw fixture text, raw query, full trace, and unsafe diagnostic keys are not exposed.
+```
+
+**Classification:**
+
+```text
+Verification-only closeout.
+lkw_proof_summary.v1 remains an LKW-specific proof UX / inspectability projection.
+No new platform mechanism was introduced.
+Not a Sentry, vendor observability, token optimization, or exporter step.
+```
+
 ---
 
 ## 6. Post-LKW.1 hardening and adoption waves
@@ -743,9 +792,14 @@ Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
 | LKW-OBS-OTLP-1C | Run end-to-end Swagger proof and inspect persisted OTLP log records | docs, manual proof | **Done** — manual Docker Compose proof verified that LKW runtime events are exported as OTLP logs to the local OpenTelemetry Collector and persisted to `.observability/otel/lkw-otlp-logs.jsonl`. Persisted records include run_id, task_id, capability, agent_id, tool_id and latency_ms. Raw request/query content was not exported. |
 | LKW-OBS-OTLP-DUP-1 | Diagnose and fix duplicate OTLP log records for identical runtime events | `intergrax/runtime/events/event_bus.py`, `tests/unit/runtime/observability/`, `tests/unit/runtime/events/` | **Done** — `RuntimeEventBus.publish()` no longer double-dispatches subscribers (previously invoked handlers via `record()` and again in `publish()`); OTLP export plugin receives each runtime event once per `event_id`. |
 | LKW-OBS-VIEW-1A | Add lightweight OTLP log inspector for persisted JSONL sink | `scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`, `tests/scripts/test_inspect_otlp_logs.py` | **Done** — inspector BAT at `applications/local_workspace_application/scripts/inspect-otlp-logs.bat`; Python entrypoint `applications/local_workspace_application/scripts/inspect_otlp_logs.py`; latest-run timeline works; manual duplicate check = 0; focused tests: `uv run pytest applications/local_workspace_application/tests/scripts/test_inspect_otlp_logs.py -q` → **5 passed** |
-| LKW-OBS-SENTRY | Sentry error-monitoring platform proof | — | **Planned / Platform-reusable** | LKW is the proof workload only; Sentry implementation belongs to platform [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) **OBS-SENTRY**. LKW may later own deployment env wiring and live proof once the platform provider exists. |
+| LKW-OBS-SENTRY-0 | Wire LKW problem reporting to Sentry provider proof | `host/settings.py`, `docker/docker-compose.sentry.yml`, `scripts/run-sentry-observability-proof.*`, `docs/SENTRY_OBSERVABILITY.md` | **Done** — LKW remains proof workload; platform owns Sentry provider; DSN-based Compose overlay + controlled problem proof helper; closes operational proof path, not production-grade readiness |
+| LKW-OBS-SENTRY-1 | Local Sentry Docker proof stack | `docker/docker-compose.sentry*.yml`, `docker/sentry/`, `serving/sentry_proof_routes.py`, `scripts/run-sentry-observability-proof.*`, `docs/SENTRY_OBSERVABILITY.md`, `docs/public-adoption/LKW_PLATFORM_PROOF.md` | **Done** — repo-owned local Sentry stack (UI `http://127.0.0.1:9000`), bootstrap local DSN, LKW app-level proof endpoint, docs updated; closes local operational proof, not production-grade readiness |
+| LKW-OBS-SENTRY-1F | Fix all-in-one Docker proof startup for local Sentry | `docker/sentry.services.yml`, `docker/docker-compose.sentry.yml`, `scripts/run-local-docker-all.sh`, `docker/sentry/bootstrap/bootstrap.sh`, `tests/test_lkw_docker_compose_discovery.py`, docs | **Done** — internal Sentry fragment renamed (no double-discovery); `sentry-upgrade` before `sentry-web`; local proof secret key; `run-local-docker-all.sh`; atomic `generated.env`; one-script startup canonical in docs |
+| LKW-OBS-SENTRY | Sentry error-monitoring platform proof (umbrella) | — | **Done (LKW-OBS-SENTRY-1)** | LKW is the proof workload only; platform owns Sentry provider per [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) **OBS-SENTRY-1**. Production gaps remain: auth/DSN management, alert routing, dashboards/runbooks, retention, ownership, CI live proof if applicable |
 
 **OBS-VENDOR-0 (platform plan):** LKW-OBS-VIEW-1A closeout recorded here; next steps tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-1` … `OBS-VENDOR-8`).
 
-**Platform proof candidate — OBS-SENTRY:** future Sentry error-monitoring proof tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-SENTRY; LKW is not the integration owner.
+**Platform proof candidate — OBS-PROBLEM:** before `LKW-OBS-SENTRY`, the platform must define a plugin-extensible problem/error signal contract in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase `OBS-PROBLEM`. LKW is only the controlled failure proof workload; LKW must not own a custom issue model or call Sentry/vendor SDKs directly.
+
+**Platform proof candidate — OBS-SENTRY:** Sentry error-monitoring proof tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-SENTRY; platform owns provider implementation (**OBS-SENTRY-1 Done**); LKW-OBS-SENTRY-0 wires controlled problem proof through shared observability export.
 

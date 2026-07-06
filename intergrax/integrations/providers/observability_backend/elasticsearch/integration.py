@@ -30,6 +30,7 @@ _ELASTICSEARCH_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
     ObservabilityVendorSignal.LOGS,
     ObservabilityVendorSignal.TRACES,
     ObservabilityVendorSignal.METRICS,
+    ObservabilityVendorSignal.PROBLEMS,
 )
 
 ELASTICSEARCH_SUPPORTED_SIGNALS = _ELASTICSEARCH_SUPPORTED_SIGNALS

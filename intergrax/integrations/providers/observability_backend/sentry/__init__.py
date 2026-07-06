@@ -1,22 +1,46 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+from intergrax.integrations.providers.observability_backend.sentry.config import (
+    ENV_SENTRY_DEBUG,
+    ENV_SENTRY_DSN,
+    ENV_SENTRY_ENVIRONMENT,
+    ENV_SENTRY_RELEASE,
+    ENV_SENTRY_SERVER_NAME,
+    ENV_SENTRY_SHUTDOWN_TIMEOUT_SECONDS,
+    SentryIntegrationConfig,
+)
 from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
+    "ENV_SENTRY_DEBUG",
+    "ENV_SENTRY_DSN",
+    "ENV_SENTRY_ENVIRONMENT",
+    "ENV_SENTRY_RELEASE",
+    "ENV_SENTRY_SERVER_NAME",
+    "ENV_SENTRY_SHUTDOWN_TIMEOUT_SECONDS",
     "SENTRY_OBSERVABILITY_PROVIDER_ID",
+    "SentryCaptureClient",
+    "SentryIntegrationConfig",
     "SentryObservabilityIntegration",
     "SentryObservabilityIntegrationConfig",
     "SentryObservabilityTransport",
+    "SentrySdkObservabilityTransport",
     "create_sentry_observability_backend",
     "create_sentry_observability_integration",
+    "create_sentry_observability_transport",
+    "map_vendor_payload_to_sentry_event",
     "register_sentry_integration",
 ]
 
 _BUNDLE_EXPORTS = frozenset(
     {
+        "SentryCaptureClient",
+        "SentrySdkObservabilityTransport",
         "create_sentry_observability_backend",
         "create_sentry_observability_integration",
+        "create_sentry_observability_transport",
+        "map_vendor_payload_to_sentry_event",
     }
 )
 

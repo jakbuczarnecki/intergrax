@@ -185,17 +185,31 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 
 ### Windows convenience: all Compose overlays
 
-On Windows, this helper starts the base stack plus every optional overlay in `applications/local_workspace_application/docker/` without listing each `-f` file:
+This helper starts the base stack plus every optional top-level overlay in `applications/local_workspace_application/docker/` without listing each `-f` file:
+
+Windows:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat
 ```
 
-It wraps the same `docker compose -f ... -f ...` pattern documented above. Future overlays added to the docker directory are picked up automatically. Pass any Docker Compose command after the script name when needed, for example:
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-local-docker-all.sh
+applications/local_workspace_application/scripts/run-local-docker-all.sh
+```
+
+These wrappers discover `docker-compose.*.yml` overlays (Elasticsearch, Kibana, Sentry, etc.). Internal fragments such as `sentry.services.yml` are included by their parent overlay and are not discovered directly. Pass any Docker Compose command after the script name when needed, for example:
 
 ```bat
 applications\local_workspace_application\scripts\run-local-docker-all.bat ps
 applications\local_workspace_application\scripts\run-local-docker-all.bat down
+```
+
+```bash
+applications/local_workspace_application/scripts/run-local-docker-all.sh ps
+applications/local_workspace_application/scripts/run-local-docker-all.sh down -v
 ```
 
 With no arguments it runs:

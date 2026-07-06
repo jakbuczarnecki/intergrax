@@ -11,22 +11,27 @@ cache) MUST obtain clients and facades from this module or ``resolve(..., KEY_VA
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
-from intergrax.distributed.providers.redis_execution_semaphore import RedisExecutionSemaphore
-from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
-from intergrax.distributed.providers.redis_kv_store import RedisKVStore
-from intergrax.distributed.providers.redis_rate_limiter import RedisDistributedRateLimiter
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
-from intergrax.integrations.providers.key_value_cache.redis.adapter import _RedisKeyValueCache
-from intergrax.integrations.providers.key_value_cache.redis.client import create_redis_client, resolve_redis_config
-from intergrax.integrations.providers.key_value_cache.redis.config import RedisIntegrationConfig
-from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
-from intergrax.rag.rerankers.cache.redis_rerank_cache import RedisRerankCache
+from intergrax.integrations.providers.key_value_cache.redis.integration import (
+    REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
+    RedisKeyValueCacheIntegration,
+    RedisKeyValueCacheIntegrationConfig,
+    RedisKeyValueCacheClient,
+)
+
+if TYPE_CHECKING:
+    from intergrax.distributed.providers.redis_execution_semaphore import RedisExecutionSemaphore
+    from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
+    from intergrax.distributed.providers.redis_rate_limiter import RedisDistributedRateLimiter
+    from intergrax.integrations.providers.key_value_cache.redis.config import RedisIntegrationConfig
+    from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
 
 
 @dataclass(frozen=True)
@@ -66,6 +71,13 @@ def create_redis_integration(
     ``create_redis_key_value_cache``; prefer this function when wiring multiple
     Redis-backed components in Tier-3 composition roots.
     """
+    from intergrax.distributed.providers.redis_execution_semaphore import RedisExecutionSemaphore
+    from intergrax.distributed.providers.redis_idempotency_store import RedisIdempotencyStore
+    from intergrax.distributed.providers.redis_kv_store import RedisKVStore
+    from intergrax.distributed.providers.redis_rate_limiter import RedisDistributedRateLimiter
+    from intergrax.integrations.providers.key_value_cache.redis.adapter import _RedisKeyValueCache
+    from intergrax.integrations.providers.key_value_cache.redis.client import create_redis_client, resolve_redis_config
+
     overrides: dict[str, object] = dict(config_overrides)
     if url is not None:
         overrides["url"] = url
@@ -109,9 +121,6 @@ def create_redis_key_value_cache(
         client=client,
         **config_overrides,
     ).key_value_cache
-    from intergrax.integrations.providers.key_value_cache.redis.integration import (
-        RedisKeyValueCacheIntegration,
-    )
 
     if isinstance(runtime, RedisKeyValueCacheIntegration):
         return runtime
@@ -193,6 +202,9 @@ def create_redis_rerank_cache(
     **config_overrides: object,
 ) -> BaseRerankCache:
     """RAG rerank cache — uses the shared Redis client factory."""
+    from intergrax.integrations.providers.key_value_cache.redis.client import create_redis_client
+    from intergrax.rag.rerankers.cache.redis_rerank_cache import RedisRerankCache
+
     resolved_client = create_redis_client(
         url=url,
         db=db,
@@ -205,18 +217,10 @@ def create_redis_rerank_cache(
         key_prefix=key_prefix,
     )
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.key_value_cache.redis.integration import (
-    REDIS_KEY_VALUE_CACHE_PROVIDER_ID,
-    RedisKeyValueCacheIntegration,
-    RedisKeyValueCacheIntegrationConfig,
-    RedisKeyValueCacheClient,
-)
-
 
 def create_redis_key_value_cache_integration(
     *,
-    client: RedisKeyValueCacheIntegrationClient | None = None,
+    client: RedisKeyValueCacheClient | None = None,
     enabled: bool = False,
 ) -> RedisKeyValueCacheIntegration:
     """

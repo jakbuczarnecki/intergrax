@@ -463,6 +463,7 @@ def test_create_elasticsearch_observability_integration_factory() -> None:
         ObservabilityVendorSignal.LOGS,
         ObservabilityVendorSignal.TRACES,
         ObservabilityVendorSignal.METRICS,
+        ObservabilityVendorSignal.PROBLEMS,
     )
 
 

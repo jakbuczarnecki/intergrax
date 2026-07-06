@@ -38,6 +38,7 @@ class ObservabilityVendorSignal(StrEnum):
     TRACES = "traces"
     METRICS = "metrics"
     LLM_EVENTS = "llm_events"
+    PROBLEMS = "problems"
 
 
 class ObservabilityVendorKind(StrEnum):
@@ -105,6 +106,10 @@ class ObservabilityVendorPayload(BaseModel):
     correlation_id: str = ""
     event_id: str = ""
 
+    problem_kind: str = ""
+    problem_severity: str = ""
+    problem_error_code: str = ""
+
     sanitized_application_attributes: SanitizedApplicationObservabilityAttributes | None = None
 
 
@@ -170,6 +175,9 @@ def map_envelope_to_vendor_payload(
         source_schema_id=safe_envelope.source_schema_id,
         correlation_id=safe_envelope.correlation_id,
         event_id=safe_envelope.event_id,
+        problem_kind=safe_envelope.problem_kind,
+        problem_severity=safe_envelope.problem_severity,
+        problem_error_code=safe_envelope.problem_error_code,
         sanitized_application_attributes=safe_envelope.sanitized_application_attributes,
     )
     return ObservabilityVendorMappingResult(payload=payload, signal=signal)
@@ -180,6 +188,8 @@ def _signal_for_record_type(record_type: str) -> ObservabilityVendorSignal:
         return ObservabilityVendorSignal.LLM_EVENTS
     if record_type == "journal_ref":
         return ObservabilityVendorSignal.LOGS
+    if record_type == "problem_signal":
+        return ObservabilityVendorSignal.PROBLEMS
     if record_type in {"tool_call", "rag_call", "runtime_event", "diagnostic"}:
         return ObservabilityVendorSignal.EVENTS
     return ObservabilityVendorSignal.EVENTS

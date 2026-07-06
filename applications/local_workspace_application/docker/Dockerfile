@@ -21,7 +21,9 @@ COPY agents/local_synthesizer/ ./agents/local_synthesizer/
 
 # pyproject.toml already declares disjoint Linux and Windows uv environments.
 # Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.
-RUN uv sync --no-dev
+# The local Sentry proof runs LKW with backend=sentry, so the image must include
+# the provider-owned Sentry SDK optional dependency.
+RUN uv sync --no-dev --extra integrations-sentry
 
 # Build-time start-path smoke catches missing copied packages and eager optional
 # integrations before docker compose starts the runtime container.

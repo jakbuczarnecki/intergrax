@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 
 class TokenOptimizationProfile(StrEnum):
@@ -377,3 +377,413 @@ class TokenOptimizationResult:
     fallback_used: bool = False
     bypass_reason: TokenOptimizationBypassReason | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def _validate_non_negative_optional_token(
+    value: int | None,
+    field_name: str,
+) -> None:
+    if value is not None and value < 0:
+        raise ValueError(f"{field_name} cannot be negative")
+
+
+def _validate_non_empty_string(value: str, field_name: str) -> None:
+    if not value:
+        raise ValueError(f"{field_name} cannot be empty")
+
+
+def _validate_non_empty_id_tuple(ids: tuple[str, ...], field_name: str) -> None:
+    if any(not layer_id for layer_id in ids):
+        raise ValueError(f"{field_name} cannot contain empty strings")
+
+
+def _validate_non_negative_optional_index(
+    value: int | None,
+    field_name: str,
+) -> None:
+    if value is not None and value < 0:
+        raise ValueError(f"{field_name} cannot be negative")
+
+
+class ContextFragmentPriority(StrEnum):
+    """Priority tier for context packing decisions."""
+
+    MUST_KEEP = "must_keep"
+    HIGH_PRIORITY = "high_priority"
+    COMPRESSIBLE = "compressible"
+    DROPPABLE = "droppable"
+
+
+class ContextPackingDecisionKind(StrEnum):
+    """Per-fragment packing action aligned with receipt/report language."""
+
+    KEEP = "keep"
+    COMPACT = "compact"
+    DEDUPLICATE = "deduplicate"
+    DROP = "drop"
+    TRUNCATE = "truncate"
+    BYPASS = "bypass"
+    FALLBACK = "fallback"
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPackingBudget:
+    """Token budget envelope for context packing without counting logic."""
+
+    max_input_tokens: int | None = None
+    reserved_output_tokens: int | None = None
+    target_context_tokens: int | None = None
+    hard_context_limit: int | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_negative_optional_token(self.max_input_tokens, "max_input_tokens")
+        _validate_non_negative_optional_token(
+            self.reserved_output_tokens, "reserved_output_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.target_context_tokens, "target_context_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.hard_context_limit, "hard_context_limit"
+        )
+        if (
+            self.target_context_tokens is not None
+            and self.hard_context_limit is not None
+            and self.target_context_tokens > self.hard_context_limit
+        ):
+            raise ValueError(
+                "target_context_tokens cannot exceed hard_context_limit"
+            )
+        if (
+            self.reserved_output_tokens is not None
+            and self.max_input_tokens is not None
+            and self.reserved_output_tokens > self.max_input_tokens
+        ):
+            raise ValueError(
+                "reserved_output_tokens cannot exceed max_input_tokens"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPackingDecision:
+    """Per-fragment packing decision for dedupe and budget-aware packing."""
+
+    fragment_id: str
+    decision: ContextPackingDecisionKind
+    priority: ContextFragmentPriority
+    reason: str | None = None
+    original_tokens: int | None = None
+    optimized_tokens: int | None = None
+    saved_tokens: int | None = None
+    related_fragment_ids: tuple[str, ...] = ()
+    strategy: TokenOptimizationStrategyRef | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.fragment_id:
+            raise ValueError("fragment_id cannot be empty")
+        _validate_non_negative_optional_token(self.original_tokens, "original_tokens")
+        _validate_non_negative_optional_token(self.optimized_tokens, "optimized_tokens")
+        _validate_non_negative_optional_token(self.saved_tokens, "saved_tokens")
+        if (
+            self.original_tokens is not None
+            and self.optimized_tokens is not None
+            and self.saved_tokens is not None
+            and self.saved_tokens != self.original_tokens - self.optimized_tokens
+        ):
+            raise ValueError(
+                "saved_tokens must equal original_tokens - optimized_tokens"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextDeduplicationMetadata:
+    """Cross-fragment duplicate linkage without dedupe execution logic."""
+
+    duplicate_of_fragment_id: str | None = None
+    duplicate_fragment_ids: tuple[str, ...] = ()
+    dedupe_key: str | None = None
+    exact: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.dedupe_key is not None and not self.dedupe_key:
+            raise ValueError("dedupe_key cannot be empty")
+        if any(not fragment_id for fragment_id in self.duplicate_fragment_ids):
+            raise ValueError("duplicate_fragment_ids cannot contain empty strings")
+
+
+@dataclass(frozen=True, slots=True)
+class ContextFragmentPackingMetadata:
+    """Per-fragment packing metadata for priority-tiered context packing."""
+
+    priority: ContextFragmentPriority = ContextFragmentPriority.COMPRESSIBLE
+    required: bool = False
+    protected: bool = False
+    budget: ContextPackingBudget | None = None
+    deduplication: ContextDeduplicationMetadata | None = None
+    decisions: tuple[ContextPackingDecision, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.required and self.priority is ContextFragmentPriority.DROPPABLE:
+            raise ValueError(
+                "required fragments cannot have droppable priority"
+            )
+        if self.protected and self.priority is ContextFragmentPriority.DROPPABLE:
+            raise ValueError(
+                "protected fragments cannot have droppable priority"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPackingReceiptMetadata:
+    """Receipt explanation metadata for context packing without receipt builders."""
+
+    budget: ContextPackingBudget | None = None
+    decisions: tuple[ContextPackingDecision, ...] = ()
+    total_original_tokens: int | None = None
+    total_optimized_tokens: int | None = None
+    total_saved_tokens: int | None = None
+    strategy_breakdown: Mapping[str, int] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_negative_optional_token(
+            self.total_original_tokens, "total_original_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.total_optimized_tokens, "total_optimized_tokens"
+        )
+        _validate_non_negative_optional_token(
+            self.total_saved_tokens, "total_saved_tokens"
+        )
+        if (
+            self.total_original_tokens is not None
+            and self.total_optimized_tokens is not None
+            and self.total_saved_tokens is not None
+            and self.total_saved_tokens
+            != self.total_original_tokens - self.total_optimized_tokens
+        ):
+            raise ValueError(
+                "total_saved_tokens must equal total_original_tokens - total_optimized_tokens"
+            )
+        for strategy_id, saved in self.strategy_breakdown.items():
+            if saved < 0:
+                raise ValueError(
+                    f"strategy_breakdown[{strategy_id!r}] cannot be negative"
+                )
+
+
+class TokenOptimizationLayerDecision(StrEnum):
+    """Per-layer outcome within a sequential optimization pipeline."""
+
+    APPLY = "apply"
+    BYPASS = "bypass"
+    FALLBACK = "fallback"
+    OVERRIDE_PREVIOUS = "override_previous"
+    REVERT_TO_ORIGINAL = "revert_to_original"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationLayerDescriptor:
+    """Descriptor for a built-in, custom, or plugin optimization layer."""
+
+    layer_id: str
+    name: str
+    version: str
+    strategy: TokenOptimizationStrategyRef
+    supported_source_types: tuple[TokenOptimizationSourceType, ...] = ()
+    safety_class: StrategySafetyClass | None = None
+    plugin_id: str | None = None
+    built_in: bool = False
+    requires_validation: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.layer_id, "layer_id")
+        _validate_non_empty_string(self.name, "name")
+        _validate_non_empty_string(self.version, "version")
+        if self.plugin_id is not None:
+            _validate_non_empty_string(self.plugin_id, "plugin_id")
+        for source_type in self.supported_source_types:
+            if not isinstance(source_type, TokenOptimizationSourceType):
+                raise ValueError(
+                    "supported_source_types cannot contain invalid entries"
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationLayerContext:
+    """Pipeline position and lineage for a single layer invocation."""
+
+    pipeline_id: str | None = None
+    layer_index: int | None = None
+    previous_layer_ids: tuple[str, ...] = ()
+    applied_layer_ids: tuple[str, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_negative_optional_index(self.layer_index, "layer_index")
+        _validate_non_empty_id_tuple(self.previous_layer_ids, "previous_layer_ids")
+        _validate_non_empty_id_tuple(self.applied_layer_ids, "applied_layer_ids")
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationLayerRequest:
+    """Layer input carrying immutable baseline and mutable working content."""
+
+    original_content: str
+    current_content: str
+    source_type: TokenOptimizationSourceType
+    policy: TokenOptimizationPolicy = field(default_factory=TokenOptimizationPolicy)
+    attribution: TokenOptimizationAttribution | None = None
+    layer_context: TokenOptimizationLayerContext | None = None
+    strategy: TokenOptimizationStrategyRef | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.original_content is None:
+            raise ValueError("original_content must not be None")
+        if self.current_content is None:
+            raise ValueError("current_content must not be None")
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationLayerResult:
+    """Per-layer outcome with explicit override and fallback visibility."""
+
+    layer_id: str
+    output_content: str
+    decision: TokenOptimizationLayerDecision
+    measurement: TokenSavingsMeasurement | None = None
+    validation: ProtectedRegionValidationResult | None = None
+    receipt_metadata: Mapping[str, Any] = field(default_factory=dict)
+    previous_changes_overridden: bool = False
+    overridden_layer_ids: tuple[str, ...] = ()
+    override_reason: str | None = None
+    fallback_used: bool = False
+    bypass_reason: TokenOptimizationBypassReason | None = None
+    strategy: TokenOptimizationStrategyRef | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.layer_id, "layer_id")
+        if self.output_content is None:
+            raise ValueError("output_content must not be None")
+        _validate_non_empty_id_tuple(self.overridden_layer_ids, "overridden_layer_ids")
+        if self.previous_changes_overridden and not self.override_reason:
+            raise ValueError(
+                "override_reason should be provided when previous_changes_overridden is True"
+            )
+        if (
+            self.decision is TokenOptimizationLayerDecision.OVERRIDE_PREVIOUS
+            and not self.previous_changes_overridden
+        ):
+            raise ValueError(
+                "previous_changes_overridden must be True when decision is OVERRIDE_PREVIOUS"
+            )
+        if (
+            self.decision is TokenOptimizationLayerDecision.REVERT_TO_ORIGINAL
+            and not self.previous_changes_overridden
+        ):
+            raise ValueError(
+                "previous_changes_overridden must be True when decision is REVERT_TO_ORIGINAL"
+            )
+
+
+class TokenOptimizationLayer(Protocol):
+    """Contract for built-in, custom, or plugin optimization layers."""
+
+    @property
+    def descriptor(self) -> TokenOptimizationLayerDescriptor:
+        ...
+
+    def optimize(
+        self,
+        request: TokenOptimizationLayerRequest,
+    ) -> TokenOptimizationLayerResult:
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationLayerRef:
+    """Ordered layer reference for pipeline composition."""
+
+    layer_id: str
+    plugin_id: str | None = None
+    version: str | None = None
+    enabled: bool = True
+    order: int | None = None
+    required: bool = False
+    settings: Mapping[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.layer_id, "layer_id")
+        if self.plugin_id is not None:
+            _validate_non_empty_string(self.plugin_id, "plugin_id")
+        if self.version is not None:
+            _validate_non_empty_string(self.version, "version")
+        _validate_non_negative_optional_index(self.order, "order")
+
+
+class TokenOptimizationPipelineMode(StrEnum):
+    """How a pipeline resolves its ordered layer list."""
+
+    DEFAULT = "default"
+    REPLACE = "replace"
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationPipelineConfig:
+    """Developer-configurable optimization pipeline composition."""
+
+    pipeline_id: str
+    mode: TokenOptimizationPipelineMode = TokenOptimizationPipelineMode.DEFAULT
+    layers: tuple[TokenOptimizationLayerRef, ...] = ()
+    allow_repeated_layers: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.pipeline_id, "pipeline_id")
+        if self.mode is TokenOptimizationPipelineMode.REPLACE and not self.layers:
+            raise ValueError("layers must not be empty when mode is REPLACE")
+        for layer_ref in self.layers:
+            _validate_non_negative_optional_index(layer_ref.order, "order")
+        if not self.allow_repeated_layers:
+            enabled_ids = [layer.layer_id for layer in self.layers if layer.enabled]
+            if len(enabled_ids) != len(set(enabled_ids)):
+                raise ValueError(
+                    "enabled layer_id values must be unique when "
+                    "allow_repeated_layers is False"
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationPipelineResult:
+    """Aggregate outcome after sequential layer execution."""
+
+    pipeline_id: str
+    original_content: str
+    final_content: str
+    layer_results: tuple[TokenOptimizationLayerResult, ...] = ()
+    applied_layer_ids: tuple[str, ...] = ()
+    bypassed_layer_ids: tuple[str, ...] = ()
+    failed_layer_ids: tuple[str, ...] = ()
+    fallback_used: bool = False
+    aggregate_measurement: TokenSavingsMeasurement | None = None
+    receipt_metadata: Mapping[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _validate_non_empty_string(self.pipeline_id, "pipeline_id")
+        if self.original_content is None:
+            raise ValueError("original_content must not be None")
+        if self.final_content is None:
+            raise ValueError("final_content must not be None")
+        _validate_non_empty_id_tuple(self.applied_layer_ids, "applied_layer_ids")
+        _validate_non_empty_id_tuple(self.bypassed_layer_ids, "bypassed_layer_ids")
+        _validate_non_empty_id_tuple(self.failed_layer_ids, "failed_layer_ids")

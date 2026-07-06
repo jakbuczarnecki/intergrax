@@ -18,6 +18,7 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationContract,
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
+    map_envelope_to_vendor_payload,
 )
 from intergrax.runtime.observability.export_attributes import (
     ApplicationObservabilityAttributes,
@@ -43,6 +44,7 @@ _FORBIDDEN_VENDOR_IMPORT_PREFIXES = (
     "phoenix",
     "opentelemetry",
     "elasticsearch",
+    "sentry",
 )
 
 
@@ -256,3 +258,71 @@ def test_no_vendor_sdk_imports_in_observability_integration_module() -> None:
     for token in _FORBIDDEN_VENDOR_IMPORT_PREFIXES:
         assert f"import {token}" not in source
         assert f"from {token}" not in source
+
+
+def _policy_safe_problem_signal_envelope() -> ObservabilityExportEnvelope:
+    return ObservabilityExportEnvelope(
+        record_kind=ExportRecordKind.PROBLEM_SIGNAL,
+        problem_kind="lkw.retrieve_failed",
+        problem_severity="error",
+        problem_error_code="LKW_RETRIEVE_FAILED",
+        application_attributes=None,
+    )
+
+
+def test_problem_signal_maps_to_problems_vendor_signal() -> None:
+    envelope = _policy_safe_problem_signal_envelope()
+
+    result = map_envelope_to_vendor_payload(
+        envelope,
+        provider_id="example",
+        integration_id="example:observability_vendor",
+    )
+
+    assert result.signal == ObservabilityVendorSignal.PROBLEMS
+    assert result.payload.record_type == "problem_signal"
+    assert result.payload.problem_kind == "lkw.retrieve_failed"
+    assert result.payload.problem_severity == "error"
+    assert result.payload.problem_error_code == "LKW_RETRIEVE_FAILED"
+
+
+def test_vendor_contract_preserves_problem_fields() -> None:
+    integration = ExampleObservabilityVendorIntegration.for_provider(
+        provider_id="example",
+        supported_signals=(ObservabilityVendorSignal.PROBLEMS,),
+    )
+    envelope = _policy_safe_problem_signal_envelope()
+
+    payload = integration.map_envelope(envelope).payload
+
+    assert payload.problem_kind == "lkw.retrieve_failed"
+    assert payload.problem_severity == "error"
+    assert payload.problem_error_code == "LKW_RETRIEVE_FAILED"
+
+
+def test_map_envelope_to_vendor_payload_rejects_raw_application_attributes() -> None:
+    attributes = ExampleWorkspaceObservabilityAttributes(file_count=1)
+    envelope = ObservabilityExportEnvelope(
+        record_kind=ExportRecordKind.PROBLEM_SIGNAL,
+        problem_kind="lkw.retrieve_failed",
+        application_attributes=attributes,
+    )
+
+    with pytest.raises(ValueError, match="raw application_attributes"):
+        map_envelope_to_vendor_payload(
+            envelope,
+            provider_id="example",
+            integration_id="example:observability_vendor",
+        )
+
+
+def test_sentry_and_elasticsearch_supported_signals_include_problems() -> None:
+    from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+        ELASTICSEARCH_SUPPORTED_SIGNALS,
+    )
+    from intergrax.integrations.providers.observability_backend.sentry.integration import (
+        SENTRY_SUPPORTED_SIGNALS,
+    )
+
+    assert ObservabilityVendorSignal.PROBLEMS in SENTRY_SUPPORTED_SIGNALS
+    assert ObservabilityVendorSignal.PROBLEMS in ELASTICSEARCH_SUPPORTED_SIGNALS

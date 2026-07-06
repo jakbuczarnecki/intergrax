@@ -1,0 +1,43 @@
+# © Artur Czarnecki. All rights reserved.
+# Local Sentry observability proof overlay for LKW.
+# Run from repository root:
+# docker compose \
+#   -f applications/local_workspace_application/docker/docker-compose.yml \
+#   -f applications/local_workspace_application/docker/docker-compose.sentry.yml \
+#   up --build
+#
+# Starts a repo-owned local Sentry stack (UI http://127.0.0.1:9000) and configures
+# LKW to export safe problem metadata through the platform Sentry provider.
+# External SaaS DSN is optional override only — not required for canonical proof.
+
+include:
+  - sentry.services.yml
+
+services:
+  local_workspace:
+    environment:
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: sentry
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_ENVIRONMENT: local-proof
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_RELEASE: lkw-sentry-proof
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SERVER_NAME: intergrax-lkw-local
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SHUTDOWN_TIMEOUT_SECONDS: "2"
+      LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_FLUSH_AFTER_CAPTURE: "true"
+      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT: "false"
+    volumes:
+      - ./sentry-proof:/proof:ro
+      - ./start-local-workspace-sentry-proof.sh:/start-local-workspace-sentry-proof.sh:ro
+    command:
+      - /bin/sh
+      - /start-local-workspace-sentry-proof.sh
+    depends_on:
+      qdrant:
+        condition: service_started
+      ollama:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+      sentry-bootstrap:
+        condition: service_completed_successfully
+      sentry-nginx:
+        condition: service_started

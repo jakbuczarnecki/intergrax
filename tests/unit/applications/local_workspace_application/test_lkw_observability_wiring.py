@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Generator
 from unittest.mock import MagicMock, patch
@@ -21,10 +22,16 @@ from intergrax.runtime.observability.operator_wiring import (
     ObservabilityExportBackendRegistryError,
     ObservabilityExportOperatorConfig,
     OtlpExportOperatorConfig,
+    SentryExportOperatorConfig,
     build_otlp_observability_integration,
 )
 from intergrax.runtime.observability.elasticsearch_export_wiring import (
     build_elasticsearch_observability_integration,
+)
+from intergrax.runtime.observability.export_policy import ObservabilityExportPolicy
+from intergrax.runtime.observability.problem_reporter import ProblemReportContext, report_problem
+from intergrax.runtime.observability.sentry_export_wiring import (
+    build_sentry_observability_integration,
 )
 from intergrax.runtime.observability.otlp_exporter import OtlpObservabilityExporterConfig
 from intergrax.runtime.plugins.contract import RuntimePlugin
@@ -56,6 +63,9 @@ _FORBIDDEN_VENDOR_TOKENS = (
     "elasticsearch",
     "opentelemetry",
     "integrations.providers.observability_backend",
+    "sentry_sdk",
+    "integrations.providers.observability_backend.sentry",
+    "SentrySdkObservabilityTransport",
 )
 
 
@@ -89,6 +99,22 @@ def _enabled_elasticsearch_config() -> ObservabilityExportOperatorConfig:
     )
 
 
+def _enabled_sentry_config() -> ObservabilityExportOperatorConfig:
+    return ObservabilityExportOperatorConfig(
+        enabled=True,
+        export_content=False,
+        backend_id="sentry",
+        sentry=SentryExportOperatorConfig(
+            dsn="https://example@sentry.io/1",
+            environment="test",
+            release="lkw-test",
+            server_name="local-lkw",
+            shutdown_timeout_seconds=2.0,
+            flush_after_capture=True,
+        ),
+    )
+
+
 class FakeElasticsearchTransport:
     async def send_observability_payload(self, payload: object) -> None:
         return None
@@ -101,6 +127,25 @@ def _elasticsearch_registry_with_transport(
     registry.register(
         "elasticsearch",
         lambda config: build_elasticsearch_observability_integration(config, transport=transport),
+    )
+    return registry
+
+
+class FakeSentryTransport:
+    def __init__(self) -> None:
+        self.payloads: list[Any] = []
+
+    async def send_observability_payload(self, payload: object) -> None:
+        self.payloads.append(payload)
+
+
+def _sentry_registry_with_transport(
+    transport: FakeSentryTransport,
+) -> ObservabilityExportBackendRegistry:
+    registry = ObservabilityExportBackendRegistry()
+    registry.register(
+        "sentry",
+        lambda config: build_sentry_observability_integration(config, transport=transport),
     )
     return registry
 
@@ -183,6 +228,17 @@ def test_enabled_elasticsearch_config_returns_exactly_one_runtime_plugin() -> No
     assert plugins[0].plugin_id == "runtime.observability_export"
 
 
+def test_enabled_sentry_config_returns_exactly_one_runtime_plugin() -> None:
+    plugins = build_local_workspace_observability_plugins(
+        _enabled_sentry_config(),
+        registry=_sentry_registry_with_transport(FakeSentryTransport()),
+    )
+
+    assert len(plugins) == 1
+    assert isinstance(plugins[0], RuntimePlugin)
+    assert plugins[0].plugin_id == "runtime.observability_export"
+
+
 def test_enabled_otlp_config_returns_exactly_one_runtime_plugin() -> None:
     plugins = build_local_workspace_observability_plugins(_enabled_config())
 
@@ -224,6 +280,74 @@ def test_unregistered_backend_id_fails_at_plugin_build() -> None:
         match="no observability export backend builder registered for 'acme_observability'",
     ):
         build_local_workspace_observability_plugins(config)
+
+
+@pytest.mark.asyncio
+async def test_controlled_problem_envelope_reaches_fake_sentry_transport() -> None:
+    transport = FakeSentryTransport()
+    integration = build_sentry_observability_integration(
+        _enabled_sentry_config(),
+        transport=transport,
+    )
+    context = ProblemReportContext(
+        run_id="run-proof-1",
+        task_id="task-proof-1",
+        agent_id="local_search",
+        capability="local.workspace.search",
+        correlation_id="corr-proof-1",
+    )
+
+    result = await report_problem(
+        context=context,
+        problem_kind="lkw.retrieve_failed",
+        error_code="LKW_RETRIEVE_FAILED",
+        source_layer="lkw",
+        source_component="retrieve",
+        tool_id="rag.retrieve",
+        exporter=integration,
+        policy=ObservabilityExportPolicy(enabled=True, export_content=False),
+    )
+
+    assert result.exported is True
+    assert len(transport.payloads) == 1
+    payload = transport.payloads[0]
+    assert payload.record_type == "problem_signal"
+    assert payload.problem_kind == "lkw.retrieve_failed"
+    assert payload.problem_error_code == "LKW_RETRIEVE_FAILED"
+    assert payload.run_id == "run-proof-1"
+    assert payload.correlation_id == "corr-proof-1"
+
+
+@pytest.mark.asyncio
+async def test_export_content_true_with_sentry_is_still_forced_to_metadata_only_policy() -> None:
+    transport = FakeSentryTransport()
+    plugins = build_local_workspace_observability_plugins(
+        replace(_enabled_sentry_config(), export_content=True),
+        registry=_sentry_registry_with_transport(transport),
+    )
+    assert len(plugins) == 1
+
+    bus = RuntimeEventBus(record_history=False)
+    plugins[0].register(bus, HookRegistry(), MagicMock())
+    event = RuntimeEvent(
+        task_id="task-1",
+        run_id="run-1",
+        event_type=RuntimeEventType.TOOL_COMPLETED,
+        phase=ExecutionPhase.STEP_EXECUTION,
+        payload={
+            "tool_id": "workspace.read_file",
+            "latency_ms": 9,
+            "prompt": "secret prompt",
+            "content": "raw body",
+        },
+    )
+
+    await bus.publish(event)
+
+    assert len(transport.payloads) == 1
+    serialized = json.dumps(transport.payloads[0].model_dump(mode="json"))
+    assert "secret prompt" not in serialized
+    assert "raw body" not in serialized
 
 
 @pytest.mark.asyncio
@@ -437,3 +561,18 @@ def test_lkw_settings_do_not_import_elasticsearch_failed_delivery_sink() -> None
     assert "integrations.providers.observability_backend.elasticsearch.failed_delivery" not in source
     assert "json.dump" not in source
     assert "open(" not in source
+
+
+def test_lkw_settings_do_not_import_sentry_provider_sdk() -> None:
+    source = _LKW_SETTINGS_PATH.read_text(encoding="utf-8")
+    forbidden = (
+        "sentry_sdk",
+        "integrations.providers.observability_backend.sentry",
+        "SentrySdkObservabilityTransport",
+        "create_sentry_observability_transport",
+        "build_sentry_observability_integration",
+    )
+    for token in forbidden:
+        assert token not in source, f"settings.py contains forbidden Sentry coupling token: {token}"
+    assert "observability_sentry" in source
+    assert "LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN" in source or "OBSERVABILITY_SENTRY_DSN" in source
