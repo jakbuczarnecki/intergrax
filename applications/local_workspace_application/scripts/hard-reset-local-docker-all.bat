@@ -59,24 +59,18 @@ if exist "%SENTRY_PROOF_DIR%\.bootstrapped" (
 )
 
 echo.
-echo [3/3] Starting clean local Docker stack in detached mode...
-call "%RUN_ALL%" up -d --build
-set "EXIT_CODE=%ERRORLEVEL%"
-
-if not "%EXIT_CODE%"=="0" (
-    echo Docker compose startup failed with exit code %EXIT_CODE%.
-    popd >nul
-    exit /b %EXIT_CODE%
-)
+echo [3/3] Launching clean local Docker stack startup in a separate minimized window...
+start "LKW platform proof startup" /min "%RUN_ALL%" up -d --build
 
 echo.
 echo LKW local Docker hard reset complete.
+echo Stack startup is continuing separately.
 echo.
 echo Next step:
-echo   applications\local_workspace_application\scripts\run-local-docker-all.bat ps -a
+echo   applications\local_workspace_application\scripts\check-lkw-platform-proof-status.bat
 echo.
-echo Expected: local_workspace, elasticsearch, kibana, sentry-web, sentry-relay, and sentry-nginx should be Up.
-echo Note: one-shot setup containers such as sentry-bootstrap and sentry-upgrade may show Exited (0).
+echo If the status checker prints proof_status=WAIT, wait 30-60 seconds and run it again.
+echo If the status checker prints proof_status=FAIL, use the diagnostic command printed by the checker.
 echo.
 
 popd >nul
