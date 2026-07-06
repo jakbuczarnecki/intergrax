@@ -19,6 +19,9 @@ _DOCS_DIR = _LKW_ROOT / "docs"
 _SENTRY_OVERLAY = _DOCKER_DIR / "docker-compose.sentry.yml"
 _SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "sentry.services.yml"
 _SENTRY_CONF = _DOCKER_DIR / "sentry" / "sentry.conf.py"
+_SENTRY_PROOF_DIR = _DOCKER_DIR / "sentry-proof"
+_SENTRY_PROOF_PLACEHOLDER = _SENTRY_PROOF_DIR / "generated.env.placeholder"
+_ROOT_GITIGNORE = _PROJECT_ROOT / ".gitignore"
 _OLD_SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "docker-compose.sentry.services.yml"
 _RUN_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "run-local-docker-all.bat"
 _RUN_LOCAL_DOCKER_ALL_SH = _SCRIPTS_DIR / "run-local-docker-all.sh"
@@ -154,6 +157,19 @@ def test_sentry_relay_has_local_proof_credentials_json() -> None:
     for key in ("secret_key", "public_key", "id"):
         assert key in payload
         assert isinstance(payload[key], str) and payload[key]
+
+
+def test_sentry_proof_runtime_state_gitignored() -> None:
+    gitignore = _ROOT_GITIGNORE.read_text(encoding="utf-8")
+    assert "applications/local_workspace_application/docker/sentry-proof/generated.env" in gitignore
+    assert "applications/local_workspace_application/docker/sentry-proof/.bootstrapped" in gitignore
+
+
+def test_sentry_proof_generated_env_placeholder_committed() -> None:
+    assert _SENTRY_PROOF_PLACEHOLDER.is_file()
+    content = _SENTRY_PROOF_PLACEHOLDER.read_text(encoding="utf-8")
+    assert "bootstrap-pending@sentry-relay:3000/1" in content
+    assert "LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_DSN=" in content
 
 
 def test_sentry_secret_key_in_shared_env() -> None:

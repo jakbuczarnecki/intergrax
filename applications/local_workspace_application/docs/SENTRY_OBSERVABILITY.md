@@ -141,7 +141,11 @@ Bootstrap writes the local DSN for the LKW container to:
 applications/local_workspace_application/docker/sentry-proof/generated.env
 ```
 
-This file is **local proof state** — a placeholder until bootstrap completes, then overwritten atomically (`generated.env.tmp` → `generated.env`). Do not commit real external DSNs.
+That path is **local proof runtime state** — created or overwritten atomically by `sentry-bootstrap` (`generated.env.tmp` → `generated.env`). It is listed in `.gitignore` together with `.bootstrapped`; do not commit bootstrap output or external SaaS DSNs. The committed template is:
+
+```text
+applications/local_workspace_application/docker/sentry-proof/generated.env.placeholder
+```
 
 ## Run controlled LKW error proof
 
