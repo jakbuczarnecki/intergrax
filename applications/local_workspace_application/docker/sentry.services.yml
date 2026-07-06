@@ -79,6 +79,17 @@ services:
     volumes:
       - sentry_kafka:/var/lib/kafka/data
 
+  sentry-kafka-topics:
+    image: confluentinc/cp-kafka:7.6.1
+    command: >
+      bash -lc '
+        kafka-topics --bootstrap-server sentry-kafka:9092 --create --if-not-exists --topic ingest-events --partitions 1 --replication-factor 1
+      '
+    depends_on:
+      sentry-kafka:
+        condition: service_healthy
+    restart: "no"
+
   sentry-clickhouse:
     image: altinity/clickhouse-server:23.8.11.29.altinitystable
     ulimits:
@@ -222,8 +233,8 @@ services:
     depends_on:
       sentry-web:
         condition: service_healthy
-    # Local proof race: the ingest-events Kafka topic may be created shortly after
-    # the consumer first starts. Retry instead of requiring a manual restart.
+      sentry-kafka-topics:
+        condition: service_completed_successfully
     restart: on-failure
 
   sentry-post-process-forwarder-errors:
