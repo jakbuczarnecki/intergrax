@@ -21,6 +21,7 @@ _SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "sentry.services.yml"
 _SENTRY_CONF = _DOCKER_DIR / "sentry" / "sentry.conf.py"
 _SENTRY_PROOF_DIR = _DOCKER_DIR / "sentry-proof"
 _SENTRY_PROOF_PLACEHOLDER = _SENTRY_PROOF_DIR / "generated.env.placeholder"
+_SENTRY_PROOF_START_SCRIPT = _DOCKER_DIR / "start-local-workspace-sentry-proof.sh"
 _ROOT_GITIGNORE = _PROJECT_ROOT / ".gitignore"
 _OLD_SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "docker-compose.sentry.services.yml"
 _RUN_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "run-local-docker-all.bat"
@@ -163,6 +164,28 @@ def test_sentry_proof_runtime_state_gitignored() -> None:
     gitignore = _ROOT_GITIGNORE.read_text(encoding="utf-8")
     assert "applications/local_workspace_application/docker/sentry-proof/generated.env" in gitignore
     assert "applications/local_workspace_application/docker/sentry-proof/.bootstrapped" in gitignore
+
+
+def test_sentry_overlay_loads_generated_env_at_container_start() -> None:
+    overlay = _SENTRY_OVERLAY.read_text(encoding="utf-8")
+    assert "./sentry-proof:/proof:ro" in overlay
+    assert "start-local-workspace-sentry-proof.sh" in overlay
+    assert "path: ./sentry-proof/generated.env" not in overlay
+
+
+def test_sentry_proof_start_script_sources_generated_env_before_uvicorn() -> None:
+    assert _SENTRY_PROOF_START_SCRIPT.is_file()
+    script = _SENTRY_PROOF_START_SCRIPT.read_text(encoding="utf-8")
+    assert "/proof/generated.env" in script
+    assert "sentry-bootstrap must complete before local_workspace starts" in script
+    assert "exec uvicorn local_workspace_application.host.main:app" in script
+
+
+def test_sentry_proof_start_script_has_lf_line_endings_only() -> None:
+    content = _SENTRY_PROOF_START_SCRIPT.read_bytes()
+    assert b"\r\n" not in content
+    assert b"\r" not in content
+    assert content.split(b"\n", 1)[0] == b"#!/bin/sh"
 
 
 def test_sentry_proof_generated_env_placeholder_committed() -> None:

@@ -101,7 +101,7 @@ postgres/redis/kafka/clickhouse healthy
 → sentry-upgrade (migrations)
 → sentry-web healthy
 → sentry-bootstrap (proof account + generated.env)
-→ local_workspace (reads bootstrap DSN)
+→ local_workspace (sources /proof/generated.env at process start)
 ```
 
 ClickHouse/Snuba may emit noisy background warnings during warm-up. Missing-table errors (for example `generic_metric_counters_aggregated_local` or `metrics_counters_v2_local`) should **not** persist after `sentry-snuba-bootstrap` completes successfully.
@@ -141,7 +141,11 @@ Bootstrap writes the local DSN for the LKW container to:
 applications/local_workspace_application/docker/sentry-proof/generated.env
 ```
 
-That path is **local proof runtime state** — created or overwritten atomically by `sentry-bootstrap` (`generated.env.tmp` → `generated.env`). It is listed in `.gitignore` together with `.bootstrapped`; do not commit bootstrap output or external SaaS DSNs. The committed template is:
+That path is **local proof runtime state** — created or overwritten atomically by `sentry-bootstrap` (`generated.env.tmp` → `generated.env`). It is listed in `.gitignore` together with `.bootstrapped`; do not commit bootstrap output or external SaaS DSNs.
+
+Docker Compose resolves `env_file` when creating the container, before `depends_on` completes, so the Sentry overlay does **not** use `env_file` for `generated.env`. Instead, `local_workspace` mounts `./sentry-proof` read-only at `/proof` and `start-local-workspace-sentry-proof.sh` sources `/proof/generated.env` immediately before `uvicorn` starts. If the file is missing, the container exits with a clear local-proof error.
+
+The committed template is:
 
 ```text
 applications/local_workspace_application/docker/sentry-proof/generated.env.placeholder

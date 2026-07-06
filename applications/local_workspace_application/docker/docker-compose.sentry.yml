@@ -24,9 +24,12 @@ services:
       LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_SHUTDOWN_TIMEOUT_SECONDS: "2"
       LOCAL_WORKSPACE_OBSERVABILITY_SENTRY_FLUSH_AFTER_CAPTURE: "true"
       LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT: "false"
-    env_file:
-      - path: ./sentry-proof/generated.env
-        required: false
+    volumes:
+      - ./sentry-proof:/proof:ro
+      - ./start-local-workspace-sentry-proof.sh:/start-local-workspace-sentry-proof.sh:ro
+    command:
+      - /bin/sh
+      - /start-local-workspace-sentry-proof.sh
     depends_on:
       qdrant:
         condition: service_started
