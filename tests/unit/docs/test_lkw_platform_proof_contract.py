@@ -63,6 +63,7 @@ def test_lkw_platform_proof_documents_persistent_storage_step() -> None:
     assert "reindexed_after_restart=false" in text
     assert "Do not use hard-reset-local-docker-all" in text
     assert "LKW persists indexed local knowledge across a non-destructive restart." in text
+    assert "LKW_5_PERSISTENCE_VERIFICATION.md" in text
 
 
 def test_persistence_proof_bat_delegates_to_powershell() -> None:
