@@ -49,6 +49,53 @@ def test_lkw_platform_proof_uses_canonical_reviewer_commands() -> None:
         r"applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat"
         in text
     )
+    assert (
+        r"applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat"
+        in text
+    )
+
+
+def test_lkw_platform_proof_documents_persistent_storage_step() -> None:
+    text = _LKW_PLATFORM_PROOF.read_text(encoding="utf-8")
+    assert "persistent local knowledge" in text
+    assert "non-destructive restart" in text
+    assert "volumes_removed=false" in text
+    assert "reindexed_after_restart=false" in text
+    assert "Do not use hard-reset-local-docker-all" in text
+    assert "LKW persists indexed local knowledge across a non-destructive restart." in text
+    assert "LKW_5_PERSISTENCE_VERIFICATION.md" in text
+
+
+def test_persistence_proof_bat_delegates_to_powershell() -> None:
+    text = (_SCRIPTS / "run-lkw-persistence-proof.bat").read_text(encoding="utf-8")
+    assert "run-lkw-persistence-proof.ps1" in text
+    assert "-NoProfile" in text
+    assert "-ExecutionPolicy Bypass" in text
+    assert '-File "%PROOF%"' in text
+    assert "exit /b %ERRORLEVEL%" in text
+
+
+def test_persistence_proof_helper_avoids_destructive_restart_commands() -> None:
+    text = (_SCRIPTS / "run-lkw-persistence-proof.ps1").read_text(encoding="utf-8")
+    assert "down -v" not in text
+    assert "--volumes" not in text
+    assert "Remove-Volume" not in text
+    assert "hard-reset-local-docker-all" not in text
+
+
+def test_persistence_proof_helper_implements_reviewer_contract() -> None:
+    text = (_SCRIPTS / "run-lkw-persistence-proof.ps1").read_text(encoding="utf-8")
+    for needle in (
+        "/v1/local_workspace/run",
+        "local.workspace.index",
+        "local.workspace.search",
+        "docker compose",
+        "restart",
+        "proof_result=PASS",
+        "volumes_removed=false",
+        "reindexed_after_restart=false",
+    ):
+        assert needle in text
 
 
 def test_windows_hard_reset_launcher_delegates_to_powershell() -> None:

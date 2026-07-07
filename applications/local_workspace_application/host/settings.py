@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
 from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
@@ -22,6 +23,22 @@ from intergrax.runtime.observability.operator_wiring import (
 
 
 LocalWorkspaceIdentitySource = Literal["body_or_context", "context_only"]
+
+_DEFAULT_DATA_HOME = "build/local_workspace"
+
+
+def _resolve_data_home(env: EnvReader) -> str:
+    primary = env.optional_str("DATA_HOME")
+    if primary is not None:
+        return primary
+    legacy = (os.environ.get("LKW_DATA_HOME") or "").strip()
+    if legacy:
+        return legacy
+    return _DEFAULT_DATA_HOME
+
+
+def _data_home_path(data_home: str, *parts: str) -> str:
+    return (Path(data_home) / Path(*parts)).as_posix()
 
 
 def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
@@ -97,6 +114,31 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_sentry_shutdown_timeout_seconds: float = 2.0
     observability_sentry_debug: bool = False
     observability_sentry_flush_after_capture: bool = False
+    data_home: str = _DEFAULT_DATA_HOME
+
+    @property
+    def config_dir(self) -> str:
+        return _data_home_path(self.data_home, "config")
+
+    @property
+    def data_dir(self) -> str:
+        return _data_home_path(self.data_home, "data")
+
+    @property
+    def sqlite_data_dir(self) -> str:
+        return _data_home_path(self.data_home, "data", "sqlite")
+
+    @property
+    def shadow_workspaces_dir(self) -> str:
+        return _data_home_path(self.data_home, "data", "shadow_workspaces")
+
+    @property
+    def logs_dir(self) -> str:
+        return _data_home_path(self.data_home, "logs")
+
+    @property
+    def run_dir(self) -> str:
+        return _data_home_path(self.data_home, "run")
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -379,8 +421,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         allowed_read_roots = frozenset(
             part.strip() for part in read_roots_raw.split(",") if part.strip()
         )
+        data_home = _resolve_data_home(env)
 
         return {
+            "data_home": data_home,
             "default_agent_id": agent_id,
             "identity_source": identity_source,
             "enable_rag": enable_rag,

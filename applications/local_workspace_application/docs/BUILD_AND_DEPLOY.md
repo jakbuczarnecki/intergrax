@@ -32,9 +32,10 @@ Minimum local stack variables are documented in `.env.example`:
 | Variable | Role |
 |----------|------|
 | `LOCAL_WORKSPACE_BACKEND_PORT` | LKW HTTP port, default `8020` |
+| `LOCAL_WORKSPACE_DATA_HOME` | Canonical LKW local data root (`build/local_workspace` in repo dev); alias `LKW_DATA_HOME` |
 | `INTERGRAX_ALLOWED_READ_ROOTS` | Host paths that LKW may read when indexing local files |
-| `INTERGRAX_SQLITE_DATA_DIR` | Local SQLite/runtime data directory |
-| `INTERGRAX_SHADOW_ROOT` | Shadow workspace root for generated artifacts |
+| `INTERGRAX_SQLITE_DATA_DIR` | Current runtime SQLite/runtime data directory (compatibility; align with data-home layout) |
+| `INTERGRAX_SHADOW_ROOT` | Current runtime shadow workspace root for generated artifacts (compatibility; align with data-home layout) |
 | `LOCAL_WORKSPACE_VECTOR_STORE` | `qdrant` by default; `inmemory` only for test/dev fallback |
 | `INTERGRAX_QDRANT_URL` | Qdrant endpoint |
 | `INTERGRAX_QDRANT_COLLECTION` | Default local RAG collection |
