@@ -73,7 +73,7 @@ def test_lkw_integration_profile_defaults_to_qdrant_vector_store(
     profile = build_local_workspace_integration_profile()
 
     assert profile.vector_store is not None
-    assert profile.vector_store.slug == "qdrant"
+    assert profile.vector_store.manifest.slug == "qdrant"
     assert "qdrant" in profile.options
 
 
@@ -85,7 +85,7 @@ def test_lkw_integration_profile_allows_explicit_inmemory_fallback(
     profile = build_local_workspace_integration_profile()
 
     assert profile.vector_store is not None
-    assert profile.vector_store.slug == "inmemory"
+    assert profile.vector_store.manifest.slug == "inmemory"
     assert "inmemory" in profile.options
 
 
