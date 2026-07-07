@@ -247,6 +247,8 @@ This proof:
 
 `PASS` means indexed local knowledge survived the restart.
 
+Latest recorded live result: [`LKW_5_PERSISTENCE_VERIFICATION.md`](../../applications/local_workspace_application/docs/LKW_5_PERSISTENCE_VERIFICATION.md).
+
 Do not use hard-reset-local-docker-all between the before/after search. Hard reset removes volumes and invalidates this persistence proof.
 
 ---
