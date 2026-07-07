@@ -90,3 +90,18 @@ def test_env_example_documents_data_home_contract() -> None:
     assert "INTERGRAX_SQLITE_DATA_DIR" in content
     assert "INTERGRAX_SHADOW_ROOT" in content
     assert "LOCAL_WORKSPACE_VECTOR_STORE=qdrant" in content
+
+
+def test_env_example_persistence_defaults_match_data_home_layout() -> None:
+    settings = LocalWorkspaceBackendSettings.from_env()
+    content = _ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
+
+    assert "LOCAL_WORKSPACE_DATA_HOME=build/local_workspace" in content
+    assert f"INTERGRAX_SQLITE_DATA_DIR={settings.sqlite_data_dir}" in content
+    assert f"INTERGRAX_SHADOW_ROOT={settings.shadow_workspaces_dir}" in content
+    assert _posix(settings.sqlite_data_dir).endswith(
+        "build/local_workspace/data/sqlite"
+    )
+    assert _posix(settings.shadow_workspaces_dir).endswith(
+        "build/local_workspace/data/shadow_workspaces"
+    )
