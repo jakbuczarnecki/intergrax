@@ -12,6 +12,7 @@ Use this document as the source of truth. Follow the steps in order. A reviewer 
 1. LKW starts as a real Tier-3 Intergrax application.
 2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
 3. LKW emits controlled problem signals into local Sentry.
+4. LKW persists indexed local knowledge across a non-destructive restart.
 ```
 
 Local proof endpoints:
@@ -217,6 +218,39 @@ task_completed
 
 ---
 
+## Step 7 — Verify persistent local knowledge after restart
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
+```
+
+Expected result:
+
+```text
+proof_result=PASS
+proof_kind=persistent_vector_storage
+restart_mode=non_destructive
+volumes_removed=false
+before_restart_results=1
+after_restart_results=1
+reindexed_after_restart=false
+```
+
+This proof:
+
+- indexes a marker document into the local vector store,
+- verifies search before restart,
+- restarts LKW and Qdrant without deleting Docker volumes,
+- searches again without reindexing.
+
+`PASS` means indexed local knowledge survived the restart.
+
+Do not use hard-reset-local-docker-all between the before/after search. Hard reset removes volumes and invalidates this persistence proof.
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -224,6 +258,7 @@ applications\local_workspace_application\scripts\hard-reset-local-docker-all.bat
 applications\local_workspace_application\scripts\check-lkw-platform-proof-status.bat
 applications\local_workspace_application\scripts\run-sentry-observability-proof.bat --run-id lkw-sentry-live-001 --correlation-id lkw-sentry-live-001
 applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
+applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
 ```
 
 Then open:
