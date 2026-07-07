@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW.5 Closed — persistence proof passed** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -13,7 +13,9 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 
 Latest observability snapshot: **2026-06-30 — LKW-OBS OTLP proof path closed** · **LKW-OBS-VIEW-1A Done** (inspector + duplicate check = 0). LKW OTLP export: env-driven config (1A), Compose collector + JSONL sink (1B), manual Swagger proof (1C), duplicate export fix (DUP-1), lightweight inspector (`scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`; focused tests 5 passed). **Next platform phase:** **OBS-VENDOR** — production vendor integration rollout ([`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR); LKW remains proof workload, not integration owner.
 
-Current LKW.2 execution status: §5 below. LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
+Latest persistence snapshot: **2026-07-07 — LKW.5 PERSISTENCE PROOF PASSED**. `LKW_DATA_HOME` settings contract, repo-dev persistence env alignment, Qdrant persistent vector-store guardrails, public platform proof step, and live non-destructive restart proof are closed. Live proof verified `before_restart_results=1`, `after_restart_results=1`, `volumes_removed=false`, and `reindexed_after_restart=false`. See [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md).
+
+Current LKW.2 execution status: §5 below. LKW.5 persistence proof: [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md). LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
 Platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
@@ -282,7 +284,7 @@ This track is executed one task at a time.
 | LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
 | LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
-| LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
+| LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
