@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
@@ -25,10 +27,16 @@ from intergrax.skills.registry.bootstrap import register_default_skills, reset_d
 from intergrax.skills.resolver import SkillResolver
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from local_indexer.local_indexer_agent import LocalIndexerAgent
-from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+    build_local_workspace_integration_profile,
+)
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_APP_ROOT = Path(__file__).resolve().parents[2]
+_DOCKER_COMPOSE = _APP_ROOT / "docker" / "docker-compose.yml"
 
 
 @pytest.fixture(autouse=True)
@@ -54,6 +62,54 @@ def test_lkw_environment_profile_registers_local_workspace_skills() -> None:
         "local.workspace.synthesize",
     ):
         assert wiring.registry.has(skill_id)
+
+
+def test_lkw_integration_profile_defaults_to_qdrant_vector_store(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("LOCAL_WORKSPACE_VECTOR_STORE", raising=False)
+    monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_REDIS", raising=False)
+
+    profile = build_local_workspace_integration_profile()
+
+    assert profile.vector_store is not None
+    assert profile.vector_store.slug == "qdrant"
+    assert "qdrant" in profile.options
+
+
+def test_lkw_integration_profile_allows_explicit_inmemory_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+
+    profile = build_local_workspace_integration_profile()
+
+    assert profile.vector_store is not None
+    assert profile.vector_store.slug == "inmemory"
+    assert "inmemory" in profile.options
+
+
+def test_lkw_integration_profile_rejects_unsupported_vector_store(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "chroma")
+
+    with pytest.raises(
+        ValueError,
+        match="LOCAL_WORKSPACE_VECTOR_STORE must be one of: qdrant, inmemory",
+    ):
+        build_local_workspace_integration_profile()
+
+
+def test_lkw_docker_compose_uses_persistent_qdrant_storage_contract() -> None:
+    text = _DOCKER_COMPOSE.read_text(encoding="utf-8")
+
+    assert "LOCAL_WORKSPACE_VECTOR_STORE: qdrant" in text
+    assert "INTERGRAX_QDRANT_URL: http://qdrant:6333" in text
+    assert "INTERGRAX_QDRANT_COLLECTION: local_workspace" in text
+    assert "\n  qdrant:" in text
+    assert "qdrant_data:/qdrant/storage" in text
+    assert "\n  qdrant_data:" in text
 
 
 def test_lkw_package_closure_accepts_pipeline_graph_trigger() -> None:
