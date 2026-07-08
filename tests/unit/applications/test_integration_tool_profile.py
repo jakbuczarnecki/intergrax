@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.integration_tool_profile import (
+    apply_resolved_integration_tool_guardrails,
     extend_tool_profile_for_integration,
     integration_category_configured,
 )
@@ -18,7 +19,13 @@ from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID
 from intergrax.tools.providers.notify.service import NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SCHEDULE_TOOL_ID
 from intergrax.tools.providers.storage.service import STORAGE_EXISTS_TOOL_ID
 from intergrax.tools.providers.records.service import RECORDS_COUNT_TOOL_ID
-from intergrax.tools.providers.message_bus.service import MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID
+from intergrax.tools.providers.message_bus.bundle import MESSAGE_BUS_TOOL_IDS
+from intergrax.tools.providers.message_bus.service import (
+    MESSAGE_BUS_ENQUEUE_TOOL_ID,
+    MESSAGE_BUS_GET_STATUS_TOOL_ID,
+    MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
+)
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.providers.workflow.service import (
     WORKFLOW_CANCEL_RUN_TOOL_ID,
     WORKFLOW_LIST_RUNS_TOOL_ID,
@@ -113,6 +120,35 @@ def test_notify_batch_enabled_for_notification_channel() -> None:
     tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
     assert NOTIFY_SEND_BATCH_TOOL_ID in tool_profile.enabled
     assert NOTIFY_SCHEDULE_TOOL_ID in tool_profile.enabled
+
+
+def test_resolved_message_bus_context_adds_all_message_bus_tools() -> None:
+    ctx = ToolWiringContext(message_bus=object())
+    profile = apply_resolved_integration_tool_guardrails(
+        ToolProfile(enabled=[]),
+        ctx,
+        categories=(IntegrationCategory.MESSAGE_BUS,),
+    )
+    for tool_id in MESSAGE_BUS_TOOL_IDS:
+        assert tool_id in profile.enabled
+
+
+def test_missing_resolved_message_bus_context_prunes_message_bus_tools() -> None:
+    ctx = ToolWiringContext(message_bus=None)
+    profile = apply_resolved_integration_tool_guardrails(
+        ToolProfile(
+            enabled=[
+                MESSAGE_BUS_ENQUEUE_TOOL_ID,
+                MESSAGE_BUS_GET_STATUS_TOOL_ID,
+                "rag.retrieve",
+            ]
+        ),
+        ctx,
+        categories=(IntegrationCategory.MESSAGE_BUS,),
+    )
+    assert MESSAGE_BUS_ENQUEUE_TOOL_ID not in profile.enabled
+    assert MESSAGE_BUS_GET_STATUS_TOOL_ID not in profile.enabled
+    assert "rag.retrieve" in profile.enabled
 
 
 def test_t10_integration_tools_enabled_for_matching_categories() -> None:

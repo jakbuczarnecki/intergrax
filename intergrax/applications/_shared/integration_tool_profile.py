@@ -100,6 +100,7 @@ from intergrax.tools.providers.workflow.service import (
     WORKFLOW_TRIGGER_TOOL_ID,
 )
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.SECURITY_SCANNER: (
@@ -227,6 +228,50 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.DOCUMENT_PARSER: (RAG_INGEST_TOOL_ID,),
     IntegrationCategory.VECTOR_STORE: (RAG_RETRIEVE_TOOL_ID, RAG_INGEST_TOOL_ID),
 }
+
+_CONTEXT_ACCESSORS: dict[IntegrationCategory, str] = {
+    IntegrationCategory.MESSAGE_BUS: "message_bus",
+}
+
+
+def _resolved_context_value(ctx: ToolWiringContext, category: IntegrationCategory) -> object | None:
+    accessor = _CONTEXT_ACCESSORS.get(category)
+    if accessor is None:
+        return None
+    return getattr(ctx, accessor, None)
+
+
+def apply_resolved_integration_tool_guardrails(
+    tool_profile: ToolProfile,
+    ctx: ToolWiringContext,
+    *,
+    categories: tuple[IntegrationCategory, ...],
+) -> ToolProfile:
+    """Add or prune integration-backed tool_ids based on resolved ToolWiringContext slots."""
+    enabled = list(tool_profile.enabled)
+
+    for category in categories:
+        tool_ids = _CATEGORY_TOOL_IDS.get(category, ())
+        if not tool_ids:
+            continue
+
+        accessor = _CONTEXT_ACCESSORS.get(category)
+        if accessor is None:
+            raise ValueError(
+                f"apply_resolved_integration_tool_guardrails does not support {category!r}"
+            )
+
+        resolved = _resolved_context_value(ctx, category)
+        tool_id_set = set(tool_ids)
+        if resolved is None:
+            enabled = [tool_id for tool_id in enabled if tool_id not in tool_id_set]
+            continue
+
+        for tool_id in tool_ids:
+            if tool_id not in enabled:
+                enabled.append(tool_id)
+
+    return tool_profile.model_copy(update={"enabled": enabled})
 
 
 def integration_category_configured(

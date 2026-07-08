@@ -589,7 +589,7 @@ LKW.4 should start with **one local/deterministic provider or proof mode**. Prov
 
 #### Message bus tool exposure (LKW.4B guardrail — implemented)
 
-When a `message_bus` integration is configured on the host integration profile, `message_bus.*` tools **may** be exposed to the relevant host/tool profile. When `message_bus` is **not** configured, `message_bus.*` tools remain **disabled** for LKW. LKW host tool wiring (`host/tool_wiring.py`) enforces this via resolved `ToolWiringContext.message_bus` — **LKW.4B closed**.
+When a `message_bus` integration is configured on the host integration profile, `message_bus.*` tools **may** be exposed to the relevant host/tool profile. When `message_bus` is **not** configured, `message_bus.*` tools remain **disabled** for LKW. Shared application wiring (`apply_resolved_integration_tool_guardrails` in `intergrax/applications/_shared/integration_tool_profile.py`) enforces the resolved `ToolWiringContext.message_bus` guardrail; LKW host (`host/tool_wiring.py`) consumes that helper — **LKW.4B closed** · **LKW.4B-PROP-1 closed**.
 
 Code references: [`background_ingest/contracts.py`](../background_ingest/contracts.py) · platform [`INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
 
