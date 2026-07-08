@@ -295,7 +295,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.4-ARCH-1** — background jobs platform architecture scope. **LKW.4B** must not start until platform/app/agent/provider boundaries are documented.
+**Next planned task:** **LKW.4B** — message bus tool wiring guardrails. Platform/app/agent/provider boundaries are documented in [`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7 (LKW.4-ARCH-1 closed).
 
 **Platform proof pattern (same as observability):**
 
@@ -810,14 +810,14 @@ LKW.4 proves that a Tier-3 application can enqueue a domain background job throu
 | ID | Task | Scope | Status |
 |----|------|-------|--------|
 | LKW.4A | Background ingest job payload contract | LKW domain payload + deterministic idempotency | **Closed** |
-| LKW.4-ARCH-1 | Background jobs platform architecture scope | Document platform/app/agent/provider boundaries | **Planned — next task** |
-| LKW.4B | Message bus tool wiring guardrails | Optional `message_bus` tool exposure only when provider configured | Planned |
+| LKW.4-ARCH-1 | Background jobs platform architecture scope | Document platform/app/agent/provider boundaries | **Closed** |
+| LKW.4B | Message bus tool wiring guardrails | Optional `message_bus` tool exposure only when provider configured | **Planned — next task** |
 | LKW.4C | Background ingest enqueue helper | Application service/helper that builds payload and calls provider-neutral enqueue | Planned |
 | LKW.4D | Worker handler contract | Decode payload and execute `local.workspace.index` through platform execution path | Planned |
 | LKW.4E | Live proof | Enqueue job → worker executes index → search verifies result | Planned |
 | LKW.4F | Record proof and closeout | Save proof result and align plan/status | Planned |
 
-**Execution gate:** LKW.4-ARCH-1 must close before LKW.4B begins. LKW.4B–LKW.4F depend on documented platform boundaries and must not introduce LKW-specific queue code.
+**Execution gate:** LKW.4-ARCH-1 is closed; LKW.4B may begin. LKW.4B–LKW.4F depend on documented platform boundaries ([`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7) and must not introduce LKW-specific queue code.
 
 **Out of scope for LKW.4:** file watcher and incremental index (**LKW.7**); OS daemon and interaction intake (**LKW.6**); Slack notify (**LKW.6b**, optional later); implementing every listed provider — one local/deterministic proof path is sufficient for first closeout.
 
