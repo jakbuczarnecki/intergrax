@@ -530,6 +530,20 @@ Application/domain job
 | **Agents (Tier-2)** | Tool/skill invocation only — **no** provider SDK imports; **no** Kafka / RabbitMQ / Celery imports |
 | **Providers** | Backend implementation behind the common contract (examples only — LKW.4 does not require all): `kafka`, `rabbitmq`, `celery`, `redpanda`, `sqs`, `service_bus`, `pubsub`, `nats`, `pulsar`, `confluent`, `temporal` |
 
+#### Platform background task model dependency
+
+LKW.4 is aligned with the platform background task architecture in [`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md). LKW background ingest is one concrete **TaskDefinition** in that model — not a separate queue design.
+
+**LKW.4E must use the target concepts:**
+
+- `TaskRequest` enqueue envelope
+- `TaskDefinition` / handler mapping (`lkw.background_ingest.v1` → `handle_background_ingest_task_request`)
+- `WorkerRuntime` or local deterministic proof harness (BG-TASKS-7)
+- Pull status/result via `message_bus.get_status` / `get_result`
+- Lifecycle events and trace correlation (target model; proof may start minimal)
+
+LKW.4E **may** use a local deterministic proof harness but **must not** become an LKW-owned queue implementation. See [`docs/plan/BACKGROUND_TASKS.md`](../../../docs/plan/BACKGROUND_TASKS.md).
+
 #### Intended background ingest flow
 
 Triggers (file watcher, scheduler, or explicit user background action) build a domain job and enqueue through the platform surface — **without** duplicating queue logic in LKW:
@@ -591,7 +605,7 @@ LKW.4 should start with **one local/deterministic provider or proof mode**. Prov
 
 When a `message_bus` integration is configured on the host integration profile, `message_bus.*` tools **may** be exposed to the relevant host/tool profile. When `message_bus` is **not** configured, `message_bus.*` tools remain **disabled** for LKW. Shared application wiring (`apply_resolved_integration_tool_guardrails` in `intergrax/applications/_shared/integration_tool_profile.py`) enforces the resolved `ToolWiringContext.message_bus` guardrail; LKW host (`host/tool_wiring.py`) consumes that helper — **LKW.4B closed** · **LKW.4B-PROP-1 closed**.
 
-Code references: [`background_ingest/contracts.py`](../background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../background_ingest/enqueue.py) (LKW.4C enqueue helper) · [`background_ingest/handler.py`](../background_ingest/handler.py) (LKW.4D worker handler contract) · platform [`INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
+Code references: [`background_ingest/contracts.py`](../background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../background_ingest/enqueue.py) (LKW.4C enqueue helper) · [`background_ingest/handler.py`](../background_ingest/handler.py) (LKW.4D worker handler contract) · platform [`BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md) · [`INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
 
 ---
 
