@@ -269,3 +269,9 @@ Then open:
 Sentry: http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
 Kibana: http://127.0.0.1:5601
 ```
+
+---
+
+## Token optimization claim guardrails
+
+For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md).
