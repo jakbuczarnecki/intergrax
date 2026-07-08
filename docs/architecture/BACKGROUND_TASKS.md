@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../plan/BACKGROUND_TASKS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)  
-**Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1**
+**Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
 
 ---
 
@@ -17,7 +17,7 @@ This document defines the **target platform architecture** for background task r
 | **Target architecture** | Direction for platform implementation; not all components exist in code yet |
 | **Generalizes LKW.4** | LKW background ingest is the first proof workload, not a bespoke queue design |
 | **Not production yet** | No claim that `TaskRegistry`, `WorkerRuntime`, or `TaskEvent` are fully implemented |
-| **LKW.4E proof** | May use a **local deterministic proof harness** (synchronous immediate execution, no external broker) while still following the concepts below |
+| **LKW.4E proof** | Must use **real platform components** and a **real local MessageBus provider** in the proof stack (for example RabbitMQ in Docker); mocks, fake queues, and in-memory-only bypasses are **not** platform proof |
 
 Future platform code should converge on **TaskRegistry + WorkerRuntime + TaskEvent lifecycle**. Applications and agents must not invent application-owned queue systems.
 
@@ -164,7 +164,7 @@ A developer defines a custom background task through platform contracts — **no
 | Kafka / RabbitMQ | Consumer receives when message available on subscribed topic/queue |
 | SQS | Polling / long-poll; visibility timeout / lease model |
 | Temporal | Workflow/activity worker model |
-| **Local deterministic proof** | Synchronous immediate execution in-process (LKW.4E harness) |
+| **Local message bus provider (LKW proof stack)** | Async enqueue → broker/queue → worker consumer (for example RabbitMQ in local Docker) |
 
 The platform hides provider-specific mechanics behind **TaskQueue/MessageBus + WorkerRuntime** contracts.
 
@@ -186,7 +186,7 @@ Pull inspection is the **mandatory baseline** — works for all providers and su
 
 **Semantics:**
 
-- Enqueue returns `TaskHandle` immediately; execution is asynchronous (except local proof harness).
+- Enqueue returns `TaskHandle` immediately; execution is asynchronous. LKW.4E platform proof must observe this async lifecycle — synchronous in-process bypass is not sufficient.
 - Pull APIs are provider-neutral; callers pass `task_id` + `provider` (+ `tenant_id` when required).
 - Agents waiting on background work should prefer pull + events rather than blocking vendor consumers.
 
@@ -391,7 +391,8 @@ Explicitly **out of scope** for this architecture document and the BG-TASKS trac
 - Slack notify (LKW.6b)
 - OS daemon (LKW.6)
 - Arbitrary code serialization on the queue
-- Provider-specific external backend live tests in LKW.4E first pass
+- Cloud-managed vendor backends (SQS, Service Bus, Pub/Sub, etc.) in LKW.4E first pass — a **local** broker/provider in the proof stack is required
+- Mocks, fake queues, in-memory-only bypasses, and unit-test-only handler invocation as LKW.4E platform proof
 
 ---
 

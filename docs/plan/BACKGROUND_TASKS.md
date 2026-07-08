@@ -3,7 +3,7 @@
 **Architecture (1:1):** [`architecture/BACKGROUND_TASKS.md`](../architecture/BACKGROUND_TASKS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW.4 ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6)  
-**Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1**
+**Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
 
 ---
 
@@ -118,18 +118,19 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 
 ---
 
-### BG-TASKS-7 — Local deterministic provider / proof harness
+### BG-TASKS-7 — Local message bus provider for platform proof
 
-**Scope:** Synchronous in-process queue/worker for proofs — **no external broker**.
+**Scope:** Real local broker/queue in the LKW proof stack — **not** mocks, fake queues, or in-memory-only bypasses.
 
 | Deliverable | Detail |
 |-------------|--------|
-| Local `MessageBus` implementation | Enqueue → immediate or queued in-memory dispatch |
+| Local `MessageBus` provider wiring | Configured `message_bus` integration in proof stack (for example RabbitMQ in Docker) |
+| Async enqueue / consume | `message_bus.enqueue` returns before handler completes; worker consumes from broker |
 | WorkerRuntime proof mode | Resolves registry, runs handler, stores result |
-| LKW.4E consumer | Background ingest live proof |
+| LKW.4E consumer | Background ingest live proof via public reviewer path ([`LKW_PLATFORM_PROOF.md`](../public-adoption/LKW_PLATFORM_PROOF.md) Step 8) |
 
 **Depends on:** BG-TASKS-1, BG-TASKS-2 (minimal contract)  
-**Out of scope:** External Kafka/RabbitMQ/SQS for first LKW.4E pass
+**Out of scope:** Cloud-managed vendor backends (SQS, Service Bus, Pub/Sub) in LKW.4E first pass
 
 ---
 
@@ -172,7 +173,7 @@ This plan schedules platform implementation phases. **No production WorkerRuntim
 | **LKW.4C** | Enqueue helper → platform `message_bus.enqueue` |
 | **LKW.4D** | Handler contract → `TaskHandler` + `WorkerRuntime` invocation |
 | **LKW.4E-ARCH-1** | Platform background task architecture ([`architecture/BACKGROUND_TASKS.md`](../architecture/BACKGROUND_TASKS.md)) — **this milestone** |
-| **LKW.4E** | Local deterministic live proof (BG-TASKS-7 harness) |
+| **LKW.4E** | Live platform proof with real local MessageBus provider (BG-TASKS-7) — enqueue → async worker → search evidence |
 | **LKW.4F** | Proof closeout and plan alignment |
 
 ---

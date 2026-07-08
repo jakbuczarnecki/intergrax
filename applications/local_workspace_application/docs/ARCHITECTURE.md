@@ -538,11 +538,11 @@ LKW.4 is aligned with the platform background task architecture in [`docs/archit
 
 - `TaskRequest` enqueue envelope
 - `TaskDefinition` / handler mapping (`lkw.background_ingest.v1` → `handle_background_ingest_task_request`)
-- `WorkerRuntime` or local deterministic proof harness (BG-TASKS-7)
+- `WorkerRuntime` with a **real local MessageBus provider** in the proof stack (BG-TASKS-7)
 - Pull status/result via `message_bus.get_status` / `get_result`
 - Lifecycle events and trace correlation (target model; proof may start minimal)
 
-LKW.4E **may** use a local deterministic proof harness but **must not** become an LKW-owned queue implementation. See [`docs/plan/BACKGROUND_TASKS.md`](../../../docs/plan/BACKGROUND_TASKS.md).
+LKW.4E is a **platform proof through LKW**. It must demonstrate production-like platform behavior: real `message_bus.*` tools, a real local broker/provider in the proof stack, and asynchronous worker execution. Mocks, fake queues, in-memory-only bypasses, and unit-test-only handler invocation are **not** sufficient for platform proof. See [`docs/plan/BACKGROUND_TASKS.md`](../../../docs/plan/BACKGROUND_TASKS.md) and public reviewer Step 8 in [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
 
 #### Intended background ingest flow
 
@@ -599,7 +599,7 @@ File watcher and incremental index are **LKW.7**, not LKW.4. OS daemon and inter
 
 #### LKW.4 vs provider portability
 
-LKW.4 should start with **one local/deterministic provider or proof mode**. Provider portability proof can happen later. Provider-specific SDKs stay behind platform provider integrations — LKW.4 does **not** implement every listed backend.
+LKW.4 starts with **one real local message bus provider** in the proof stack (for example RabbitMQ in Docker). Provider portability proof can happen later. Provider-specific SDKs stay behind platform provider integrations — LKW.4 does **not** implement every listed backend. Mocks and in-memory-only queue bypasses do **not** satisfy LKW.4E platform proof.
 
 #### Message bus tool exposure (LKW.4B guardrail — implemented)
 

@@ -13,6 +13,7 @@ Use this document as the source of truth. Follow the steps in order. A reviewer 
 2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
 3. LKW emits controlled problem signals into local Sentry.
 4. LKW persists indexed local knowledge across a non-destructive restart.
+5. LKW enqueues and executes background ingest jobs through the real platform message-bus / TaskQueue path with a local provider in the proof stack.
 ```
 
 Local proof endpoints:
@@ -253,6 +254,49 @@ Do not use hard-reset-local-docker-all between the before/after search. Hard res
 
 ---
 
+## Step 8 — Verify background task / queue platform proof
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
+```
+
+Expected result:
+
+```text
+proof_result=PASS
+proof_kind=platform_background_task
+task_name=lkw.background_ingest.v1
+message_bus_provider=<configured_local_provider>
+enqueue_mode=real_provider
+worker_execution=asynchronous
+task_status=SUCCEEDED
+search_results=1
+mock_queue=false
+```
+
+This proof:
+
+- enqueues a real `LkwBackgroundIngestJob` through platform `message_bus.enqueue`,
+- routes the `TaskRequest` through a **real local message bus provider** in the proof stack (for example RabbitMQ in Docker),
+- executes the registered handler through the platform worker path **asynchronously** (enqueue returns before work completes),
+- inspects lifecycle through provider-neutral `message_bus.get_status` / `message_bus.get_result`,
+- verifies indexed content through `local.workspace.search` after the task succeeds.
+
+**Platform proof guardrails — this step is not satisfied by:**
+
+- mocks or fake queue implementations,
+- in-memory-only or synchronous in-process bypasses,
+- unit-test-only handler invocation without the live `message_bus.*` tool surface,
+- calling `local.workspace.index` directly while skipping enqueue / queue / worker lifecycle.
+
+The proof stack must include a configured `message_bus` integration, a running broker/queue backend, and a worker consumer for `lkw.background_ingest.v1`. LKW remains the proof workload; platform owns contracts, tools, provider adapters, and worker execution.
+
+Latest recorded live result: pending LKW.4E implementation — see [`IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6.
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -261,6 +305,7 @@ applications\local_workspace_application\scripts\check-lkw-platform-proof-status
 applications\local_workspace_application\scripts\run-sentry-observability-proof.bat --run-id lkw-sentry-live-001 --correlation-id lkw-sentry-live-001
 applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
 applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
+applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 ```
 
 Then open:
