@@ -283,7 +283,7 @@ This track is executed one task at a time.
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
 | LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
-| LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
+| LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | Planned | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
@@ -293,7 +293,42 @@ This track is executed one task at a time.
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
 | LKW-W | Deferred architecture watchlist | LKW proof pain only | Deferred | Watch |
 
-**LKW.4 scope note:** contract/wiring for `message_bus` background ingest only — not file watcher, daemon, or new queue system. First step: **LKW.4A** (background ingest job payload + idempotency contract). File watcher + incremental index remain **LKW.7**.
+**LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
+
+**Next planned task:** **LKW.4-ARCH-1** — background jobs platform architecture scope. **LKW.4B** must not start until platform/app/agent/provider boundaries are documented.
+
+**Platform proof pattern (same as observability):**
+
+```text
+platform contract
+-> provider-neutral tool surface
+-> provider integration
+-> LKW proof workload
+-> reviewer proof
+```
+
+For message bus / background jobs:
+
+```text
+Application/domain job
+-> platform TaskQueue / MessageBus contract
+-> provider-neutral message_bus tools
+-> provider integration
+-> LKW background ingest proof workload
+```
+
+**Ownership boundaries:**
+
+| Layer | Owns |
+|-------|------|
+| **Platform** | `TaskQueue` / `MessageBus` contract; `MessageBusIntegrationContract`; provider integrations; `message_bus.*` tool surface; lifecycle / status / result abstraction |
+| **LKW** | `LkwBackgroundIngestJob`; `task_name`; payload schema; idempotency key convention; handler mapping; proof workload |
+| **Agents** | Tool/skill invocation only — no provider SDK imports |
+| **Providers** | Backend implementation behind the common contract (examples only — LKW.4 does not require all): `kafka`, `rabbitmq`, `celery`, `redpanda`, `sqs`, `service_bus`, `pubsub`, `nats`, `pulsar`, `confluent`, `temporal` |
+
+LKW proof should start with **one local/deterministic provider or proof mode**. Provider portability can be proven later.
+
+Sub-plan: §6 below.
 
 ---
 
@@ -768,7 +803,27 @@ Not a Sentry, vendor observability, token optimization, or exporter step.
 
 ---
 
-## 6. Post-LKW.1 hardening and adoption waves
+## 6. LKW.4 — Platform message-bus background ingest proof
+
+LKW.4 proves that a Tier-3 application can enqueue a domain background job through the platform message-bus contract and execute it asynchronously without owning queue infrastructure. LKW remains the proof workload; platform owns contracts, tools, and provider integrations.
+
+| ID | Task | Scope | Status |
+|----|------|-------|--------|
+| LKW.4A | Background ingest job payload contract | LKW domain payload + deterministic idempotency | **Closed** |
+| LKW.4-ARCH-1 | Background jobs platform architecture scope | Document platform/app/agent/provider boundaries | **Planned — next task** |
+| LKW.4B | Message bus tool wiring guardrails | Optional `message_bus` tool exposure only when provider configured | Planned |
+| LKW.4C | Background ingest enqueue helper | Application service/helper that builds payload and calls provider-neutral enqueue | Planned |
+| LKW.4D | Worker handler contract | Decode payload and execute `local.workspace.index` through platform execution path | Planned |
+| LKW.4E | Live proof | Enqueue job → worker executes index → search verifies result | Planned |
+| LKW.4F | Record proof and closeout | Save proof result and align plan/status | Planned |
+
+**Execution gate:** LKW.4-ARCH-1 must close before LKW.4B begins. LKW.4B–LKW.4F depend on documented platform boundaries and must not introduce LKW-specific queue code.
+
+**Out of scope for LKW.4:** file watcher and incremental index (**LKW.7**); OS daemon and interaction intake (**LKW.6**); Slack notify (**LKW.6b**, optional later); implementing every listed provider — one local/deterministic proof path is sufficient for first closeout.
+
+---
+
+## 7. Post-LKW.1 hardening and adoption waves
 
 ### LKW-H2 — evidence/maturity wording cleanup
 
