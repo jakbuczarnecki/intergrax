@@ -591,7 +591,7 @@ LKW.4 should start with **one local/deterministic provider or proof mode**. Prov
 
 When a `message_bus` integration is configured on the host integration profile, `message_bus.*` tools **may** be exposed to the relevant host/tool profile. When `message_bus` is **not** configured, `message_bus.*` tools remain **disabled** for LKW. Shared application wiring (`apply_resolved_integration_tool_guardrails` in `intergrax/applications/_shared/integration_tool_profile.py`) enforces the resolved `ToolWiringContext.message_bus` guardrail; LKW host (`host/tool_wiring.py`) consumes that helper — **LKW.4B closed** · **LKW.4B-PROP-1 closed**.
 
-Code references: [`background_ingest/contracts.py`](../background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../background_ingest/enqueue.py) (LKW.4C enqueue helper) · platform [`INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
+Code references: [`background_ingest/contracts.py`](../background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../background_ingest/enqueue.py) (LKW.4C enqueue helper) · [`background_ingest/handler.py`](../background_ingest/handler.py) (LKW.4D worker handler contract) · platform [`INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
 
 ---
 
