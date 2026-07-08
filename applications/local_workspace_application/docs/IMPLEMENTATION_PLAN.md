@@ -293,6 +293,8 @@ This track is executed one task at a time.
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
 | LKW-W | Deferred architecture watchlist | LKW proof pain only | Deferred | Watch |
 
+**LKW.4 scope note:** contract/wiring for `message_bus` background ingest only — not file watcher, daemon, or new queue system. First step: **LKW.4A** (background ingest job payload + idempotency contract). File watcher + incremental index remain **LKW.7**.
+
 ---
 
 ## 2. Closed support wave — LKW-H0: minimal runtime hardening for product proof
