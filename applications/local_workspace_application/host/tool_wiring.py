@@ -17,6 +17,7 @@ from intergrax.tools.providers.filesystem.service import (
     FILESYSTEM_STAT_TOOL_ID,
     FILESYSTEM_WRITE_TEXT_TOOL_ID,
 )
+from intergrax.tools.providers.message_bus.bundle import MESSAGE_BUS_TOOL_IDS
 from intergrax.tools.providers.rag.index_lifecycle_service import (
     RAG_CHECK_INDEX_STATUS_TOOL_ID,
     RAG_GET_DOCUMENT_TOOL_ID,
@@ -60,6 +61,18 @@ _FILESYSTEM_TOOL_IDS: tuple[str, ...] = (
     FILESYSTEM_WRITE_TEXT_TOOL_ID,
 )
 
+_MESSAGE_BUS_TOOL_ID_SET = frozenset(MESSAGE_BUS_TOOL_IDS)
+
+
+def _append_unique(enabled: list[str], tool_ids: tuple[str, ...]) -> None:
+    for tool_id in tool_ids:
+        if tool_id not in enabled:
+            enabled.append(tool_id)
+
+
+def _without_message_bus_tools(enabled: list[str]) -> list[str]:
+    return [tool_id for tool_id in enabled if tool_id not in _MESSAGE_BUS_TOOL_ID_SET]
+
 
 def wire_local_workspace_tools(
     *,
@@ -80,6 +93,11 @@ def wire_local_workspace_tools(
     ctx = ToolWiringContext.from_integration_profile(resolved_profile)
     if allowed_roots:
         ctx = replace(ctx, read_allowlist_roots=allowed_roots)
+
+    if ctx.message_bus is not None:
+        _append_unique(enabled, MESSAGE_BUS_TOOL_IDS)
+    else:
+        enabled = _without_message_bus_tools(enabled)
 
     profile = ToolProfile(enabled=enabled)
     return build_application_tool_wiring(
