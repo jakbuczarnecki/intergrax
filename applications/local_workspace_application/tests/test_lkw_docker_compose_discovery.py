@@ -267,3 +267,34 @@ def test_docs_mention_canonical_all_in_one_startup() -> None:
     for doc in (sentry_doc, platform_proof):
         assert "run-local-docker-all.bat" in doc
         assert "run-local-docker-all.sh" in doc
+
+
+def test_kafka_overlay_configures_real_background_task_stack() -> None:
+    text = (_DOCKER_DIR / "docker-compose.kafka.yml").read_text(encoding="utf-8")
+    assert 'LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"' in text
+    assert "INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092" in text
+    assert "INTERGRAX_KAFKA_TOPIC: intergrax-lkw-tasks" in text
+    assert "lkw-background-worker:" in text
+    assert "background_worker_main" in text
+    assert "lkw-kafka-ui:" in text
+    assert "8088:8080" in text
+
+
+def test_background_task_proof_helper_implements_reviewer_contract() -> None:
+    for path in (
+        _SCRIPTS_DIR / "run-lkw-background-task-proof.bat",
+        _SCRIPTS_DIR / "run-lkw-background-task-proof.sh",
+        _SCRIPTS_DIR / "run-lkw-background-task-proof.py",
+    ):
+        assert path.exists()
+    py = (_SCRIPTS_DIR / "run-lkw-background-task-proof.py").read_text(encoding="utf-8")
+    for needle in (
+        "proof_result=PASS",
+        "proof_kind=platform_background_task",
+        "background-task/enqueue",
+        "background-task/status",
+        "local.workspace.search",
+        "mock_queue=false",
+        "kafka_ui",
+    ):
+        assert needle in py

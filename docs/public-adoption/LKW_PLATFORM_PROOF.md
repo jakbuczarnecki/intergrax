@@ -22,6 +22,7 @@ Local proof endpoints:
 LKW API         http://127.0.0.1:8020
 Elasticsearch   http://127.0.0.1:9200
 Kibana          http://127.0.0.1:5601
+Kafka UI        http://127.0.0.1:8088
 Sentry UI       http://127.0.0.1:9000
 ```
 
@@ -268,7 +269,7 @@ Expected result:
 proof_result=PASS
 proof_kind=platform_background_task
 task_name=lkw.background_ingest.v1
-message_bus_provider=<configured_local_provider>
+message_bus_provider=kafka
 enqueue_mode=real_provider
 worker_execution=asynchronous
 task_status=SUCCEEDED
@@ -279,7 +280,7 @@ mock_queue=false
 This proof:
 
 - enqueues a real `LkwBackgroundIngestJob` through platform `message_bus.enqueue`,
-- routes the `TaskRequest` through a **real local message bus provider** in the proof stack (for example RabbitMQ in Docker),
+- routes the `TaskRequest` through a **real local message bus provider** in the proof stack (Kafka in Docker),
 - executes the registered handler through the platform worker path **asynchronously** (enqueue returns before work completes),
 - inspects lifecycle through provider-neutral `message_bus.get_status` / `message_bus.get_result`,
 - verifies indexed content through `local.workspace.search` after the task succeeds.
@@ -313,6 +314,7 @@ Then open:
 ```text
 Sentry: http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
 Kibana: http://127.0.0.1:5601
+Kafka UI: http://127.0.0.1:8088
 ```
 
 ---

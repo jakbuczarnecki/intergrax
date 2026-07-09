@@ -206,6 +206,10 @@ dev-ci = [
   "celery>=5.3",
 ]
 integrations-sentry = ["sentry-sdk>=2.0"]
+integrations-kafka = [
+  "confluent-kafka>=2.3.0",
+  "redis>=5.0",
+]
 integrations-harness = [
   "sentry-sdk>=2.0",
 ]

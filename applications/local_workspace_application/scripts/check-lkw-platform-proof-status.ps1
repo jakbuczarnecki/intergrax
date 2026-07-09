@@ -19,6 +19,10 @@ $requiredUp = @(
     "local_workspace",
     "elasticsearch",
     "kibana",
+    "lkw-redis",
+    "lkw-kafka",
+    "lkw-kafka-ui",
+    "lkw-background-worker",
     "sentry-web",
     "sentry-relay",
     "sentry-nginx",
@@ -29,7 +33,8 @@ $requiredExitedZero = @(
     "sentry-bootstrap",
     "sentry-upgrade",
     "sentry-snuba-bootstrap",
-    "sentry-kafka-topics"
+    "sentry-kafka-topics",
+    "lkw-kafka-topics"
 )
 
 $rows = & docker compose @composeArgs ps -a --format "{{.Service}}|{{.Status}}"

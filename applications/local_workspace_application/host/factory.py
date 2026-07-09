@@ -35,6 +35,9 @@ from local_workspace_application.host.environment_profile import build_local_wor
 from local_workspace_application.host.observability_wiring import build_local_workspace_observability_plugins
 from local_workspace_application.host.run_task_enricher import build_lkw_http_run_task_enricher
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
+from local_workspace_application.serving.background_task_proof_routes import (
+    mount_local_workspace_background_task_proof_routes,
+)
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
 from local_workspace_application.serving.sentry_proof_routes import mount_local_workspace_sentry_proof_routes
 
@@ -132,6 +135,12 @@ def create_local_workspace_backend_app(
         app,
         settings=settings,
         observability_export=observability_export,
+        prefix=settings.route_prefix,
+    )
+    mount_local_workspace_background_task_proof_routes(
+        app,
+        settings=settings,
+        wiring_context=runtime.env_wiring.tool_wiring.wiring_context,
         prefix=settings.route_prefix,
     )
 
