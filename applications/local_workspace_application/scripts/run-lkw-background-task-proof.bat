@@ -31,6 +31,15 @@ echo LKW base URL: %LKW_BASE_URL%
 echo Kafka UI URL: %KAFKA_UI_URL%
 echo.
 
+set "PROOF_DOCS_DIR=%REPO_ROOT%\applications\local_workspace_application\.proof_docs"
+if not exist "%PROOF_DOCS_DIR%" (
+    mkdir "%PROOF_DOCS_DIR%"
+    if errorlevel 1 (
+        echo Failed to create proof docs directory: %PROOF_DOCS_DIR%
+        exit /b 1
+    )
+)
+
 echo Step 1/3: starting Docker stack with Kafka overlay...
 docker compose -f "%BASE_COMPOSE%" -f "%KAFKA_COMPOSE%" up -d --build local_workspace lkw-background-worker lkw-kafka lkw-kafka-topics lkw-kafka-ui lkw-redis
 if errorlevel 1 goto proof_fail

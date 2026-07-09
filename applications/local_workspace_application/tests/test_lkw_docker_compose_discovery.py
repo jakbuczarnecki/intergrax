@@ -280,6 +280,9 @@ def test_kafka_overlay_configures_real_background_task_stack() -> None:
     assert "background_worker_main" in text
     assert "lkw-kafka-ui:" in text
     assert "8085:8080" in text
+    assert "../.proof_docs:/data/user_docs:rw" in text
+    assert "PLAINTEXT_HOST://127.0.0.1:9094" in text
+    assert '"9094:9094"' in text
 
 
 def test_background_task_proof_helper_implements_reviewer_contract() -> None:
@@ -301,5 +304,8 @@ def test_background_task_proof_helper_implements_reviewer_contract() -> None:
         "kafka_topics=",
         "intergrax.task-events",
         "direct_indexer_call=false",
+        "collection_id=",
+        '"query": marker',
+        '"top_k": 5',
     ):
         assert needle in py

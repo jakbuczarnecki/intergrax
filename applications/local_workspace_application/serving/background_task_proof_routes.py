@@ -53,6 +53,7 @@ class LocalWorkspaceBackgroundTaskProofEnqueueResponseV1(BaseModel):
     correlation_id: str
     marker: str
     source_path: str
+    collection_id: str = _PROOF_COLLECTION_ID
     task_id: str = ""
     provider: str = ""
     tenant_id: str = _PROOF_TENANT_ID
@@ -167,6 +168,7 @@ async def enqueue_local_workspace_background_task_proof(
         correlation_id=correlation_id,
         marker=marker,
         source_path=source_path,
+        collection_id=_PROOF_COLLECTION_ID,
         task_id=output.task_id,
         provider=output.provider,
         initial_task_status=status_output.status.value,

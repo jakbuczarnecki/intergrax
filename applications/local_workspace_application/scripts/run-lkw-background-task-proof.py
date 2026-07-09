@@ -194,8 +194,11 @@ def main() -> int:
     marker = str(enqueue.get("marker", ""))
     run_id = str(enqueue.get("run_id", ""))
     correlation_id = str(enqueue.get("correlation_id", ""))
-    if not task_id or not provider or not marker:
+    collection_id = str(enqueue.get("collection_id", ""))
+    if not task_id or not provider or not marker or not run_id or not correlation_id:
         return _fail("missing_enqueue_evidence")
+    if not collection_id:
+        return _fail("missing_collection_id")
 
     if provider != "kafka":
         return _fail("message_bus_provider_not_kafka", message_bus_provider=provider)
@@ -247,6 +250,9 @@ def main() -> int:
             "background_task_run_id": run_id,
             "background_task_id": task_id,
             "background_task_correlation_id": correlation_id,
+            "collection_id": collection_id,
+            "query": marker,
+            "top_k": 5,
         },
     }
     try:
@@ -289,6 +295,7 @@ def main() -> int:
     print(f"correlation_id={correlation_id}")
     print(f"task_id={task_id}")
     print(f"marker={marker}")
+    print(f"collection_id={collection_id}")
     if kafka_messages >= 0:
         print(f"kafka_topic_messages={kafka_messages}")
     return 0

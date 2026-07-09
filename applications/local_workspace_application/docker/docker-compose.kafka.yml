@@ -19,6 +19,10 @@ services:
       INTERGRAX_KAFKA_STATUS_TOPIC: intergrax.task-status
       INTERGRAX_KAFKA_RESULTS_TOPIC: intergrax.task-results
       INTERGRAX_KAFKA_CONSUMER_GROUP: lkw-background-ingest
+    volumes:
+      - lkw_sqlite:/data/sqlite
+      - lkw_shadow:/data/shadow_workspaces
+      - ../.proof_docs:/data/user_docs:rw
     depends_on:
       - qdrant
       - ollama
@@ -67,7 +71,7 @@ services:
     volumes:
       - lkw_sqlite:/data/sqlite
       - lkw_shadow:/data/shadow_workspaces
-      - ../sample_docs:/data/user_docs:ro
+      - ../.proof_docs:/data/user_docs:rw
     depends_on:
       - qdrant
       - ollama
@@ -85,14 +89,14 @@ services:
   lkw-kafka:
     image: apache/kafka:3.7.0
     ports:
-      - "9094:9092"
+      - "9094:9094"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://lkw-kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:9094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://lkw-kafka:9092,PLAINTEXT_HOST://127.0.0.1:9094
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@lkw-kafka:9093
       KAFKA_CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
