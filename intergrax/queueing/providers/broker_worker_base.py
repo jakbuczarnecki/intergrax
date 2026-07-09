@@ -9,6 +9,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from intergrax.background_tasks.events import TaskEvent, TaskEventEmitter, TaskEventName
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskStatus
@@ -40,10 +41,14 @@ class BrokerWorkerBase(ABC):
         registry: TaskExecutionRegistry,
         kv_store: DistributedKVStore,
         idempotency_store: Optional[IdempotencyStore] = None,
+        event_emitter: TaskEventEmitter | None = None,
+        provider_name: str = "broker",
     ) -> None:
         self._registry: TaskExecutionRegistry = registry
         self._kv_store: DistributedKVStore = kv_store
         self._idempotency_store: Optional[IdempotencyStore] = idempotency_store
+        self._event_emitter = event_emitter
+        self._provider_name = provider_name
 
     # ------------------------------------------------------------------
     # Storage keys (aligned with BrokerBackedTaskQueueBase)
@@ -58,6 +63,36 @@ class BrokerWorkerBase(ABC):
     # ------------------------------------------------------------------
     # Public entry point (called by provider-specific worker)
     # ------------------------------------------------------------------
+
+    def _emit_event(
+        self,
+        name: TaskEventName,
+        *,
+        task_id: str,
+        tenant_id: str,
+        run_id: str,
+        task_name: str,
+        idempotency_key: Optional[str],
+        correlation_id: Optional[str] = None,
+        status: Optional[str] = None,
+        metadata: Optional[dict[str, object]] = None,
+    ) -> None:
+        if self._event_emitter is None:
+            return
+        self._event_emitter.emit(
+            TaskEvent(
+                name=name,
+                task_id=task_id,
+                tenant_id=tenant_id,
+                run_id=run_id,
+                task_name=task_name,
+                provider=self._provider_name,
+                correlation_id=correlation_id,
+                idempotency_key=idempotency_key,
+                status=status,
+                metadata=dict(metadata or {}),
+            )
+        )
 
     def process_message(
         self,
@@ -76,9 +111,22 @@ class BrokerWorkerBase(ABC):
         tenant_id: str = message["tenant_id"]
         run_id: str = message["run_id"]
         task_name: str = message["task_name"]
-        encoded_payload: str = message["payload"]
+        encoded_payload: str = message.get("payload") or message.get("payload_base64", "")
         payload_bytes: bytes = base64.b64decode(encoded_payload.encode("ascii"))
         idempotency_key: Optional[str] = message.get("idempotency_key")
+        correlation_id: Optional[str] = message.get("correlation_id")
+        provider_name = str(message.get("provider") or self._provider_name)
+
+        self._emit_event(
+            TaskEventName.DISPATCHED,
+            task_id=task_id,
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_name=task_name,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+            metadata={"intergrax.worker_runtime.received": True},
+        )
 
         # Transition -> RUNNING
         self._kv_store.set(
@@ -91,8 +139,18 @@ class BrokerWorkerBase(ABC):
             tenant_id=tenant_id,
             task_id=task_id,
             task_name=task_name,
-            provider=str(message.get("provider") or "broker"),
+            provider=provider_name,
             status=TaskStatus.RUNNING,
+        )
+        self._emit_event(
+            TaskEventName.STARTED,
+            task_id=task_id,
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_name=task_name,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+            status=TaskStatus.RUNNING.value,
         )
 
         try:
@@ -130,8 +188,28 @@ class BrokerWorkerBase(ABC):
                 tenant_id=tenant_id,
                 task_id=task_id,
                 task_name=task_name,
-                provider=str(message.get("provider") or "broker"),
+                provider=provider_name,
                 status=TaskStatus.SUCCEEDED,
+            )
+            self._emit_event(
+                TaskEventName.SUCCEEDED,
+                task_id=task_id,
+                tenant_id=tenant_id,
+                run_id=run_id,
+                task_name=task_name,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+                status=TaskStatus.SUCCEEDED.value,
+            )
+            self._emit_event(
+                TaskEventName.RESULT_STORED,
+                task_id=task_id,
+                tenant_id=tenant_id,
+                run_id=run_id,
+                task_name=task_name,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+                status=TaskStatus.SUCCEEDED.value,
             )
 
         except Exception as exc:
@@ -155,8 +233,19 @@ class BrokerWorkerBase(ABC):
                 tenant_id=tenant_id,
                 task_id=task_id,
                 task_name=task_name,
-                provider=str(message.get("provider") or "broker"),
+                provider=provider_name,
                 status=TaskStatus.FAILED,
+            )
+            self._emit_event(
+                TaskEventName.FAILED,
+                task_id=task_id,
+                tenant_id=tenant_id,
+                run_id=run_id,
+                task_name=task_name,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+                status=TaskStatus.FAILED.value,
+                metadata={"error": error_message},
             )
 
             raise exc

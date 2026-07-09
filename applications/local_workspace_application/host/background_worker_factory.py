@@ -12,14 +12,20 @@ from intergrax.applications._shared.task_control_wiring import (
     build_task_runner_with_enricher,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.background_tasks.definition import TaskDefinition
+from intergrax.background_tasks.registry import TaskRegistry
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_worker
 from intergrax.integrations.providers.key_value_cache.redis.bundle import create_redis_kv_store
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from local_workspace_application.background_ingest.contracts import (
+    LKW_BACKGROUND_INGEST_TASK_NAME,
+    LkwBackgroundIngestJob,
+)
 from local_workspace_application.background_ingest.worker_handler import (
-    register_background_ingest_worker_handler,
+    make_background_ingest_worker_handler,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
@@ -51,7 +57,17 @@ def build_local_workspace_background_worker_wiring(
     task_runner = build_task_runner_with_enricher(runtime.nexus_loop, task_enricher)
 
     registry = TaskExecutionRegistry()
-    register_background_ingest_worker_handler(registry, task_runner)
+    task_registry = TaskRegistry()
+    handler = make_background_ingest_worker_handler(task_runner)
+    task_registry.register(
+        TaskDefinition(
+            task_name=LKW_BACKGROUND_INGEST_TASK_NAME,
+            payload_schema=LkwBackgroundIngestJob,
+            handler=handler,
+            provider="kafka",
+        )
+    )
+    task_registry.bind_execution_registry(registry)
 
     kv_store = create_redis_kv_store()
     worker = create_kafka_worker(

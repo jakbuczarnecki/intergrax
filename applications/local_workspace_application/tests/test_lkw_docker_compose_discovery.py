@@ -272,12 +272,14 @@ def test_docs_mention_canonical_all_in_one_startup() -> None:
 def test_kafka_overlay_configures_real_background_task_stack() -> None:
     text = (_DOCKER_DIR / "docker-compose.kafka.yml").read_text(encoding="utf-8")
     assert 'LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"' in text
+    assert 'LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"' in text
     assert "INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092" in text
-    assert "INTERGRAX_KAFKA_TOPIC: intergrax-lkw-tasks" in text
+    assert "INTERGRAX_KAFKA_TOPIC: intergrax.tasks" in text
+    assert "INTERGRAX_KAFKA_EVENTS_TOPIC: intergrax.task-events" in text
     assert "lkw-background-worker:" in text
     assert "background_worker_main" in text
     assert "lkw-kafka-ui:" in text
-    assert "8088:8080" in text
+    assert "8085:8080" in text
 
 
 def test_background_task_proof_helper_implements_reviewer_contract() -> None:
@@ -295,6 +297,9 @@ def test_background_task_proof_helper_implements_reviewer_contract() -> None:
         "background-task/status",
         "local.workspace.search",
         "mock_queue=false",
-        "kafka_ui",
+        "kafka_ui_url",
+        "kafka_topics=",
+        "intergrax.task-events",
+        "direct_indexer_call=false",
     ):
         assert needle in py

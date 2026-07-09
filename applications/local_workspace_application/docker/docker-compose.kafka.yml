@@ -10,10 +10,14 @@ services:
   local_workspace:
     environment:
       LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
+      LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_REDIS: "true"
       INTERGRAX_REDIS_URL: redis://lkw-redis:6379/0
       INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092
-      INTERGRAX_KAFKA_TOPIC: intergrax-lkw-tasks
+      INTERGRAX_KAFKA_TOPIC: intergrax.tasks
+      INTERGRAX_KAFKA_EVENTS_TOPIC: intergrax.task-events
+      INTERGRAX_KAFKA_STATUS_TOPIC: intergrax.task-status
+      INTERGRAX_KAFKA_RESULTS_TOPIC: intergrax.task-results
       INTERGRAX_KAFKA_CONSUMER_GROUP: lkw-background-ingest
     depends_on:
       - qdrant
@@ -41,6 +45,7 @@ services:
       INTERGRAX_ENV: dev
       LOCAL_WORKSPACE_BACKEND_ENV: dev
       LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
+      LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_REDIS: "true"
       LOCAL_WORKSPACE_VECTOR_STORE: qdrant
       INTERGRAX_QDRANT_URL: http://qdrant:6333
@@ -54,7 +59,10 @@ services:
       OLLAMA_HOST: http://ollama:11434
       INTERGRAX_REDIS_URL: redis://lkw-redis:6379/0
       INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092
-      INTERGRAX_KAFKA_TOPIC: intergrax-lkw-tasks
+      INTERGRAX_KAFKA_TOPIC: intergrax.tasks
+      INTERGRAX_KAFKA_EVENTS_TOPIC: intergrax.task-events
+      INTERGRAX_KAFKA_STATUS_TOPIC: intergrax.task-status
+      INTERGRAX_KAFKA_RESULTS_TOPIC: intergrax.task-results
       INTERGRAX_KAFKA_CONSUMER_GROUP: lkw-background-ingest
     volumes:
       - lkw_sqlite:/data/sqlite
@@ -102,13 +110,15 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server lkw-kafka:9092 --create --if-not-exists --topic intergrax-lkw-tasks --partitions 1 --replication-factor 1
+        for topic in intergrax.tasks intergrax.task-events intergrax.task-status intergrax.task-results; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server lkw-kafka:9092 --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1
+        done
     restart: "no"
 
   lkw-kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
-      - "8088:8080"
+      - "8085:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: intergrax-lkw
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: lkw-kafka:9092

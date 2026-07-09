@@ -23,7 +23,10 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 
 def local_workspace_message_bus_enabled() -> bool:
-    return _env_bool("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS", default=False)
+    return _env_bool("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS", default=False) or _env_bool(
+        "LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS",
+        default=False,
+    )
 
 
 def create_local_workspace_kafka_message_bus(

@@ -18,6 +18,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 def test_message_bus_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS", raising=False)
+    monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS", raising=False)
     assert local_workspace_message_bus_enabled() is False
     profile = build_local_workspace_integration_profile()
     assert profile.message_bus is None
@@ -51,7 +52,14 @@ def test_message_bus_profile_materializes_kafka_and_redis(
     assert binding.instance is not None
 
 
+def test_kafka_message_bus_enabled_via_alias(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS", raising=False)
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS", "true")
+    assert local_workspace_message_bus_enabled() is True
+
+
 def test_materialize_is_idempotent_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS", raising=False)
+    monkeypatch.delenv("LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS", raising=False)
     profile = build_local_workspace_integration_profile()
     assert materialize_local_workspace_message_bus_profile(profile) == profile

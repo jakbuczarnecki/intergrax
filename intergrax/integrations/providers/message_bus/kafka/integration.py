@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Mapping
+from typing import Mapping, Optional, Sequence
 
 from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.message_bus import MessageBus
+from intergrax.queueing.contracts.task_queue import TaskStatus
 from intergrax.runtime.integrations.categories.messaging import MessageBusIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 

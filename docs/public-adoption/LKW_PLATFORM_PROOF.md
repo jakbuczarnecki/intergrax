@@ -22,7 +22,7 @@ Local proof endpoints:
 LKW API         http://127.0.0.1:8020
 Elasticsearch   http://127.0.0.1:9200
 Kibana          http://127.0.0.1:5601
-Kafka UI        http://127.0.0.1:8088
+Kafka UI        http://127.0.0.1:8085
 Sentry UI       http://127.0.0.1:9000
 ```
 
@@ -294,7 +294,7 @@ This proof:
 
 The proof stack must include a configured `message_bus` integration, a running broker/queue backend, and a worker consumer for `lkw.background_ingest.v1`. LKW remains the proof workload; platform owns contracts, tools, provider adapters, and worker execution.
 
-Latest recorded live result: pending LKW.4E implementation — see [`IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §6.
+Latest recorded live result: pending LKW.4E live proof — run `run-lkw-background-task-proof.bat` against the Kafka overlay stack.
 
 ---
 
@@ -314,7 +314,22 @@ Then open:
 ```text
 Sentry: http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
 Kibana: http://127.0.0.1:5601
-Kafka UI: http://127.0.0.1:8088
+Kafka UI: http://127.0.0.1:8085
+
+Topics to inspect:
+
+```text
+intergrax.tasks
+intergrax.task-events
+intergrax.task-status
+intergrax.task-results
+```
+
+Expected in Kafka UI:
+
+- `TaskRequest` message exists for `run_id` / `correlation_id` in `intergrax.tasks`
+- lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` in `intergrax.task-events`
+- status/result records in `intergrax.task-status` / `intergrax.task-results`
 ```
 
 ---

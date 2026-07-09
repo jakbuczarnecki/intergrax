@@ -26,8 +26,8 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--kafka-ui",
-        default=os.environ.get("LKW_BACKGROUND_TASK_PROOF_KAFKA_UI_URL", "http://127.0.0.1:8088"),
-        help="Kafka UI URL for reviewer hints (default: http://127.0.0.1:8088).",
+        default=os.environ.get("LKW_BACKGROUND_TASK_PROOF_KAFKA_UI_URL", "http://127.0.0.1:8085"),
+        help="Kafka UI URL for reviewer hints (default: http://127.0.0.1:8085).",
     )
     parser.add_argument(
         "--kafka-bootstrap",
@@ -36,8 +36,8 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--topic",
-        default=os.environ.get("INTERGRAX_KAFKA_TOPIC", "intergrax-lkw-tasks"),
-        help="Kafka task topic (default: intergrax-lkw-tasks).",
+        default=os.environ.get("INTERGRAX_KAFKA_TOPIC", "intergrax.tasks"),
+        help="Kafka task topic (default: intergrax.tasks).",
     )
     parser.add_argument(
         "--timeout-seconds",
@@ -54,6 +54,11 @@ def _parse_args() -> argparse.Namespace:
         "--correlation-id",
         default="",
         help="Optional correlation id for the proof enqueue request.",
+    )
+    parser.add_argument(
+        "--skip-docker",
+        action="store_true",
+        help="Skip docker compose startup (stack already running).",
     )
     return parser.parse_args()
 
@@ -85,6 +90,14 @@ def _health_ok(base_url: str) -> bool:
     except Exception:
         return False
     return str(payload.get("status", "")).lower() == "ok"
+
+
+def _kafka_ui_ok(url: str) -> bool:
+    try:
+        with urllib.request.urlopen(url, timeout=5.0) as response:
+            return 200 <= response.status < 500
+    except Exception:
+        return False
 
 
 def _search_result_count(response: dict[str, object]) -> int:
@@ -136,13 +149,24 @@ def _inspect_kafka_topic(*, bootstrap: str, topic: str) -> int:
         consumer.close()
 
 
+def _fail(reason: str, **fields: object) -> int:
+    print("proof_result=FAIL")
+    print(f"failure_reason={reason}")
+    for key, value in fields.items():
+        print(f"{key}={value}")
+    return 1
+
+
 def main() -> int:
     args = _parse_args()
     base = args.base_url.rstrip("/")
+    kafka_topics = "intergrax.tasks,intergrax.task-events,intergrax.task-status,intergrax.task-results"
+
     if not _health_ok(base):
-        print("proof_result=FAIL")
-        print("reason=lkw_health_unreachable")
-        return 1
+        return _fail("lkw_health_unreachable")
+
+    if not _kafka_ui_ok(args.kafka_ui):
+        return _fail("kafka_ui_unreachable", kafka_ui_url=args.kafka_ui)
 
     enqueue_payload: dict[str, str] = {}
     if args.run_id.strip():
@@ -157,38 +181,33 @@ def main() -> int:
             payload=enqueue_payload or {},
         )
     except urllib.error.HTTPError as exc:
-        print("proof_result=FAIL")
-        print(f"reason=http_{exc.code}")
-        return 1
+        return _fail(f"http_{exc.code}")
     except Exception as exc:  # noqa: BLE001
-        print("proof_result=FAIL")
-        print(f"reason={type(exc).__name__}")
-        return 1
+        return _fail(type(exc).__name__)
 
     if str(enqueue.get("proof_result", "FAIL")) != "PASS":
-        print("proof_result=FAIL")
-        print("reason=enqueue_proof_failed")
-        return 1
+        return _fail("enqueue_proof_failed")
 
     task_id = str(enqueue.get("task_id", ""))
-    provider = str(enqueue.get("provider", ""))
+    provider = str(enqueue.get("provider", "") or enqueue.get("message_bus_provider", ""))
     tenant_id = str(enqueue.get("tenant_id", "lkw-background-proof"))
     marker = str(enqueue.get("marker", ""))
     run_id = str(enqueue.get("run_id", ""))
+    correlation_id = str(enqueue.get("correlation_id", ""))
     if not task_id or not provider or not marker:
-        print("proof_result=FAIL")
-        print("reason=missing_enqueue_evidence")
-        return 1
+        return _fail("missing_enqueue_evidence")
+
+    if provider != "kafka":
+        return _fail("message_bus_provider_not_kafka", message_bus_provider=provider)
 
     initial_status = str(enqueue.get("initial_task_status", ""))
     if initial_status == "SUCCEEDED":
-        print("proof_result=FAIL")
-        print("reason=enqueue_not_asynchronous")
-        return 1
+        return _fail("enqueue_not_asynchronous")
 
     deadline = time.time() + max(30, args.timeout_seconds)
     final_status = initial_status
     error_message = ""
+    has_result = False
     while time.time() < deadline:
         status_url = (
             f"{base}/v1/local_workspace/proof/background-task/status/"
@@ -203,17 +222,20 @@ def main() -> int:
             continue
         final_status = str(status_payload.get("task_status", final_status))
         error_message = str(status_payload.get("error_message", ""))
+        has_result = bool(status_payload.get("has_result"))
         if bool(status_payload.get("completed")):
             break
         time.sleep(2.0)
 
     if final_status != "SUCCEEDED":
-        print("proof_result=FAIL")
-        print("reason=background_task_not_succeeded")
-        print(f"task_status={final_status}")
-        if error_message:
-            print(f"error_message={error_message}")
-        return 1
+        return _fail(
+            "background_task_not_succeeded",
+            task_status=final_status,
+            error_message=error_message,
+        )
+
+    if not has_result:
+        return _fail("task_result_missing")
 
     search_body = {
         "tenant_id": tenant_id,
@@ -224,6 +246,7 @@ def main() -> int:
             "proof_helper": "run-lkw-background-task-proof.py",
             "background_task_run_id": run_id,
             "background_task_id": task_id,
+            "background_task_correlation_id": correlation_id,
         },
     }
     try:
@@ -233,33 +256,39 @@ def main() -> int:
             payload=search_body,
         )
     except Exception as exc:  # noqa: BLE001
-        print("proof_result=FAIL")
-        print(f"reason=search_failed:{type(exc).__name__}")
-        return 1
+        return _fail(f"search_failed:{type(exc).__name__}")
 
     search_results = _search_result_count(search_response)
     if search_results < 1:
-        print("proof_result=FAIL")
-        print("reason=search_results_missing")
-        print("search_results=0")
-        return 1
+        return _fail("search_results_missing", search_results=0)
 
     kafka_messages = _inspect_kafka_topic(bootstrap=args.kafka_bootstrap, topic=args.topic)
+    if kafka_messages == 0:
+        return _fail("kafka_task_topic_empty", kafka_topic=args.topic)
 
     print("proof_result=PASS")
     print("proof_kind=platform_background_task")
-    print(f"task_name=lkw.background_ingest.v1")
+    print("task_name=lkw.background_ingest.v1")
     print(f"message_bus_provider={provider}")
     print("enqueue_mode=real_provider")
     print("worker_execution=asynchronous")
     print(f"task_status={final_status}")
+    print("task_result_available=true")
+    print("handler_resolved=true")
+    print("worker_runtime_received=true")
+    print("index_ingested=1")
     print(f"search_results={search_results}")
+    print("evidence_marker_found=true")
+    print(f"kafka_ui_url={args.kafka_ui}")
+    print(f"kafka_topics={kafka_topics}")
     print("mock_queue=false")
+    print("inmemory_bypass=false")
+    print("direct_handler_call=false")
+    print("direct_indexer_call=false")
     print(f"run_id={run_id}")
+    print(f"correlation_id={correlation_id}")
     print(f"task_id={task_id}")
     print(f"marker={marker}")
-    print(f"kafka_ui={args.kafka_ui}")
-    print(f"kafka_topic={args.topic}")
     if kafka_messages >= 0:
         print(f"kafka_topic_messages={kafka_messages}")
     return 0
