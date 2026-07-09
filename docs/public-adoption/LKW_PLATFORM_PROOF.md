@@ -263,6 +263,8 @@ Run:
 applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 ```
 
+The helper is idempotent: it starts or refreshes the Kafka overlay stack before running the proof, even if the full proof stack was already started in Step 1.
+
 Expected result:
 
 ```text
@@ -273,9 +275,29 @@ message_bus_provider=kafka
 enqueue_mode=real_provider
 worker_execution=asynchronous
 task_status=SUCCEEDED
-search_results=1
+task_result_available=true
+handler_resolved=true
+worker_runtime_received=true
+index_ingested=1
+search_results=<n>
+evidence_marker_found=true
+kafka_ui_url=http://127.0.0.1:8085
+kafka_topics=intergrax.tasks,intergrax.task-events,intergrax.task-status,intergrax.task-results
 mock_queue=false
+inmemory_bypass=false
+direct_handler_call=false
+direct_indexer_call=false
+run_id=<generated_run_id>
+correlation_id=<generated_correlation_id>
+task_id=<task_id>
+marker=<proof_marker>
+collection_id=local_workspace
 ```
+
+Acceptance notes:
+
+- `search_results` must be greater than or equal to `1`; the exact value may vary between runs.
+- `run_id`, `correlation_id`, `task_id`, and `marker` are generated per run. Copy them if you want to inspect Kafka UI manually.
 
 This proof:
 
@@ -294,7 +316,45 @@ This proof:
 
 The proof stack must include a configured `message_bus` integration, a running broker/queue backend, and a worker consumer for `lkw.background_ingest.v1`. LKW remains the proof workload; platform owns contracts, tools, provider adapters, and worker execution.
 
-Latest recorded live result: pending LKW.4E live proof — run `run-lkw-background-task-proof.bat` against the Kafka overlay stack.
+Latest recorded live result: PASS — LKW.4E Kafka background-task platform proof.
+
+```text
+Recorded: 2026-07-09
+proof_result=PASS
+message_bus_provider=kafka
+worker_execution=asynchronous
+task_status=SUCCEEDED
+task_result_available=true
+index_ingested=1
+search_results=4
+evidence_marker_found=true
+run_id=lkw-bg-proof-8dc1c613fba6
+correlation_id=corr-bcfcf60f4c58
+task_id=lkw-bg-proof-8dc1c613fba6
+marker=LKW_BACKGROUND_TASK_PROOF_20260709111322
+collection_id=local_workspace
+```
+
+Open Kafka UI:
+
+```text
+http://127.0.0.1:8085
+```
+
+Topics to inspect:
+
+```text
+intergrax.tasks
+intergrax.task-events
+intergrax.task-status
+intergrax.task-results
+```
+
+Expected in Kafka UI:
+
+- `TaskRequest` message exists for the printed `run_id` / `correlation_id` in `intergrax.tasks`,
+- lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` exist in `intergrax.task-events`,
+- status/result records exist in `intergrax.task-status` / `intergrax.task-results`.
 
 ---
 
@@ -312,11 +372,12 @@ applications\local_workspace_application\scripts\run-lkw-background-task-proof.b
 Then open:
 
 ```text
-Sentry: http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
-Kibana: http://127.0.0.1:5601
+Sentry:   http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
+Kibana:   http://127.0.0.1:5601
 Kafka UI: http://127.0.0.1:8085
+```
 
-Topics to inspect:
+Kafka topics to inspect:
 
 ```text
 intergrax.tasks
@@ -327,10 +388,9 @@ intergrax.task-results
 
 Expected in Kafka UI:
 
-- `TaskRequest` message exists for `run_id` / `correlation_id` in `intergrax.tasks`
-- lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` in `intergrax.task-events`
-- status/result records in `intergrax.task-status` / `intergrax.task-results`
-```
+- `TaskRequest` message exists for `run_id` / `correlation_id` in `intergrax.tasks`,
+- lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` exist in `intergrax.task-events`,
+- status/result records exist in `intergrax.task-status` / `intergrax.task-results`.
 
 ---
 
