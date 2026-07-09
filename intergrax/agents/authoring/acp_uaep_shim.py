@@ -49,6 +49,23 @@ def apply_host_tool_invoker_to_runtime_context(
     runtime_context.config.tool_registry = registry
     runtime_context.config.tool_invoker = tool_invoker
 
+    from intergrax.applications._shared.rag_runtime_bridge import apply_rag_from_tool_wiring_context
+    from intergrax.tools.core.handler import WiringContextToolHandler
+
+    wiring_ctx = None
+    for registered in registry.list():
+        handler = registered.handler
+        if isinstance(handler, WiringContextToolHandler):
+            wiring_ctx = handler._ctx
+            break
+    if wiring_ctx is None:
+        return
+    runtime_context.config.tool_wiring_context = wiring_ctx
+    runtime_context.config.enable_rag = True
+    if wiring_ctx.integration_profile is not None:
+        runtime_context.config.integration_profile = wiring_ctx.integration_profile
+    apply_rag_from_tool_wiring_context(runtime_context.config, wiring_ctx)
+
 
 def attach_acp_catalog_exec_ctx(
     step_ctx: AgentStepContext,

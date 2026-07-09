@@ -42,6 +42,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         self,
         tenant_id: str,
         key: str,
+        lease_seconds: Optional[int] = None,
     ) -> None:
         composite_key = (tenant_id, key)
 
@@ -63,6 +64,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         tenant_id: str,
         key: str,
         result: ToolExecutionResult[BaseModel],
+        completed_ttl_seconds: Optional[int] = None,
     ) -> None:
         composite_key = (tenant_id, key)
 

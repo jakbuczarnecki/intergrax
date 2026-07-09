@@ -8,7 +8,6 @@ import os
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.message_bus import MessageBus
-from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.providers.key_value_cache.redis.bundle import create_redis_kv_store
 from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_message_bus
 from intergrax.integrations.registry.catalog_manifests import KAFKA, REDIS
@@ -42,23 +41,21 @@ def materialize_local_workspace_message_bus_profile(
     profile: IntegrationProfile,
 ) -> IntegrationProfile:
     """
-    When message bus is enabled, resolve Redis KV + Kafka bus instances on the profile.
+    When message bus is enabled, keep serializable catalog bindings on the profile.
 
-    Catalog ``profile.resolve(MESSAGE_BUS)`` cannot infer ``kv_store`` automatically;
-    LKW proof wiring injects a live bus instance instead.
+    Live Kafka bus + Redis KV are composed later in ``wire_integration_tool_context``
+    so package closure checksums do not embed non-serializable runtime instances.
     """
     if not local_workspace_message_bus_enabled():
         return profile
 
-    kv_store = create_redis_kv_store()
-    bus = create_local_workspace_kafka_message_bus(kv_store=kv_store)
     options = dict(profile.options)
     options.setdefault(REDIS.slug, {})
     options.setdefault(KAFKA.slug, {})
     return profile.model_copy(
         update={
             "key_value_cache": profile.key_value_cache or REDIS,
-            "message_bus": IntegrationBinding.from_instance(bus),
+            "message_bus": profile.message_bus or KAFKA,
             "options": options,
         }
     )

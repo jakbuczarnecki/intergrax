@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 from pathlib import Path
@@ -307,5 +308,53 @@ def test_background_task_proof_helper_implements_reviewer_contract() -> None:
         "collection_id=",
         '"query": marker',
         '"top_k": 5',
+        '"user_id": _PROOF_REQUESTED_BY',
+        "lkw.background_task_proof",
+        "num_results",
+        "evidence_count",
+        "diagnostics",
+        'diagnostics.get("lkw.search_summary.v1")',
     ):
         assert needle in py
+
+
+def _load_background_task_proof_module():
+    proof_path = _SCRIPTS_DIR / "run-lkw-background-task-proof.py"
+    spec = importlib.util.spec_from_file_location("lkw_background_task_proof", proof_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_background_task_proof_search_result_count_reads_diagnostics_path() -> None:
+    proof = _load_background_task_proof_module()
+    canonical = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "schema_version": "lkw_evidence.v1",
+                "diagnostics": {
+                    "lkw.search_summary.v1": {
+                        "num_results": 2,
+                        "evidence_count": 2,
+                        "reason": "retrieve_complete",
+                        "used": True,
+                    }
+                },
+            }
+        }
+    }
+    legacy_wrong_shape = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "lkw.search_summary.v1": {
+                    "num_results": 2,
+                    "evidence_count": 2,
+                }
+            }
+        }
+    }
+
+    assert proof._search_result_count(canonical) == 2
+    assert proof._search_result_count(legacy_wrong_shape) == 0
+    assert proof._search_summary_diagnostic(canonical)["reason"] == "retrieve_complete"

@@ -14,6 +14,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+_PROOF_REQUESTED_BY = "lkw.background_task_proof"
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -100,17 +102,25 @@ def _kafka_ui_ok(url: str) -> bool:
         return False
 
 
-def _search_result_count(response: dict[str, object]) -> int:
+def _search_summary_diagnostic(response: dict[str, object]) -> dict[str, object]:
     metadata = response.get("metadata")
     if not isinstance(metadata, dict):
-        return 0
+        return {}
     evidence = metadata.get("lkw_evidence.v1")
     if not isinstance(evidence, dict):
+        return {}
+    diagnostics = evidence.get("diagnostics")
+    if not isinstance(diagnostics, dict):
+        return {}
+    search_summary = diagnostics.get("lkw.search_summary.v1")
+    return search_summary if isinstance(search_summary, dict) else {}
+
+
+def _search_result_count(response: dict[str, object]) -> int:
+    search_summary = _search_summary_diagnostic(response)
+    if not search_summary:
         return 0
-    search_summary = evidence.get("lkw.search_summary.v1")
-    if not isinstance(search_summary, dict):
-        return 0
-    for field in ("result_count", "results_count", "hits"):
+    for field in ("result_count", "results_count", "hits", "num_results", "evidence_count"):
         value = search_summary.get(field)
         if isinstance(value, int) and value > 0:
             return value
@@ -242,6 +252,7 @@ def main() -> int:
 
     search_body = {
         "tenant_id": tenant_id,
+        "user_id": _PROOF_REQUESTED_BY,
         "message": marker,
         "capability": "local.workspace.search",
         "metadata": {
@@ -250,6 +261,8 @@ def main() -> int:
             "background_task_run_id": run_id,
             "background_task_id": task_id,
             "background_task_correlation_id": correlation_id,
+            "tenant_id": tenant_id,
+            "user_id": _PROOF_REQUESTED_BY,
             "collection_id": collection_id,
             "query": marker,
             "top_k": 5,
@@ -266,7 +279,15 @@ def main() -> int:
 
     search_results = _search_result_count(search_response)
     if search_results < 1:
-        return _fail("search_results_missing", search_results=0)
+        search_diag = _search_summary_diagnostic(search_response)
+        return _fail(
+            "search_results_missing",
+            search_results=0,
+            search_reason=search_diag.get("reason", ""),
+            search_raw_tool_reason=search_diag.get("raw_tool_reason", ""),
+            search_used=search_diag.get("used", ""),
+            search_num_results=search_diag.get("num_results", ""),
+        )
 
     kafka_messages = _inspect_kafka_topic(bootstrap=args.kafka_bootstrap, topic=args.topic)
     if kafka_messages == 0:

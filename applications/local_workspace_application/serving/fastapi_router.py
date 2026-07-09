@@ -39,6 +39,9 @@ class LocalWorkspaceRunService:
 
     async def run_task(self, body: LocalWorkspaceRunRequestV1) -> LocalWorkspaceRunResponseV1:
         run_id = new_run_id()
+        metadata = dict(body.metadata)
+        if body.tenant_id and "tenant_id" not in metadata:
+            metadata["tenant_id"] = body.tenant_id
         task = Task(
             task_id=run_id,
             tenant_id=body.tenant_id,
@@ -46,7 +49,7 @@ class LocalWorkspaceRunService:
             session_id=body.session_id,
             message=body.message,
             context=TaskContext(capability=body.capability or "local.workspace.search"),
-            metadata=dict(body.metadata),
+            metadata=metadata,
         )
         result = await self.task_runner.run_task(task)
         metadata = dict(result.metadata)
