@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from intergrax.integrations._shared.speech_integration_bridge import (
     IntegrationSpeechAdapter,
     infer_speech_provider_slug,
@@ -81,6 +83,8 @@ def wire_integration_tool_context(
         extras=dict(ctx.extras),
     )
 
+    updated = _compose_kafka_message_bus_with_kv_store(updated, integration_profile)
+
     speech_slug = integration_profile.slug_for_category(IntegrationCategory.SPEECH_PROVIDER)
     if updated.speech_provider is not None:
         provider_slug = (
@@ -95,6 +99,23 @@ def wire_integration_tool_context(
         updated.extras.pop(SPEECH_PROFILE_EXTRA_KEY, None)
 
     return updated
+
+
+def _compose_kafka_message_bus_with_kv_store(
+    ctx: ToolWiringContext,
+    integration_profile: IntegrationProfile,
+) -> ToolWiringContext:
+    if ctx.message_bus is not None:
+        return ctx
+    if integration_profile.slug_for_category(IntegrationCategory.MESSAGE_BUS) != "kafka":
+        return ctx
+    kv_store = ctx.key_value_cache
+    if kv_store is None:
+        return ctx
+
+    from intergrax.integrations.providers.message_bus.kafka.bundle import create_kafka_message_bus
+
+    return replace(ctx, message_bus=create_kafka_message_bus(kv_store=kv_store))
 
 
 def _resolve_optional(profile: IntegrationProfile, category: IntegrationCategory) -> object | None:

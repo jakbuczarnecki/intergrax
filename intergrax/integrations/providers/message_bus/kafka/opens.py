@@ -53,6 +53,21 @@ def open_kafka_consumer(
     )
 
 
+def _open_kafka_lifecycle_emitter(
+    config: KafkaIntegrationConfig,
+    *,
+    producer: MessageProducer,
+) -> "KafkaTaskLifecycleEmitter":
+    from intergrax.integrations.providers.message_bus.kafka.lifecycle import KafkaTaskLifecycleEmitter
+
+    return KafkaTaskLifecycleEmitter(
+        producer=producer,
+        events_topic=config.events_topic,
+        status_topic=config.status_topic,
+        results_topic=config.results_topic,
+    )
+
+
 def open_kafka_task_queue(
     config: KafkaIntegrationConfig,
     *,
@@ -63,10 +78,13 @@ def open_kafka_task_queue(
     from intergrax.queueing.providers.kafka.kafka_task_queue import KafkaTaskQueue
 
     resolved_producer = open_kafka_producer(config, producer=producer)
+    resolved_config = config.model_copy(update={"topic": topic or config.topic})
+    lifecycle_emitter = _open_kafka_lifecycle_emitter(resolved_config, producer=resolved_producer)
     return KafkaTaskQueue(
         producer=resolved_producer,
-        topic=topic or config.topic,
+        config=resolved_config,
         kv_store=kv_store,
+        lifecycle_emitter=lifecycle_emitter,
     )
 
 
@@ -89,10 +107,14 @@ def open_kafka_worker(
         consumer_group=consumer_group,
         consumer=consumer,
     )
+    resolved_producer = open_kafka_producer(config)
+    lifecycle_emitter = _open_kafka_lifecycle_emitter(config, producer=resolved_producer)
     return KafkaWorker(
         consumer=resolved_consumer,
         registry=registry,
         kv_store=kv_store,
+        config=config,
+        lifecycle_emitter=lifecycle_emitter,
         idempotency_store=idempotency_store,
         poll_timeout_seconds=poll_timeout_seconds,
     )

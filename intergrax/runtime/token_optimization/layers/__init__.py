@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Built-in token optimization layers (TOKEN-OPT-3C-B+ / TOKEN-OPT-3D)."""
+"""Built-in token optimization layers (TOKEN-OPT-3C-B+ / TOKEN-OPT-3D / TOKEN-OPT-4A)."""
 
 from __future__ import annotations
 
@@ -14,6 +14,10 @@ from intergrax.runtime.token_optimization.layers.exact_deduplication import (
     ExactDeduplicationLayer,
     ExactDeduplicationLayerConfig,
 )
+from intergrax.runtime.token_optimization.layers.extractive_filtering import (
+    ExtractiveFilteringLayer,
+    ExtractiveFilteringLayerConfig,
+)
 
 __all__ = [
     "BudgetAwareContextPackingLayer",
@@ -22,4 +26,6 @@ __all__ = [
     "BudgetAwarePackingInput",
     "ExactDeduplicationLayer",
     "ExactDeduplicationLayerConfig",
+    "ExtractiveFilteringLayer",
+    "ExtractiveFilteringLayerConfig",
 ]

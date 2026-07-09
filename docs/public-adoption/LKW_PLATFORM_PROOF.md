@@ -13,6 +13,7 @@ Use this document as the source of truth. Follow the steps in order. A reviewer 
 2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
 3. LKW emits controlled problem signals into local Sentry.
 4. LKW persists indexed local knowledge across a non-destructive restart.
+5. LKW enqueues and executes background ingest jobs through the real platform message-bus / TaskQueue path with a local provider in the proof stack.
 ```
 
 Local proof endpoints:
@@ -21,6 +22,7 @@ Local proof endpoints:
 LKW API         http://127.0.0.1:8020
 Elasticsearch   http://127.0.0.1:9200
 Kibana          http://127.0.0.1:5601
+Kafka UI        http://127.0.0.1:8085
 Sentry UI       http://127.0.0.1:9000
 ```
 
@@ -253,6 +255,109 @@ Do not use hard-reset-local-docker-all between the before/after search. Hard res
 
 ---
 
+## Step 8 — Verify background task / queue platform proof
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
+```
+
+The helper is idempotent: it starts or refreshes the Kafka overlay stack before running the proof, even if the full proof stack was already started in Step 1.
+
+Expected result:
+
+```text
+proof_result=PASS
+proof_kind=platform_background_task
+task_name=lkw.background_ingest.v1
+message_bus_provider=kafka
+enqueue_mode=real_provider
+worker_execution=asynchronous
+task_status=SUCCEEDED
+task_result_available=true
+handler_resolved=true
+worker_runtime_received=true
+index_ingested=1
+search_results=<n>
+evidence_marker_found=true
+kafka_ui_url=http://127.0.0.1:8085
+kafka_topics=intergrax.tasks,intergrax.task-events,intergrax.task-status,intergrax.task-results
+mock_queue=false
+inmemory_bypass=false
+direct_handler_call=false
+direct_indexer_call=false
+run_id=<generated_run_id>
+correlation_id=<generated_correlation_id>
+task_id=<task_id>
+marker=<proof_marker>
+collection_id=local_workspace
+```
+
+Acceptance notes:
+
+- `search_results` must be greater than or equal to `1`; the exact value may vary between runs.
+- `run_id`, `correlation_id`, `task_id`, and `marker` are generated per run. Copy them if you want to inspect Kafka UI manually.
+
+This proof:
+
+- enqueues a real `LkwBackgroundIngestJob` through platform `message_bus.enqueue`,
+- routes the `TaskRequest` through a **real local message bus provider** in the proof stack (Kafka in Docker),
+- executes the registered handler through the platform worker path **asynchronously** (enqueue returns before work completes),
+- inspects lifecycle through provider-neutral `message_bus.get_status` / `message_bus.get_result`,
+- verifies indexed content through `local.workspace.search` after the task succeeds.
+
+**Platform proof guardrails — this step is not satisfied by:**
+
+- mocks or fake queue implementations,
+- in-memory-only or synchronous in-process bypasses,
+- unit-test-only handler invocation without the live `message_bus.*` tool surface,
+- calling `local.workspace.index` directly while skipping enqueue / queue / worker lifecycle.
+
+The proof stack must include a configured `message_bus` integration, a running broker/queue backend, and a worker consumer for `lkw.background_ingest.v1`. LKW remains the proof workload; platform owns contracts, tools, provider adapters, and worker execution.
+
+Latest recorded live result: PASS — LKW.4E Kafka background-task platform proof.
+
+```text
+Recorded: 2026-07-09
+proof_result=PASS
+message_bus_provider=kafka
+worker_execution=asynchronous
+task_status=SUCCEEDED
+task_result_available=true
+index_ingested=1
+search_results=4
+evidence_marker_found=true
+run_id=lkw-bg-proof-8dc1c613fba6
+correlation_id=corr-bcfcf60f4c58
+task_id=lkw-bg-proof-8dc1c613fba6
+marker=LKW_BACKGROUND_TASK_PROOF_20260709111322
+collection_id=local_workspace
+```
+
+Open Kafka UI:
+
+```text
+http://127.0.0.1:8085
+```
+
+Topics to inspect:
+
+```text
+intergrax.tasks
+intergrax.task-events
+intergrax.task-status
+intergrax.task-results
+```
+
+Expected in Kafka UI:
+
+- `TaskRequest` message exists for the printed `run_id` / `correlation_id` in `intergrax.tasks`,
+- lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` exist in `intergrax.task-events`,
+- status/result records exist in `intergrax.task-status` / `intergrax.task-results`.
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -261,11 +366,34 @@ applications\local_workspace_application\scripts\check-lkw-platform-proof-status
 applications\local_workspace_application\scripts\run-sentry-observability-proof.bat --run-id lkw-sentry-live-001 --correlation-id lkw-sentry-live-001
 applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
 applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
+applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 ```
 
 Then open:
 
 ```text
-Sentry: http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
-Kibana: http://127.0.0.1:5601
+Sentry:   http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
+Kibana:   http://127.0.0.1:5601
+Kafka UI: http://127.0.0.1:8085
 ```
+
+Kafka topics to inspect:
+
+```text
+intergrax.tasks
+intergrax.task-events
+intergrax.task-status
+intergrax.task-results
+```
+
+Expected in Kafka UI:
+
+- `TaskRequest` message exists for `run_id` / `correlation_id` in `intergrax.tasks`,
+- lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` exist in `intergrax.task-events`,
+- status/result records exist in `intergrax.task-status` / `intergrax.task-results`.
+
+---
+
+## Token optimization claim guardrails
+
+For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md).

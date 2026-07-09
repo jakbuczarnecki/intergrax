@@ -1701,6 +1701,10 @@ integrations-guardrails = [
 integrations-harness = [
     { name = "sentry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+integrations-kafka = [
+    { name = "confluent-kafka", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "redis", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 integrations-sentry = [
     { name = "sentry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1789,6 +1793,7 @@ requires-dist = [
     { name = "cohere", specifier = ">=5.5" },
     { name = "cohere", marker = "extra == 'llm-cohere-native'", specifier = ">=5.5" },
     { name = "confluent-kafka", marker = "extra == 'dev'", specifier = ">=2.3.0" },
+    { name = "confluent-kafka", marker = "extra == 'integrations-kafka'", specifier = ">=2.3.0" },
     { name = "cryptography", specifier = ">=42.0" },
     { name = "databricks-sql-connector", marker = "extra == 'dev'", specifier = ">=3.6" },
     { name = "docling", extras = ["all"], marker = "extra == 'dev'", specifier = "==2.76.0" },
@@ -1858,6 +1863,7 @@ requires-dist = [
     { name = "qdrant-client", specifier = ">=1.9" },
     { name = "redis", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "redis", marker = "extra == 'dev-ci'", specifier = ">=5.0" },
+    { name = "redis", marker = "extra == 'integrations-kafka'", specifier = ">=5.0" },
     { name = "requests-cache", specifier = ">=1.2" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "sentence-transformers", specifier = ">=3.0" },
@@ -1889,7 +1895,7 @@ requires-dist = [
     { name = "xlrd", specifier = ">=2.0" },
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
-provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-harness", "integrations-guardrails"]
+provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-harness", "integrations-guardrails"]
 
 [[package]]
 name = "invoke"

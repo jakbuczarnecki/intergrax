@@ -20,7 +20,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Solution + trust zones | §5 |
 | Agent roster | §6 |
 | Install / upgrade / uninstall | §7 |
-| Integrations, tools, skills | §8 |
+| Integrations, tools, skills · LKW.4 background jobs | §8 |
 | Runtime + Slack (optional) | §9 |
 | Request flows | §10 |
 | Implementation waves + acceptance | §15 |
@@ -137,7 +137,8 @@ LKW is a **personal Agent OS instance** on the user's computer:
 │  │ Tier-0  integrations · tools · skills · RAG · shadow workspace     │  │
 │  └───────────────────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────┐  optional: indexer sidecar (LKW.7)        │
-│  │ file watcher + queue   │  same host, enqueues ingest tasks          │
+│  │ file watcher +         │  same host; enqueues via message_bus       │
+│  │ background ingest path │  (platform TaskQueue — LKW.4)              │
 │  └──────────────────────┘                                              │
 └─────────────────────────────────────────────────────────────────────────┘
                                      │
@@ -404,7 +405,7 @@ Grant **Full Disk Access** if indexing outside home directory.
 | `rerank_provider` | `cohere_rerank` | Optional rerank after hybrid retrieval in `rag.retrieve` | `RetrievalService` / `RagProfile` |
 | `observability_backend` | `otel` (optional) | Export traces when OTLP enabled on environment profile | `host/environment_profile.py` |
 | `object_storage` | `filesystem` (Wave 4) | Export shadow artifacts / checkpoint blobs | `storage.*` tools when enabled |
-| `message_bus` | queue slug (Wave 4) | Background ingest jobs | `message_bus.*` when worker enabled |
+| `message_bus` | message_bus provider slug (LKW.4) | Platform background ingest jobs | `message_bus.*` when a message bus provider is configured |
 
 **Override:** `INTERGRAX_INTEGRATION_PROFILE_JSON` — e.g. swap `vector_store` to `chroma` for persistent local index.
 
@@ -506,6 +507,106 @@ NexusLoop → AgentEngine → UAEP ctx.invoke_tool(ToolRequest(tool_name="rag.re
 
 See [`host/environment_profile.py`](host/environment_profile.py).
 
+### 8.7 LKW.4 — Background jobs via platform MessageBus
+
+LKW.4 is a **platform message-bus / background-jobs proof track**, not an LKW-owned queue implementation. LKW must **not** implement an application-specific queue, a new queue system, or provider-specific SDK wiring. **LKW is the proof workload; platform owns queue infrastructure.**
+
+**Platform proof pattern** (same as observability):
+
+```text
+Application/domain job
+  → platform TaskQueue / MessageBus contract
+  → provider-neutral message_bus.* tools
+  → provider integration
+  → LKW background ingest proof workload
+```
+
+#### Ownership boundaries
+
+| Layer | Owns |
+|-------|------|
+| **Platform** | `TaskQueue` / `MessageBus` contract (`intergrax/queueing/contracts/task_queue.py`, `intergrax/integrations/contracts/message_bus.py`); `MessageBusIntegrationContract` (`intergrax/runtime/integrations/categories/messaging.py`); provider integrations; provider-neutral `message_bus.*` tools (`message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, …); lifecycle / status / result abstraction |
+| **LKW (Tier-3)** | `LkwBackgroundIngestJob` (`background_ingest/contracts.py`); `task_name` (`lkw.background_ingest.v1`); payload schema; idempotency key convention; handler mapping; proof workload and reviewer runbook |
+| **Agents (Tier-2)** | Tool/skill invocation only — **no** provider SDK imports; **no** Kafka / RabbitMQ / Celery imports |
+| **Providers** | Backend implementation behind the common contract (examples only — LKW.4 does not require all): `kafka`, `rabbitmq`, `celery`, `redpanda`, `sqs`, `service_bus`, `pubsub`, `nats`, `pulsar`, `confluent`, `temporal` |
+
+#### Platform background task model dependency
+
+LKW.4 is aligned with the platform background task architecture in [`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md). LKW background ingest is one concrete **TaskDefinition** in that model — not a separate queue design.
+
+**LKW.4E must use the target concepts:**
+
+- `TaskRequest` enqueue envelope
+- `TaskDefinition` / handler mapping (`lkw.background_ingest.v1` → `handle_background_ingest_task_request`)
+- `WorkerRuntime` with a **real local MessageBus provider** in the proof stack (BG-TASKS-7)
+- Pull status/result via `message_bus.get_status` / `get_result`
+- Lifecycle events and trace correlation (target model; proof may start minimal)
+
+LKW.4E is a **platform proof through LKW**. It must demonstrate production-like platform behavior: real `message_bus.*` tools, a real local broker/provider in the proof stack, and asynchronous worker execution. Mocks, fake queues, in-memory-only bypasses, and unit-test-only handler invocation are **not** sufficient for platform proof. See [`docs/plan/BACKGROUND_TASKS.md`](../../../docs/plan/BACKGROUND_TASKS.md) and public reviewer Step 8 in [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
+
+#### Intended background ingest flow
+
+Triggers (file watcher, scheduler, or explicit user background action) build a domain job and enqueue through the platform surface — **without** duplicating queue logic in LKW:
+
+```text
+File watcher / scheduler / user background action
+  → build LkwBackgroundIngestJob
+  → encode_background_ingest_job()
+  → background_ingest_payload_base64()
+  → message_bus.enqueue
+  → TaskRequest(
+       tenant_id,
+       run_id,
+       task_name="lkw.background_ingest.v1",
+       payload=<json bytes>,
+       idempotency_key=<stable key>
+     )
+  → MessageBus / TaskQueue
+  → provider adapter
+  → worker handler
+  → decode_background_ingest_job()
+  → execute local.workspace.index through platform execution path
+  → TaskResult / status via message_bus.get_status / get_result / list_tasks
+```
+
+**Execution rules:**
+
+- `local.workspace.index` remains the indexing capability — the worker runs the **existing** capability path and must **not** duplicate `LocalIndexerAgent` logic inline.
+- Payload carries paths and scope only (`LkwBackgroundIngestJob`); no raw document content in the job envelope.
+- Idempotency is platform-backed via `TaskRequest.idempotency_key` and LKW's stable key convention.
+
+**Compact request-flow diagram:**
+
+```text
+Background action
+  → LkwBackgroundIngestJob
+  → message_bus.enqueue
+  → TaskQueue / MessageBus
+  → provider
+  → worker handler
+  → local.workspace.index (platform execution path)
+  → message_bus.get_status / get_result
+```
+
+#### LKW.4 vs LKW.7
+
+| Wave | Proves / adds |
+|------|----------------|
+| **LKW.4** | Domain job payload; enqueue via platform `message_bus.*`; inspect lifecycle through provider-neutral tools; handler executes index without changing agent logic; live proof via search/index evidence |
+| **LKW.7** (later) | File watcher; incremental index trigger policy; directory change detection; batching/debounce; recurring filesystem-driven enqueue |
+
+File watcher and incremental index are **LKW.7**, not LKW.4. OS daemon and interaction intake remain **LKW.6**. Slack notify remains optional later (**LKW.6b**), not LKW.4 core.
+
+#### LKW.4 vs provider portability
+
+LKW.4 starts with **one real local message bus provider** in the proof stack (for example RabbitMQ in Docker). Provider portability proof can happen later. Provider-specific SDKs stay behind platform provider integrations — LKW.4 does **not** implement every listed backend. Mocks and in-memory-only queue bypasses do **not** satisfy LKW.4E platform proof.
+
+#### Message bus tool exposure (LKW.4B guardrail — implemented)
+
+When a `message_bus` integration is configured on the host integration profile, `message_bus.*` tools **may** be exposed to the relevant host/tool profile. When `message_bus` is **not** configured, `message_bus.*` tools remain **disabled** for LKW. Shared application wiring (`apply_resolved_integration_tool_guardrails` in `intergrax/applications/_shared/integration_tool_profile.py`) enforces the resolved `ToolWiringContext.message_bus` guardrail; LKW host (`host/tool_wiring.py`) consumes that helper — **LKW.4B closed** · **LKW.4B-PROP-1 closed**.
+
+Code references: [`background_ingest/contracts.py`](../background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../background_ingest/enqueue.py) (LKW.4C enqueue helper) · [`background_ingest/handler.py`](../background_ingest/handler.py) (LKW.4D worker handler contract) · platform [`BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md) · [`INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
+
 ---
 
 ## 9. Local OS runtime and interaction model
@@ -529,9 +630,10 @@ LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in th
 │  User workstation (Windows / Linux / macOS)                              │
 │                                                                          │
 │  ┌─────────────────────┐    ┌──────────────────────┐                   │
-│  │ LKW Host (always-on) │    │ Indexer worker (opt) │                   │
-│  │ local_workspace_app  │    │ file watcher + queue │                   │
-│  │ :8020 localhost      │    │ Wave LKW.7           │                   │
+│  │ LKW Host (always-on) │    │ Indexer sidecar (opt)│                   │
+│  │ local_workspace_app  │    │ file watcher +       │                   │
+│  │ :8020 localhost      │    │ background ingest    │                   │
+│  │                      │    │ enqueue (LKW.7)      │                   │
 │  └──────────┬──────────┘    └──────────┬───────────┘                   │
 │             │                          │                                 │
 │             ▼                          ▼                                 │
@@ -566,7 +668,7 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 #### Always-on responsibilities
 
 1. **Listen** for user tasks (HTTP, MCP, interaction intake).
-2. **Maintain** local RAG index (background ingest — LKW.7).
+2. **Maintain** local RAG index (platform message-bus background ingest — LKW.4; filesystem triggers — LKW.7).
 3. **Run** Nexus graph on demand (search now, synthesize on request).
 4. **Notify** on completion / HITL (`notification_channel=slack` on long-running tasks).
 5. **Persist** checkpoints for pause/resume ([`docs/intergrax_runtime_architecture.md` Appendix F.4](../../docs/intergrax_runtime_architecture.md)).
@@ -662,10 +764,10 @@ LKW.6 wires this on the product host (mirror `lab_application` / `legal_applicat
 | Pattern | Trigger | Nexus behaviour |
 |---------|---------|-----------------|
 | **Interactive** | User message (Slack, HTTP, MCP) | Sync or async run; reply when `COMPLETED` or `WAITING_FOR_HUMAN` |
-| **Background index** | File watcher / cron (LKW.7) | `message_bus.enqueue` → worker runs `local.workspace.index`; Slack notify on batch complete |
+| **Background index** | File watcher / cron / explicit enqueue (LKW.4 + LKW.7) | `message_bus.enqueue` → platform queue lifecycle → worker runs `local.workspace.index`; optional Slack notify on batch complete (LKW.6b) |
 | **Long-running synthesize** | Large report | `TaskLongRunningOptions` + checkpoint; user resumes via Slack `approve` / HTTP |
 
-User can **always** submit a new interactive task while background indexing runs — Nexus queue + idempotency prevent duplicate ingests (LKW.7).
+User can **always** submit a new interactive task while background indexing runs — platform message-bus/task-queue idempotency prevents duplicate ingests (LKW.4 payload key + LKW.7 watcher policy).
 
 ### 9.6 Integration profile extension for Slack (LKW.6b)
 
@@ -810,11 +912,11 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.1** | 1 | Domain UAEP: ingest + search | Tier-2 agents | LKW.0 | Planned |
 | **LKW.2** | 2 | Graph pipeline + local skills | Tier-1 graph + Tier-0 skills | LKW.1 | Planned |
 | **LKW.3** | 3 | Filesystem browse + allowlist | Tier-0 tools + Tier-3 policy | LKW.0 | **Done** (T6) |
-| **LKW.4** | 4 | Background ingest queue | Tier-0 message_bus | LKW.1 | Planned |
+| **LKW.4** | 4 | Platform message-bus background ingest proof | Tier-0 message_bus + Tier-3 proof workload | LKW.1 | Planned |
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
 | **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | Planned |
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 worker | LKW.4, LKW.5 | Planned |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | Planned |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -876,7 +978,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 1. Copy `.env.example` → `.env` in `applications/local_workspace_application/`.
 2. Set `LOCAL_WORKSPACE_INCLUDE_SCHEDULER=true`, `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL=true`.
-3. Optional queue path: `LOCAL_WORKSPACE_INCLUDE_QUEUE_WORKER=true` (see ORCH-MAINT-01 lab scaffold default).
+3. Optional background-jobs path: `LOCAL_WORKSPACE_INCLUDE_QUEUE_WORKER=true` when a message_bus provider is configured (see ORCH-MAINT-01 lab scaffold default).
 4. Start host: `uv run uvicorn local_workspace_application.host.main:app --port 8090`.
 5. Verify: `GET /health` → 200; `POST /v1/local_workspace/run` with `echo.basic` completes; scheduler poll logs when `INTERGRAX_SCHEDULER_POLL_SECONDS` set.
 
@@ -901,7 +1003,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
 | LKW.7.1 | `host/indexer_worker.py` | File watcher on allowlist roots |
-| LKW.7.2 | queue | `message_bus.enqueue` ingest jobs |
+| LKW.7.2 | background ingest enqueue | `message_bus.enqueue` ingest jobs (platform TaskQueue — LKW.4) |
 | LKW.7.3 | notify | Optional Slack batch complete |
 
 **Acceptance:** Drop file in watched folder → indexed within N minutes without user command.
@@ -936,7 +1038,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 | Gap | Impact | Mitigation (Wave) |
 |-----|--------|-------------------|
-| No file watcher | No auto re-index | LKW.4 worker |
+| No file watcher | No auto re-index | LKW.7 file watcher + enqueue path |
 | In-memory vector store default | Index lost on restart | Chroma + `INTEGRATION_PROFILE_JSON` |
 | Windows path / OneDrive edge cases | Parser failures | Test matrix in LKW.1 acceptance |
 | Qdrant/Chroma lack `list_document_ids` | `rag.list_documents` empty/unsupported on some backends | Use InMemory for dev; extend provider bindings in follow-up |

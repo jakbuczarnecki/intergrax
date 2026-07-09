@@ -95,8 +95,8 @@ def resolve_tenant_scoped_vectorstore(
     if manager is None or not tenant_id:
         return manager
 
-    wired_tenant = vectorstore_tenant_id(manager)
-    if wired_tenant is None or wired_tenant == tenant_id:
+    wired_tenant = vectorstore_tenant_id(manager) or "default"
+    if wired_tenant == tenant_id:
         return manager
 
     profile = ctx.integration_profile

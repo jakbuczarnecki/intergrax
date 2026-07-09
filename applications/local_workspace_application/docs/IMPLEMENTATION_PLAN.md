@@ -3,7 +3,7 @@
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
 **Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
 
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
+Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW.5 Closed — persistence proof passed** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
 
 Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
 
@@ -13,7 +13,9 @@ index -> search with tenant-scoped evidence -> synthesize with evidence -> shado
 
 Latest observability snapshot: **2026-06-30 — LKW-OBS OTLP proof path closed** · **LKW-OBS-VIEW-1A Done** (inspector + duplicate check = 0). LKW OTLP export: env-driven config (1A), Compose collector + JSONL sink (1B), manual Swagger proof (1C), duplicate export fix (DUP-1), lightweight inspector (`scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`; focused tests 5 passed). **Next platform phase:** **OBS-VENDOR** — production vendor integration rollout ([`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR); LKW remains proof workload, not integration owner.
 
-Current LKW.2 execution status: §5 below. LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
+Latest persistence snapshot: **2026-07-07 — LKW.5 PERSISTENCE PROOF PASSED**. `LKW_DATA_HOME` settings contract, repo-dev persistence env alignment, Qdrant persistent vector-store guardrails, public platform proof step, and live non-destructive restart proof are closed. Live proof verified `before_restart_results=1`, `after_restart_results=1`, `volumes_removed=false`, and `reindexed_after_restart=false`. See [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md).
+
+Current LKW.2 execution status: §5 below. LKW.5 persistence proof: [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md). LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
 Application-local history: [`journal/`](journal/).  
 Platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
 
@@ -281,8 +283,8 @@ This track is executed one task at a time.
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
 | LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
-| LKW.4 | Background ingest queue (`message_bus`) | LKW.1 | Planned | Medium |
-| LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | Planned | High |
+| LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | Planned | Medium |
+| LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
@@ -290,6 +292,43 @@ This track is executed one task at a time.
 | LKW-H2 | Evidence/maturity wording cleanup | LKW.1 | Planned | Medium |
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
 | LKW-W | Deferred architecture watchlist | LKW proof pain only | Deferred | Watch |
+
+**LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
+
+**Next planned task:** **LKW.4E** — live proof (LKW.4E-PROOF-DOC-1 closed). Platform background task model: [`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md). LKW.4 boundaries: [`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7 (LKW.4-ARCH-1 closed; LKW.4B closed; LKW.4B-PROP-1 closed; LKW.4C closed; LKW.4D closed; LKW.4E-ARCH-1 closed; LKW.4E-PROOF-DOC-1 closed).
+
+**Platform proof pattern (same as observability):**
+
+```text
+platform contract
+-> provider-neutral tool surface
+-> provider integration
+-> LKW proof workload
+-> reviewer proof
+```
+
+For message bus / background jobs:
+
+```text
+Application/domain job
+-> platform TaskQueue / MessageBus contract
+-> provider-neutral message_bus tools
+-> provider integration
+-> LKW background ingest proof workload
+```
+
+**Ownership boundaries:**
+
+| Layer | Owns |
+|-------|------|
+| **Platform** | `TaskQueue` / `MessageBus` contract; `MessageBusIntegrationContract`; provider integrations; `message_bus.*` tool surface; lifecycle / status / result abstraction |
+| **LKW** | `LkwBackgroundIngestJob`; `task_name`; payload schema; idempotency key convention; handler mapping; proof workload |
+| **Agents** | Tool/skill invocation only — no provider SDK imports |
+| **Providers** | Backend implementation behind the common contract (examples only — LKW.4 does not require all): `kafka`, `rabbitmq`, `celery`, `redpanda`, `sqs`, `service_bus`, `pubsub`, `nats`, `pulsar`, `confluent`, `temporal` |
+
+LKW proof should start with **one real local message bus provider** in the proof stack. Provider portability can be proven later. Mocks and in-memory-only queue bypasses do **not** satisfy LKW.4E platform proof.
+
+Sub-plan: §6 below.
 
 ---
 
@@ -764,7 +803,30 @@ Not a Sentry, vendor observability, token optimization, or exporter step.
 
 ---
 
-## 6. Post-LKW.1 hardening and adoption waves
+## 6. LKW.4 — Platform message-bus background ingest proof
+
+LKW.4 proves that a Tier-3 application can enqueue a domain background job through the platform message-bus contract and execute it asynchronously without owning queue infrastructure. LKW remains the proof workload; platform owns contracts, tools, and provider integrations.
+
+| ID | Task | Scope | Status |
+|----|------|-------|--------|
+| LKW.4A | Background ingest job payload contract | LKW domain payload + deterministic idempotency | **Closed** |
+| LKW.4-ARCH-1 | Background jobs platform architecture scope | Document platform/app/agent/provider boundaries | **Closed** |
+| LKW.4B | Message bus tool wiring guardrails | Optional `message_bus` tool exposure only when provider configured | **Closed** |
+| LKW.4B-PROP-1 | Promote message_bus tool guardrail to shared wiring | Move resolved message_bus tool exposure guardrail from LKW host into shared application helper | **Closed** |
+| LKW.4C | Background ingest enqueue helper | Application service/helper that builds payload and calls provider-neutral enqueue | **Closed** |
+| LKW.4D | Worker handler contract | Decode payload and execute `local.workspace.index` through platform execution path | **Closed** |
+| LKW.4E-ARCH-1 | Platform background task execution model | Document TaskDefinition/TaskRegistry, WorkerRuntime, TaskEvent lifecycle, pull/event observation, logging, metrics, tracing, and LKW.4E proof boundaries | **Closed** |
+| LKW.4E-PROOF-DOC-1 | Public platform proof reviewer path | Document real queue/background-task verification in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Step 8; align architecture/plan wording — no mock/in-memory-only proof | **Closed** |
+| LKW.4E | Live proof | Real local MessageBus provider in proof stack → enqueue job → async worker executes index → `get_status`/`get_result` → search verifies result | **Planned — next task** |
+| LKW.4F | Record proof and closeout | Save proof result and align plan/status | Planned |
+
+**Execution gate:** LKW.4D, LKW.4E-ARCH-1, and LKW.4E-PROOF-DOC-1 are closed. LKW.4E may begin. LKW.4E must follow the platform background task architecture ([`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md)). LKW.4E must not invent an LKW-only queue/worker architecture. LKW.4E is live proof only. LKW.4E must wire a **real local MessageBus provider** in the proof stack (for example RabbitMQ in Docker) and demonstrate asynchronous enqueue → worker → result lifecycle through provider-neutral `message_bus.*` tools. Mocks, fake queues, in-memory-only bypasses, and unit-test-only execution are **not** sufficient. LKW.4E must not add file watcher, scheduler, or Slack notify. LKW.4E–LKW.4F depend on documented platform boundaries ([`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7) and must not introduce LKW-specific queue code. Public reviewer path: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Step 8.
+
+**Out of scope for LKW.4:** file watcher and incremental index (**LKW.7**); OS daemon and interaction intake (**LKW.6**); Slack notify (**LKW.6b**, optional later); implementing every listed provider — one **real local** message bus provider in the proof stack is sufficient for first closeout; cloud-managed vendor backends in LKW.4E first pass.
+
+---
+
+## 7. Post-LKW.1 hardening and adoption waves
 
 ### LKW-H2 — evidence/maturity wording cleanup
 

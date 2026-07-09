@@ -53,6 +53,10 @@ def test_lkw_platform_proof_uses_canonical_reviewer_commands() -> None:
         r"applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat"
         in text
     )
+    assert (
+        r"applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat"
+        in text
+    )
 
 
 def test_lkw_platform_proof_documents_persistent_storage_step() -> None:

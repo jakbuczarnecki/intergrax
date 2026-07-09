@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from intergrax.applications._shared.integration_tool_profile import apply_resolved_integration_tool_guardrails
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
 from intergrax.tools.providers.document.service import DOCUMENT_PARSE_PREVIEW_TOOL_ID, DOCUMENT_PARSE_TOOL_ID
@@ -82,6 +84,11 @@ def wire_local_workspace_tools(
         ctx = replace(ctx, read_allowlist_roots=allowed_roots)
 
     profile = ToolProfile(enabled=enabled)
+    profile = apply_resolved_integration_tool_guardrails(
+        profile,
+        ctx,
+        categories=(IntegrationCategory.MESSAGE_BUS,),
+    )
     return build_application_tool_wiring(
         profile,
         integration_profile=resolved_profile,

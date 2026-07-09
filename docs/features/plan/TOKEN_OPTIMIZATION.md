@@ -686,7 +686,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Near-deduplication | `rag_context_pack`, `conversation_history` | `lossless` / `experimental` | `balanced` | Yes | Yes | Yes | Post-3C eval | Deferred |
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
-| Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
+| Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | **TOKEN-OPT-4A** | **Implemented** |
 | Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | TOKEN-2 / TOKEN-6 extension | Deferred |
 | Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Retrieval-on-demand | `rag_context_pack`, `retrieved_evidence` | `reversible` / `lossy` (partial) | `balanced` | Yes | Yes | Yes | RAG integration slice | Deferred |
@@ -932,6 +932,34 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 > **Important:** TOKEN-OPT-3D remains a **char-budget prototype**. It must not be described as token-accurate optimization until a provider-aware tokenizer/counting adapter is introduced and measured.
 
 **Status:** **Done / Closed**.
+
+#### TOKEN-OPT-4A — extractive filtering layer for tool / terminal / log output
+
+**Purpose:** Add a deterministic extractive filtering layer for noisy tool, terminal, and log output without semantic compression or LLM summarization.
+
+**Deliverables:**
+
+- `intergrax/runtime/token_optimization/layers/extractive_filtering.py` — `ExtractiveFilteringLayer`, `ExtractiveFilteringLayerConfig`
+- `intergrax/runtime/token_optimization/layers/__init__.py` — layer exports
+- `tests/unit/runtime/token_optimization/test_extractive_filtering_layer.py`
+
+**Closeout:**
+
+- deterministic extractive filtering layer added
+- targets `tool_output`, `terminal_output`, and `log_output`
+- preserves head/tail, important error/warning lines, and traceback blocks
+- collapses repeated lines deterministically
+- emits char-level metadata only
+- does not create token-accurate savings claims
+- does not use LLM summarization
+- does not use semantic compression
+- does not add runtime pipeline engine
+- does not change existing optimizer behavior
+- savings attribution remains separate from dedupe, packing, and truncation
+
+**Status:** **Done / Closed**.
+
+**Next step:** **TOKEN-OPT-4B** — extractive filtering evaluation cases / regression pack.
 
 ### TOKEN-OPT-3A acceptance
 

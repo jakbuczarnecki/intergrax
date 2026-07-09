@@ -33,6 +33,8 @@ _external_apps/
 docs/_external/
 
 applications/local_workspace_application/.observability/
+applications/local_workspace_application/.proof_docs/
+
 .artifacts/
 
 # LKW local Sentry proof runtime state (bootstrap writes generated.env on first stack start)

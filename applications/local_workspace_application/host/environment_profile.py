@@ -17,9 +17,13 @@ from intergrax.applications.contracts.graph_spec import (
     GraphNode,
 )
 from intergrax.integrations.core.binding import IntegrationBinding
-from intergrax.integrations.registry.catalog_manifests import DOCLING, INMEMORY, OTEL, QDRANT, REDIS, SQLITE
+from intergrax.integrations.registry.catalog_manifests import DOCLING, INMEMORY, KAFKA, OTEL, QDRANT, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import llm_profile_from_env
+from local_workspace_application.host.message_bus_wiring import (
+    local_workspace_message_bus_enabled,
+    materialize_local_workspace_message_bus_profile,
+)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
 
@@ -65,6 +69,9 @@ def build_local_workspace_integration_profile() -> IntegrationProfile:
 
     vector_store = _local_vector_store_manifest()
     enable_redis = _env_bool("LOCAL_WORKSPACE_ENABLE_REDIS", default=False)
+    enable_message_bus = local_workspace_message_bus_enabled()
+    if enable_message_bus:
+        enable_redis = True
     options: dict[str, dict[str, object]] = {
         OTEL.slug: {},
         SQLITE.slug: {},
@@ -72,14 +79,18 @@ def build_local_workspace_integration_profile() -> IntegrationProfile:
     }
     if enable_redis:
         options[REDIS.slug] = {}
-    return IntegrationProfile(
+    if enable_message_bus:
+        options[KAFKA.slug] = {}
+    profile = IntegrationProfile(
         relational_store=SQLITE,
         vector_store=vector_store,
         key_value_cache=REDIS if enable_redis else None,
+        message_bus=KAFKA if enable_message_bus else None,
         document_parser=DOCLING,
         observability_backend=OTEL,
         options=options,
     )
+    return materialize_local_workspace_message_bus_profile(profile)
 
 
 def build_local_workspace_environment_profile(

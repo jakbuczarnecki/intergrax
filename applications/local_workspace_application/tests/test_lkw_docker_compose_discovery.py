@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 from pathlib import Path
@@ -267,3 +268,93 @@ def test_docs_mention_canonical_all_in_one_startup() -> None:
     for doc in (sentry_doc, platform_proof):
         assert "run-local-docker-all.bat" in doc
         assert "run-local-docker-all.sh" in doc
+
+
+def test_kafka_overlay_configures_real_background_task_stack() -> None:
+    text = (_DOCKER_DIR / "docker-compose.kafka.yml").read_text(encoding="utf-8")
+    assert 'LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"' in text
+    assert 'LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"' in text
+    assert "INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092" in text
+    assert "INTERGRAX_KAFKA_TOPIC: intergrax.tasks" in text
+    assert "INTERGRAX_KAFKA_EVENTS_TOPIC: intergrax.task-events" in text
+    assert "lkw-background-worker:" in text
+    assert "background_worker_main" in text
+    assert "lkw-kafka-ui:" in text
+    assert "8085:8080" in text
+    assert "../.proof_docs:/data/user_docs:rw" in text
+    assert "PLAINTEXT_HOST://127.0.0.1:9094" in text
+    assert '"9094:9094"' in text
+
+
+def test_background_task_proof_helper_implements_reviewer_contract() -> None:
+    for path in (
+        _SCRIPTS_DIR / "run-lkw-background-task-proof.bat",
+        _SCRIPTS_DIR / "run-lkw-background-task-proof.sh",
+        _SCRIPTS_DIR / "run-lkw-background-task-proof.py",
+    ):
+        assert path.exists()
+    py = (_SCRIPTS_DIR / "run-lkw-background-task-proof.py").read_text(encoding="utf-8")
+    for needle in (
+        "proof_result=PASS",
+        "proof_kind=platform_background_task",
+        "background-task/enqueue",
+        "background-task/status",
+        "local.workspace.search",
+        "mock_queue=false",
+        "kafka_ui_url",
+        "kafka_topics=",
+        "intergrax.task-events",
+        "direct_indexer_call=false",
+        "collection_id=",
+        '"query": marker',
+        '"top_k": 5',
+        '"user_id": _PROOF_REQUESTED_BY',
+        "lkw.background_task_proof",
+        "num_results",
+        "evidence_count",
+        "diagnostics",
+        'diagnostics.get("lkw.search_summary.v1")',
+    ):
+        assert needle in py
+
+
+def _load_background_task_proof_module():
+    proof_path = _SCRIPTS_DIR / "run-lkw-background-task-proof.py"
+    spec = importlib.util.spec_from_file_location("lkw_background_task_proof", proof_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_background_task_proof_search_result_count_reads_diagnostics_path() -> None:
+    proof = _load_background_task_proof_module()
+    canonical = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "schema_version": "lkw_evidence.v1",
+                "diagnostics": {
+                    "lkw.search_summary.v1": {
+                        "num_results": 2,
+                        "evidence_count": 2,
+                        "reason": "retrieve_complete",
+                        "used": True,
+                    }
+                },
+            }
+        }
+    }
+    legacy_wrong_shape = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "lkw.search_summary.v1": {
+                    "num_results": 2,
+                    "evidence_count": 2,
+                }
+            }
+        }
+    }
+
+    assert proof._search_result_count(canonical) == 2
+    assert proof._search_result_count(legacy_wrong_shape) == 0
+    assert proof._search_summary_diagnostic(canonical)["reason"] == "retrieve_complete"
