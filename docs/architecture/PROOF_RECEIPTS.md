@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../plan/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1D closed**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1E closed**
 
 ---
 
@@ -157,29 +157,55 @@ Reviewer (inspection only)
 
 - Smoke partition `platform_smoke` / row `mongodb_document_store` is **not** a `ProofReceipt`.
 - No `ProofReceiptStore` call in 1D; no pymongo imports in LKW application code.
-- Public Step 9 in `LKW_PLATFORM_PROOF.md` remains for **PROOF-RECEIPTS-1E** after live receipt recording succeeds.
+- Public Step 9 in `LKW_PLATFORM_PROOF.md` documents Mongo Express receipt inspection for **PROOF-RECEIPTS-1E**.
 
 ---
 
-## J. Future reviewer path (target)
+## J. PROOF-RECEIPTS-1E — LKW background-task receipt recording (closed)
 
-After PROOF-RECEIPTS-1C–1E:
+**Workload proof:** `applications/local_workspace_application/scripts/run-lkw-background-task-proof.py`
+**Runner:** `applications/local_workspace_application/scripts/run-lkw-background-task-proof.bat` (Kafka + MongoDB overlays)
+**Recording helper:** `intergrax/proofs/receipts/recording.py`
 
-1. Run LKW proof workload (e.g. background task proof already closed at LKW.4E).
+```text
+LKW background-task workload
+  → live Kafka execution
+  → ProofReceipt
+  → ProofReceiptStore
+  → DocumentStore
+  → MongoDBDocumentStoreIntegration
+  → MongoDB
+  → Mongo Express reviewer inspection
+```
+
+- `ProofReceipt` in MongoDB is the source of truth; markdown is reviewer guidance only.
+- The infrastructure smoke record from 1D is not a `ProofReceipt`.
+- No direct pymongo or MongoDB write exists in LKW.
+- No in-memory fallback is accepted for live proof acceptance.
+- Final `proof_result=PASS` depends on receipt write/read/query verification.
+
+---
+
+## K. Future reviewer path (target)
+
+After PROOF-RECEIPTS-1C–1E closeout:
+
+1. Run LKW proof workload (background task proof with receipt recording).
 2. Application records a `ProofReceipt` through `ProofReceiptStore`.
 3. `IntegrationProfile` selects `document_store=mongodb`.
 4. Reviewer inspects receipt in **Mongo Express** / Mongo UI — not by opening markdown closeout files.
 
-Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB proof stack succeeds — not before PROOF-RECEIPTS-1E closeout.
+Public Step 9 in `LKW_PLATFORM_PROOF.md` is available for Mongo Express receipt inspection.
 
 ---
 
-## K. Code references
+## L. Code references
 
 | Artifact | Path |
 |----------|------|
 | ProofReceipt contract | `intergrax/proofs/receipts/contracts.py` |
 | Document mapping | `intergrax/proofs/receipts/document_store.py` |
+| Recording helper | `intergrax/proofs/receipts/recording.py` |
 | Store engine | `intergrax/proofs/receipts/store.py` |
 | DocumentStore contract | `intergrax/integrations/contracts/document_store.py` |
 | DocumentStore vendor contract | `intergrax/runtime/integrations/document_store.py` |

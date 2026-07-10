@@ -3,7 +3,7 @@
 **Architecture (1:1):** [`architecture/PROOF_RECEIPTS.md`](../architecture/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW-PR ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1D closed**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1E closed**
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Item | Value |
 |------|-------|
-| **Track status** | In progress — architecture + contracts + vendor integration boundary defined |
+| **Track status** | **Closed** — PROOF-RECEIPTS-1A through **1E** complete |
 | **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../architecture/PROOF_RECEIPTS.md) — **PROOF-RECEIPTS-1B closed** |
 | **Current proof consumer** | LKW (structured receipt after live proofs) |
 | **Default live vendor** | MongoDB (`document_store` integration) |
-| **Next step** | **PROOF-RECEIPTS-1E** — LKW proof receipt recording through platform (after **PROOF-RECEIPTS-1D** live PASS) |
+| **Next step** | — (Proof Receipts wave complete) |
 
 **Note:** LKW.4E (Kafka-backed background task live proof) remains **closed**. Proof receipts are the **next platform proof wave** — not a markdown closeout of LKW.4E.
 
@@ -31,7 +31,7 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 | **PROOF-RECEIPTS-1B** | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`; category config/operations; `as_document_store()` boundary; unit tests | **Done** |
 | **PROOF-RECEIPTS-1C** | Complete `document_store` vendor category cutover | MongoDB, Cassandra, DynamoDB on `DocumentStoreVendorIntegrationContract`; remove `DocumentStoreIntegrationContract` | **Done** |
 | **PROOF-RECEIPTS-1D** | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay for live vendor-backed receipt persistence | **Closed** |
-| **PROOF-RECEIPTS-1E** | LKW proof receipt recording through platform | LKW proof workloads write `ProofReceipt` via `ProofReceiptStore` after live proofs | Planned |
+| **PROOF-RECEIPTS-1E** | LKW proof receipt recording through platform | LKW proof workloads write `ProofReceipt` via `ProofReceiptStore` after live proofs | **Closed** |
 
 ---
 
@@ -132,11 +132,27 @@ docker compose \
 
 | Deliverable | Detail |
 |-------------|--------|
-| LKW proof recording | LKW proof workloads persist `ProofReceipt` through `ProofReceiptStore` after live proofs |
+| Recording helper | `intergrax/proofs/receipts/recording.py` — `record_and_verify_proof_receipt()` |
+| LKW proof recording | `run-lkw-background-task-proof.py` persists `ProofReceipt` after live Kafka background-task proof |
+| Combined proof stack | `run-lkw-background-task-proof.bat` composes Kafka + MongoDB overlays |
 | Platform boundary | No pymongo or direct MongoDB access in Tier-3 |
-| Public reviewer docs | Step 9 in `LKW_PLATFORM_PROOF.md` only after live proof succeeds — not before 1E closeout |
+| Public reviewer docs | Step 9 in `LKW_PLATFORM_PROOF.md` — receipt inspection via Mongo Express |
+
+**Path:**
+
+```text
+LKW background-task workload
+  → live Kafka execution
+  → ProofReceipt
+  → ProofReceiptStore
+  → DocumentStore
+  → MongoDBDocumentStoreIntegration
+  → MongoDB
+  → Mongo Express reviewer inspection
+```
 
 **Depends on:** PROOF-RECEIPTS-1D
+**Closeout:** live PASS via `run-lkw-background-task-proof.bat` (workload + receipt write/read/query verification)
 
 ---
 

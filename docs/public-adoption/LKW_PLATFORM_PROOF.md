@@ -1,8 +1,6 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
-This is the guided reviewer path for verifying that Intergrax works as a real platform.
-
-Use this document as the source of truth. Follow the steps in order. A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
+This document is the guided reviewer path. Structured ProofReceipt documents persisted through the platform DocumentStore are the source of truth for proof outcomes. Follow the steps in order. A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
 
 ---
 
@@ -14,6 +12,7 @@ Use this document as the source of truth. Follow the steps in order. A reviewer 
 3. LKW emits controlled problem signals into local Sentry.
 4. LKW persists indexed local knowledge across a non-destructive restart.
 5. LKW enqueues and executes background ingest jobs through the real platform message-bus / TaskQueue path with a local provider in the proof stack.
+6. LKW records structured proof evidence through ProofReceiptStore into a real MongoDB DocumentStore vendor and exposes it for reviewer inspection through Mongo Express.
 ```
 
 Local proof endpoints:
@@ -23,6 +22,7 @@ LKW API         http://127.0.0.1:8020
 Elasticsearch   http://127.0.0.1:9200
 Kibana          http://127.0.0.1:5601
 Kafka UI        http://127.0.0.1:8085
+Mongo Express   http://127.0.0.1:8086
 Sentry UI       http://127.0.0.1:9000
 ```
 
@@ -263,7 +263,7 @@ Run:
 applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 ```
 
-The helper is idempotent: it starts or refreshes the Kafka overlay stack before running the proof, even if the full proof stack was already started in Step 1.
+The helper is idempotent: it starts or refreshes the combined Kafka + MongoDB overlay stack before running the proof, even if the full proof stack was already started in Step 1.
 
 Expected result:
 
@@ -292,6 +292,18 @@ correlation_id=<generated_correlation_id>
 task_id=<task_id>
 marker=<proof_marker>
 collection_id=local_workspace
+proof_receipt_recorded=true
+proof_receipt_verified=true
+proof_receipt_store=platform
+document_store_provider=mongodb
+proof_receipt_id=<generated_proof_id>
+proof_receipt_run_id=<generated_run_id>
+proof_receipt_result=PASS
+proof_receipt_query_verified=true
+mongo_express_url=http://127.0.0.1:8086
+markdown_source_of_truth=false
+direct_mongodb_write=false
+direct_pymongo_from_lkw=false
 ```
 
 Acceptance notes:
@@ -305,7 +317,11 @@ This proof:
 - routes the `TaskRequest` through a **real local message bus provider** in the proof stack (Kafka in Docker),
 - executes the registered handler through the platform worker path **asynchronously** (enqueue returns before work completes),
 - inspects lifecycle through provider-neutral `message_bus.get_status` / `message_bus.get_result`,
-- verifies indexed content through `local.workspace.search` after the task succeeds.
+- verifies indexed content through `local.workspace.search` after the task succeeds,
+- constructs a `ProofReceipt` from the actual live evidence,
+- stores it through `ProofReceiptStore` → platform `DocumentStore` → `MongoDBDocumentStoreIntegration`,
+- verifies read-back and query before printing final `proof_result=PASS`,
+- fails if receipt persistence is unavailable.
 
 **Platform proof guardrails — this step is not satisfied by:**
 
@@ -314,26 +330,7 @@ This proof:
 - unit-test-only handler invocation without the live `message_bus.*` tool surface,
 - calling `local.workspace.index` directly while skipping enqueue / queue / worker lifecycle.
 
-The proof stack must include a configured `message_bus` integration, a running broker/queue backend, and a worker consumer for `lkw.background_ingest.v1`. LKW remains the proof workload; platform owns contracts, tools, provider adapters, and worker execution.
-
-Latest recorded live result: PASS — LKW.4E Kafka background-task platform proof.
-
-```text
-Recorded: 2026-07-09
-proof_result=PASS
-message_bus_provider=kafka
-worker_execution=asynchronous
-task_status=SUCCEEDED
-task_result_available=true
-index_ingested=1
-search_results=4
-evidence_marker_found=true
-run_id=lkw-bg-proof-8dc1c613fba6
-correlation_id=corr-bcfcf60f4c58
-task_id=lkw-bg-proof-8dc1c613fba6
-marker=LKW_BACKGROUND_TASK_PROOF_20260709111322
-collection_id=local_workspace
-```
+The proof stack must include a configured `message_bus` integration, a running broker/queue backend, a worker consumer for `lkw.background_ingest.v1`, and a live MongoDB document store for receipt persistence. LKW remains the proof workload; platform owns contracts, tools, provider adapters, worker execution, and receipt storage.
 
 Open Kafka UI:
 
@@ -358,6 +355,84 @@ Expected in Kafka UI:
 
 ---
 
+## Step 9 — Inspect the structured ProofReceipt in Mongo Express
+
+After Step 8 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted receipt.
+
+### Open Mongo Express
+
+```text
+http://127.0.0.1:8086
+```
+
+### Select
+
+```text
+database: intergrax_proofs
+collection: proof_receipts
+```
+
+### Find the receipt
+
+Use the values printed by Step 8:
+
+```text
+proof_receipt_id
+proof_receipt_run_id
+task_id
+```
+
+Each stored document is a MongoDB row mapped from `DocumentRecord`. The `data` field contains the full `ProofReceipt` JSON (`schema_version`, `proof_id`, `proof_kind`, `application_id`, `result`, `run_id`, `correlation_id`, `task_id`, `provider_evidence`, `domain_evidence`, `guardrails`, `metadata`, `recorded_at`). Partition and row keys are derived as:
+
+```text
+partition_key = proof_receipts/local_workspace
+row_key       = proof/platform_background_task/<run_id>
+```
+
+### Reviewer checks
+
+Verify in the stored `data` object:
+
+```text
+schema_version = intergrax.proof_receipt.v1
+application_id = local_workspace
+proof_kind = platform_background_task
+result = PASS
+run_id matches Step 8
+correlation_id matches Step 8
+task_id matches Step 8
+provider_evidence.message_bus_provider = kafka
+provider_evidence.worker_execution = asynchronous
+provider_evidence.task_status = SUCCEEDED
+domain_evidence.task_name = lkw.background_ingest.v1
+domain_evidence.search_results >= 1
+domain_evidence.evidence_marker_found = true
+guardrails.mock_queue = false
+guardrails.inmemory_bypass = false
+guardrails.direct_handler_call = false
+guardrails.direct_indexer_call = false
+guardrails.direct_mongodb_write = false
+guardrails.direct_pymongo_from_lkw = false
+guardrails.markdown_source_of_truth = false
+```
+
+### Authority
+
+The MongoDB `ProofReceipt` is the source of truth for this run. This markdown page explains how to execute and inspect the proof but does not store the authoritative result.
+
+### Historical example (non-authoritative)
+
+Older markdown-only closeout blocks are retained only as examples. They are not the live source of truth once receipt recording is enabled.
+
+```text
+example_only=true
+recorded=2026-07-09
+message_bus_provider=kafka
+worker_execution=asynchronous
+```
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -372,10 +447,14 @@ applications\local_workspace_application\scripts\run-lkw-background-task-proof.b
 Then open:
 
 ```text
-Sentry:   http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
-Kibana:   http://127.0.0.1:5601
-Kafka UI: http://127.0.0.1:8085
+Sentry:        http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2
+Kibana:        http://127.0.0.1:5601
+Kafka UI:      http://127.0.0.1:8085
+Mongo Express: http://127.0.0.1:8086
 ```
+
+1. Inspect Kafka lifecycle using `run_id` / `correlation_id`.
+2. Inspect MongoDB receipt using `proof_receipt_id` / `proof_receipt_run_id`.
 
 Kafka topics to inspect:
 
