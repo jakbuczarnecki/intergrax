@@ -28,7 +28,6 @@ __all__ = [
 _LAZY_EXPORTS = frozenset(
     {
         "MongoDBIntegrationBundle",
-        "MongoDBDocumentStore",
         "create_mongodb_integration",
         "create_mongodb_document_store",
         "register_mongodb_integration",
@@ -41,6 +40,9 @@ _LAZY_EXPORTS = frozenset(
 _CONTRACT_INTEGRATION_EXPORTS = frozenset(
     {
         "MONGODB_DOCUMENT_STORE_PROVIDER_ID",
+        "MongoDBDocumentStoreIntegration",
+        "MongoDBDocumentStoreIntegrationConfig",
+        "MongoDBDocumentStoreClient",
         "MongodbDocumentStoreIntegration",
         "MongodbDocumentStoreIntegrationConfig",
         "MongodbDocumentStoreClient",
@@ -48,6 +50,10 @@ _CONTRACT_INTEGRATION_EXPORTS = frozenset(
 )
 
 def __getattr__(name: str):
+    if name == "MongoDBDocumentStore":
+        from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
+
+        return _MongoDBDocumentStore
     if name == "register_mongodb_integration":
         from intergrax.integrations.providers.document_store.mongodb.register import register_mongodb_integration
 
@@ -56,10 +62,6 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.document_store.mongodb import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
-    if name == "MongoDBDocumentStore":
-        from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
-
-        return MongoDBDocumentStore
     if name in _CONTRACT_INTEGRATION_EXPORTS:
         from intergrax.integrations.providers.document_store.mongodb import integration as _integration
 

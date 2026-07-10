@@ -1,68 +1,55 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Cassandra document store integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
+"""Cassandra document store integration (PROOF-RECEIPTS-1C)."""
 
 from __future__ import annotations
 
-from typing import Sequence
-
-from pydantic import PrivateAttr
+from pydantic import Field, PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.runtime.integrations.categories.data import DocumentStoreIntegrationContract
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.document_store import (
+    DocumentStoreVendorIntegrationConfig,
+    DocumentStoreVendorIntegrationContract,
+)
 
 CASSANDRA_DOCUMENT_STORE_PROVIDER_ID = "cassandra"
 
 
-class CassandraDocumentStoreIntegrationConfig(CategoryIntegrationConfig):
+class CassandraDocumentStoreIntegrationConfig(DocumentStoreVendorIntegrationConfig):
     """Typed config for Cassandra document store integration."""
-
-    pass
 
 
 CassandraDocumentStoreClient = DocumentStore
 
-class CassandraDocumentStoreIntegration(DocumentStoreIntegrationContract):
+
+class CassandraDocumentStoreIntegration(DocumentStoreVendorIntegrationContract):
     """
     Single public Cassandra document store entrypoint.
 
     Legacy catalog factory (create_cassandra_integration) owns catalog behavior; legacy factories use from_client().
     """
 
-    config: CassandraDocumentStoreIntegrationConfig = CassandraDocumentStoreIntegrationConfig()
-    _client: CassandraDocumentStoreClient | None = PrivateAttr(default=None)
-    
+    config: CassandraDocumentStoreIntegrationConfig = Field(
+        default_factory=CassandraDocumentStoreIntegrationConfig
+    )
+    _store: DocumentStore | None = PrivateAttr(default=None)
 
-    def close(self):
-        return self._require_client().close()
+    def as_document_store(self) -> DocumentStore:
+        return self._require_store()
 
-    def delete(self, partition_key, row_key):
-        return self._require_client().delete(partition_key, row_key)
-
-    def get(self, partition_key, row_key):
-        return self._require_client().get(partition_key, row_key)
-
-    def put(self, document):
-        return self._require_client().put(document)
-
-    def query(self, partition_key, limit: int = 100, row_key_prefix: Optional[str] = None):
-        return self._require_client().query(partition_key, limit=limit, row_key_prefix=row_key_prefix)
-
-    def _require_client(self) -> DocumentStore:
-        if self._client is None:
+    def _require_store(self) -> DocumentStore:
+        if self._store is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",
             )
-        return self._client
-
+        return self._store
 
     @classmethod
     def from_client(
         cls,
-        client: CassandraDocumentStoreClient,
+        client: DocumentStore,
         *,
         enabled: bool = False,
     ) -> CassandraDocumentStoreIntegration:
@@ -71,11 +58,9 @@ class CassandraDocumentStoreIntegration(DocumentStoreIntegrationContract):
             display_name="Cassandra",
             config=CassandraDocumentStoreIntegrationConfig(enabled=enabled),
         )
-        integration._client = client
+        integration._store = client
         return integration
 
     @property
-    def client(self) -> CassandraDocumentStoreClient | None:
-        return self._client
-
-DocumentStore.register(CassandraDocumentStoreIntegration)
+    def client(self) -> DocumentStore | None:
+        return self._store

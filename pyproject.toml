@@ -210,6 +210,7 @@ integrations-kafka = [
   "confluent-kafka>=2.3.0",
   "redis>=5.0",
 ]
+integrations-mongodb = ["pymongo>=4.6"]
 integrations-harness = [
   "sentry-sdk>=2.0",
 ]

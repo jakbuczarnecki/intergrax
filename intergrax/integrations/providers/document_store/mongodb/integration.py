@@ -1,81 +1,72 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Mongodb document store integration (INTEGRATIONS-2D · INTEGRATIONS-2E runtime cutover)."""
+"""MongoDB document store integration (PROOF-RECEIPTS-1C)."""
 
 from __future__ import annotations
 
-from typing import Sequence
-
-from pydantic import PrivateAttr
+from pydantic import Field, PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentStore
-from intergrax.runtime.integrations.categories.data import DocumentStoreIntegrationContract
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.document_store import (
+    DocumentStoreVendorIntegrationConfig,
+    DocumentStoreVendorIntegrationContract,
+)
 
 MONGODB_DOCUMENT_STORE_PROVIDER_ID = "mongodb"
 
 
-class MongodbDocumentStoreIntegrationConfig(CategoryIntegrationConfig):
-    """Typed config for Mongodb document store integration."""
-
-    pass
+class MongoDBDocumentStoreIntegrationConfig(DocumentStoreVendorIntegrationConfig):
+    """Typed config for MongoDB document store integration."""
 
 
-MongodbDocumentStoreClient = DocumentStore
+MongoDBDocumentStoreClient = DocumentStore
 
-class MongodbDocumentStoreIntegration(DocumentStoreIntegrationContract):
+
+class MongoDBDocumentStoreIntegration(DocumentStoreVendorIntegrationContract):
     """
-    Single public Mongodb document store entrypoint.
+    Single public MongoDB document store entrypoint.
 
     Legacy catalog factory (create_mongodb_integration) owns catalog behavior; legacy factories use from_client().
     """
 
-    config: MongodbDocumentStoreIntegrationConfig = MongodbDocumentStoreIntegrationConfig()
-    _client: MongodbDocumentStoreClient | None = PrivateAttr(default=None)
-    
+    config: MongoDBDocumentStoreIntegrationConfig = Field(
+        default_factory=MongoDBDocumentStoreIntegrationConfig
+    )
+    _store: DocumentStore | None = PrivateAttr(default=None)
 
-    def close(self):
-        return self._require_client().close()
+    def as_document_store(self) -> DocumentStore:
+        return self._require_store()
 
-    def delete(self, partition_key, row_key):
-        return self._require_client().delete(partition_key, row_key)
-
-    def get(self, partition_key, row_key):
-        return self._require_client().get(partition_key, row_key)
-
-    def put(self, document):
-        return self._require_client().put(document)
-
-    def query(self, partition_key, limit: int = 100, row_key_prefix: Optional[str] = None):
-        return self._require_client().query(partition_key, limit=limit, row_key_prefix=row_key_prefix)
-
-    def _require_client(self) -> DocumentStore:
-        if self._client is None:
+    def _require_store(self) -> DocumentStore:
+        if self._store is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires a catalog client for operations",
             )
-        return self._client
-
+        return self._store
 
     @classmethod
     def from_client(
         cls,
-        client: MongodbDocumentStoreClient,
+        client: DocumentStore,
         *,
         enabled: bool = False,
-    ) -> MongodbDocumentStoreIntegration:
+    ) -> MongoDBDocumentStoreIntegration:
         integration = cls.for_provider(
             provider_id=MONGODB_DOCUMENT_STORE_PROVIDER_ID,
-            display_name="Mongodb",
-            config=MongodbDocumentStoreIntegrationConfig(enabled=enabled),
+            display_name="MongoDB",
+            config=MongoDBDocumentStoreIntegrationConfig(enabled=enabled),
         )
-        integration._client = client
+        integration._store = client
         return integration
 
     @property
-    def client(self) -> MongodbDocumentStoreClient | None:
-        return self._client
+    def client(self) -> DocumentStore | None:
+        return self._store
 
-DocumentStore.register(MongodbDocumentStoreIntegration)
+
+# Compatibility-only aliases (historical import paths).
+MongodbDocumentStoreIntegration = MongoDBDocumentStoreIntegration
+MongodbDocumentStoreIntegrationConfig = MongoDBDocumentStoreIntegrationConfig
+MongodbDocumentStoreClient = MongoDBDocumentStoreClient

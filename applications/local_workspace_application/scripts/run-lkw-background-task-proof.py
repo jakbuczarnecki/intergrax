@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""LKW Kafka background-task platform proof helper (LKW.4E)."""
+"""LKW Kafka background-task platform proof helper with ProofReceipt recording (LKW.4E / PROOF-RECEIPTS-1E)."""
 
 from __future__ import annotations
 
@@ -13,8 +13,168 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Any
+
+from intergrax.integrations.providers.document_store.mongodb.bundle import create_mongodb_integration
+from intergrax.integrations.providers.document_store.mongodb.integration import (
+    MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+    MongoDBDocumentStoreIntegration,
+)
+from intergrax.proofs.receipts.contracts import ProofReceipt, ProofReceiptResult
+from intergrax.proofs.receipts.recording import (
+    ProofReceiptVerificationError,
+    record_and_verify_proof_receipt,
+)
 
 _PROOF_REQUESTED_BY = "lkw.background_task_proof"
+_PROOF_RUNNER = "run-lkw-background-task-proof.py"
+_RECEIPT_TASK = "PROOF-RECEIPTS-1E"
+_APPLICATION_ID = "local_workspace"
+_PROOF_KIND = "platform_background_task"
+_TASK_NAME = "lkw.background_ingest.v1"
+_KAFKA_TOPICS = (
+    "intergrax.tasks",
+    "intergrax.task-events",
+    "intergrax.task-status",
+    "intergrax.task-results",
+)
+_DEFAULT_MONGO_EXPRESS_URL = "http://127.0.0.1:8086"
+
+
+def build_background_task_proof_id(run_id: str) -> str:
+    """Stable proof receipt identity for a background-task proof run."""
+    normalized_run_id = run_id.strip()
+    if not normalized_run_id:
+        raise ValueError("run_id must not be blank")
+    return f"{_APPLICATION_ID}:{_PROOF_KIND}:{normalized_run_id}"
+
+
+def build_background_task_proof_receipt(
+    *,
+    run_id: str,
+    correlation_id: str,
+    task_id: str,
+    provider: str,
+    final_status: str,
+    search_results: int,
+    marker: str,
+    collection_id: str,
+    tenant_id: str,
+    kafka_messages: int,
+    mongo_express_url: str = _DEFAULT_MONGO_EXPRESS_URL,
+    result: ProofReceiptResult = ProofReceiptResult.PASS,
+    has_result: bool = True,
+    handler_resolved: bool = True,
+    worker_runtime_received: bool = True,
+) -> ProofReceipt:
+    """Build a structured ProofReceipt from live background-task proof evidence."""
+    kafka_inspection_available = kafka_messages >= 0
+    provider_evidence: dict[str, Any] = {
+        "message_bus_provider": provider,
+        "enqueue_mode": "real_provider",
+        "worker_execution": "asynchronous",
+        "task_status": final_status,
+        "task_result_available": has_result,
+        "handler_resolved": handler_resolved,
+        "worker_runtime_received": worker_runtime_received,
+        "kafka_topics": list(_KAFKA_TOPICS),
+    }
+    if kafka_inspection_available:
+        provider_evidence["kafka_topic_messages"] = kafka_messages
+        provider_evidence["kafka_topic_inspection_available"] = True
+    else:
+        provider_evidence["kafka_topic_messages"] = None
+        provider_evidence["kafka_topic_inspection_available"] = False
+
+    return ProofReceipt(
+        proof_id=build_background_task_proof_id(run_id),
+        proof_kind=_PROOF_KIND,
+        application_id=_APPLICATION_ID,
+        result=result,
+        run_id=run_id,
+        correlation_id=correlation_id,
+        task_id=task_id,
+        provider_evidence=provider_evidence,
+        domain_evidence={
+            "task_name": _TASK_NAME,
+            "index_ingested": 1,
+            "search_results": search_results,
+            "evidence_marker_found": True,
+            "marker": marker,
+            "collection_id": collection_id,
+            "tenant_id": tenant_id,
+        },
+        guardrails={
+            "mock_queue": False,
+            "inmemory_bypass": False,
+            "direct_handler_call": False,
+            "direct_indexer_call": False,
+            "direct_mongodb_write": False,
+            "direct_pymongo_from_lkw": False,
+            "markdown_source_of_truth": False,
+        },
+        metadata={
+            "proof_runner": _PROOF_RUNNER,
+            "receipt_task": _RECEIPT_TASK,
+            "mongo_express_url": mongo_express_url,
+            "recorded_from_live_run": True,
+        },
+    )
+
+
+def _resolve_host_mongodb_uri() -> str | None:
+    explicit = os.environ.get("INTERGRAX_MONGODB_URI", "").strip()
+    if explicit:
+        return explicit
+
+    username = os.environ.get("LKW_MONGODB_ROOT_USERNAME", "intergrax").strip() or "intergrax"
+    password = (
+        os.environ.get("LKW_MONGODB_ROOT_PASSWORD", "intergrax-local-dev-only").strip()
+        or "intergrax-local-dev-only"
+    )
+    database = os.environ.get("LKW_MONGODB_DATABASE", "intergrax_proofs").strip() or "intergrax_proofs"
+    host_port = os.environ.get("LKW_MONGODB_HOST_PORT", "27018").strip() or "27018"
+    return (
+        f"mongodb://{username}:{password}@127.0.0.1:{host_port}/{database}?authSource=admin"
+    )
+
+
+def ensure_mongodb_env() -> None:
+    """Populate host-visible MongoDB provider environment for platform resolution."""
+    if not os.environ.get("INTERGRAX_MONGODB_URI", "").strip():
+        resolved = _resolve_host_mongodb_uri()
+        if resolved:
+            os.environ["INTERGRAX_MONGODB_URI"] = resolved
+    if not os.environ.get("INTERGRAX_MONGODB_DATABASE", "").strip():
+        os.environ["INTERGRAX_MONGODB_DATABASE"] = (
+            os.environ.get("LKW_MONGODB_DATABASE", "intergrax_proofs").strip() or "intergrax_proofs"
+        )
+    if not os.environ.get("INTERGRAX_MONGODB_COLLECTION", "").strip():
+        os.environ["INTERGRAX_MONGODB_COLLECTION"] = (
+            os.environ.get("LKW_MONGODB_COLLECTION", "proof_receipts").strip() or "proof_receipts"
+        )
+
+
+def resolve_mongodb_document_store():
+    """Resolve MongoDB DocumentStore through the platform provider factory."""
+    ensure_mongodb_env()
+    bundle = create_mongodb_integration()
+    integration = bundle.document_store
+    if not isinstance(integration, MongoDBDocumentStoreIntegration):
+        raise TypeError("integration_not_mongodb_document_store")
+    store = integration.as_document_store()
+    if store is None:
+        raise RuntimeError("document_store_adapter_unresolved")
+    return integration, store
+
+
+def record_background_task_proof_receipt(
+    receipt: ProofReceipt,
+) -> tuple[ProofReceipt, MongoDBDocumentStoreIntegration]:
+    """Persist and verify a background-task proof receipt through the platform store."""
+    integration, document_store = resolve_mongodb_document_store()
+    verified = record_and_verify_proof_receipt(receipt, document_store, owns_document_store=True)
+    return verified, integration
 
 
 def _parse_args() -> argparse.Namespace:
@@ -30,6 +190,11 @@ def _parse_args() -> argparse.Namespace:
         "--kafka-ui",
         default=os.environ.get("LKW_BACKGROUND_TASK_PROOF_KAFKA_UI_URL", "http://127.0.0.1:8085"),
         help="Kafka UI URL for reviewer hints (default: http://127.0.0.1:8085).",
+    )
+    parser.add_argument(
+        "--mongo-express",
+        default=os.environ.get("LKW_MONGO_EXPRESS_URL", _DEFAULT_MONGO_EXPRESS_URL),
+        help="Mongo Express URL for reviewer hints (default: http://127.0.0.1:8086).",
     )
     parser.add_argument(
         "--kafka-bootstrap",
@@ -162,15 +327,85 @@ def _inspect_kafka_topic(*, bootstrap: str, topic: str) -> int:
 def _fail(reason: str, **fields: object) -> int:
     print("proof_result=FAIL")
     print(f"failure_reason={reason}")
+    print("proof_receipt_recorded=false")
     for key, value in fields.items():
         print(f"{key}={value}")
     return 1
 
 
+def _fail_receipt_recording(error: BaseException) -> int:
+    print("proof_result=FAIL")
+    print("failure_reason=proof_receipt_recording_failed")
+    print("proof_workload_result=PASS")
+    print("proof_receipt_recorded=false")
+    print("proof_receipt_verified=false")
+    print(f"receipt_error={type(error).__name__}")
+    print(f"receipt_message={error}")
+    return 1
+
+
+def _print_pass_output(
+    *,
+    provider: str,
+    final_status: str,
+    search_results: int,
+    run_id: str,
+    correlation_id: str,
+    task_id: str,
+    marker: str,
+    collection_id: str,
+    kafka_ui_url: str,
+    mongo_express_url: str,
+    kafka_messages: int,
+    verified_receipt: ProofReceipt,
+    integration_class: str,
+) -> None:
+    kafka_topics = ",".join(_KAFKA_TOPICS)
+    print("proof_result=PASS")
+    print(f"proof_kind={_PROOF_KIND}")
+    print(f"task_name={_TASK_NAME}")
+    print(f"message_bus_provider={provider}")
+    print("enqueue_mode=real_provider")
+    print("worker_execution=asynchronous")
+    print(f"task_status={final_status}")
+    print("task_result_available=true")
+    print("handler_resolved=true")
+    print("worker_runtime_received=true")
+    print("index_ingested=1")
+    print(f"search_results={search_results}")
+    print("evidence_marker_found=true")
+    print(f"kafka_ui_url={kafka_ui_url}")
+    print(f"kafka_topics={kafka_topics}")
+    print("mock_queue=false")
+    print("inmemory_bypass=false")
+    print("direct_handler_call=false")
+    print("direct_indexer_call=false")
+    print(f"run_id={run_id}")
+    print(f"correlation_id={correlation_id}")
+    print(f"task_id={task_id}")
+    print(f"marker={marker}")
+    print(f"collection_id={collection_id}")
+    if kafka_messages >= 0:
+        print(f"kafka_topic_messages={kafka_messages}")
+    print("proof_receipt_recorded=true")
+    print("proof_receipt_verified=true")
+    print("proof_receipt_store=platform")
+    print(f"document_store_provider={MONGODB_DOCUMENT_STORE_PROVIDER_ID}")
+    print(f"document_store_integration={integration_class}")
+    print(f"proof_receipt_id={verified_receipt.proof_id}")
+    print(f"proof_receipt_run_id={verified_receipt.run_id}")
+    print(f"proof_receipt_result={verified_receipt.result.value}")
+    print(f"proof_receipt_application_id={verified_receipt.application_id}")
+    print("proof_receipt_query_verified=true")
+    print(f"mongo_express_url={mongo_express_url}")
+    print("markdown_source_of_truth=false")
+    print("direct_mongodb_write=false")
+    print("direct_pymongo_from_lkw=false")
+
+
 def main() -> int:
     args = _parse_args()
     base = args.base_url.rstrip("/")
-    kafka_topics = "intergrax.tasks,intergrax.task-events,intergrax.task-status,intergrax.task-results"
 
     if not _health_ok(base):
         return _fail("lkw_health_unreachable")
@@ -257,7 +492,7 @@ def main() -> int:
         "capability": "local.workspace.search",
         "metadata": {
             "proof": "LKW_PLATFORM_PROOF",
-            "proof_helper": "run-lkw-background-task-proof.py",
+            "proof_helper": _PROOF_RUNNER,
             "background_task_run_id": run_id,
             "background_task_id": task_id,
             "background_task_correlation_id": correlation_id,
@@ -293,32 +528,41 @@ def main() -> int:
     if kafka_messages == 0:
         return _fail("kafka_task_topic_empty", kafka_topic=args.topic)
 
-    print("proof_result=PASS")
-    print("proof_kind=platform_background_task")
-    print("task_name=lkw.background_ingest.v1")
-    print(f"message_bus_provider={provider}")
-    print("enqueue_mode=real_provider")
-    print("worker_execution=asynchronous")
-    print(f"task_status={final_status}")
-    print("task_result_available=true")
-    print("handler_resolved=true")
-    print("worker_runtime_received=true")
-    print("index_ingested=1")
-    print(f"search_results={search_results}")
-    print("evidence_marker_found=true")
-    print(f"kafka_ui_url={args.kafka_ui}")
-    print(f"kafka_topics={kafka_topics}")
-    print("mock_queue=false")
-    print("inmemory_bypass=false")
-    print("direct_handler_call=false")
-    print("direct_indexer_call=false")
-    print(f"run_id={run_id}")
-    print(f"correlation_id={correlation_id}")
-    print(f"task_id={task_id}")
-    print(f"marker={marker}")
-    print(f"collection_id={collection_id}")
-    if kafka_messages >= 0:
-        print(f"kafka_topic_messages={kafka_messages}")
+    receipt = build_background_task_proof_receipt(
+        run_id=run_id,
+        correlation_id=correlation_id,
+        task_id=task_id,
+        provider=provider,
+        final_status=final_status,
+        search_results=search_results,
+        marker=marker,
+        collection_id=collection_id,
+        tenant_id=tenant_id,
+        kafka_messages=kafka_messages,
+        mongo_express_url=args.mongo_express,
+        has_result=has_result,
+    )
+
+    try:
+        verified_receipt, integration = record_background_task_proof_receipt(receipt)
+    except (ProofReceiptVerificationError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        return _fail_receipt_recording(exc)
+
+    _print_pass_output(
+        provider=provider,
+        final_status=final_status,
+        search_results=search_results,
+        run_id=run_id,
+        correlation_id=correlation_id,
+        task_id=task_id,
+        marker=marker,
+        collection_id=collection_id,
+        kafka_ui_url=args.kafka_ui,
+        mongo_express_url=args.mongo_express,
+        kafka_messages=kafka_messages,
+        verified_receipt=verified_receipt,
+        integration_class=type(integration).__name__,
+    )
     return 0
 
 

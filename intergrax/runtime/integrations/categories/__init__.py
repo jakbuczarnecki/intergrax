@@ -36,11 +36,9 @@ from intergrax.runtime.integrations.categories.collaboration import (
     WikiKnowledgeIntegrationContract,
 )
 from intergrax.runtime.integrations.categories.data import (
-    DOCUMENT_STORE_INTEGRATION_CONTRACT_SCHEMA,
     GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA,
     KEY_VALUE_CACHE_INTEGRATION_CONTRACT_SCHEMA,
     RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA,
-    DocumentStoreIntegrationContract,
     GraphStoreIntegrationContract,
     KeyValueCacheIntegrationContract,
     RelationalStoreIntegrationContract,
@@ -84,6 +82,7 @@ from intergrax.runtime.integrations.categories.storage import (
     VectorStoreIntegrationContract,
 )
 from intergrax.runtime.integrations.contracts import PlatformIntegrationContract, PlatformIntegrationKind
+from intergrax.runtime.integrations.document_store import DocumentStoreVendorIntegrationContract
 from intergrax.runtime.integrations.observability import ObservabilityVendorIntegrationContract
 
 # Provider folder category for observability backends (layout.py).
@@ -94,9 +93,10 @@ OBSERVABILITY_VENDOR_INTEGRATION_KIND = PlatformIntegrationKind.OBSERVABILITY_VE
 
 # Maps layout.py SLUG_CATEGORY folder names to category contract classes.
 # observability_backend aliases to ObservabilityVendorIntegrationContract — no duplicate contract.
+# document_store aliases to DocumentStoreVendorIntegrationContract — no duplicate contract.
 PROVIDER_CATEGORY_CONTRACT_REGISTRY: dict[str, type[PlatformIntegrationContract]] = {
     "relational_store": RelationalStoreIntegrationContract,
-    "document_store": DocumentStoreIntegrationContract,
+    "document_store": DocumentStoreVendorIntegrationContract,
     "key_value_cache": KeyValueCacheIntegrationContract,
     "message_bus": MessageBusIntegrationContract,
     "object_storage": ObjectStorageIntegrationContract,
@@ -136,7 +136,6 @@ __all__ = [
     "COLLABORATION_SUITE_INTEGRATION_CONTRACT_SCHEMA",
     "CRM_INTEGRATION_CONTRACT_SCHEMA",
     "DOCUMENT_PARSER_INTEGRATION_CONTRACT_SCHEMA",
-    "DOCUMENT_STORE_INTEGRATION_CONTRACT_SCHEMA",
     "FEATURE_FLAG_INTEGRATION_CONTRACT_SCHEMA",
     "GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA",
     "IDENTITY_PROVIDER_INTEGRATION_CONTRACT_SCHEMA",
@@ -169,7 +168,6 @@ __all__ = [
     "CollaborationSuiteIntegrationContract",
     "CrmIntegrationContract",
     "DocumentParserIntegrationContract",
-    "DocumentStoreIntegrationContract",
     "FeatureFlagIntegrationContract",
     "GraphStoreIntegrationContract",
     "IdentityProviderIntegrationContract",

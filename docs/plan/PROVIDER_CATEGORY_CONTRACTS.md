@@ -76,7 +76,7 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 | Provider folder (`SLUG_CATEGORY`) | Contract class | `schema_id` | `integration_kind` | Notes |
 |-----------------------------------|----------------|-------------|-------------------|-------|
 | `relational_store` | `RelationalStoreIntegrationContract` | `relational_store_integration_contract.v1` | `relational_store` | |
-| `document_store` | `DocumentStoreIntegrationContract` | `document_store_integration_contract.v1` | `document_store` | |
+| `document_store` | **`DocumentStoreVendorIntegrationContract`** | `document_store_vendor_integration_contract.v1` | `document_store` | **Alias** — replaces removed `DocumentStoreIntegrationContract` |
 | `key_value_cache` | `KeyValueCacheIntegrationContract` | `key_value_cache_integration_contract.v1` | `key_value_cache` | |
 | `message_bus` | `MessageBusIntegrationContract` | `message_bus_integration_contract.v1` | `message_bus` | |
 | `object_storage` | `ObjectStorageIntegrationContract` | `object_storage_integration_contract.v1` | `object_storage` | Legacy shorthand: `PlatformIntegrationKind.STORAGE` |
@@ -116,6 +116,7 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 | Concept | Value | Maps to |
 |---------|-------|---------|
 | Provider folder | `observability_backend` | `ObservabilityVendorIntegrationContract` |
+| Provider folder | `document_store` | `DocumentStoreVendorIntegrationContract` |
 | Runtime `integration_kind` | `observability_vendor` | Used by observability vendor integrations |
 | `PlatformIntegrationKind` | `OBSERVABILITY_BACKEND` | Documents folder taxonomy |
 | `PlatformIntegrationKind` | `OBSERVABILITY_VENDOR` | Runtime integration kind for observability contracts |

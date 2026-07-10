@@ -20,6 +20,7 @@ from intergrax.integrations.providers.document_store.cassandra.integration impor
 from intergrax.integrations.providers.document_store.cassandra.bundle import (
     CassandraIntegrationBundle,
     create_cassandra_document_store,
+    create_cassandra_document_store_integration,
     create_cassandra_integration,
 )
 from intergrax.integrations.providers.document_store.cassandra.config import (
@@ -334,7 +335,9 @@ def test_register_and_resolve_via_profile() -> None:
     )
 
     assert_document_store(store)
-    assert isinstance(store, CassandraDocumentStoreIntegration)
+    integration = create_cassandra_document_store_integration(client=store, enabled=True)
+    assert isinstance(integration, CassandraDocumentStoreIntegration)
+    assert integration.as_document_store() is store
 
 
 def test_register_default_integrations_includes_cassandra() -> None:
@@ -348,7 +351,9 @@ def test_register_default_integrations_includes_cassandra() -> None:
         config={**_cassandra_config().model_dump(), "session_factory": factory},
     )
 
-    assert isinstance(store, CassandraDocumentStoreIntegration)
+    assert_document_store(store)
+    integration = create_cassandra_document_store_integration(client=store, enabled=True)
+    assert isinstance(integration, CassandraDocumentStoreIntegration)
 
 
 def test_opens_creates_driver_session_when_not_injected() -> None:

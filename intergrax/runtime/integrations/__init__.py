@@ -14,6 +14,13 @@ from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationStatus,
     derive_platform_integration_id,
 )
+from intergrax.runtime.integrations.document_store import (
+    DOCUMENT_STORE_VENDOR_INTEGRATION_CONTRACT_SCHEMA,
+    DocumentStoreVendorIntegrationConfig,
+    DocumentStoreVendorIntegrationContract,
+    DocumentStoreVendorKind,
+    DocumentStoreVendorOperation,
+)
 from intergrax.runtime.integrations.observability import (
     OBSERVABILITY_VENDOR_INTEGRATION_CONTRACT_SCHEMA,
     OBSERVABILITY_VENDOR_PAYLOAD_SCHEMA,
@@ -56,6 +63,11 @@ from intergrax.runtime.integrations.registry_v2 import (
 
 __all__ = [
     "DEFERRED_LLM_GUARDRAIL_SLUGS",
+    "DOCUMENT_STORE_VENDOR_INTEGRATION_CONTRACT_SCHEMA",
+    "DocumentStoreVendorIntegrationConfig",
+    "DocumentStoreVendorIntegrationContract",
+    "DocumentStoreVendorKind",
+    "DocumentStoreVendorOperation",
     "DuplicateIntegrationRegistrationError",
     "IntegrationCapability",
     "IntegrationFactory",

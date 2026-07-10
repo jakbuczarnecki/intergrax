@@ -98,8 +98,8 @@ CATEGORY_CONTRACT: dict[str, tuple[str, str]] = {
         "RelationalStoreIntegrationContract",
     ),
     "document_store": (
-        "intergrax.runtime.integrations.categories.data",
-        "DocumentStoreIntegrationContract",
+        "intergrax.runtime.integrations.document_store",
+        "DocumentStoreVendorIntegrationContract",
     ),
     "key_value_cache": (
         "intergrax.runtime.integrations.categories.data",

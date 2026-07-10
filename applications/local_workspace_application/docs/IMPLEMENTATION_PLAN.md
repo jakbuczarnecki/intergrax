@@ -283,8 +283,9 @@ This track is executed one task at a time.
 | LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
 | LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
-| LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | Planned | Medium |
+| LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | **Closed — LKW.4E live Kafka proof passed** | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
+| LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | **Closed — PROOF-RECEIPTS-1A through PROOF-RECEIPTS-1E complete** | Medium |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
@@ -295,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.4E** — live proof (LKW.4E-PROOF-DOC-1 closed). Platform background task model: [`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md). LKW.4 boundaries: [`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7 (LKW.4-ARCH-1 closed; LKW.4B closed; LKW.4B-PROP-1 closed; LKW.4C closed; LKW.4D closed; LKW.4E-ARCH-1 closed; LKW.4E-PROOF-DOC-1 closed).
+**Next planned task:** **LKW.6A** — Define interaction intake contract and daemon lifecycle boundary. **LKW.6A** is the first scoped task of **LKW.6**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -817,12 +818,93 @@ LKW.4 proves that a Tier-3 application can enqueue a domain background job throu
 | LKW.4D | Worker handler contract | Decode payload and execute `local.workspace.index` through platform execution path | **Closed** |
 | LKW.4E-ARCH-1 | Platform background task execution model | Document TaskDefinition/TaskRegistry, WorkerRuntime, TaskEvent lifecycle, pull/event observation, logging, metrics, tracing, and LKW.4E proof boundaries | **Closed** |
 | LKW.4E-PROOF-DOC-1 | Public platform proof reviewer path | Document real queue/background-task verification in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Step 8; align architecture/plan wording — no mock/in-memory-only proof | **Closed** |
-| LKW.4E | Live proof | Real local MessageBus provider in proof stack → enqueue job → async worker executes index → `get_status`/`get_result` → search verifies result | **Planned — next task** |
-| LKW.4F | Record proof and closeout | Save proof result and align plan/status | Planned |
+| LKW.4E | Live proof | Real local MessageBus provider in proof stack → enqueue job → async worker executes index → `get_status`/`get_result` → search verifies result | **Closed — Kafka live proof passed** |
+| LKW.4F | Record proof and closeout | Save proof result and align plan/status | **Superseded by LKW-PR** — structured receipts via platform `ProofReceiptStore`, not markdown source-of-truth |
 
 **Execution gate:** LKW.4D, LKW.4E-ARCH-1, and LKW.4E-PROOF-DOC-1 are closed. LKW.4E may begin. LKW.4E must follow the platform background task architecture ([`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md)). LKW.4E must not invent an LKW-only queue/worker architecture. LKW.4E is live proof only. LKW.4E must wire a **real local MessageBus provider** in the proof stack (for example RabbitMQ in Docker) and demonstrate asynchronous enqueue → worker → result lifecycle through provider-neutral `message_bus.*` tools. Mocks, fake queues, in-memory-only bypasses, and unit-test-only execution are **not** sufficient. LKW.4E must not add file watcher, scheduler, or Slack notify. LKW.4E–LKW.4F depend on documented platform boundaries ([`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7) and must not introduce LKW-specific queue code. Public reviewer path: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Step 8.
 
 **Out of scope for LKW.4:** file watcher and incremental index (**LKW.7**); OS daemon and interaction intake (**LKW.6**); Slack notify (**LKW.6b**, optional later); implementing every listed provider — one **real local** message bus provider in the proof stack is sufficient for first closeout; cloud-managed vendor backends in LKW.4E first pass.
+
+---
+
+## 6b. LKW-PR — MongoDB-backed Proof Receipt Store
+
+**ID note:** **LKW-PR** is the proof-receipt platform wave. It is **not** a redefinition of closed **LKW.5** (persistence / `LKW_DATA_HOME` + Qdrant). **LKW.4E** remains closed as the Kafka-backed background-task live proof.
+
+LKW-PR proves that structured proof evidence is persisted through the platform **`DocumentStore`** contract with **MongoDB** as the default/natural live vendor. Markdown reviewer guides remain operational documentation only — **not** the source of truth for proof results.
+
+| ID | Task | Scope | Status |
+|----|------|-------|--------|
+| PROOF-RECEIPTS-1A | ProofReceipt contract + DocumentStore mapping + `ProofReceiptStore` | Platform contracts, architecture/plan docs, unit tests | **Closed** |
+| PROOF-RECEIPTS-1B | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`, tests, architecture docs | **Closed** |
+| PROOF-RECEIPTS-1C | Complete `document_store` vendor category cutover | MongoDB, Cassandra, DynamoDB on `DocumentStoreVendorIntegrationContract` | **Closed** |
+| PROOF-RECEIPTS-1D | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay + platform DocumentStore smoke (`docker-compose.mongodb.yml`, `run-lkw-mongodb-proof-stack.bat`) | **Closed** |
+| PROOF-RECEIPTS-1E | LKW proof receipt recording through platform | LKW proof workloads call platform `ProofReceiptStore` after live Kafka proof | **Closed** |
+
+**Platform proof pattern:**
+
+```text
+LKW proof workload
+  → build ProofReceipt (domain + provider + guardrail evidence)
+  → ProofReceiptStore.put()
+  → DocumentStore contract
+  → integration profile selects mongodb
+  → MongoDB provider
+  → reviewer inspects receipt in Mongo Express / Mongo UI
+```
+
+**PROOF-RECEIPTS-1D runner (repository root):** `applications\local_workspace_application\scripts\run-lkw-mongodb-proof-stack.bat` — Mongo Express default `http://localhost:8086`; smoke via `verify_lkw_mongodb_stack.py` (not a `ProofReceipt`). **Closed** — live PASS includes MongoDB restart persistence read-back.
+
+**Strict boundaries:** LKW must **not** import pymongo; LKW must **not** write directly to MongoDB; no LKW-only MongoDB helper; no bypass of `DocumentStore` or `IntegrationProfile` vendor selection; no in-memory/fake store as live proof acceptance.
+
+Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+
+---
+
+## 6c. LKW.6 — OS daemon + interaction intake router
+
+**Ownership:** **LKW.6** — daemon + interaction intake · **LKW.6b** — optional Slack Socket Mode · **LKW.7** — file watcher + incremental index · **LKW.8** — tray thin client.
+
+| ID | Task | Scope | Status |
+|----|------|-------|--------|
+| LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Normalized intake request, router boundary, daemon lifecycle contract, forwarding into existing LKW execution boundary | **Planned — next** |
+| LKW.6B | Implement local daemon process and lifecycle | Local daemon process implementing the LKW.6A lifecycle contract | **Planned** |
+| LKW.6C | Implement first OS interaction adapter and live proof | First OS-specific interaction adapter wired through intake → router → execution | **Planned** |
+
+**Expected architecture (LKW.6A):**
+
+```text
+OS-specific interaction adapter
+  → InteractionIntakeRequest
+  → InteractionIntakeRouter
+  → existing LKW application/runtime execution boundary
+```
+
+**LKW.6A will define:**
+
+- normalized `InteractionIntakeRequest`
+- interaction source and kind
+- correlation and request metadata
+- `InteractionIntakeRouter` boundary
+- daemon lifecycle contract:
+  - start
+  - stop
+  - health
+  - graceful shutdown
+- forwarding into the existing LKW application/runtime execution boundary
+
+**LKW.6A does not include:**
+
+- Windows Service implementation
+- operating-system startup registration
+- tray application
+- Slack Socket Mode
+- file watcher
+- incremental indexing
+- background process implementation
+- new agent runtime
+- direct provider SDK integration
+- a second LKW execution path
 
 ---
 

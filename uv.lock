@@ -1705,6 +1705,9 @@ integrations-kafka = [
     { name = "confluent-kafka", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "redis", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+integrations-mongodb = [
+    { name = "pymongo", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 integrations-sentry = [
     { name = "sentry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1845,6 +1848,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], marker = "extra == 'dev'", specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pymongo", marker = "extra == 'dev'", specifier = ">=4.6" },
+    { name = "pymongo", marker = "extra == 'integrations-mongodb'", specifier = ">=4.6" },
     { name = "pymupdf", specifier = ">=1.23" },
     { name = "pymysql", marker = "extra == 'dev'", specifier = ">=1.1" },
     { name = "pyright", marker = "extra == 'dev'" },
@@ -1895,7 +1899,7 @@ requires-dist = [
     { name = "xlrd", specifier = ">=2.0" },
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
-provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-harness", "integrations-guardrails"]
+provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails"]
 
 [[package]]
 name = "invoke"
