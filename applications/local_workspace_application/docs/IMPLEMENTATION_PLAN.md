@@ -838,10 +838,8 @@ LKW-PR proves that structured proof evidence is persisted through the platform *
 | PROOF-RECEIPTS-1A | ProofReceipt contract + DocumentStore mapping + `ProofReceiptStore` | Platform contracts, architecture/plan docs, unit tests | **Closed** |
 | PROOF-RECEIPTS-1B | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`, tests, architecture docs | **Closed** |
 | PROOF-RECEIPTS-1C | MongoDB DocumentStore vendor integration | Concrete vendor subclass + provider registration | Planned — **next** |
-| PROOF-RECEIPTS-1D | Wire `ProofReceiptStore` through IntegrationProfile/config | Host selects `DocumentStore` from profile | Planned |
-| PROOF-RECEIPTS-1E | Record LKW proof receipts | LKW proof workloads call platform `ProofReceiptStore` | Planned |
-| PROOF-RECEIPTS-1F | MongoDB + Mongo Express Docker proof stack | Live vendor-backed receipt persistence | Planned |
-| PROOF-RECEIPTS-1G | Public reviewer Step 9 | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) — only after live stack | Planned |
+| PROOF-RECEIPTS-1D | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay for live vendor-backed receipt persistence | Planned |
+| PROOF-RECEIPTS-1E | LKW proof receipt recording through platform | LKW proof workloads call platform `ProofReceiptStore` | Planned |
 
 **Platform proof pattern:**
 

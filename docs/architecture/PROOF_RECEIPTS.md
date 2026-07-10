@@ -139,14 +139,14 @@ Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{p
 
 ## I. Future reviewer path (target)
 
-After PROOF-RECEIPTS-1C–1F:
+After PROOF-RECEIPTS-1C–1E:
 
 1. Run LKW proof workload (e.g. background task proof already closed at LKW.4E).
 2. Application records a `ProofReceipt` through `ProofReceiptStore`.
 3. `IntegrationProfile` selects `document_store=mongodb`.
 4. Reviewer inspects receipt in **Mongo Express** / Mongo UI — not by opening markdown closeout files.
 
-Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB proof stack ships (**PROOF-RECEIPTS-1G**).
+Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB proof stack succeeds — not before PROOF-RECEIPTS-1E closeout.
 
 ---
 

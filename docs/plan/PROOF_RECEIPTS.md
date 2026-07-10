@@ -30,10 +30,8 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 | **PROOF-RECEIPTS-1A** | Define ProofReceipt contract and MongoDB-backed storage architecture | `ProofReceipt` model; `DocumentRecord` mapping; `ProofReceiptStore`; architecture + plan docs; unit tests | **Done** |
 | **PROOF-RECEIPTS-1B** | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`; category config/operations; `as_document_store()` boundary; unit tests | **Done** |
 | **PROOF-RECEIPTS-1C** | Implement MongoDB DocumentStore vendor integration | Concrete MongoDB subclass; provider registration; `as_document_store()` live adapter | Planned |
-| **PROOF-RECEIPTS-1D** | Wire ProofReceiptStore through IntegrationProfile/config | Host/application wiring selects `DocumentStore` from profile; expose store to proof workloads | Planned |
-| **PROOF-RECEIPTS-1E** | Record LKW proof receipts through platform engine | LKW proof scripts write `ProofReceipt` via `ProofReceiptStore` after live proofs | Planned |
-| **PROOF-RECEIPTS-1F** | Add MongoDB + Mongo Express Docker proof stack | Compose overlay for live vendor-backed receipt persistence | Planned |
-| **PROOF-RECEIPTS-1G** | Add reviewer-visible Step 9 to LKW_PLATFORM_PROOF.md | Public reviewer path for MongoDB receipt inspection — only after live stack ships | Planned |
+| **PROOF-RECEIPTS-1D** | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay for live vendor-backed receipt persistence | Planned |
+| **PROOF-RECEIPTS-1E** | LKW proof receipt recording through platform | LKW proof workloads write `ProofReceipt` via `ProofReceiptStore` after live proofs | Planned |
 
 ---
 
@@ -101,7 +99,32 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 
 ---
 
-## F. Integration analogy
+## F. PROOF-RECEIPTS-1D scope
+
+| Deliverable | Detail |
+|-------------|--------|
+| Docker compose overlay | MongoDB + Mongo Express services in LKW proof stack |
+| Live vendor path | Receipt persistence through MongoDB provider selected via `IntegrationProfile` / config — not a separate scheduled wiring task |
+| Reviewer inspection | Mongo Express / Mongo UI for structured receipt queries |
+
+**Depends on:** PROOF-RECEIPTS-1C
+**Blocks:** PROOF-RECEIPTS-1E
+
+---
+
+## G. PROOF-RECEIPTS-1E scope
+
+| Deliverable | Detail |
+|-------------|--------|
+| LKW proof recording | LKW proof workloads persist `ProofReceipt` through `ProofReceiptStore` after live proofs |
+| Platform boundary | No pymongo or direct MongoDB access in Tier-3 |
+| Public reviewer docs | Step 9 in `LKW_PLATFORM_PROOF.md` only after live proof succeeds — not before 1E closeout |
+
+**Depends on:** PROOF-RECEIPTS-1D
+
+---
+
+## H. Integration analogy
 
 | Existing proof | Platform surface | Vendor |
 |----------------|------------------|--------|
@@ -112,10 +135,10 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 
 ---
 
-## G. Out of scope (this track)
+## I. Out of scope (this track)
 
 - Rewriting LKW.4E closeout as markdown-only proof
 - pymongo imports in Tier-3 applications
 - In-memory DocumentStore as live proof backend
-- MongoDB Docker stack (1F)
-- Public LKW Step 9 before live stack (1G)
+- Public LKW Step 9 before live proof succeeds (PROOF-RECEIPTS-1E)
+- Standalone IntegrationProfile wiring task — profile/config selection remains an architectural requirement, not a separately scheduled proof-receipt step
