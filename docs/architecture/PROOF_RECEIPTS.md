@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../plan/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1B**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1C**
 
 ---
 
@@ -35,14 +35,14 @@ Application proof workload (e.g. LKW)
   → ProofReceiptStore.put()
   → DocumentStore contract (provider-neutral data surface)
   → DocumentStoreVendorIntegrationContract (platform integration boundary)
-  → concrete vendor integration (e.g. MongoDB — PROOF-RECEIPTS-1C)
+  → concrete vendor integration (MongoDB, Cassandra, DynamoDB — PROOF-RECEIPTS-1C)
   → vendor SDK / backend
   → persisted structured receipt
 ```
 
 `DocumentStore` is the **provider-neutral data surface** — `get`, `put`, `delete`, `query`, and `close` without vendor-specific types. `DocumentStoreVendorIntegrationContract` is the **platform integration boundary** between that surface and concrete vendors. It mirrors `ObservabilityVendorIntegrationContract` used for Elasticsearch/Sentry-style observability proofs: category-specific config, `supported_operations`, `for_provider(...)`, safe `public_view()`, and `as_document_store()` for vendor implementations.
 
-MongoDB will be the **first/default live vendor** in **PROOF-RECEIPTS-1C**. LKW must **never** depend on MongoDB or pymongo directly — only on `ProofReceiptStore` → `DocumentStore`.
+MongoDB remains the **default/natural live vendor** for ProofReceipt storage (PROOF-RECEIPTS-1D Docker proof stack is next). LKW must **never** depend on MongoDB or pymongo directly — only on `ProofReceiptStore` → `DocumentStore`.
 
 This mirrors existing platform integration proofs:
 
@@ -117,11 +117,11 @@ Host/application wiring selects the `DocumentStore` implementation from **`Integ
 
 | Artifact | Role |
 |----------|------|
-| `DocumentStoreVendorIntegrationContract` | Platform-owned category contract deriving from `PlatformIntegrationContract` |
+| `DocumentStoreVendorIntegrationContract` | Platform-owned category contract deriving from `PlatformIntegrationContract` — **only active `document_store` contract** (PROOF-RECEIPTS-1C) |
 | `DocumentStoreVendorIntegrationConfig` | Typed, secret-safe config (`database_name`, `collection_name`, `namespace`) |
 | `DocumentStoreVendorOperation` | Declared operations: `get`, `put`, `delete`, `query`, `close` |
 | `DocumentStoreVendorKind` | Well-known vendor slugs (`mongodb`, `cassandra`, …) |
-| `as_document_store()` | Boundary method — concrete vendors return a `DocumentStore` implementation |
+| `as_document_store()` | Boundary method — MongoDB, Cassandra, and DynamoDB return existing `DocumentStore` adapters |
 
 Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{provider_id}:document_store` (for example `mongodb:document_store`).
 

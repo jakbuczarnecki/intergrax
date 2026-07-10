@@ -3,7 +3,7 @@
 **Architecture (1:1):** [`architecture/PROOF_RECEIPTS.md`](../architecture/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW-PR ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1B closed**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1C closed**
 
 ---
 
@@ -15,7 +15,7 @@
 | **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../architecture/PROOF_RECEIPTS.md) — **PROOF-RECEIPTS-1B closed** |
 | **Current proof consumer** | LKW (structured receipt after live proofs) |
 | **Default live vendor** | MongoDB (`document_store` integration) |
-| **Next step** | **PROOF-RECEIPTS-1C** — implement MongoDB DocumentStore vendor integration |
+| **Next step** | **PROOF-RECEIPTS-1D** — LKW Docker proof stack with MongoDB / Mongo Express |
 
 **Note:** LKW.4E (Kafka-backed background task live proof) remains **closed**. Proof receipts are the **next platform proof wave** — not a markdown closeout of LKW.4E.
 
@@ -29,7 +29,7 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 |----|------|-------|--------|
 | **PROOF-RECEIPTS-1A** | Define ProofReceipt contract and MongoDB-backed storage architecture | `ProofReceipt` model; `DocumentRecord` mapping; `ProofReceiptStore`; architecture + plan docs; unit tests | **Done** |
 | **PROOF-RECEIPTS-1B** | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`; category config/operations; `as_document_store()` boundary; unit tests | **Done** |
-| **PROOF-RECEIPTS-1C** | Implement MongoDB DocumentStore vendor integration | Concrete MongoDB subclass; provider registration; `as_document_store()` live adapter | Planned |
+| **PROOF-RECEIPTS-1C** | Complete `document_store` vendor category cutover | MongoDB, Cassandra, DynamoDB on `DocumentStoreVendorIntegrationContract`; remove `DocumentStoreIntegrationContract` | **Done** |
 | **PROOF-RECEIPTS-1D** | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay for live vendor-backed receipt persistence | Planned |
 | **PROOF-RECEIPTS-1E** | LKW proof receipt recording through platform | LKW proof workloads write `ProofReceipt` via `ProofReceiptStore` after live proofs | Planned |
 
@@ -85,21 +85,22 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 
 ---
 
-## E. PROOF-RECEIPTS-1C scope (next)
+## E. PROOF-RECEIPTS-1C deliverables (closed)
 
 | Deliverable | Detail |
 |-------------|--------|
-| MongoDB vendor subclass | `DocumentStoreVendorIntegrationContract` concrete implementation |
-| Provider registration | Ensure `mongodb` document store resolves from catalog/profile |
-| Conformance | `assert_document_store` passes for MongoDB adapter |
-| Config | `INTERGRAX_MONGODB_URI`, database name env alignment |
+| Vendor category cutover | MongoDB, Cassandra, DynamoDB inherit `DocumentStoreVendorIntegrationContract` |
+| `as_document_store()` | Each vendor returns existing provider-backed `DocumentStore` adapter |
+| Old contract removal | `DocumentStoreIntegrationContract` removed from active runtime modules |
+| Registry alias | `document_store` folder maps to `DocumentStoreVendorIntegrationContract` |
+| Unit tests | `test_document_store_vendor_category_cutover.py`; provider tests updated |
 
 **Depends on:** PROOF-RECEIPTS-1B  
 **Blocks:** PROOF-RECEIPTS-1D
 
 ---
 
-## F. PROOF-RECEIPTS-1D scope
+## F. PROOF-RECEIPTS-1D scope (next)
 
 | Deliverable | Detail |
 |-------------|--------|

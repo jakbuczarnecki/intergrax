@@ -22,7 +22,6 @@ from intergrax.runtime.integrations.contracts import (
 )
 
 RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA = "relational_store_integration_contract.v1"
-DOCUMENT_STORE_INTEGRATION_CONTRACT_SCHEMA = "document_store_integration_contract.v1"
 KEY_VALUE_CACHE_INTEGRATION_CONTRACT_SCHEMA = "key_value_cache_integration_contract.v1"
 GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA = "graph_store_integration_contract.v1"
 
@@ -53,40 +52,6 @@ class RelationalStoreIntegrationContract(PlatformIntegrationContract):
             cls,
             provider_id=provider_id,
             integration_kind=PlatformIntegrationKind.RELATIONAL_STORE.value,
-            default_capabilities=_CONNECT_READ_WRITE_HEALTH,
-            capabilities=capabilities,
-            display_name=display_name,
-            version=version,
-            config=config,
-        )
-
-
-class DocumentStoreIntegrationContract(PlatformIntegrationContract):
-    """Category contract for document_store providers (mongodb, cassandra, …)."""
-
-    schema_id: Literal["document_store_integration_contract.v1"] = (
-        DOCUMENT_STORE_INTEGRATION_CONTRACT_SCHEMA
-    )
-    integration_kind: str = PlatformIntegrationKind.DOCUMENT_STORE.value
-    capabilities: tuple[PlatformIntegrationCapability, ...] = Field(
-        default_factory=lambda: _CONNECT_READ_WRITE_HEALTH
-    )
-    config: CategoryIntegrationConfig = Field(default_factory=CategoryIntegrationConfig)
-
-    @classmethod
-    def for_provider(
-        cls,
-        *,
-        provider_id: str,
-        capabilities: tuple[PlatformIntegrationCapability, ...] | None = None,
-        display_name: str | None = None,
-        version: str | None = None,
-        config: CategoryIntegrationConfig | None = None,
-    ) -> DocumentStoreIntegrationContract:
-        return category_for_provider(
-            cls,
-            provider_id=provider_id,
-            integration_kind=PlatformIntegrationKind.DOCUMENT_STORE.value,
             default_capabilities=_CONNECT_READ_WRITE_HEALTH,
             capabilities=capabilities,
             display_name=display_name,

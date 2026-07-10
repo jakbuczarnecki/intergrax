@@ -55,7 +55,7 @@ _CLASS_NAME_OVERRIDES: dict[str, str] = {
 
 _CATEGORY_CONTRACT: dict[str, tuple[str, str]] = {
     "relational_store": ("intergrax.runtime.integrations.categories.data", "RelationalStoreIntegrationContract"),
-    "document_store": ("intergrax.runtime.integrations.categories.data", "DocumentStoreIntegrationContract"),
+    "document_store": ("intergrax.runtime.integrations.document_store", "DocumentStoreVendorIntegrationContract"),
     "key_value_cache": ("intergrax.runtime.integrations.categories.data", "KeyValueCacheIntegrationContract"),
     "graph_store": ("intergrax.runtime.integrations.categories.data", "GraphStoreIntegrationContract"),
     "message_bus": ("intergrax.runtime.integrations.categories.messaging", "MessageBusIntegrationContract"),

@@ -98,6 +98,14 @@ class DocumentStoreVendorIntegrationContract(PlatformIntegrationContract):
         version: str | None = None,
         config: DocumentStoreVendorIntegrationConfig | None = None,
     ) -> DocumentStoreVendorIntegrationContract:
+        if config is None:
+            config_field = cls.model_fields["config"]
+            if config_field.default_factory is not None:
+                config = config_field.default_factory()
+            elif isinstance(config_field.default, DocumentStoreVendorIntegrationConfig):
+                config = config_field.default
+            else:
+                config = DocumentStoreVendorIntegrationConfig()
         return cls(
             integration_id=derive_platform_integration_id(
                 provider_id,
@@ -108,7 +116,7 @@ class DocumentStoreVendorIntegrationContract(PlatformIntegrationContract):
             version=version,
             capabilities=capabilities,
             supported_operations=supported_operations,
-            config=config or DocumentStoreVendorIntegrationConfig(),
+            config=config,
         )
 
     def as_document_store(self) -> DocumentStore:

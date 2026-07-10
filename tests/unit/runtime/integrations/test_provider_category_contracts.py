@@ -13,6 +13,7 @@ from intergrax.runtime.integrations.categories import (
     PROVIDER_CATEGORY_CONTRACT_REGISTRY,
     VectorStoreIntegrationContract,
 )
+from intergrax.runtime.integrations.document_store import DocumentStoreVendorIntegrationContract
 from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationCapability,
     PlatformIntegrationConfig,
@@ -68,7 +69,10 @@ def test_observability_backend_aligns_with_observability_vendor_contract() -> No
 
 def test_category_contracts_have_stable_schema_id() -> None:
     for category, contract_cls in PROVIDER_CATEGORY_CONTRACT_REGISTRY.items():
-        if contract_cls is ObservabilityVendorIntegrationContract:
+        if contract_cls in (
+            ObservabilityVendorIntegrationContract,
+            DocumentStoreVendorIntegrationContract,
+        ):
             continue
         instance = contract_cls.for_provider(provider_id=f"example_{category}")
         assert instance.schema_id.endswith("_integration_contract.v1")
@@ -80,6 +84,10 @@ def test_category_contracts_use_matching_integration_kind() -> None:
         if contract_cls is ObservabilityVendorIntegrationContract:
             contract = contract_cls.for_provider(provider_id="otel")
             assert contract.integration_kind == OBSERVABILITY_VENDOR_INTEGRATION_KIND
+            continue
+        if contract_cls is DocumentStoreVendorIntegrationContract:
+            contract = contract_cls.for_provider(provider_id="mongodb")
+            assert contract.integration_kind == PlatformIntegrationKind.DOCUMENT_STORE.value
             continue
         contract = contract_cls.for_provider(provider_id=f"example_{category}")
         assert contract.integration_kind == category

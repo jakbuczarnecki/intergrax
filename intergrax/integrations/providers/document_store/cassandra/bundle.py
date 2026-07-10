@@ -40,17 +40,21 @@ def create_cassandra_integration(
     **config_overrides: object,
 ) -> CassandraIntegrationBundle:
     config = resolve_cassandra_config(**config_overrides)
-    store = open_cassandra_document_store(
+    integration = open_cassandra_document_store(
         config,
         implementation=document_store,
         session=session,
         session_factory=session_factory,
     )
-    assert isinstance(store, CassandraDocumentStoreIntegration)
+    assert isinstance(integration, CassandraDocumentStoreIntegration)
+    adapter = integration.as_document_store()
+    from intergrax.integrations.providers.document_store.cassandra.adapter import _CassandraDocumentStore
+
+    assert isinstance(adapter, _CassandraDocumentStore)
     return CassandraIntegrationBundle(
         config=config,
-        document_store=store,
-        cql_client=store._require_client().cql_client,
+        document_store=integration,
+        cql_client=adapter.cql_client,
     )
 
 
@@ -60,14 +64,14 @@ def create_cassandra_document_store(
     session: Optional[object] = None,
     session_factory: Optional[Callable[[], object]] = None,
     **config_overrides: object,
-) -> CassandraDocumentStoreIntegration:
+) -> DocumentStore:
     """Catalog factory for ``"cassandra"`` / ``DOCUMENT_STORE``."""
     return create_cassandra_integration(
         document_store=document_store,
         session=session,
         session_factory=session_factory,
         **config_overrides,
-    ).document_store
+    ).document_store.as_document_store()
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_store.cassandra.integration import (
@@ -80,7 +84,7 @@ from intergrax.integrations.providers.document_store.cassandra.integration impor
 
 def create_cassandra_document_store_integration(
     *,
-    client: CassandraDocumentStoreIntegrationClient | None = None,
+    client: CassandraDocumentStoreClient | None = None,
     enabled: bool = False,
 ) -> CassandraDocumentStoreIntegration:
     """
