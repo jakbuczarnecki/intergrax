@@ -285,7 +285,7 @@ This track is executed one task at a time.
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
 | LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | **Closed — LKW.4E live Kafka proof passed** | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
-| LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | Planned — **PROOF-RECEIPTS-1B closed** | Medium |
+| LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | **Closed — PROOF-RECEIPTS-1A through PROOF-RECEIPTS-1E complete** | Medium |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** — Proof Receipts wave **closed** (**PROOF-RECEIPTS-1E**). **PROOF-RECEIPTS-1D** MongoDB Docker overlay is **closed**. LKW.4E live Kafka proof is **closed**. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md). LKW-PR boundaries: §6b below (**PROOF-RECEIPTS-1C closed**).
+**Next planned task:** **LKW.6A** — Define interaction intake contract and daemon lifecycle boundary. **LKW.6A** is the first scoped task of **LKW.6**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -858,6 +858,53 @@ LKW proof workload
 **Strict boundaries:** LKW must **not** import pymongo; LKW must **not** write directly to MongoDB; no LKW-only MongoDB helper; no bypass of `DocumentStore` or `IntegrationProfile` vendor selection; no in-memory/fake store as live proof acceptance.
 
 Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+
+---
+
+## 6c. LKW.6 — OS daemon + interaction intake router
+
+**Ownership:** **LKW.6** — daemon + interaction intake · **LKW.6b** — optional Slack Socket Mode · **LKW.7** — file watcher + incremental index · **LKW.8** — tray thin client.
+
+| ID | Task | Scope | Status |
+|----|------|-------|--------|
+| LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Normalized intake request, router boundary, daemon lifecycle contract, forwarding into existing LKW execution boundary | **Planned — next** |
+| LKW.6B | Implement local daemon process and lifecycle | Local daemon process implementing the LKW.6A lifecycle contract | **Planned** |
+| LKW.6C | Implement first OS interaction adapter and live proof | First OS-specific interaction adapter wired through intake → router → execution | **Planned** |
+
+**Expected architecture (LKW.6A):**
+
+```text
+OS-specific interaction adapter
+  → InteractionIntakeRequest
+  → InteractionIntakeRouter
+  → existing LKW application/runtime execution boundary
+```
+
+**LKW.6A will define:**
+
+- normalized `InteractionIntakeRequest`
+- interaction source and kind
+- correlation and request metadata
+- `InteractionIntakeRouter` boundary
+- daemon lifecycle contract:
+  - start
+  - stop
+  - health
+  - graceful shutdown
+- forwarding into the existing LKW application/runtime execution boundary
+
+**LKW.6A does not include:**
+
+- Windows Service implementation
+- operating-system startup registration
+- tray application
+- Slack Socket Mode
+- file watcher
+- incremental indexing
+- background process implementation
+- new agent runtime
+- direct provider SDK integration
+- a second LKW execution path
 
 ---
 
