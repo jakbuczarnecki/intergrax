@@ -296,7 +296,7 @@ def test_background_task_proof_helper_implements_reviewer_contract() -> None:
     py = (_SCRIPTS_DIR / "run-lkw-background-task-proof.py").read_text(encoding="utf-8")
     for needle in (
         "proof_result=PASS",
-        "proof_kind=platform_background_task",
+        'f"proof_kind={_PROOF_KIND}"',
         "background-task/enqueue",
         "background-task/status",
         "local.workspace.search",
@@ -314,6 +314,10 @@ def test_background_task_proof_helper_implements_reviewer_contract() -> None:
         "evidence_count",
         "diagnostics",
         'diagnostics.get("lkw.search_summary.v1")',
+        "proof_receipt_recorded=true",
+        "proof_receipt_verified=true",
+        "record_and_verify_proof_receipt",
+        "build_background_task_proof_receipt",
     ):
         assert needle in py
 

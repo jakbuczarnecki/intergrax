@@ -15,6 +15,12 @@ from intergrax.proofs.receipts.document_store import (
     proof_receipt_row_key,
     proof_receipt_to_document,
 )
+from intergrax.proofs.receipts.recording import (
+    ProofReceiptVerificationError,
+    record_and_verify_proof_receipt,
+    record_and_verify_proof_receipt_with_store,
+    receipts_semantically_equal,
+)
 from intergrax.proofs.receipts.store import ProofReceiptStore
 
 __all__ = [
@@ -23,7 +29,11 @@ __all__ = [
     "ProofReceipt",
     "ProofReceiptResult",
     "ProofReceiptStore",
+    "ProofReceiptVerificationError",
     "proof_receipt_from_document",
+    "record_and_verify_proof_receipt",
+    "record_and_verify_proof_receipt_with_store",
+    "receipts_semantically_equal",
     "proof_receipt_partition_key",
     "proof_receipt_row_key",
     "proof_receipt_to_document",

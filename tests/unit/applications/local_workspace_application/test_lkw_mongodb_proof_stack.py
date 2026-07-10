@@ -113,10 +113,11 @@ def test_runner_does_not_use_mongosh_writes_or_proof_receipt_store() -> None:
     assert "restart lkw-mongodb" in lowered
 
 
-def test_public_step_9_not_marked_completed() -> None:
+def test_public_step_9_documents_receipt_inspection() -> None:
     assert _PUBLIC_PLATFORM_PROOF.exists()
     text = _read(_PUBLIC_PLATFORM_PROOF)
-    assert "Step 9" not in text
+    assert "## Step 9 — Inspect the structured ProofReceipt in Mongo Express" in text
+    assert "proof_receipts/local_workspace" in text
 
 
 def _load_verify_module():
