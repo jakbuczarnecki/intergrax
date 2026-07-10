@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../plan/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1A**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1B**
 
 ---
 
@@ -33,11 +33,16 @@ The source of truth is a **`ProofReceipt`** document persisted through the provi
 Application proof workload (e.g. LKW)
   → build ProofReceipt (domain + provider + guardrail evidence)
   → ProofReceiptStore.put()
-  → DocumentStore contract
-  → integration profile selects vendor (mongodb)
-  → MongoDB provider adapter
+  → DocumentStore contract (provider-neutral data surface)
+  → DocumentStoreVendorIntegrationContract (platform integration boundary)
+  → concrete vendor integration (e.g. MongoDB — PROOF-RECEIPTS-1C)
+  → vendor SDK / backend
   → persisted structured receipt
 ```
+
+`DocumentStore` is the **provider-neutral data surface** — `get`, `put`, `delete`, `query`, and `close` without vendor-specific types. `DocumentStoreVendorIntegrationContract` is the **platform integration boundary** between that surface and concrete vendors. It mirrors `ObservabilityVendorIntegrationContract` used for Elasticsearch/Sentry-style observability proofs: category-specific config, `supported_operations`, `for_provider(...)`, safe `public_view()`, and `as_document_store()` for vendor implementations.
+
+MongoDB will be the **first/default live vendor** in **PROOF-RECEIPTS-1C**. LKW must **never** depend on MongoDB or pymongo directly — only on `ProofReceiptStore` → `DocumentStore`.
 
 This mirrors existing platform integration proofs:
 
@@ -46,7 +51,7 @@ This mirrors existing platform integration proofs:
 | Async background tasks | `message_bus.*` / `TaskQueue` | Kafka (LKW.4E) |
 | Problem/error signals | `PlatformProblemSignal` / observability export | Sentry |
 | Event/log timeline | Observability vendor integration | Elasticsearch / Kibana |
-| **Structured proof receipts** | **`DocumentStore` / `ProofReceiptStore`** | **MongoDB** |
+| **Structured proof receipts** | **`ProofReceiptStore` → `DocumentStore` → `DocumentStoreVendorIntegrationContract`** | **MongoDB** |
 
 ---
 
@@ -102,11 +107,27 @@ Mapping is **provider-neutral**. No MongoDB-specific field names or BSON types l
 - `query(application_id, proof_kind=…, limit=…)` — partition query with optional `row_key_prefix`
 - `close()` — delegate resource release
 
-Host/application wiring selects the `DocumentStore` implementation from **`IntegrationProfile`** / config — the same pattern as Kafka message bus, Sentry observability, and Elasticsearch timeline proofs.
+Host/application wiring selects the `DocumentStore` implementation from **`IntegrationProfile`** / config via a concrete `DocumentStoreVendorIntegrationContract` subclass — the same layered pattern as Kafka message bus, Sentry observability, and Elasticsearch timeline proofs.
 
 ---
 
-## G. Strict boundaries
+## G. DocumentStore vendor integration contract
+
+**Code:** `intergrax/runtime/integrations/document_store.py`
+
+| Artifact | Role |
+|----------|------|
+| `DocumentStoreVendorIntegrationContract` | Platform-owned category contract deriving from `PlatformIntegrationContract` |
+| `DocumentStoreVendorIntegrationConfig` | Typed, secret-safe config (`database_name`, `collection_name`, `namespace`) |
+| `DocumentStoreVendorOperation` | Declared operations: `get`, `put`, `delete`, `query`, `close` |
+| `DocumentStoreVendorKind` | Well-known vendor slugs (`mongodb`, `cassandra`, …) |
+| `as_document_store()` | Boundary method — concrete vendors return a `DocumentStore` implementation |
+
+Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{provider_id}:document_store` (for example `mongodb:document_store`).
+
+---
+
+## H. Strict boundaries
 
 1. **No pymongo outside the MongoDB provider package** (`intergrax/integrations/providers/document_store/mongodb/`).
 2. **LKW must not import pymongo** or call MongoDB APIs directly.
@@ -116,7 +137,7 @@ Host/application wiring selects the `DocumentStore` implementation from **`Integ
 
 ---
 
-## H. Future reviewer path (target)
+## I. Future reviewer path (target)
 
 After PROOF-RECEIPTS-1C–1F:
 
@@ -125,11 +146,11 @@ After PROOF-RECEIPTS-1C–1F:
 3. `IntegrationProfile` selects `document_store=mongodb`.
 4. Reviewer inspects receipt in **Mongo Express** / Mongo UI — not by opening markdown closeout files.
 
-Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB proof stack ships (**PROOF-RECEIPTS-1F**).
+Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB proof stack ships (**PROOF-RECEIPTS-1G**).
 
 ---
 
-## I. Code references
+## J. Code references
 
 | Artifact | Path |
 |----------|------|
@@ -137,5 +158,6 @@ Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB pro
 | Document mapping | `intergrax/proofs/receipts/document_store.py` |
 | Store engine | `intergrax/proofs/receipts/store.py` |
 | DocumentStore contract | `intergrax/integrations/contracts/document_store.py` |
+| DocumentStore vendor contract | `intergrax/runtime/integrations/document_store.py` |
 | MongoDB provider | `intergrax/integrations/providers/document_store/mongodb/` |
 | LKW proof schedule | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` §LKW-PR |

@@ -285,7 +285,7 @@ This track is executed one task at a time.
 | LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
 | LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | **Closed — LKW.4E live Kafka proof passed** | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
-| LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | Planned — **PROOF-RECEIPTS-1A closed** | Medium |
+| LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | Planned — **PROOF-RECEIPTS-1B closed** | Medium |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **PROOF-RECEIPTS-1B** — complete MongoDB DocumentStore provider wiring. LKW.4E live Kafka proof is **closed**. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md). LKW-PR boundaries: §6b below (**PROOF-RECEIPTS-1A closed**).
+**Next planned task:** **PROOF-RECEIPTS-1C** — implement MongoDB DocumentStore vendor integration. LKW.4E live Kafka proof is **closed**. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md). LKW-PR boundaries: §6b below (**PROOF-RECEIPTS-1B closed**).
 
 **Platform proof pattern (same as observability):**
 
@@ -836,11 +836,12 @@ LKW-PR proves that structured proof evidence is persisted through the platform *
 | ID | Task | Scope | Status |
 |----|------|-------|--------|
 | PROOF-RECEIPTS-1A | ProofReceipt contract + DocumentStore mapping + `ProofReceiptStore` | Platform contracts, architecture/plan docs, unit tests | **Closed** |
-| PROOF-RECEIPTS-1B | MongoDB DocumentStore provider wiring | Close provider registration/profile gaps | Planned — **next** |
-| PROOF-RECEIPTS-1C | Wire `ProofReceiptStore` through IntegrationProfile/config | Host selects `DocumentStore` from profile | Planned |
-| PROOF-RECEIPTS-1D | Record LKW proof receipts | LKW proof workloads call platform `ProofReceiptStore` | Planned |
-| PROOF-RECEIPTS-1E | MongoDB + Mongo Express Docker proof stack | Live vendor-backed receipt persistence | Planned |
-| PROOF-RECEIPTS-1F | Public reviewer Step 9 | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) — only after live stack | Planned |
+| PROOF-RECEIPTS-1B | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`, tests, architecture docs | **Closed** |
+| PROOF-RECEIPTS-1C | MongoDB DocumentStore vendor integration | Concrete vendor subclass + provider registration | Planned — **next** |
+| PROOF-RECEIPTS-1D | Wire `ProofReceiptStore` through IntegrationProfile/config | Host selects `DocumentStore` from profile | Planned |
+| PROOF-RECEIPTS-1E | Record LKW proof receipts | LKW proof workloads call platform `ProofReceiptStore` | Planned |
+| PROOF-RECEIPTS-1F | MongoDB + Mongo Express Docker proof stack | Live vendor-backed receipt persistence | Planned |
+| PROOF-RECEIPTS-1G | Public reviewer Step 9 | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) — only after live stack | Planned |
 
 **Platform proof pattern:**
 
