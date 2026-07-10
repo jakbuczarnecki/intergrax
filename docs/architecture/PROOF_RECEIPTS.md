@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../plan/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1C**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1D closed**
 
 ---
 
@@ -42,7 +42,7 @@ Application proof workload (e.g. LKW)
 
 `DocumentStore` is the **provider-neutral data surface** — `get`, `put`, `delete`, `query`, and `close` without vendor-specific types. `DocumentStoreVendorIntegrationContract` is the **platform integration boundary** between that surface and concrete vendors. It mirrors `ObservabilityVendorIntegrationContract` used for Elasticsearch/Sentry-style observability proofs: category-specific config, `supported_operations`, `for_provider(...)`, safe `public_view()`, and `as_document_store()` for vendor implementations.
 
-MongoDB remains the **default/natural live vendor** for ProofReceipt storage (PROOF-RECEIPTS-1D Docker proof stack is next). LKW must **never** depend on MongoDB or pymongo directly — only on `ProofReceiptStore` → `DocumentStore`.
+MongoDB remains the **default/natural live vendor** for ProofReceipt storage. **PROOF-RECEIPTS-1D** adds the optional LKW Docker overlay (`docker-compose.mongodb.yml`) with `lkw-mongodb`, `lkw-mongo-express`, and a platform-backed `DocumentStore` smoke path — **closed**. The smoke record is infrastructure connectivity data, not a `ProofReceipt`. LKW must **never** depend on MongoDB or pymongo directly — only on `ProofReceiptStore` → `DocumentStore` (recording in **PROOF-RECEIPTS-1E**).
 
 This mirrors existing platform integration proofs:
 
@@ -137,7 +137,31 @@ Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{p
 
 ---
 
-## I. Future reviewer path (target)
+## I. PROOF-RECEIPTS-1D — LKW MongoDB Docker proof stack (closed)
+
+**Overlay:** `applications/local_workspace_application/docker/docker-compose.mongodb.yml`  
+**Runner:** `applications/local_workspace_application/scripts/run-lkw-mongodb-proof-stack.bat`  
+**Validator:** `applications/local_workspace_application/scripts/verify_lkw_mongodb_stack.py`
+
+```text
+Platform smoke (PROOF-RECEIPTS-1D)
+  → create_mongodb_integration()
+  → MongoDBDocumentStoreIntegration.as_document_store()
+  → DocumentStore.put() / get()
+  → MongoDB (lkw-mongodb, volume lkw_mongodb_data)
+
+Reviewer (inspection only)
+  → Mongo Express (http://localhost:8086 default)
+  → MongoDB
+```
+
+- Smoke partition `platform_smoke` / row `mongodb_document_store` is **not** a `ProofReceipt`.
+- No `ProofReceiptStore` call in 1D; no pymongo imports in LKW application code.
+- Public Step 9 in `LKW_PLATFORM_PROOF.md` remains for **PROOF-RECEIPTS-1E** after live receipt recording succeeds.
+
+---
+
+## J. Future reviewer path (target)
 
 After PROOF-RECEIPTS-1C–1E:
 
@@ -150,7 +174,7 @@ Public Step 9 in `LKW_PLATFORM_PROOF.md` is added only when the live MongoDB pro
 
 ---
 
-## J. Code references
+## K. Code references
 
 | Artifact | Path |
 |----------|------|

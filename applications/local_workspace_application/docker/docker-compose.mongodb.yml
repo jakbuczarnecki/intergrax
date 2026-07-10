@@ -1,0 +1,68 @@
+# © Artur Czarnecki. All rights reserved.
+# Optional MongoDB + Mongo Express document-store proof overlay for LKW (PROOF-RECEIPTS-1D).
+# Run from repository root:
+# docker compose \
+#   -f applications/local_workspace_application/docker/docker-compose.yml \
+#   -f applications/local_workspace_application/docker/docker-compose.mongodb.yml \
+#   up --build
+
+services:
+  local_workspace:
+    environment:
+      INTERGRAX_MONGODB_URI: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/${LKW_MONGODB_DATABASE:-intergrax_proofs}?authSource=admin
+      INTERGRAX_MONGODB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
+      INTERGRAX_MONGODB_COLLECTION: ${LKW_MONGODB_COLLECTION:-proof_receipts}
+    depends_on:
+      lkw-mongodb:
+        condition: service_healthy
+
+  lkw-mongodb:
+    image: mongo:7.0.14
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${LKW_MONGODB_ROOT_USERNAME:-intergrax}
+      MONGO_INITDB_ROOT_PASSWORD: ${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}
+      MONGO_INITDB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
+    expose:
+      - "27017"
+    ports:
+      - "${LKW_MONGODB_HOST_PORT:-27018}:27017"
+    volumes:
+      - lkw_mongodb_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "${LKW_MONGODB_ROOT_USERNAME:-intergrax}",
+          "--password",
+          "${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  lkw-mongo-express:
+    image: mongo-express:1.0.2-20
+    ports:
+      - "${LKW_MONGO_EXPRESS_PORT:-8086}:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${LKW_MONGODB_ROOT_USERNAME:-intergrax}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}
+      ME_CONFIG_MONGODB_URL: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/?authSource=admin
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      lkw-mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  lkw_mongodb_data:

@@ -3,7 +3,7 @@
 **Architecture (1:1):** [`architecture/PROOF_RECEIPTS.md`](../architecture/PROOF_RECEIPTS.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Proof consumer:** LKW-PR ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1C closed**
+**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1D closed**
 
 ---
 
@@ -15,7 +15,7 @@
 | **Architecture** | [`architecture/PROOF_RECEIPTS.md`](../architecture/PROOF_RECEIPTS.md) — **PROOF-RECEIPTS-1B closed** |
 | **Current proof consumer** | LKW (structured receipt after live proofs) |
 | **Default live vendor** | MongoDB (`document_store` integration) |
-| **Next step** | **PROOF-RECEIPTS-1D** — LKW Docker proof stack with MongoDB / Mongo Express |
+| **Next step** | **PROOF-RECEIPTS-1E** — LKW proof receipt recording through platform (after **PROOF-RECEIPTS-1D** live PASS) |
 
 **Note:** LKW.4E (Kafka-backed background task live proof) remains **closed**. Proof receipts are the **next platform proof wave** — not a markdown closeout of LKW.4E.
 
@@ -30,7 +30,7 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 | **PROOF-RECEIPTS-1A** | Define ProofReceipt contract and MongoDB-backed storage architecture | `ProofReceipt` model; `DocumentRecord` mapping; `ProofReceiptStore`; architecture + plan docs; unit tests | **Done** |
 | **PROOF-RECEIPTS-1B** | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`; category config/operations; `as_document_store()` boundary; unit tests | **Done** |
 | **PROOF-RECEIPTS-1C** | Complete `document_store` vendor category cutover | MongoDB, Cassandra, DynamoDB on `DocumentStoreVendorIntegrationContract`; remove `DocumentStoreIntegrationContract` | **Done** |
-| **PROOF-RECEIPTS-1D** | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay for live vendor-backed receipt persistence | Planned |
+| **PROOF-RECEIPTS-1D** | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay for live vendor-backed receipt persistence | **Closed** |
 | **PROOF-RECEIPTS-1E** | LKW proof receipt recording through platform | LKW proof workloads write `ProofReceipt` via `ProofReceiptStore` after live proofs | Planned |
 
 ---
@@ -100,16 +100,31 @@ Historical **LKW.5** in the LKW plan refers to the **closed persistence proof** 
 
 ---
 
-## F. PROOF-RECEIPTS-1D scope (next)
+## F. PROOF-RECEIPTS-1D deliverables (closed)
 
 | Deliverable | Detail |
 |-------------|--------|
-| Docker compose overlay | MongoDB + Mongo Express services in LKW proof stack |
-| Live vendor path | Receipt persistence through MongoDB provider selected via `IntegrationProfile` / config — not a separate scheduled wiring task |
-| Reviewer inspection | Mongo Express / Mongo UI for structured receipt queries |
+| Docker compose overlay | `applications/local_workspace_application/docker/docker-compose.mongodb.yml` — MongoDB (`lkw-mongodb`) + Mongo Express (`lkw-mongo-express`) |
+| Live vendor path | Platform `MongoDBDocumentStoreIntegration` → `as_document_store()` → `DocumentStore.put/get` smoke — **not** a `ProofReceipt` |
+| Reviewer inspection | Mongo Express at `http://localhost:8086` (default) — inspection only; not on LKW runtime path |
+| Persistent volume | Named volume `lkw_mongodb_data` |
+| Proof runner | `applications/local_workspace_application/scripts/run-lkw-mongodb-proof-stack.bat` |
+| Smoke validator | `applications/local_workspace_application/scripts/verify_lkw_mongodb_stack.py` |
 
-**Depends on:** PROOF-RECEIPTS-1C
-**Blocks:** PROOF-RECEIPTS-1E
+**Compose command (repository root):**
+
+```bash
+docker compose \
+  -f applications/local_workspace_application/docker/docker-compose.yml \
+  -f applications/local_workspace_application/docker/docker-compose.mongodb.yml \
+  up --build
+```
+
+**Defaults:** database `intergrax_proofs`; collection `proof_receipts`; MongoDB service `lkw-mongodb`; auth source `admin`. Smoke record partition `platform_smoke` / row `mongodb_document_store` is **infrastructure connectivity data only** — not a `ProofReceipt`. **ProofReceipt recording remains PROOF-RECEIPTS-1E.**
+
+**Depends on:** PROOF-RECEIPTS-1C  
+**Blocks:** PROOF-RECEIPTS-1E  
+**Closeout:** live PASS via `run-lkw-mongodb-proof-stack.bat` (platform put/get + MongoDB restart persistence read-back).
 
 ---
 
