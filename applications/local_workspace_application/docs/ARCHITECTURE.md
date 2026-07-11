@@ -679,12 +679,41 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 |---------|--------|----------------------|----------|
 | **Local HTTP** | Scaffold **Done** | `POST /v1/local_workspace/run` | Scripts, tray, local integrations |
 | **Local MCP** | Scaffold **Done** | `/mcp` on same host | Cursor / IDE at desk |
-| **Interaction intake** | Platform **Done**; LKW host **planned LKW.6** | `POST /v1/interactions/intake` | Slack slash commands, Teams, lab JSON |
+| **Interaction intake** | Platform **Done**; LKW host **LKW.6A Done** | `POST /v1/interactions/intake` | Slack slash commands, Teams, lab JSON |
 | **Slack outbound** | Platform **Done** | `INTERGRAX_SLACK_WEBHOOK_URL`, HITL templates | Alerts, approvals, result snippets |
 | **Debug CLI** | Platform **Done** | `python -m intergrax.debug` | Operators |
 | **Tray / native UI** | **Deferred LKW.8** | Calls localhost HTTP/MCP | Folder picker, status icon |
 
-**Rule:** every surface normalizes to a Nexus `Task` — same agents, same policy, same trace. See [`applications/USAGE.md` §4b](../USAGE.md) · canon §18.
+**Rule:** every surface normalizes to a Nexus `Task` — same agents, same policy, same trace. **LKW.6A** unifies `/v1/local_workspace/run` and `/v1/interactions/intake` through one `LocalWorkspaceTaskExecutor` before `NexusLoop`. See [`applications/USAGE.md` §4b](../USAGE.md) · canon §18.
+
+### 9.3a LKW.6A — unified application execution boundary (closed)
+
+Platform interaction intake exists and LKW host wiring exists; **LKW.6A** unifies execution and daemon lifecycle semantics.
+
+```text
+POST /v1/local_workspace/run
+POST /v1/interactions/intake
+(future tray / Slack / OS sources)
+  → platform adapter (interaction only) / HTTP request model (/run)
+  → Task
+  → LocalWorkspaceTaskExecutor.prepare()  [capability policy + LKW defaults + reliability + orchestration ACP]
+  → LocalWorkspaceTaskExecutor.execute_prepared()
+  → NexusLoop.handle_task
+  → TaskResult
+```
+
+| Concern | Owner | Notes |
+|---------|-------|-------|
+| Transport normalization | Platform `InteractionAdapter` / HTTP schemas | No LKW interaction models |
+| Application execution prep | `LocalWorkspaceTaskExecutor` | Allowlisted capabilities: `local.workspace.search` / `.index` / `.synthesize` (+ graph triggers) |
+| Reliability enrichment | Shared `build_reliability_task_enricher` | Applied once per execution |
+| Daemon lifecycle | `LocalWorkspaceHostLifecycle` | `STARTING` → `READY` → `STOPPING` → `STOPPED`; `FAILED` on startup errors |
+| Liveness | `GET /health` | Unchanged: `{"status":"ok"}` |
+| Readiness | `GET /v1/local_workspace/readiness` | Requires `READY` + executor available + required components healthy |
+| Work rejection | Both execution surfaces | HTTP 503 `lkw_host_not_ready` / `lkw_host_stopping` when not accepting work |
+| Background extension point | Documented only | `execute=false` returns prepared `Task`; future background routing via platform message bus (LKW.4) |
+
+**LKW.6A does not include:** Windows Service / systemd / launchd packaging (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
 ### 9.4 Slack as optional interaction channel
 
@@ -705,7 +734,7 @@ Slack Events API  ──►  (A) Socket Mode client in LKW daemon   [preferred: 
 InteractionIntakeService  +  SlackInteractionAdapter
        │  verify signature · parse slash payload · map text → Task
        ▼
-NexusLoop.handle_task(capability=local.workspace.search, message=...)
+LocalWorkspaceTaskExecutor  →  NexusLoop.handle_task(capability=local.workspace.search, message=...)
        │
        ▼
 LocalSearchAgent → rag.retrieve (local Chroma index)
@@ -732,7 +761,7 @@ curl -s -X POST "http://127.0.0.1:8020/v1/interactions/intake?execute=true&tenan
   -d '{"command":"/lkw","text":"search projekt Alpha","user_id":"U1","team_id":"T1"}'
 ```
 
-LKW.6 wires this on the product host (mirror `lab_application` / `legal_application` interaction flags).
+LKW.6A wires interaction intake through the shared executor (see §9.3a). Enable with `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true` and `LOCAL_WORKSPACE_INTERACTION_SURFACE=lab_json` for Slack-free proof.
 
 #### Slack connectivity modes
 

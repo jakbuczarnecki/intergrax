@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.6A** — Define interaction intake contract and daemon lifecycle boundary. **LKW.6A** is the first scoped task of **LKW.6**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+**Next planned task:** **LKW.6B** — Implement local daemon process and OS lifecycle packaging. **LKW.6A** — unified interaction execution boundary and daemon lifecycle semantics — **Closed**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -867,8 +867,8 @@ Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architectu
 
 | ID | Task | Scope | Status |
 |----|------|-------|--------|
-| LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Normalized intake request, router boundary, daemon lifecycle contract, forwarding into existing LKW execution boundary | **Planned — next** |
-| LKW.6B | Implement local daemon process and lifecycle | Local daemon process implementing the LKW.6A lifecycle contract | **Planned** |
+| LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Unified `LocalWorkspaceTaskExecutor`; platform interaction intake reused; lifecycle/readiness contract; `/run` + `/interactions/intake` share one execution boundary | **Closed** |
+| LKW.6B | Implement local daemon process and lifecycle | Local daemon process implementing the LKW.6A lifecycle contract | **Planned — next** |
 | LKW.6C | Implement first OS interaction adapter and live proof | First OS-specific interaction adapter wired through intake → router → execution | **Planned** |
 
 **Expected architecture (LKW.6A):**
@@ -880,31 +880,22 @@ OS-specific interaction adapter
   → existing LKW application/runtime execution boundary
 ```
 
-**LKW.6A will define:**
+**LKW.6A delivered (closed):**
 
-- normalized `InteractionIntakeRequest`
-- interaction source and kind
-- correlation and request metadata
-- `InteractionIntakeRouter` boundary
-- daemon lifecycle contract:
-  - start
-  - stop
-  - health
-  - graceful shutdown
-- forwarding into the existing LKW application/runtime execution boundary
+- Platform interaction stack reused (`InboundInteraction`, `Task`, `InteractionIntakeService`, `create_interaction_intake_router`) — no LKW-specific interaction models.
+- `LocalWorkspaceTaskExecutor` (`host/task_executor.py`) is the single application execution boundary for `/v1/local_workspace/run` and `/v1/interactions/intake`.
+- Enrichment order: transport normalization (platform adapter) → LKW application defaults/capability policy → shared reliability enrichment → orchestration ACP enrichment (when applicable) → `NexusLoop`.
+- `LocalWorkspaceHostLifecycle` (`host/lifecycle.py`) defines `STARTING` / `READY` / `STOPPING` / `STOPPED` / `FAILED`, component health, and `GET /v1/local_workspace/readiness` (liveness remains `GET /health` → `{"status":"ok"}`).
+- `include_interaction_routes=false` by default; `lab_json` surface enabled in test/proof configuration without Slack.
+- **LKW.6A does not include:** OS service packaging, Socket Mode, file watcher, tray, or a second interaction framework.
 
-**LKW.6A does not include:**
+**LKW.6B will implement:**
 
-- Windows Service implementation
-- operating-system startup registration
-- tray application
-- Slack Socket Mode
-- file watcher
-- incremental indexing
-- background process implementation
-- new agent runtime
-- direct provider SDK integration
-- a second LKW execution path
+- local daemon process wrapper around the LKW host (uvicorn entrypoint + lifecycle hooks)
+- OS service registration packaging (systemd / launchd / Windows Service) as a separate deliverable
+- graceful shutdown integration with the LKW.6A lifecycle contract
+
+**Out of scope for LKW.6B (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS interaction adapters (**LKW.6C**).
 
 ---
 

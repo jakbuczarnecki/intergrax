@@ -212,6 +212,8 @@ app.include_router(
 )
 ```
 
+`InteractionIntakeService` also accepts an optional `task_executor` (`intergrax.runtime.interactions.task_executor.TaskExecutor`). When set, `execute=true` routes through the executor instead of calling `NexusLoop` directly; `nexus_loop=` remains supported for backward compatibility. LKW mounts a shared `LocalWorkspaceTaskExecutor` so `/run` and interaction intake share one application boundary.
+
 | Host | Env flag | Surface env |
 |------|----------|-------------|
 | lab | `LAB_INCLUDE_INTERACTIONS` | `LAB_INTERACTION_SURFACE` |

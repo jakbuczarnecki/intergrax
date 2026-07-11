@@ -13,6 +13,8 @@ from intergrax.contracts.run_artifact_bundle import RUN_ARTIFACT_BUNDLE_METADATA
 from intergrax.contracts.task_artifacts import RunArtifactBundle, WorkspaceArtifactRef
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.runtime.task.task_metadata_keys import TaskResultMetadataKey
+from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
+from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.fastapi_router import LocalWorkspaceRunService
 from local_workspace_application.serving.run_artifact_metadata import (
     ensure_run_artifact_bundle_metadata,
@@ -179,9 +181,13 @@ async def test_run_task_exposes_platform_bundle_and_lkw_synthesize_diagnostic() 
             },
         },
     )
-    runner = AsyncMock()
-    runner.run_task = AsyncMock(return_value=task_result)
-    service = LocalWorkspaceRunService(task_runner=runner, default_agent_id="local_synthesizer")
+    lifecycle = LocalWorkspaceHostLifecycle()
+    lifecycle.set_executor_available(True)
+    lifecycle.transition_to_ready()
+    executor = AsyncMock(spec=LocalWorkspaceTaskExecutor)
+    executor.execute = AsyncMock(return_value=task_result)
+    executor.nexus_loop = None
+    service = LocalWorkspaceRunService(task_executor=executor, default_agent_id="local_synthesizer")
 
     response = await service.run_task(
         LocalWorkspaceRunRequestV1(
