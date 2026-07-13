@@ -68,6 +68,8 @@ docs(hosting): register platform hosting ownership
 
 ## APP-HOST-1A.1 — Hosted Application Profile Core
 
+**Status:** Done (2026-07-13)
+
 **Architecture:** hub §4–5; satellite §21–22
 **Depends on:** APP-HOST-0D
 **Goal:** First implementation slice after governance — hosting package skeleton and profile identity core only.
@@ -78,8 +80,21 @@ Target code:
 
 ```text
 intergrax/hosting/__init__.py
-intergrax/hosting/contracts/profile.py
+intergrax/hosting/contracts/__init__.py
 intergrax/hosting/contracts/identity.py
+intergrax/hosting/contracts/profile.py
+```
+
+Delivered public API:
+
+```text
+HostedApplicationIdentity
+HostedApplicationProfile
+HostedApplicationProfilePublicView
+HOSTED_APPLICATION_PROFILE_SPEC_VERSION
+HostedApplicationProfile.identity
+HostedApplicationProfile.public_view()
+HostedApplicationProfile.profile_digest()
 ```
 
 In scope:

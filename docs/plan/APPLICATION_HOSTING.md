@@ -6,7 +6,7 @@
 **ADR:** [`ADR-HOST-001`](../adr/entries/2026-07-13/ADR-HOST-001.md)  
 **First adopter/proof:** `applications/local_workspace_application/`
 
-**Status:** Architecture established; implementation not started.
+**Status:** Architecture established; implementation started. APP-HOST-1A.1 complete.
 
 ---
 
@@ -74,15 +74,15 @@ LKW is the first product adoption and proof. Generic code MUST be implemented un
 | APP-HOST-0C | Implementation plan + fidelity matrix | **Done** |
 | APP-HOST-0D | Tier-3/LKW cross-plan ownership correction | **Done** |
 
-APP-HOST-0 closes with **0D Done**. Runtime implementation begins at **APP-HOST-1A.1** (not started until that row opens).
+APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1A.1** (profile core).
 
 ### APP-HOST-1 — Public authoring contracts
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-1A.1 | Hosted Application Profile Core | Planned |
+| APP-HOST-1A.1 | Hosted Application Profile Core | **Done** |
 | APP-HOST-1A.2 | Foundation `HostedApplicationProfile` composition root (contracts available before engine foundation) | Planned |
-| APP-HOST-1B | `HostedApplicationContext` and scoped typed service registry | Planned |
+| APP-HOST-1B | `HostedApplicationContext` and scoped typed service registry | **Planned — next** |
 | APP-HOST-1C | `HostedApplicationHooks` and hook registration model | Planned |
 | APP-HOST-1D | `HostedApplicationComponent` and component metadata contract | Planned |
 | APP-HOST-1E | Hosting policies and standard presets | Planned |
@@ -179,8 +179,8 @@ The waves are not a license to implement every row at once. Recommended first se
 
 ```text
 APP-HOST-0D                    [Done]
-→ APP-HOST-1A.1                [next — profile core]
-→ APP-HOST-1B
+→ APP-HOST-1A.1                [Done]
+→ APP-HOST-1B                  [next]
 → APP-HOST-1C
 → APP-HOST-1D
 → APP-HOST-1E
@@ -404,40 +404,56 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-1A.1 — Hosted Application Profile Core
+APP-HOST-1B — HostedApplicationContext and scoped typed service registry
 ```
 
-APP-HOST-0D (Tier-3/LKW cross-plan ownership correction) is **Done**. Application Hosting implementation remains not started until APP-HOST-1A.1 closes.
+APP-HOST-0D (Tier-3/LKW cross-plan ownership correction) is **Done**. APP-HOST-1A.1 (Hosted Application Profile Core) is **Done**.
 
-APP-HOST-1A.1 scope:
+APP-HOST-1B scope:
 
 ```text
-hosting package skeleton
-application identity contract
-application_id validation
-spec_version
-runtime-only application factory reference
-stable application factory descriptor/id
-safe metadata
-safe deterministic public projection
-deterministic profile digest
+HostedApplicationContext instance-scoped contract
+scoped typed service registry
+safe profile reference without runtime-only fields
+resolved paths, clock/logger/event publisher interfaces
+shutdown token/request interface
+lifecycle snapshot provider
 ```
 
-Explicitly out of scope for APP-HOST-1A.1:
+Target code:
+
+```text
+intergrax/hosting/contracts/context.py
+intergrax/hosting/services.py
+```
+
+Explicitly out of scope for APP-HOST-1B:
 
 ```text
 HostedApplicationEngine
-HostedApplicationContext
-hooks
-components
-policies
-events
+HostedApplicationHooks
+HostedApplicationComponent
+hosting policies
+typed hosting events
 plugins
 interaction composition
 OS adapters
 supervisor
 LKW adoption
 ```
+
+APP-HOST-1A.1 (profile core) delivered:
+
+```text
+intergrax/hosting/__init__.py
+intergrax/hosting/contracts/__init__.py
+intergrax/hosting/contracts/identity.py
+intergrax/hosting/contracts/profile.py
+tests/unit/hosting/test_hosted_application_profile_core.py
+tests/unit/hosting/test_hosted_application_profile_core_schema.py
+```
+
+Public API: `HostedApplicationIdentity`, `HostedApplicationProfile`, `HostedApplicationProfilePublicView`, `HOSTED_APPLICATION_PROFILE_SPEC_VERSION`, `profile.identity`, `profile.public_view()`, `profile.profile_digest()`.
 
 APP-HOST-1A.2 defines the foundation `HostedApplicationProfile` composition root after APP-HOST-1B..1E and APP-HOST-3A exist. It may include only contracts available before the engine foundation:
 
