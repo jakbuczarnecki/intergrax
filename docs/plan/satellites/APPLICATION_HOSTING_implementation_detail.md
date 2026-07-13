@@ -141,24 +141,31 @@ tests/unit/hosting/test_hosted_application_profile_core.py
 tests/unit/hosting/test_hosted_application_profile_core_schema.py
 ```
 
-## APP-HOST-1A.2 — Complete HostedApplicationProfile Composition Root
+## APP-HOST-1A.2 — Foundation HostedApplicationProfile Composition Root
 
 **Architecture:** hub §4–5; satellite §21–22
-**Depends on:** APP-HOST-1A.1, APP-HOST-1B, APP-HOST-1C, APP-HOST-1D, APP-HOST-1E (and policy rows they reference)
-**Goal:** Complete the one canonical `HostedApplicationProfile` composition root using typed contracts from foundation rows.
+**Depends on:** APP-HOST-1A.1, APP-HOST-1B, APP-HOST-1C, APP-HOST-1D, APP-HOST-1E, APP-HOST-3A
+**Goal:** Complete the foundation `HostedApplicationProfile` composition root required before the engine foundation, using typed contracts from foundation rows.
 
-May add final typed composition fields **only after** their owning contract tasks exist:
+Allowed typed composition fields:
 
 ```text
-context references
-hooks
-components
-policies
-event subscriptions
-plugins
-interaction profile
-instance policy
-shutdown/restart policy references
+application identity and factory core from APP-HOST-1A.1
+HostedApplicationHooks registrations
+HostedApplicationComponent registrations
+hosting policy references
+typed hosting event subscriptions from APP-HOST-3A
+safe metadata
+safe deterministic public projection
+deterministic digest
+```
+
+Clarifications:
+
+```text
+HostedApplicationContext is instance-scoped and is not a HostedApplicationProfile field.
+InteractionProfile extends the same canonical HostedApplicationProfile in APP-HOST-6A.
+The plugin field and plugin contract extend the same canonical HostedApplicationProfile in APP-HOST-9E.
 ```
 
 The split changes implementation granularity, not architecture ownership — **`HostedApplicationProfile` remains the one canonical hosting composition root.**
@@ -170,16 +177,20 @@ HostedApplicationEngine
 HostedApplicationSupervisor
 OS adapters
 LKW adoption
+InteractionProfile (APP-HOST-6A)
+plugins (APP-HOST-9E)
+HostedApplicationContext as a profile field
 ```
 
 Acceptance:
 
 ```text
-full profile composes from typed contract fields only
-duplicate component/plugin ids rejected
-safe public view deterministic for full profile
+foundation profile composes from typed contract fields only
+duplicate component ids rejected
+safe public view deterministic for foundation profile
 profile digest deterministic for equivalent safe config
 no untyped placeholders for deferred contracts
+no InteractionProfile or plugin fields on foundation profile
 ```
 
 Tests:
@@ -700,21 +711,24 @@ APP-HOST-9A
 
 **APP-HOST-9A (`run_hosted_application(profile)`) MUST precede APP-HOST-8A** — LKW proof validates one-profile authoring.
 
+Initial LKW adoption does **not** require `InteractionProfile` (APP-HOST-6A). LKW may host existing interaction/runtime surfaces through the application runtime adapter until APP-HOST-6A closes.
+
 Equivalent consolidated delivery is acceptable only if gates remain independently testable.
 
 ## APP-HOST-8A — LKW hosted profile
 
-LKW defines only:
+Initial LKW adoption does **not** require `InteractionProfile`. LKW may host its existing interaction/runtime surfaces through the application runtime adapter. `InteractionProfile` adoption follows **APP-HOST-6A**; an interaction profile in LKW is allowed only when APP-HOST-6A is closed.
+
+LKW may initially define only:
 
 ```text
 application factory/runtime adapter
 LKW-specific hooks
 LKW-specific components
-interaction profile
-hosting presets/metadata
+hosting presets and metadata
 ```
 
-No generic engine/supervisor/OS implementation under LKW.
+Generic engine, supervisor, control, and OS infrastructure remain platform-owned. No generic engine/supervisor/OS implementation under LKW.
 
 ## APP-HOST-8B — Lifecycle migration
 
@@ -764,7 +778,7 @@ Persist a structured ProofReceipt through the platform store with hosting eviden
 
 ## APP-HOST-9A — Runner facade
 
-**Depends on:** APP-HOST-2F minimum, APP-HOST-4 minimum, APP-HOST-5C minimum
+**Depends on:** APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F minimum, APP-HOST-4 minimum foundation, APP-HOST-5C minimum
 **Blocks:** APP-HOST-8A (LKW hosted-profile adoption)
 
 Target:
