@@ -6,6 +6,8 @@
 
 > **Documentation boundary:** Platform docs in `docs/` (architecture canon, `intergrax_runtime_architecture.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`docs/ARCHITECTURE.md`**, **`docs/IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
 
+> **Authoring rule:** Application authors define product behavior and compose platform capabilities. They do not implement generic platform infrastructure. For ownership decisions see [`docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md).
+
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
 
@@ -211,6 +213,8 @@ app.include_router(
     prefix=settings.interaction_route_prefix,
 )
 ```
+
+`InteractionIntakeService` also accepts an optional `task_executor` (`intergrax.runtime.interactions.task_executor.TaskExecutor`). When set, `execute=true` routes through the executor instead of calling `NexusLoop` directly; `nexus_loop=` remains supported for backward compatibility. LKW mounts a shared `LocalWorkspaceTaskExecutor` so `/run` and interaction intake share one application boundary.
 
 | Host | Env flag | Surface env |
 |------|----------|-------------|

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from intergrax.runtime.interactions.errors import HostNotAcceptingWorkError
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
 from intergrax.runtime.interactions.models import InteractionIntakeResponse
 
@@ -39,6 +40,11 @@ def create_interaction_intake_router(
                 tenant_id=tenant,
                 execute=execute,
             )
+        except HostNotAcceptingWorkError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail={"error_id": exc.error_id, "message": exc.detail},
+            ) from exc
         except ValueError as exc:
             message = str(exc)
             if "signature" in message.lower() or "Slack" in message or "Teams" in message:

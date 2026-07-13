@@ -64,7 +64,7 @@ def lkw_smoke_workspace(tmp_path: Path) -> tuple[Path, str]:
 def lkw_smoke_client(
     lkw_smoke_workspace: tuple[Path, str],
     monkeypatch: pytest.MonkeyPatch,
-) -> TestClient:
+):
     fixture_doc, fixture_path = lkw_smoke_workspace
     _ = fixture_doc
     workspace_root = fixture_doc.parent
@@ -74,7 +74,8 @@ def lkw_smoke_client(
     monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG", "true")
     monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG_INGEST", "true")
 
-    return TestClient(create_local_workspace_backend_app())
+    with TestClient(create_local_workspace_backend_app()) as client:
+        yield client
 
 
 def _post_run(client: TestClient, payload: dict[str, Any]) -> dict[str, Any]:

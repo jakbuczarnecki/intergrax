@@ -1,13 +1,14 @@
 # Tier-3 Application Environment, Sandbox, and Shadow Workspace
 
-**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§50 + APP-CON-* / APP-EVOL-* / APP-OPS-* (host environments)  
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26  
-**Audit layers:** 3, 28  
-**Audit instruction:** [`audit/TIER3_APPLICATION_ENVIRONMENT.md`](../audit/TIER3_APPLICATION_ENVIRONMENT.md)  
-**Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix H · AC  
+**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§50 + APP-CON-* / APP-EVOL-* / APP-OPS-* (host environments)
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26
+**Audit layers:** 3, 28
+**Audit instruction:** [`audit/TIER3_APPLICATION_ENVIRONMENT.md`](../audit/TIER3_APPLICATION_ENVIRONMENT.md)
+**Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix H · AC
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates H-APP + APP-CON/EVOL/OPS)
+**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — Tier-3 applications are platform adopters (`PLATFORM-INV-004`). Reusable infrastructure discovered during application development must be promoted to the owning platform domain before application implementation continues (`PLATFORM-INV-001`, `PLATFORM-INV-002`).
 
 ---
 

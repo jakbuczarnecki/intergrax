@@ -12,14 +12,16 @@ from intergrax.runtime.interactions.factory import (
     resolve_interaction_settings,
 )
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
+from intergrax.runtime.interactions.task_executor import TaskExecutor
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
 def wire_interaction_intake_service(
-    nexus_loop: NexusLoop,
+    nexus_loop: NexusLoop | None = None,
     *,
     interaction_surface: str = "auto",
+    task_executor: TaskExecutor | None = None,
     task_enricher: Callable[..., object] | None = None,
 ) -> InteractionIntakeService:
     """
@@ -33,6 +35,7 @@ def wire_interaction_intake_service(
     verifier = create_inbound_verifier()
     return InteractionIntakeService(
         nexus_loop=nexus_loop,
+        task_executor=task_executor,
         adapter=adapter,
         verifier=verifier,
         task_enricher=task_enricher,

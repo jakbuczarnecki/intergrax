@@ -3,7 +3,7 @@
 **Status:** Canonical index (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
 **Audit ID:** P2-ARCH-01  
-**Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) · [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) · [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
@@ -12,6 +12,8 @@
 Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs, ADRs, and CI gates. This document is the **single cross-layer authority** — normative MUST / MUST NOT / SHOULD rules plus a terse `SYS-INV-*` index with CI pointers.
 
 **This file is not a second canon.** When semantics change, update the domain architecture first, then adjust the cross-layer rule and §5 row here. Do not copy long tables from ACP / APP / ORCH into this guide.
+
+**Distinction from architecture principles:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) governs capability ownership, architecture evolution, domain creation, application adoption, and proof order (`PLATFORM-INV-*`). **This guide** (`SYS-INV-*`) is the cross-layer runtime and code **MUST / MUST NOT** index. Do not duplicate `PLATFORM-INV-*` definitions here — reference the principles document.
 
 ---
 

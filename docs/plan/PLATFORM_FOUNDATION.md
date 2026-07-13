@@ -1,8 +1,9 @@
 # Platform Foundation — Implementation Plan
 
-**Architecture (1:1):** [`architecture/PLATFORM_FOUNDATION.md`](../architecture/PLATFORM_FOUNDATION.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/PLATFORM_FOUNDATION.md`](../architecture/PLATFORM_FOUNDATION.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
+**Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
@@ -72,7 +73,7 @@ Verify (every harness PR):
 
 ### 6.1av Harness implementation queue — Platform Foundation audit maintenance
 
-**Source:** Interactive layer audit (2026-06-19) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-19/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-19/PLATFORM_FOUNDATION.md) · prior: [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Source:** Interactive layer audit (2026-06-19) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-19/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-19/PLATFORM_FOUNDATION.md) · prior: [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)
 **Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -91,12 +92,12 @@ Verify (every harness PR):
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
-**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.  
-EVID-EVAL Eval Regression Evidence **Done** — `evidence eval` writes deterministic eval evidence artifacts and optionally enriches `evidence posture` via `EVAL_REGRESSION` when the report exists. It is not a new eval framework and does not run real LLM/provider evaluation.  
-EVID-COST Cost Evidence **Done** — `evidence cost` writes deterministic local cost evidence artifacts and optionally enriches `evidence posture` via `COST_EVIDENCE` when the report exists. It is not a billing engine, provider pricing system, cloud cost estimator, or real LLM usage meter.  
-Evidence platform proof path **Done** — the canonical local proof path is now documented in architecture and README: `certify core` → `trace export` → `evidence live-core` → `evidence eval` → `evidence cost` → `evidence posture` / `posture export`.  
-Evidence smoke audit: **Done** — canonical local proof path verified (see `HARNESS_EVIDENCE_PACK.md` § A2 closeout). README / onboarding update after smoke audit: **Done** — operator-facing proof path in README (see `HARNESS_EVIDENCE_PACK.md` § A3 closeout). Evidence artifact sanity checker / docs checker: **Done** — `scripts/maintenance/check_evidence_artifacts.py` validates expected artifacts and README proof-path references (see `HARNESS_EVIDENCE_PACK.md` § A4 closeout). External one-page harness narrative: **Done** — `docs/guides/INTERGRAX_HARNESS_NARRATIVE.md` (see `HARNESS_EVIDENCE_PACK.md` § A5 closeout). **Strong ROI and polished/adopter-ready ROI are closed.** No immediate HEP evidence ROI task remains; deferred evidence waves remain deferred until explicitly prioritized. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap. **Boundary:** HEP remains §6.1 harness/platform evidence extension — not product/application work.  
-**Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** product/application work  
+**Status:** HEP-1 **Done**; HEP-2 Trace Evidence Path **Done**; HEP-3 Evidence Posture / Scoreboard **Done**; EVID-CORE-FU-01 Selected Live Tier-0 Probes **Done** — `certify core` → `trace export` → `evidence live-core` → `evidence posture` / `evidence posture export`. EVID-CORE-FU-01 adds selected local no-network live Tier-0 probes with mock LLM/tools. It does not replace deterministic CORE certification and is not full runtime certification.
+EVID-EVAL Eval Regression Evidence **Done** — `evidence eval` writes deterministic eval evidence artifacts and optionally enriches `evidence posture` via `EVAL_REGRESSION` when the report exists. It is not a new eval framework and does not run real LLM/provider evaluation.
+EVID-COST Cost Evidence **Done** — `evidence cost` writes deterministic local cost evidence artifacts and optionally enriches `evidence posture` via `COST_EVIDENCE` when the report exists. It is not a billing engine, provider pricing system, cloud cost estimator, or real LLM usage meter.
+Evidence platform proof path **Done** — the canonical local proof path is now documented in architecture and README: `certify core` → `trace export` → `evidence live-core` → `evidence eval` → `evidence cost` → `evidence posture` / `posture export`.
+Evidence smoke audit: **Done** — canonical local proof path verified (see `HARNESS_EVIDENCE_PACK.md` § A2 closeout). README / onboarding update after smoke audit: **Done** — operator-facing proof path in README (see `HARNESS_EVIDENCE_PACK.md` § A3 closeout). Evidence artifact sanity checker / docs checker: **Done** — `scripts/maintenance/check_evidence_artifacts.py` validates expected artifacts and README proof-path references (see `HARNESS_EVIDENCE_PACK.md` § A4 closeout). External one-page harness narrative: **Done** — `docs/guides/INTERGRAX_HARNESS_NARRATIVE.md` (see `HARNESS_EVIDENCE_PACK.md` § A5 closeout). **Strong ROI and polished/adopter-ready ROI are closed.** No immediate HEP evidence ROI task remains; deferred evidence waves remain deferred until explicitly prioritized. The detailed task count and roadmap live in `HARNESS_EVIDENCE_PACK.md` § Evidence ROI roadmap. **Boundary:** HEP remains §6.1 harness/platform evidence extension — not product/application work.
+**Priority ladder:** **Band 2ae** — §6.1 extension (harness evidence / runtime proof / onboarding); runs **after** gate green; **not** product/application work
 **Source:** External infrastructure audit (2026-06) + operator decision B → A → C
 
 | Wave | Scope | IDs | Status |
@@ -146,8 +147,8 @@ Wave H-INT-9 (P2 reserve):  M-P5.29 → M-P5.30 → M-P5.31 → M-P5.32 → M-P5
 Wave PRE (presets):         M-P5-PRE.1  (after H-INT-6 P0 slugs wired)
 ```
 
-**Prerequisites:** Phase M.6 P4 **Done**; M-P4.FU wiring **Done**; Phase INT closeout **Done** (health probe patterns).  
-**Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.  
+**Prerequisites:** Phase M.6 P4 **Done**; M-P4.FU wiring **Done**; Phase INT closeout **Done** (health probe patterns).
+**Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.
 **Closeout target:** catalog **136** slugs; `HARNESS_M6_P5_PROBE_SLUGS` + four Tier-3 presets; gate green.
 
 ### 6.3 End of platform plan

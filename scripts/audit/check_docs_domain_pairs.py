@@ -40,6 +40,11 @@ PLAN_ONLY_HUBS = {
     "PROVIDER_CATEGORY_CONTRACTS",
 }
 
+# Meta-architecture governance canon (hub-linked; no 1:1 plan pair).
+ARCH_ONLY_GOVERNANCE = {
+    "INTERGRAX_ARCHITECTURE_PRINCIPLES",
+}
+
 ALLOWED_DOCS_ROOT = {
     "intergrax_runtime_architecture.md",
     "DOCUMENTATION_MAP.md",
@@ -50,7 +55,7 @@ def _check_domain_pairs(errors: list[str]) -> int:
     arch_files = sorted(ARCH.glob("*.md"))
     plan_files = sorted(PLAN.glob("*.md"))
 
-    arch_names = {p.stem for p in arch_files}
+    arch_names = {p.stem for p in arch_files} - ARCH_ONLY_GOVERNANCE
     plan_names = {p.stem for p in plan_files} - PLAN_ONLY_HUBS
 
     if arch_names != plan_names:

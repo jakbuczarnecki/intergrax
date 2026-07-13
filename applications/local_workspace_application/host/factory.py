@@ -30,15 +30,18 @@ from intergrax.applications._shared.task_control_wiring import (
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
+from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle, apply_lkw_daemon_lifespan
+from local_workspace_application.host.lkw_task_enricher import build_lkw_combined_task_enricher
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
 from local_workspace_application.host.observability_wiring import build_local_workspace_observability_plugins
-from local_workspace_application.host.run_task_enricher import build_lkw_http_run_task_enricher
+from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.serving.background_task_proof_routes import (
     mount_local_workspace_background_task_proof_routes,
 )
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
+from local_workspace_application.serving.readiness_routes import mount_local_workspace_readiness_routes
 from local_workspace_application.serving.sentry_proof_routes import mount_local_workspace_sentry_proof_routes
 
 
@@ -53,6 +56,7 @@ def create_local_workspace_backend_app(
     if observability_export is None:
         observability_export = settings.build_observability_export_config()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
+    host_lifecycle = LocalWorkspaceHostLifecycle()
 
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = manifest.environment or build_local_workspace_environment_profile(settings)
@@ -84,11 +88,41 @@ def create_local_workspace_backend_app(
         idempotency_store=runtime.reliability.idempotency_store,
     )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
-    lkw_run_task_enricher = build_lkw_http_run_task_enricher(
+    lkw_task_enricher = build_lkw_combined_task_enricher(
         env,
+        default_capability=manifest.default_capability,
         agent_checkpoint_store=runtime.agent_checkpoint_store,
+        compensation_queue_store=runtime.compensation_queue_store,
+        idempotency_store=runtime.reliability.idempotency_store,
     )
-    lkw_run_task_runner = build_task_runner_with_enricher(nexus_loop, lkw_run_task_enricher)
+    lkw_task_executor = LocalWorkspaceTaskExecutor(
+        nexus_loop,
+        task_enricher=lkw_task_enricher,
+        lifecycle=host_lifecycle,
+    )
+    host_lifecycle.set_executor_available(True)
+    host_lifecycle.register_component("runtime", enabled=True, required=True, healthy=True)
+    host_lifecycle.register_component("http", enabled=True, required=True, healthy=True)
+    host_lifecycle.register_component(
+        "mcp",
+        enabled=settings.include_mcp,
+        required=False,
+        healthy=True,
+    )
+    host_lifecycle.register_component(
+        "interaction_intake",
+        enabled=settings.include_interaction_routes,
+        required=False,
+        healthy=True,
+        detail="disabled" if not settings.include_interaction_routes else "mounted",
+    )
+    host_lifecycle.register_component(
+        "scheduler",
+        enabled=settings.include_scheduler,
+        required=False,
+        healthy=True,
+        detail="disabled" if not settings.include_scheduler else "configured",
+    )
     scheduler_wiring = wire_long_running_scheduler(
         checkpoint_store=checkpoint_store,
         task_runner=task_runner,
@@ -126,10 +160,14 @@ def create_local_workspace_backend_app(
 
     mount_local_workspace_routes(
         app,
-        nexus_loop=nexus_loop,
+        task_executor=lkw_task_executor,
         prefix=settings.route_prefix,
         default_agent_id=settings.default_agent_id,
-        task_runner=lkw_run_task_runner,
+    )
+    mount_local_workspace_readiness_routes(
+        app,
+        host_lifecycle,
+        prefix=settings.route_prefix,
     )
     mount_local_workspace_sentry_proof_routes(
         app,
@@ -155,9 +193,8 @@ def create_local_workspace_backend_app(
 
     if settings.include_interaction_routes:
         interaction_service = wire_interaction_intake_service(
-            nexus_loop,
             interaction_surface=settings.interaction_surface,
-            task_enricher=task_enricher,
+            task_executor=lkw_task_executor,
         )
         app.include_router(
             create_interaction_intake_router(
@@ -194,5 +231,8 @@ def create_local_workspace_backend_app(
     else:
         apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
 
+    apply_lkw_daemon_lifespan(app, host_lifecycle)
+    app.state.lkw_host_lifecycle = host_lifecycle
+    app.state.lkw_task_executor = lkw_task_executor
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

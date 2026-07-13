@@ -19,6 +19,18 @@ After APP-CON / APP-EVOL / APP-OPS documentation tranches, the platform has many
 
 **Verdict summary:** No structural conflicts. **Three naming overlap risks** require glossary discipline; **one table row** in TIER3 §22 was misleading (fixed). **CapabilityRegistry** must not be introduced as a new type.
 
+### 1.1 Platform evolution governance checks
+
+When reviewing new capabilities or adoption work, also verify ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)):
+
+| Check | Principle |
+|-------|-----------|
+| One architectural owner per reusable capability | `PLATFORM-INV-003` |
+| Generic capability not owned by an application | `PLATFORM-INV-001`, `PLATFORM-INV-011` |
+| Architecture before adoption | `PLATFORM-INV-002` |
+| Domain plan owns implementation tasks | §17 architecture/plan pairing |
+| First adopter and proof do not redefine architecture | `PLATFORM-INV-005` |
+
 ---
 
 ## 2. Capability layer — ALIGNED (do not merge)
