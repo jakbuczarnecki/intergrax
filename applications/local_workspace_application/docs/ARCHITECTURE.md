@@ -992,6 +992,8 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 #### LKW.6 — OS daemon + interaction intake (backend productization)
 
+**Platform ownership:** generic always-on hosting is owned by [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md); LKW is the first adopter and proof ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../../docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) §34). LKW.6A delivered the application execution boundary; LKW.6B adopts platform hosting — it does not implement `HostedApplicationEngine`, supervisors, or generic OS adapters in the application tree.
+
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
 | LKW.6.1 | `scripts/lkw-host.*` | Start/stop wrapper for uvicorn |

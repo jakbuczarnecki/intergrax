@@ -34,6 +34,25 @@ When priority 1 and priority 2/3 conflict, **update architecture and plan first*
 
 ---
 
+## Platform capability evolution
+
+When a roadmap item reveals reusable infrastructure, **stop application implementation** and resolve platform ownership first. Canonical sequence ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · `PLATFORM-INV-002`):
+
+```text
+identify capability
+  → classify application-specific vs platform-wide
+  → ADR
+  → architecture
+  → plan
+  → platform implementation
+  → first adopter
+  → live proof
+```
+
+Application development must not continue on generic platform infrastructure once it is recognized as platform-wide. Project-management and Cursor workflow details remain in this strategy document and iteration rules — not in the architecture-principles canon.
+
+---
+
 ## Documentation boundary
 
 Canonical **`docs/`** architecture and **`intergrax_runtime_architecture.md`** describe the **Intergrax Harness AI / Agent OS platform** — the runtime and infrastructure for launching and governing agent environments.

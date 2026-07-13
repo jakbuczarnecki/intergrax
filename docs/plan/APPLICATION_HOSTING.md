@@ -44,6 +44,8 @@ Deliver a platform-owned, reusable Application Hosting subsystem that can run an
 
 LKW is the first product adoption and proof. Generic code MUST be implemented under platform namespaces and `APP-HOST-*` plan identifiers.
 
+**Governance prerequisite** ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)): APP-HOST implementation follows platform-domain ownership. LKW adoption begins only after the required platform implementation slices are complete. Delivery order remains **platform implementation → LKW adoption → LKW live proof** — do not move LKW proof tasks before platform foundation rows.
+
 ---
 
 ## 2. Delivery principles

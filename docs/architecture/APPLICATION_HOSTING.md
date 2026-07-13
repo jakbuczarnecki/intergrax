@@ -1,12 +1,13 @@
 # Application Hosting
 
-**Status:** Canonical architecture — accepted for implementation planning  
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/APPLICATION_HOSTING.md`](../plan/APPLICATION_HOSTING.md)  
-**ADR:** [`ADR-HOST-001`](../adr/entries/2026-07-13/ADR-HOST-001.md)  
-**Extended detail:** [`satellites/APPLICATION_HOSTING_extended_depth.md`](satellites/APPLICATION_HOSTING_extended_depth.md)  
-**Primary integration:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)  
+**Status:** Canonical architecture — accepted for implementation planning
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/APPLICATION_HOSTING.md`](../plan/APPLICATION_HOSTING.md)
+**ADR:** [`ADR-HOST-001`](../adr/entries/2026-07-13/ADR-HOST-001.md)
+**Extended detail:** [`satellites/APPLICATION_HOSTING_extended_depth.md`](satellites/APPLICATION_HOSTING_extended_depth.md)
+**Primary integration:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
 **First adopter/proof:** `applications/local_workspace_application/`
+**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — Application Hosting is the canonical example of platform ownership, architecture before adoption, deployment transparency, and first-adopter proof through LKW (`PLATFORM-INV-001`, `PLATFORM-INV-002`, `PLATFORM-INV-004`, `PLATFORM-INV-006`, `PLATFORM-INV-007`).
 
 ---
 
@@ -133,6 +134,8 @@ It does not answer:
 - **HOST-INV-10:** LKW is a proof workload, never the owner of generic hosting contracts.
 - **HOST-INV-11:** `ApplicationHost.on_hook` and `HostedApplicationHooks` are distinct and MUST NOT be merged.
 - **HOST-INV-12:** Restart creates a new application instance/process lifecycle; the hosted application does not `exec` itself.
+
+**`HOST-INV-*` vs `PLATFORM-INV-*`:** domain-local `HOST-INV-*` rules remain authoritative for hosting contracts and runtime behavior. Platform `PLATFORM-INV-*` identifiers in [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) govern why this domain exists, who owns generic hosting, and how applications adopt it — do not replace `HOST-INV-*` with `PLATFORM-INV-*` in this document.
 
 ---
 
@@ -507,6 +510,7 @@ Generic contracts and engine code MUST NOT live under `applications/local_worksp
 | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | Authoring facade, scaffolding, guides |
 | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | Deployment posture boundary; not local supervisor ownership |
 | [`plan/APPLICATION_HOSTING.md`](../plan/APPLICATION_HOSTING.md) | Implementation truth and fidelity matrix |
+| [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) | Platform evolution and adoption governance |
 
 ---
 

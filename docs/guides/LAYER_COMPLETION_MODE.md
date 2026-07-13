@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
-**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules) · [implementation-journal/](../implementation-journal/README.md)
+**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md#architecture-vs-implementation-rules-boundary) (architecture vs implementation rules) · [implementation-journal/](../implementation-journal/README.md)
 
 **Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
@@ -59,6 +59,8 @@ Read **only** documents required for the designated layer — do **not** load al
 ---
 
 ## 4. Objective
+
+**Governance prerequisite** ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)): layer closeout assumes ownership is established, architecture and plan are canonical for the domain, the capability is not hidden inside an application, and first-adopter proof follows platform implementation (`PLATFORM-INV-002`, `PLATFORM-INV-005`).
 
 Bring the designated layer to a state that is:
 

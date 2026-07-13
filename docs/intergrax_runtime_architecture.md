@@ -1,6 +1,7 @@
 # Intergrax Runtime Architecture
 
 **Hub only** — domain architecture and implementation are paired 1:1 under `architecture/` and `plan/`; multi-layer features are paired 1:1 under `features/architecture/` and `features/plan/`.
+**Architecture principles:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — canonical rules for platform capability ownership, domain creation, application adoption, and proof order (meta-architecture governance; not a domain pair).
 **Target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **Features:** [`features/README.md`](features/README.md) — cross-layer capability docs that coordinate multiple domain pairs without replacing domain ownership.
@@ -16,9 +17,13 @@
 ## Documentation topology
 
 ```text
+docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md   — architecture governance (meta; no plan pair)
+docs/intergrax_runtime_architecture.md                   — runtime architecture hub (this file)
 docs/architecture/<DOMAIN>.md       ↔ docs/plan/<DOMAIN>.md
 docs/features/architecture/<FEATURE>.md ↔ docs/features/plan/<FEATURE>.md
 ```
+
+**Architecture governance** ([`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)) defines how capabilities are owned, classified, adopted, and proved. **Runtime architecture** (this hub) indexes the platform topology. **Domain architecture/plan pairs** own one reusable capability each. **Feature coordination** pairs cut across domains without replacing domain ownership.
 
 Domain pairs own layer architecture and implementation truth. Feature pairs coordinate capabilities that cut across multiple domain pairs. Feature implementation still lands in the owning domain plan rows.
 

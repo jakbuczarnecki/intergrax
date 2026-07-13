@@ -6,6 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 1–2, 32  
 **Audit instruction:** [`audit/PLATFORM_FOUNDATION.md`](../audit/PLATFORM_FOUNDATION.md)  
+**Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
 ---
 
 ## Cursor read scope (token budget)
