@@ -328,22 +328,24 @@ $LKW_DATA_HOME/
 
 **Engineering default (repo dev):** `build/` under repository — override via env for product parity testing.
 
-### 7.4 Install steps by OS (LKW.6B — platform adoption target)
+### 7.4 Install steps by OS (APP-HOST-7 — later operator/packaging targets)
 
-**Ownership:** LKW declares product always-on requirements and adopts platform Application Hosting. Generic OS service integration, signal handling, restart supervision, and service-manager descriptors are **platform-owned** ([`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md)). The examples below are **operator-facing targets** for LKW.6B live proof — not LKW-owned generic hosting infrastructure.
+**Ownership:** LKW declares product always-on requirements and adopts platform Application Hosting. Generic OS service integration, signal handling, restart supervision, and service-manager descriptors are **platform-owned** ([`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md)). The examples below are **operator-facing targets** for post-APP-HOST-7 packaging — **not** LKW.6B initial proof requirements.
+
+**LKW.6B initial proof** does not require service-manager installation or reboot survival unless APP-HOST-7 is completed. Initial acceptance covers: foreground hosted start, READY state, real LKW request, single-instance rejection, graceful stop, supervisor restart, new instance identity, real request after restart.
 
 ```text
 LKW application
   → LKW-specific HostedApplicationProfile
   → platform HostedApplicationEngine
-  → platform supervisor / OS adapters when applicable
+  → platform supervisor / OS adapters when applicable (APP-HOST-7)
 ```
 
 #### Windows
 
 ```text
 1. Installer copies bundle → %LOCALAPPDATA%\Intergrax\LKW\
-2. LKW.6B: platform Windows hosting adapter registers always-on service (LKW does not own generic service framework)
+2. APP-HOST-7: platform Windows hosting adapter registers always-on service (LKW does not own generic service framework)
 3. Optional: tray app in Startup folder → localhost:8020
 4. First-run wizard (LKW.8): pick folders → writes allowed_read_roots.json
 ```
@@ -664,11 +666,13 @@ LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in th
                                               (outbound from daemon — no public IP required)
 ```
 
-#### OS service packaging (LKW.6B — platform adoption)
+#### OS service packaging (APP-HOST-7 — later operator/packaging targets)
 
 **Platform ownership:** generic always-on hosting, lifecycle state machine, readiness aggregation, instance lock, signal handling, restart loop, and OS adapters (`systemd`, `launchd`, Windows Service) are owned by [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md). LKW is the first adopter and proof — it supplies an LKW-specific `HostedApplicationProfile`, hooks, and components only.
 
-| OS | Platform adapter target (LKW.6B proof) | Notes |
+**LKW.6B initial proof** does not require the OS adapters below unless APP-HOST-7 is completed. Keep these as later operator/packaging targets.
+
+| OS | Platform adapter target (APP-HOST-7) | Notes |
 |----|--------------------------------------|-------|
 | **Windows** | Platform Windows hosting adapter | User-session for file access; avoid SYSTEM account for home-folder indexing |
 | **Linux** | Platform `systemd` user-unit integration | `After=network.target`; restart on failure via platform supervisor |
@@ -1008,11 +1012,11 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
 | LKW.6.1 | `scripts/lkw-host.*` | Start/stop wrapper for uvicorn (dev/operator convenience — not generic hosting engine) |
-| LKW.6.2 | `hosting/` (LKW profile) + platform adoption | LKW-specific `HostedApplicationProfile` / hooks; platform OS adapter integration via APP-HOST (§7.4 targets) |
+| LKW.6.2 | `hosting/` (LKW profile) + platform adoption | LKW-specific `HostedApplicationProfile` / hooks; platform OS adapter integration via APP-HOST-7 (§7.4 targets) |
 | LKW.6.3 | `host/factory.py` | `wire_interaction_intake_service` + router |
 | LKW.6.4 | `host/settings.py` | `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS` |
 
-**Acceptance:** Service survives reboot; `GET /health` OK; intake JSON → completed task (no Slack required).
+**Acceptance (LKW.6B initial proof):** foreground hosted start → READY → real LKW request → single-instance rejection → graceful stop → supervisor restart → new instance identity → real request after restart. No Slack required. Service-manager installation and reboot survival are **APP-HOST-7** targets, not LKW.6B initial proof.
 
 **Frontend:** none new. **Backend:** host only.
 

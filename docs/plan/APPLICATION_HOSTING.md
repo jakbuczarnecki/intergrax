@@ -81,7 +81,7 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation begins at **APP-HOST-
 | ID | Task | Status |
 |----|------|--------|
 | APP-HOST-1A.1 | Hosted Application Profile Core | Planned |
-| APP-HOST-1A.2 | Complete `HostedApplicationProfile` composition root | Planned |
+| APP-HOST-1A.2 | Foundation `HostedApplicationProfile` composition root (contracts available before engine foundation) | Planned |
 | APP-HOST-1B | `HostedApplicationContext` and scoped typed service registry | Planned |
 | APP-HOST-1C | `HostedApplicationHooks` and hook registration model | Planned |
 | APP-HOST-1D | `HostedApplicationComponent` and component metadata contract | Planned |
@@ -152,7 +152,7 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation begins at **APP-HOST-
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-1..5 minimum foundation + APP-HOST-9A |
+| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-9A (see §4); no `InteractionProfile` unless APP-HOST-6A is also closed |
 | APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | Blocked |
 | APP-HOST-8C | LKW foreground hosted runner and single-instance proof | Blocked |
 | APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
@@ -164,11 +164,11 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation begins at **APP-HOST-
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-9A | `run_hosted_application(profile)` author facade | Planned |
+| APP-HOST-9A | `run_hosted_application(profile)` author facade | Planned — depends on APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, 5C; precedes APP-HOST-8A |
 | APP-HOST-9B | `HarnessApplication.hosting(...)` integration | Planned |
 | APP-HOST-9C | New-application scaffold/template support | Planned |
 | APP-HOST-9D | Application creation/hosting author guide | Planned |
-| APP-HOST-9E | Plugin/component examples and conformance kit | Planned |
+| APP-HOST-9E | Plugin/component examples and conformance kit; extends canonical `HostedApplicationProfile` with plugin field and plugin contract | Planned |
 | APP-HOST-9F | Migration guide and stable API declaration | Planned |
 
 ---
@@ -184,28 +184,29 @@ APP-HOST-0D                    [Done]
 → APP-HOST-1C
 → APP-HOST-1D
 → APP-HOST-1E
-→ APP-HOST-2A
 → APP-HOST-3A
+→ APP-HOST-1A.2                [foundation composition root]
+→ APP-HOST-1F
+→ APP-HOST-2A
+→ APP-HOST-2B
 → APP-HOST-2C
 → APP-HOST-2D
 → APP-HOST-2E
 → APP-HOST-2F
 → APP-HOST-3B/3C
-→ APP-HOST-4A
-→ APP-HOST-4C/4D/4E
+→ APP-HOST-4A/4C/4D/4E
 → APP-HOST-5A/5B/5C
 → APP-HOST-9A                  [author facade — required before LKW adoption]
-→ APP-HOST-1A.2                [complete composition root after contract rows]
 → APP-HOST-8A...               [LKW adoption + live proof]
 ```
 
 Required ordering before first adopter proof:
 
 ```text
-platform contracts
-→ engine foundation
-→ instance/shutdown minimum
-→ supervisor minimum
+platform contracts (1A.1..1E, 3A, 1A.2, 1F)
+→ engine foundation (2A..2F)
+→ instance/shutdown minimum (4A/4C/4D/4E)
+→ supervisor minimum (5A/5B/5C)
 → run_hosted_application(profile)   (APP-HOST-9A)
 → LKW adoption                        (APP-HOST-8A)
 → LKW live proof                      (APP-HOST-8C..8E)
@@ -214,13 +215,15 @@ platform contracts
 Rationale:
 
 - public contracts and lifecycle semantics precede the engine,
-- events are designed before engine behavior becomes opaque,
+- typed hosting events (APP-HOST-3A) are designed before the foundation composition root (APP-HOST-1A.2) and engine behavior become opaque,
+- APP-HOST-1A.2 is the foundation `HostedApplicationProfile` composition root — only contracts available before engine foundation; `HostedApplicationContext` is instance-scoped and not a profile field,
+- contract package exports and compatibility gates (APP-HOST-1F) follow the foundation composition root,
 - component coordination precedes LKW adoption,
 - instance/shutdown/supervisor mechanics precede restart proof,
-- **`run_hosted_application(profile)` (APP-HOST-9A) precedes LKW adoption (APP-HOST-8A)** — one-profile authoring validates the first adopter path,
-- APP-HOST-1A.2 completes the canonical composition root after typed contract rows exist,
-- interaction convenience facade can evolve after engine contracts stabilize,
-- OS-specific service installation is not required for initial platform proof.
+- **`run_hosted_application(profile)` (APP-HOST-9A) precedes LKW adoption (APP-HOST-8A)** — depends on APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, and 5C,
+- `InteractionProfile` extends the same canonical profile in APP-HOST-6A — not required for initial LKW proof; LKW may host existing interaction/runtime surfaces through the application runtime adapter,
+- plugin field and plugin contract extend the same canonical profile in APP-HOST-9E,
+- OS-specific service installation (APP-HOST-7) is not required for initial platform proof.
 
 ---
 
@@ -312,15 +315,20 @@ Before APP-HOST-8 closes:
 ```text
 platform contract/engine suites green
 LKW contains no generic engine/supervisor/OS code
-second instance rejected
-ready event/health verified
-real LKW task succeeds
-shutdown releases ownership
-restart creates new instance
-real LKW task succeeds after restart
+foreground hosted start
+READY state verified
+real LKW request succeeds
+single-instance rejection verified
+graceful stop releases ownership
+supervisor restart creates new instance identity
+real LKW request succeeds after restart
 structured receipt recorded
 reviewer steps reproducible
 ```
+
+Initial LKW proof does **not** require `InteractionProfile` (APP-HOST-6A) — LKW hosts existing interaction/runtime surfaces through the application runtime adapter. Interaction facade adoption may follow APP-HOST-6A.
+
+Service-manager installation, OS adapter registration, and reboot survival are **not** required unless APP-HOST-7 is closed — they remain later operator/packaging targets.
 
 ---
 
@@ -431,4 +439,27 @@ supervisor
 LKW adoption
 ```
 
-APP-HOST-1A.2 completes the one canonical `HostedApplicationProfile` composition root after APP-HOST-1B..1E and related policy rows exist.
+APP-HOST-1A.2 defines the foundation `HostedApplicationProfile` composition root after APP-HOST-1B..1E and APP-HOST-3A exist. It may include only contracts available before the engine foundation:
+
+```text
+identity and application factory core
+instance/lifecycle/shutdown/restart policies
+HostedApplicationHooks
+HostedApplicationComponent registrations
+typed hosting event subscriptions (after APP-HOST-3A)
+safe metadata/public view/digest
+```
+
+Explicitly out of scope for APP-HOST-1A.2:
+
+```text
+context references — HostedApplicationContext is instance-scoped, not a profile field (APP-HOST-1B)
+InteractionProfile — extends the same canonical profile in APP-HOST-6A
+plugins — plugin field and plugin contract extend the same canonical profile in APP-HOST-9E
+HostedApplicationEngine
+OS adapters
+supervisor
+LKW adoption
+```
+
+APP-HOST-9A (`run_hosted_application(profile)`) depends on at least APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F, APP-HOST-4 minimum foundation (4A/4C/4D/4E), and APP-HOST-5C, and must close before APP-HOST-8A.

@@ -868,7 +868,7 @@ Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architectu
 | ID | Task | Scope | Status |
 |----|------|-------|--------|
 | LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Unified `LocalWorkspaceTaskExecutor`; platform interaction intake reused; lifecycle/readiness contract; `/run` + `/interactions/intake` share one execution boundary | **Closed** |
-| LKW.6B | Adopt Application Hosting + always-on proof | Adopt platform `APPLICATION_HOSTING`; product-specific hooks/components only; live proof — **not** generic engine/supervisor/OS adapters | **Planned — next** |
+| LKW.6B | Adopt Application Hosting + always-on proof | Adopt platform `APPLICATION_HOSTING`; product-specific hooks/components only; foreground hosted proof — **not** generic engine/supervisor/OS adapters; no service-manager/reboot unless APP-HOST-7 | **Planned — next** |
 | LKW.6C | Implement first OS interaction adapter and live proof | First **product-specific** interaction source or OS-facing input channel wired through intake → executor → Nexus — **not** generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or supervisor integration | **Planned** |
 
 **Expected architecture (LKW.6A):**
@@ -891,14 +891,17 @@ OS-specific interaction adapter
 
 **LKW.6B will implement (adoption, not generic hosting ownership):**
 
-- adopt [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md) public contracts **after the required platform foundation closes** (APP-HOST-1..5 minimum + APP-HOST-9A)
+- adopt [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md) public contracts **after the required platform foundation closes** (APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, 5C, and APP-HOST-9A — see [`docs/plan/APPLICATION_HOSTING.md`](../../../docs/plan/APPLICATION_HOSTING.md) §4)
 - LKW may add **only**: LKW-specific `HostedApplicationProfile`, LKW-specific hooks, LKW-specific components, integration with the existing LKW application runtime, and live product proof
 - always-on live product proof — the following remain **platform-owned**: `HostedApplicationEngine`, `HostedApplicationSupervisor`, `InstanceGuard`, signal handling, restart mechanics, generic OS adapters, generic lifecycle/readiness contracts
 - graceful shutdown and readiness through the adopted hosting boundary (LKW.6A semantics preserved; `LocalWorkspaceHostLifecycle` migrated or bridged — not reimplemented as generic hosting in LKW)
+- **initial proof acceptance:** foreground hosted start, READY state, real LKW request, single-instance rejection, graceful stop, supervisor restart, new instance identity, real request after restart
+- LKW hosts existing interaction/runtime surfaces through the application runtime adapter — `InteractionProfile` adoption follows APP-HOST-6A, not LKW.6B initial proof
+- **not required for initial proof:** Windows Service, `systemd`, `launchd`, service-manager installation, reboot survival — these are APP-HOST-7 operator/packaging targets (see ARCHITECTURE §7.4)
 
 **LKW.6C scope (product input channel only):** may own a product-specific interaction source or OS-facing product adapter when it represents an LKW input channel. Must **not** own generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or generic supervisor integration.
 
-**Out of scope for LKW.6B (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS interaction adapters (**LKW.6C**).
+**Out of scope for LKW.6B (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS interaction adapters (**LKW.6C**), OS service packaging (**APP-HOST-7**).
 
 ---
 
