@@ -36,6 +36,32 @@ Load **only** the satellite matching your task or cited §.
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
+## Related platform domains
+
+| Domain | Relationship |
+|--------|--------------|
+| [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Optional **deployment wrapper** around a Tier-3 application definition |
+
+A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged** across deployment models — standalone runner, hosted engine, or future deployment models all execute the same `Task` / `NexusLoop` path.
+
+Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvironmentProfile`, `UnifiedTaskRunner`, `ApplicationHost.on_hook`, or `NexusLoop`.
+
+**Deployment-posture boundary:**
+
+| Tier-3 owns (product workload posture) | Application Hosting owns (platform deployment mechanics) |
+|----------------------------------------|----------------------------------------------------------|
+| the application requires continuous availability | process lifecycle |
+| the application exposes HTTP/MCP/interaction surfaces | liveness/readiness coordination |
+| the application contributes background components | instance ownership |
+| the application supports reactive, scheduled, or hybrid workloads | signal handling |
+| posture declarations in profile and host factory wiring | graceful shutdown |
+| | restart supervision |
+| | generic OS hosting adapters |
+| | service-manager integration boundaries |
+
+Canon: [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) · [`plan/APPLICATION_HOSTING.md`](../plan/APPLICATION_HOSTING.md) · [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) §34.
+
+
 ## Table of contents
 
 | § | Topic |

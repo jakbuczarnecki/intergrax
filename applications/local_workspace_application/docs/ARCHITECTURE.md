@@ -151,7 +151,7 @@ LKW is a **personal Agent OS instance** on the user's computer:
 
 ### 4.2 Responsibility matrix
 
-| Concern | Frontend | Backend (LKW daemon) |
+| Concern | Frontend | Backend (LKW application host) |
 |---------|----------|----------------------|
 | User message / command | Collects text, paths, template choice | Parses into `Task` |
 | Capability routing | May suggest `capability` in JSON | Nexus selects agent / graph |
@@ -170,7 +170,7 @@ LKW is a **personal Agent OS instance** on the user's computer:
 | **HTTP API** | any HTTP client | `POST /v1/local_workspace/run` | LKW.0 Done |
 | **MCP** | Cursor, Claude Desktop | `http://127.0.0.1:8020/mcp` | LKW.0 Done |
 | **LKW Tray** | Tauri/Electron or native | localhost HTTP + folder picker | LKW.8 |
-| **Slack** | Slack App (Socket Mode) | intake inside daemon | LKW.6b |
+| **Slack** | Slack App (Socket Mode) | intake via platform interaction stack on LKW host | LKW.6b |
 | **CLI operator** | `intergrax.debug` | trace DB | platform Done |
 
 ### 4.4 Backend process model
@@ -328,13 +328,22 @@ $LKW_DATA_HOME/
 
 **Engineering default (repo dev):** `build/` under repository — override via env for product parity testing.
 
-### 7.4 Install steps by OS (LKW.6 target)
+### 7.4 Install steps by OS (LKW.6B — platform adoption target)
+
+**Ownership:** LKW declares product always-on requirements and adopts platform Application Hosting. Generic OS service integration, signal handling, restart supervision, and service-manager descriptors are **platform-owned** ([`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md)). The examples below are **operator-facing targets** for LKW.6B live proof — not LKW-owned generic hosting infrastructure.
+
+```text
+LKW application
+  → LKW-specific HostedApplicationProfile
+  → platform HostedApplicationEngine
+  → platform supervisor / OS adapters when applicable
+```
 
 #### Windows
 
 ```text
 1. Installer copies bundle → %LOCALAPPDATA%\Intergrax\LKW\
-2. Register Windows Service OR Login Task → runs scripts/lkw-host.ps1
+2. LKW.6B: platform Windows hosting adapter registers always-on service (LKW does not own generic service framework)
 3. Optional: tray app in Startup folder → localhost:8020
 4. First-run wizard (LKW.8): pick folders → writes allowed_read_roots.json
 ```
@@ -655,15 +664,17 @@ LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in th
                                               (outbound from daemon — no public IP required)
 ```
 
-#### OS service packaging (see also §7.4)
+#### OS service packaging (LKW.6B — platform adoption)
 
-| OS | Recommended mechanism | Notes |
-|----|----------------------|-------|
-| **Windows** | Windows Service or scheduled task + tray helper | User-session for file access; avoid SYSTEM account for home-folder indexing |
-| **Linux** | `systemd` user unit (`lkw.service`) | `After=network.target`; restart on failure |
-| **macOS** | `launchd` LaunchAgent (`~/Library/LaunchAgents/`) | Full Disk Access may be required for user folders |
+**Platform ownership:** generic always-on hosting, lifecycle state machine, readiness aggregation, instance lock, signal handling, restart loop, and OS adapters (`systemd`, `launchd`, Windows Service) are owned by [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md). LKW is the first adopter and proof — it supplies an LKW-specific `HostedApplicationProfile`, hooks, and components only.
 
-Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Production packaging: single binary or `uv run` wrapper in service unit.
+| OS | Platform adapter target (LKW.6B proof) | Notes |
+|----|--------------------------------------|-------|
+| **Windows** | Platform Windows hosting adapter | User-session for file access; avoid SYSTEM account for home-folder indexing |
+| **Linux** | Platform `systemd` user-unit integration | `After=network.target`; restart on failure via platform supervisor |
+| **macOS** | Platform `launchd` LaunchAgent integration | Full Disk Access may be required for user folders |
+
+Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. **LKW.6B** adopts platform hosting around this factory; LKW does not implement generic daemon engine or OS hosting mechanics in the application tree.
 
 #### Always-on responsibilities
 
@@ -688,7 +699,7 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 
 ### 9.3a LKW.6A — unified application execution boundary (closed)
 
-Platform interaction intake exists and LKW host wiring exists; **LKW.6A** unifies execution and daemon lifecycle semantics.
+Platform interaction intake exists and LKW host wiring exists; **LKW.6A** unifies execution and application-level readiness semantics (temporary until **LKW.6B** adopts platform Application Hosting).
 
 ```text
 POST /v1/local_workspace/run
@@ -707,17 +718,17 @@ POST /v1/interactions/intake
 | Transport normalization | Platform `InteractionAdapter` / HTTP schemas | No LKW interaction models |
 | Application execution prep | `LocalWorkspaceTaskExecutor` | Allowlisted capabilities: `local.workspace.search` / `.index` / `.synthesize` (+ graph triggers) |
 | Reliability enrichment | Shared `build_reliability_task_enricher` | Applied once per execution |
-| Daemon lifecycle | `LocalWorkspaceHostLifecycle` | `STARTING` → `READY` → `STOPPING` → `STOPPED`; `FAILED` on startup errors |
+| Application readiness (temporary) | `LocalWorkspaceHostLifecycle` (LKW.6A) | `STARTING` → `READY` → `STOPPING` → `STOPPED`; `FAILED` on startup errors — **not** canonical platform hosting; awaits LKW.6B migration to `HostedApplicationEngine` |
 | Liveness | `GET /health` | Unchanged: `{"status":"ok"}` |
 | Readiness | `GET /v1/local_workspace/readiness` | Requires `READY` + executor available + required components healthy |
 | Work rejection | Both execution surfaces | HTTP 503 `lkw_host_not_ready` / `lkw_host_stopping` when not accepting work |
 | Background extension point | Documented only | `execute=false` returns prepared `Task`; future background routing via platform message bus (LKW.4) |
 
-**LKW.6A does not include:** Windows Service / systemd / launchd packaging (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
+**LKW.6A does not include:** platform Application Hosting adoption (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
 ### 9.4 Slack as optional interaction channel
 
-Slack is **supported and professional** as an **optional** channel — not the product core. Use existing Intergrax **interaction + notification** integrations (`slack` slug). Execution remains on the **local LKW daemon**.
+Slack is **supported and professional** as an **optional** channel — not the product core. Use existing Intergrax **interaction + notification** integrations (`slack` slug). Execution remains on the **local LKW application host** (always-available backend on localhost).
 
 **Decision record:** Primary UX = localhost (HTTP/MCP/tray). Slack = remote/mobile/team + HITL. Product must pass acceptance tests **without** Slack configured.
 
@@ -727,7 +738,7 @@ Slack is **supported and professional** as an **optional** channel — not the p
 User in Slack:  /lkw search dokumenty o projekcie Alpha
        │
        ▼
-Slack Events API  ──►  (A) Socket Mode client in LKW daemon   [preferred: no inbound port]
+Slack Events API  ──►  (A) Socket Mode client in LKW host process   [preferred: no inbound port]
                     or (B) HTTPS tunnel → localhost:8020/v1/interactions/intake
        │
        ▼
@@ -996,8 +1007,8 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
-| LKW.6.1 | `scripts/lkw-host.*` | Start/stop wrapper for uvicorn |
-| LKW.6.2 | `packaging/` | systemd / launchd / Windows scripts (§7.4) |
+| LKW.6.1 | `scripts/lkw-host.*` | Start/stop wrapper for uvicorn (dev/operator convenience — not generic hosting engine) |
+| LKW.6.2 | `hosting/` (LKW profile) + platform adoption | LKW-specific `HostedApplicationProfile` / hooks; platform OS adapter integration via APP-HOST (§7.4 targets) |
 | LKW.6.3 | `host/factory.py` | `wire_interaction_intake_service` + router |
 | LKW.6.4 | `host/settings.py` | `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS` |
 

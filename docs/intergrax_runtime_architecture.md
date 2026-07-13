@@ -35,7 +35,7 @@ Current feature pairs:
 
 ---
 
-## Domain pair index (22)
+## Domain pair index (23)
 
 | # | Domain | Architecture | Plan |
 |---|--------|--------------|------|
@@ -61,6 +61,7 @@ Current feature pairs:
 | 20 | `ELASTIC_CAPACITY_AND_SCALING` | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) | [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) |
 | 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | 22 | `TIER3_APPLICATION_ENVIRONMENT` | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) |
+| 23 | `APPLICATION_HOSTING` | [`architecture/APPLICATION_HOSTING.md`](architecture/APPLICATION_HOSTING.md) | [`plan/APPLICATION_HOSTING.md`](plan/APPLICATION_HOSTING.md) |
 
 **Plan-only hubs (no 1:1 architecture basename):** [`plan/HARNESS_EVIDENCE_PACK.md`](plan/HARNESS_EVIDENCE_PACK.md) · [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · [`plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (satellite architecture under `architecture/satellites/`).
 
@@ -174,6 +175,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | What agents are active in this product? | **`ApplicationManifest`** roster | §24 · §27 |
 | What harness slices are enabled? | **`ApplicationEnvironmentProfile`** (§22.1 flat · §22.6 bundles) | §22 · [ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md) |
 | Reactive vs daemon vs batch? | Posture + host factory | §23 |
+| Always-on deployment lifecycle? | **`APPLICATION_HOSTING`** (wraps Tier-3 factory) | [`APPLICATION_HOSTING.md`](architecture/APPLICATION_HOSTING.md) |
 | Who sets routing capability? | L1–L4 matrix | §23.3 |
 | Virtual org / simulation rules? | **`OrganizationalPolicyEnvelope`** | §39 |
 | Dynamic block at intake / selection? | **`ApplicationHost`** + `HookPoint` | §32 |
@@ -183,3 +185,5 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 - **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
 - **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
+- **Tier-3 defines the application** — manifest, profile, surfaces, and Task/Nexus integration.
+- **Application Hosting provides deployment lifecycle models** around that application — process lifecycle, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS adapters ([`APPLICATION_HOSTING.md`](architecture/APPLICATION_HOSTING.md)). Deployment posture does not alter Task semantics, Nexus execution, agent behavior, or product results.

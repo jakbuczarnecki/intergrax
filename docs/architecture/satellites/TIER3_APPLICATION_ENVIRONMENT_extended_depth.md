@@ -336,6 +336,14 @@ Agents are **not** separate OS processes. They are registry entries invoked **on
 
 **Rule:** posture is a **product wiring decision** on Tier-3. Tier-1 Nexus semantics are identical across postures.
 
+### 23.2.1 Product workload posture vs platform deployment mechanics
+
+Tier-3 declares **what the product needs** — continuous availability, HTTP/MCP/interaction surfaces, background components, and reactive/scheduled/hybrid workloads (see §23.1–§23.2). [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md) owns the **generic operational realization**: process lifecycle, liveness/readiness coordination, instance ownership, signal handling, graceful shutdown, restart supervision, generic OS hosting adapters, and service-manager integration boundaries.
+
+Wrapping a Tier-3 application with Application Hosting does not alter `ApplicationManifest`, `ApplicationEnvironmentProfile`, `UnifiedTaskRunner`, `ApplicationHost.on_hook`, or `NexusLoop` semantics.
+
+
+
 ## 23.3 Routing responsibility matrix (who sets `capability`)
 
 Free-text user input does **not** implicitly select agents. Routing is explicit at one of four layers:
@@ -602,6 +610,21 @@ Return **`None`** to defer to default Nexus/harness behavior. Return **`HookResu
 **Protocol:** `intergrax/harness/application_host.py`  
 **Bridge:** `intergrax/harness/hooks.py` → `ApplicationHostMiddleware`  
 **Wiring:** `apply_application_host_wiring(nexus, host)` in `applications/_shared/application_host_wiring.py` (**Done** APP-CON-1)
+
+### 25.3.0 ApplicationHost hooks vs HostedApplicationHooks (normative)
+
+Tier-3 defines **two distinct hook systems**. They must not be merged into one callback system, and neither mechanism may implement a private orchestration or hosting loop.
+
+| Mechanism | Boundary | Examples |
+|-----------|----------|----------|
+| **`ApplicationHost.on_hook`** | Application execution and Nexus/Task boundaries | task intake · execution · tool/result boundaries · application environment reactions |
+| **`HostedApplicationHooks`** | Hosted application **instance lifecycle** boundaries (platform [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)) | `before_start` · `before_ready` · `before_stop` · `after_start` · `after_ready` · `after_stop` · `on_failure` |
+
+**Neither hook mechanism implicitly invokes the other.**
+
+A future author facade may expose hosting through `HarnessApplication.hosting(...)` — **planned only; not implemented**.
+
+---
 
 ### 25.3.1 Hooks are event reactions — not a cognitive loop (normative)
 

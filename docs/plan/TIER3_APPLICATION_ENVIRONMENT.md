@@ -10,6 +10,32 @@
 
 **Cross-plan — Profile bundles (APP-EVOL-8):** Hierarchical bundles (architecture §22.6 · ADR-APP-003) preserve flat property shims in M1 — no ACP contract change until `spec_version` 2.0 (M3).
 
+**Cross-plan — Application Hosting (`APPLICATION_HOSTING`):** Tier-3 owns only:
+
+```text
+application factory/runtime bridge
+application definition and composition
+ApplicationHost execution hooks
+future HarnessApplication.hosting(...) facade integration
+```
+
+Application Hosting owns:
+
+```text
+HostedApplicationProfile
+HostedApplicationHooks
+HostedApplicationComponent
+HostedApplicationEngine
+HostedApplicationSupervisor
+InstanceGuard
+hosting lifecycle and readiness
+signals and shutdown
+restart policy execution
+generic OS adapters
+```
+
+Concrete hosting implementation rows remain tracked exclusively in [`plan/APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md). Do not copy the `APP-HOST-*` backlog into this plan.
+
 **Application authoring canon (APP-CON):** architecture §24–§51 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. **Operations canon (APP-OPS):** architecture §50. **Freeze audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md). Phases **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** · **H-APP-FREEZE** below.
 
 **Fidelity rule:** Every architecture §20–§51 normative row MUST map to a plan ID in [§Architecture fidelity matrix](#architecture-fidelity-matrix--20-51) and a verification artifact in [§Fidelity verification gates](#fidelity-verification-gates). Completing the **open APP-\*** backlog is sufficient for implementation to match frozen architecture — no new primitives without ADR.

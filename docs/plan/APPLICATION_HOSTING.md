@@ -72,15 +72,16 @@ LKW is the first product adoption and proof. Generic code MUST be implemented un
 | APP-HOST-0A | ADR and dedicated domain registration | **Done** |
 | APP-HOST-0B | Architecture hub + extended-depth canon | **Done** |
 | APP-HOST-0C | Implementation plan + fidelity matrix | **Done** |
-| APP-HOST-0D | Tier-3/LKW cross-plan ownership correction | **Planned — next** |
+| APP-HOST-0D | Tier-3/LKW cross-plan ownership correction | **Done** |
 
-APP-HOST-0 does not authorize runtime implementation until 0D and documentation consistency validation pass.
+APP-HOST-0 closes with **0D Done**. Runtime implementation begins at **APP-HOST-1A.1** (not started until that row opens).
 
 ### APP-HOST-1 — Public authoring contracts
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-1A | `HostedApplicationProfile` and versioned safe public model | Planned |
+| APP-HOST-1A.1 | Hosted Application Profile Core | Planned |
+| APP-HOST-1A.2 | Complete `HostedApplicationProfile` composition root | Planned |
 | APP-HOST-1B | `HostedApplicationContext` and scoped typed service registry | Planned |
 | APP-HOST-1C | `HostedApplicationHooks` and hook registration model | Planned |
 | APP-HOST-1D | `HostedApplicationComponent` and component metadata contract | Planned |
@@ -151,7 +152,7 @@ APP-HOST-0 does not authorize runtime implementation until 0D and documentation 
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-1..4 minimum foundation |
+| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-1..5 minimum foundation + APP-HOST-9A |
 | APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | Blocked |
 | APP-HOST-8C | LKW foreground hosted runner and single-instance proof | Blocked |
 | APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
@@ -177,8 +178,8 @@ APP-HOST-0 does not authorize runtime implementation until 0D and documentation 
 The waves are not a license to implement every row at once. Recommended first sequence:
 
 ```text
-APP-HOST-0D
-→ APP-HOST-1A
+APP-HOST-0D                    [Done]
+→ APP-HOST-1A.1                [next — profile core]
 → APP-HOST-1B
 → APP-HOST-1C
 → APP-HOST-1D
@@ -193,7 +194,21 @@ APP-HOST-0D
 → APP-HOST-4A
 → APP-HOST-4C/4D/4E
 → APP-HOST-5A/5B/5C
-→ APP-HOST-8A...
+→ APP-HOST-9A                  [author facade — required before LKW adoption]
+→ APP-HOST-1A.2                [complete composition root after contract rows]
+→ APP-HOST-8A...               [LKW adoption + live proof]
+```
+
+Required ordering before first adopter proof:
+
+```text
+platform contracts
+→ engine foundation
+→ instance/shutdown minimum
+→ supervisor minimum
+→ run_hosted_application(profile)   (APP-HOST-9A)
+→ LKW adoption                        (APP-HOST-8A)
+→ LKW live proof                      (APP-HOST-8C..8E)
 ```
 
 Rationale:
@@ -202,6 +217,8 @@ Rationale:
 - events are designed before engine behavior becomes opaque,
 - component coordination precedes LKW adoption,
 - instance/shutdown/supervisor mechanics precede restart proof,
+- **`run_hosted_application(profile)` (APP-HOST-9A) precedes LKW adoption (APP-HOST-8A)** — one-profile authoring validates the first adopter path,
+- APP-HOST-1A.2 completes the canonical composition root after typed contract rows exist,
 - interaction convenience facade can evolve after engine contracts stabilize,
 - OS-specific service installation is not required for initial platform proof.
 
@@ -379,22 +396,39 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-0D — Tier-3/LKW cross-plan ownership correction
+APP-HOST-1A.1 — Hosted Application Profile Core
 ```
 
-This is documentation-only and must:
+APP-HOST-0D (Tier-3/LKW cross-plan ownership correction) is **Done**. Application Hosting implementation remains not started until APP-HOST-1A.1 closes.
 
-- register the domain pair in the runtime architecture hub,
-- add Tier-3 architecture/plan cross-references,
-- distinguish `ApplicationHost.on_hook` from hosting hooks,
-- reframe LKW.6B as platform adoption/proof,
-- remove any wording that assigns generic engine or OS mechanics to LKW,
-- validate links and architecture/plan pairing.
-
-After APP-HOST-0D, the first implementation task is expected to be:
+APP-HOST-1A.1 scope:
 
 ```text
-APP-HOST-1A — HostedApplicationProfile and versioned safe public model
+hosting package skeleton
+application identity contract
+application_id validation
+spec_version
+runtime-only application factory reference
+stable application factory descriptor/id
+safe metadata
+safe deterministic public projection
+deterministic profile digest
 ```
 
-The exact instruction must be generated only after APP-HOST-0D audit and contract-scope review.
+Explicitly out of scope for APP-HOST-1A.1:
+
+```text
+HostedApplicationEngine
+HostedApplicationContext
+hooks
+components
+policies
+events
+plugins
+interaction composition
+OS adapters
+supervisor
+LKW adoption
+```
+
+APP-HOST-1A.2 completes the one canonical `HostedApplicationProfile` composition root after APP-HOST-1B..1E and related policy rows exist.
