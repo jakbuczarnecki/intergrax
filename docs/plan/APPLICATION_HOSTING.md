@@ -154,7 +154,7 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-9A (see §4); no `InteractionProfile` unless APP-HOST-6A is also closed |
+| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Planned — next (see §4); no `InteractionProfile` unless APP-HOST-6A is also closed |
 | APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | Blocked |
 | APP-HOST-8C | LKW foreground hosted runner and single-instance proof | Blocked |
 | APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
@@ -166,7 +166,7 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-9A | `run_hosted_application(profile)` author facade | Planned — depends on APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, 5C; precedes APP-HOST-8A |
+| APP-HOST-9A | `run_hosted_application(profile)` author facade | **Done** |
 | APP-HOST-9B | `HarnessApplication.hosting(...)` integration | Planned |
 | APP-HOST-9C | New-application scaffold/template support | Planned |
 | APP-HOST-9D | Application creation/hosting author guide | Planned |
@@ -187,8 +187,8 @@ APP-HOST-0D                    [Done]
 → APP-HOST-W3                  [Done — process control and supervision]
   → APP-HOST-4A..4E
   → APP-HOST-5A..5C
-→ APP-HOST-9A                  [next — author facade — required before LKW adoption]
-→ APP-HOST-8A...               [LKW adoption + live proof]
+→ APP-HOST-9A                  [Done — author facade]
+→ APP-HOST-8A...               [next — LKW adoption + live proof]
 ```
 
 Required ordering before first adopter proof:
@@ -395,8 +395,10 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-9A — run_hosted_application(profile) author facade
+APP-HOST-8A — Define LKW hosted profile using platform contracts only
 ```
+
+**APP-HOST-9A — `run_hosted_application(profile)` author facade — Done** (2026-07-14). Public synchronous foreground runner: `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`; resolves profile once before side effects; assembles reference paths, clocks, logger, process identity, event publisher, control coordinator, signal adapter, instance guard, engine factory, and supervisor internally.
 
 **APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14; corrective pass). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
 

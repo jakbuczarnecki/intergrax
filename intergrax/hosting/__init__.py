@@ -90,6 +90,7 @@ from intergrax.hosting.shutdown import (
     HostedApplicationShutdownExecutionSnapshot,
 )
 from intergrax.hosting.signals import PortableForegroundSignalAdapter
+from intergrax.hosting.runner import run_hosted_application
 from intergrax.hosting.supervisor import (
     HostedApplicationEngineFactory,
     HostedApplicationExitKind,
@@ -185,4 +186,5 @@ __all__ = [
     "RuntimeSpineHostedApplicationEventPublisher",
     "ShutdownPolicy",
     "resolve_hosted_application_definition",
+    "run_hosted_application",
 ]

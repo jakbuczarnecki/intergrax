@@ -260,6 +260,13 @@ tests/unit/hosting/test_hosted_application_profile_schema.py
 **Architecture:** satellite Â§23
 **Goal:** Safe instance-scoped context for extensions.
 
+
+Delivered API:
+
+```python
+run_hosted_application(profile: HostedApplicationProfile) -> HostedApplicationSupervisorResult
+```
+
 Target:
 
 ```text
@@ -859,6 +866,9 @@ Persist a structured ProofReceipt through the platform store with hosting eviden
 
 ## APP-HOST-9A â€” Runner facade
 
+
+**Status:** Done (2026-07-14)
+
 **Depends on:** APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F minimum, APP-HOST-4 minimum foundation, APP-HOST-5C minimum
 **Blocks:** APP-HOST-8A (LKW hosted-profile adoption)
 
@@ -976,7 +986,7 @@ Commit:
 
 No row may be marked Done when its directly affected regression suite is red.
 
-# APP-HOST-W3 corrective pass — Process control and supervision hardening
+# APP-HOST-W3 corrective pass ï¿½ Process control and supervision hardening
 
 **Status:** **Done** (2026-07-14)
 
@@ -988,7 +998,7 @@ Delivered corrections:
 HostedApplicationInstanceAcquisitionResult + guard port alignment
 linearizable file-lock acquisition under native lock
 truthful lease is_valid/release + INSTANCE_RELEASED only after verified release
-HostedApplicationEffectiveControlRequest through wait_until_requested › stop › shutdown
+HostedApplicationEffectiveControlRequest through wait_until_requested ï¿½ stop ï¿½ shutdown
 HostedApplicationGlobalShutdownBudget across before_stop/intake/drain/cancel/flush/component/runtime/observer/lease/terminal phases
 wrapped exit classification (INSTANCE_CONFLICT, configuration errors)
 deterministic restart backoff + stable-window reset via ready_duration_seconds
@@ -996,5 +1006,5 @@ supervisor restart evaluation after engine failures without bypassing cleanup ve
 regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
 ```
 
-**Next wave:** APP-HOST-9A — `run_hosted_application(profile)` author facade (not started).
+**APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`. **Next wave:** APP-HOST-8A - Define LKW hosted profile using platform contracts only.
 
