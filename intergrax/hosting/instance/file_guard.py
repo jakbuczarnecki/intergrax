@@ -295,15 +295,22 @@ class FileHostedApplicationInstanceLease:
   async def release(self) -> None:
     if self._released_verified:
       return
+    released = False
     try:
       self.verify_ownership()
       assert self._lock.fd is not None
-      os.ftruncate(self._lock.fd, 0)
+      try:
+        os.ftruncate(self._lock.fd, 0)
+      except OSError as exc:
+        raise HostedApplicationInstanceGuardError("lease_truncate_failed") from exc
+      released = True
+      self._released_verified = True
     except HostedApplicationInstanceOwnershipError:
-      self._lock.close()
       raise
-    self._lock.close()
-    self._released_verified = True
+    finally:
+      self._lock.close()
+      if not released:
+        self._released_verified = False
 
 
 def _read_metadata_from_lock(lock: NativeFileLock) -> _LeaseMetadata:
@@ -491,3 +498,18 @@ class FileHostedApplicationInstanceGuard:
       _metadata=metadata,
     )
     return HostedApplicationInstanceAcquisitionResult(lease=lease, classification=classification)
+
+
+def lease_native_lock_for_tests(lease: FileHostedApplicationInstanceLease) -> NativeFileLock:
+    """Test seam exposing the native lock for fault injection."""
+    return lease._lock
+
+
+def lease_metadata_for_tests(lease: FileHostedApplicationInstanceLease) -> _LeaseMetadata:
+    """Test seam exposing lease metadata for corruption injection."""
+    return lease._metadata
+
+
+def lease_release_verified_for_tests(lease: FileHostedApplicationInstanceLease) -> bool:
+    """Test seam reporting whether release was verified."""
+    return lease._released_verified

@@ -90,11 +90,12 @@ class HostedApplicationShutdownRequestSnapshot(BaseModel):
     reason_code: str
     requested_at: datetime
     deadline_at: datetime | None = None
+    source_id: str = "runtime"
 
-    @field_validator("reason_code")
+    @field_validator("reason_code", "source_id")
     @classmethod
-    def _validate_reason_code(cls, value: str) -> str:
-        return validate_bounded_identifier(value, field_name="reason_code")
+    def _validate_identifiers(cls, value: str, info) -> str:
+        return validate_bounded_identifier(value, field_name=info.field_name)
 
     @field_validator("requested_at", "deadline_at")
     @classmethod

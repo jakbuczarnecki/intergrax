@@ -97,7 +97,7 @@ class HostedApplicationControlCoordinator:
     source_id: str = "runtime",
   ) -> HostedApplicationShutdownRequestSnapshot:
     safe_reason = validate_bounded_identifier(reason_code, field_name="reason_code")
-    validate_bounded_identifier(source_id, field_name="source_id")
+    safe_source = validate_bounded_identifier(source_id, field_name="source_id")
     if deadline_at is not None:
       _validate_timezone_aware(deadline_at, field_name="deadline_at")
     with self._lock:
@@ -106,6 +106,7 @@ class HostedApplicationControlCoordinator:
         reason_code=safe_reason,
         requested_at=now,
         deadline_at=deadline_at,
+        source_id=safe_source,
       )
       if self._shutdown_request is None:
         self._shutdown_request = incoming
@@ -128,7 +129,16 @@ class HostedApplicationControlCoordinator:
       _validate_timezone_aware(deadline_at, field_name="deadline_at")
     with self._lock:
       if self._effective_intent is HostedApplicationControlIntent.STOP:
-        raise HostedApplicationControlError("restart cannot override persistent stop")
+        if self._restart_request is not None:
+          return self._restart_request
+        if self._shutdown_request is not None:
+          return HostedApplicationRestartRequestSnapshot(
+            reason_code=self._shutdown_request.reason_code,
+            requested_at=self._shutdown_request.requested_at,
+            deadline_at=self._shutdown_request.deadline_at,
+            source_id=self._shutdown_request.source_id,
+          )
+        raise HostedApplicationControlError("restart cannot override persistent stop without stop request")
       now = self.clock.now()
       incoming = HostedApplicationRestartRequestSnapshot(
         reason_code=safe_reason,
@@ -229,7 +239,7 @@ class HostedApplicationControlCoordinator:
         reason_code=self._shutdown_request.reason_code,
         requested_at=self._shutdown_request.requested_at,
         deadline_at=self._shutdown_request.deadline_at,
-        source_id="runtime",
+        source_id=self._shutdown_request.source_id,
       )
     if self._effective_intent is HostedApplicationControlIntent.RESTART and self._restart_request is not None:
       return HostedApplicationEffectiveControlRequest(

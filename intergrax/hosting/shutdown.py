@@ -242,12 +242,22 @@ class HostedApplicationShutdownExecutor:
     await self._phase_stop_intake(budget, recorder, active_before)
     if strategy is ShutdownStrategy.CANCEL_IMMEDIATELY:
       await self._phase_cancel(budget, recorder, active_before)
-      recorder.forced = True
+      if self._active_count() > 0:
+        recorder.forced = True
     elif strategy is ShutdownStrategy.DRAIN_THEN_CANCEL:
       drained = await self._phase_drain(budget, recorder, active_before)
       if not drained and self._active_count() > 0:
         await self._phase_cancel(budget, recorder, active_before)
-        recorder.forced = True
+        cancel_outcome = recorder.records[-1].outcome
+        if (
+          self._active_count() > 0
+          or cancel_outcome
+          not in {
+            HostedApplicationShutdownPhaseOutcome.COMPLETED,
+            HostedApplicationShutdownPhaseOutcome.SKIPPED,
+          }
+        ):
+          recorder.forced = True
     elif strategy is ShutdownStrategy.WAIT_UNTIL_COMPLETE:
       drained = await self._phase_drain(budget, recorder, active_before)
       if not drained and self._active_count() > 0:
@@ -306,11 +316,17 @@ class HostedApplicationShutdownExecutor:
       self.active_work_controller.wait_for_idle,
     )
     completed = outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and self._active_count() == 0
-    if outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT or not completed:
+    if outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+      recorder.timed_out = True
+    elif outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+      recorder.timed_out = True
+    record_outcome = outcome
+    if outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and not completed:
+      record_outcome = HostedApplicationShutdownPhaseOutcome.TIMED_OUT
       recorder.timed_out = True
     recorder.record(
       phase=HostedApplicationShutdownPhase.DRAIN,
-      outcome=outcome if completed else HostedApplicationShutdownPhaseOutcome.TIMED_OUT,
+      outcome=record_outcome,
       started_at=started_at,
       active_before=active_before,
     )
@@ -377,6 +393,9 @@ def build_shutdown_execution_snapshot(
 ) -> HostedApplicationShutdownExecutionSnapshot:
   requested_at = request.requested_at if request is not None else clock.now()
   effective_deadline_at = request.deadline_at if request is not None else None
+  timed_out = recorder.timed_out
+  if effective_deadline_at is not None and clock.now() >= effective_deadline_at:
+    timed_out = True
   snapshot = HostedApplicationShutdownExecutionSnapshot(
     strategy=shutdown_policy.strategy,
     requested_at=requested_at,
@@ -384,10 +403,8 @@ def build_shutdown_execution_snapshot(
     phase_records=tuple(recorder.records),
     active_work_before=active_work_before,
     active_work_after=active_work_after,
-    timed_out=recorder.timed_out,
+    timed_out=timed_out,
     forced=recorder.forced,
     completed_at=clock.now(),
   )
-  if recorder.timed_out and recorder.records and recorder.records[-1].outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
-    pass
   return snapshot

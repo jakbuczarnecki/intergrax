@@ -100,12 +100,13 @@ async def test_drain_then_cancel_strategy() -> None:
     snapshot = await _execute(executor)
     assert work.intake_stopped
     assert work.cancelled
-    assert snapshot.forced
+    assert snapshot.timed_out
+    assert snapshot.forced is (work.active > 0)
     assert any(record.phase is HostedApplicationShutdownPhase.DRAIN for record in snapshot.phase_records)
 
 
 @pytest.mark.asyncio
-async def test_cancel_immediately() -> None:
+async def test_cancel_immediately_success_not_forced() -> None:
     work = FakeActiveWork()
     executor = HostedApplicationShutdownExecutor(
         shutdown_policy=ShutdownPolicy.cancel_immediately(),
@@ -114,7 +115,7 @@ async def test_cancel_immediately() -> None:
     )
     snapshot = await _execute(executor)
     assert work.cancelled
-    assert snapshot.strategy.value == "cancel_immediately"
+    assert snapshot.forced is False
 
 
 @pytest.mark.asyncio

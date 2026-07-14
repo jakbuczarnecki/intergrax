@@ -25,6 +25,8 @@ from intergrax.hosting.instance.file_guard import (
     FileHostedApplicationInstanceGuard,
     FileHostedApplicationInstanceLease,
     OsProcessProbe,
+    lease_native_lock_for_tests,
+    lease_release_verified_for_tests,
     _LeaseMetadata,
     _METADATA_SCHEMA_VERSION,
 )
@@ -73,6 +75,7 @@ async def test_port_conformance(tmp_path: Path) -> None:
     assert isinstance(guard, HostedApplicationInstanceGuardPort)
     result = await guard.acquire(_identity())
     assert isinstance(result, HostedApplicationInstanceAcquisitionResult)
+    await result.lease.release()
 
 
 @pytest.mark.asyncio
@@ -80,6 +83,7 @@ async def test_metadata_reread_after_native_lock(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
     result = await guard.acquire(_identity())
     assert result.lease.is_valid() is True
+    await result.lease.release()
 
 
 @pytest.mark.asyncio
@@ -176,7 +180,7 @@ async def test_ownership_token_mismatch_release(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
     lease = (await guard.acquire(_identity())).lease
     assert isinstance(lease, FileHostedApplicationInstanceLease)
-    lease._lock.write_bytes(
+    lease_native_lock_for_tests(lease).write_bytes(
         _LeaseMetadata(
             schema_version=_METADATA_SCHEMA_VERSION,
             application_id="test_app",
@@ -191,6 +195,7 @@ async def test_ownership_token_mismatch_release(tmp_path: Path) -> None:
         ).to_json_bytes()
     )
     assert lease.is_valid() is False
+    lease_native_lock_for_tests(lease).close()
     with pytest.raises(HostedApplicationInstanceOwnershipError):
         await lease.release()
 
@@ -200,7 +205,7 @@ async def test_is_valid_detects_changed_metadata(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
     lease = (await guard.acquire(_identity())).lease
     assert isinstance(lease, FileHostedApplicationInstanceLease)
-    lease._lock.write_bytes(
+    lease_native_lock_for_tests(lease).write_bytes(
         _LeaseMetadata(
             schema_version=_METADATA_SCHEMA_VERSION,
             application_id="test_app",
@@ -215,6 +220,7 @@ async def test_is_valid_detects_changed_metadata(tmp_path: Path) -> None:
         ).to_json_bytes()
     )
     assert lease.is_valid() is False
+    lease_native_lock_for_tests(lease).close()
 
 
 @pytest.mark.asyncio
@@ -222,10 +228,11 @@ async def test_failed_release_not_reported_as_released(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
     lease = (await guard.acquire(_identity())).lease
     assert isinstance(lease, FileHostedApplicationInstanceLease)
-    lease._lock.write_bytes(b"corrupt")
+    lease_native_lock_for_tests(lease).write_bytes(b"corrupt")
     with pytest.raises(HostedApplicationInstanceOwnershipError):
         await lease.release()
     assert lease.is_valid() is False
+    lease_native_lock_for_tests(lease).close()
 
 
 @pytest.mark.asyncio
@@ -234,6 +241,27 @@ async def test_stale_recovery_emits_recovered_then_acquired_classification(tmp_p
     object.__setattr__(guard, "process_probe", _DeadProbe())
     lease1 = (await guard.acquire(_identity("old"))).lease
     assert isinstance(lease1, FileHostedApplicationInstanceLease)
-    lease1._lock.close()
+    lease_native_lock_for_tests(lease1).close()
     result = await guard.acquire(_identity("new"))
     assert result.classification is InstanceAcquisitionClassification.STALE_OWNER
+
+
+@pytest.mark.asyncio
+async def test_ftruncate_failure_closes_handle_without_verified_release(tmp_path: Path) -> None:
+    guard = _guard(tmp_path)
+    lease = (await guard.acquire(_identity())).lease
+    assert isinstance(lease, FileHostedApplicationInstanceLease)
+    native = lease_native_lock_for_tests(lease)
+    original_ftruncate = os.ftruncate
+
+    def failing_ftruncate(fd: int, length: int) -> None:
+        raise OSError("ftruncate failed")
+
+    os.ftruncate = failing_ftruncate  # type: ignore[assignment]
+    try:
+        with pytest.raises(HostedApplicationInstanceGuardError):
+            await lease.release()
+    finally:
+        os.ftruncate = original_ftruncate
+    assert lease_release_verified_for_tests(lease) is False
+    assert native.held is False

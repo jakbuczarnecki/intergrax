@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from intergrax.hosting.control import HostedApplicationControlCoordinator
-from intergrax.hosting.errors import HostedApplicationSignalError
+from intergrax.hosting.errors import HostedApplicationControlError, HostedApplicationSignalError
 
 
 @runtime_checkable
@@ -63,6 +63,8 @@ class PortableForegroundSignalAdapter:
     for signum in signals:
       self._previous_handlers[signum] = self.signal_api.getsignal(signum)
       self.signal_api.signal(signum, self._make_handler(signum))
+    if self.enable_sighup_restart and not hasattr(signal, "SIGHUP"):
+      self.enable_sighup_restart = False
     self._installed = True
 
   def restore(self) -> None:
@@ -86,5 +88,8 @@ class PortableForegroundSignalAdapter:
         and hasattr(signal, "SIGHUP")
         and signum == getattr(signal, "SIGHUP")
       ):
-        self.coordinator.request_restart("signal.sighup")
+        try:
+          self.coordinator.request_restart("signal.sighup")
+        except HostedApplicationControlError:
+          return
     return _handler

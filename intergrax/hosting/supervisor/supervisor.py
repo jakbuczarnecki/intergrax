@@ -30,10 +30,12 @@ from intergrax.hosting.supervisor.classification import (
 from intergrax.hosting.supervisor.restart import (
   AsyncioSleeper,
   HostedApplicationRandomSource,
+  HostedApplicationRestartDecision,
   HostedApplicationRestartPolicyEvaluator,
   HostedApplicationSleeper,
   SystemRandomSource,
 )
+from intergrax.hosting.shutdown import MonotonicClock, SystemMonotonicClock
 
 InstanceIdGenerator = Callable[[], str]
 
@@ -92,6 +94,7 @@ class HostedApplicationSupervisor:
   control: HostedApplicationControlCoordinator
   event_publisher: HostedApplicationEventPublisher
   clock: HostedApplicationClock
+  monotonic_clock: MonotonicClock = field(default_factory=SystemMonotonicClock)
   sleeper: HostedApplicationSleeper = field(default_factory=AsyncioSleeper)
   random_source: HostedApplicationRandomSource = field(default_factory=SystemRandomSource)
   instance_id_generator: InstanceIdGenerator = field(default_factory=lambda: (lambda: str(uuid4())))
@@ -101,6 +104,7 @@ class HostedApplicationSupervisor:
       policy=self.definition.restart_policy,
       clock=self.clock,
       random_source=self.random_source,
+      monotonic_clock=self.monotonic_clock,
     )
     attempt_number = 0
     attempt_records: list[HostedApplicationSupervisorAttemptRecord] = []
@@ -115,6 +119,8 @@ class HostedApplicationSupervisor:
         break
       instance_id = validate_instance_id(self.instance_id_generator())
       self.control.prepare_next_instance()
+      if self.control.is_shutdown_requested():
+        break
       launch = HostedApplicationSupervisorLaunchContext(
         definition=self.definition,
         instance_id=instance_id,
@@ -131,6 +137,9 @@ class HostedApplicationSupervisor:
       exit_record: HostedApplicationExitRecord | None = None
       cleanup_verified = True
       cleanup_issue = ""
+
+      if self.control.is_shutdown_requested():
+        break
 
       try:
         engine = await self._build_engine(launch)
@@ -153,17 +162,15 @@ class HostedApplicationSupervisor:
           )
         )
         last_exit = exit_record
-        decision = restart_evaluator.evaluate(exit_record, attempt_number=attempt_number)
-        if not decision.should_restart:
-          break
-        if not await self._schedule_restart(
+        should_continue, exhausted = await self._maybe_schedule_restart(
           restart_evaluator,
-          decision,
-          last_exit=last_exit,
+          exit_record,
           attempt_number=attempt_number,
-        ):
+          exhausted=exhausted,
+        )
+        if not should_continue:
           break
-        attempt_number = decision.attempt_number
+        attempt_number += 1
         continue
 
       try:
@@ -217,30 +224,18 @@ class HostedApplicationSupervisor:
       if self.control.is_shutdown_requested():
         break
 
-      decision = restart_evaluator.evaluate(exit_record, attempt_number=attempt_number)
-      if not decision.should_restart:
-        if decision.exhausted:
-          exhausted = True
-          await self._publish_restart_event_safe(
-            HostedApplicationEventType.RESTART_EXHAUSTED,
-            attempt_number=attempt_number,
-            delay=0.0,
-            exit_kind=exit_record.exit_kind,
-            reason_code=decision.reason_code,
-          )
-        break
-
       if not cleanup_verified:
         break
 
-      if not await self._schedule_restart(
+      should_continue, exhausted = await self._maybe_schedule_restart(
         restart_evaluator,
-        decision,
-        last_exit=exit_record,
+        exit_record,
         attempt_number=attempt_number,
-      ):
+        exhausted=exhausted,
+      )
+      if not should_continue:
         break
-      attempt_number = decision.attempt_number
+      attempt_number += 1
 
     if last_exit is None:
       return self._result_for_stop_before_launch(attempt_records)
@@ -276,10 +271,43 @@ class HostedApplicationSupervisor:
       restart_exhausted=False,
     )
 
+  async def _maybe_schedule_restart(
+    self,
+    restart_evaluator: HostedApplicationRestartPolicyEvaluator,
+    exit_record: HostedApplicationExitRecord,
+    *,
+    attempt_number: int,
+    exhausted: bool,
+  ) -> tuple[bool, bool]:
+    decision = restart_evaluator.evaluate(exit_record, attempt_number=attempt_number)
+    if not decision.should_restart:
+      if decision.exhausted:
+        exhausted = True
+        await self._publish_restart_event_safe(
+          HostedApplicationEventType.RESTART_EXHAUSTED,
+          attempt_number=attempt_number,
+          delay=0.0,
+          exit_kind=exit_record.exit_kind,
+          reason_code=decision.reason_code,
+        )
+      return False, exhausted
+    if self.control.is_shutdown_requested():
+      return False, exhausted
+    if not await self._schedule_restart(
+      restart_evaluator,
+      decision,
+      last_exit=exit_record,
+      attempt_number=attempt_number,
+    ):
+      return False, exhausted
+    if self.control.is_shutdown_requested():
+      return False, exhausted
+    return True, exhausted
+
   async def _schedule_restart(
     self,
     restart_evaluator: HostedApplicationRestartPolicyEvaluator,
-    decision,
+    decision: HostedApplicationRestartDecision,
     *,
     last_exit: HostedApplicationExitRecord,
     attempt_number: int,
@@ -303,6 +331,8 @@ class HostedApplicationSupervisor:
       control=self.control,
       sleeper=self.sleeper,
     ):
+      return False
+    if self.control.is_shutdown_requested():
       return False
     await self._publish_restart_event_safe(
       HostedApplicationEventType.RESTART_STARTED,

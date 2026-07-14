@@ -36,6 +36,7 @@ from intergrax.hosting.contracts.context import (
     HostedApplicationLogger,
 )
 from intergrax.hosting.contracts.lifecycle import (
+    HostedApplicationEffectiveControlRequest,
     HostedApplicationLifecycleSnapshotProvider,
     HostedApplicationShutdownCoordinator,
     HostedApplicationShutdownRequestSnapshot,
@@ -98,8 +99,9 @@ class _NoopShutdown(HostedApplicationShutdownCoordinator):
             deadline_at=deadline_at,
         )
 
-    async def wait_until_requested(self) -> HostedApplicationShutdownRequestSnapshot:
-        return HostedApplicationShutdownRequestSnapshot(
+    async def wait_until_requested(self) -> HostedApplicationEffectiveControlRequest:
+        return HostedApplicationEffectiveControlRequest(
+            intent="stop",
             reason_code="test",
             requested_at=datetime.now(UTC),
         )

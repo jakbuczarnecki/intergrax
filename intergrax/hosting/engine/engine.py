@@ -62,6 +62,7 @@ from intergrax.hosting.shutdown import (
     HostedApplicationShutdownExecutor,
     HostedApplicationShutdownPhase,
     HostedApplicationShutdownPhaseOutcome,
+    MonotonicClock,
     ShutdownPhaseRecorder,
     SystemMonotonicClock,
     build_shutdown_execution_snapshot,
@@ -101,7 +102,7 @@ class HostedApplicationEngine:
     health_poll_interval_seconds: float = 5.0
     health_poll_sleeper: object | None = None
     failure_id_generator: object | None = None
-    monotonic_clock: object | None = None
+    monotonic_clock: MonotonicClock | None = None
     _operation_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     _startup_aborted: bool = field(default=False, repr=False)
     _instance_acquire_failed: bool = field(default=False, repr=False)
@@ -446,10 +447,39 @@ class HostedApplicationEngine:
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
 
     def _should_abort_startup(self) -> bool:
-        return self._startup_aborted or self.shutdown.is_shutdown_requested()
+        if self._startup_aborted:
+            return True
+        if self.shutdown.is_shutdown_requested():
+            return True
+        if hasattr(self.shutdown, "is_restart_requested"):
+            return bool(self.shutdown.is_restart_requested())  # type: ignore[attr-defined]
+        return False
 
     async def _abort_startup_to_stopping(self, reason_code: str) -> None:
-        await self._graceful_stop_sequence(reason_code=reason_code)
+        control_request = self._resolve_effective_control_request()
+        await self._graceful_stop_sequence(
+            reason_code=control_request.reason_code if control_request is not None else reason_code,
+            control_request=control_request,
+        )
+
+    def _resolve_effective_control_request(self) -> HostedApplicationEffectiveControlRequest | None:
+        if hasattr(self.shutdown, "current_effective_request"):
+            effective = self.shutdown.current_effective_request()  # type: ignore[attr-defined]
+            if effective is not None:
+                return effective
+        current = self.shutdown.current_request()
+        if current is None:
+            return None
+        if isinstance(current, HostedApplicationEffectiveControlRequest):
+            return current
+        source_id = getattr(current, "source_id", "runtime")
+        return HostedApplicationEffectiveControlRequest(
+            intent="stop",
+            reason_code=current.reason_code,
+            requested_at=current.requested_at,
+            deadline_at=current.deadline_at,
+            source_id=source_id,
+        )
 
     async def _refresh_health(self) -> None:
         if self._context is None or self._runtime is None:
@@ -546,22 +576,7 @@ class HostedApplicationEngine:
             )
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPING)
 
-        effective_request = control_request
-        if effective_request is None:
-            if hasattr(self.shutdown, "current_effective_request"):
-                effective_request = self.shutdown.current_effective_request()  # type: ignore[attr-defined]
-            if effective_request is None:
-                effective_request = self.shutdown.current_request()  # type: ignore[assignment]
-                if effective_request is not None and not isinstance(
-                    effective_request, HostedApplicationEffectiveControlRequest
-                ):
-                    effective_request = HostedApplicationEffectiveControlRequest(
-                        intent="stop",
-                        reason_code=effective_request.reason_code,
-                        requested_at=effective_request.requested_at,
-                        deadline_at=effective_request.deadline_at,
-                    )
-
+        effective_request = control_request or self._resolve_effective_control_request()
         policy = self.definition.lifecycle_policy
         budget_seconds = compute_shutdown_budget_seconds(
             shutdown_policy=self.definition.shutdown_policy,
@@ -584,6 +599,8 @@ class HostedApplicationEngine:
             if self.active_work_controller is not None
             else 0
         )
+        context = self._context
+        assert context is not None
 
         before_stop_started = self.clock.now()
         before_stop_outcome = await run_bounded_phase(
@@ -591,9 +608,11 @@ class HostedApplicationEngine:
             policy.default_blocking_hook_timeout_seconds,
             lambda: self._hooks.execute_blocking(
                 HostedApplicationHookPoint.BEFORE_STOP,
-                self._context,
+                context,
             ),
         )
+        if before_stop_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
         recorder.record(
             phase=HostedApplicationShutdownPhase.BEFORE_STOP,
             outcome=before_stop_outcome,
@@ -609,7 +628,7 @@ class HostedApplicationEngine:
         )
         try:
             await shutdown_executor.execute(
-                request=effective_request if isinstance(effective_request, HostedApplicationEffectiveControlRequest) else None,
+                request=effective_request,
                 budget=budget,
                 recorder=recorder,
             )
@@ -633,6 +652,8 @@ class HostedApplicationEngine:
             policy.default_observer_hook_timeout_seconds,
             self._health.stop_polling,
         )
+        if health_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
         recorder.record(
             phase=HostedApplicationShutdownPhase.HEALTH_POLL_STOP,
             outcome=health_outcome,
@@ -643,8 +664,10 @@ class HostedApplicationEngine:
         component_outcome = await run_bounded_phase(
             budget,
             policy.default_blocking_hook_timeout_seconds,
-            lambda: self._components.stop_started(self._context),
+            lambda: self._components.stop_started(context),
         )
+        if component_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
         recorder.record(
             phase=HostedApplicationShutdownPhase.COMPONENT_STOP,
             outcome=component_outcome,
@@ -664,8 +687,10 @@ class HostedApplicationEngine:
             runtime_outcome = await run_bounded_phase(
                 budget,
                 policy.default_blocking_hook_timeout_seconds,
-                lambda: self._runtime.stop(self._context),  # type: ignore[union-attr]
+                lambda: self._runtime.stop(context),  # type: ignore[union-attr]
             )
+            if runtime_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+                recorder.timed_out = True
             recorder.record(
                 phase=HostedApplicationShutdownPhase.RUNTIME_STOP,
                 outcome=runtime_outcome,
@@ -673,12 +698,14 @@ class HostedApplicationEngine:
             )
 
         observer_started = self.clock.now()
-        self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, self._context)
+        self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, context)
         observer_outcome = await run_bounded_phase(
             budget,
             policy.default_observer_hook_timeout_seconds,
             lambda: self._observer_tasks.drain(policy.default_observer_hook_timeout_seconds),
         )
+        if observer_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
         recorder.record(
             phase=HostedApplicationShutdownPhase.AFTER_STOP_OBSERVER,
             outcome=observer_outcome,
@@ -686,36 +713,35 @@ class HostedApplicationEngine:
         )
 
         lease_started = self.clock.now()
-        lease_released = await self._release_lease_verified()
-        lease_outcome = (
-            HostedApplicationShutdownPhaseOutcome.COMPLETED
-            if lease_released
-            else HostedApplicationShutdownPhaseOutcome.FAILED
+        lease_outcome = await run_bounded_phase(
+            budget,
+            policy.default_observer_hook_timeout_seconds,
+            self._bounded_release_lease,
         )
+        lease_released = lease_outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and self._lease_released
         if lease_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
             recorder.timed_out = True
+        elif lease_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
+        elif lease_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+            pass
+        elif not lease_released and lease_outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED:
+            lease_outcome = HostedApplicationShutdownPhaseOutcome.FAILED
         recorder.record(
             phase=HostedApplicationShutdownPhase.LEASE_RELEASE,
             outcome=lease_outcome,
             started_at=lease_started,
         )
         if lease_released:
-            await self._publish_instance_event(HostedApplicationEventType.INSTANCE_RELEASED)
-
-        active_after = (
-            self.active_work_controller.active_work_count()
-            if self.active_work_controller is not None
-            else 0
-        )
-        shutdown_snapshot = build_shutdown_execution_snapshot(
-            shutdown_policy=self.definition.shutdown_policy,
-            request=effective_request if isinstance(effective_request, HostedApplicationEffectiveControlRequest) else None,
-            clock=self.clock,
-            recorder=recorder,
-            active_work_before=active_before,
-            active_work_after=active_after,
-        )
-        self._diagnostics.set_shutdown_execution(shutdown_snapshot)
+            instance_release_outcome = await run_bounded_phase(
+                budget,
+                policy.default_observer_hook_timeout_seconds,
+                lambda: self._publish_instance_event(HostedApplicationEventType.INSTANCE_RELEASED),
+            )
+            if instance_release_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+                recorder.timed_out = True
+            elif instance_release_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+                recorder.timed_out = True
 
         self._close_context()
         if self._lifecycle.state is HostedApplicationLifecycleState.STOPPING:
@@ -724,7 +750,16 @@ class HostedApplicationEngine:
                 reason_code=reason_code,
             )
         self._health.refresh_once()
-        await self._publish_terminal_stopped_event()
+
+        stopped_publish_outcome = await run_bounded_phase(
+            budget,
+            policy.default_observer_hook_timeout_seconds,
+            self._publish_terminal_stopped_event,
+        )
+        if stopped_publish_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+            recorder.timed_out = True
+        elif stopped_publish_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
 
         terminal_started = self.clock.now()
         self._observer_tasks.close_to_new_tasks()
@@ -733,12 +768,31 @@ class HostedApplicationEngine:
             policy.default_observer_hook_timeout_seconds,
             lambda: self._observer_tasks.drain(policy.default_observer_hook_timeout_seconds),
         )
+        if terminal_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+            recorder.timed_out = True
+        elif terminal_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
         recorder.record(
             phase=HostedApplicationShutdownPhase.TERMINAL_SUBSCRIBER_DRAIN,
             outcome=terminal_outcome,
             started_at=terminal_started,
         )
         self._observer_tasks.cancel_remaining()
+
+        active_after = (
+            self.active_work_controller.active_work_count()
+            if self.active_work_controller is not None
+            else 0
+        )
+        shutdown_snapshot = build_shutdown_execution_snapshot(
+            shutdown_policy=self.definition.shutdown_policy,
+            request=effective_request,
+            clock=self.clock,
+            recorder=recorder,
+            active_work_before=active_before,
+            active_work_after=active_after,
+        )
+        self._diagnostics.set_shutdown_execution(shutdown_snapshot)
         self._diagnostics.set_observer_task_count(self._observer_tasks.task_count)
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
         return self._terminal_result(reason_code)
@@ -792,6 +846,9 @@ class HostedApplicationEngine:
                 exc=exc,
                 reason_code="cleanup_phase_failed",
             )
+
+    async def _bounded_release_lease(self) -> None:
+        await self._release_lease_verified()
 
     async def _release_lease_verified(self) -> bool:
         if self._lease_released or self._lease is None:
