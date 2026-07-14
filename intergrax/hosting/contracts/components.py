@@ -19,6 +19,22 @@ from intergrax.hosting.contracts.public_data import (
     validate_positive_bounded_seconds,
 )
 
+
+def _validate_timezone_aware_datetime(value: datetime, *, field_name: str) -> datetime:
+    if value.tzinfo is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return value
+
+
+def _validate_bounded_safe_message(value: str, *, field_name: str, max_length: int = 512) -> str:
+    if not value:
+        return ""
+    if len(value) > max_length:
+        raise ValueError(f"{field_name} must be at most {max_length} characters")
+    if any(ord(character) < 32 for character in value):
+        raise ValueError(f"{field_name} must not contain control characters")
+    return value
+
 if TYPE_CHECKING:
     from intergrax.hosting.contracts.context import HostedApplicationContext
 
@@ -52,20 +68,26 @@ class HostedApplicationComponentHealth(BaseModel):
     @field_validator("component_id")
     @classmethod
     def _validate_component_id_field(cls, value: str) -> str:
-        if not value:
-            return ""
-        if len(value) > 256:
-            raise ValueError("component_id must be at most 256 characters")
-        return value
+        return validate_bounded_identifier(value, field_name="component_id")
 
-    @field_validator("detail_code", "safe_message")
+    @field_validator("detail_code")
     @classmethod
-    def _validate_message_fields(cls, value: str) -> str:
+    def _validate_detail_code(cls, value: str) -> str:
         if not value:
             return ""
-        if len(value) > 512:
-            raise ValueError("message field must be at most 512 characters")
-        return value
+        return validate_bounded_identifier(value, field_name="detail_code")
+
+    @field_validator("safe_message")
+    @classmethod
+    def _validate_safe_message(cls, value: str) -> str:
+        return _validate_bounded_safe_message(value, field_name="safe_message")
+
+    @field_validator("last_transition_at", "last_check_at")
+    @classmethod
+    def _validate_timestamps(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return _validate_timezone_aware_datetime(value, field_name="timestamp")
 
 
 @runtime_checkable

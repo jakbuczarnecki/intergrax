@@ -60,7 +60,14 @@ class HostedApplicationServiceRegistry:
             raise HostedApplicationServiceRegistryStateError("registry is closed")
         if self._sealed:
             raise HostedApplicationServiceRegistryStateError("registry is sealed")
-        if not isinstance(service, service_type):
+        try:
+            compatible = isinstance(service, service_type)
+        except TypeError as exc:
+            raise HostedApplicationServiceRegistryCompatibilityError(
+                "runtime compatibility cannot be checked for the supplied registration type "
+                f"({stable_service_type_id(service_type)})"
+            ) from exc
+        if not compatible:
             raise HostedApplicationServiceRegistryCompatibilityError(
                 f"service is not compatible with {stable_service_type_id(service_type)}"
             )

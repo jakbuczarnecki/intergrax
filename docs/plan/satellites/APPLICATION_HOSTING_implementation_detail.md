@@ -2,12 +2,12 @@
 
 **Parent plan:** [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)
 **Architecture:** [`../../architecture/APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md)
-**Architecture detail:** [`../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md`](../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md)
+`	ext
 
 > Load only the section for the selected `APP-HOST-*` task. This document contains implementation detail, code targets, acceptance criteria, and verification guidance. The parent plan remains the queue/status authority.
 
 ---
-
+`
 # APP-HOST-0 — Architecture and governance
 
 ## APP-HOST-0D — Tier-3/LKW cross-plan ownership correction
@@ -74,12 +74,12 @@ docs(hosting): register platform hosting ownership
 
 **Delivered code:**
 
-`	ext
+```text
 intergrax/hosting/__init__.py
 intergrax/hosting/services.py
 intergrax/hosting/contracts/{identity,profile,public_data,context,lifecycle,hooks,components,policies,events}.py
 tests/unit/hosting/
-`
+```
 
 **Next wave:** APP-HOST-W2 — Complete Hosting Engine (2A..2F, 3B, 3C).
 

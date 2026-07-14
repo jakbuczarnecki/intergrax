@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 import pytest
 
+from intergrax.hosting import HostedApplicationComponent
 from intergrax.hosting.services import (
     HostedApplicationServiceRegistry,
+    HostedApplicationServiceRegistryCompatibilityError,
     HostedApplicationServiceRegistryDuplicateError,
     HostedApplicationServiceRegistryStateError,
 )
@@ -53,3 +57,31 @@ def test_service_objects_absent_from_diagnostics() -> None:
     diagnostics = registry.diagnostic_view()
     assert diagnostics == ("tests.unit.hosting._helpers.SampleComponent",)
     assert repr(SampleComponent()) not in diagnostics
+
+
+class _NonRuntimeCheckableWriter(Protocol):
+    def write(self, data: str) -> None: ...
+
+
+class _WriterImpl:
+    def write(self, data: str) -> None:
+        return None
+
+
+def test_non_runtime_checkable_protocol_raises_compatibility_error() -> None:
+    registry = HostedApplicationServiceRegistry()
+    with pytest.raises(HostedApplicationServiceRegistryCompatibilityError, match="cannot be checked"):
+        registry.register(_NonRuntimeCheckableWriter, _WriterImpl())
+
+
+def test_incompatible_concrete_service_raises_compatibility_error() -> None:
+    registry = HostedApplicationServiceRegistry()
+    with pytest.raises(HostedApplicationServiceRegistryCompatibilityError, match="not compatible"):
+        registry.register(SampleComponent, object())  # type: ignore[arg-type]
+
+
+def test_runtime_checkable_protocol_registration_succeeds() -> None:
+    registry = HostedApplicationServiceRegistry()
+    component = SampleComponent()
+    registry.register(HostedApplicationComponent, component)
+    assert registry.require(HostedApplicationComponent) is component

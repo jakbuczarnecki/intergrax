@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
@@ -20,9 +20,17 @@ from intergrax.hosting.contracts.public_data import (
 )
 
 if TYPE_CHECKING:
-    pass
+    from intergrax.hosting.contracts.context import HostedApplicationContext
 
-HostedApplicationHookCallback = Callable[..., None | Awaitable[None]]
+
+class HostedApplicationHookCallback(Protocol):
+    def __call__(
+        self,
+        context: HostedApplicationContext,
+    ) -> None | Awaitable[None]: ...
+
+
+HostedApplicationHookHandler = Callable[["HostedApplicationContext"], None | Awaitable[None]]
 
 
 class HostedApplicationHookPoint(str, Enum):
@@ -88,7 +96,7 @@ class HostedApplicationHook(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     hook_id: str
-    handler: SkipJsonSchema[HostedApplicationHookCallback] = Field(exclude=True, repr=False)
+    handler: SkipJsonSchema[HostedApplicationHookHandler] = Field(exclude=True, repr=False)
     handler_id: str | None = None
     priority: int = 0
     timeout_seconds: float | None = None

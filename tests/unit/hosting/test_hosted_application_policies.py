@@ -37,6 +37,60 @@ def test_invalid_shutdown_combinations_rejected() -> None:
             cancel_timeout_seconds=5,
             flush_timeout_seconds=5,
         )
+    with pytest.raises(ValidationError, match="drain_then_cancel requires positive drain_timeout_seconds"):
+        ShutdownPolicy(
+            strategy=ShutdownStrategy.DRAIN_THEN_CANCEL,
+            drain_timeout_seconds=0,
+            cancel_timeout_seconds=10,
+            flush_timeout_seconds=5,
+        )
+    with pytest.raises(ValidationError, match="wait_until_complete requires positive bounded"):
+        ShutdownPolicy(
+            strategy=ShutdownStrategy.WAIT_UNTIL_COMPLETE,
+            drain_timeout_seconds=0,
+            cancel_timeout_seconds=0,
+            flush_timeout_seconds=5,
+        )
+
+
+@pytest.mark.parametrize(
+    ("factory", "match"),
+    [
+        (lambda: RestartPolicy(mode=RestartMode.NEVER, max_attempts=1), "max_attempts=0"),
+        (
+            lambda: RestartPolicy(
+                mode=RestartMode.NEVER,
+                max_attempts=0,
+                custom_classifier_id="x.y",
+            ),
+            "custom classifier",
+        ),
+        (lambda: RestartPolicy(mode=RestartMode.ON_FAILURE, max_attempts=0), "max_attempts > 0"),
+        (lambda: RestartPolicy(mode=RestartMode.ALWAYS, max_attempts=0), "max_attempts > 0"),
+        (
+            lambda: RestartPolicy(
+                mode=RestartMode.ON_FAILURE,
+                max_attempts=3,
+                custom_classifier_id="tests.classifier",
+            ),
+            "custom classifier",
+        ),
+        (lambda: RestartPolicy(mode=RestartMode.CUSTOM, max_attempts=0), "max_attempts > 0"),
+        (lambda: RestartPolicy(mode=RestartMode.CUSTOM, max_attempts=1), "custom_classifier"),
+        (
+            lambda: RestartPolicy(
+                mode=RestartMode.ON_FAILURE,
+                max_attempts=3,
+                initial_backoff_seconds=30,
+                max_backoff_seconds=10,
+            ),
+            "initial_backoff_seconds",
+        ),
+    ],
+)
+def test_invalid_restart_policy_combinations_rejected(factory, match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        factory()
 
 
 def test_restart_max_backoff_validation() -> None:

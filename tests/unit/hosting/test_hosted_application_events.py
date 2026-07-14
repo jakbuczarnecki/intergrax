@@ -92,6 +92,50 @@ def test_duplicate_subscription_ids_rejected() -> None:
         )
 
 
+def test_duplicate_event_types_rejected() -> None:
+    with pytest.raises(ValidationError, match="duplicate event_type"):
+        HostedApplicationEventSubscription(
+            subscription_id="diag",
+            event_types=(
+                HostedApplicationEventType.APPLICATION_FAILED,
+                HostedApplicationEventType.APPLICATION_FAILED,
+            ),
+            handler=record_hosting_diagnostic_handler,
+        )
+
+
+def test_event_rejects_invalid_application_id() -> None:
+    with pytest.raises(ValidationError, match="application_id"):
+        HostedApplicationEvent(
+            event_type=HostedApplicationEventType.APPLICATION_READY,
+            application_id="1invalid",
+            instance_id="instance-001",
+            lifecycle_state=HostedApplicationLifecycleState.READY,
+        )
+
+
+def test_event_rejects_empty_event_id() -> None:
+    with pytest.raises(ValidationError, match="event_id"):
+        HostedApplicationEvent(
+            event_id="",
+            event_type=HostedApplicationEventType.APPLICATION_READY,
+            application_id="my_application",
+            instance_id="instance-001",
+            lifecycle_state=HostedApplicationLifecycleState.READY,
+        )
+
+
+def test_event_rejects_naive_occurred_at() -> None:
+    with pytest.raises(ValidationError, match="timezone-aware"):
+        HostedApplicationEvent(
+            event_type=HostedApplicationEventType.APPLICATION_READY,
+            occurred_at=datetime(2026, 7, 14, 12, 0),
+            application_id="my_application",
+            instance_id="instance-001",
+            lifecycle_state=HostedApplicationLifecycleState.READY,
+        )
+
+
 def test_stable_schema_id_and_version() -> None:
     event = HostedApplicationEvent(
         event_type=HostedApplicationEventType.APPLICATION_READY,
@@ -102,3 +146,23 @@ def test_stable_schema_id_and_version() -> None:
     )
     assert event.schema_id == HOSTED_APPLICATION_EVENT_SCHEMA_ID
     assert event.schema_version == HOSTED_APPLICATION_EVENT_SCHEMA_VERSION
+
+
+def test_sync_event_handler_accepted() -> None:
+    subscription = HostedApplicationEventSubscription(
+        subscription_id="sync",
+        event_types=(HostedApplicationEventType.APPLICATION_READY,),
+        handler=record_hosting_diagnostic_handler,
+        handler_id="tests.unit.hosting._helpers.record_hosting_diagnostic_handler",
+    )
+    assert subscription.subscription_id == "sync"
+
+
+async def test_async_event_handler_accepted() -> None:
+    subscription = HostedApplicationEventSubscription(
+        subscription_id="async",
+        event_types=(HostedApplicationEventType.APPLICATION_READY,),
+        handler=record_hosting_diagnostic_handler,
+        handler_id="tests.unit.hosting._helpers.record_hosting_diagnostic_handler",
+    )
+    assert subscription.subscription_id == "async"

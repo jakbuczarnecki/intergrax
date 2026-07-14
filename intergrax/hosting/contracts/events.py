@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import Protocol
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -16,21 +16,18 @@ from pydantic import JsonValue
 from pydantic.json_schema import SkipJsonSchema
 
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.hosting.contracts.identity import normalize_application_id
 from intergrax.hosting.contracts.lifecycle import HostedApplicationLifecycleState
 from intergrax.hosting.contracts.public_data import (
     derive_stable_callable_id,
     normalize_public_json_mapping,
     validate_bounded_identifier,
     validate_bounded_priority,
+    validate_instance_id,
 )
-
-if TYPE_CHECKING:
-    pass
 
 HOSTED_APPLICATION_EVENT_SCHEMA_ID = "intergrax.hosting.event"
 HOSTED_APPLICATION_EVENT_SCHEMA_VERSION = "1.0"
-
-HostedApplicationEventHandler = Callable[..., None | Awaitable[None]]
 
 
 class HostedApplicationEventType(str, Enum):
@@ -101,9 +98,17 @@ class HostedApplicationEvent(BaseModel):
     @field_validator("event_id")
     @classmethod
     def _validate_event_id(cls, value: str) -> str:
-        if not value:
-            return ""
         return validate_bounded_identifier(value, field_name="event_id")
+
+    @field_validator("application_id")
+    @classmethod
+    def _validate_application_id(cls, value: str) -> str:
+        return normalize_application_id(value)
+
+    @field_validator("instance_id")
+    @classmethod
+    def _validate_instance_id(cls, value: str) -> str:
+        return validate_instance_id(value)
 
     @field_validator("correlation_id", "causation_id")
     @classmethod
@@ -123,6 +128,16 @@ class HostedApplicationEvent(BaseModel):
     @classmethod
     def _validate_payload(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
         return normalize_public_json_mapping(value)
+
+
+class HostedApplicationEventHandler(Protocol):
+    def __call__(
+        self,
+        event: HostedApplicationEvent,
+    ) -> None | Awaitable[None]: ...
+
+
+HostedApplicationEventHandlerCallable = Callable[[HostedApplicationEvent], None | Awaitable[None]]
 
 
 class HostedApplicationEventSubscriptionPublicDescriptor(BaseModel):
@@ -145,7 +160,7 @@ class HostedApplicationEventSubscription(BaseModel):
 
     subscription_id: str
     event_types: tuple[HostedApplicationEventType, ...]
-    handler: SkipJsonSchema[HostedApplicationEventHandler] = Field(exclude=True, repr=False)
+    handler: SkipJsonSchema[HostedApplicationEventHandlerCallable] = Field(exclude=True, repr=False)
     handler_id: str | None = None
     source_id: str = "profile"
     priority: int = 0
@@ -180,6 +195,11 @@ class HostedApplicationEventSubscription(BaseModel):
     ) -> tuple[HostedApplicationEventType, ...]:
         if not value:
             raise ValueError("event_types must not be empty")
+        seen: set[HostedApplicationEventType] = set()
+        for event_type in value:
+            if event_type in seen:
+                raise ValueError(f"duplicate event_type: {event_type.value}")
+            seen.add(event_type)
         return value
 
     @model_validator(mode="after")

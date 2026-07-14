@@ -90,3 +90,7 @@ __all__ = [
     "RestartPolicy",
     "ShutdownPolicy",
 ]
+
+HostedApplicationHook.model_rebuild()
+HostedApplicationHooks.model_rebuild()
+HostedApplicationProfile.model_rebuild()

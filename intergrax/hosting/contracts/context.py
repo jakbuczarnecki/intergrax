@@ -5,14 +5,16 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, JsonValue
+from pydantic import BaseModel, ConfigDict, JsonValue, field_validator
 
 from intergrax.hosting.contracts.events import HostedApplicationEvent
+from intergrax.hosting.contracts.identity import normalize_application_id
 from intergrax.hosting.contracts.lifecycle import (
     HostedApplicationLifecycleSnapshot,
     HostedApplicationLifecycleSnapshotProvider,
@@ -24,6 +26,14 @@ from intergrax.hosting.contracts.public_data import (
     validate_instance_id,
 )
 from intergrax.hosting.services import HostedApplicationServiceRegistry
+
+_PROFILE_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def _validate_timezone_aware_datetime(value: datetime, *, field_name: str) -> datetime:
+    if value.tzinfo is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return value
 
 
 class HostedApplicationPaths(BaseModel):
@@ -44,6 +54,11 @@ class HostedApplicationProcessIdentity(BaseModel):
     host_id: str | None = None
     user_scope_id: str | None = None
     started_at: datetime
+
+    @field_validator("started_at")
+    @classmethod
+    def _validate_started_at(cls, value: datetime) -> datetime:
+        return _validate_timezone_aware_datetime(value, field_name="started_at")
 
 
 class HostedApplicationContextPublicView(BaseModel):
@@ -87,7 +102,7 @@ class HostedApplicationEventPublisher(Protocol):
     async def publish(self, event: HostedApplicationEvent) -> None: ...
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class HostedApplicationContext:
     """Instance-scoped hosted application runtime context contract."""
 
@@ -106,7 +121,13 @@ class HostedApplicationContext:
     _closed: bool = False
 
     def __post_init__(self) -> None:
-        self.instance_id = validate_instance_id(self.instance_id)
+        normalized_application_id = normalize_application_id(self.application_id)
+        object.__setattr__(self, "application_id", normalized_application_id)
+        object.__setattr__(self, "instance_id", validate_instance_id(self.instance_id))
+        if not _PROFILE_DIGEST_RE.match(self.profile_digest):
+            raise ValueError("profile_digest must match sha256:<64 lowercase hex>")
+        if normalized_application_id != self.profile.identity.application_id:
+            raise ValueError("application_id must match profile.identity.application_id")
 
     @property
     def closed(self) -> bool:
@@ -124,7 +145,9 @@ class HostedApplicationContext:
         )
 
     def close(self) -> None:
-        self._closed = True
+        if self._closed:
+            return
+        object.__setattr__(self, "_closed", True)
         self.services.close()
 
 

@@ -26,6 +26,7 @@ _EXPECTED_PUBLIC_NAMES = (
     "HostedApplicationProcessIdentity",
     "HostedApplicationLifecycleState",
     "HostedApplicationLifecycleSnapshot",
+    "HostedApplicationLifecycleSnapshotProvider",
     "HostedApplicationServiceRegistry",
     "HostedApplicationHook",
     "HostedApplicationHooks",
@@ -48,6 +49,7 @@ _EXPECTED_PUBLIC_NAMES = (
     "HostedApplicationLogger",
     "HostedApplicationEventPublisher",
     "HostedApplicationShutdownCoordinator",
+    "HostedApplicationShutdownRequestSnapshot",
 )
 
 

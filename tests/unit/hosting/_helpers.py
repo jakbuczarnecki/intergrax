@@ -133,10 +133,7 @@ async def flush_state_handler(context: HostedApplicationContext) -> None:
     return None
 
 
-async def record_hosting_diagnostic_handler(
-    context: HostedApplicationContext,
-    event: HostedApplicationEvent,
-) -> None:
+async def record_hosting_diagnostic_handler(event: HostedApplicationEvent) -> None:
     return None
 
 

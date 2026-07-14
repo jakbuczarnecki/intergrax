@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 
 import pytest
 from pydantic import ValidationError
@@ -67,6 +68,57 @@ def test_duplicate_dependencies_rejected() -> None:
         HostedApplicationComponentRegistration(
             component=SampleComponent(),
             dependencies=("dep_a", "dep_a"),
+        )
+
+
+def test_component_health_rejects_invalid_component_id() -> None:
+    with pytest.raises(ValidationError, match="component_id"):
+        HostedApplicationComponentHealth(
+            component_id="",
+            enabled=True,
+            required=True,
+            state=HostedApplicationComponentState.READY,
+            healthy=True,
+            ready=True,
+        )
+
+
+def test_component_health_rejects_invalid_detail_code() -> None:
+    with pytest.raises(ValidationError, match="detail_code"):
+        HostedApplicationComponentHealth(
+            component_id="background_worker",
+            enabled=True,
+            required=True,
+            state=HostedApplicationComponentState.READY,
+            healthy=True,
+            ready=True,
+            detail_code="bad detail",
+        )
+
+
+def test_component_health_rejects_control_characters_in_safe_message() -> None:
+    with pytest.raises(ValidationError, match="safe_message"):
+        HostedApplicationComponentHealth(
+            component_id="background_worker",
+            enabled=True,
+            required=True,
+            state=HostedApplicationComponentState.READY,
+            healthy=True,
+            ready=True,
+            safe_message="bad\x00message",
+        )
+
+
+def test_component_health_rejects_naive_timestamps() -> None:
+    with pytest.raises(ValidationError, match="timezone-aware"):
+        HostedApplicationComponentHealth(
+            component_id="background_worker",
+            enabled=True,
+            required=True,
+            state=HostedApplicationComponentState.READY,
+            healthy=True,
+            ready=True,
+            last_check_at=datetime(2026, 7, 14, 12, 0),
         )
 
 

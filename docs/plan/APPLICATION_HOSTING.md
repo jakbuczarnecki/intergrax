@@ -362,10 +362,10 @@ LKW reviewer proof updates
 | Architecture section | Plan owner | Primary code target | Verification artifact | Status |
 |----------------------|------------|---------------------|-----------------------|--------|
 | Hub §1–3 purpose/ownership/invariants | APP-HOST-0 | documentation/governance | doc/index checks | Done |
-| Hub §4–5 authoring/profile | APP-HOST-1, 9 | `intergrax/hosting/contracts*`, facade | schema/DX tests | Planned |
+| Hub §4–5 authoring/profile | APP-HOST-1, 9 | `intergrax/hosting/contracts*`, facade | schema/DX tests | **Contracts Done (W1); facade pending** |
 | Hub §6–7 engine/lifecycle | APP-HOST-2 | `intergrax/hosting/engine*` | transition/failure tests | Planned |
-| Hub §8 hooks/components/policies/plugins | APP-HOST-1,2,9 | contracts/coordinators/plugins | contract/order tests | Planned |
-| Hub §9 events | APP-HOST-3 | `intergrax/hosting/events*` | schema/order/redaction tests | Planned |
+| Hub §8 hooks/components/policies/plugins | APP-HOST-1,2,9 | contracts/coordinators/plugins | contract/order tests | **Contracts Done (W1); runtime/coordinators pending** |
+| Hub §9 events | APP-HOST-3 | `intergrax/hosting/events*` | schema/order/redaction tests | **Contracts Done (W1); event spine bridge pending** |
 | Hub §10 interactions | APP-HOST-6 | hosting/Tier-3 bridge | surface composition tests | Planned |
 | Hub §11 instance/control/supervisor | APP-HOST-4,5 | instance/control/supervisor | process/restart tests | Planned |
 | Hub §12 OS boundary | APP-HOST-7 | `intergrax/hosting/os/` | adapter contract tests | Planned |

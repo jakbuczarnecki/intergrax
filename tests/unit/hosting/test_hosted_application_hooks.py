@@ -68,3 +68,21 @@ def test_runtime_handler_absent_from_dump_schema_repr() -> None:
 def test_unstable_callable_requires_explicit_handler_id() -> None:
     with pytest.raises(ValidationError, match="handler_id"):
         HostedApplicationHook(hook_id="lambda_hook", handler=lambda context: None)
+
+
+def test_sync_hook_callback_accepted() -> None:
+    hook = HostedApplicationHook(
+        hook_id="sync",
+        handler=warm_cache_handler,
+        handler_id="tests.unit.hosting._helpers.warm_cache_handler",
+    )
+    assert hook.hook_id == "sync"
+
+
+async def test_async_hook_callback_accepted() -> None:
+    hook = HostedApplicationHook(
+        hook_id="async",
+        handler=flush_state_handler,
+        handler_id="tests.unit.hosting._helpers.flush_state_handler",
+    )
+    assert hook.hook_id == "async"

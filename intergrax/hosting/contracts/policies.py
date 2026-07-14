@@ -117,10 +117,18 @@ class ShutdownPolicy(BaseModel):
 
     @model_validator(mode="after")
     def _validate_strategy_timeouts(self) -> ShutdownPolicy:
+        if self.strategy is ShutdownStrategy.DRAIN_THEN_CANCEL:
+            if self.drain_timeout_seconds <= 0:
+                raise ValueError("drain_then_cancel requires positive drain_timeout_seconds")
+            if self.cancel_timeout_seconds <= 0:
+                raise ValueError("drain_then_cancel requires positive cancel_timeout_seconds")
         if self.strategy is ShutdownStrategy.CANCEL_IMMEDIATELY and self.drain_timeout_seconds != 0:
             raise ValueError("cancel_immediately requires drain_timeout_seconds=0")
-        if self.strategy is ShutdownStrategy.WAIT_UNTIL_COMPLETE and self.cancel_timeout_seconds != 0:
-            raise ValueError("wait_until_complete requires cancel_timeout_seconds=0")
+        if self.strategy is ShutdownStrategy.WAIT_UNTIL_COMPLETE:
+            if self.cancel_timeout_seconds != 0:
+                raise ValueError("wait_until_complete requires cancel_timeout_seconds=0")
+            if self.drain_timeout_seconds <= 0:
+                raise ValueError("wait_until_complete requires positive bounded drain_timeout_seconds")
         return self
 
     @classmethod
@@ -231,17 +239,33 @@ class RestartPolicy(BaseModel):
 
     @model_validator(mode="after")
     def _resolve_custom_classifier(self) -> RestartPolicy:
-        if self.mode is RestartMode.CUSTOM:
-            if self.custom_classifier_id is None and self.custom_classifier is None:
-                raise ValueError("custom restart mode requires custom_classifier or custom_classifier_id")
-            if self.custom_classifier_id is None and self.custom_classifier is not None:
-                derived_id = derive_stable_callable_id(
-                    self.custom_classifier,
-                    field_name="custom_classifier_id",
-                )
-                object.__setattr__(self, "custom_classifier_id", derived_id)
-        elif self.custom_classifier is not None:
-            raise ValueError("custom_classifier is only valid for custom restart mode")
+        if self.initial_backoff_seconds > self.max_backoff_seconds:
+            raise ValueError("initial_backoff_seconds must be <= max_backoff_seconds")
+
+        if self.mode is RestartMode.NEVER:
+            if self.max_attempts != 0:
+                raise ValueError("never restart mode requires max_attempts=0")
+            if self.custom_classifier is not None or self.custom_classifier_id is not None:
+                raise ValueError("custom classifier fields are only valid for custom restart mode")
+            return self
+
+        if self.mode in {RestartMode.ON_FAILURE, RestartMode.ALWAYS}:
+            if self.max_attempts <= 0:
+                raise ValueError(f"{self.mode.value} restart mode requires max_attempts > 0")
+            if self.custom_classifier is not None or self.custom_classifier_id is not None:
+                raise ValueError("custom classifier fields are only valid for custom restart mode")
+            return self
+
+        if self.max_attempts <= 0:
+            raise ValueError("custom restart mode requires max_attempts > 0")
+        if self.custom_classifier_id is None and self.custom_classifier is None:
+            raise ValueError("custom restart mode requires custom_classifier or custom_classifier_id")
+        if self.custom_classifier_id is None and self.custom_classifier is not None:
+            derived_id = derive_stable_callable_id(
+                self.custom_classifier,
+                field_name="custom_classifier_id",
+            )
+            object.__setattr__(self, "custom_classifier_id", derived_id)
         return self
 
     def to_public_policy(self) -> RestartPolicy:
