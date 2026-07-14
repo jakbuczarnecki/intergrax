@@ -217,33 +217,21 @@ async def test_backoff_stop_interruption() -> None:
 async def test_factory_exhaustion_reports_restart_exhausted() -> None:
     profile = HostedApplicationProfile(
         application_id="test_app",
-        application_factory=minimal_profile_with_runtime(FakeRuntime(fail_start=True)).application_factory,
+        application_factory=minimal_profile_with_runtime(FakeRuntime()).application_factory,
         application_factory_id="tests.unit.hosting.engine._fakes.test_app_runtime_factory",
-        restart=RestartPolicy.always(max_attempts=1),
+        restart=RestartPolicy.always(max_attempts=2),
     )
     definition = resolve_hosted_application_definition(profile)
     control = HostedApplicationControlCoordinator(clock=FixedClock())
     publisher = RecordingPublisher()
+    monotonic = FakeMonotonicClock()
+    sleeper = AdvancingSleeper(monotonic)
+    factory_calls = {"count": 0}
+    instance_ids = ["instance-001", "instance-002", "instance-003", "instance-004"]
 
     def factory(launch: HostedApplicationSupervisorLaunchContext) -> Awaitable[HostedApplicationEngine]:
-        clock = FixedClock()
-
-        async def _build() -> HostedApplicationEngine:
-            engine = HostedApplicationEngine(
-                definition=launch.definition,
-                instance_id=launch.instance_id,
-                paths=build_engine_paths(),
-                process_identity=build_process_identity(clock),
-                clock=clock,
-                logger=NoopLogger(),
-                shutdown=launch.control,
-                event_publisher=RecordingPublisher(),
-                instance_guard=FakeInstanceGuard(),
-                health_poll_interval_seconds=0.01,
-            )
-            return engine
-
-        return _build()
+        factory_calls["count"] += 1
+        raise RuntimeError("factory failure")
 
     supervisor = HostedApplicationSupervisor(
         definition=definition,
@@ -251,13 +239,24 @@ async def test_factory_exhaustion_reports_restart_exhausted() -> None:
         control=control,
         event_publisher=publisher,
         clock=FixedClock(),
-        instance_id_generator=_SequenceInstanceIds(["instance-001", "instance-002", "instance-003"]),
+        monotonic_clock=monotonic,
+        sleeper=sleeper,
+        instance_id_generator=_SequenceInstanceIds(instance_ids),
     )
     result = await supervisor.run()
+    assert factory_calls["count"] == 3
+    assert len(result.attempts) == 3
+    assert all(
+        attempt.exit_record is not None
+        and attempt.exit_record.exit_kind is HostedApplicationExitKind.SUPERVISOR_ERROR
+        for attempt in result.attempts
+    )
     assert result.restart_exhausted is True
-    assert len(result.attempts) == 2
-    exhausted_events = [event for event in publisher.events if event.event_type is HostedApplicationEventType.RESTART_EXHAUSTED]
+    exhausted_events = [
+        event for event in publisher.events if event.event_type is HostedApplicationEventType.RESTART_EXHAUSTED
+    ]
     assert len(exhausted_events) == 1
+    assert factory_calls["count"] < len(instance_ids)
 
 
 @pytest.mark.asyncio
@@ -333,3 +332,55 @@ async def test_release_failure_prevents_replacement() -> None:
     )
     result = await supervisor.run()
     assert len(result.attempts) == 1
+
+
+@pytest.mark.asyncio
+async def test_startup_lease_hang_prevents_supervisor_replacement() -> None:
+    from tests.unit.hosting.engine._fakes import HangingReleaseLease
+
+    profile = HostedApplicationProfile(
+        application_id="test_app",
+        application_factory=minimal_profile_with_runtime(FakeRuntime(fail_start=True)).application_factory,
+        application_factory_id="tests.unit.hosting.engine._fakes.test_app_runtime_factory",
+        restart=RestartPolicy.on_failure(max_attempts=3),
+    )
+    definition = resolve_hosted_application_definition(profile)
+    control = HostedApplicationControlCoordinator(clock=FixedClock())
+    monotonic = FakeMonotonicClock()
+    engines: list[HostedApplicationEngine] = []
+
+    def factory(launch: HostedApplicationSupervisorLaunchContext) -> Awaitable[HostedApplicationEngine]:
+        clock = FixedClock()
+
+        async def _build() -> HostedApplicationEngine:
+            engine = HostedApplicationEngine(
+                definition=launch.definition,
+                instance_id=launch.instance_id,
+                paths=build_engine_paths(),
+                process_identity=build_process_identity(clock),
+                clock=clock,
+                logger=NoopLogger(),
+                shutdown=launch.control,
+                event_publisher=RecordingPublisher(),
+                instance_guard=FakeInstanceGuard(HangingReleaseLease()),
+                health_poll_interval_seconds=0.01,
+                monotonic_clock=monotonic,
+            )
+            engines.append(engine)
+            return engine
+
+        return _build()
+
+    supervisor = HostedApplicationSupervisor(
+        definition=definition,
+        engine_factory=factory,
+        control=control,
+        event_publisher=RecordingPublisher(),
+        clock=FixedClock(),
+        monotonic_clock=monotonic,
+        instance_id_generator=_SequenceInstanceIds(["instance-001", "instance-002"]),
+    )
+    result = await supervisor.run()
+    assert len(result.attempts) == 1
+    assert engines[0].diagnostics_snapshot().instance_lease_released is False
+    assert result.attempts[0].cleanup_verified is False

@@ -248,16 +248,7 @@ class HostedApplicationShutdownExecutor:
       drained = await self._phase_drain(budget, recorder, active_before)
       if not drained and self._active_count() > 0:
         await self._phase_cancel(budget, recorder, active_before)
-        cancel_outcome = recorder.records[-1].outcome
-        if (
-          self._active_count() > 0
-          or cancel_outcome
-          not in {
-            HostedApplicationShutdownPhaseOutcome.COMPLETED,
-            HostedApplicationShutdownPhaseOutcome.SKIPPED,
-          }
-        ):
-          recorder.forced = True
+        recorder.forced = True
     elif strategy is ShutdownStrategy.WAIT_UNTIL_COMPLETE:
       drained = await self._phase_drain(budget, recorder, active_before)
       if not drained and self._active_count() > 0:
@@ -351,7 +342,12 @@ class HostedApplicationShutdownExecutor:
       self.shutdown_policy.cancel_timeout_seconds,
       self.active_work_controller.cancel_active_work,
     )
-    if outcome is not HostedApplicationShutdownPhaseOutcome.COMPLETED:
+    if outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+      recorder.timed_out = True
+      recorder.forced = True
+    elif outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+      recorder.forced = True
+    elif outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
       recorder.timed_out = True
       recorder.forced = True
     recorder.record(

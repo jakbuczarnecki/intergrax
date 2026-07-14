@@ -520,37 +520,11 @@ class HostedApplicationEngine:
                 reason_code="startup_failed",
             )
         await self._safe_phase(self._hooks.schedule_on_failure, self._context)
-        await self._safe_phase(self._health.stop_polling)
-        if self._components.started_component_ids:
-            await self._safe_phase(self._components.stop_started, self._context)
-        if self._runtime is not None:
-            await self._safe_phase(
-                self._runtime.stop,
-                self._context,
-                phase=HostedApplicationFailurePhase.RUNTIME_STOP,
-            )
-        if await self._release_lease_verified():
-            await self._publish_instance_event(HostedApplicationEventType.INSTANCE_RELEASED)
-        self._close_context()
-        if self._lifecycle.state in {
-            HostedApplicationLifecycleState.STARTING,
-            HostedApplicationLifecycleState.READY,
-        }:
-            self._lifecycle.transition_to(HostedApplicationLifecycleState.FAILED, reason_code="failed")
-        self._health.refresh_once()
+        await self._execute_bounded_terminal_cleanup(
+            record_lifecycle_failure_event=True,
+            transition_to_failed=True,
+        )
         self._reuse_blocked = True
-        try:
-            await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_FAILED)
-        except Exception as publish_exc:
-            self._diagnostics.record_secondary_failure(
-                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
-                source_kind="event_publisher",
-                source_id=HostedApplicationEventType.APPLICATION_FAILED.value,
-                exc=publish_exc,
-                reason_code="terminal_event_publish_failed",
-            )
-        await self._quiescent_drain_failure_observers()
-        self._diagnostics.set_observer_task_count(self._observer_tasks.task_count)
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
 
     async def _graceful_stop_sequence(
@@ -798,11 +772,205 @@ class HostedApplicationEngine:
         return self._terminal_result(reason_code)
 
     async def _failed_terminal_cleanup(self, reason_code: str) -> HostedApplicationEngineTerminalResult:
-        await self._drain_observer_tasks(close_first=True)
-        await self._safe_phase(self._release_lease_verified)
-        self._close_context()
-        self._health.refresh_once()
+        await self._execute_bounded_terminal_cleanup(
+            record_lifecycle_failure_event=False,
+            transition_to_failed=False,
+        )
         return self._terminal_result(reason_code)
+
+    async def _execute_bounded_terminal_cleanup(
+        self,
+        *,
+        record_lifecycle_failure_event: bool,
+        transition_to_failed: bool,
+    ) -> None:
+        policy = self.definition.lifecycle_policy
+        budget_seconds = compute_shutdown_budget_seconds(
+            shutdown_policy=self.definition.shutdown_policy,
+            blocking_hook_timeout=policy.default_blocking_hook_timeout_seconds,
+            observer_drain_timeout=policy.default_observer_hook_timeout_seconds,
+            component_stop_budget=policy.default_blocking_hook_timeout_seconds,
+            runtime_stop_budget=policy.default_blocking_hook_timeout_seconds,
+            lease_release_timeout=policy.default_observer_hook_timeout_seconds,
+            explicit_deadline_at=None,
+            clock=self.clock,
+            requested_at=self.clock.now(),
+        )
+        budget = HostedApplicationGlobalShutdownBudget(
+            deadline_monotonic=self._monotonic_clock.monotonic() + budget_seconds,
+            monotonic_clock=self._monotonic_clock,
+        )
+        recorder = ShutdownPhaseRecorder(clock=self.clock)
+        context = self._context
+
+        health_started = self.clock.now()
+        health_outcome = await run_bounded_phase(
+            budget,
+            policy.default_observer_hook_timeout_seconds,
+            self._health.stop_polling,
+        )
+        if health_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
+        recorder.record(
+            phase=HostedApplicationShutdownPhase.HEALTH_POLL_STOP,
+            outcome=health_outcome,
+            started_at=health_started,
+        )
+
+        if context is not None and self._components.started_component_ids:
+            component_started = self.clock.now()
+            component_outcome = await run_bounded_phase(
+                budget,
+                policy.default_blocking_hook_timeout_seconds,
+                lambda: self._components.stop_started(context),
+            )
+            if component_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+                recorder.timed_out = True
+            recorder.record(
+                phase=HostedApplicationShutdownPhase.COMPONENT_STOP,
+                outcome=component_outcome,
+                started_at=component_started,
+            )
+            if component_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+                self._diagnostics.record_secondary_failure(
+                    phase=HostedApplicationFailurePhase.COMPONENT_STOP,
+                    source_kind="components",
+                    source_id="stop",
+                    exc=RuntimeError("component_stop_failed"),
+                    reason_code="component_stop_failed",
+                )
+
+        if context is not None and self._runtime is not None:
+            runtime_started = self.clock.now()
+            runtime_outcome = await run_bounded_phase(
+                budget,
+                policy.default_blocking_hook_timeout_seconds,
+                lambda: self._runtime.stop(context),  # type: ignore[union-attr]
+            )
+            if runtime_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+                recorder.timed_out = True
+            recorder.record(
+                phase=HostedApplicationShutdownPhase.RUNTIME_STOP,
+                outcome=runtime_outcome,
+                started_at=runtime_started,
+            )
+            if runtime_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+                self._diagnostics.record_secondary_failure(
+                    phase=HostedApplicationFailurePhase.RUNTIME_STOP,
+                    source_kind="runtime",
+                    source_id="stop",
+                    exc=RuntimeError("runtime_stop_failed"),
+                    reason_code="runtime_stop_failed",
+                )
+
+        lease_started = self.clock.now()
+        lease_outcome = await run_bounded_phase(
+            budget,
+            policy.default_observer_hook_timeout_seconds,
+            self._bounded_release_lease,
+        )
+        lease_released = (
+            lease_outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and self._lease_released
+        )
+        if lease_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+            recorder.timed_out = True
+        elif lease_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
+        elif lease_outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+            pass
+        elif not lease_released and lease_outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED:
+            lease_outcome = HostedApplicationShutdownPhaseOutcome.FAILED
+        recorder.record(
+            phase=HostedApplicationShutdownPhase.LEASE_RELEASE,
+            outcome=lease_outcome,
+            started_at=lease_started,
+        )
+        if lease_released:
+            instance_release_outcome = await run_bounded_phase(
+                budget,
+                policy.default_observer_hook_timeout_seconds,
+                lambda: self._publish_instance_event(HostedApplicationEventType.INSTANCE_RELEASED),
+            )
+            if instance_release_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+                recorder.timed_out = True
+            elif (
+                instance_release_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED
+                and budget.exhausted()
+            ):
+                recorder.timed_out = True
+
+        self._close_context()
+
+        if transition_to_failed:
+            if self._lifecycle.state in {
+                HostedApplicationLifecycleState.STARTING,
+                HostedApplicationLifecycleState.READY,
+            }:
+                self._lifecycle.transition_to(
+                    HostedApplicationLifecycleState.FAILED,
+                    reason_code="failed",
+                )
+            self._health.refresh_once()
+
+        if record_lifecycle_failure_event:
+            await run_bounded_phase(
+                budget,
+                policy.default_observer_hook_timeout_seconds,
+                lambda: self._observer_tasks.drain(policy.default_observer_hook_timeout_seconds),
+            )
+            failed_publish_outcome = await run_bounded_phase(
+                budget,
+                policy.default_observer_hook_timeout_seconds,
+                self._publish_lifecycle_failed_event,
+            )
+            if failed_publish_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+                recorder.timed_out = True
+            elif (
+                failed_publish_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED
+                and budget.exhausted()
+            ):
+                recorder.timed_out = True
+
+        self._observer_tasks.close_to_new_tasks()
+        terminal_started = self.clock.now()
+        terminal_outcome = await run_bounded_phase(
+            budget,
+            policy.default_observer_hook_timeout_seconds,
+            lambda: self._observer_tasks.drain(policy.default_observer_hook_timeout_seconds),
+        )
+        if terminal_outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+            recorder.timed_out = True
+        elif terminal_outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+            recorder.timed_out = True
+        recorder.record(
+            phase=HostedApplicationShutdownPhase.TERMINAL_SUBSCRIBER_DRAIN,
+            outcome=terminal_outcome,
+            started_at=terminal_started,
+        )
+        self._observer_tasks.cancel_remaining()
+
+        active_before = (
+            self.active_work_controller.active_work_count()
+            if self.active_work_controller is not None
+            else 0
+        )
+        active_after = (
+            self.active_work_controller.active_work_count()
+            if self.active_work_controller is not None
+            else 0
+        )
+        shutdown_snapshot = build_shutdown_execution_snapshot(
+            shutdown_policy=self.definition.shutdown_policy,
+            request=None,
+            clock=self.clock,
+            recorder=recorder,
+            active_work_before=active_before,
+            active_work_after=active_after,
+        )
+        self._diagnostics.set_shutdown_execution(shutdown_snapshot)
+        self._diagnostics.set_observer_task_count(self._observer_tasks.task_count)
+        if not transition_to_failed:
+            self._health.refresh_once()
 
     async def _publish_terminal_stopped_event(self) -> None:
         try:
@@ -812,6 +980,18 @@ class HostedApplicationEngine:
                 phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
                 source_kind="event_publisher",
                 source_id=HostedApplicationEventType.APPLICATION_STOPPED.value,
+                exc=publish_exc,
+                reason_code="terminal_event_publish_failed",
+            )
+
+    async def _publish_lifecycle_failed_event(self) -> None:
+        try:
+            await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_FAILED)
+        except Exception as publish_exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
+                source_kind="event_publisher",
+                source_id=HostedApplicationEventType.APPLICATION_FAILED.value,
                 exc=publish_exc,
                 reason_code="terminal_event_publish_failed",
             )

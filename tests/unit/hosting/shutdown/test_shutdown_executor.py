@@ -101,7 +101,7 @@ async def test_drain_then_cancel_strategy() -> None:
     assert work.intake_stopped
     assert work.cancelled
     assert snapshot.timed_out
-    assert snapshot.forced is (work.active > 0)
+    assert snapshot.forced is True
     assert any(record.phase is HostedApplicationShutdownPhase.DRAIN for record in snapshot.phase_records)
 
 

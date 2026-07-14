@@ -18,7 +18,8 @@ from intergrax.hosting import (
 from intergrax.hosting.contracts.events import HostedApplicationEventType
 from intergrax.hosting.contracts.lifecycle import HostedApplicationEffectiveControlRequest
 from intergrax.hosting.control import HostedApplicationControlCoordinator
-from intergrax.hosting.errors import HostedApplicationInstanceGuardError
+from intergrax.hosting.contracts.lifecycle import HostedApplicationLifecycleState
+from intergrax.hosting.errors import HostedApplicationInstanceGuardError, HostedApplicationStartupError
 from intergrax.hosting.instance.contracts import HostedApplicationInstanceIdentity
 from intergrax.hosting.instance.file_guard import (
     FileHostedApplicationInstanceGuard,
@@ -30,7 +31,10 @@ from intergrax.hosting.shutdown import (
     HostedApplicationShutdownPhase,
     HostedApplicationShutdownPhaseOutcome,
 )
-from intergrax.hosting.supervisor.classification import HostedApplicationExitClassifier
+from intergrax.hosting.supervisor.classification import (
+    HostedApplicationExitClassifier,
+    HostedApplicationExitKind,
+)
 from tests.unit.hosting.engine._fakes import (
     FakeInstanceGuard,
     FakeLease,
@@ -245,3 +249,94 @@ async def test_ftruncate_failure_no_instance_released_event(tmp_path: Path) -> N
     await engine.stop(reason_code="stop.now")
     released = [event for event in pub.events if event.event_type is HostedApplicationEventType.INSTANCE_RELEASED]
     assert released == []
+
+
+@pytest.mark.asyncio
+async def test_startup_failure_runtime_stop_hang_bounded_cleanup() -> None:
+    monotonic = FakeMonotonicClock()
+    runtime = FakeRuntime(fail_start=True)
+    original_stop = runtime.stop
+
+    async def hanging_stop(context) -> None:
+        await asyncio.sleep(60.0)
+        await original_stop(context)
+
+    runtime.stop = hanging_stop  # type: ignore[method-assign]
+    engine, _, _ = _engine(runtime=runtime, monotonic=monotonic)
+    with pytest.raises(HostedApplicationStartupError):
+        await engine.start()
+    assert engine.lifecycle_snapshot().state is HostedApplicationLifecycleState.FAILED
+    diagnostics = engine.diagnostics_snapshot()
+    assert diagnostics.context_closed is True
+    assert diagnostics.shutdown_execution is not None
+    runtime_phase = next(
+        record
+        for record in diagnostics.shutdown_execution.phase_records
+        if record.phase is HostedApplicationShutdownPhase.RUNTIME_STOP
+    )
+    assert runtime_phase.outcome in {
+        HostedApplicationShutdownPhaseOutcome.TIMED_OUT,
+        HostedApplicationShutdownPhaseOutcome.SKIPPED,
+    }
+    lease_phase = next(
+        record
+        for record in diagnostics.shutdown_execution.phase_records
+        if record.phase is HostedApplicationShutdownPhase.LEASE_RELEASE
+    )
+    assert lease_phase is not None
+
+
+@pytest.mark.asyncio
+async def test_startup_failure_lease_release_hang_bounded_cleanup() -> None:
+    monotonic = FakeMonotonicClock()
+    runtime = FakeRuntime(fail_start=True)
+    engine, _, _ = _engine(
+        runtime=runtime,
+        lease=HangingReleaseLease(),
+        monotonic=monotonic,
+    )
+    with pytest.raises(HostedApplicationStartupError):
+        await engine.start()
+    assert engine.lifecycle_snapshot().state is HostedApplicationLifecycleState.FAILED
+    diagnostics = engine.diagnostics_snapshot()
+    assert diagnostics.context_closed is True
+    assert diagnostics.instance_lease_released is False
+    assert diagnostics.shutdown_execution is not None
+    lease_phase = next(
+        record
+        for record in diagnostics.shutdown_execution.phase_records
+        if record.phase is HostedApplicationShutdownPhase.LEASE_RELEASE
+    )
+    assert lease_phase.outcome in {
+        HostedApplicationShutdownPhaseOutcome.TIMED_OUT,
+        HostedApplicationShutdownPhaseOutcome.SKIPPED,
+    }
+
+
+@pytest.mark.asyncio
+async def test_stopped_with_lease_release_failed_is_forced_termination() -> None:
+    class FailingReleaseLease(FakeLease):
+        async def release(self) -> None:
+            raise RuntimeError("release failed")
+
+    engine, control, _ = _engine(lease=FailingReleaseLease())
+    await engine.start()
+    control.request_shutdown("stop.now")
+    result = await engine.run_until_stopped()
+    assert result.terminal_state is HostedApplicationLifecycleState.STOPPED
+    snapshot = result.diagnostics.shutdown_execution
+    assert snapshot is not None
+    lease_phase = next(r for r in snapshot.phase_records if r.phase is HostedApplicationShutdownPhase.LEASE_RELEASE)
+    assert lease_phase.outcome is HostedApplicationShutdownPhaseOutcome.FAILED
+    classifier = HostedApplicationExitClassifier()
+    exit_record = classifier.classify_terminal_result(
+        result,
+        application_id=engine.definition.application_id,
+        instance_id=engine.instance_id,
+        profile_digest=engine.definition.profile_digest,
+        occurred_at=FixedClock().now(),
+        shutdown_execution=snapshot,
+    )
+    assert exit_record.exit_kind is HostedApplicationExitKind.FORCED_TERMINATION
+    assert exit_record.exit_kind is not HostedApplicationExitKind.CLEAN_STOP
+    assert exit_record.retryable is False

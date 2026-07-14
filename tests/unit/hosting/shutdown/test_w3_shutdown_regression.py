@@ -152,9 +152,12 @@ async def test_drain_timeout_then_cancel() -> None:
         active_work_controller=work,
     )
     snapshot = await _run(executor, budget_seconds=0.05)
-    phases = [record.phase for record in snapshot.phase_records]
-    assert HostedApplicationShutdownPhase.DRAIN in phases
-    assert HostedApplicationShutdownPhase.CANCEL in phases
+    drain = next(r for r in snapshot.phase_records if r.phase is HostedApplicationShutdownPhase.DRAIN)
+    cancel = next(r for r in snapshot.phase_records if r.phase is HostedApplicationShutdownPhase.CANCEL)
+    assert drain.outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT
+    assert cancel.outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED
+    assert snapshot.timed_out is True
+    assert snapshot.forced is True
 
 
 @pytest.mark.asyncio
@@ -168,6 +171,8 @@ async def test_cancel_failure_recorded() -> None:
     snapshot = await _run(executor)
     cancel = next(r for r in snapshot.phase_records if r.phase is HostedApplicationShutdownPhase.CANCEL)
     assert cancel.outcome is HostedApplicationShutdownPhaseOutcome.FAILED
+    assert snapshot.timed_out is False
+    assert snapshot.forced is True
 
 
 @pytest.mark.asyncio

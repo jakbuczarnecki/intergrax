@@ -23,7 +23,32 @@ from intergrax.hosting.errors import (
   HostedApplicationInstanceConflictError,
   HostedApplicationSupervisorError,
 )
-from intergrax.hosting.shutdown import HostedApplicationShutdownExecutionSnapshot
+from intergrax.hosting.shutdown import (
+  HostedApplicationShutdownExecutionSnapshot,
+  HostedApplicationShutdownPhase,
+  HostedApplicationShutdownPhaseOutcome,
+)
+
+_CRITICAL_CLEANUP_PHASES = frozenset(
+  {
+    HostedApplicationShutdownPhase.COMPONENT_STOP,
+    HostedApplicationShutdownPhase.RUNTIME_STOP,
+    HostedApplicationShutdownPhase.LEASE_RELEASE,
+  }
+)
+
+
+def _has_critical_cleanup_failure(
+  shutdown_execution: HostedApplicationShutdownExecutionSnapshot | None,
+) -> bool:
+  if shutdown_execution is None:
+    return False
+  return any(
+    record.phase in _CRITICAL_CLEANUP_PHASES
+    and record.outcome is HostedApplicationShutdownPhaseOutcome.FAILED
+    for record in shutdown_execution.phase_records
+  )
+
 
 _HOSTING_EXCEPTION_TYPES = (
   HostedApplicationInstanceConflictError,
@@ -168,8 +193,9 @@ class HostedApplicationExitClassifier:
     failure = result.diagnostics.current_failure
     shutdown_timed_out = shutdown_execution.timed_out if shutdown_execution else False
     shutdown_forced = shutdown_execution.forced if shutdown_execution else False
+    critical_cleanup_failure = _has_critical_cleanup_failure(shutdown_execution)
 
-    if shutdown_timed_out or shutdown_forced:
+    if shutdown_timed_out or shutdown_forced or critical_cleanup_failure:
       return HostedApplicationExitRecord(
         exit_kind=HostedApplicationExitKind.FORCED_TERMINATION,
         retryable=False,
