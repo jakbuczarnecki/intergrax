@@ -223,7 +223,11 @@ class HostedApplicationEngine:
             try:
                 await self._startup_sequence()
             except Exception as exc:
-                if self._lifecycle.state is HostedApplicationLifecycleState.STARTING:
+                state = self._lifecycle.state
+                if state in {
+                    HostedApplicationLifecycleState.STARTING,
+                    HostedApplicationLifecycleState.READY,
+                }:
                     await self._startup_failure_cleanup(exc)
                     primary = self._diagnostics.primary_exception or exc
                     raise HostedApplicationStartupError("hosted application startup failed") from primary
@@ -263,7 +267,7 @@ class HostedApplicationEngine:
         return HostedApplicationContext(
             application_id=self.definition.application_id,
             instance_id=self.instance_id,
-            profile=self.definition.profile_public_snapshot,
+            profile=self.definition.profile_public_view(),
             profile_digest=self.definition.profile_digest,
             paths=self.paths,
             process_identity=self.process_identity,
@@ -445,11 +449,14 @@ class HostedApplicationEngine:
                 self._context,
                 phase=HostedApplicationFailurePhase.RUNTIME_STOP,
             )
-        await self._drain_observer_tasks(close_first=True)
         await self._safe_phase(self._release_lease)
         self._close_context()
-        if self._lifecycle.state is HostedApplicationLifecycleState.STARTING:
+        if self._lifecycle.state in {
+            HostedApplicationLifecycleState.STARTING,
+            HostedApplicationLifecycleState.READY,
+        }:
             self._lifecycle.transition_to(HostedApplicationLifecycleState.FAILED, reason_code="failed")
+        self._health.refresh_once()
         self._reuse_blocked = True
         try:
             await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_FAILED)
@@ -461,6 +468,8 @@ class HostedApplicationEngine:
                 exc=publish_exc,
                 reason_code="terminal_event_publish_failed",
             )
+        await self._quiescent_drain_failure_observers()
+        self._diagnostics.set_observer_task_count(self._observer_tasks.task_count)
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
 
     async def _graceful_stop_sequence(self, *, reason_code: str) -> HostedApplicationEngineTerminalResult:
@@ -504,6 +513,7 @@ class HostedApplicationEngine:
                 HostedApplicationLifecycleState.STOPPED,
                 reason_code=reason_code,
             )
+        self._health.refresh_once()
         await self._publish_terminal_stopped_event()
         await self._safe_phase(self._observer_tasks.drain, drain_timeout)
         self._observer_tasks.close_to_new_tasks()
@@ -515,6 +525,7 @@ class HostedApplicationEngine:
         await self._drain_observer_tasks(close_first=True)
         await self._safe_phase(self._release_lease)
         self._close_context()
+        self._health.refresh_once()
         return self._terminal_result(reason_code)
 
     async def _publish_terminal_stopped_event(self) -> None:
@@ -528,6 +539,14 @@ class HostedApplicationEngine:
                 exc=publish_exc,
                 reason_code="terminal_event_publish_failed",
             )
+
+    async def _quiescent_drain_failure_observers(self) -> None:
+        """Drain failure hooks and subscriptions after APPLICATION_FAILED is published."""
+        drain_timeout = self.definition.lifecycle_policy.default_observer_hook_timeout_seconds
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
+        self._observer_tasks.close_to_new_tasks()
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
+        self._observer_tasks.cancel_remaining()
 
     async def _drain_observer_tasks(self, *, close_first: bool = False) -> None:
         drain_timeout = self.definition.lifecycle_policy.default_observer_hook_timeout_seconds

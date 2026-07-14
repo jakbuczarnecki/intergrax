@@ -79,6 +79,31 @@ def test_source_profile_metadata_mutation_isolated() -> None:
     assert original_view.profile.metadata == {"tier": "local"}
 
 
+def test_profile_public_snapshot_direct_mutation_isolated() -> None:
+    profile = HostedApplicationProfile(
+        application_id="test_app",
+        application_factory=minimal_profile_with_runtime().application_factory,
+        metadata={"tier": "local", "nested": {"key": "value"}},
+    )
+    definition = resolve_hosted_application_definition(profile)
+    original_digest = definition.profile_digest
+    snapshot = definition.profile_public_snapshot
+    snapshot.metadata["tier"] = "changed"
+    nested = snapshot.metadata.get("nested")
+    if isinstance(nested, dict):
+        nested["key"] = "mutated"
+    assert definition.public_view().profile.metadata == {
+        "tier": "local",
+        "nested": {"key": "value"},
+    }
+    assert definition.profile_public_snapshot.metadata == {
+        "tier": "local",
+        "nested": {"key": "value"},
+    }
+    assert definition.profile_digest == original_digest
+    assert definition.definition_digest == resolve_hosted_application_definition(profile).definition_digest
+
+
 def test_nested_metadata_mutation_after_resolution_is_isolated() -> None:
     profile = HostedApplicationProfile(
         application_id="test_app",
@@ -346,3 +371,115 @@ async def test_registry_rejection_emits_no_coroutine_warning() -> None:
         registry.schedule(lambda: noop(), phase=HostedApplicationFailurePhase.AFTER_STOP_OBSERVER, source_id="noop")
         await asyncio.sleep(0)
     assert not any("coroutine" in str(item.message).lower() for item in caught)
+
+
+@pytest.mark.asyncio
+async def test_post_ready_lease_invalidation_never_leaves_ready() -> None:
+    from tests.unit.hosting.engine._fakes import SecondCheckInvalidatingLease
+
+    lease = SecondCheckInvalidatingLease()
+    guard = FakeInstanceGuard(lease=lease)
+    runtime = FakeRuntime()
+    engine = _build_engine(runtime=runtime, guard=guard)
+    with pytest.raises(HostedApplicationStartupError):
+        await engine.start()
+    assert engine.lifecycle_snapshot().state is HostedApplicationLifecycleState.FAILED
+    assert not engine.accepts_new_work
+    assert runtime.stop_count >= 1
+    assert lease.released
+    assert engine.diagnostics_snapshot().context_closed
+    health = engine.health_snapshot()
+    assert not health.live
+    assert not health.ready
+    assert not health.accepting_new_work
+
+
+@pytest.mark.asyncio
+async def test_startup_failure_drains_observers_and_subscriptions() -> None:
+    hook_events: list[HostedApplicationEventType] = []
+    failure_events: list[HostedApplicationEventType] = []
+    on_failure_calls = {"count": 0}
+
+    async def on_failure_hook(context) -> None:
+        on_failure_calls["count"] += 1
+        await context.event_publisher.publish(
+            HostedApplicationEvent(
+                event_type=HostedApplicationEventType.HOOK_COMPLETED,
+                application_id=context.application_id,
+                instance_id=context.instance_id,
+                lifecycle_state=context.lifecycle.snapshot().state,
+                payload={"hook_id": "on_failure", "hook_point": "on_failure"},
+            )
+        )
+
+    def hook_handler(event: HostedApplicationEvent) -> None:
+        hook_events.append(event.event_type)
+
+    def failure_handler(event: HostedApplicationEvent) -> None:
+        failure_events.append(event.event_type)
+
+    profile = HostedApplicationProfile(
+        application_id="test_app",
+        application_factory=minimal_profile_with_runtime(FakeRuntime(fail_start=True)).application_factory,
+        hooks=HostedApplicationHooks(
+            on_failure=(
+                HostedApplicationHook(
+                    hook_id="on_failure",
+                    handler=on_failure_hook,
+                    handler_id="tests.on_failure",
+                ),
+            ),
+        ),
+        event_subscriptions=(
+            HostedApplicationEventSubscription(
+                subscription_id="hook_sub",
+                event_types=(
+                    HostedApplicationEventType.HOOK_STARTED,
+                    HostedApplicationEventType.HOOK_COMPLETED,
+                    HostedApplicationEventType.HOOK_FAILED,
+                ),
+                handler=hook_handler,
+                handler_id="tests.hook_sub",
+                source_id="profile",
+            ),
+            HostedApplicationEventSubscription(
+                subscription_id="failed_sub",
+                event_types=(HostedApplicationEventType.APPLICATION_FAILED,),
+                handler=failure_handler,
+                handler_id="tests.failed_sub",
+                source_id="profile",
+            ),
+        ),
+    )
+    engine = _build_engine(profile)
+    with pytest.raises(HostedApplicationStartupError):
+        await engine.start()
+    assert on_failure_calls["count"] == 1
+    assert HostedApplicationEventType.HOOK_COMPLETED in hook_events
+    assert HostedApplicationEventType.APPLICATION_FAILED in failure_events
+    assert engine.diagnostics_snapshot().observer_task_count == 0
+
+
+@pytest.mark.asyncio
+async def test_terminal_health_snapshot_after_clean_shutdown() -> None:
+    engine = _build_engine()
+    await engine.start()
+    result = await engine.stop(reason_code="test.complete")
+    health = result.diagnostics.health
+    assert result.terminal_state is HostedApplicationLifecycleState.STOPPED
+    assert not health.live
+    assert not health.ready
+    assert not health.accepting_new_work
+
+
+@pytest.mark.asyncio
+async def test_terminal_health_snapshot_after_startup_failure() -> None:
+    engine = _build_engine(runtime=FakeRuntime(fail_start=True))
+    with pytest.raises(HostedApplicationStartupError):
+        await engine.start()
+    diagnostics = engine.diagnostics_snapshot()
+    health = diagnostics.health
+    assert diagnostics.lifecycle.state is HostedApplicationLifecycleState.FAILED
+    assert not health.live
+    assert not health.ready
+    assert not health.accepting_new_work

@@ -69,12 +69,24 @@ class FakeLease(HostedApplicationInstanceLeasePort):
     def __init__(self, *, valid: bool = True) -> None:
         self._valid = valid
         self.released = False
+        self.validity_check_count = 0
 
     def is_valid(self) -> bool:
+        self.validity_check_count += 1
         return self._valid and not self.released
 
     async def release(self) -> None:
         self.released = True
+
+
+class SecondCheckInvalidatingLease(FakeLease):
+    """Lease that is valid on the first is_valid() call and invalid thereafter."""
+
+    def is_valid(self) -> bool:
+        self.validity_check_count += 1
+        if self.validity_check_count == 1:
+            return True
+        return False
 
 
 class FakeInstanceGuard(HostedApplicationInstanceGuardPort):

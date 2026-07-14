@@ -18,6 +18,7 @@ from intergrax.hosting.contracts.lifecycle import (
     HostedApplicationLifecycleState,
 )
 from intergrax.hosting.contracts.public_data import validate_bounded_identifier
+from intergrax.hosting.errors import HostedApplicationDiagnosticError
 from intergrax.hosting.engine.health import HostedApplicationHealthSnapshot
 
 FailureIdGenerator = Callable[[], str]
@@ -164,9 +165,11 @@ class DiagnosticsRecorder:
 
     def next_failure_id(self) -> str:
         if self.failure_id_generator is not None:
-            return self.failure_id_generator()
-        self._failure_counter += 1
-        return f"failure-{self._failure_counter:04d}"
+            raw_id = self.failure_id_generator()
+        else:
+            self._failure_counter += 1
+            raw_id = f"failure-{self._failure_counter:04d}"
+        return self._validate_failure_id(raw_id)
 
     def record_primary_failure(
         self,
@@ -264,6 +267,25 @@ class DiagnosticsRecorder:
             snapshot_timestamp=self.clock.now(),
         )
 
+    def _validate_failure_id(self, failure_id: str) -> str:
+        try:
+            return validate_bounded_identifier(failure_id, field_name="failure_id")
+        except ValueError as exc:
+            raise HostedApplicationDiagnosticError(str(exc)) from exc
+
+    def _validate_diagnostic_timestamp(self, occurred_at: datetime) -> datetime:
+        if occurred_at.tzinfo is None:
+            raise HostedApplicationDiagnosticError(
+                "diagnostic clock produced naive timestamp"
+            )
+        return occurred_at
+
+    def _bounded_identifier_or_diagnostic(self, value: str, *, field_name: str) -> str:
+        try:
+            return validate_bounded_identifier(value, field_name=field_name)
+        except ValueError as exc:
+            raise HostedApplicationDiagnosticError(str(exc)) from exc
+
     def _build_failure_record(
         self,
         *,
@@ -274,15 +296,21 @@ class DiagnosticsRecorder:
         reason_code: str,
         primary: bool,
     ) -> HostedApplicationFailureRecord:
-        safe_reason = validate_bounded_identifier(reason_code, field_name="reason_code")
+        safe_reason = self._bounded_identifier_or_diagnostic(reason_code, field_name="reason_code")
+        secondary_count = len(self.secondary_failures) if primary else 0
+        if secondary_count < 0:
+            raise HostedApplicationDiagnosticError("secondary_failure_count must be non-negative")
+        occurred_at = self._validate_diagnostic_timestamp(self.clock.now())
         return HostedApplicationFailureRecord(
             failure_id=self.next_failure_id(),
             reason_code=safe_reason,
             phase=phase,
-            source_kind=validate_bounded_identifier(source_kind, field_name="source_kind"),
-            source_id=validate_bounded_identifier(source_id, field_name="source_id"),
+            source_kind=self._bounded_identifier_or_diagnostic(
+                source_kind, field_name="source_kind"
+            ),
+            source_id=self._bounded_identifier_or_diagnostic(source_id, field_name="source_id"),
             exception_type=type(exc).__name__,
-            occurred_at=self.clock.now(),
+            occurred_at=occurred_at,
             primary=primary,
-            secondary_failure_count=len(self.secondary_failures) if primary else 0,
+            secondary_failure_count=secondary_count,
         )

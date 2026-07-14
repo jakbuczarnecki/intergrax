@@ -40,3 +40,7 @@ class HostedApplicationComponentError(HostedApplicationEngineError):
 
 class HostedApplicationRuntimeError(HostedApplicationEngineError):
     """Raised when opaque application runtime operations fail."""
+
+
+class HostedApplicationDiagnosticError(HostedApplicationEngineError):
+    """Raised when hosting diagnostics or failure records are invalid."""

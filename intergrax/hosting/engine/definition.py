@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -32,7 +33,7 @@ from intergrax.hosting.contracts.profile import (
     HostedApplicationProfile,
     HostedApplicationProfilePublicView,
 )
-from intergrax.hosting.contracts.public_data import public_json_digest
+from intergrax.hosting.contracts.public_data import canonical_public_json_bytes, public_json_digest
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from intergrax.hosting.errors import HostedApplicationConfigurationError, HostedApplicationDefinitionError
 
@@ -87,7 +88,7 @@ class HostedApplicationDefinition:
     """Immutable runtime composition derived from a hosted application profile."""
 
     application_id: str
-    profile_public_snapshot: HostedApplicationProfilePublicView
+    profile_public_json_bytes: bytes
     profile_digest: str
     definition_digest: str
     application_factory: ApplicationFactory
@@ -107,13 +108,23 @@ class HostedApplicationDefinition:
     pre_runtime_component_ids: tuple[str, ...]
     post_runtime_component_ids: tuple[str, ...]
 
+    def profile_public_view(self) -> HostedApplicationProfilePublicView:
+        """Reconstruct a fresh immutable public profile projection."""
+        payload = json.loads(self.profile_public_json_bytes)
+        return HostedApplicationProfilePublicView.model_validate(payload)
+
+    @property
+    def profile_public_snapshot(self) -> HostedApplicationProfilePublicView:
+        """Fresh public profile projection (not a shared mutable instance)."""
+        return self.profile_public_view()
+
     def public_view(self) -> HostedApplicationDefinitionPublicView:
         hook_ids_by_point = {
             point.value: tuple(hook.hook_id for hook in self.hook_registrations.get(point, ()))
             for point in HOSTED_APPLICATION_HOOK_POINT_ORDER
         }
         return HostedApplicationDefinitionPublicView(
-            profile=self.profile_public_snapshot,
+            profile=self.profile_public_view(),
             profile_digest=self.profile_digest,
             definition_digest=self.definition_digest,
             hook_ids_by_point=hook_ids_by_point,
@@ -364,13 +375,13 @@ def resolve_hosted_application_definition(
         "post_runtime_component_ids": list(post_runtime),
     }
     definition_digest = public_json_digest(public_payload)
-    profile_public_snapshot = HostedApplicationProfilePublicView.model_validate(
+    profile_public_json_bytes = canonical_public_json_bytes(
         profile.public_view().model_dump(mode="json"),
     )
 
     return HostedApplicationDefinition(
         application_id=profile.application_id,
-        profile_public_snapshot=profile_public_snapshot,
+        profile_public_json_bytes=profile_public_json_bytes,
         profile_digest=profile_digest,
         definition_digest=definition_digest,
         application_factory=profile.application_factory,
