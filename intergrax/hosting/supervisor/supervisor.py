@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.hosting.contracts.context import HostedApplicationClock, HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import HostedApplicationEvent, HostedApplicationEventType
+from intergrax.hosting.contracts.lifecycle import HostedApplicationLifecycleState
 from intergrax.hosting.contracts.public_data import validate_instance_id
 from intergrax.hosting.control import HostedApplicationControlCoordinator
 from intergrax.hosting.engine.definition import HostedApplicationDefinition
@@ -67,6 +68,8 @@ class HostedApplicationSupervisorAttemptRecord(BaseModel):
   instance_id: str
   exit_record: HostedApplicationExitRecord | None = None
   terminal_result: HostedApplicationEngineTerminalResult | None = Field(default=None, repr=False)
+  cleanup_verified: bool = True
+  cleanup_issue: str = ""
 
 
 class HostedApplicationSupervisorResult(BaseModel):
@@ -104,6 +107,9 @@ class HostedApplicationSupervisor:
     last_exit: HostedApplicationExitRecord | None = None
     exhausted = False
 
+    if self.control.is_shutdown_requested():
+      return self._result_for_stop_before_launch(attempt_records)
+
     while True:
       if self.control.is_shutdown_requested():
         break
@@ -119,15 +125,19 @@ class HostedApplicationSupervisor:
         attempt_number=attempt_number,
         started_at=self.clock.now(),
       )
-      engine = await self._build_engine(launch)
-      self._verify_engine_contract(engine, launch)
+
+      engine: HostedApplicationEngine | None = None
+      terminal: HostedApplicationEngineTerminalResult | None = None
+      exit_record: HostedApplicationExitRecord | None = None
+      cleanup_verified = True
+      cleanup_issue = ""
+
       try:
-        terminal = await engine.run_until_stopped()
-      except Exception as exc:
-        classifier = HostedApplicationExitClassifier(
-          restart_requested=self.control.is_restart_requested(),
-        )
-        last_exit = classifier.classify_exception(
+        engine = await self._build_engine(launch)
+        self._verify_engine_contract(engine, launch)
+      except HostedApplicationSupervisorError as exc:
+        classifier = HostedApplicationExitClassifier()
+        exit_record = classifier.classify_exception(
           exc,
           application_id=self.definition.application_id,
           instance_id=instance_id,
@@ -138,81 +148,102 @@ class HostedApplicationSupervisor:
           HostedApplicationSupervisorAttemptRecord(
             attempt_number=attempt_number,
             instance_id=instance_id,
-            exit_record=last_exit,
+            exit_record=exit_record,
+            cleanup_verified=True,
           )
         )
-        raise
-      finally:
-        await self._verify_engine_released(engine)
+        last_exit = exit_record
+        decision = restart_evaluator.evaluate(exit_record, attempt_number=attempt_number)
+        if not decision.should_restart:
+          break
+        if not await self._schedule_restart(
+          restart_evaluator,
+          decision,
+          last_exit=last_exit,
+          attempt_number=attempt_number,
+        ):
+          break
+        attempt_number = decision.attempt_number
+        continue
 
-      classifier = HostedApplicationExitClassifier(
-        restart_requested=self.control.is_restart_requested(),
-      )
-      shutdown_execution = terminal.diagnostics.shutdown_execution
-      last_exit = classifier.classify_terminal_result(
-        terminal,
-        application_id=self.definition.application_id,
-        instance_id=instance_id,
-        profile_digest=self.definition.profile_digest,
-        occurred_at=self.clock.now(),
-        shutdown_execution=shutdown_execution,
-      )
+      try:
+        terminal = await engine.run_until_stopped()
+      except Exception as exc:
+        classifier = HostedApplicationExitClassifier(
+          restart_requested=self.control.is_restart_requested(),
+        )
+        exit_record = classifier.classify_exception(
+          exc,
+          application_id=self.definition.application_id,
+          instance_id=instance_id,
+          profile_digest=self.definition.profile_digest,
+          occurred_at=self.clock.now(),
+        )
+      finally:
+        if engine is not None:
+          cleanup_verified, cleanup_issue = self._verify_engine_cleanup(engine)
+
+      if exit_record is None and terminal is not None:
+        if terminal.ready_duration_seconds is not None:
+          restart_evaluator.record_stable_runtime(
+            stable_at=self.clock.now(),
+            ready_duration_seconds=terminal.ready_duration_seconds,
+          )
+        classifier = HostedApplicationExitClassifier(
+          restart_requested=self.control.is_restart_requested(),
+        )
+        exit_record = classifier.classify_terminal_result(
+          terminal,
+          application_id=self.definition.application_id,
+          instance_id=instance_id,
+          profile_digest=self.definition.profile_digest,
+          occurred_at=self.clock.now(),
+          shutdown_execution=terminal.diagnostics.shutdown_execution,
+        )
+
+      assert exit_record is not None
       attempt_records.append(
         HostedApplicationSupervisorAttemptRecord(
           attempt_number=attempt_number,
           instance_id=instance_id,
-          exit_record=last_exit,
+          exit_record=exit_record,
           terminal_result=terminal,
+          cleanup_verified=cleanup_verified,
+          cleanup_issue=cleanup_issue,
         )
       )
+      last_exit = exit_record
 
       if self.control.is_shutdown_requested():
         break
 
-      decision = restart_evaluator.evaluate(last_exit, attempt_number=attempt_number)
+      decision = restart_evaluator.evaluate(exit_record, attempt_number=attempt_number)
       if not decision.should_restart:
         if decision.exhausted:
           exhausted = True
-          await self._publish_restart_event(
+          await self._publish_restart_event_safe(
             HostedApplicationEventType.RESTART_EXHAUSTED,
             attempt_number=attempt_number,
             delay=0.0,
-            exit_kind=last_exit.exit_kind,
+            exit_kind=exit_record.exit_kind,
             reason_code=decision.reason_code,
           )
         break
 
-      await self._publish_restart_event(
-        HostedApplicationEventType.RESTART_REQUESTED,
-        attempt_number=decision.attempt_number,
-        delay=decision.delay_seconds,
-        exit_kind=last_exit.exit_kind,
-        reason_code=last_exit.reason_code,
-      )
-      await self._publish_restart_event(
-        HostedApplicationEventType.RESTART_SCHEDULED,
-        attempt_number=decision.attempt_number,
-        delay=decision.delay_seconds,
-        exit_kind=last_exit.exit_kind,
-        reason_code=last_exit.reason_code,
-      )
-      if not await restart_evaluator.wait_backoff(
-        decision.delay_seconds,
-        control=self.control,
-        sleeper=self.sleeper,
+      if not cleanup_verified:
+        break
+
+      if not await self._schedule_restart(
+        restart_evaluator,
+        decision,
+        last_exit=exit_record,
+        attempt_number=attempt_number,
       ):
         break
-      await self._publish_restart_event(
-        HostedApplicationEventType.RESTART_STARTED,
-        attempt_number=decision.attempt_number,
-        delay=0.0,
-        exit_kind=last_exit.exit_kind,
-        reason_code=last_exit.reason_code,
-      )
       attempt_number = decision.attempt_number
 
     if last_exit is None:
-      raise HostedApplicationSupervisorError("supervisor completed without terminal exit")
+      return self._result_for_stop_before_launch(attempt_records)
     return HostedApplicationSupervisorResult(
       application_id=self.definition.application_id,
       profile_digest=self.definition.profile_digest,
@@ -221,6 +252,66 @@ class HostedApplicationSupervisor:
       attempts=tuple(attempt_records),
       restart_exhausted=exhausted,
     )
+
+  def _result_for_stop_before_launch(
+    self,
+    attempt_records: list[HostedApplicationSupervisorAttemptRecord],
+  ) -> HostedApplicationSupervisorResult:
+    exit_record = HostedApplicationExitRecord(
+      exit_kind=HostedApplicationExitKind.CLEAN_STOP,
+      retryable=False,
+      reason_code="stop_before_launch",
+      application_id=self.definition.application_id,
+      instance_id="supervisor",
+      profile_digest=self.definition.profile_digest,
+      terminal_lifecycle_state=HostedApplicationLifecycleState.STOPPED,
+      occurred_at=self.clock.now(),
+    )
+    return HostedApplicationSupervisorResult(
+      application_id=self.definition.application_id,
+      profile_digest=self.definition.profile_digest,
+      definition_digest=self.definition.definition_digest,
+      final_exit=exit_record,
+      attempts=tuple(attempt_records),
+      restart_exhausted=False,
+    )
+
+  async def _schedule_restart(
+    self,
+    restart_evaluator: HostedApplicationRestartPolicyEvaluator,
+    decision,
+    *,
+    last_exit: HostedApplicationExitRecord,
+    attempt_number: int,
+  ) -> bool:
+    await self._publish_restart_event_safe(
+      HostedApplicationEventType.RESTART_REQUESTED,
+      attempt_number=decision.attempt_number,
+      delay=decision.delay_seconds,
+      exit_kind=last_exit.exit_kind,
+      reason_code=last_exit.reason_code,
+    )
+    await self._publish_restart_event_safe(
+      HostedApplicationEventType.RESTART_SCHEDULED,
+      attempt_number=decision.attempt_number,
+      delay=decision.delay_seconds,
+      exit_kind=last_exit.exit_kind,
+      reason_code=last_exit.reason_code,
+    )
+    if not await restart_evaluator.wait_backoff(
+      decision.delay_seconds,
+      control=self.control,
+      sleeper=self.sleeper,
+    ):
+      return False
+    await self._publish_restart_event_safe(
+      HostedApplicationEventType.RESTART_STARTED,
+      attempt_number=decision.attempt_number,
+      delay=0.0,
+      exit_kind=last_exit.exit_kind,
+      reason_code=last_exit.reason_code,
+    )
+    return True
 
   async def _build_engine(self, launch: HostedApplicationSupervisorLaunchContext) -> HostedApplicationEngine:
     try:
@@ -249,14 +340,15 @@ class HostedApplicationSupervisor:
     if engine.definition.application_id != self.definition.application_id:
       raise HostedApplicationSupervisorError("engine application_id mismatch")
 
-  async def _verify_engine_released(self, engine: HostedApplicationEngine) -> None:
+  def _verify_engine_cleanup(self, engine: HostedApplicationEngine) -> tuple[bool, str]:
     diagnostics = engine.diagnostics_snapshot()
     if diagnostics.instance_lease_acquired and not diagnostics.instance_lease_released:
-      raise HostedApplicationSupervisorError("prior engine lease not released")
+      return False, "prior_engine_lease_not_released"
     if not diagnostics.context_closed:
-      raise HostedApplicationSupervisorError("prior engine context not closed")
+      return False, "prior_engine_context_not_closed"
+    return True, ""
 
-  async def _publish_restart_event(
+  async def _publish_restart_event_safe(
     self,
     event_type: HostedApplicationEventType,
     *,
@@ -265,20 +357,21 @@ class HostedApplicationSupervisor:
     exit_kind: HostedApplicationExitKind,
     reason_code: str,
   ) -> None:
-    from intergrax.hosting.contracts.lifecycle import HostedApplicationLifecycleState
-
-    await self.event_publisher.publish(
-      HostedApplicationEvent(
-        event_type=event_type,
-        application_id=self.definition.application_id,
-        instance_id="supervisor",
-        lifecycle_state=HostedApplicationLifecycleState.STOPPED,
-        payload={
-          "attempt_number": attempt_number,
-          "delay_seconds": delay,
-          "exit_kind": exit_kind.value,
-          "reason_code": reason_code,
-          "profile_digest": self.definition.profile_digest,
-        },
+    try:
+      await self.event_publisher.publish(
+        HostedApplicationEvent(
+          event_type=event_type,
+          application_id=self.definition.application_id,
+          instance_id="supervisor",
+          lifecycle_state=HostedApplicationLifecycleState.STOPPED,
+          payload={
+            "attempt_number": attempt_number,
+            "delay_seconds": delay,
+            "exit_kind": exit_kind.value,
+            "reason_code": reason_code,
+            "profile_digest": self.definition.profile_digest,
+          },
+        )
       )
-    )
+    except Exception:
+      return

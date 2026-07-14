@@ -59,8 +59,9 @@ def _guard(tmp_path: Path, *, allow_stale_recovery: bool = True) -> FileHostedAp
 @pytest.mark.asyncio
 async def test_fresh_acquire_and_public_view(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
-    lease, classification = await guard.acquire(_identity())
-    assert classification is InstanceAcquisitionClassification.FRESH
+    acquisition = await guard.acquire(_identity())
+    assert acquisition.classification is InstanceAcquisitionClassification.FRESH
+    lease = acquisition.lease
     public = lease.public_view()
     assert public.instance_id == "instance-001"
     assert "ownership_token" not in public.model_dump()
@@ -70,7 +71,7 @@ async def test_fresh_acquire_and_public_view(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_second_active_owner_rejected(tmp_path: Path) -> None:
-    import intergrax.hosting.instance.file_guard as file_guard_module
+    import intergrax.hosting.instance._native_lock as native_lock_module
     from intergrax.hosting.instance._native_lock import NativeFileLockError
 
     guard = _guard(tmp_path)
@@ -91,23 +92,22 @@ async def test_second_active_owner_rejected(tmp_path: Path) -> None:
     lock_path.write_bytes(metadata.to_json_bytes())
     object.__setattr__(guard, "process_probe", _LiveProbe())
 
-    class _BusyNativeLock:
-        def __init__(self, _path: object) -> None:
-            raise NativeFileLockError("lock_busy")
+    def _busy_acquire(_fd: int) -> None:
+        raise NativeFileLockError("lock_busy")
 
-    original = file_guard_module.NativeFileLock
-    file_guard_module.NativeFileLock = _BusyNativeLock
+    original = native_lock_module.try_acquire_exclusive
+    native_lock_module.try_acquire_exclusive = _busy_acquire
     try:
         with pytest.raises(HostedApplicationInstanceConflictError):
             await guard.acquire(_identity("instance-002"))
     finally:
-        file_guard_module.NativeFileLock = original
+        native_lock_module.try_acquire_exclusive = original
 
 
 @pytest.mark.asyncio
 async def test_idempotent_release_and_token_mismatch(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
-    lease, _ = await guard.acquire(_identity())
+    lease = (await guard.acquire(_identity())).lease
     corrupted = _LeaseMetadata(
         schema_version=lease._metadata.schema_version,
         application_id=lease._metadata.application_id,
@@ -122,9 +122,7 @@ async def test_idempotent_release_and_token_mismatch(tmp_path: Path) -> None:
     )
     lease._lock.write_bytes(corrupted.to_json_bytes())
     with pytest.raises(HostedApplicationInstanceOwnershipError):
-        lease.verify_ownership()
-    await lease.release()
-    await lease.release()
+        await lease.release()
 
 
 class _DeadProbe(OsProcessProbe):
@@ -141,11 +139,12 @@ class _LiveProbe(OsProcessProbe):
 async def test_stale_owner_recovered(tmp_path: Path) -> None:
     guard = _guard(tmp_path)
     object.__setattr__(guard, "process_probe", _DeadProbe())
-    lease1, _ = await guard.acquire(_identity("instance-old"))
+    lease1 = (await guard.acquire(_identity("instance-old"))).lease
     lease1._lock.close()
-    object.__setattr__(lease1, "_released", True)
-    lease2, classification = await guard.acquire(_identity("instance-new"))
-    assert classification is InstanceAcquisitionClassification.STALE_OWNER
+    object.__setattr__(lease1, "_released_verified", True)
+    acquisition2 = await guard.acquire(_identity("instance-new"))
+    assert acquisition2.classification is InstanceAcquisitionClassification.STALE_OWNER
+    lease2 = acquisition2.lease
     await lease2.release()
 
 
@@ -153,8 +152,9 @@ async def test_stale_owner_recovered(tmp_path: Path) -> None:
 async def test_stale_recovery_disabled(tmp_path: Path) -> None:
     guard = _guard(tmp_path, allow_stale_recovery=False)
     object.__setattr__(guard, "process_probe", _DeadProbe())
-    lease1, _ = await guard.acquire(_identity("instance-old"))
-    await lease1.release()
+    lease1 = (await guard.acquire(_identity("instance-old"))).lease
+    lease1._lock.close()
+    object.__setattr__(lease1, "_released_verified", True)
     with pytest.raises(HostedApplicationInstanceConflictError):
         await guard.acquire(_identity("instance-new"))
 

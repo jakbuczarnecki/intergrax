@@ -376,7 +376,7 @@ LKW reviewer proof updates
 | Satellite §27 health | APP-HOST-2E | health/readiness | aggregate health tests | Planned |
 | Satellite §28 events | APP-HOST-3 | event contracts/publisher | event spine tests | **Contracts Done (W1)** |
 | Satellite §29 policies | APP-HOST-1E,4D,5B | policies | preset/decision tests | **Contracts Done (W1)** |
-| Satellite §30 instance | APP-HOST-4A/4B | instance guard | conflict/stale recovery tests | Planned |
+| Satellite §30 instance | APP-HOST-4A/4B | instance guard | conflict/stale recovery tests | Done |
 | Satellite §31 control | APP-HOST-4C/4E | signal/control bridge | idempotency tests | Planned |
 | Satellite §32 supervisor | APP-HOST-5 | supervisor | restart/backoff proof | Planned |
 | Satellite §33 interactions | APP-HOST-6 | interaction facade | existing intake reuse tests | Planned |
@@ -398,7 +398,9 @@ No architecture section may remain without a plan owner before the domain is dec
 APP-HOST-9A — run_hosted_application(profile) author facade
 ```
 
-**APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
+**APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14; corrective pass). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
+
+W3 corrective pass hardened: linearizable file-lock acquisition (`HostedApplicationInstanceAcquisitionResult`), truthful lease release/events, effective STOP/RESTART control propagation, one global monotonic shutdown budget across all phases, wrapped exit classification, deterministic restart backoff with stable-window reset, and supervisor restart flow without bypassing cleanup evaluation.
 
 W3 supervisor is **in-process**; W3 file lock and signal bridge are **portable reference implementations**. Full OS adapter/service-manager posture remains **APP-HOST-7**. Profile-source preservation contract remains **APP-HOST-5D**. Process proof harness remains **APP-HOST-5E**.
 

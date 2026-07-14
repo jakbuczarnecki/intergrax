@@ -53,6 +53,35 @@ class HostedApplicationLifecycleSnapshot(BaseModel):
         return _validate_timezone_aware_datetime(value, field_name="last_transition_at")
 
 
+class HostedApplicationEffectiveControlRequest(BaseModel):
+    """Immutable effective shutdown/restart control request."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    intent: str
+    reason_code: str
+    requested_at: datetime
+    deadline_at: datetime | None = None
+    source_id: str = "runtime"
+
+    @field_validator("reason_code", "source_id", "intent")
+    @classmethod
+    def _validate_identifiers(cls, value: str, info) -> str:
+        return validate_bounded_identifier(value, field_name=info.field_name)
+
+    @field_validator("requested_at", "deadline_at")
+    @classmethod
+    def _validate_timestamps(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return _validate_timezone_aware_datetime(value, field_name="timestamp")
+
+    @model_validator(mode="after")
+    def _validate_deadline_order(self) -> HostedApplicationEffectiveControlRequest:
+        if self.deadline_at is not None and self.deadline_at < self.requested_at:
+            raise ValueError("deadline_at must not be earlier than requested_at")
+        return self
+
 class HostedApplicationShutdownRequestSnapshot(BaseModel):
     """Immutable shutdown request snapshot exposed through context ports."""
 
@@ -103,4 +132,4 @@ class HostedApplicationShutdownCoordinator(Protocol):
         deadline_at: datetime | None = None,
     ) -> HostedApplicationShutdownRequestSnapshot: ...
 
-    async def wait_until_requested(self) -> HostedApplicationShutdownRequestSnapshot: ...
+    async def wait_until_requested(self) -> HostedApplicationEffectiveControlRequest: ...

@@ -138,8 +138,15 @@ async def test_engine_contract_mismatch_rejected() -> None:
         clock=FixedClock(),
         instance_id_generator=_SequenceInstanceIds(["instance-001"]),
     )
+    launch = HostedApplicationSupervisorLaunchContext(
+        definition=definition,
+        instance_id="instance-001",
+        attempt_number=0,
+        control=control,
+    )
+    engine = await supervisor._build_engine(launch)
     with pytest.raises(HostedApplicationSupervisorError):
-        await supervisor.run()
+        supervisor._verify_engine_contract(engine, launch)
 
 
 def test_restart_policy_custom_classifier_signature() -> None:

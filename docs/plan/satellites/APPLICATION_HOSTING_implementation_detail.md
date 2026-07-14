@@ -975,3 +975,26 @@ Commit:
 ```
 
 No row may be marked Done when its directly affected regression suite is red.
+
+# APP-HOST-W3 corrective pass — Process control and supervision hardening
+
+**Status:** **Done** (2026-07-14)
+
+**Closes:** APP-HOST-4A..4E, APP-HOST-5A..5C, APP-HOST-W3 corrective pass.
+
+Delivered corrections:
+
+```text
+HostedApplicationInstanceAcquisitionResult + guard port alignment
+linearizable file-lock acquisition under native lock
+truthful lease is_valid/release + INSTANCE_RELEASED only after verified release
+HostedApplicationEffectiveControlRequest through wait_until_requested › stop › shutdown
+HostedApplicationGlobalShutdownBudget across before_stop/intake/drain/cancel/flush/component/runtime/observer/lease/terminal phases
+wrapped exit classification (INSTANCE_CONFLICT, configuration errors)
+deterministic restart backoff + stable-window reset via ready_duration_seconds
+supervisor restart evaluation after engine failures without bypassing cleanup verification
+regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
+```
+
+**Next wave:** APP-HOST-9A — `run_hosted_application(profile)` author facade (not started).
+

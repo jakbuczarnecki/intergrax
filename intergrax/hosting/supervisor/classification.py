@@ -12,7 +12,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from intergrax.hosting.contracts.lifecycle import HostedApplicationLifecycleState
-from intergrax.hosting.contracts.public_data import validate_bounded_identifier
+from intergrax.hosting.contracts.public_data import validate_bounded_identifier, validate_instance_id
 from intergrax.hosting.engine.diagnostics import (
   HostedApplicationEngineTerminalResult,
   HostedApplicationFailurePhase,
@@ -24,6 +24,13 @@ from intergrax.hosting.errors import (
   HostedApplicationSupervisorError,
 )
 from intergrax.hosting.shutdown import HostedApplicationShutdownExecutionSnapshot
+
+_HOSTING_EXCEPTION_TYPES = (
+  HostedApplicationInstanceConflictError,
+  HostedApplicationConfigurationError,
+  HostedApplicationDefinitionError,
+  HostedApplicationSupervisorError,
+)
 
 
 class HostedApplicationExitKind(str, Enum):
@@ -55,12 +62,36 @@ class HostedApplicationExitRecord(BaseModel):
   shutdown_forced: bool = False
   occurred_at: datetime
 
+  @field_validator("instance_id")
+  @classmethod
+  def _validate_instance_id(cls, value: str) -> str:
+    return validate_instance_id(value)
+
   @field_validator("reason_code", "failure_category")
   @classmethod
   def _validate_reason_code(cls, value: str) -> str:
     if not value:
       return ""
     return validate_bounded_identifier(value, field_name="reason_code")
+
+  @field_validator("occurred_at")
+  @classmethod
+  def _validate_occurred_at(cls, value: datetime) -> datetime:
+    if value.tzinfo is None:
+      raise ValueError("occurred_at must be timezone-aware")
+    return value
+
+
+def _find_hosting_exception(exc: BaseException, *, max_depth: int = 8) -> BaseException | None:
+  current: BaseException | None = exc
+  for _ in range(max_depth):
+    if current is None:
+      return None
+    for hosting_type in _HOSTING_EXCEPTION_TYPES:
+      if isinstance(current, hosting_type):
+        return current
+    current = current.__cause__
+  return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,8 +100,17 @@ class HostedApplicationExitClassifier:
 
   restart_requested: bool = False
 
-  def classify_exception(self, exc: BaseException, *, application_id: str, instance_id: str, profile_digest: str, occurred_at: datetime) -> HostedApplicationExitRecord:
-    if isinstance(exc, HostedApplicationInstanceConflictError):
+  def classify_exception(
+    self,
+    exc: BaseException,
+    *,
+    application_id: str,
+    instance_id: str,
+    profile_digest: str,
+    occurred_at: datetime,
+  ) -> HostedApplicationExitRecord:
+    hosting_exc = _find_hosting_exception(exc) or exc
+    if isinstance(hosting_exc, HostedApplicationInstanceConflictError):
       return HostedApplicationExitRecord(
         exit_kind=HostedApplicationExitKind.INSTANCE_CONFLICT,
         retryable=False,
@@ -81,7 +121,7 @@ class HostedApplicationExitClassifier:
         terminal_lifecycle_state=HostedApplicationLifecycleState.FAILED,
         occurred_at=occurred_at,
       )
-    if isinstance(exc, (HostedApplicationConfigurationError, HostedApplicationDefinitionError)):
+    if isinstance(hosting_exc, (HostedApplicationConfigurationError, HostedApplicationDefinitionError)):
       return HostedApplicationExitRecord(
         exit_kind=HostedApplicationExitKind.CONFIGURATION_ERROR,
         retryable=False,
@@ -92,7 +132,7 @@ class HostedApplicationExitClassifier:
         terminal_lifecycle_state=HostedApplicationLifecycleState.FAILED,
         occurred_at=occurred_at,
       )
-    if isinstance(exc, HostedApplicationSupervisorError):
+    if isinstance(hosting_exc, HostedApplicationSupervisorError):
       return HostedApplicationExitRecord(
         exit_kind=HostedApplicationExitKind.SUPERVISOR_ERROR,
         retryable=False,
@@ -129,11 +169,11 @@ class HostedApplicationExitClassifier:
     shutdown_timed_out = shutdown_execution.timed_out if shutdown_execution else False
     shutdown_forced = shutdown_execution.forced if shutdown_execution else False
 
-    if self.restart_requested and terminal_state is HostedApplicationLifecycleState.STOPPED:
+    if shutdown_timed_out or shutdown_forced:
       return HostedApplicationExitRecord(
-        exit_kind=HostedApplicationExitKind.RESTART_REQUESTED,
-        retryable=True,
-        reason_code=result.reason_code or "restart_requested",
+        exit_kind=HostedApplicationExitKind.FORCED_TERMINATION,
+        retryable=False,
+        reason_code="forced_termination",
         application_id=application_id,
         instance_id=instance_id,
         profile_digest=profile_digest,
@@ -143,11 +183,11 @@ class HostedApplicationExitClassifier:
         occurred_at=occurred_at,
       )
 
-    if shutdown_timed_out or shutdown_forced:
+    if self.restart_requested and terminal_state is HostedApplicationLifecycleState.STOPPED:
       return HostedApplicationExitRecord(
-        exit_kind=HostedApplicationExitKind.FORCED_TERMINATION,
-        retryable=False,
-        reason_code="forced_termination",
+        exit_kind=HostedApplicationExitKind.RESTART_REQUESTED,
+        retryable=True,
+        reason_code=result.reason_code or "restart_requested",
         application_id=application_id,
         instance_id=instance_id,
         profile_digest=profile_digest,

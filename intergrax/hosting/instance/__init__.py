@@ -7,6 +7,8 @@ from intergrax.hosting.instance.contracts import (
   HostedApplicationInstanceConflictSnapshot,
   HostedApplicationInstanceLeasePublicView,
   InstanceAcquisitionClassification,
+  HostedApplicationInstanceAcquisitionResult,
+  HostedApplicationInstanceLeasePort,
 )
 from intergrax.hosting.instance.file_guard import (
   FileHostedApplicationInstanceGuard,
@@ -18,7 +20,9 @@ from intergrax.hosting.instance.file_guard import (
 __all__ = [
   "FileHostedApplicationInstanceGuard",
   "FileHostedApplicationInstanceLease",
+  "HostedApplicationInstanceAcquisitionResult",
   "HostedApplicationInstanceConflictSnapshot",
+  "HostedApplicationInstanceLeasePort",
   "HostedApplicationInstanceLeasePublicView",
   "HostedApplicationProcessProbe",
   "InstanceAcquisitionClassification",

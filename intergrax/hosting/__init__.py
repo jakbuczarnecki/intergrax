@@ -52,6 +52,7 @@ from intergrax.hosting.engine.health import (
     HostedApplicationHealthSnapshot,
     HostedApplicationReadinessService,
 )
+from intergrax.hosting.instance.contracts import HostedApplicationInstanceAcquisitionResult
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from intergrax.hosting.errors import (
     HostedApplicationComponentError,
@@ -80,6 +81,7 @@ from intergrax.hosting.control import (
     HostedApplicationControlSnapshot,
     HostedApplicationRestartRequestSnapshot,
 )
+from intergrax.hosting.contracts.lifecycle import HostedApplicationEffectiveControlRequest
 from intergrax.hosting.instance import FileHostedApplicationInstanceGuard
 from intergrax.hosting.instance.contracts import HostedApplicationInstanceLeasePublicView
 from intergrax.hosting.shutdown import (
@@ -127,11 +129,13 @@ __all__ = [
     "HostedApplicationControlCoordinator",
     "HostedApplicationControlIntent",
     "HostedApplicationControlSnapshot",
+    "HostedApplicationEffectiveControlRequest",
     "HostedApplicationRestartRequestSnapshot",
     "HostedApplicationActiveWorkController",
     "HostedApplicationFlushService",
     "HostedApplicationShutdownExecutionSnapshot",
     "HostedApplicationInstanceLeasePublicView",
+    "HostedApplicationInstanceAcquisitionResult",
     "FileHostedApplicationInstanceGuard",
     "PortableForegroundSignalAdapter",
     "HostedApplicationExitKind",

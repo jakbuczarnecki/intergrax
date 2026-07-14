@@ -14,7 +14,10 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from intergrax.hosting.contracts.context import HostedApplicationClock
-from intergrax.hosting.contracts.lifecycle import HostedApplicationShutdownRequestSnapshot
+from intergrax.hosting.contracts.lifecycle import (
+  HostedApplicationEffectiveControlRequest,
+  HostedApplicationShutdownRequestSnapshot,
+)
 from intergrax.hosting.contracts.public_data import validate_bounded_identifier
 from intergrax.hosting.errors import HostedApplicationControlError
 
@@ -67,6 +70,7 @@ class HostedApplicationControlSnapshot(BaseModel):
   effective_intent: HostedApplicationControlIntent | None = None
   shutdown_request: HostedApplicationShutdownRequestSnapshot | None = None
   restart_request: HostedApplicationRestartRequestSnapshot | None = None
+  effective_request: HostedApplicationEffectiveControlRequest | None = None
 
 
 @dataclass
@@ -79,6 +83,11 @@ class HostedApplicationControlCoordinator:
   _shutdown_request: HostedApplicationShutdownRequestSnapshot | None = field(default=None, repr=False)
   _restart_request: HostedApplicationRestartRequestSnapshot | None = field(default=None, repr=False)
   _effective_intent: HostedApplicationControlIntent | None = field(default=None, repr=False)
+  _loop: asyncio.AbstractEventLoop | None = field(default=None, repr=False)
+
+  def bind_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+    with self._lock:
+      self._loop = loop
 
   def request_shutdown(
     self,
@@ -103,7 +112,7 @@ class HostedApplicationControlCoordinator:
       else:
         self._shutdown_request = self._coalesce_shutdown(self._shutdown_request, incoming)
       self._effective_intent = HostedApplicationControlIntent.STOP
-      self._shutdown_event.set()
+      self._wake_waiters()
       return self._shutdown_request
 
   def request_restart(
@@ -133,7 +142,7 @@ class HostedApplicationControlCoordinator:
           self._effective_intent = HostedApplicationControlIntent.RESTART
       else:
         self._restart_request = self._coalesce_restart(self._restart_request, incoming)
-      self._shutdown_event.set()
+      self._wake_waiters()
       return self._restart_request
 
   def is_shutdown_requested(self) -> bool:
@@ -155,29 +164,31 @@ class HostedApplicationControlCoordinator:
     with self._lock:
       return self._restart_request
 
+  def current_effective_request(self) -> HostedApplicationEffectiveControlRequest | None:
+    with self._lock:
+      return self._effective_request_locked()
+
   def snapshot(self) -> HostedApplicationControlSnapshot:
     with self._lock:
       return HostedApplicationControlSnapshot(
         effective_intent=self._effective_intent,
         shutdown_request=self._shutdown_request,
         restart_request=self._restart_request,
+        effective_request=self._effective_request_locked(),
       )
 
   def health_probe(self) -> HostedApplicationControlSnapshot:
     return self.snapshot()
 
-  async def wait_until_requested(self) -> HostedApplicationShutdownRequestSnapshot:
+  async def wait_until_requested(self) -> HostedApplicationEffectiveControlRequest:
+    loop = asyncio.get_running_loop()
+    self.bind_loop(loop)
     await self._shutdown_event.wait()
     with self._lock:
-      if self._shutdown_request is not None:
-        return self._shutdown_request
-      if self._restart_request is not None:
-        return HostedApplicationShutdownRequestSnapshot(
-          reason_code=self._restart_request.reason_code,
-          requested_at=self._restart_request.requested_at,
-          deadline_at=self._restart_request.deadline_at,
-        )
-      raise HostedApplicationControlError("control event set without request")
+      effective = self._effective_request_locked()
+      if effective is None:
+        raise HostedApplicationControlError("control event set without request")
+      return effective
 
   def prepare_next_instance(self) -> None:
     with self._lock:
@@ -210,3 +221,29 @@ class HostedApplicationControlCoordinator:
     if self._deadline_rank(incoming.deadline_at) > self._deadline_rank(current.deadline_at):
       return incoming
     return current
+
+  def _effective_request_locked(self) -> HostedApplicationEffectiveControlRequest | None:
+    if self._effective_intent is HostedApplicationControlIntent.STOP and self._shutdown_request is not None:
+      return HostedApplicationEffectiveControlRequest(
+        intent=HostedApplicationControlIntent.STOP.value,
+        reason_code=self._shutdown_request.reason_code,
+        requested_at=self._shutdown_request.requested_at,
+        deadline_at=self._shutdown_request.deadline_at,
+        source_id="runtime",
+      )
+    if self._effective_intent is HostedApplicationControlIntent.RESTART and self._restart_request is not None:
+      return HostedApplicationEffectiveControlRequest(
+        intent=HostedApplicationControlIntent.RESTART.value,
+        reason_code=self._restart_request.reason_code,
+        requested_at=self._restart_request.requested_at,
+        deadline_at=self._restart_request.deadline_at,
+        source_id=self._restart_request.source_id,
+      )
+    return None
+
+  def _wake_waiters(self) -> None:
+    loop = self._loop
+    if loop is not None and loop.is_running():
+      loop.call_soon_threadsafe(self._shutdown_event.set)
+    else:
+      self._shutdown_event.set()

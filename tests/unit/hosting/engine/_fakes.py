@@ -19,15 +19,19 @@ from intergrax.hosting import (
     HostedApplicationProcessIdentity,
     HostedApplicationProfile,
     HostedApplicationShutdownCoordinator,
-    HostedApplicationShutdownRequestSnapshot,
 )
 from intergrax.hosting.contracts.context import HostedApplicationClock, HostedApplicationLogger
-from intergrax.hosting.engine.ports import (
-    HostedApplicationInstanceGuardPort,
-    HostedApplicationInstanceLeasePort,
-    HostedApplicationRuntime,
+from intergrax.hosting.contracts.lifecycle import (
+    HostedApplicationEffectiveControlRequest,
+    HostedApplicationShutdownRequestSnapshot,
 )
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceIdentity
+from intergrax.hosting.engine.ports import HostedApplicationInstanceGuardPort, HostedApplicationRuntime
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceAcquisitionResult,
+    HostedApplicationInstanceIdentity,
+    HostedApplicationInstanceLeasePort,
+    InstanceAcquisitionClassification,
+)
 
 
 class FixedClock(HostedApplicationClock):
@@ -116,12 +120,15 @@ class FakeInstanceGuard(HostedApplicationInstanceGuardPort):
     async def acquire(
         self,
         identity: HostedApplicationInstanceIdentity,
-    ) -> HostedApplicationInstanceLeasePort:
+    ) -> HostedApplicationInstanceAcquisitionResult:
         self.acquire_count += 1
         self.last_identity = identity
         if self.fail_acquire:
             raise RuntimeError("instance acquire rejected")
-        return self.lease
+        return HostedApplicationInstanceAcquisitionResult(
+            lease=self.lease,
+            classification=InstanceAcquisitionClassification.FRESH,
+        )
 
 
 class FakeShutdownCoordinator(HostedApplicationShutdownCoordinator):
@@ -135,6 +142,16 @@ class FakeShutdownCoordinator(HostedApplicationShutdownCoordinator):
 
     def current_request(self) -> HostedApplicationShutdownRequestSnapshot | None:
         return self._snapshot
+
+    def current_effective_request(self) -> HostedApplicationEffectiveControlRequest | None:
+        if self._snapshot is None:
+            return None
+        return HostedApplicationEffectiveControlRequest(
+            intent="stop",
+            reason_code=self._snapshot.reason_code,
+            requested_at=self._snapshot.requested_at,
+            deadline_at=self._snapshot.deadline_at,
+        )
 
     def request_shutdown(
         self,
@@ -151,10 +168,15 @@ class FakeShutdownCoordinator(HostedApplicationShutdownCoordinator):
         self._event.set()
         return self._snapshot
 
-    async def wait_until_requested(self) -> HostedApplicationShutdownRequestSnapshot:
+    async def wait_until_requested(self) -> HostedApplicationEffectiveControlRequest:
         await self._event.wait()
         assert self._snapshot is not None
-        return self._snapshot
+        return HostedApplicationEffectiveControlRequest(
+            intent="stop",
+            reason_code=self._snapshot.reason_code,
+            requested_at=self._snapshot.requested_at,
+            deadline_at=self._snapshot.deadline_at,
+        )
 
 
 class FakeRuntime:
