@@ -50,6 +50,11 @@ _EXPECTED_PUBLIC_NAMES = (
     "HostedApplicationEventPublisher",
     "HostedApplicationShutdownCoordinator",
     "HostedApplicationShutdownRequestSnapshot",
+    "HostedApplicationEngine",
+    "HostedApplicationRuntime",
+    "HostedApplicationDefinition",
+    "resolve_hosted_application_definition",
+    "RuntimeSpineHostedApplicationEventPublisher",
 )
 
 

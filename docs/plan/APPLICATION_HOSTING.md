@@ -6,7 +6,7 @@
 **ADR:** [`ADR-HOST-001`](../adr/entries/2026-07-13/ADR-HOST-001.md)  
 **First adopter/proof:** `applications/local_workspace_application/`
 
-**Status:** Public hosting foundation complete. Engine implementation not started. APP-HOST-W1 closed (2026-07-14).
+**Status:** Public hosting foundation and single-instance engine foundation complete. Process control, real instance ownership and supervision not started. APP-HOST-W2 closed (2026-07-14).
 
 ---
 
@@ -94,20 +94,20 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-2A | Lifecycle state machine and transition validation | Planned |
-| APP-HOST-2B | Profile composition/validation and immutable runtime definition | Planned |
-| APP-HOST-2C | Hook coordinator with ordering, timeouts, and failure semantics | Planned |
-| APP-HOST-2D | Component dependency graph and start/rollback/stop ordering | Planned |
-| APP-HOST-2E | Aggregate health/readiness and accepting-work guard | Planned |
-| APP-HOST-2F | `HostedApplicationEngine` startup/shutdown orchestration | Planned |
+| APP-HOST-2A | Lifecycle state machine and transition validation | **Done** |
+| APP-HOST-2B | Profile composition/validation and immutable runtime definition | **Done** (foundation profile composition; plugin contribution/override semantics remain APP-HOST-9E) |
+| APP-HOST-2C | Hook coordinator with ordering, timeouts, and failure semantics | **Done** |
+| APP-HOST-2D | Component dependency graph and start/rollback/stop ordering | **Done** |
+| APP-HOST-2E | Aggregate health/readiness and accepting-work guard | **Done** |
+| APP-HOST-2F | `HostedApplicationEngine` startup/shutdown orchestration | **Done** |
 
 ### APP-HOST-3 — Events and diagnostics
 
 | ID | Task | Status |
 |----|------|--------|
 | APP-HOST-3A | Typed/versioned hosting event contracts | **Done** |
-| APP-HOST-3B | Event publication through existing Intergrax event spine | Planned |
-| APP-HOST-3C | Safe diagnostic/public snapshots and failure records | Planned |
+| APP-HOST-3B | Event publication through existing Intergrax event spine | **Done** |
+| APP-HOST-3C | Safe diagnostic/public snapshots and failure records | **Done** |
 | APP-HOST-3D | Hosting metrics and observability integration | Planned |
 
 ### APP-HOST-4 — Instance ownership and graceful control
@@ -183,11 +183,10 @@ The waves are not a license to implement every row at once. Recommended first se
 APP-HOST-0D                    [Done]
 → APP-HOST-1A.1                [Done]
 → APP-HOST-W1                  [Done — public hosting foundation]
-→ APP-HOST-W2                  [next — engine foundation]
-  → APP-HOST-2A..2F
-  → APP-HOST-3B/3C
-→ APP-HOST-4A/4C/4D/4E
-→ APP-HOST-5A/5B/5C
+→ APP-HOST-W2                  [Done — engine foundation]
+→ APP-HOST-W3                  [next — process control and supervision]
+  → APP-HOST-4A..4E
+  → APP-HOST-5A..5C
 → APP-HOST-9A                  [author facade — required before LKW adoption]
 → APP-HOST-8A...               [LKW adoption + live proof]
 ```
@@ -396,20 +395,33 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-W2 — Complete Hosting Engine
+APP-HOST-W3 — Process Control and Supervision
 ```
 
-**APP-HOST-W2** groups (not started):
+**APP-HOST-W3** groups (not started):
 
 ```text
-APP-HOST-2A — lifecycle state machine
-APP-HOST-2B — profile composition validation / immutable runtime definition
-APP-HOST-2C — hook coordinator
-APP-HOST-2D — component coordinator
-APP-HOST-2E — aggregate health/readiness
-APP-HOST-2F — HostedApplicationEngine
-APP-HOST-3B — event spine bridge
-APP-HOST-3C — safe diagnostic/public snapshots
+APP-HOST-4A — InstanceGuard / InstanceLease reference implementation
+APP-HOST-4B — stale ownership recovery and run-directory safety
+APP-HOST-4C — typed shutdown/restart requests and control coordinator
+APP-HOST-4D — drain/cancel/flush shutdown policy implementation
+APP-HOST-4E — signal bridge and portable foreground signal adapter
+APP-HOST-5A — exit/failure classification contracts
+APP-HOST-5B — restart policy evaluator and deterministic backoff
+APP-HOST-5C — HostedApplicationSupervisor reference implementation
+```
+
+**APP-HOST-W2 — Complete Hosting Engine — Done** (2026-07-14). Closes APP-HOST-2A..2F, APP-HOST-3B, APP-HOST-3C.
+
+APP-HOST-2B note: foundation profile resolution is complete; real plugin contribution/override semantics remain APP-HOST-9E.
+
+Target code:
+
+```text
+intergrax/hosting/engine/
+intergrax/hosting/eventing.py
+intergrax/hosting/errors.py
+tests/unit/hosting/engine/
 ```
 
 APP-HOST-0D (Tier-3/LKW cross-plan ownership correction) is **Done**. APP-HOST-1A.1 (Hosted Application Profile Core) is **Done**. **APP-HOST-W1** (public hosting foundation) is **Done**.

@@ -36,6 +36,35 @@ from intergrax.hosting.contracts import (
     RestartPolicy,
     ShutdownPolicy,
 )
+from intergrax.hosting.engine.definition import (
+    HostedApplicationDefinition,
+    HostedApplicationDefinitionPublicView,
+    resolve_hosted_application_definition,
+)
+from intergrax.hosting.engine.diagnostics import (
+    HostedApplicationDiagnosticSnapshot,
+    HostedApplicationEngineTerminalResult,
+    HostedApplicationFailurePhase,
+    HostedApplicationFailureRecord,
+)
+from intergrax.hosting.engine.engine import HostedApplicationEngine
+from intergrax.hosting.engine.health import (
+    HostedApplicationHealthSnapshot,
+    HostedApplicationReadinessService,
+)
+from intergrax.hosting.engine.ports import HostedApplicationRuntime
+from intergrax.hosting.errors import (
+    HostedApplicationComponentError,
+    HostedApplicationConfigurationError,
+    HostedApplicationDefinitionError,
+    HostedApplicationEngineError,
+    HostedApplicationHookError,
+    HostedApplicationLifecycleTransitionError,
+    HostedApplicationRuntimeError,
+    HostedApplicationShutdownError,
+    HostedApplicationStartupError,
+)
+from intergrax.hosting.eventing import RuntimeSpineHostedApplicationEventPublisher
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 
 __all__ = [
@@ -49,10 +78,27 @@ __all__ = [
     "HostedApplicationComponentState",
     "HostedApplicationContext",
     "HostedApplicationContextPublicView",
+    "HostedApplicationDefinition",
+    "HostedApplicationDefinitionPublicView",
+    "HostedApplicationDiagnosticSnapshot",
+    "HostedApplicationEngine",
+    "HostedApplicationEngineTerminalResult",
+    "HostedApplicationEngineError",
+    "HostedApplicationConfigurationError",
+    "HostedApplicationDefinitionError",
+    "HostedApplicationLifecycleTransitionError",
+    "HostedApplicationStartupError",
+    "HostedApplicationShutdownError",
+    "HostedApplicationHookError",
+    "HostedApplicationComponentError",
+    "HostedApplicationRuntimeError",
     "HostedApplicationEvent",
     "HostedApplicationEventPublisher",
     "HostedApplicationEventSubscription",
     "HostedApplicationEventType",
+    "HostedApplicationFailurePhase",
+    "HostedApplicationFailureRecord",
+    "HostedApplicationHealthSnapshot",
     "HostedApplicationHook",
     "HostedApplicationHookMode",
     "HostedApplicationHookPoint",
@@ -66,11 +112,15 @@ __all__ = [
     "HostedApplicationProcessIdentity",
     "HostedApplicationProfile",
     "HostedApplicationProfilePublicView",
+    "HostedApplicationReadinessService",
+    "HostedApplicationRuntime",
     "HostedApplicationServiceRegistry",
     "HostedApplicationShutdownCoordinator",
     "HostedApplicationShutdownRequestSnapshot",
     "InstancePolicy",
     "LifecyclePolicy",
     "RestartPolicy",
+    "RuntimeSpineHostedApplicationEventPublisher",
     "ShutdownPolicy",
+    "resolve_hosted_application_definition",
 ]
