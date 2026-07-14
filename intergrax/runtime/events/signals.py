@@ -85,6 +85,7 @@ def emit_domain_signal(
     agent_id: str | None = None,
     step_id: str | None = None,
     node_id: str | None = None,
+    phase: ExecutionPhase = ExecutionPhase.STEP_EXECUTION,
 ) -> RuntimeEvent:
     """Emit a Tier-2/3 domain signal on the unified bus."""
     from intergrax.runtime.events.event_kind_registry import require_registered_event_kind
@@ -108,7 +109,7 @@ def emit_domain_signal(
         event_kind=kind,
         event_category=category_for_event_kind(kind),
         ops_hint="ops:domain_signal",
-        phase=ExecutionPhase.STEP_EXECUTION,
+        phase=phase,
         severity=severity,
         correlation_id=ctx.effective_correlation_id,
         parent_event_id=ctx.parent_event_id,

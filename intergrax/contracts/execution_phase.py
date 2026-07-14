@@ -22,3 +22,4 @@ class ExecutionPhase(str, Enum):
     FINALIZATION = "finalization"
     TRACE_PERSISTENCE = "trace_persistence"
     COMPLETION = "completion"
+    APPLICATION_HOSTING = "application_hosting"

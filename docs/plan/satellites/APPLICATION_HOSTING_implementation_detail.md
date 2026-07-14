@@ -1,7 +1,7 @@
 # APPLICATION_HOSTING — implementation detail
 
-**Parent plan:** [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)  
-**Architecture:** [`../../architecture/APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md)  
+**Parent plan:** [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)
+**Architecture:** [`../../architecture/APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md)
 **Architecture detail:** [`../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md`](../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md)
 
 > Load only the section for the selected `APP-HOST-*` task. This document contains implementation detail, code targets, acceptance criteria, and verification guidance. The parent plan remains the queue/status authority.
@@ -12,8 +12,9 @@
 
 ## APP-HOST-0D — Tier-3/LKW cross-plan ownership correction
 
-**Type:** Documentation-only  
-**Depends on:** 0A–0C  
+**Type:** Documentation-only
+**Depends on:** 0A–0C
+**Status:** **Done** (2026-07-13)
 **Goal:** Make platform ownership unambiguous before code starts.
 
 Required changes:
@@ -63,37 +64,103 @@ docs(hosting): register platform hosting ownership
 
 ---
 
+---
+
+# APP-HOST-W1 — Complete Public Hosting Foundation
+
+**Status:** **Done** (2026-07-14)
+
+**Closes:** APP-HOST-1A.2, APP-HOST-1B, APP-HOST-1C, APP-HOST-1D, APP-HOST-1E, APP-HOST-1F, APP-HOST-3A (contract vocabulary only).
+
+**Delivered code:**
+
+```text
+intergrax/hosting/__init__.py
+intergrax/hosting/services.py
+intergrax/hosting/contracts/{identity,profile,public_data,context,lifecycle,hooks,components,policies,events}.py
+tests/unit/hosting/
+```
+
+**Next wave:** APP-HOST-W3 — Process Control and Supervision (4A..4E, 5A..5C).
+
+# APP-HOST-W2 — Complete Hosting Engine
+
+**Status:** **Done** (2026-07-14)
+
+**Closes:** APP-HOST-2A, APP-HOST-2B (foundation profile composition), APP-HOST-2C, APP-HOST-2D, APP-HOST-2E, APP-HOST-2F, APP-HOST-3B, APP-HOST-3C.
+
+**Delivered code:**
+
+```text
+intergrax/hosting/engine/
+intergrax/hosting/eventing.py
+intergrax/hosting/errors.py
+tests/unit/hosting/engine/
+```
+
+**Next wave:** APP-HOST-W3 — Process Control and Supervision (not started).
+
 # APP-HOST-1 — Public authoring contracts
 
-## APP-HOST-1A — HostedApplicationProfile
+## APP-HOST-1A.1 — Hosted Application Profile Core
 
-**Architecture:** hub §4–5; satellite §21–22  
-**Goal:** Introduce the single versioned author composition root without engine behavior.
+**Status:** Done (2026-07-13)
+
+**Architecture:** hub §4–5; satellite §21–22
+**Depends on:** APP-HOST-0D
+**Goal:** First implementation slice after governance — hosting package skeleton and profile identity core only.
+
+**First task after APP-HOST-0D.**
 
 Target code:
 
 ```text
 intergrax/hosting/__init__.py
-intergrax/hosting/contracts/profile.py
+intergrax/hosting/contracts/__init__.py
 intergrax/hosting/contracts/identity.py
+intergrax/hosting/contracts/profile.py
 ```
 
-Minimum model:
+Delivered public API:
 
 ```text
-application_id
-application_factory reference/descriptor
+HostedApplicationIdentity
+HostedApplicationProfile
+HostedApplicationProfilePublicView
+HOSTED_APPLICATION_PROFILE_SPEC_VERSION
+HostedApplicationProfile.identity
+HostedApplicationProfile.public_view()
+HostedApplicationProfile.profile_digest()
+```
+
+In scope:
+
+```text
+hosting package skeleton
+application identity contract
+application_id validation
 spec_version
-instance policy
-lifecycle policy
-shutdown policy
-restart policy
-interaction profile reference/placeholder
-components
-hooks
-event subscriptions
-plugins
+runtime-only application factory reference
+stable application factory descriptor/id
 safe metadata
+safe deterministic public projection
+deterministic profile digest
+```
+
+Explicitly out of scope:
+
+```text
+HostedApplicationEngine
+HostedApplicationContext
+hooks
+components
+policies
+events
+plugins
+interaction composition
+OS adapters
+supervisor
+LKW adoption
 ```
 
 Scope rules:
@@ -104,14 +171,13 @@ Scope rules:
 - no direct `NexusLoop` field,
 - application factory may be represented by a runtime-only callable excluded from public serialization,
 - public view/schema must never serialize secrets or arbitrary callable internals,
-- support standard defaults/presets without requiring every field.
+- **do not introduce untyped `Any` placeholders** for contracts owned by later rows.
 
 Acceptance:
 
 ```text
-minimal profile creates successfully
+minimal profile core creates successfully
 invalid application id rejected
-duplicate component/plugin ids rejected
 safe public view deterministic
 spec_version present
 profile digest deterministic for equivalent safe config
@@ -122,13 +188,76 @@ no second ApplicationEnvironmentProfile introduced
 Tests:
 
 ```text
+tests/unit/hosting/test_hosted_application_profile_core.py
+tests/unit/hosting/test_hosted_application_profile_core_schema.py
+```
+
+## APP-HOST-1A.2 — Foundation HostedApplicationProfile Composition Root
+**Status:** **Done** (2026-07-14)
+
+
+**Architecture:** hub §4–5; satellite §21–22
+**Depends on:** APP-HOST-1A.1, APP-HOST-1B, APP-HOST-1C, APP-HOST-1D, APP-HOST-1E, APP-HOST-3A
+**Goal:** Complete the foundation `HostedApplicationProfile` composition root required before the engine foundation, using typed contracts from foundation rows.
+
+Allowed typed composition fields:
+
+```text
+application identity and factory core from APP-HOST-1A.1
+HostedApplicationHooks registrations
+HostedApplicationComponent registrations
+hosting policy references
+typed hosting event subscriptions from APP-HOST-3A
+safe metadata
+safe deterministic public projection
+deterministic digest
+```
+
+Clarifications:
+
+```text
+HostedApplicationContext is instance-scoped and is not a HostedApplicationProfile field.
+InteractionProfile extends the same canonical HostedApplicationProfile in APP-HOST-6A.
+The plugin field and plugin contract extend the same canonical HostedApplicationProfile in APP-HOST-9E.
+```
+
+The split changes implementation granularity, not architecture ownership — **`HostedApplicationProfile` remains the one canonical hosting composition root.**
+
+Explicitly out of scope:
+
+```text
+HostedApplicationEngine
+HostedApplicationSupervisor
+OS adapters
+LKW adoption
+InteractionProfile (APP-HOST-6A)
+plugins (APP-HOST-9E)
+HostedApplicationContext as a profile field
+```
+
+Acceptance:
+
+```text
+foundation profile composes from typed contract fields only
+duplicate component ids rejected
+safe public view deterministic for foundation profile
+profile digest deterministic for equivalent safe config
+no untyped placeholders for deferred contracts
+no InteractionProfile or plugin fields on foundation profile
+```
+
+Tests:
+
+```text
 tests/unit/hosting/test_hosted_application_profile.py
 tests/unit/hosting/test_hosted_application_profile_schema.py
 ```
 
 ## APP-HOST-1B — HostedApplicationContext
+**Status:** **Done** (2026-07-14)
 
-**Architecture:** satellite §23  
+
+**Architecture:** satellite §23
 **Goal:** Safe instance-scoped context for extensions.
 
 Target:
@@ -161,8 +290,10 @@ Acceptance:
 - closed/terminal context rejects unsafe late mutation.
 
 ## APP-HOST-1C — HostedApplicationHooks
+**Status:** **Done** (2026-07-14)
 
-**Architecture:** satellite §25  
+
+**Architecture:** satellite §25
 **Goal:** One coherent hook registration contract.
 
 Target:
@@ -202,8 +333,10 @@ Acceptance:
 - no application execution/Nexus hook overlap.
 
 ## APP-HOST-1D — HostedApplicationComponent
+**Status:** **Done** (2026-07-14)
 
-**Architecture:** satellite §26  
+
+**Architecture:** satellite §26
 **Goal:** Cohesive component lifecycle/health contract.
 
 Target:
@@ -233,8 +366,10 @@ Acceptance:
 - active interaction sources can implement the contract later.
 
 ## APP-HOST-1E — Policies
+**Status:** **Done** (2026-07-14)
 
-**Architecture:** satellite §29  
+
+**Architecture:** satellite §29
 **Goal:** Typed immutable policy models and presets only.
 
 Target:
@@ -263,6 +398,8 @@ Acceptance:
 - custom decision callable represented as runtime extension, not serialized code.
 
 ## APP-HOST-1F — Contract exports and compatibility gates
+**Status:** **Done** (2026-07-14)
+
 
 Required:
 
@@ -280,7 +417,9 @@ no provider/OS SDK imports in contracts
 
 ## APP-HOST-2A — Lifecycle state machine
 
-**Architecture:** satellite §24  
+**Status:** **Done** (2026-07-14)
+
+**Architecture:** satellite §24
 **Target:** `intergrax/hosting/engine/lifecycle.py`
 
 Implement:
@@ -301,6 +440,8 @@ Acceptance:
 
 ## APP-HOST-2B — Composition validation
 
+**Status:** **Done** (2026-07-14) — foundation profile composition
+
 Resolve profile + plugin contributions into an immutable `HostedApplicationDefinition`.
 
 Acceptance:
@@ -312,6 +453,8 @@ Acceptance:
 - no lifecycle side effects during composition.
 
 ## APP-HOST-2C — Hook coordinator
+
+**Status:** **Done** (2026-07-14)
 
 Implement deterministic blocking/observer execution.
 
@@ -327,6 +470,8 @@ no re-entrant lifecycle transition from hook
 ```
 
 ## APP-HOST-2D — Component coordinator
+
+**Status:** **Done** (2026-07-14)
 
 Implement:
 
@@ -344,6 +489,8 @@ Acceptance includes partial-start rollback and multiple secondary cleanup failur
 
 ## APP-HOST-2E — Health/readiness
 
+**Status:** **Done** (2026-07-14)
+
 Target:
 
 ```text
@@ -360,6 +507,8 @@ Acceptance:
 - readiness changes publish events once per transition.
 
 ## APP-HOST-2F — HostedApplicationEngine
+
+**Status:** **Done** (2026-07-14)
 
 Compose lifecycle, hooks, components, runtime factory, health, events, instance lease interface, and shutdown control.
 
@@ -383,6 +532,8 @@ no Task/Nexus imports in engine package
 # APP-HOST-3 — Events and diagnostics
 
 ## APP-HOST-3A — Event contracts
+**Status:** **Done** (2026-07-14) — contracts only; spine bridge remains APP-HOST-3B.
+
 
 Implement versioned typed event envelope/families from architecture §28.
 
@@ -396,6 +547,8 @@ Acceptance:
 
 ## APP-HOST-3B — Existing spine bridge
 
+**Status:** **Done** (2026-07-14)
+
 Investigate and use existing Intergrax runtime event/observability contracts. If no suitable application-level publisher exists, add the smallest shared bridge in the owning observability/runtime domain and cross-plan it.
 
 Forbidden:
@@ -407,6 +560,8 @@ new private exporter stack
 ```
 
 ## APP-HOST-3C — Diagnostics
+
+**Status:** **Done** (2026-07-14)
 
 Implement safe snapshots and typed failure records.
 
@@ -627,28 +782,34 @@ Decide whether installers/auto-update belong to Application Hosting, DX/packagin
 At minimum closed:
 
 ```text
-APP-HOST-1A..1F
-APP-HOST-2A..2F
+APP-HOST-1A.1, APP-HOST-1B..1F, APP-HOST-1A.2
+APP-HOST-W2 Done (2A..2F, 3B, 3C)
 APP-HOST-3A..3C
 APP-HOST-4A,4C,4D,4E
 APP-HOST-5A..5C
+APP-HOST-9A
 ```
+
+**APP-HOST-9A (`run_hosted_application(profile)`) MUST precede APP-HOST-8A** — LKW proof validates one-profile authoring.
+
+Initial LKW adoption does **not** require `InteractionProfile` (APP-HOST-6A). LKW may host existing interaction/runtime surfaces through the application runtime adapter until APP-HOST-6A closes.
 
 Equivalent consolidated delivery is acceptable only if gates remain independently testable.
 
 ## APP-HOST-8A — LKW hosted profile
 
-LKW defines only:
+Initial LKW adoption does **not** require `InteractionProfile`. LKW may host its existing interaction/runtime surfaces through the application runtime adapter. `InteractionProfile` adoption follows **APP-HOST-6A**; an interaction profile in LKW is allowed only when APP-HOST-6A is closed.
+
+LKW may initially define only:
 
 ```text
 application factory/runtime adapter
 LKW-specific hooks
 LKW-specific components
-interaction profile
-hosting presets/metadata
+hosting presets and metadata
 ```
 
-No generic engine/supervisor/OS implementation under LKW.
+Generic engine, supervisor, control, and OS infrastructure remain platform-owned. No generic engine/supervisor/OS implementation under LKW.
 
 ## APP-HOST-8B — Lifecycle migration
 
@@ -698,13 +859,16 @@ Persist a structured ProofReceipt through the platform store with hosting eviden
 
 ## APP-HOST-9A — Runner facade
 
+**Depends on:** APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F minimum, APP-HOST-4 minimum foundation, APP-HOST-5C minimum
+**Blocks:** APP-HOST-8A (LKW hosted-profile adoption)
+
 Target:
 
 ```python
 run_hosted_application(profile)
 ```
 
-Must support standard foreground execution without requiring engine/supervisor assembly.
+Must support standard foreground execution without requiring engine/supervisor assembly. Required before first adopter proof so LKW validates one-profile authoring.
 
 ## APP-HOST-9B — HarnessApplication integration
 

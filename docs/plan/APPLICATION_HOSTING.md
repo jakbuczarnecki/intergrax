@@ -6,7 +6,7 @@
 **ADR:** [`ADR-HOST-001`](../adr/entries/2026-07-13/ADR-HOST-001.md)  
 **First adopter/proof:** `applications/local_workspace_application/`
 
-**Status:** Architecture established; implementation not started.
+**Status:** Public hosting foundation and single-instance engine foundation complete. Process control, real instance ownership and supervision not started. APP-HOST-W2 closed (2026-07-14).
 
 ---
 
@@ -72,58 +72,61 @@ LKW is the first product adoption and proof. Generic code MUST be implemented un
 | APP-HOST-0A | ADR and dedicated domain registration | **Done** |
 | APP-HOST-0B | Architecture hub + extended-depth canon | **Done** |
 | APP-HOST-0C | Implementation plan + fidelity matrix | **Done** |
-| APP-HOST-0D | Tier-3/LKW cross-plan ownership correction | **Planned — next** |
+| APP-HOST-0D | Tier-3/LKW cross-plan ownership correction | **Done** |
 
-APP-HOST-0 does not authorize runtime implementation until 0D and documentation consistency validation pass.
+APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1A.1** (profile core).
 
 ### APP-HOST-1 — Public authoring contracts
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-1A | `HostedApplicationProfile` and versioned safe public model | Planned |
-| APP-HOST-1B | `HostedApplicationContext` and scoped typed service registry | Planned |
-| APP-HOST-1C | `HostedApplicationHooks` and hook registration model | Planned |
-| APP-HOST-1D | `HostedApplicationComponent` and component metadata contract | Planned |
-| APP-HOST-1E | Hosting policies and standard presets | Planned |
-| APP-HOST-1F | Contract package exports, schemas, compatibility gates | Planned |
+| APP-HOST-1A.1 | Hosted Application Profile Core | **Done** |
+| APP-HOST-1A.2 | Foundation `HostedApplicationProfile` composition root (contracts available before engine foundation) | **Done** |
+| APP-HOST-1B | `HostedApplicationContext` and scoped typed service registry | **Done** |
+| APP-HOST-1C | `HostedApplicationHooks` and hook registration model | **Done** |
+| APP-HOST-1D | `HostedApplicationComponent` and component metadata contract | **Done** |
+| APP-HOST-1E | Hosting policies and standard presets | **Done** |
+| APP-HOST-1F | Contract package exports, schemas, compatibility gates | **Done** |
+
+**Functional wave:** **APP-HOST-W1 — Complete Public Hosting Foundation — Done** (closes 1A.2, 1B, 1C, 1D, 1E, 1F, 3A contract vocabulary).
 
 ### APP-HOST-2 — Engine lifecycle foundation
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-2A | Lifecycle state machine and transition validation | Planned |
-| APP-HOST-2B | Profile composition/validation and immutable runtime definition | Planned |
-| APP-HOST-2C | Hook coordinator with ordering, timeouts, and failure semantics | Planned |
-| APP-HOST-2D | Component dependency graph and start/rollback/stop ordering | Planned |
-| APP-HOST-2E | Aggregate health/readiness and accepting-work guard | Planned |
-| APP-HOST-2F | `HostedApplicationEngine` startup/shutdown orchestration | Planned |
+| APP-HOST-2A | Lifecycle state machine and transition validation | **Done** |
+| APP-HOST-2B | Profile composition/validation and immutable runtime definition | **Done** (foundation profile composition; plugin contribution/override semantics remain APP-HOST-9E) |
+| APP-HOST-2C | Hook coordinator with ordering, timeouts, and failure semantics | **Done** |
+| APP-HOST-2D | Component dependency graph and start/rollback/stop ordering | **Done** |
+| APP-HOST-2E | Aggregate health/readiness and accepting-work guard | **Done** |
+| APP-HOST-2F | `HostedApplicationEngine` startup/shutdown orchestration | **Done** |
 
 ### APP-HOST-3 — Events and diagnostics
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-3A | Typed/versioned hosting event contracts | Planned |
-| APP-HOST-3B | Event publication through existing Intergrax event spine | Planned |
-| APP-HOST-3C | Safe diagnostic/public snapshots and failure records | Planned |
+| APP-HOST-3A | Typed/versioned hosting event contracts | **Done** |
+| APP-HOST-3B | Event publication through existing Intergrax event spine | **Done** |
+| APP-HOST-3C | Safe diagnostic/public snapshots and failure records | **Done** |
 | APP-HOST-3D | Hosting metrics and observability integration | Planned |
 
 ### APP-HOST-4 — Instance ownership and graceful control
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-4A | `InstanceGuard`/`InstanceLease` contracts and file-lock reference implementation | Planned |
-| APP-HOST-4B | Stale ownership recovery and run-directory safety | Planned |
-| APP-HOST-4C | Typed shutdown/restart requests and idempotent control coordinator | Planned |
-| APP-HOST-4D | Drain/cancel/flush shutdown policy implementation | Planned |
-| APP-HOST-4E | Signal bridge contract and portable foreground signal adapter | Planned |
+| APP-HOST-4A | `InstanceGuard`/`InstanceLease` contracts and file-lock reference implementation | **Done** |
+| APP-HOST-4B | Stale ownership recovery and run-directory safety | **Done** |
+| APP-HOST-4C | Typed shutdown/restart requests and idempotent control coordinator | **Done** |
+| APP-HOST-4D | Drain/cancel/flush shutdown policy implementation | **Done** |
+| APP-HOST-4E | Signal bridge contract and portable foreground signal adapter | **Done** |
 
 ### APP-HOST-5 — Supervisor and restart
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-5A | Exit/failure classification contracts | Planned |
-| APP-HOST-5B | Restart policy evaluator and deterministic backoff | Planned |
-| APP-HOST-5C | `HostedApplicationSupervisor` reference implementation | Planned |
+| APP-HOST-5A | Exit/failure classification contracts | **Done** |
+| APP-HOST-5B | Restart policy evaluator and deterministic backoff | **Done** |
+| APP-HOST-5C | `HostedApplicationSupervisor` reference implementation | **Done** |
 | APP-HOST-5D | Restart configuration/profile-digest preservation | Planned |
 | APP-HOST-5E | Crash/restart/process-level proof harness | Planned |
 
@@ -151,7 +154,7 @@ APP-HOST-0 does not authorize runtime implementation until 0D and documentation 
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-1..4 minimum foundation |
+| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-9A (see §4); no `InteractionProfile` unless APP-HOST-6A is also closed |
 | APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | Blocked |
 | APP-HOST-8C | LKW foreground hosted runner and single-instance proof | Blocked |
 | APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
@@ -163,11 +166,11 @@ APP-HOST-0 does not authorize runtime implementation until 0D and documentation 
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-9A | `run_hosted_application(profile)` author facade | Planned |
+| APP-HOST-9A | `run_hosted_application(profile)` author facade | Planned — depends on APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, 5C; precedes APP-HOST-8A |
 | APP-HOST-9B | `HarnessApplication.hosting(...)` integration | Planned |
 | APP-HOST-9C | New-application scaffold/template support | Planned |
 | APP-HOST-9D | Application creation/hosting author guide | Planned |
-| APP-HOST-9E | Plugin/component examples and conformance kit | Planned |
+| APP-HOST-9E | Plugin/component examples and conformance kit; extends canonical `HostedApplicationProfile` with plugin field and plugin contract | Planned |
 | APP-HOST-9F | Migration guide and stable API declaration | Planned |
 
 ---
@@ -177,33 +180,41 @@ APP-HOST-0 does not authorize runtime implementation until 0D and documentation 
 The waves are not a license to implement every row at once. Recommended first sequence:
 
 ```text
-APP-HOST-0D
-→ APP-HOST-1A
-→ APP-HOST-1B
-→ APP-HOST-1C
-→ APP-HOST-1D
-→ APP-HOST-1E
-→ APP-HOST-2A
-→ APP-HOST-3A
-→ APP-HOST-2C
-→ APP-HOST-2D
-→ APP-HOST-2E
-→ APP-HOST-2F
-→ APP-HOST-3B/3C
-→ APP-HOST-4A
-→ APP-HOST-4C/4D/4E
-→ APP-HOST-5A/5B/5C
-→ APP-HOST-8A...
+APP-HOST-0D                    [Done]
+→ APP-HOST-1A.1                [Done]
+→ APP-HOST-W1                  [Done — public hosting foundation]
+→ APP-HOST-W2                  [Done — engine foundation]
+→ APP-HOST-W3                  [Done — process control and supervision]
+  → APP-HOST-4A..4E
+  → APP-HOST-5A..5C
+→ APP-HOST-9A                  [next — author facade — required before LKW adoption]
+→ APP-HOST-8A...               [LKW adoption + live proof]
+```
+
+Required ordering before first adopter proof:
+
+```text
+platform contracts (W1 Done: 1A.1..1E, 3A, 1A.2, 1F)
+→ engine foundation (2A..2F)
+→ instance/shutdown minimum (4A/4C/4D/4E)
+→ supervisor minimum (5A/5B/5C)
+→ run_hosted_application(profile)   (APP-HOST-9A)
+→ LKW adoption                        (APP-HOST-8A)
+→ LKW live proof                      (APP-HOST-8C..8E)
 ```
 
 Rationale:
 
 - public contracts and lifecycle semantics precede the engine,
-- events are designed before engine behavior becomes opaque,
+- typed hosting events (APP-HOST-3A) are designed before the foundation composition root (APP-HOST-1A.2) and engine behavior become opaque,
+- APP-HOST-1A.2 is the foundation `HostedApplicationProfile` composition root — only contracts available before engine foundation; `HostedApplicationContext` is instance-scoped and not a profile field,
+- contract package exports and compatibility gates (APP-HOST-1F) follow the foundation composition root,
 - component coordination precedes LKW adoption,
 - instance/shutdown/supervisor mechanics precede restart proof,
-- interaction convenience facade can evolve after engine contracts stabilize,
-- OS-specific service installation is not required for initial platform proof.
+- **`run_hosted_application(profile)` (APP-HOST-9A) precedes LKW adoption (APP-HOST-8A)** — depends on APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, and 5C,
+- `InteractionProfile` extends the same canonical profile in APP-HOST-6A — not required for initial LKW proof; LKW may host existing interaction/runtime surfaces through the application runtime adapter,
+- plugin field and plugin contract extend the same canonical profile in APP-HOST-9E,
+- OS-specific service installation (APP-HOST-7) is not required for initial platform proof.
 
 ---
 
@@ -295,15 +306,20 @@ Before APP-HOST-8 closes:
 ```text
 platform contract/engine suites green
 LKW contains no generic engine/supervisor/OS code
-second instance rejected
-ready event/health verified
-real LKW task succeeds
-shutdown releases ownership
-restart creates new instance
-real LKW task succeeds after restart
+foreground hosted start
+READY state verified
+real LKW request succeeds
+single-instance rejection verified
+graceful stop releases ownership
+supervisor restart creates new instance identity
+real LKW request succeeds after restart
 structured receipt recorded
 reviewer steps reproducible
 ```
+
+Initial LKW proof does **not** require `InteractionProfile` (APP-HOST-6A) — LKW hosts existing interaction/runtime surfaces through the application runtime adapter. Interaction facade adoption may follow APP-HOST-6A.
+
+Service-manager installation, OS adapter registration, and reboot survival are **not** required unless APP-HOST-7 is closed — they remain later operator/packaging targets.
 
 ---
 
@@ -345,21 +361,21 @@ LKW reviewer proof updates
 | Architecture section | Plan owner | Primary code target | Verification artifact | Status |
 |----------------------|------------|---------------------|-----------------------|--------|
 | Hub §1–3 purpose/ownership/invariants | APP-HOST-0 | documentation/governance | doc/index checks | Done |
-| Hub §4–5 authoring/profile | APP-HOST-1, 9 | `intergrax/hosting/contracts*`, facade | schema/DX tests | Planned |
+| Hub §4–5 authoring/profile | APP-HOST-1, 9 | `intergrax/hosting/contracts*`, facade | schema/DX tests | **Contracts Done (W1); facade pending** |
 | Hub §6–7 engine/lifecycle | APP-HOST-2 | `intergrax/hosting/engine*` | transition/failure tests | Planned |
-| Hub §8 hooks/components/policies/plugins | APP-HOST-1,2,9 | contracts/coordinators/plugins | contract/order tests | Planned |
-| Hub §9 events | APP-HOST-3 | `intergrax/hosting/events*` | schema/order/redaction tests | Planned |
+| Hub §8 hooks/components/policies/plugins | APP-HOST-1,2,9 | contracts/coordinators/plugins | contract/order tests | **Contracts Done (W1); runtime/coordinators pending** |
+| Hub §9 events | APP-HOST-3 | `intergrax/hosting/events*` | schema/order/redaction tests | **Contracts Done (W1); event spine bridge pending** |
 | Hub §10 interactions | APP-HOST-6 | hosting/Tier-3 bridge | surface composition tests | Planned |
 | Hub §11 instance/control/supervisor | APP-HOST-4,5 | instance/control/supervisor | process/restart tests | Planned |
 | Hub §12 OS boundary | APP-HOST-7 | `intergrax/hosting/os/` | adapter contract tests | Planned |
 | Hub §13 LKW adoption | APP-HOST-8 | LKW hosted profile/proof | live proof + receipt | Blocked |
-| Satellite §20–23 model/context | APP-HOST-1 | contracts/context | validation/public-view tests | Planned |
+| Satellite §20–23 model/context | APP-HOST-1 | contracts/context | validation/public-view tests | **Done (W1)** |
 | Satellite §24 lifecycle | APP-HOST-2 | state machine/engine | transition matrix | Planned |
-| Satellite §25 hooks | APP-HOST-1C,2C | hooks/coordinator | ordering/timeout/failure tests | Planned |
-| Satellite §26 components | APP-HOST-1D,2D | components/coordinator | DAG/rollback tests | Planned |
+| Satellite §25 hooks | APP-HOST-1C,2C | hooks/coordinator | ordering/timeout/failure tests | **Contracts Done (W1)** |
+| Satellite §26 components | APP-HOST-1D,2D | components/coordinator | DAG/rollback tests | **Contracts Done (W1)** |
 | Satellite §27 health | APP-HOST-2E | health/readiness | aggregate health tests | Planned |
-| Satellite §28 events | APP-HOST-3 | event contracts/publisher | event spine tests | Planned |
-| Satellite §29 policies | APP-HOST-1E,4D,5B | policies | preset/decision tests | Planned |
+| Satellite §28 events | APP-HOST-3 | event contracts/publisher | event spine tests | **Contracts Done (W1)** |
+| Satellite §29 policies | APP-HOST-1E,4D,5B | policies | preset/decision tests | **Contracts Done (W1)** |
 | Satellite §30 instance | APP-HOST-4A/4B | instance guard | conflict/stale recovery tests | Planned |
 | Satellite §31 control | APP-HOST-4C/4E | signal/control bridge | idempotency tests | Planned |
 | Satellite §32 supervisor | APP-HOST-5 | supervisor | restart/backoff proof | Planned |
@@ -379,22 +395,110 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-0D — Tier-3/LKW cross-plan ownership correction
+APP-HOST-9A — run_hosted_application(profile) author facade
 ```
 
-This is documentation-only and must:
+**APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
 
-- register the domain pair in the runtime architecture hub,
-- add Tier-3 architecture/plan cross-references,
-- distinguish `ApplicationHost.on_hook` from hosting hooks,
-- reframe LKW.6B as platform adoption/proof,
-- remove any wording that assigns generic engine or OS mechanics to LKW,
-- validate links and architecture/plan pairing.
+W3 supervisor is **in-process**; W3 file lock and signal bridge are **portable reference implementations**. Full OS adapter/service-manager posture remains **APP-HOST-7**. Profile-source preservation contract remains **APP-HOST-5D**. Process proof harness remains **APP-HOST-5E**.
 
-After APP-HOST-0D, the first implementation task is expected to be:
+**APP-HOST-W3** delivered:
 
 ```text
-APP-HOST-1A — HostedApplicationProfile and versioned safe public model
+APP-HOST-4A — InstanceGuard / InstanceLease reference implementation — Done
+APP-HOST-4B — stale ownership recovery and run-directory safety — Done
+APP-HOST-4C — typed shutdown/restart requests and control coordinator — Done
+APP-HOST-4D — drain/cancel/flush shutdown policy implementation — Done
+APP-HOST-4E — signal bridge and portable foreground signal adapter — Done
+APP-HOST-5A — exit/failure classification contracts — Done
+APP-HOST-5B — restart policy evaluator and deterministic backoff — Done
+APP-HOST-5C — HostedApplicationSupervisor reference implementation — Done
 ```
 
-The exact instruction must be generated only after APP-HOST-0D audit and contract-scope review.
+**APP-HOST-W2 — Complete Hosting Engine — Done** (2026-07-14). Closes APP-HOST-2A..2F, APP-HOST-3B, APP-HOST-3C.
+
+APP-HOST-2B note: foundation profile resolution is complete; real plugin contribution/override semantics remain APP-HOST-9E.
+
+Target code:
+
+```text
+intergrax/hosting/engine/
+intergrax/hosting/eventing.py
+intergrax/hosting/errors.py
+tests/unit/hosting/engine/
+```
+
+APP-HOST-0D (Tier-3/LKW cross-plan ownership correction) is **Done**. APP-HOST-1A.1 (Hosted Application Profile Core) is **Done**. **APP-HOST-W1** (public hosting foundation) is **Done**.
+
+### APP-HOST-W1 delivered (2026-07-14)
+
+Target code:
+
+```text
+intergrax/hosting/__init__.py
+intergrax/hosting/services.py
+intergrax/hosting/contracts/__init__.py
+intergrax/hosting/contracts/identity.py
+intergrax/hosting/contracts/profile.py
+intergrax/hosting/contracts/public_data.py
+intergrax/hosting/contracts/context.py
+intergrax/hosting/contracts/lifecycle.py
+intergrax/hosting/contracts/hooks.py
+intergrax/hosting/contracts/components.py
+intergrax/hosting/contracts/policies.py
+intergrax/hosting/contracts/events.py
+tests/unit/hosting/
+```
+
+Public API (from `intergrax.hosting`):
+
+```text
+HostedApplicationIdentity
+HostedApplicationProfile / HostedApplicationProfilePublicView
+HOSTED_APPLICATION_PROFILE_SPEC_VERSION
+HostedApplicationContext / HostedApplicationContextPublicView
+HostedApplicationPaths / HostedApplicationProcessIdentity
+HostedApplicationLifecycleState / HostedApplicationLifecycleSnapshot
+HostedApplicationServiceRegistry
+HostedApplicationHook / HostedApplicationHooks / HostedApplicationHookPoint / HostedApplicationHookMode
+HostedApplicationComponent / HostedApplicationComponentRegistration
+HostedApplicationComponentHealth / HostedApplicationComponentState
+LifecyclePolicy / ShutdownPolicy / RestartPolicy
+ComponentFailurePolicy / HookFailurePolicy / InstancePolicy
+HostedApplicationEvent / HostedApplicationEventType / HostedApplicationEventSubscription
+HostedApplicationClock / HostedApplicationLogger / HostedApplicationEventPublisher
+HostedApplicationShutdownCoordinator
+```
+
+W1 is contracts-only: no engine, supervisor, hook/component execution, event bus, or OS adapters.
+
+APP-HOST-1A.1 (profile core) remains backward compatible:
+
+```text
+HostedApplicationProfile(application_id=..., application_factory=...)
+```
+
+APP-HOST-1A.2 defines the foundation `HostedApplicationProfile` composition root after APP-HOST-1B..1E and APP-HOST-3A exist. It may include only contracts available before the engine foundation:
+
+```text
+identity and application factory core
+instance/lifecycle/shutdown/restart policies
+HostedApplicationHooks
+HostedApplicationComponent registrations
+typed hosting event subscriptions (after APP-HOST-3A)
+safe metadata/public view/digest
+```
+
+Explicitly out of scope for APP-HOST-1A.2:
+
+```text
+context references — HostedApplicationContext is instance-scoped, not a profile field (APP-HOST-1B)
+InteractionProfile — extends the same canonical profile in APP-HOST-6A
+plugins — plugin field and plugin contract extend the same canonical profile in APP-HOST-9E
+HostedApplicationEngine
+OS adapters
+supervisor
+LKW adoption
+```
+
+APP-HOST-9A (`run_hosted_application(profile)`) depends on at least APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F, APP-HOST-4 minimum foundation (4A/4C/4D/4E), and APP-HOST-5C, and must close before APP-HOST-8A.
