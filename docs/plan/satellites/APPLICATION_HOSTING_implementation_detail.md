@@ -64,6 +64,25 @@ docs(hosting): register platform hosting ownership
 
 ---
 
+---
+
+# APP-HOST-W1 — Complete Public Hosting Foundation
+
+**Status:** **Done** (2026-07-14)
+
+**Closes:** APP-HOST-1A.2, APP-HOST-1B, APP-HOST-1C, APP-HOST-1D, APP-HOST-1E, APP-HOST-1F, APP-HOST-3A (contract vocabulary only).
+
+**Delivered code:**
+
+`	ext
+intergrax/hosting/__init__.py
+intergrax/hosting/services.py
+intergrax/hosting/contracts/{identity,profile,public_data,context,lifecycle,hooks,components,policies,events}.py
+tests/unit/hosting/
+`
+
+**Next wave:** APP-HOST-W2 — Complete Hosting Engine (2A..2F, 3B, 3C).
+
 # APP-HOST-1 — Public authoring contracts
 
 ## APP-HOST-1A.1 — Hosted Application Profile Core
@@ -157,6 +176,8 @@ tests/unit/hosting/test_hosted_application_profile_core_schema.py
 ```
 
 ## APP-HOST-1A.2 — Foundation HostedApplicationProfile Composition Root
+**Status:** **Done** (2026-07-14)
+
 
 **Architecture:** hub §4–5; satellite §21–22
 **Depends on:** APP-HOST-1A.1, APP-HOST-1B, APP-HOST-1C, APP-HOST-1D, APP-HOST-1E, APP-HOST-3A
@@ -216,6 +237,8 @@ tests/unit/hosting/test_hosted_application_profile_schema.py
 ```
 
 ## APP-HOST-1B — HostedApplicationContext
+**Status:** **Done** (2026-07-14)
+
 
 **Architecture:** satellite §23
 **Goal:** Safe instance-scoped context for extensions.
@@ -250,6 +273,8 @@ Acceptance:
 - closed/terminal context rejects unsafe late mutation.
 
 ## APP-HOST-1C — HostedApplicationHooks
+**Status:** **Done** (2026-07-14)
+
 
 **Architecture:** satellite §25
 **Goal:** One coherent hook registration contract.
@@ -291,6 +316,8 @@ Acceptance:
 - no application execution/Nexus hook overlap.
 
 ## APP-HOST-1D — HostedApplicationComponent
+**Status:** **Done** (2026-07-14)
+
 
 **Architecture:** satellite §26
 **Goal:** Cohesive component lifecycle/health contract.
@@ -322,6 +349,8 @@ Acceptance:
 - active interaction sources can implement the contract later.
 
 ## APP-HOST-1E — Policies
+**Status:** **Done** (2026-07-14)
+
 
 **Architecture:** satellite §29
 **Goal:** Typed immutable policy models and presets only.
@@ -352,6 +381,8 @@ Acceptance:
 - custom decision callable represented as runtime extension, not serialized code.
 
 ## APP-HOST-1F — Contract exports and compatibility gates
+**Status:** **Done** (2026-07-14)
+
 
 Required:
 
@@ -472,6 +503,8 @@ no Task/Nexus imports in engine package
 # APP-HOST-3 — Events and diagnostics
 
 ## APP-HOST-3A — Event contracts
+**Status:** **Done** (2026-07-14) — contracts only; spine bridge remains APP-HOST-3B.
+
 
 Implement versioned typed event envelope/families from architecture §28.
 

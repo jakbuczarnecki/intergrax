@@ -57,7 +57,20 @@ def test_application_factory_absent_from_public_view() -> None:
     public_view = profile.public_view()
     dumped = public_view.model_dump()
     assert "application_factory" not in dumped
-    assert set(dumped) == {"spec_version", "identity", "metadata"}
+    assert set(dumped) == {
+        "spec_version",
+        "identity",
+        "metadata",
+        "hooks",
+        "components",
+        "lifecycle",
+        "shutdown",
+        "restart",
+        "component_failure",
+        "hook_failure",
+        "instance",
+        "event_subscriptions",
+    }
 
 
 def test_callable_repr_and_address_absent_from_repr_and_serialized_output() -> None:
@@ -83,6 +96,9 @@ def test_public_view_contains_exact_fields() -> None:
         application_factory_id=profile.application_factory_id or "",
     )
     assert public_view.metadata == {"tier": "local"}
+    assert public_view.hooks == ()
+    assert public_view.components == ()
+    assert public_view.event_subscriptions == ()
 
 
 def test_public_view_json_serialization_is_deterministic() -> None:
