@@ -1,5 +1,7 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
+**Prerequisite:** Complete the [README Quick start](../../README.md#quick-start) (lab host, ~5 min) before this platform proof.
+
 This document is the guided reviewer path. Structured ProofReceipt documents persisted through the platform DocumentStore are the source of truth for proof outcomes. Follow the steps in order. A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
 
 ---

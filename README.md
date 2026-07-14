@@ -2,22 +2,28 @@
 
 <!-- [![Regression gate](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml) (https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml)-->
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![Quick start](https://img.shields.io/badge/quick%20start-5%20min-0969da.svg)](#quick-start)
 [![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
 [![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)
 [![LLM context](https://img.shields.io/badge/llms.txt-available-orange.svg)](llms.txt)
-[![LKW proof](https://img.shields.io/badge/LKW%20platform%20proof-run%20locally-2ea44f.svg)](docs/public-adoption/LKW_PLATFORM_PROOF.md)
+[![LKW proof](https://img.shields.io/badge/LKW%20platform%20proof-step%202-2ea44f.svg)](docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 **Agent OS and Harness AI runtime** for building, orchestrating, experimenting with, and validating specialized AI agents — with a **clear separation between who decides, who executes, and who orchestrates.**
+
+**First time evaluating?** Start with [Quick start](#quick-start) (lab host, ~5 min). **Next step:** [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) (Docker + Elasticsearch + Kibana). **Prerequisites:** Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
 
 ---
 
 ## See Intergrax running
 
-The fastest way to evaluate Intergrax is the **Local Knowledge Workspace (LKW) platform proof** — a real Tier-3 application that runs a governed agent workflow through Nexus, `rag.retrieve`, runtime events, policy-safe observability export, Elasticsearch, and Kibana.
+Two evaluation paths — start with the lighter lab path, then run the full product proof when ready.
 
-The proof validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
+| Path | Best for | Requires |
+|------|----------|----------|
+| **[Quick start](#quick-start)** | First contact — clone, verify, lab run, trace inspect | `uv sync`, lab host on `:8090` |
+| **[LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)** | Full Tier-3 product proof — RAG, observability export, Elasticsearch, Kibana | Docker Compose, prerequisites above |
 
-[Run the LKW platform proof →](docs/public-adoption/LKW_PLATFORM_PROOF.md)
+**Quick start** runs the lab host and a traced Echo capability run. **LKW platform proof** validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
 
 ## Overview
 
@@ -56,6 +62,25 @@ Intergrax — Harness AI
 ```
 
 Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
+
+---
+
+## Table of contents
+
+- [See Intergrax running](#see-intergrax-running)
+- [Overview](#overview)
+- [Current platform maturity](#current-platform-maturity)
+- [License and collaboration model](#license-and-collaboration-model)
+- [Start here](#start-here)
+- [Quick start](#quick-start)
+- [Proof of platform](#proof-of-platform)
+- [What you can do today](#what-you-can-do-today)
+- [Harness AI — the core idea](#harness-ai--the-core-idea)
+- [Four-tier platform model](#four-tier-platform-model)
+- [Nexus runtime and agent execution](#nexus-runtime-and-agent-execution)
+- [Applications](#applications)
+- [Documentation index](#documentation-index)
+- [Contributing & community](#contributing--community)
 
 ---
 
@@ -126,7 +151,7 @@ Intergrax is not presented as a finished SaaS, a general-purpose open-source fra
 
 | If you are… | Start with |
 |-------------|------------|
-| Evaluating Intergrax for the first time | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
+| Evaluating Intergrax for the first time | [Quick start](#quick-start) · [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [FAQ.md](FAQ.md) · [Proof of platform](#proof-of-platform) |
 | Checking use-case fit | [USE_CASES.md](USE_CASES.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | Checking collaboration or license boundaries | [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE) |
 | Reviewing the Harness AI / Agent OS model | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
@@ -249,7 +274,7 @@ See [Harness Environment — core certification](docs/guides/HARNESS_ENVIRONMENT
 uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 ```
 
-### 4. Execute and inspect
+### 4. Usage — execute and inspect
 
 ```bash
 # Submit a run (Echo agent via capability routing)
@@ -257,8 +282,19 @@ curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
   -H "Content-Type: application/json" \
   -d '{"message":"hello","capability":"echo.basic"}'
 
-# Inspect trace (replace {task_id} from response)
+# Inspect trace — copy task_id from the POST response JSON above
 curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
+```
+
+**Expected output (abbreviated):**
+
+```json
+{"task_id":"01JABC…","run_id":"01JABC…","state":"completed","answer":"hello","agent_id":"echo"}
+```
+
+```text
+# trace excerpt (GET /debug/tasks/{task_id}/trace?include_runtime=true)
+step_started → tool_requested → tool_completed → step_completed
 ```
 
 **Next steps:** scaffold your own agent, register it, rerun through the lab, inspect `/debug/tasks/{id}/metrics` and `/events`.
