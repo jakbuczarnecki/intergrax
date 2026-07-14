@@ -43,6 +43,7 @@ class ComponentCoordinator:
     _health: dict[str, HostedApplicationComponentHealth] = field(default_factory=dict)
     _mark_not_ready_failed: set[str] = field(default_factory=set)
     _degraded: set[str] = field(default_factory=set)
+    _startup_fatal: BaseException | None = field(default=None, repr=False)
 
     @property
     def started_component_ids(self) -> tuple[str, ...]:
@@ -52,8 +53,16 @@ class ComponentCoordinator:
             if component_id in self._started
         )
 
+    @property
+    def startup_fatal_error(self) -> BaseException | None:
+        return self._startup_fatal
+
     def component_health(self) -> dict[str, HostedApplicationComponentHealth]:
-        return dict(self._health)
+        return {
+            component_id: self._health[component_id]
+            for component_id in self.definition.component_start_order
+            if component_id in self._health
+        }
 
     async def start_phase(
         self,
@@ -65,6 +74,8 @@ class ComponentCoordinator:
         levels = self._levels_for_ids(component_ids)
         for level in levels:
             await self._start_level(context, level)
+            if self._startup_fatal is not None:
+                raise self._startup_fatal
 
     async def stop_started(self, context: HostedApplicationContext) -> None:
         stop_ids = [
@@ -91,9 +102,12 @@ class ComponentCoordinator:
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
             if isinstance(result, HostedApplicationComponentError):
+                self._startup_fatal = result
                 raise result
             if isinstance(result, Exception):
-                raise HostedApplicationComponentError("component startup failed") from result
+                error = HostedApplicationComponentError("component startup failed")
+                self._startup_fatal = error
+                raise error from result
 
     async def _start_one(
         self,
@@ -105,7 +119,7 @@ class ComponentCoordinator:
             resolved = self.definition.enabled_components[component_id]
             registration = resolved.registration
             if not self._dependencies_started(resolved):
-                self._record_skipped_dependency(component_id)
+                await self._handle_dependency_skip(context, component_id, resolved)
                 return
             await self._publish_component_event(
                 context,
@@ -131,6 +145,65 @@ class ComponentCoordinator:
                 HostedApplicationEventType.COMPONENT_STARTED,
                 component_id,
             )
+
+    async def _handle_dependency_skip(
+        self,
+        context: HostedApplicationContext,
+        component_id: str,
+        resolved: ResolvedComponentRegistration,
+    ) -> None:
+        action = resolved.registration.failure_action or ComponentFailureAction.FAIL_HOST
+        required = resolved.registration.required
+        await self._publish_component_event(
+            context,
+            HostedApplicationEventType.COMPONENT_FAILED,
+            component_id,
+        )
+        failed_health = HostedApplicationComponentHealth(
+            component_id=component_id,
+            enabled=True,
+            required=required,
+            state=HostedApplicationComponentState.FAILED,
+            healthy=False,
+            ready=False,
+            detail_code="dependency_not_started",
+        )
+        self._health[component_id] = failed_health
+
+        if action is ComponentFailureAction.IGNORE_WITH_DIAGNOSTIC:
+            self.diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.COMPONENT_START,
+                source_kind="component",
+                source_id=component_id,
+                exc=RuntimeError("dependency_not_started"),
+                reason_code="dependency_skipped_ignored",
+            )
+            return
+
+        if action is ComponentFailureAction.MARK_DEGRADED:
+            self._degraded.add(component_id)
+            self._health[component_id] = failed_health.model_copy(
+                update={"state": HostedApplicationComponentState.DEGRADED},
+            )
+            return
+
+        if action is ComponentFailureAction.MARK_NOT_READY:
+            self._mark_not_ready_failed.add(component_id)
+            return
+
+        if required or action is ComponentFailureAction.FAIL_HOST:
+            exc = HostedApplicationComponentError(
+                f"required component skipped due to dependency failure: {component_id}"
+            )
+            self.diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.COMPONENT_START,
+                source_kind="component",
+                source_id=component_id,
+                exc=exc,
+                reason_code="dependency_not_started",
+            )
+            self._startup_fatal = exc
+            raise exc
 
     async def _handle_start_failure(
         self,
@@ -172,27 +245,17 @@ class ComponentCoordinator:
             exc=exc,
             reason_code="component_start_failed",
         )
-        raise HostedApplicationComponentError(
+        error = HostedApplicationComponentError(
             f"required component failed to start: {component_id}"
-        ) from exc
+        )
+        self._startup_fatal = error
+        raise error from exc
 
     def _dependencies_started(self, resolved: ResolvedComponentRegistration) -> bool:
         for dependency in resolved.registration.dependencies:
             if dependency not in self._started:
                 return False
         return True
-
-    def _record_skipped_dependency(self, component_id: str) -> None:
-        resolved = self.definition.enabled_components[component_id]
-        self._health[component_id] = HostedApplicationComponentHealth(
-            component_id=component_id,
-            enabled=True,
-            required=resolved.registration.required,
-            state=HostedApplicationComponentState.FAILED,
-            healthy=False,
-            ready=False,
-            detail_code="dependency_not_started",
-        )
 
     async def _stop_level(
         self,
@@ -259,7 +322,9 @@ class ComponentCoordinator:
         context: HostedApplicationContext,
     ) -> dict[str, HostedApplicationComponentHealth]:
         updated: dict[str, HostedApplicationComponentHealth] = {}
-        for component_id in self._started:
+        for component_id in self.definition.component_start_order:
+            if component_id not in self._started:
+                continue
             resolved = self.definition.enabled_components[component_id]
             health = await self._collect_health(context, resolved)
             previous = self._health.get(component_id)
@@ -291,12 +356,13 @@ class ComponentCoordinator:
         component = registration.component
         assert isinstance(component, HostedApplicationComponent)
         try:
-            return await asyncio.wait_for(
+            raw = await asyncio.wait_for(
                 component.health(context),
                 timeout=registration.health_timeout_seconds,
             )
         except Exception:
             return _failed_health(registration)
+        return _normalize_component_health(raw, registration)
 
     async def _publish_component_event(
         self,
@@ -336,6 +402,20 @@ class ComponentCoordinator:
             for level in reversed(self.definition.component_dependency_levels)
         ]
         return tuple(level for level in levels if level)
+
+
+def _normalize_component_health(
+    health: HostedApplicationComponentHealth,
+    registration: HostedApplicationComponentRegistration,
+) -> HostedApplicationComponentHealth:
+    component_id = registration.component_id or ""
+    return health.model_copy(
+        update={
+            "component_id": component_id,
+            "enabled": registration.enabled,
+            "required": registration.required,
+        }
+    )
 
 
 def _failed_health(

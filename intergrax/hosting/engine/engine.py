@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
 
 from intergrax.hosting.contracts.context import (
     HostedApplicationClock,
@@ -29,6 +30,7 @@ from intergrax.hosting.engine.diagnostics import (
     HostedApplicationDiagnosticSnapshot,
     HostedApplicationEngineTerminalResult,
     HostedApplicationFailurePhase,
+    HostedApplicationOperationPhase,
 )
 from intergrax.hosting.engine.health import (
     HostedApplicationHealthCoordinator,
@@ -47,6 +49,7 @@ from intergrax.hosting.engine.ports import (
 from intergrax.hosting.engine.runtime import invoke_application_factory
 from intergrax.hosting.errors import (
     HostedApplicationEngineError,
+    HostedApplicationShutdownError,
     HostedApplicationStartupError,
 )
 from intergrax.hosting.eventing import HostingEventDispatcher
@@ -79,8 +82,17 @@ class HostedApplicationEngine:
     instance_guard: HostedApplicationInstanceGuardPort
     health_poll_interval_seconds: float = 5.0
     health_poll_sleeper: object | None = None
+    failure_id_generator: object | None = None
+    _operation_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
+    _startup_aborted: bool = field(default=False, repr=False)
+    _instance_acquire_failed: bool = field(default=False, repr=False)
+    _reuse_blocked: bool = field(default=False, repr=False)
 
     def __post_init__(self) -> None:
+        if not math.isfinite(self.health_poll_interval_seconds) or self.health_poll_interval_seconds <= 0:
+            raise HostedApplicationEngineError(
+                "health_poll_interval_seconds must be finite and positive"
+            )
         self._lifecycle = HostedApplicationLifecycleController(self.clock)
         self._services = HostedApplicationServiceRegistry()
         self._diagnostics = DiagnosticsRecorder(
@@ -95,15 +107,17 @@ class HostedApplicationEngine:
                 for point, hooks in self.definition.hook_registrations.items()
             },
             event_subscription_ids=tuple(
-                subscription.subscription_id
-                for subscription in self.definition.event_subscriptions
+                resolved.subscription.subscription_id
+                for resolved in self.definition.event_subscriptions
             ),
+            failure_id_generator=self.failure_id_generator,  # type: ignore[arg-type]
         )
         self._observer_tasks = ObserverTaskRegistry(self._diagnostics)
         self._health = HostedApplicationHealthCoordinator(self._lifecycle, self.clock)
         self._health.configure_polling(
             interval_seconds=self.health_poll_interval_seconds,
             sleeper=self.health_poll_sleeper,
+            on_poll_failure=self._handle_health_poll_failure,
         )
         self._readiness = _ReadinessServiceAdapter(self._health)
         self._event_dispatcher = HostingEventDispatcher(
@@ -117,6 +131,7 @@ class HostedApplicationEngine:
             self.definition.profile.lifecycle,
             self._diagnostics,
             self._observer_tasks,
+            self._event_dispatcher.publish,
         )
         self._components = ComponentCoordinator(
             definition=self.definition,
@@ -129,8 +144,6 @@ class HostedApplicationEngine:
         self._lease: HostedApplicationInstanceLeasePort | None = None
         self._lease_released = False
         self._context_closed = False
-        self._startup_lock = asyncio.Lock()
-        self._stop_lock = asyncio.Lock()
 
     @property
     def context(self) -> HostedApplicationContext:
@@ -141,6 +154,11 @@ class HostedApplicationEngine:
     @property
     def accepts_new_work(self) -> bool:
         return self._health.accepts_new_work()
+
+    @property
+    def reuse_blocked(self) -> bool:
+        """When true, a prior fatal failure blocked further start attempts."""
+        return self._reuse_blocked
 
     def lifecycle_snapshot(self):
         return self._lifecycle.snapshot()
@@ -156,8 +174,13 @@ class HostedApplicationEngine:
         )
 
     async def start(self) -> None:
-        async with self._startup_lock:
-            if self._lifecycle.state is not HostedApplicationLifecycleState.CREATED:
+        async with self._operation_lock:
+            if self._reuse_blocked:
+                raise HostedApplicationStartupError(
+                    "hosted application engine reuse is blocked after fatal failure"
+                )
+            state = self._lifecycle.state
+            if state is not HostedApplicationLifecycleState.CREATED:
                 if self._lifecycle.is_terminal:
                     raise HostedApplicationStartupError(
                         "cannot start hosted application engine from terminal state"
@@ -165,21 +188,36 @@ class HostedApplicationEngine:
                 raise HostedApplicationStartupError(
                     "hosted application engine has already started"
                 )
+            self._startup_aborted = False
+            self._instance_acquire_failed = False
             self._context = self._build_context()
             self._services.register(HostedApplicationReadinessService, self._readiness)
+            self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.STARTUP)
             try:
                 await self._startup_sequence()
             except Exception as exc:
-                await self._startup_failure_cleanup(exc)
-                primary = self._diagnostics.primary_exception or exc
-                raise HostedApplicationStartupError("hosted application startup failed") from primary
+                if self._lifecycle.state is HostedApplicationLifecycleState.STARTING:
+                    await self._startup_failure_cleanup(exc)
+                    primary = self._diagnostics.primary_exception or exc
+                    raise HostedApplicationStartupError("hosted application startup failed") from primary
+                if self._instance_acquire_failed:
+                    raise HostedApplicationStartupError("instance acquisition failed") from exc
+                raise
 
     async def stop(self, *, reason_code: str = "engine.stop") -> HostedApplicationEngineTerminalResult:
-        async with self._stop_lock:
-            if self._lifecycle.state is HostedApplicationLifecycleState.STOPPED:
+        async with self._operation_lock:
+            state = self._lifecycle.state
+            if state is HostedApplicationLifecycleState.CREATED:
+                raise HostedApplicationShutdownError(
+                    "cannot stop hosted application engine before start"
+                )
+            if state is HostedApplicationLifecycleState.STOPPED:
                 return self._terminal_result(reason_code)
-            if self._lifecycle.state is HostedApplicationLifecycleState.FAILED:
-                return self._terminal_result(reason_code)
+            if state is HostedApplicationLifecycleState.FAILED:
+                return await self._failed_terminal_cleanup(reason_code)
+            if state is HostedApplicationLifecycleState.STARTING:
+                self._startup_aborted = True
+                self._lifecycle.set_shutdown_requested(True)
             return await self._shutdown_sequence(reason_code=reason_code)
 
     async def run_until_stopped(self) -> HostedApplicationEngineTerminalResult:
@@ -212,30 +250,78 @@ class HostedApplicationEngine:
             profile_digest=self.definition.profile_digest,
             process_identity=self.process_identity,
         )
-        self._lease = await self.instance_guard.acquire(identity)
+        try:
+            self._lease = await self.instance_guard.acquire(identity)
+        except Exception as exc:
+            self._instance_acquire_failed = True
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.INSTANCE_ACQUIRE,
+                source_kind="instance_guard",
+                source_id="acquire",
+                exc=exc,
+                reason_code="instance_acquire_failed",
+            )
+            self._reset_context_after_pre_lifecycle_failure()
+            raise HostedApplicationStartupError("instance acquisition failed") from exc
+
         self._health.set_lease(self._lease)
         self._diagnostics.mark_lease_acquired()
         self._lifecycle.transition_to(HostedApplicationLifecycleState.STARTING, reason_code="starting")
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STARTING)
         await self._hooks.execute_blocking(HostedApplicationHookPoint.BEFORE_START, self._context)
+        if self._should_abort_startup():
+            await self._abort_startup_to_stopping("startup_aborted")
+            return
         await self._components.start_phase(
             self._context,
             self.definition.pre_runtime_component_ids,
         )
-        self._runtime = await invoke_application_factory(
-            self.definition.application_factory,
-            self._context,
-        )
+        if self._should_abort_startup():
+            await self._abort_startup_to_stopping("startup_aborted")
+            return
+        try:
+            self._runtime = await invoke_application_factory(
+                self.definition.application_factory,
+                self._context,
+            )
+        except Exception as exc:
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.RUNTIME_FACTORY,
+                source_kind="runtime_factory",
+                source_id="factory",
+                exc=exc,
+                reason_code="runtime_factory_failed",
+            )
+            raise
         self._diagnostics.mark_runtime_created()
-        await self._runtime.start(self._context)
+        try:
+            await self._runtime.start(self._context)
+        except Exception as exc:
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.RUNTIME_START,
+                source_kind="runtime",
+                source_id="start",
+                exc=exc,
+                reason_code="runtime_start_failed",
+            )
+            raise
         self._diagnostics.mark_runtime_started()
+        if self._should_abort_startup():
+            await self._abort_startup_to_stopping("startup_aborted")
+            return
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STARTED)
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_START, self._context)
         await self._components.start_phase(
             self._context,
             self.definition.post_runtime_component_ids,
         )
+        if self._should_abort_startup():
+            await self._abort_startup_to_stopping("startup_aborted")
+            return
         await self._hooks.execute_blocking(HostedApplicationHookPoint.BEFORE_READY, self._context)
+        if self._should_abort_startup():
+            await self._abort_startup_to_stopping("startup_aborted")
+            return
         runtime_ready = await self._runtime.ready(self._context)
         self._health.set_runtime_ready(runtime_ready)
         self._health.update_component_health(
@@ -243,12 +329,54 @@ class HostedApplicationEngine:
             mark_not_ready_failed=self._components.mark_not_ready_component_ids,
             degraded_component_ids=self._components.degraded_component_ids,
         )
+        gate = self._health.evaluate_startup_readiness_gate()
+        if not gate.passed:
+            exc = RuntimeError(f"startup_readiness_gate_failed:{gate.reason_code}")
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.HEALTH_EVALUATION,
+                source_kind="health",
+                source_id="startup_gate",
+                exc=exc,
+                reason_code=gate.reason_code or "readiness_gate_failed",
+            )
+            raise HostedApplicationStartupError("startup readiness gate failed") from exc
         self._services.seal()
         self._lifecycle.transition_to(HostedApplicationLifecycleState.READY, reason_code="ready")
-        self._health.refresh_once()
+        self._health.refresh_once(accepting_new_work_override=True)
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_READY)
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_READY, self._context)
         await self._health.start_polling(self._refresh_health)
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
+
+    def _should_abort_startup(self) -> bool:
+        return self._startup_aborted or self.shutdown.is_shutdown_requested()
+
+    async def _abort_startup_to_stopping(self, reason_code: str) -> None:
+        assert self._context is not None
+        self._lifecycle.transition_to(
+            HostedApplicationLifecycleState.STOPPING,
+            reason_code=reason_code,
+        )
+        await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPING)
+        await self._safe_phase(self._health.stop_polling)
+        if self._components.started_component_ids:
+            await self._safe_phase(self._components.stop_started, self._context)
+        if self._runtime is not None:
+            await self._safe_phase(
+                self._runtime.stop,
+                self._context,
+                phase=HostedApplicationFailurePhase.RUNTIME_STOP,
+            )
+        self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, self._context)
+        await self._terminal_lifecycle_publication(HostedApplicationEventType.APPLICATION_STOPPED)
+        await self._safe_phase(self._release_lease)
+        self._close_context()
+        if self._lifecycle.state is HostedApplicationLifecycleState.STOPPING:
+            self._lifecycle.transition_to(
+                HostedApplicationLifecycleState.STOPPED,
+                reason_code=reason_code,
+            )
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
 
     async def _refresh_health(self) -> None:
         if self._context is None or self._runtime is None:
@@ -262,8 +390,18 @@ class HostedApplicationEngine:
             degraded_component_ids=self._components.degraded_component_ids,
         )
 
+    def _handle_health_poll_failure(self, exc: BaseException) -> None:
+        self._diagnostics.record_secondary_failure(
+            phase=HostedApplicationFailurePhase.HEALTH_EVALUATION,
+            source_kind="health_poll",
+            source_id="refresh",
+            exc=exc,
+            reason_code="health_poll_failed",
+        )
+
     async def _startup_failure_cleanup(self, exc: Exception) -> None:
         assert self._context is not None
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.ROLLBACK)
         if self._diagnostics.primary_exception is None:
             self._diagnostics.record_primary_failure(
                 phase=HostedApplicationFailurePhase.RUNTIME_START,
@@ -272,70 +410,97 @@ class HostedApplicationEngine:
                 exc=exc,
                 reason_code="startup_failed",
             )
-        await self._hooks.execute_on_failure(self._context, primary_exc=exc)
+        await self._safe_phase(self._hooks.schedule_on_failure, self._context)
+        await self._safe_phase(self._health.stop_polling)
         if self._components.started_component_ids:
-            await self._components.stop_started(self._context)
+            await self._safe_phase(self._components.stop_started, self._context)
         if self._runtime is not None:
-            try:
-                await self._runtime.stop(self._context)
-            except Exception as stop_exc:
-                self._diagnostics.record_secondary_failure(
-                    phase=HostedApplicationFailurePhase.ROLLBACK,
-                    source_kind="runtime",
-                    source_id="rollback_stop",
-                    exc=stop_exc,
-                    reason_code="runtime_rollback_failed",
-                )
-        await self._release_lease()
+            await self._safe_phase(self._runtime.stop, self._context, phase=HostedApplicationFailurePhase.ROLLBACK)
+        await self._safe_phase(self._release_lease)
         self._close_context()
         if self._lifecycle.state is HostedApplicationLifecycleState.STARTING:
             self._lifecycle.transition_to(HostedApplicationLifecycleState.FAILED, reason_code="failed")
-        try:
-            await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_FAILED)
-        except Exception as publish_exc:
-            self._diagnostics.record_secondary_failure(
-                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
-                source_kind="event_publisher",
-                source_id="application_failed",
-                exc=publish_exc,
-                reason_code="failure_event_publish_failed",
-            )
+        self._reuse_blocked = True
+        await self._terminal_lifecycle_publication(HostedApplicationEventType.APPLICATION_FAILED)
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
 
     async def _shutdown_sequence(self, *, reason_code: str) -> HostedApplicationEngineTerminalResult:
         if self._context is None:
             self._context = self._build_context()
         assert self._context is not None
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.SHUTDOWN)
         self._lifecycle.set_shutdown_requested(True)
-        if self._lifecycle.state is HostedApplicationLifecycleState.READY:
+        state = self._lifecycle.state
+        if state is HostedApplicationLifecycleState.READY:
             self._lifecycle.transition_to(HostedApplicationLifecycleState.STOPPING, reason_code=reason_code)
-        elif self._lifecycle.state is HostedApplicationLifecycleState.STARTING:
+        elif state is HostedApplicationLifecycleState.STARTING:
             self._lifecycle.transition_to(HostedApplicationLifecycleState.STOPPING, reason_code=reason_code)
-        self._health.refresh_once()
+        self._health.refresh_once(accepting_new_work_override=False)
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPING)
-        await self._hooks.execute_blocking(HostedApplicationHookPoint.BEFORE_STOP, self._context)
-        await self._health.stop_polling()
-        await self._components.stop_started(self._context)
+        await self._safe_phase(
+            self._hooks.execute_blocking,
+            HostedApplicationHookPoint.BEFORE_STOP,
+            self._context,
+            phase=HostedApplicationFailurePhase.BEFORE_STOP_HOOK,
+        )
+        await self._safe_phase(self._health.stop_polling)
+        await self._safe_phase(self._components.stop_started, self._context)
         if self._runtime is not None:
-            try:
-                await self._runtime.stop(self._context)
-            except Exception as exc:
-                self._diagnostics.record_secondary_failure(
-                    phase=HostedApplicationFailurePhase.RUNTIME_STOP,
-                    source_kind="runtime",
-                    source_id="stop",
-                    exc=exc,
-                    reason_code="runtime_stop_failed",
-                )
+            await self._safe_phase(
+                self._runtime.stop,
+                self._context,
+                phase=HostedApplicationFailurePhase.RUNTIME_STOP,
+            )
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, self._context)
-        drain_timeout = self.definition.profile.lifecycle.default_observer_hook_timeout_seconds
-        await self._observer_tasks.drain(drain_timeout)
-        self._observer_tasks.cancel_remaining()
-        await self._release_lease()
+        await self._terminal_lifecycle_publication(HostedApplicationEventType.APPLICATION_STOPPED)
+        await self._safe_phase(self._release_lease)
         self._close_context()
         if self._lifecycle.state is HostedApplicationLifecycleState.STOPPING:
             self._lifecycle.transition_to(HostedApplicationLifecycleState.STOPPED, reason_code=reason_code)
-        await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPED)
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
         return self._terminal_result(reason_code)
+
+    async def _failed_terminal_cleanup(self, reason_code: str) -> HostedApplicationEngineTerminalResult:
+        self._observer_tasks.close_to_new_tasks()
+        drain_timeout = self.definition.profile.lifecycle.default_observer_hook_timeout_seconds
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
+        self._observer_tasks.cancel_remaining()
+        await self._safe_phase(self._release_lease)
+        self._close_context()
+        return self._terminal_result(reason_code)
+
+    async def _terminal_lifecycle_publication(
+        self,
+        event_type: HostedApplicationEventType,
+    ) -> None:
+        try:
+            await self._publish_lifecycle_event(event_type)
+        except Exception as publish_exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
+                source_kind="event_publisher",
+                source_id=event_type.value,
+                exc=publish_exc,
+                reason_code="terminal_event_publish_failed",
+            )
+        drain_timeout = self.definition.profile.lifecycle.default_observer_hook_timeout_seconds
+        self._observer_tasks.close_to_new_tasks()
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
+        self._observer_tasks.cancel_remaining()
+
+    async def _safe_phase(self, callback, *args, phase: HostedApplicationFailurePhase | None = None, **kwargs) -> None:
+        try:
+            result = callback(*args, **kwargs)
+            if asyncio.iscoroutine(result) or asyncio.isfuture(result):
+                await result
+        except Exception as exc:
+            self._diagnostics.record_secondary_failure(
+                phase=phase or HostedApplicationFailurePhase.ROLLBACK,
+                source_kind="cleanup",
+                source_id=callback.__name__ if hasattr(callback, "__name__") else "phase",
+                exc=exc,
+                reason_code="cleanup_phase_failed",
+            )
 
     async def _release_lease(self) -> None:
         if self._lease_released or self._lease is None:
@@ -362,7 +527,16 @@ class HostedApplicationEngine:
         self._context_closed = True
         self._diagnostics.mark_context_closed()
 
+    def _reset_context_after_pre_lifecycle_failure(self) -> None:
+        if self._context is not None:
+            self._context.close()
+        self._context = None
+        self._context_closed = False
+        self._services = HostedApplicationServiceRegistry()
+        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
+
     def _terminal_result(self, reason_code: str) -> HostedApplicationEngineTerminalResult:
+        self._diagnostics.set_observer_task_count(self._observer_tasks.task_count)
         return HostedApplicationEngineTerminalResult(
             terminal_state=self._lifecycle.state,
             reason_code=reason_code,

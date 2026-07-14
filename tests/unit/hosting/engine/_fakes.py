@@ -78,9 +78,10 @@ class FakeLease(HostedApplicationInstanceLeasePort):
 
 
 class FakeInstanceGuard(HostedApplicationInstanceGuardPort):
-    def __init__(self, lease: FakeLease | None = None) -> None:
+    def __init__(self, lease: FakeLease | None = None, *, fail_acquire: bool = False) -> None:
         self.lease = lease or FakeLease()
         self.acquire_count = 0
+        self.fail_acquire = fail_acquire
 
     async def acquire(
         self,
@@ -88,6 +89,8 @@ class FakeInstanceGuard(HostedApplicationInstanceGuardPort):
     ) -> HostedApplicationInstanceLeasePort:
         self.acquire_count += 1
         self.last_identity = identity
+        if self.fail_acquire:
+            raise RuntimeError("instance acquire rejected")
         return self.lease
 
 

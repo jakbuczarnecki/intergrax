@@ -5,19 +5,16 @@
 
 from __future__ import annotations
 
-import asyncio
-import inspect
-from typing import Any
-
-from pydantic import Field
+from pydantic import Field, JsonValue
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.hosting.contracts.context import HostedApplicationEventPublisher
 from intergrax.hosting.contracts.events import (
     HostedApplicationEvent,
-    HostedApplicationEventSubscription,
     HostedApplicationEventType,
 )
+from intergrax.hosting.engine.callbacks import invoke_callback
+from intergrax.hosting.engine.definition import ResolvedEventSubscription
 from intergrax.hosting.engine.diagnostics import DiagnosticsRecorder, HostedApplicationFailurePhase
 from intergrax.hosting.engine.observer_tasks import ObserverTaskRegistry
 from intergrax.runtime.events.emit_context import EmitContext
@@ -46,7 +43,7 @@ class HostedApplicationEventPayloadV1(RuntimeEventPayload):
     severity: str
     correlation_id: str = ""
     causation_id: str = ""
-    safe_payload: dict[str, Any] = Field(default_factory=dict)
+    safe_payload: dict[str, JsonValue] = Field(default_factory=dict)
 
     def redact(self) -> HostedApplicationEventPayloadV1:
         return self
@@ -75,11 +72,16 @@ def hosted_event_to_payload(event: HostedApplicationEvent) -> HostedApplicationE
     )
 
 
-def build_hosting_emit_context(event: HostedApplicationEvent, bus: object | None) -> EmitContext:
+def build_hosting_emit_context(
+    event: HostedApplicationEvent,
+    bus: object | None,
+    *,
+    production_mode: bool = False,
+) -> EmitContext:
     """Build synthetic spine correlation fields for hosting domain signals.
 
-  The synthetic ``task_id`` is a legacy spine correlation field and is not an
-  Intergrax application ``Task``.
+    The synthetic ``task_id`` is a legacy spine correlation field and is not an
+    Intergrax application ``Task``.
     """
     return EmitContext(
         task_id=f"hosting_{event.application_id}",
@@ -87,6 +89,7 @@ def build_hosting_emit_context(event: HostedApplicationEvent, bus: object | None
         correlation_id=event.correlation_id or event.event_id,
         parent_event_id=event.causation_id or None,
         bus=bus,  # type: ignore[arg-type]
+        production_mode=production_mode,
     )
 
 
@@ -100,7 +103,7 @@ class RuntimeSpineHostedApplicationEventPublisher:
 
     async def publish(self, event: HostedApplicationEvent) -> None:
         payload = hosted_event_to_payload(event)
-        ctx = build_hosting_emit_context(event, self._bus)
+        ctx = build_hosting_emit_context(event, self._bus, production_mode=self._production_mode)
         try:
             emit_domain_signal(
                 ctx,
@@ -119,7 +122,7 @@ class HostingEventDispatcher:
     def __init__(
         self,
         downstream: HostedApplicationEventPublisher,
-        subscriptions: tuple[HostedApplicationEventSubscription, ...],
+        subscriptions: tuple[ResolvedEventSubscription, ...],
         diagnostics: DiagnosticsRecorder,
         observer_tasks: ObserverTaskRegistry,
     ) -> None:
@@ -127,7 +130,11 @@ class HostingEventDispatcher:
         self._subscriptions = tuple(
             sorted(
                 subscriptions,
-                key=lambda item: (item.priority, item.source_id, item.subscription_id),
+                key=lambda item: (
+                    item.subscription.priority,
+                    item.subscription.source_id,
+                    item.declaration_index,
+                ),
             )
         )
         self._diagnostics = diagnostics
@@ -144,39 +151,36 @@ class HostingEventDispatcher:
                 exc=exc,
                 reason_code="event_publish_failed",
             )
-        for subscription in self._matching_subscriptions(event.event_type):
+        for resolved in self._matching_subscriptions(event.event_type):
             self._observer_tasks.schedule(
-                self._invoke_subscription(subscription, event),
+                self._invoke_subscription(resolved, event),
                 phase=HostedApplicationFailurePhase.EVENT_SUBSCRIBER,
-                source_id=subscription.subscription_id,
+                source_id=resolved.subscription.subscription_id,
             )
 
     def _matching_subscriptions(
         self,
         event_type: HostedApplicationEventType,
-    ) -> tuple[HostedApplicationEventSubscription, ...]:
+    ) -> tuple[ResolvedEventSubscription, ...]:
         return tuple(
-            subscription
-            for subscription in self._subscriptions
-            if event_type in subscription.event_types
+            resolved
+            for resolved in self._subscriptions
+            if event_type in resolved.subscription.event_types
         )
 
     async def _invoke_subscription(
         self,
-        subscription: HostedApplicationEventSubscription,
+        resolved: ResolvedEventSubscription,
         event: HostedApplicationEvent,
     ) -> None:
+        handler = resolved.subscription.handler
         try:
-            result = subscription.handler(event)
-            if inspect.isawaitable(result):
-                await result
-            else:
-                await asyncio.to_thread(subscription.handler, event)
+            await invoke_callback(handler, event)
         except Exception as exc:
             self._diagnostics.record_secondary_failure(
                 phase=HostedApplicationFailurePhase.EVENT_SUBSCRIBER,
                 source_kind="event_subscription",
-                source_id=subscription.subscription_id,
+                source_id=resolved.subscription.subscription_id,
                 exc=exc,
                 reason_code="event_subscriber_failed",
             )

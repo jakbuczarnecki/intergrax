@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -19,6 +19,8 @@ from intergrax.hosting.contracts.lifecycle import (
 )
 from intergrax.hosting.contracts.public_data import validate_bounded_identifier
 from intergrax.hosting.engine.health import HostedApplicationHealthSnapshot
+
+FailureIdGenerator = Callable[[], str]
 
 
 class HostedApplicationFailurePhase(str, Enum):
@@ -38,6 +40,15 @@ class HostedApplicationFailurePhase(str, Enum):
     EVENT_PUBLISH = "event_publish"
     EVENT_SUBSCRIBER = "event_subscriber"
     AFTER_STOP_OBSERVER = "after_stop_observer"
+    ROLLBACK = "rollback"
+
+
+class HostedApplicationOperationPhase(str, Enum):
+    """Explicit active engine operation phase for diagnostics."""
+
+    IDLE = "idle"
+    STARTUP = "startup"
+    SHUTDOWN = "shutdown"
     ROLLBACK = "rollback"
 
 
@@ -81,6 +92,7 @@ class HostedApplicationDiagnosticSnapshot(BaseModel):
     instance_lease_acquired: bool = False
     instance_lease_released: bool = False
     observer_task_count: int = 0
+    active_operation_phase: HostedApplicationOperationPhase = HostedApplicationOperationPhase.IDLE
     snapshot_timestamp: datetime
 
 
@@ -106,6 +118,7 @@ class DiagnosticsRecorder:
     component_start_order: tuple[str, ...] = ()
     hook_ids_by_point: dict[str, tuple[str, ...]] = field(default_factory=dict)
     event_subscription_ids: tuple[str, ...] = ()
+    failure_id_generator: FailureIdGenerator | None = None
     runtime_created: bool = False
     runtime_started: bool = False
     started_component_ids: list[str] = field(default_factory=list)
@@ -113,14 +126,19 @@ class DiagnosticsRecorder:
     instance_lease_acquired: bool = False
     instance_lease_released: bool = False
     observer_task_count: int = 0
+    active_operation_phase: HostedApplicationOperationPhase = HostedApplicationOperationPhase.IDLE
     current_failure: HostedApplicationFailureRecord | None = None
     last_failure: HostedApplicationFailureRecord | None = None
     secondary_failures: list[HostedApplicationFailureRecord] = field(default_factory=list)
     _primary_exception: BaseException | None = field(default=None, repr=False)
+    _failure_counter: int = field(default=0, repr=False)
 
     @property
     def primary_exception(self) -> BaseException | None:
         return self._primary_exception
+
+    def set_operation_phase(self, phase: HostedApplicationOperationPhase) -> None:
+        self.active_operation_phase = phase
 
     def mark_runtime_created(self) -> None:
         self.runtime_created = True
@@ -143,6 +161,12 @@ class DiagnosticsRecorder:
 
     def set_observer_task_count(self, count: int) -> None:
         self.observer_task_count = count
+
+    def next_failure_id(self) -> str:
+        if self.failure_id_generator is not None:
+            return self.failure_id_generator()
+        self._failure_counter += 1
+        return f"failure-{self._failure_counter:04d}"
 
     def record_primary_failure(
         self,
@@ -223,6 +247,7 @@ class DiagnosticsRecorder:
             instance_lease_acquired=self.instance_lease_acquired,
             instance_lease_released=self.instance_lease_released,
             observer_task_count=self.observer_task_count,
+            active_operation_phase=self.active_operation_phase,
             snapshot_timestamp=self.clock.now(),
         )
 
@@ -238,7 +263,7 @@ class DiagnosticsRecorder:
     ) -> HostedApplicationFailureRecord:
         safe_reason = validate_bounded_identifier(reason_code, field_name="reason_code")
         return HostedApplicationFailureRecord(
-            failure_id=str(uuid.uuid4()),
+            failure_id=self.next_failure_id(),
             reason_code=safe_reason,
             phase=phase,
             source_kind=validate_bounded_identifier(source_kind, field_name="source_kind"),

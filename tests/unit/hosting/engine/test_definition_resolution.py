@@ -133,3 +133,16 @@ def test_public_view_excludes_runtime_refs() -> None:
     payload = definition.public_view().model_dump(mode="json")
     assert "application_factory" not in payload
     assert "handler" not in str(payload)
+
+
+def test_definition_is_immutable() -> None:
+    profile = HostedApplicationProfile(
+        application_id="test_app",
+        application_factory=sample_application_factory,
+        components=(component_registration(FakeComponent("worker")),),
+    )
+    definition = resolve_hosted_application_definition(profile)
+    with pytest.raises((AttributeError, TypeError)):
+        definition.profile_digest = "mutated"  # type: ignore[misc]
+    with pytest.raises(TypeError):
+        definition.enabled_components["worker"] = next(iter(definition.enabled_components.values()))  # type: ignore[index]

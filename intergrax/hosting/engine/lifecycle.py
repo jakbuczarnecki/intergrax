@@ -14,6 +14,7 @@ from intergrax.hosting.contracts.lifecycle import (
     HostedApplicationLifecycleSnapshot,
     HostedApplicationLifecycleState,
 )
+from intergrax.hosting.contracts.public_data import validate_bounded_identifier
 from intergrax.hosting.errors import HostedApplicationLifecycleTransitionError
 
 _VALID_TRANSITIONS: dict[
@@ -123,6 +124,12 @@ class HostedApplicationLifecycleController:
         *,
         reason_code: str = "",
     ) -> None:
+        safe_reason = validate_bounded_identifier(reason_code or "transition", field_name="reason_code")
+        occurred_at = self._clock.now()
+        if occurred_at.tzinfo is None:
+            raise HostedApplicationLifecycleTransitionError(
+                "lifecycle clock produced naive timestamp"
+            )
         with self._lock:
             if self._state in _TERMINAL_STATES:
                 raise HostedApplicationLifecycleTransitionError(
@@ -135,13 +142,13 @@ class HostedApplicationLifecycleController:
                 )
             previous = self._state
             self._state = target
-            self._last_transition_at = self._clock.now()
-            self._reason_code = reason_code
+            self._last_transition_at = occurred_at
+            self._reason_code = safe_reason
             self._history.append(
                 LifecycleTransitionRecord(
                     from_state=previous,
                     to_state=target,
-                    occurred_at=self._last_transition_at,
-                    reason_code=reason_code,
+                    occurred_at=occurred_at,
+                    reason_code=safe_reason,
                 )
             )

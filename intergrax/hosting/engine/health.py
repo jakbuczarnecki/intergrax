@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import math
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -19,6 +20,7 @@ from intergrax.hosting.contracts.context import HostedApplicationClock
 from intergrax.hosting.contracts.lifecycle import HostedApplicationLifecycleState
 from intergrax.hosting.engine.lifecycle import HostedApplicationLifecycleController
 from intergrax.hosting.engine.ports import HostedApplicationInstanceLeasePort
+from intergrax.hosting.errors import HostedApplicationConfigurationError
 
 
 class HostedApplicationHealthSnapshot(BaseModel):
@@ -49,6 +51,14 @@ class HostedApplicationReadinessService(Protocol):
 
 
 @dataclass
+class StartupReadinessGateResult:
+    """Result of startup readiness gate evaluation."""
+
+    passed: bool
+    reason_code: str = ""
+
+
+@dataclass
 class HostedApplicationHealthCoordinator:
     """Aggregate health and readiness evaluator for one engine instance."""
 
@@ -64,15 +74,22 @@ class HostedApplicationHealthCoordinator:
     _poll_shutdown: asyncio.Event = field(default_factory=asyncio.Event)
     _poll_interval_seconds: float = 5.0
     _poll_sleeper: object | None = None
+    _on_poll_failure: Callable[[BaseException], None] | None = None
 
     def configure_polling(
         self,
         *,
         interval_seconds: float,
         sleeper: object | None = None,
+        on_poll_failure: Callable[[BaseException], None] | None = None,
     ) -> None:
+        if not math.isfinite(interval_seconds) or interval_seconds <= 0:
+            raise HostedApplicationConfigurationError(
+                "health_poll_interval_seconds must be finite and positive"
+            )
         self._poll_interval_seconds = interval_seconds
         self._poll_sleeper = sleeper
+        self._on_poll_failure = on_poll_failure
 
     def set_runtime_ready(self, value: bool) -> None:
         self._runtime_ready = value
@@ -90,9 +107,26 @@ class HostedApplicationHealthCoordinator:
         self._component_health = dict(health)
         self._mark_not_ready_failed = mark_not_ready_failed
         self._degraded_component_ids = degraded_component_ids
-        return self.refresh_once()
+        return self.refresh_once(accepting_new_work_override=False)
 
-    def refresh_once(self) -> HostedApplicationHealthSnapshot:
+    def evaluate_startup_readiness_gate(self) -> StartupReadinessGateResult:
+        lifecycle = self.lifecycle.snapshot()
+        if lifecycle.shutdown_requested:
+            return StartupReadinessGateResult(False, "shutdown_requested")
+        if not self._runtime_ready:
+            return StartupReadinessGateResult(False, "runtime_not_ready")
+        if self._lease is None or not self._lease.is_valid():
+            return StartupReadinessGateResult(False, "invalid_lease")
+        blocking = self._blocking_component_ids()
+        if blocking:
+            return StartupReadinessGateResult(False, f"blocking_components:{','.join(blocking)}")
+        return StartupReadinessGateResult(True)
+
+    def refresh_once(
+        self,
+        *,
+        accepting_new_work_override: bool | None = None,
+    ) -> HostedApplicationHealthSnapshot:
         lifecycle = self.lifecycle.snapshot()
         instance_valid = self._lease.is_valid() if self._lease is not None else False
         shutdown_requested = lifecycle.shutdown_requested
@@ -100,15 +134,8 @@ class HostedApplicationHealthCoordinator:
             HostedApplicationLifecycleState.STOPPED,
             HostedApplicationLifecycleState.FAILED,
         }
-        blocking: list[str] = []
-        degraded: list[str] = sorted(self._degraded_component_ids)
-        for component_id, component_health in sorted(self._component_health.items()):
-            registration_required = component_health.required and component_health.enabled
-            if registration_required and (not component_health.healthy or not component_health.ready):
-                blocking.append(component_id)
-            if component_id in self._mark_not_ready_failed:
-                blocking.append(component_id)
-        blocking_ids = tuple(sorted(set(blocking)))
+        blocking_ids = self._blocking_component_ids()
+        degraded = tuple(sorted(self._degraded_component_ids))
         ready = (
             lifecycle.state is HostedApplicationLifecycleState.READY
             and self._runtime_ready
@@ -116,7 +143,10 @@ class HostedApplicationHealthCoordinator:
             and not shutdown_requested
             and not blocking_ids
         )
-        accepting = ready
+        if accepting_new_work_override is not None:
+            accepting = accepting_new_work_override
+        else:
+            accepting = ready
         snapshot = HostedApplicationHealthSnapshot(
             live=live,
             ready=ready,
@@ -126,20 +156,28 @@ class HostedApplicationHealthCoordinator:
             instance_ownership_valid=instance_valid,
             shutdown_requested=shutdown_requested,
             blocking_component_ids=blocking_ids,
-            degraded_component_ids=tuple(degraded),
-            component_snapshots=tuple(
-                self._component_health[component_id]
-                for component_id in sorted(self._component_health)
-            ),
+            degraded_component_ids=degraded,
+            component_snapshots=tuple(self._component_health.values()),
             last_evaluated_at=self.clock.now(),
         )
         self._last_snapshot = snapshot
         self.lifecycle.set_accepting_new_work(accepting)
         return snapshot
 
+    def _blocking_component_ids(self) -> tuple[str, ...]:
+        blocking: list[str] = []
+        for component_id in sorted(self._component_health):
+            component_health = self._component_health[component_id]
+            registration_required = component_health.required and component_health.enabled
+            if registration_required and (not component_health.healthy or not component_health.ready):
+                blocking.append(component_id)
+            if component_id in self._mark_not_ready_failed:
+                blocking.append(component_id)
+        return tuple(sorted(set(blocking)))
+
     def snapshot(self) -> HostedApplicationHealthSnapshot:
         if self._last_snapshot is None:
-            return self.refresh_once()
+            return self.refresh_once(accepting_new_work_override=False)
         return self._last_snapshot
 
     def accepts_new_work(self) -> bool:
@@ -158,17 +196,26 @@ class HostedApplicationHealthCoordinator:
         if self._poll_task is None:
             return
         self._poll_shutdown.set()
-        await self._poll_task
-        self._poll_task = None
+        try:
+            await self._poll_task
+        except Exception:
+            pass
+        finally:
+            self._poll_task = None
 
     async def _poll_loop(
         self,
         refresh_callback: Callable[[], Awaitable[None]] | Callable[[], None],
     ) -> None:
         while not self._poll_shutdown.is_set():
-            result = refresh_callback()
-            if inspect.isawaitable(result):
-                await result
+            try:
+                result = refresh_callback()
+                if inspect.isawaitable(result):
+                    await result
+            except Exception as exc:
+                if self._on_poll_failure is not None:
+                    self._on_poll_failure(exc)
+                self.refresh_once(accepting_new_work_override=False)
             if self._poll_sleeper is not None and hasattr(self._poll_sleeper, "sleep"):
                 await self._poll_sleeper.sleep(self._poll_interval_seconds)  # type: ignore[attr-defined]
             else:

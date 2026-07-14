@@ -81,7 +81,24 @@ intergrax/hosting/contracts/{identity,profile,public_data,context,lifecycle,hook
 tests/unit/hosting/
 ```
 
-**Next wave:** APP-HOST-W2 — Complete Hosting Engine (2A..2F, 3B, 3C).
+**Next wave:** APP-HOST-W3 — Process Control and Supervision (4A..4E, 5A..5C).
+
+# APP-HOST-W2 — Complete Hosting Engine
+
+**Status:** **Done** (2026-07-14)
+
+**Closes:** APP-HOST-2A, APP-HOST-2B (foundation profile composition), APP-HOST-2C, APP-HOST-2D, APP-HOST-2E, APP-HOST-2F, APP-HOST-3B, APP-HOST-3C.
+
+**Delivered code:**
+
+`	ext
+intergrax/hosting/engine/
+intergrax/hosting/eventing.py
+intergrax/hosting/errors.py
+tests/unit/hosting/engine/
+`
+
+**Next wave:** APP-HOST-W3 — Process Control and Supervision (not started).
 
 # APP-HOST-1 — Public authoring contracts
 
@@ -400,6 +417,8 @@ no provider/OS SDK imports in contracts
 
 ## APP-HOST-2A — Lifecycle state machine
 
+**Status:** **Done** (2026-07-14)
+
 **Architecture:** satellite §24
 **Target:** `intergrax/hosting/engine/lifecycle.py`
 
@@ -421,6 +440,8 @@ Acceptance:
 
 ## APP-HOST-2B — Composition validation
 
+**Status:** **Done** (2026-07-14) — foundation profile composition
+
 Resolve profile + plugin contributions into an immutable `HostedApplicationDefinition`.
 
 Acceptance:
@@ -432,6 +453,8 @@ Acceptance:
 - no lifecycle side effects during composition.
 
 ## APP-HOST-2C — Hook coordinator
+
+**Status:** **Done** (2026-07-14)
 
 Implement deterministic blocking/observer execution.
 
@@ -447,6 +470,8 @@ no re-entrant lifecycle transition from hook
 ```
 
 ## APP-HOST-2D — Component coordinator
+
+**Status:** **Done** (2026-07-14)
 
 Implement:
 
@@ -464,6 +489,8 @@ Acceptance includes partial-start rollback and multiple secondary cleanup failur
 
 ## APP-HOST-2E — Health/readiness
 
+**Status:** **Done** (2026-07-14)
+
 Target:
 
 ```text
@@ -480,6 +507,8 @@ Acceptance:
 - readiness changes publish events once per transition.
 
 ## APP-HOST-2F — HostedApplicationEngine
+
+**Status:** **Done** (2026-07-14)
 
 Compose lifecycle, hooks, components, runtime factory, health, events, instance lease interface, and shutdown control.
 
@@ -518,6 +547,8 @@ Acceptance:
 
 ## APP-HOST-3B — Existing spine bridge
 
+**Status:** **Done** (2026-07-14)
+
 Investigate and use existing Intergrax runtime event/observability contracts. If no suitable application-level publisher exists, add the smallest shared bridge in the owning observability/runtime domain and cross-plan it.
 
 Forbidden:
@@ -529,6 +560,8 @@ new private exporter stack
 ```
 
 ## APP-HOST-3C — Diagnostics
+
+**Status:** **Done** (2026-07-14)
 
 Implement safe snapshots and typed failure records.
 
