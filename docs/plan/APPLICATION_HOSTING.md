@@ -114,19 +114,19 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-4A | `InstanceGuard`/`InstanceLease` contracts and file-lock reference implementation | Planned |
-| APP-HOST-4B | Stale ownership recovery and run-directory safety | Planned |
-| APP-HOST-4C | Typed shutdown/restart requests and idempotent control coordinator | Planned |
-| APP-HOST-4D | Drain/cancel/flush shutdown policy implementation | Planned |
-| APP-HOST-4E | Signal bridge contract and portable foreground signal adapter | Planned |
+| APP-HOST-4A | `InstanceGuard`/`InstanceLease` contracts and file-lock reference implementation | **Done** |
+| APP-HOST-4B | Stale ownership recovery and run-directory safety | **Done** |
+| APP-HOST-4C | Typed shutdown/restart requests and idempotent control coordinator | **Done** |
+| APP-HOST-4D | Drain/cancel/flush shutdown policy implementation | **Done** |
+| APP-HOST-4E | Signal bridge contract and portable foreground signal adapter | **Done** |
 
 ### APP-HOST-5 — Supervisor and restart
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-5A | Exit/failure classification contracts | Planned |
-| APP-HOST-5B | Restart policy evaluator and deterministic backoff | Planned |
-| APP-HOST-5C | `HostedApplicationSupervisor` reference implementation | Planned |
+| APP-HOST-5A | Exit/failure classification contracts | **Done** |
+| APP-HOST-5B | Restart policy evaluator and deterministic backoff | **Done** |
+| APP-HOST-5C | `HostedApplicationSupervisor` reference implementation | **Done** |
 | APP-HOST-5D | Restart configuration/profile-digest preservation | Planned |
 | APP-HOST-5E | Crash/restart/process-level proof harness | Planned |
 
@@ -184,10 +184,10 @@ APP-HOST-0D                    [Done]
 → APP-HOST-1A.1                [Done]
 → APP-HOST-W1                  [Done — public hosting foundation]
 → APP-HOST-W2                  [Done — engine foundation]
-→ APP-HOST-W3                  [next — process control and supervision]
+→ APP-HOST-W3                  [Done — process control and supervision]
   → APP-HOST-4A..4E
   → APP-HOST-5A..5C
-→ APP-HOST-9A                  [author facade — required before LKW adoption]
+→ APP-HOST-9A                  [next — author facade — required before LKW adoption]
 → APP-HOST-8A...               [LKW adoption + live proof]
 ```
 
@@ -395,20 +395,24 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-W3 — Process Control and Supervision
+APP-HOST-9A — run_hosted_application(profile) author facade
 ```
 
-**APP-HOST-W3** groups (not started):
+**APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
+
+W3 supervisor is **in-process**; W3 file lock and signal bridge are **portable reference implementations**. Full OS adapter/service-manager posture remains **APP-HOST-7**. Profile-source preservation contract remains **APP-HOST-5D**. Process proof harness remains **APP-HOST-5E**.
+
+**APP-HOST-W3** delivered:
 
 ```text
-APP-HOST-4A — InstanceGuard / InstanceLease reference implementation
-APP-HOST-4B — stale ownership recovery and run-directory safety
-APP-HOST-4C — typed shutdown/restart requests and control coordinator
-APP-HOST-4D — drain/cancel/flush shutdown policy implementation
-APP-HOST-4E — signal bridge and portable foreground signal adapter
-APP-HOST-5A — exit/failure classification contracts
-APP-HOST-5B — restart policy evaluator and deterministic backoff
-APP-HOST-5C — HostedApplicationSupervisor reference implementation
+APP-HOST-4A — InstanceGuard / InstanceLease reference implementation — Done
+APP-HOST-4B — stale ownership recovery and run-directory safety — Done
+APP-HOST-4C — typed shutdown/restart requests and control coordinator — Done
+APP-HOST-4D — drain/cancel/flush shutdown policy implementation — Done
+APP-HOST-4E — signal bridge and portable foreground signal adapter — Done
+APP-HOST-5A — exit/failure classification contracts — Done
+APP-HOST-5B — restart policy evaluator and deterministic backoff — Done
+APP-HOST-5C — HostedApplicationSupervisor reference implementation — Done
 ```
 
 **APP-HOST-W2 — Complete Hosting Engine — Done** (2026-07-14). Closes APP-HOST-2A..2F, APP-HOST-3B, APP-HOST-3C.

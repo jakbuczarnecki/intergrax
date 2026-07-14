@@ -49,8 +49,16 @@ from intergrax.hosting.engine.ports import (
 from intergrax.hosting.engine.runtime import invoke_application_factory
 from intergrax.hosting.errors import (
     HostedApplicationEngineError,
+    HostedApplicationInstanceConflictError,
     HostedApplicationShutdownError,
     HostedApplicationStartupError,
+)
+from intergrax.hosting.instance.contracts import InstanceAcquisitionClassification
+from intergrax.hosting.shutdown import (
+    HostedApplicationActiveWorkController,
+    HostedApplicationFlushService,
+    HostedApplicationShutdownExecutor,
+    compute_shutdown_budget_seconds,
 )
 from intergrax.hosting.eventing import HostingEventDispatcher
 from intergrax.hosting.services import HostedApplicationServiceRegistry
@@ -80,6 +88,8 @@ class HostedApplicationEngine:
     shutdown: HostedApplicationShutdownCoordinator
     event_publisher: HostedApplicationEventPublisher
     instance_guard: HostedApplicationInstanceGuardPort
+    active_work_controller: HostedApplicationActiveWorkController | None = None
+    flush_services: tuple[HostedApplicationFlushService, ...] = ()
     health_poll_interval_seconds: float = 5.0
     health_poll_sleeper: object | None = None
     failure_id_generator: object | None = None
@@ -288,7 +298,24 @@ class HostedApplicationEngine:
             process_identity=self.process_identity,
         )
         try:
-            self._lease = await self.instance_guard.acquire(identity)
+            acquire_result = await self.instance_guard.acquire(identity)
+            if isinstance(acquire_result, tuple):
+                self._lease, acquisition_classification = acquire_result
+            else:
+                self._lease = acquire_result
+                acquisition_classification = InstanceAcquisitionClassification.FRESH
+        except HostedApplicationInstanceConflictError as exc:
+            self._instance_acquire_failed = True
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.INSTANCE_ACQUIRE,
+                source_kind="instance_guard",
+                source_id="acquire",
+                exc=exc,
+                reason_code="instance_conflict",
+            )
+            await self._publish_instance_event(HostedApplicationEventType.INSTANCE_REJECTED)
+            self._reset_context_after_pre_lifecycle_failure()
+            raise HostedApplicationStartupError("instance acquisition failed") from exc
         except Exception as exc:
             self._instance_acquire_failed = True
             self._diagnostics.record_primary_failure(
@@ -300,6 +327,13 @@ class HostedApplicationEngine:
             )
             self._reset_context_after_pre_lifecycle_failure()
             raise HostedApplicationStartupError("instance acquisition failed") from exc
+
+        if acquisition_classification is InstanceAcquisitionClassification.STALE_OWNER:
+            await self._publish_instance_event(HostedApplicationEventType.INSTANCE_STALE_RECOVERED)
+        elif acquisition_classification is InstanceAcquisitionClassification.CORRUPTED_METADATA:
+            await self._publish_instance_event(HostedApplicationEventType.INSTANCE_STALE_RECOVERED)
+        else:
+            await self._publish_instance_event(HostedApplicationEventType.INSTANCE_ACQUIRED)
 
         self._health.set_lease(self._lease)
         self._diagnostics.mark_lease_acquired()
@@ -495,6 +529,38 @@ class HostedApplicationEngine:
             self._context,
             phase=HostedApplicationFailurePhase.BEFORE_STOP_HOOK,
         )
+        shutdown_request = self.shutdown.current_request()
+        budget_seconds = compute_shutdown_budget_seconds(
+            shutdown_policy=self.definition.shutdown_policy,
+            blocking_hook_timeout=self.definition.lifecycle_policy.default_blocking_hook_timeout_seconds,
+            observer_drain_timeout=self.definition.lifecycle_policy.default_observer_hook_timeout_seconds,
+            component_stop_budget=self.definition.lifecycle_policy.default_blocking_hook_timeout_seconds,
+            runtime_stop_budget=self.definition.lifecycle_policy.default_blocking_hook_timeout_seconds,
+            lease_release_timeout=self.definition.lifecycle_policy.default_observer_hook_timeout_seconds,
+            explicit_deadline_at=shutdown_request.deadline_at if shutdown_request else None,
+            clock=self.clock,
+            requested_at=shutdown_request.requested_at if shutdown_request else self.clock.now(),
+        )
+        shutdown_executor = HostedApplicationShutdownExecutor(
+            shutdown_policy=self.definition.shutdown_policy,
+            clock=self.clock,
+            active_work_controller=self.active_work_controller,
+            flush_services=self.flush_services,
+        )
+        try:
+            shutdown_snapshot = await shutdown_executor.execute(
+                request=shutdown_request,
+                budget_seconds=budget_seconds,
+            )
+            self._diagnostics.set_shutdown_execution(shutdown_snapshot)
+        except Exception as exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.RUNTIME_STOP,
+                source_kind="shutdown_executor",
+                source_id="execute",
+                exc=exc,
+                reason_code="shutdown_execution_failed",
+            )
         await self._safe_phase(self._health.stop_polling)
         await self._safe_phase(self._components.stop_started, self._context)
         if self._runtime is not None:
@@ -504,9 +570,8 @@ class HostedApplicationEngine:
                 phase=HostedApplicationFailurePhase.RUNTIME_STOP,
             )
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, self._context)
-        drain_timeout = self.definition.lifecycle_policy.default_observer_hook_timeout_seconds
-        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
         await self._safe_phase(self._release_lease)
+        await self._publish_instance_event(HostedApplicationEventType.INSTANCE_RELEASED)
         self._close_context()
         if self._lifecycle.state is HostedApplicationLifecycleState.STOPPING:
             self._lifecycle.transition_to(
@@ -515,6 +580,7 @@ class HostedApplicationEngine:
             )
         self._health.refresh_once()
         await self._publish_terminal_stopped_event()
+        drain_timeout = self.definition.lifecycle_policy.default_observer_hook_timeout_seconds
         await self._safe_phase(self._observer_tasks.drain, drain_timeout)
         self._observer_tasks.close_to_new_tasks()
         self._observer_tasks.cancel_remaining()
@@ -610,6 +676,32 @@ class HostedApplicationEngine:
             terminal_state=self._lifecycle.state,
             reason_code=reason_code,
             diagnostics=self.diagnostics_snapshot(),
+        )
+
+    async def _publish_instance_event(self, event_type: HostedApplicationEventType) -> None:
+        assert self._context is not None
+        payload: dict[str, object] = {}
+        if self._lease is not None and hasattr(self._lease, "public_view"):
+            try:
+                public_view = self._lease.public_view()
+                payload = {
+                    "instance_id": public_view.instance_id,
+                    "process_id": public_view.process_id,
+                    "profile_digest": public_view.profile_digest,
+                }
+            except Exception:
+                payload = {}
+        from pydantic import JsonValue
+
+        safe_payload: dict[str, JsonValue] = {key: value for key, value in payload.items()}  # type: ignore[misc]
+        await self._event_dispatcher.publish(
+            HostedApplicationEvent(
+                event_type=event_type,
+                application_id=self._context.application_id,
+                instance_id=self._context.instance_id,
+                lifecycle_state=self._lifecycle.state,
+                payload=safe_payload,
+            )
         )
 
     async def _publish_lifecycle_event(self, event_type: HostedApplicationEventType) -> None:

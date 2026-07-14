@@ -56,16 +56,48 @@ from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from intergrax.hosting.errors import (
     HostedApplicationComponentError,
     HostedApplicationConfigurationError,
+    HostedApplicationControlError,
     HostedApplicationDefinitionError,
     HostedApplicationEngineError,
     HostedApplicationHookError,
+    HostedApplicationInstanceConflictError,
+    HostedApplicationInstanceGuardError,
+    HostedApplicationInstanceOwnershipError,
     HostedApplicationLifecycleTransitionError,
+    HostedApplicationRestartPolicyError,
     HostedApplicationRuntimeError,
     HostedApplicationShutdownError,
+    HostedApplicationShutdownTimeoutError,
+    HostedApplicationSignalError,
     HostedApplicationStartupError,
+    HostedApplicationSupervisorError,
 )
 from intergrax.hosting.eventing import RuntimeSpineHostedApplicationEventPublisher
 from intergrax.hosting.services import HostedApplicationServiceRegistry
+from intergrax.hosting.control import (
+    HostedApplicationControlCoordinator,
+    HostedApplicationControlIntent,
+    HostedApplicationControlSnapshot,
+    HostedApplicationRestartRequestSnapshot,
+)
+from intergrax.hosting.instance import FileHostedApplicationInstanceGuard
+from intergrax.hosting.instance.contracts import HostedApplicationInstanceLeasePublicView
+from intergrax.hosting.shutdown import (
+    HostedApplicationActiveWorkController,
+    HostedApplicationFlushService,
+    HostedApplicationShutdownExecutionSnapshot,
+)
+from intergrax.hosting.signals import PortableForegroundSignalAdapter
+from intergrax.hosting.supervisor import (
+    HostedApplicationEngineFactory,
+    HostedApplicationExitKind,
+    HostedApplicationExitRecord,
+    HostedApplicationRestartDecision,
+    HostedApplicationRestartPolicyEvaluator,
+    HostedApplicationSupervisor,
+    HostedApplicationSupervisorLaunchContext,
+    HostedApplicationSupervisorResult,
+)
 
 __all__ = [
     "HOSTED_APPLICATION_PROFILE_SPEC_VERSION",
@@ -92,6 +124,32 @@ __all__ = [
     "HostedApplicationHookError",
     "HostedApplicationComponentError",
     "HostedApplicationRuntimeError",
+    "HostedApplicationControlCoordinator",
+    "HostedApplicationControlIntent",
+    "HostedApplicationControlSnapshot",
+    "HostedApplicationRestartRequestSnapshot",
+    "HostedApplicationActiveWorkController",
+    "HostedApplicationFlushService",
+    "HostedApplicationShutdownExecutionSnapshot",
+    "HostedApplicationInstanceLeasePublicView",
+    "FileHostedApplicationInstanceGuard",
+    "PortableForegroundSignalAdapter",
+    "HostedApplicationExitKind",
+    "HostedApplicationExitRecord",
+    "HostedApplicationRestartDecision",
+    "HostedApplicationRestartPolicyEvaluator",
+    "HostedApplicationSupervisor",
+    "HostedApplicationSupervisorResult",
+    "HostedApplicationSupervisorLaunchContext",
+    "HostedApplicationEngineFactory",
+    "HostedApplicationControlError",
+    "HostedApplicationInstanceConflictError",
+    "HostedApplicationInstanceGuardError",
+    "HostedApplicationInstanceOwnershipError",
+    "HostedApplicationRestartPolicyError",
+    "HostedApplicationShutdownTimeoutError",
+    "HostedApplicationSignalError",
+    "HostedApplicationSupervisorError",
     "HostedApplicationEvent",
     "HostedApplicationEventPublisher",
     "HostedApplicationEventSubscription",

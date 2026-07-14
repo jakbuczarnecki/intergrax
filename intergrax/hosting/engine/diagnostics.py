@@ -20,6 +20,7 @@ from intergrax.hosting.contracts.lifecycle import (
 from intergrax.hosting.contracts.public_data import validate_bounded_identifier
 from intergrax.hosting.errors import HostedApplicationDiagnosticError
 from intergrax.hosting.engine.health import HostedApplicationHealthSnapshot
+from intergrax.hosting.shutdown import HostedApplicationShutdownExecutionSnapshot
 
 FailureIdGenerator = Callable[[], str]
 
@@ -94,6 +95,7 @@ class HostedApplicationDiagnosticSnapshot(BaseModel):
     instance_lease_released: bool = False
     observer_task_count: int = 0
     active_operation_phase: HostedApplicationOperationPhase = HostedApplicationOperationPhase.IDLE
+    shutdown_execution: HostedApplicationShutdownExecutionSnapshot | None = None
     snapshot_timestamp: datetime
 
 
@@ -128,6 +130,7 @@ class DiagnosticsRecorder:
     instance_lease_released: bool = False
     observer_task_count: int = 0
     active_operation_phase: HostedApplicationOperationPhase = HostedApplicationOperationPhase.IDLE
+    shutdown_execution: HostedApplicationShutdownExecutionSnapshot | None = None
     current_failure: HostedApplicationFailureRecord | None = None
     last_failure: HostedApplicationFailureRecord | None = None
     secondary_failures: list[HostedApplicationFailureRecord] = field(default_factory=list)
@@ -237,6 +240,12 @@ class DiagnosticsRecorder:
         self.observer_task_count = 0
         self.secondary_failures.clear()
 
+    def set_shutdown_execution(
+        self,
+        snapshot: HostedApplicationShutdownExecutionSnapshot | None,
+    ) -> None:
+        self.shutdown_execution = snapshot
+
     def snapshot(
         self,
         *,
@@ -264,6 +273,7 @@ class DiagnosticsRecorder:
             instance_lease_released=self.instance_lease_released,
             observer_task_count=self.observer_task_count,
             active_operation_phase=self.active_operation_phase,
+            shutdown_execution=self.shutdown_execution,
             snapshot_timestamp=self.clock.now(),
         )
 

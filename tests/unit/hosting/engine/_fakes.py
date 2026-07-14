@@ -24,10 +24,10 @@ from intergrax.hosting import (
 from intergrax.hosting.contracts.context import HostedApplicationClock, HostedApplicationLogger
 from intergrax.hosting.engine.ports import (
     HostedApplicationInstanceGuardPort,
-    HostedApplicationInstanceIdentity,
     HostedApplicationInstanceLeasePort,
     HostedApplicationRuntime,
 )
+from intergrax.hosting.instance.contracts import HostedApplicationInstanceIdentity
 
 
 class FixedClock(HostedApplicationClock):
@@ -74,6 +74,24 @@ class FakeLease(HostedApplicationInstanceLeasePort):
     def is_valid(self) -> bool:
         self.validity_check_count += 1
         return self._valid and not self.released
+
+    def verify_ownership(self) -> None:
+        if self.released:
+            raise RuntimeError("lease released")
+
+    def public_view(self):
+        from intergrax.hosting.instance.contracts import HostedApplicationInstanceLeasePublicView
+        from datetime import UTC, datetime
+
+        moment = datetime.now(UTC)
+        return HostedApplicationInstanceLeasePublicView(
+            application_id="test_app",
+            instance_id="instance-001",
+            process_id=1000,
+            process_started_at=moment,
+            profile_digest="sha256:" + "0" * 64,
+            acquired_at=moment,
+        )
 
     async def release(self) -> None:
         self.released = True

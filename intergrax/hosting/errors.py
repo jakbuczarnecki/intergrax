@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Hosting engine error hierarchy (APP-HOST-W2)."""
+"""Hosting engine error hierarchy (APP-HOST-W2/W3)."""
 
 from __future__ import annotations
 
@@ -44,3 +44,39 @@ class HostedApplicationRuntimeError(HostedApplicationEngineError):
 
 class HostedApplicationDiagnosticError(HostedApplicationEngineError):
     """Raised when hosting diagnostics or failure records are invalid."""
+
+
+class HostedApplicationInstanceGuardError(HostedApplicationEngineError):
+    """Raised when instance guard operations fail."""
+
+
+class HostedApplicationInstanceConflictError(HostedApplicationInstanceGuardError):
+    """Raised when another active instance owns the configured scope."""
+
+    def __init__(self, message: str, snapshot: object | None = None) -> None:
+        super().__init__(message)
+        self.snapshot = snapshot
+
+
+class HostedApplicationInstanceOwnershipError(HostedApplicationInstanceGuardError):
+    """Raised when instance lease ownership verification fails."""
+
+
+class HostedApplicationControlError(HostedApplicationEngineError):
+    """Raised when control coordinator operations are invalid."""
+
+
+class HostedApplicationShutdownTimeoutError(HostedApplicationShutdownError):
+    """Raised when bounded shutdown phases exceed their deadline."""
+
+
+class HostedApplicationSignalError(HostedApplicationEngineError):
+    """Raised when signal adapter installation or handling fails."""
+
+
+class HostedApplicationRestartPolicyError(HostedApplicationEngineError):
+    """Raised when restart policy evaluation or configuration is invalid."""
+
+
+class HostedApplicationSupervisorError(HostedApplicationEngineError):
+    """Raised when supervisor orchestration fails."""
