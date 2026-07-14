@@ -128,16 +128,26 @@ class FakeShutdownCoordinator(HostedApplicationShutdownCoordinator):
 
 
 class FakeRuntime:
-    def __init__(self, *, ready: bool = True, fail_start: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        ready: bool = True,
+        fail_start: bool = False,
+        start_delay: float = 0.0,
+    ) -> None:
         self.ready_value = ready
         self.fail_start = fail_start
+        self.start_delay = start_delay
         self.started = False
         self.stopped = False
         self.start_count = 0
         self.stop_count = 0
+        self.before_stop_count = 0
 
     async def start(self, context: HostedApplicationContext) -> None:
         self.start_count += 1
+        if self.start_delay:
+            await asyncio.sleep(self.start_delay)
         if self.fail_start:
             raise RuntimeError("runtime start failed")
         self.started = True

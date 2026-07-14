@@ -97,7 +97,7 @@ def test_required_unhealthy_blocks_gate() -> None:
     )
     result = coordinator.evaluate_startup_readiness_gate()
     assert not result.passed
-    assert result.reason_code.startswith("blocking_components:")
+    assert result.reason_code == "blocking_components"
 
 
 @pytest.mark.asyncio

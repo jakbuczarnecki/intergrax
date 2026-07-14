@@ -52,7 +52,7 @@ def _build_hook_coordinator(
     observer_tasks = ObserverTaskRegistry(diagnostics)
     coordinator = HookCoordinator(
         definition,
-        definition.profile.lifecycle,
+        definition.lifecycle_policy,
         diagnostics,
         observer_tasks,
         publish,

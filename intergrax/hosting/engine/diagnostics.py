@@ -221,6 +221,19 @@ class DiagnosticsRecorder:
     def clear_current_failure(self) -> None:
         self.current_failure = None
 
+    def clear_primary_exception(self) -> None:
+        self._primary_exception = None
+
+    def reset_attempt_local_state(self) -> None:
+        self.runtime_created = False
+        self.runtime_started = False
+        self.started_component_ids.clear()
+        self.context_closed = False
+        self.instance_lease_acquired = False
+        self.instance_lease_released = False
+        self.observer_task_count = 0
+        self.secondary_failures.clear()
+
     def snapshot(
         self,
         *,

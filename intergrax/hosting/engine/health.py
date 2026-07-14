@@ -38,6 +38,7 @@ class HostedApplicationHealthSnapshot(BaseModel):
     blocking_component_ids: tuple[str, ...] = ()
     degraded_component_ids: tuple[str, ...] = ()
     component_snapshots: tuple[HostedApplicationComponentHealth, ...] = ()
+    health_evaluation_failed: bool = False
     last_evaluated_at: datetime
 
 
@@ -69,6 +70,7 @@ class HostedApplicationHealthCoordinator:
     _component_health: dict[str, HostedApplicationComponentHealth] = field(default_factory=dict)
     _mark_not_ready_failed: frozenset[str] = frozenset()
     _degraded_component_ids: frozenset[str] = frozenset()
+    _health_evaluation_failed: bool = False
     _last_snapshot: HostedApplicationHealthSnapshot | None = None
     _poll_task: asyncio.Task[None] | None = None
     _poll_shutdown: asyncio.Event = field(default_factory=asyncio.Event)
@@ -97,6 +99,21 @@ class HostedApplicationHealthCoordinator:
     def set_lease(self, lease: HostedApplicationInstanceLeasePort | None) -> None:
         self._lease = lease
 
+    def mark_health_evaluation_failed(self) -> None:
+        self._health_evaluation_failed = True
+
+    def clear_health_evaluation_failed(self) -> None:
+        self._health_evaluation_failed = False
+
+    def reset_attempt_state(self) -> None:
+        self._runtime_ready = False
+        self._lease = None
+        self._component_health = {}
+        self._mark_not_ready_failed = frozenset()
+        self._degraded_component_ids = frozenset()
+        self._health_evaluation_failed = False
+        self._last_snapshot = None
+
     def update_component_health(
         self,
         health: dict[str, HostedApplicationComponentHealth],
@@ -107,26 +124,24 @@ class HostedApplicationHealthCoordinator:
         self._component_health = dict(health)
         self._mark_not_ready_failed = mark_not_ready_failed
         self._degraded_component_ids = degraded_component_ids
-        return self.refresh_once(accepting_new_work_override=False)
+        return self.refresh_once()
 
     def evaluate_startup_readiness_gate(self) -> StartupReadinessGateResult:
         lifecycle = self.lifecycle.snapshot()
         if lifecycle.shutdown_requested:
             return StartupReadinessGateResult(False, "shutdown_requested")
+        if self._health_evaluation_failed:
+            return StartupReadinessGateResult(False, "health_evaluation_failed")
         if not self._runtime_ready:
             return StartupReadinessGateResult(False, "runtime_not_ready")
         if self._lease is None or not self._lease.is_valid():
             return StartupReadinessGateResult(False, "invalid_lease")
         blocking = self._blocking_component_ids()
         if blocking:
-            return StartupReadinessGateResult(False, f"blocking_components:{','.join(blocking)}")
+            return StartupReadinessGateResult(False, "blocking_components")
         return StartupReadinessGateResult(True)
 
-    def refresh_once(
-        self,
-        *,
-        accepting_new_work_override: bool | None = None,
-    ) -> HostedApplicationHealthSnapshot:
+    def refresh_once(self) -> HostedApplicationHealthSnapshot:
         lifecycle = self.lifecycle.snapshot()
         instance_valid = self._lease.is_valid() if self._lease is not None else False
         shutdown_requested = lifecycle.shutdown_requested
@@ -142,11 +157,9 @@ class HostedApplicationHealthCoordinator:
             and instance_valid
             and not shutdown_requested
             and not blocking_ids
+            and not self._health_evaluation_failed
         )
-        if accepting_new_work_override is not None:
-            accepting = accepting_new_work_override
-        else:
-            accepting = ready
+        accepting = ready
         snapshot = HostedApplicationHealthSnapshot(
             live=live,
             ready=ready,
@@ -158,6 +171,7 @@ class HostedApplicationHealthCoordinator:
             blocking_component_ids=blocking_ids,
             degraded_component_ids=degraded,
             component_snapshots=tuple(self._component_health.values()),
+            health_evaluation_failed=self._health_evaluation_failed,
             last_evaluated_at=self.clock.now(),
         )
         self._last_snapshot = snapshot
@@ -177,7 +191,7 @@ class HostedApplicationHealthCoordinator:
 
     def snapshot(self) -> HostedApplicationHealthSnapshot:
         if self._last_snapshot is None:
-            return self.refresh_once(accepting_new_work_override=False)
+            return self.refresh_once()
         return self._last_snapshot
 
     def accepts_new_work(self) -> bool:
@@ -215,7 +229,8 @@ class HostedApplicationHealthCoordinator:
             except Exception as exc:
                 if self._on_poll_failure is not None:
                     self._on_poll_failure(exc)
-                self.refresh_once(accepting_new_work_override=False)
+                self.mark_health_evaluation_failed()
+                self.refresh_once()
             if self._poll_sleeper is not None and hasattr(self._poll_sleeper, "sleep"):
                 await self._poll_sleeper.sleep(self._poll_interval_seconds)  # type: ignore[attr-defined]
             else:

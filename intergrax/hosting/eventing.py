@@ -153,7 +153,7 @@ class HostingEventDispatcher:
             )
         for resolved in self._matching_subscriptions(event.event_type):
             self._observer_tasks.schedule(
-                self._invoke_subscription(resolved, event),
+                lambda resolved=resolved, event=event: self._invoke_subscription(resolved, event),
                 phase=HostedApplicationFailurePhase.EVENT_SUBSCRIBER,
                 source_id=resolved.subscription.subscription_id,
             )

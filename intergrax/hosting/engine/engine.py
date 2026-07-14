@@ -97,7 +97,7 @@ class HostedApplicationEngine:
         self._services = HostedApplicationServiceRegistry()
         self._diagnostics = DiagnosticsRecorder(
             clock=self.clock,
-            application_id=self.definition.profile.application_id,
+            application_id=self.definition.application_id,
             instance_id=self.instance_id,
             profile_digest=self.definition.profile_digest,
             definition_digest=self.definition.definition_digest,
@@ -128,14 +128,14 @@ class HostedApplicationEngine:
         )
         self._hooks = HookCoordinator(
             self.definition,
-            self.definition.profile.lifecycle,
+            self.definition.lifecycle_policy,
             self._diagnostics,
             self._observer_tasks,
             self._event_dispatcher.publish,
         )
         self._components = ComponentCoordinator(
             definition=self.definition,
-            lifecycle_policy=self.definition.profile.lifecycle,
+            lifecycle_policy=self.definition.lifecycle_policy,
             diagnostics=self._diagnostics,
             publish_event=self._event_dispatcher,
         )
@@ -190,6 +190,33 @@ class HostedApplicationEngine:
                 )
             self._startup_aborted = False
             self._instance_acquire_failed = False
+            self._diagnostics.clear_current_failure()
+            self._diagnostics.clear_primary_exception()
+            self._diagnostics.reset_attempt_local_state()
+            self._health.reset_attempt_state()
+            self._lease = None
+            self._lease_released = False
+            self._runtime = None
+            self._observer_tasks = ObserverTaskRegistry(self._diagnostics)
+            self._event_dispatcher = HostingEventDispatcher(
+                self.event_publisher,
+                self.definition.event_subscriptions,
+                self._diagnostics,
+                self._observer_tasks,
+            )
+            self._hooks = HookCoordinator(
+                self.definition,
+                self.definition.lifecycle_policy,
+                self._diagnostics,
+                self._observer_tasks,
+                self._event_dispatcher.publish,
+            )
+            self._components = ComponentCoordinator(
+                definition=self.definition,
+                lifecycle_policy=self.definition.lifecycle_policy,
+                diagnostics=self._diagnostics,
+                publish_event=self._event_dispatcher,
+            )
             self._context = self._build_context()
             self._services.register(HostedApplicationReadinessService, self._readiness)
             self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.STARTUP)
@@ -205,6 +232,12 @@ class HostedApplicationEngine:
                 raise
 
     async def stop(self, *, reason_code: str = "engine.stop") -> HostedApplicationEngineTerminalResult:
+        pre_state = self._lifecycle.state
+        if pre_state is HostedApplicationLifecycleState.STARTING or (
+            pre_state is HostedApplicationLifecycleState.CREATED and self._operation_lock.locked()
+        ):
+            self._startup_aborted = True
+            self._lifecycle.set_shutdown_requested(True)
         async with self._operation_lock:
             state = self._lifecycle.state
             if state is HostedApplicationLifecycleState.CREATED:
@@ -218,7 +251,7 @@ class HostedApplicationEngine:
             if state is HostedApplicationLifecycleState.STARTING:
                 self._startup_aborted = True
                 self._lifecycle.set_shutdown_requested(True)
-            return await self._shutdown_sequence(reason_code=reason_code)
+            return await self._graceful_stop_sequence(reason_code=reason_code)
 
     async def run_until_stopped(self) -> HostedApplicationEngineTerminalResult:
         if self._lifecycle.state is HostedApplicationLifecycleState.CREATED:
@@ -228,9 +261,9 @@ class HostedApplicationEngine:
 
     def _build_context(self) -> HostedApplicationContext:
         return HostedApplicationContext(
-            application_id=self.definition.profile.application_id,
+            application_id=self.definition.application_id,
             instance_id=self.instance_id,
-            profile=self.definition.profile.public_view(),
+            profile=self.definition.profile_public_snapshot,
             profile_digest=self.definition.profile_digest,
             paths=self.paths,
             process_identity=self.process_identity,
@@ -245,7 +278,7 @@ class HostedApplicationEngine:
     async def _startup_sequence(self) -> None:
         assert self._context is not None
         identity = HostedApplicationInstanceIdentity(
-            application_id=self.definition.profile.application_id,
+            application_id=self.definition.application_id,
             instance_id=self.instance_id,
             profile_digest=self.definition.profile_digest,
             process_identity=self.process_identity,
@@ -342,7 +375,17 @@ class HostedApplicationEngine:
             raise HostedApplicationStartupError("startup readiness gate failed") from exc
         self._services.seal()
         self._lifecycle.transition_to(HostedApplicationLifecycleState.READY, reason_code="ready")
-        self._health.refresh_once(accepting_new_work_override=True)
+        aggregate = self._health.refresh_once()
+        if not aggregate.ready or not aggregate.accepting_new_work:
+            exc = RuntimeError("post_ready_aggregate_failed")
+            self._diagnostics.record_primary_failure(
+                phase=HostedApplicationFailurePhase.HEALTH_EVALUATION,
+                source_kind="health",
+                source_id="post_ready_aggregate",
+                exc=exc,
+                reason_code="post_ready_aggregate_failed",
+            )
+            raise HostedApplicationStartupError("post-ready aggregate evaluation failed") from exc
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_READY)
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_READY, self._context)
         await self._health.start_polling(self._refresh_health)
@@ -352,43 +395,23 @@ class HostedApplicationEngine:
         return self._startup_aborted or self.shutdown.is_shutdown_requested()
 
     async def _abort_startup_to_stopping(self, reason_code: str) -> None:
-        assert self._context is not None
-        self._lifecycle.transition_to(
-            HostedApplicationLifecycleState.STOPPING,
-            reason_code=reason_code,
-        )
-        await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPING)
-        await self._safe_phase(self._health.stop_polling)
-        if self._components.started_component_ids:
-            await self._safe_phase(self._components.stop_started, self._context)
-        if self._runtime is not None:
-            await self._safe_phase(
-                self._runtime.stop,
-                self._context,
-                phase=HostedApplicationFailurePhase.RUNTIME_STOP,
-            )
-        self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, self._context)
-        await self._terminal_lifecycle_publication(HostedApplicationEventType.APPLICATION_STOPPED)
-        await self._safe_phase(self._release_lease)
-        self._close_context()
-        if self._lifecycle.state is HostedApplicationLifecycleState.STOPPING:
-            self._lifecycle.transition_to(
-                HostedApplicationLifecycleState.STOPPED,
-                reason_code=reason_code,
-            )
-        self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
+        await self._graceful_stop_sequence(reason_code=reason_code)
 
     async def _refresh_health(self) -> None:
         if self._context is None or self._runtime is None:
             return
-        runtime_ready = await self._runtime.ready(self._context)
-        self._health.set_runtime_ready(runtime_ready)
-        await self._components.refresh_component_health(self._context)
-        self._health.update_component_health(
-            self._components.component_health(),
-            mark_not_ready_failed=self._components.mark_not_ready_component_ids,
-            degraded_component_ids=self._components.degraded_component_ids,
-        )
+        try:
+            runtime_ready = await self._runtime.ready(self._context)
+            await self._components.refresh_component_health(self._context)
+            self._health.clear_health_evaluation_failed()
+            self._health.set_runtime_ready(runtime_ready)
+            self._health.update_component_health(
+                self._components.component_health(),
+                mark_not_ready_failed=self._components.mark_not_ready_component_ids,
+                degraded_component_ids=self._components.degraded_component_ids,
+            )
+        except Exception as exc:
+            self._handle_health_poll_failure(exc)
 
     def _handle_health_poll_failure(self, exc: BaseException) -> None:
         self._diagnostics.record_secondary_failure(
@@ -398,6 +421,8 @@ class HostedApplicationEngine:
             exc=exc,
             reason_code="health_poll_failed",
         )
+        self._health.mark_health_evaluation_failed()
+        self._health.refresh_once()
 
     async def _startup_failure_cleanup(self, exc: Exception) -> None:
         assert self._context is not None
@@ -415,27 +440,45 @@ class HostedApplicationEngine:
         if self._components.started_component_ids:
             await self._safe_phase(self._components.stop_started, self._context)
         if self._runtime is not None:
-            await self._safe_phase(self._runtime.stop, self._context, phase=HostedApplicationFailurePhase.ROLLBACK)
+            await self._safe_phase(
+                self._runtime.stop,
+                self._context,
+                phase=HostedApplicationFailurePhase.RUNTIME_STOP,
+            )
+        await self._drain_observer_tasks(close_first=True)
         await self._safe_phase(self._release_lease)
         self._close_context()
         if self._lifecycle.state is HostedApplicationLifecycleState.STARTING:
             self._lifecycle.transition_to(HostedApplicationLifecycleState.FAILED, reason_code="failed")
         self._reuse_blocked = True
-        await self._terminal_lifecycle_publication(HostedApplicationEventType.APPLICATION_FAILED)
+        try:
+            await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_FAILED)
+        except Exception as publish_exc:
+            self._diagnostics.record_secondary_failure(
+                phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
+                source_kind="event_publisher",
+                source_id=HostedApplicationEventType.APPLICATION_FAILED.value,
+                exc=publish_exc,
+                reason_code="terminal_event_publish_failed",
+            )
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
 
-    async def _shutdown_sequence(self, *, reason_code: str) -> HostedApplicationEngineTerminalResult:
+    async def _graceful_stop_sequence(self, *, reason_code: str) -> HostedApplicationEngineTerminalResult:
         if self._context is None:
             self._context = self._build_context()
         assert self._context is not None
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.SHUTDOWN)
         self._lifecycle.set_shutdown_requested(True)
+        self._health.refresh_once()
         state = self._lifecycle.state
-        if state is HostedApplicationLifecycleState.READY:
-            self._lifecycle.transition_to(HostedApplicationLifecycleState.STOPPING, reason_code=reason_code)
-        elif state is HostedApplicationLifecycleState.STARTING:
-            self._lifecycle.transition_to(HostedApplicationLifecycleState.STOPPING, reason_code=reason_code)
-        self._health.refresh_once(accepting_new_work_override=False)
+        if state in {
+            HostedApplicationLifecycleState.READY,
+            HostedApplicationLifecycleState.STARTING,
+        }:
+            self._lifecycle.transition_to(
+                HostedApplicationLifecycleState.STOPPING,
+                reason_code=reason_code,
+            )
         await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPING)
         await self._safe_phase(
             self._hooks.execute_blocking,
@@ -452,38 +495,45 @@ class HostedApplicationEngine:
                 phase=HostedApplicationFailurePhase.RUNTIME_STOP,
             )
         self._hooks.schedule_observers(HostedApplicationHookPoint.AFTER_STOP, self._context)
-        await self._terminal_lifecycle_publication(HostedApplicationEventType.APPLICATION_STOPPED)
+        drain_timeout = self.definition.lifecycle_policy.default_observer_hook_timeout_seconds
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
         await self._safe_phase(self._release_lease)
         self._close_context()
         if self._lifecycle.state is HostedApplicationLifecycleState.STOPPING:
-            self._lifecycle.transition_to(HostedApplicationLifecycleState.STOPPED, reason_code=reason_code)
+            self._lifecycle.transition_to(
+                HostedApplicationLifecycleState.STOPPED,
+                reason_code=reason_code,
+            )
+        await self._publish_terminal_stopped_event()
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
+        self._observer_tasks.close_to_new_tasks()
+        self._observer_tasks.cancel_remaining()
         self._diagnostics.set_operation_phase(HostedApplicationOperationPhase.IDLE)
         return self._terminal_result(reason_code)
 
     async def _failed_terminal_cleanup(self, reason_code: str) -> HostedApplicationEngineTerminalResult:
-        self._observer_tasks.close_to_new_tasks()
-        drain_timeout = self.definition.profile.lifecycle.default_observer_hook_timeout_seconds
-        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
-        self._observer_tasks.cancel_remaining()
+        await self._drain_observer_tasks(close_first=True)
         await self._safe_phase(self._release_lease)
         self._close_context()
         return self._terminal_result(reason_code)
 
-    async def _terminal_lifecycle_publication(
-        self,
-        event_type: HostedApplicationEventType,
-    ) -> None:
+    async def _publish_terminal_stopped_event(self) -> None:
         try:
-            await self._publish_lifecycle_event(event_type)
+            await self._publish_lifecycle_event(HostedApplicationEventType.APPLICATION_STOPPED)
         except Exception as publish_exc:
             self._diagnostics.record_secondary_failure(
                 phase=HostedApplicationFailurePhase.EVENT_PUBLISH,
                 source_kind="event_publisher",
-                source_id=event_type.value,
+                source_id=HostedApplicationEventType.APPLICATION_STOPPED.value,
                 exc=publish_exc,
                 reason_code="terminal_event_publish_failed",
             )
-        drain_timeout = self.definition.profile.lifecycle.default_observer_hook_timeout_seconds
+
+    async def _drain_observer_tasks(self, *, close_first: bool = False) -> None:
+        drain_timeout = self.definition.lifecycle_policy.default_observer_hook_timeout_seconds
+        if close_first:
+            self._observer_tasks.close_to_new_tasks()
+        await self._safe_phase(self._observer_tasks.drain, drain_timeout)
         self._observer_tasks.close_to_new_tasks()
         await self._safe_phase(self._observer_tasks.drain, drain_timeout)
         self._observer_tasks.cancel_remaining()

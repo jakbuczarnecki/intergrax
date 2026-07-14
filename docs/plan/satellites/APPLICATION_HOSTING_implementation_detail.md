@@ -91,12 +91,12 @@ tests/unit/hosting/
 
 **Delivered code:**
 
-`	ext
+```text
 intergrax/hosting/engine/
 intergrax/hosting/eventing.py
 intergrax/hosting/errors.py
 tests/unit/hosting/engine/
-`
+```
 
 **Next wave:** APP-HOST-W3 — Process Control and Supervision (not started).
 

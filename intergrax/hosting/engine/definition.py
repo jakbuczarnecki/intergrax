@@ -19,7 +19,15 @@ from intergrax.hosting.contracts.hooks import (
     HostedApplicationHook,
     HostedApplicationHookPoint,
 )
-from intergrax.hosting.contracts.policies import ComponentFailureAction
+from intergrax.hosting.contracts.policies import (
+    ComponentFailureAction,
+    ComponentFailurePolicy,
+    HookFailurePolicy,
+    InstancePolicy,
+    LifecyclePolicy,
+    RestartPolicy,
+    ShutdownPolicy,
+)
 from intergrax.hosting.contracts.profile import (
     HostedApplicationProfile,
     HostedApplicationProfilePublicView,
@@ -78,10 +86,17 @@ class ResolvedEventSubscription:
 class HostedApplicationDefinition:
     """Immutable runtime composition derived from a hosted application profile."""
 
-    profile: HostedApplicationProfile
+    application_id: str
+    profile_public_snapshot: HostedApplicationProfilePublicView
     profile_digest: str
     definition_digest: str
     application_factory: ApplicationFactory
+    lifecycle_policy: LifecyclePolicy
+    shutdown_policy: ShutdownPolicy
+    restart_policy: RestartPolicy
+    component_failure_policy: ComponentFailurePolicy
+    hook_failure_policy: HookFailurePolicy
+    instance_policy: InstancePolicy
     hook_registrations: Mapping[HostedApplicationHookPoint, tuple[HostedApplicationHook, ...]]
     event_subscriptions: tuple[ResolvedEventSubscription, ...]
     enabled_components: Mapping[str, ResolvedComponentRegistration]
@@ -98,7 +113,7 @@ class HostedApplicationDefinition:
             for point in HOSTED_APPLICATION_HOOK_POINT_ORDER
         }
         return HostedApplicationDefinitionPublicView(
-            profile=self.profile.public_view(),
+            profile=self.profile_public_snapshot,
             profile_digest=self.profile_digest,
             definition_digest=self.definition_digest,
             hook_ids_by_point=hook_ids_by_point,
@@ -349,12 +364,22 @@ def resolve_hosted_application_definition(
         "post_runtime_component_ids": list(post_runtime),
     }
     definition_digest = public_json_digest(public_payload)
+    profile_public_snapshot = HostedApplicationProfilePublicView.model_validate(
+        profile.public_view().model_dump(mode="json"),
+    )
 
     return HostedApplicationDefinition(
-        profile=profile,
+        application_id=profile.application_id,
+        profile_public_snapshot=profile_public_snapshot,
         profile_digest=profile_digest,
         definition_digest=definition_digest,
         application_factory=profile.application_factory,
+        lifecycle_policy=profile.lifecycle,
+        shutdown_policy=profile.shutdown,
+        restart_policy=profile.restart,
+        component_failure_policy=profile.component_failure,
+        hook_failure_policy=profile.hook_failure,
+        instance_policy=profile.instance,
         hook_registrations=hook_registrations,
         event_subscriptions=event_subscriptions,
         enabled_components=MappingProxyType(enabled),

@@ -57,7 +57,7 @@ def _build_component_coordinator(
     )
     coordinator = ComponentCoordinator(
         definition=definition,
-        lifecycle_policy=definition.profile.lifecycle,
+        lifecycle_policy=definition.lifecycle_policy,
         diagnostics=diagnostics,
         publish_event=dispatcher,
     )

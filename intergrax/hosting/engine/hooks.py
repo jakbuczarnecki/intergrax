@@ -96,7 +96,9 @@ class HookCoordinator:
                 self._lifecycle_policy.default_observer_hook_timeout_seconds
             )
             self._observer_tasks.schedule(
-                self._invoke_hook_with_timeout_tracked(hook, point, context, timeout),
+                lambda hook=hook, point=point, context=context, timeout=timeout: (
+                    self._invoke_hook_with_timeout_tracked(hook, point, context, timeout)
+                ),
                 phase=_hook_failure_phase(point),
                 source_id=hook.hook_id,
             )
