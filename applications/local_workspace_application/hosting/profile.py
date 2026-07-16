@@ -34,8 +34,8 @@ class _LocalWorkspaceRuntimeFactory:
     bind_port: int
 
     def __call__(self, context: HostedApplicationContext) -> HostedApplicationRuntime:
-        del context  # reserved for later hosting adoption steps
         return _LocalWorkspaceHostedRuntime(
+            hosted_context=context,
             settings=self.settings,
             bind_host=self.bind_host,
             bind_port=self.bind_port,

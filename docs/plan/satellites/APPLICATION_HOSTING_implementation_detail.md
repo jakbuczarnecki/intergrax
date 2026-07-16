@@ -820,18 +820,11 @@ hosting presets and metadata
 
 Generic engine, supervisor, control, and OS infrastructure remain platform-owned. No generic engine/supervisor/OS implementation under LKW.
 
-## APP-HOST-8B — Lifecycle migration — **Planned — next**
+## APP-HOST-8B — Lifecycle migration — **Done** (2026-07-16)
 
-Replace or adapt LKW.6A local lifecycle/readiness with the platform engine while preserving:
+Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`. Hosted `runtime.ready()` is limited to Uvicorn/FastAPI startup (no platform READY cycle). Direct Uvicorn `LocalWorkspaceHostLifecycle` remains compatible. Foreground and single-instance proof remain APP-HOST-8C.
 
-- `/health` compatibility,
-- readiness semantics,
-- shared task executor,
-- existing proof paths.
-
-Temporary compatibility adapters must have an explicit removal plan.
-
-## APP-HOST-8C — Foreground/single-instance proof
+## APP-HOST-8C — Foreground/single-instance proof — **Planned — next**
 
 Proof:
 
@@ -1008,7 +1001,9 @@ supervisor restart evaluation after engine failures without bypassing cleanup ve
 regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
 ```
 
-**APP-HOST-8A - Done** (2026-07-16): LKW `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; existing LKW lifecycle and uvicorn entrypoint retained; live adoption proof not started. **Next wave:** APP-HOST-8B - Migrate LKW.6A lifecycle/readiness to platform engine integration.
+**APP-HOST-8A - Done** (2026-07-16): LKW `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; existing LKW lifecycle and uvicorn entrypoint retained; live adoption proof not started.
+
+**APP-HOST-8B - Done** (2026-07-16): hosted LKW work acceptance projects `HostedApplicationReadinessService`; hosted runtime readiness is Uvicorn/FastAPI startup only; direct Uvicorn lifecycle remains compatible. **Next wave:** APP-HOST-8C - LKW foreground hosted runner and single-instance proof.
 
 **APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`.
 

@@ -26,6 +26,10 @@ from intergrax.hosting.contracts.lifecycle import (
 )
 from intergrax.hosting.contracts.policies import InstanceExclusivityMode, RestartMode
 from intergrax.hosting.contracts.profile import HostedApplicationProfile
+from intergrax.hosting.engine.health import (
+    HostedApplicationHealthSnapshot,
+    HostedApplicationReadinessService,
+)
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from intergrax.hosting.engine.runtime import invoke_application_factory
 from intergrax.hosting.services import HostedApplicationServiceRegistry
@@ -64,6 +68,12 @@ class _Shutdown:
     def request_shutdown(self, *, reason_code: str = "test") -> None:
         del reason_code
 
+    def is_shutdown_requested(self) -> bool:
+        return False
+
+    async def wait_until_requested(self) -> None:
+        return None
+
 
 class _LifecycleProvider:
     def snapshot(self) -> HostedApplicationLifecycleSnapshot:
@@ -76,9 +86,28 @@ class _LifecycleProvider:
         )
 
 
+class _ReadinessService:
+    def snapshot(self) -> HostedApplicationHealthSnapshot:
+        return HostedApplicationHealthSnapshot(
+            live=True,
+            ready=True,
+            degraded=False,
+            accepting_new_work=True,
+            runtime_ready=True,
+            instance_ownership_valid=True,
+            shutdown_requested=False,
+            last_evaluated_at=datetime.now(timezone.utc),
+        )
+
+    def accepts_new_work(self) -> bool:
+        return True
+
+
 def _minimal_context(profile: HostedApplicationProfile) -> HostedApplicationContext:
     public = profile.public_view()
     digest = profile.profile_digest()
+    services = HostedApplicationServiceRegistry()
+    services.register(HostedApplicationReadinessService, _ReadinessService())
     return HostedApplicationContext(
         application_id=profile.application_id,
         instance_id="01TESTHOSTEDPROFILEINSTANCE0001",
@@ -92,7 +121,7 @@ def _minimal_context(profile: HostedApplicationProfile) -> HostedApplicationCont
             process_id=1,
             started_at=datetime.now(timezone.utc),
         ),
-        services=HostedApplicationServiceRegistry(),
+        services=services,
         clock=_Clock(),
         logger=_Logger(),
         event_publisher=_EventPublisher(),
@@ -160,6 +189,8 @@ def test_settings_snapshot_resolved_once(monkeypatch: pytest.MonkeyPatch) -> Non
     assert runtime_two._settings is snapshot  # noqa: SLF001
     assert runtime_one._bind_host == runtime_two._bind_host  # noqa: SLF001
     assert runtime_one._bind_port == runtime_two._bind_port == 18020  # noqa: SLF001
+    assert runtime_one._hosted_context is context  # noqa: SLF001
+    assert runtime_two._hosted_context is context  # noqa: SLF001
 
 
 def test_public_view_excludes_settings_and_secrets(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Private LKW FastAPI/Uvicorn HostedApplicationRuntime adapter (APP-HOST-8A)."""
+"""Private LKW FastAPI/Uvicorn HostedApplicationRuntime adapter (APP-HOST-8A/8B)."""
 
 from __future__ import annotations
 
@@ -15,8 +15,9 @@ from fastapi import FastAPI
 from intergrax.hosting.contracts.context import HostedApplicationContext
 from intergrax.hosting.errors import HostedApplicationRuntimeError
 from local_workspace_application.host.factory import create_local_workspace_backend_app
-from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
+from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.hosting.readiness import _HostedLocalWorkspaceReadiness
 
 _STARTUP_POLL_INTERVAL_SECONDS = 0.01
 
@@ -29,7 +30,13 @@ class _HostedServer(Protocol):
     async def serve(self) -> None: ...
 
 
-ApplicationFactory = Callable[[LocalWorkspaceBackendSettings], FastAPI]
+ApplicationFactory = Callable[
+    [
+        LocalWorkspaceBackendSettings,
+        LocalWorkspaceReadinessProvider,
+    ],
+    FastAPI,
+]
 ServerFactory = Callable[[FastAPI, str, int], _HostedServer]
 
 
@@ -54,8 +61,14 @@ class _HostedUvicornServer(uvicorn.Server):
         yield
 
 
-def _default_application_factory(settings: LocalWorkspaceBackendSettings) -> FastAPI:
-    return create_local_workspace_backend_app(settings=settings)
+def _default_application_factory(
+    settings: LocalWorkspaceBackendSettings,
+    host_readiness: LocalWorkspaceReadinessProvider,
+) -> FastAPI:
+    return create_local_workspace_backend_app(
+        settings=settings,
+        host_readiness=host_readiness,
+    )
 
 
 def _default_server_factory(app: FastAPI, bind_host: str, bind_port: int) -> _HostedServer:
@@ -75,12 +88,14 @@ class _LocalWorkspaceHostedRuntime:
     def __init__(
         self,
         *,
+        hosted_context: HostedApplicationContext,
         settings: LocalWorkspaceBackendSettings,
         bind_host: str,
         bind_port: int,
         application_factory: ApplicationFactory | None = None,
         server_factory: ServerFactory | None = None,
     ) -> None:
+        self._hosted_context = hosted_context
         self._settings = settings
         self._bind_host = bind_host
         self._bind_port = bind_port
@@ -89,7 +104,6 @@ class _LocalWorkspaceHostedRuntime:
         self._app: FastAPI | None = None
         self._server: _HostedServer | None = None
         self._serve_task: asyncio.Task[None] | None = None
-        self._lifecycle: LocalWorkspaceHostLifecycle | None = None
         self._start_called = False
         self._started = False
 
@@ -97,7 +111,6 @@ class _LocalWorkspaceHostedRuntime:
         self._app = None
         self._server = None
         self._serve_task = None
-        self._lifecycle = None
         self._started = False
 
     async def start(self, context: HostedApplicationContext) -> None:
@@ -107,15 +120,15 @@ class _LocalWorkspaceHostedRuntime:
             )
         self._start_called = True
 
-        app = self._application_factory(self._settings)
-        lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
-        if lifecycle is not None and not isinstance(lifecycle, LocalWorkspaceHostLifecycle):
-            lifecycle = None
+        host_readiness = _HostedLocalWorkspaceReadiness(self._hosted_context)
+        app = self._application_factory(
+            self._settings,
+            host_readiness,
+        )
 
         server = self._server_factory(app, self._bind_host, self._bind_port)
         self._app = app
         self._server = server
-        self._lifecycle = lifecycle
 
         serve_task = asyncio.create_task(
             _serve_hosted_server(server),
@@ -163,22 +176,15 @@ class _LocalWorkspaceHostedRuntime:
         )
 
     async def ready(self, context: HostedApplicationContext) -> bool:
-        del context  # APP-HOST-8A: readiness is owned by LKW lifecycle
-        if not self._started:
-            return False
-        if self._app is None:
-            return False
-        if self._server is None:
-            return False
-        if self._serve_task is None:
-            return False
-        if self._serve_task.done():
-            return False
-        if not self._server.started:
-            return False
-        if self._lifecycle is None:
-            return False
-        return self._lifecycle.is_ready()
+        del context  # platform READY is owned by HostedApplicationReadinessService
+        return (
+            self._started
+            and self._app is not None
+            and self._server is not None
+            and self._serve_task is not None
+            and not self._serve_task.done()
+            and self._server.started
+        )
 
     async def stop(self, context: HostedApplicationContext) -> None:
         del context  # platform engine owns shutdown budget

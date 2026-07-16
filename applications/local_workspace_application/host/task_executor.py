@@ -10,16 +10,9 @@ from intergrax.runtime.interactions.errors import HostNotAcceptingWorkError
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from local_workspace_application.host.lifecycle import HostLifecycleState, LocalWorkspaceHostLifecycle
+from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
 
 TaskEnricher = Callable[[Task], Task]
-
-_NOT_READY_ERROR_IDS: dict[HostLifecycleState, str] = {
-    HostLifecycleState.STARTING: "lkw_host_not_ready",
-    HostLifecycleState.STOPPING: "lkw_host_stopping",
-    HostLifecycleState.STOPPED: "lkw_host_not_ready",
-    HostLifecycleState.FAILED: "lkw_host_not_ready",
-}
 
 
 class LocalWorkspaceTaskExecutor:
@@ -30,11 +23,11 @@ class LocalWorkspaceTaskExecutor:
         nexus_loop: NexusLoop,
         *,
         task_enricher: TaskEnricher | None,
-        lifecycle: LocalWorkspaceHostLifecycle,
+        readiness: LocalWorkspaceReadinessProvider,
     ) -> None:
         self._runner = UnifiedTaskRunner(nexus_loop)
         self._task_enricher = task_enricher
-        self._lifecycle = lifecycle
+        self._readiness = readiness
         self._nexus_loop = nexus_loop
 
     @property
@@ -47,15 +40,12 @@ class LocalWorkspaceTaskExecutor:
         return self._task_enricher(task)
 
     def assert_accepts_new_work(self) -> None:
-        if self._lifecycle.accepts_new_work:
+        snapshot = self._readiness.readiness_snapshot()
+        if snapshot.accepts_new_work:
             return
-        error_id = _NOT_READY_ERROR_IDS.get(
-            self._lifecycle.state,
-            "lkw_host_not_ready",
-        )
         raise HostNotAcceptingWorkError(
-            error_id,
-            detail=f"host lifecycle state is {self._lifecycle.state.value}",
+            snapshot.rejection_error_id,
+            detail=snapshot.detail,
         )
 
     async def execute_prepared(self, task: Task) -> TaskResult:

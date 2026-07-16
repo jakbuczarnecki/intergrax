@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""APP-HOST-8A — LKW hosted runtime adapter tests."""
+"""APP-HOST-8A/8B — LKW hosted runtime adapter tests."""
 
 from __future__ import annotations
 
@@ -26,15 +26,22 @@ from intergrax.hosting.contracts.lifecycle import (
     HostedApplicationShutdownCoordinator,
 )
 from intergrax.hosting.contracts.policies import LifecyclePolicy
+from intergrax.hosting.engine.health import (
+    HostedApplicationHealthSnapshot,
+    HostedApplicationReadinessService,
+)
 from intergrax.hosting.errors import HostedApplicationRuntimeError
 from intergrax.hosting.services import HostedApplicationServiceRegistry
-from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
+from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.hosting import build_local_workspace_hosted_profile
+from local_workspace_application.hosting.readiness import _HostedLocalWorkspaceReadiness
 from local_workspace_application.hosting.runtime import (
     _HostedUvicornServer,
     _LocalWorkspaceHostedRuntime,
 )
+
+pytestmark = pytest.mark.unit
 
 
 class _Clock:
@@ -72,67 +79,86 @@ class _Shutdown:
         return None
 
 
-class _LifecycleProvider:
-    def snapshot(self) -> HostedApplicationLifecycleSnapshot:
-        return HostedApplicationLifecycleSnapshot(
-            state=HostedApplicationLifecycleState.READY,
-            accepting_new_work=True,
+class _MutableLifecycleProvider:
+    def __init__(self) -> None:
+        self.snapshot_value = HostedApplicationLifecycleSnapshot(
+            state=HostedApplicationLifecycleState.STARTING,
+            accepting_new_work=False,
             shutdown_requested=False,
             last_transition_at=datetime.now(timezone.utc),
-            reason_code="ready",
         )
+
+    def snapshot(self) -> HostedApplicationLifecycleSnapshot:
+        return self.snapshot_value
+
+
+class _MutableReadinessService:
+    def __init__(self) -> None:
+        self.snapshot_value = HostedApplicationHealthSnapshot(
+            live=True,
+            ready=False,
+            degraded=False,
+            accepting_new_work=False,
+            runtime_ready=False,
+            instance_ownership_valid=True,
+            shutdown_requested=False,
+            last_evaluated_at=datetime.now(timezone.utc),
+        )
+
+    def snapshot(self) -> HostedApplicationHealthSnapshot:
+        return self.snapshot_value
+
+    def accepts_new_work(self) -> bool:
+        return self.snapshot_value.accepting_new_work
 
 
 def _context_for_runtime(
     *,
     startup_timeout_seconds: float = 2.0,
+    lifecycle: _MutableLifecycleProvider | None = None,
+    readiness: _MutableReadinessService | None = None,
 ) -> HostedApplicationContext:
     profile = build_local_workspace_hosted_profile(
         settings=LocalWorkspaceBackendSettings(),
     )
-    # Rebuild public view with a short startup bound for timeout tests.
     public = profile.public_view().model_copy(
         update={"lifecycle": LifecyclePolicy(default_blocking_hook_timeout_seconds=startup_timeout_seconds)},
     )
+    services = HostedApplicationServiceRegistry()
+    readiness_service = readiness or _MutableReadinessService()
+    services.register(HostedApplicationReadinessService, readiness_service)
     return HostedApplicationContext(
         application_id=profile.application_id,
         instance_id="01TESTHOSTEDRUNTIMEINSTANCE00001",
         profile=public,
         profile_digest=profile.profile_digest(),
         paths=HostedApplicationPaths(
-            data_home=Path("build/test-lkw-hosting-8a-runtime"),
-            run_directory=Path("build/test-lkw-hosting-8a-runtime/run"),
+            data_home=Path("build/test-lkw-hosting-8b-runtime"),
+            run_directory=Path("build/test-lkw-hosting-8b-runtime/run"),
         ),
         process_identity=HostedApplicationProcessIdentity(
             process_id=1,
             started_at=datetime.now(timezone.utc),
         ),
-        services=HostedApplicationServiceRegistry(),
+        services=services,
         clock=_Clock(),
         logger=_Logger(),
         event_publisher=_EventPublisher(),
         shutdown=cast(HostedApplicationShutdownCoordinator, _Shutdown()),
-        lifecycle=_LifecycleProvider(),
+        lifecycle=lifecycle or _MutableLifecycleProvider(),
     )
-
-
-def _ready_lifecycle() -> LocalWorkspaceHostLifecycle:
-    lifecycle = LocalWorkspaceHostLifecycle()
-    lifecycle.set_executor_available(True)
-    lifecycle.transition_to_ready()
-    return lifecycle
 
 
 def _fake_app_factory(
     settings: LocalWorkspaceBackendSettings,
+    host_readiness: LocalWorkspaceReadinessProvider,
     *,
-    lifecycle: LocalWorkspaceHostLifecycle | None = None,
-    calls: list[LocalWorkspaceBackendSettings] | None = None,
+    calls: list[tuple[LocalWorkspaceBackendSettings, LocalWorkspaceReadinessProvider]] | None = None,
 ) -> FastAPI:
     if calls is not None:
-        calls.append(settings)
+        calls.append((settings, host_readiness))
     app = FastAPI()
-    app.state.lkw_host_lifecycle = lifecycle or _ready_lifecycle()
+    app.state.lkw_host_readiness = host_readiness
     return app
 
 
@@ -179,26 +205,30 @@ class _FakeServer:
 @pytest.mark.asyncio
 async def test_ready_false_before_start() -> None:
     settings = LocalWorkspaceBackendSettings()
+    context = _context_for_runtime()
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: _FakeServer(),
     )
-    context = _context_for_runtime()
     assert await runtime.ready(context) is False
 
 
 @pytest.mark.asyncio
 async def test_start_ready_stop_lifecycle() -> None:
     settings = LocalWorkspaceBackendSettings()
-    app_calls: list[LocalWorkspaceBackendSettings] = []
+    app_calls: list[tuple[LocalWorkspaceBackendSettings, LocalWorkspaceReadinessProvider]] = []
     servers: list[_FakeServer] = []
-    lifecycle = _ready_lifecycle()
+    context = _context_for_runtime()
 
-    def application_factory(resolved: LocalWorkspaceBackendSettings) -> FastAPI:
-        return _fake_app_factory(resolved, lifecycle=lifecycle, calls=app_calls)
+    def application_factory(
+        resolved: LocalWorkspaceBackendSettings,
+        host_readiness: LocalWorkspaceReadinessProvider,
+    ) -> FastAPI:
+        return _fake_app_factory(resolved, host_readiness, calls=app_calls)
 
     def server_factory(app: FastAPI, host: str, port: int) -> _FakeServer:
         del app, host, port
@@ -208,24 +238,19 @@ async def test_start_ready_stop_lifecycle() -> None:
         return server
 
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
         application_factory=application_factory,
         server_factory=server_factory,
     )
-    context = _context_for_runtime()
 
     await runtime.start(context)
     assert len(app_calls) == 1
     assert len(servers) == 1
     assert runtime._serve_task is not None  # noqa: SLF001
     assert servers[0].started is True
-    assert await runtime.ready(context) is True
-
-    lifecycle.set_executor_available(False)
-    assert await runtime.ready(context) is False
-    lifecycle.set_executor_available(True)
     assert await runtime.ready(context) is True
 
     stop_task = asyncio.create_task(runtime.stop(context))
@@ -235,9 +260,71 @@ async def test_start_ready_stop_lifecycle() -> None:
     assert runtime._app is None  # noqa: SLF001
     assert runtime._server is None  # noqa: SLF001
     assert runtime._serve_task is None  # noqa: SLF001
-    assert runtime._lifecycle is None  # noqa: SLF001
 
     await runtime.stop(context)  # idempotent
+
+
+@pytest.mark.asyncio
+async def test_runtime_ready_independent_of_platform_ready() -> None:
+    settings = LocalWorkspaceBackendSettings()
+    lifecycle = _MutableLifecycleProvider()
+    readiness = _MutableReadinessService()
+    context = _context_for_runtime(lifecycle=lifecycle, readiness=readiness)
+    captured: list[LocalWorkspaceReadinessProvider] = []
+    server = _FakeServer()
+    server.allow_start.set()
+
+    def application_factory(
+        resolved: LocalWorkspaceBackendSettings,
+        host_readiness: LocalWorkspaceReadinessProvider,
+    ) -> FastAPI:
+        del resolved
+        captured.append(host_readiness)
+        return _fake_app_factory(settings, host_readiness)
+
+    runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
+        settings=settings,
+        bind_host="127.0.0.1",
+        bind_port=8020,
+        application_factory=application_factory,
+        server_factory=lambda app, host, port: server,
+    )
+    await runtime.start(context)
+
+    assert lifecycle.snapshot().state is HostedApplicationLifecycleState.STARTING
+    assert readiness.snapshot().ready is False
+    assert server.started is True
+    assert runtime._serve_task is not None  # noqa: SLF001
+    assert not runtime._serve_task.done()  # noqa: SLF001
+    assert await runtime.ready(context) is True
+    host_readiness = captured[0]
+    assert isinstance(host_readiness, _HostedLocalWorkspaceReadiness)
+    assert host_readiness.readiness_snapshot().ready is False
+    assert host_readiness.readiness_snapshot().accepts_new_work is False
+
+    lifecycle.snapshot_value = HostedApplicationLifecycleSnapshot(
+        state=HostedApplicationLifecycleState.READY,
+        accepting_new_work=True,
+        shutdown_requested=False,
+        last_transition_at=datetime.now(timezone.utc),
+    )
+    readiness.snapshot_value = HostedApplicationHealthSnapshot(
+        live=True,
+        ready=True,
+        degraded=False,
+        accepting_new_work=True,
+        runtime_ready=True,
+        instance_ownership_valid=True,
+        shutdown_requested=False,
+        last_evaluated_at=datetime.now(timezone.utc),
+    )
+    assert await runtime.ready(context) is True
+    snapshot = host_readiness.readiness_snapshot()
+    assert snapshot.ready is True
+    assert snapshot.accepts_new_work is True
+
+    await runtime.stop(context)
 
 
 @pytest.mark.asyncio
@@ -245,15 +332,16 @@ async def test_ready_false_when_serve_task_finishes() -> None:
     settings = LocalWorkspaceBackendSettings()
     server = _FakeServer()
     server.allow_start.set()
+    context = _context_for_runtime()
 
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime()
     await runtime.start(context)
     assert await runtime.ready(context) is True
     server.should_exit = True
@@ -267,14 +355,15 @@ async def test_second_start_rejected() -> None:
     settings = LocalWorkspaceBackendSettings()
     server = _FakeServer()
     server.allow_start.set()
+    context = _context_for_runtime()
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime()
     await runtime.start(context)
     with pytest.raises(HostedApplicationRuntimeError, match="already started"):
         await runtime.start(context)
@@ -285,8 +374,12 @@ async def test_second_start_rejected() -> None:
 async def test_app_factory_failure_creates_no_server_or_task() -> None:
     settings = LocalWorkspaceBackendSettings()
     servers: list[_FakeServer] = []
+    context = _context_for_runtime()
 
-    def application_factory(_settings: LocalWorkspaceBackendSettings) -> FastAPI:
+    def application_factory(
+        _settings: LocalWorkspaceBackendSettings,
+        _host_readiness: LocalWorkspaceReadinessProvider,
+    ) -> FastAPI:
         raise RuntimeError("app-factory-boom")
 
     def server_factory(app: FastAPI, host: str, port: int) -> _FakeServer:
@@ -296,13 +389,13 @@ async def test_app_factory_failure_creates_no_server_or_task() -> None:
         return server
 
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
         application_factory=application_factory,
         server_factory=server_factory,
     )
-    context = _context_for_runtime()
     with pytest.raises(RuntimeError, match="app-factory-boom"):
         await runtime.start(context)
     assert servers == []
@@ -315,14 +408,15 @@ async def test_serve_raises_before_started() -> None:
     settings = LocalWorkspaceBackendSettings()
     cause = RuntimeError("serve-boom")
     server = _FakeServer(failure_before_startup=cause)
+    context = _context_for_runtime()
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime()
     with pytest.raises(HostedApplicationRuntimeError, match="failed before startup") as exc_info:
         await runtime.start(context)
     assert exc_info.value.__cause__ is cause
@@ -333,14 +427,15 @@ async def test_system_exit_before_startup_is_normalized() -> None:
     settings = LocalWorkspaceBackendSettings()
     cause = SystemExit(1)
     server = _FakeServer(failure_before_startup=cause)
+    context = _context_for_runtime()
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime()
     with pytest.raises(HostedApplicationRuntimeError, match="failed before startup") as exc_info:
         await runtime.start(context)
     assert isinstance(exc_info.value.__cause__, SystemExit)
@@ -348,7 +443,6 @@ async def test_system_exit_before_startup_is_normalized() -> None:
     assert runtime._app is None  # noqa: SLF001
     assert runtime._server is None  # noqa: SLF001
     assert runtime._serve_task is None  # noqa: SLF001
-    assert runtime._lifecycle is None  # noqa: SLF001
 
 
 @pytest.mark.asyncio
@@ -357,14 +451,15 @@ async def test_system_exit_after_startup_does_not_exit_process() -> None:
     cause = SystemExit(1)
     server = _FakeServer()
     server.allow_start.set()
+    context = _context_for_runtime()
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime()
     await runtime.start(context)
     assert await runtime.ready(context) is True
     server._failure_after_startup = cause  # noqa: SLF001
@@ -383,21 +478,21 @@ async def test_system_exit_after_startup_does_not_exit_process() -> None:
     assert runtime._app is None  # noqa: SLF001
     assert runtime._server is None  # noqa: SLF001
     assert runtime._serve_task is None  # noqa: SLF001
-    assert runtime._lifecycle is None  # noqa: SLF001
 
 
 @pytest.mark.asyncio
 async def test_serve_exits_before_started() -> None:
     settings = LocalWorkspaceBackendSettings()
     server = _FakeServer(exit_before_startup=True)
+    context = _context_for_runtime()
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime()
     with pytest.raises(HostedApplicationRuntimeError, match="exited before startup"):
         await runtime.start(context)
 
@@ -406,14 +501,15 @@ async def test_serve_exits_before_started() -> None:
 async def test_startup_timeout_cancels_serve_task() -> None:
     settings = LocalWorkspaceBackendSettings()
     server = _FakeServer(never_start=True)
+    context = _context_for_runtime(startup_timeout_seconds=0.05)
     runtime = _LocalWorkspaceHostedRuntime(
+        hosted_context=context,
         settings=settings,
         bind_host="127.0.0.1",
         bind_port=8020,
-        application_factory=lambda s: _fake_app_factory(s),
+        application_factory=lambda s, r: _fake_app_factory(s, r),
         server_factory=lambda app, host, port: server,
     )
-    context = _context_for_runtime(startup_timeout_seconds=0.05)
     with pytest.raises(HostedApplicationRuntimeError, match="startup timed out"):
         await runtime.start(context)
     await asyncio.wait_for(server.serve_finished.wait(), timeout=2.0)
@@ -441,7 +537,6 @@ def test_runtime_module_signal_ownership_boundary() -> None:
     assert "PortableForegroundSignalAdapter" not in imported_names
     assert "HostedApplicationControlCoordinator" not in imported_names
 
-    # Production server suppresses Uvicorn signal capture.
     source_cm = inspect.getsource(_HostedUvicornServer.capture_signals)
     assert "yield" in source_cm
     assert "signal.signal" not in source_cm
