@@ -25,7 +25,10 @@ from intergrax.hosting.instance.file_guard import (
     _LeaseMetadata,
     _METADATA_SCHEMA_VERSION,
 )
-from intergrax.hosting.instance.contracts import InstanceAcquisitionClassification
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceConflictSnapshot,
+    InstanceAcquisitionClassification,
+)
 from tests.unit.hosting.engine._fakes import FixedClock
 
 pytestmark = pytest.mark.unit
@@ -45,7 +48,9 @@ def _identity(instance_id: str = "instance-001") -> HostedApplicationInstanceIde
     )
 
 
-def _guard(tmp_path: Path, *, allow_stale_recovery: bool = True) -> FileHostedApplicationInstanceGuard:
+def _guard(
+    tmp_path: Path, *, allow_stale_recovery: bool = True
+) -> FileHostedApplicationInstanceGuard:
     clock = FixedClock()
     return FileHostedApplicationInstanceGuard(
         run_directory=tmp_path,
@@ -105,6 +110,40 @@ async def test_second_active_owner_rejected(tmp_path: Path) -> None:
             await guard.acquire(_identity("instance-002"))
     finally:
         native_lock_module.try_acquire_exclusive = original
+
+
+@pytest.mark.asyncio
+async def test_busy_lock_metadata_oserror_classified_as_active_owner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import intergrax.hosting.instance.file_guard as file_guard_module
+    from intergrax.hosting.instance._native_lock import NativeFileLockError
+
+    guard = _guard(tmp_path)
+    lock_path = guard.lock_path_for("test_app")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_bytes(b"prior-lock-bytes")
+
+    def _busy_acquire(_fd: int) -> None:
+        raise NativeFileLockError("lock_busy")
+
+    def _busy_os_read(_fd: int, _nbytes: int) -> bytes:
+        raise OSError(13, "Permission denied")
+
+    monkeypatch.setattr(file_guard_module, "try_acquire_exclusive", _busy_acquire)
+    monkeypatch.setattr(file_guard_module.os, "read", _busy_os_read)
+
+    with pytest.raises(HostedApplicationInstanceConflictError) as exc_info:
+        await guard.acquire(_identity("instance-002"))
+
+    error = exc_info.value
+    assert isinstance(error.__cause__, NativeFileLockError)
+    assert not isinstance(error, OSError)
+    snapshot = error.snapshot
+    assert isinstance(snapshot, HostedApplicationInstanceConflictSnapshot)
+    assert snapshot.classification is InstanceAcquisitionClassification.ACTIVE_OWNER
+    assert snapshot.reason_code == "active_owner"
 
 
 @pytest.mark.asyncio

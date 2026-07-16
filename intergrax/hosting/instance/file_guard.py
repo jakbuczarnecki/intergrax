@@ -337,6 +337,9 @@ def _best_effort_read_metadata(lock_path: Path) -> _LeaseMetadata | None:
     return _LeaseMetadata.from_json_bytes(raw)
   except HostedApplicationInstanceGuardError:
     return None
+  except OSError:
+    # Windows mandatory locking can deny reads on a busy lock; treat as unknown prior.
+    return None
   finally:
     os.close(fd)
 
