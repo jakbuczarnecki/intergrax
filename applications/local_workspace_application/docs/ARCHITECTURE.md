@@ -730,6 +730,37 @@ POST /v1/interactions/intake
 
 **LKW.6A does not include:** platform Application Hosting adoption (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
+### 9.3b LKW.6C — Windows PowerShell interaction adapter
+
+**Status: Closed** after the live MongoDB-backed reviewer proof passes.
+
+LKW owns a thin Windows PowerShell product client that serializes the supported `lab_json` payload and posts it to the existing platform interaction intake. No new platform interaction channel is introduced.
+
+```text
+invoke-lkw-interaction.ps1
+  → POST /v1/interactions/intake?execute=true
+  → LabJsonInteractionAdapter (lab_json / channel = lab)
+  → InteractionIntakeService
+  → LocalWorkspaceTaskExecutor
+  → NexusLoop
+  → real LKW capability execution
+```
+
+| Concern | Owner | Notes |
+|---------|-------|-------|
+| Product adapter script | `scripts/invoke-lkw-interaction.ps1` | Adapter identity `lkw.windows_powershell`; source `windows_powershell` |
+| Platform channel | `LabJsonInteractionAdapter` | `interaction_channel` remains `lab` |
+| Task / enrichment / Nexus | Existing LKW host + platform | No Task, agent, or RAG logic in PowerShell |
+| Hosting / instance lock / signals | Platform Application Hosting | No generic OS hosting behavior in LKW |
+| Windows Service | APP-HOST-7 | Not LKW.6C |
+| Slack Socket Mode | LKW.6b (optional) | Not LKW.6C |
+| File watcher | LKW.7 | Not LKW.6C |
+| Tray | LKW.8 | Not LKW.6C |
+
+Enable intake with existing settings: `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=lab_json`, `LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT=true`.
+
+Reviewer command: `applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat` — see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13.
+
 ### 9.4 Slack as optional interaction channel
 
 Slack is **supported and professional** as an **optional** channel — not the product core. Use existing Intergrax **interaction + notification** integrations (`slack` slug). Execution remains on the **local LKW application host** (always-available backend on localhost).
@@ -958,9 +989,9 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.3** | 3 | Filesystem browse + allowlist | Tier-0 tools + Tier-3 policy | LKW.0 | **Done** (T6) |
 | **LKW.4** | 4 | Platform message-bus background ingest proof | Tier-0 message_bus + Tier-3 proof workload | LKW.1 | Planned |
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
-| **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | Planned |
-| **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | Planned |
+| **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
+| **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | Planned — next |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)

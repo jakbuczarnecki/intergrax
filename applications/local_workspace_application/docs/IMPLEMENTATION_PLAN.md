@@ -286,9 +286,9 @@ This track is executed one task at a time.
 | LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | **Closed — LKW.4E live Kafka proof passed** | Medium |
 | LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
 | LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | **Closed — PROOF-RECEIPTS-1A through PROOF-RECEIPTS-1E complete** | Medium |
-| LKW.6 | OS daemon + interaction intake router | LKW.1 | Planned | High |
-| LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned | Medium |
-| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned | Medium |
+| LKW.6 | OS daemon + interaction intake router | LKW.1 | **Closed** (LKW.6A/6B/6C) | High |
+| LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned / optional | Medium |
+| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | Planned — next | Medium |
 | LKW.8 | Tray thin client | LKW.6 | Deferred | Low |
 | LKW-H2 | Evidence/maturity wording cleanup | LKW.1 | Planned | Medium |
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.6C** — first OS interaction adapter and live proof. **LKW.6B** — Adopt Application Hosting + always-on proof — **Closed** (APP-HOST-8A/8B/8C/8D/8E Done). **LKW.6A** — unified interaction execution boundary and daemon lifecycle semantics — **Closed**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+**Next planned task:** **LKW.7** — File watcher and incremental index. **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6C** — Windows PowerShell interaction adapter + live reviewer proof — **Closed**. **LKW.6B** — Adopt Application Hosting + always-on proof — **Closed** (APP-HOST-8A/8B/8C/8D/8E Done). **LKW.6A** — unified interaction execution boundary and daemon lifecycle semantics — **Closed**. **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -869,7 +869,7 @@ Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architectu
 |----|------|-------|--------|
 | LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Unified `LocalWorkspaceTaskExecutor`; platform interaction intake reused; lifecycle/readiness contract; `/run` + `/interactions/intake` share one execution boundary | **Closed** |
 | LKW.6B | Adopt Application Hosting + always-on proof | Adopt platform `APPLICATION_HOSTING`; product-specific hooks/components only; foreground hosted proof — **not** generic engine/supervisor/OS adapters; no service-manager/reboot unless APP-HOST-7 | **Closed** (APP-HOST-8A/8B/8C/8D/8E Done) |
-| LKW.6C | Implement first OS interaction adapter and live proof | First **product-specific** interaction source or OS-facing input channel wired through intake → executor → Nexus — **not** generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or supervisor integration | **Planned** |
+| LKW.6C | Implement first OS interaction adapter and live proof | First **product-specific** interaction source or OS-facing input channel wired through intake → executor → Nexus — **not** generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or supervisor integration | **Closed** |
 
 **Expected architecture (LKW.6A):**
 
@@ -902,9 +902,18 @@ OS-specific interaction adapter
 - LKW hosts existing interaction/runtime surfaces through the application runtime adapter — `InteractionProfile` adoption follows APP-HOST-6A, not LKW.6B initial proof
 - **not required for LKW.6B:** Windows Service, `systemd`, `launchd`, service-manager installation, reboot survival — these are APP-HOST-7 operator/packaging targets (see ARCHITECTURE §7.4)
 
-**LKW.6C scope (product input channel only):** may own a product-specific interaction source or OS-facing product adapter when it represents an LKW input channel. Must **not** own generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or generic supervisor integration.
+**LKW.6C delivered (closed):**
 
-**Out of scope for LKW.6B (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS interaction adapters (**LKW.6C**), OS service packaging (**APP-HOST-7**).
+- Windows PowerShell localhost interaction adapter (`scripts/invoke-lkw-interaction.ps1`) — thin client only; `POST /v1/interactions/intake?execute=true`
+- Existing platform `lab_json` / `LabJsonInteractionAdapter` reused; interaction channel remains `lab`; product adapter identity `lkw.windows_powershell`
+- Real hosted LKW live proof (`python -m local_workspace_application.hosting`) with real index and search through interaction intake
+- Graceful hosted shutdown (`CTRL_BREAK` / `signal.sigbreak`) with cleanup verification
+- MongoDB-backed `ProofReceipt` (`proof_kind=platform_windows_interaction`) via one-command reviewer runner
+- Reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13
+
+**LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher remains **LKW.7 — Planned — next**. Tray remains **LKW.8 — Deferred**.
+
+**Out of scope for LKW.6C (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS service packaging (**APP-HOST-7**).
 
 ---
 

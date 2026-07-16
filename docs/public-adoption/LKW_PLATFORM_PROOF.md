@@ -16,6 +16,7 @@ This document is the guided reviewer path. Structured ProofReceipt documents per
 5. LKW enqueues and executes background ingest jobs through the real platform message-bus / TaskQueue path with a local provider in the proof stack.
 6. LKW records structured proof evidence through ProofReceiptStore into a real MongoDB DocumentStore vendor and exposes it for reviewer inspection through Mongo Express.
 7. LKW runs through Intergrax Application Hosting as a real foreground process, enforces single-instance ownership, stops gracefully, releases its lock, restarts under the supervisor with a new instance identity, preserves its profile/definition digests and executes real work after restart.
+8. A real Windows PowerShell client sends work through the platform interaction intake into the shared LKW executor and Nexus path, performing real index and search work.
 ```
 
 Local proof endpoints:
@@ -634,6 +635,169 @@ None of those replaces the persisted ProofReceipt.
 
 ---
 
+## Step 12 — Run the Windows PowerShell interaction proof
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
+```
+
+Optional deterministic reviewer command:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat --run-id lkw-windows-interaction-live-001 --correlation-id lkw-windows-interaction-live-001
+```
+
+The command starts only MongoDB and Mongo Express.
+
+The live test starts hosted LKW itself.
+
+The live test invokes the real PowerShell adapter.
+
+The PowerShell adapter calls only `/v1/interactions/intake`.
+
+A green static/unit test alone does not close LKW.6C.
+
+Expected result:
+
+```text
+proof_result=PASS
+proof_kind=platform_windows_interaction
+proof_tests_passed=1
+os_family=windows
+adapter_invoked=true
+adapter_id=lkw.windows_powershell
+powershell_runtime=Windows PowerShell
+transport=http
+intake_endpoint=/v1/interactions/intake
+interaction_surface=lab_json
+interaction_channel=lab
+hosted_ready=true
+index_executed=true
+index_state=completed
+index_task_id=<actual ID>
+index_run_id=<actual ID>
+search_executed=true
+search_state=completed
+search_task_id=<actual ID>
+search_run_id=<actual ID>
+task_ids_distinct=true
+run_ids_distinct=true
+graceful_stop=true
+cleanup_verified=true
+proof_receipt_recorded=true
+proof_receipt_verified=true
+proof_receipt_query_verified=true
+proof_receipt_store=platform
+document_store_provider=mongodb
+proof_receipt_id=<generated ID>
+proof_receipt_run_id=<run ID>
+proof_receipt_result=PASS
+correlation_id=<correlation ID>
+mongo_express_url=http://127.0.0.1:8086
+direct_run_endpoint=false
+direct_task_executor_call=false
+direct_nexus_call=false
+fake_interaction_service=false
+new_platform_interaction_adapter=false
+generic_os_hosting_adapter=false
+service_installation=false
+manual_evidence_injection=false
+inmemory_receipt_store=false
+direct_mongodb_write=false
+direct_pymongo_from_lkw=false
+markdown_source_of_truth=false
+```
+
+---
+
+## Step 13 — Inspect the Windows Interaction ProofReceipt in Mongo Express
+
+After Step 12 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted Windows interaction receipt.
+
+Open:
+
+```text
+http://127.0.0.1:8086
+```
+
+Select:
+
+```text
+database:
+  intergrax_proofs
+
+collection:
+  proof_receipts
+```
+
+Filter:
+
+```text
+proof_kind = platform_windows_interaction
+run_id = <printed proof_receipt_run_id>
+```
+
+Document identity:
+
+```text
+partition_key = proof_receipts/local_workspace
+row_key = proof/platform_windows_interaction/<run_id>
+```
+
+Reviewer checks:
+
+```text
+schema_version = intergrax.proof_receipt.v1
+application_id = local_workspace
+proof_kind = platform_windows_interaction
+result = PASS
+provider_evidence.os_family = windows
+provider_evidence.os_adapter = lkw.windows_powershell
+provider_evidence.client_runtime = Windows PowerShell
+provider_evidence.intake_endpoint = /v1/interactions/intake
+provider_evidence.intake_service = InteractionIntakeService
+provider_evidence.execution_boundary = LocalWorkspaceTaskExecutor
+provider_evidence.orchestrator = NexusLoop
+domain_evidence.adapter_invoked = true
+domain_evidence.interaction_surface = lab_json
+domain_evidence.interaction_channel = lab
+domain_evidence.index_executed = true
+domain_evidence.index_state = completed
+domain_evidence.index_task_id is non-empty
+domain_evidence.index_run_id is non-empty
+domain_evidence.search_executed = true
+domain_evidence.search_state = completed
+domain_evidence.search_task_id is non-empty
+domain_evidence.search_run_id is non-empty
+domain_evidence.task_ids_distinct = true
+domain_evidence.run_ids_distinct = true
+domain_evidence.graceful_stop = true
+domain_evidence.cleanup_verified = true
+guardrails.direct_run_endpoint = false
+guardrails.direct_task_executor_call = false
+guardrails.direct_nexus_call = false
+guardrails.fake_interaction_service = false
+guardrails.new_platform_interaction_adapter = false
+guardrails.generic_os_hosting_adapter = false
+guardrails.service_installation = false
+guardrails.direct_mongodb_write = false
+guardrails.markdown_source_of_truth = false
+```
+
+### Authority
+
+MongoDB ProofReceipt is authoritative.
+
+JUnit is temporary evidence transport.
+
+Terminal output is reviewer convenience.
+
+Markdown is the execution and inspection guide.
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -644,6 +808,7 @@ applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
 applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
 applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 applications\local_workspace_application\scripts\run-lkw-hosting-proof.bat
+applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
 ```
 
 Then open:
@@ -658,6 +823,7 @@ Mongo Express: http://127.0.0.1:8086
 1. Inspect Kafka lifecycle using `run_id` / `correlation_id`.
 2. Inspect MongoDB receipt using `proof_receipt_id` / `proof_receipt_run_id`.
 3. Inspect the Application Hosting receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_application_hosting`.
+4. Inspect the Windows Interaction receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_windows_interaction`.
 
 Kafka topics to inspect:
 
