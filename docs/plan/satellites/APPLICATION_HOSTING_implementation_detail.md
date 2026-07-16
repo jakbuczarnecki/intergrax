@@ -260,6 +260,13 @@ tests/unit/hosting/test_hosted_application_profile_schema.py
 **Architecture:** satellite §23
 **Goal:** Safe instance-scoped context for extensions.
 
+
+Delivered API:
+
+```python
+run_hosted_application(profile: HostedApplicationProfile) -> HostedApplicationSupervisorResult
+```
+
 Target:
 
 ```text
@@ -796,7 +803,9 @@ Initial LKW adoption does **not** require `InteractionProfile` (APP-HOST-6A). LK
 
 Equivalent consolidated delivery is acceptable only if gates remain independently testable.
 
-## APP-HOST-8A — LKW hosted profile
+## APP-HOST-8A — LKW hosted profile — **Done** (2026-07-16)
+
+**Delivered:** profile builder; private FastAPI/Uvicorn HostedApplicationRuntime adapter; existing LKW lifecycle retained temporarily; existing Uvicorn entrypoint retained; live adoption proof not started.
 
 Initial LKW adoption does **not** require `InteractionProfile`. LKW may host its existing interaction/runtime surfaces through the application runtime adapter. `InteractionProfile` adoption follows **APP-HOST-6A**; an interaction profile in LKW is allowed only when APP-HOST-6A is closed.
 
@@ -811,20 +820,15 @@ hosting presets and metadata
 
 Generic engine, supervisor, control, and OS infrastructure remain platform-owned. No generic engine/supervisor/OS implementation under LKW.
 
-## APP-HOST-8B — Lifecycle migration
+## APP-HOST-8B — Lifecycle migration — **Done** (2026-07-16)
 
-Replace or adapt LKW.6A local lifecycle/readiness with the platform engine while preserving:
+Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`. Hosted `runtime.ready()` is limited to Uvicorn/FastAPI startup (no platform READY cycle). Direct Uvicorn `LocalWorkspaceHostLifecycle` remains compatible.
 
-- `/health` compatibility,
-- readiness semantics,
-- shared task executor,
-- existing proof paths.
+## APP-HOST-8C — Foreground/single-instance proof — **Done** (2026-07-16)
 
-Temporary compatibility adapters must have an explicit removal plan.
+Foreground LKW hosted entrypoint delivered; canonical LKW hosted profile now has one required boundary component; canonical profile now has one blocking before_ready hook; real hosted process reached READY; real local.workspace.index request succeeded; second real process was rejected as INSTANCE_CONFLICT; first process remained READY.
 
-## APP-HOST-8C — Foreground/single-instance proof
-
-Proof:
+Proof delivered:
 
 ```text
 one profile
@@ -835,9 +839,11 @@ second instance rejected
 real LKW task succeeds
 ```
 
-## APP-HOST-8D — Stop/restart proof
+## APP-HOST-8D — Stop/restart proof — **Done** (2026-07-16)
 
-Proof:
+Public foreground LKW process stopped through the platform signal bridge; foreground shutdown produced CLEAN_STOP; a replacement process reached READY in the same instance scope; instance lock release was proven. Typed restart request stopped the first hosted engine gracefully; first attempt released its lease and closed its context; supervisor created a second engine with a new instance_id; profile and definition digests remained unchanged; second hosted instance reached READY; real local.workspace.index succeeded after restart; final typed shutdown produced CLEAN_STOP; final lock reacquisition succeeded.
+
+Proof delivered:
 
 ```text
 graceful stop
@@ -849,15 +855,32 @@ same profile digest
 real LKW task succeeds after restart
 ```
 
-## APP-HOST-8E — Receipt/reviewer path
+## APP-HOST-8E — Receipt/reviewer path — **Done**
 
-Persist a structured ProofReceipt through the platform store with hosting evidence. Update reviewer docs only after live PASS.
+Accepted path:
+
+`	ext
+accepted live hosting tests
+→ JUnit evidence
+→ ProofReceipt
+→ ProofReceiptStore
+→ DocumentStore
+→ MongoDB
+→ Mongo Express inspection
+`
+
+Markdown is not the source of truth. JUnit is not the source of truth. MongoDB ProofReceipt is the source of truth.
+
+One-command reviewer runner: pplications/local_workspace_application/scripts/run-lkw-hosting-proof.bat.
 
 ---
 
 # APP-HOST-9 — Developer experience
 
 ## APP-HOST-9A — Runner facade
+
+
+**Status:** Done (2026-07-14)
 
 **Depends on:** APP-HOST-1A.2, APP-HOST-1F, APP-HOST-2F minimum, APP-HOST-4 minimum foundation, APP-HOST-5C minimum
 **Blocks:** APP-HOST-8A (LKW hosted-profile adoption)
@@ -975,3 +998,34 @@ Commit:
 ```
 
 No row may be marked Done when its directly affected regression suite is red.
+
+# APP-HOST-W3 corrective pass � Process control and supervision hardening
+
+**Status:** **Done** (2026-07-14)
+
+**Closes:** APP-HOST-4A..4E, APP-HOST-5A..5C, APP-HOST-W3 corrective pass.
+
+Delivered corrections:
+
+```text
+HostedApplicationInstanceAcquisitionResult + guard port alignment
+linearizable file-lock acquisition under native lock
+truthful lease is_valid/release + INSTANCE_RELEASED only after verified release
+HostedApplicationEffectiveControlRequest through wait_until_requested � stop � shutdown
+HostedApplicationGlobalShutdownBudget across before_stop/intake/drain/cancel/flush/component/runtime/observer/lease/terminal phases
+wrapped exit classification (INSTANCE_CONFLICT, configuration errors)
+deterministic restart backoff + stable-window reset via ready_duration_seconds
+supervisor restart evaluation after engine failures without bypassing cleanup verification
+regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
+```
+
+**APP-HOST-8A - Done** (2026-07-16): LKW `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; existing LKW lifecycle and uvicorn entrypoint retained; live adoption proof not started.
+
+**APP-HOST-8B - Done** (2026-07-16): hosted LKW work acceptance projects `HostedApplicationReadinessService`; hosted runtime readiness is Uvicorn/FastAPI startup only; direct Uvicorn lifecycle remains compatible.
+
+**APP-HOST-8C - Done** (2026-07-16): foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + local.workspace.index; second process INSTANCE_CONFLICT; first process remained READY.
+
+**APP-HOST-8D - Done** (2026-07-16): public foreground CLEAN_STOP + lock release; typed supervisor restart with new instance_id; same profile/definition digests; real local.workspace.index after restart; final CLEAN_STOP + lock reacquisition. **APP-HOST-8E - Done** (2026-07-16): accepted live hosting tests → JUnit evidence → ProofReceipt → ProofReceiptStore → DocumentStore → MongoDB → Mongo Express inspection. Markdown/JUnit are not the source of truth; MongoDB ProofReceipt is the source of truth. APP-HOST-8A through APP-HOST-8E complete.
+
+**APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`.
+

@@ -28,6 +28,7 @@ FailureIdGenerator = Callable[[], str]
 class HostedApplicationFailurePhase(str, Enum):
     DEFINITION = "definition"
     INSTANCE_ACQUIRE = "instance_acquire"
+    INSTANCE_RELEASE = "instance_release"
     BEFORE_START_HOOK = "before_start_hook"
     COMPONENT_START = "component_start"
     RUNTIME_FACTORY = "runtime_factory"
@@ -96,6 +97,8 @@ class HostedApplicationDiagnosticSnapshot(BaseModel):
     observer_task_count: int = 0
     active_operation_phase: HostedApplicationOperationPhase = HostedApplicationOperationPhase.IDLE
     shutdown_execution: HostedApplicationShutdownExecutionSnapshot | None = None
+    ready_at: datetime | None = None
+    ready_duration_seconds: float | None = None
     snapshot_timestamp: datetime
 
 
@@ -107,6 +110,8 @@ class HostedApplicationEngineTerminalResult(BaseModel):
     terminal_state: HostedApplicationLifecycleState
     reason_code: str = ""
     diagnostics: HostedApplicationDiagnosticSnapshot
+    ready_at: datetime | None = None
+    ready_duration_seconds: float | None = None
 
 
 @dataclass
@@ -131,6 +136,7 @@ class DiagnosticsRecorder:
     observer_task_count: int = 0
     active_operation_phase: HostedApplicationOperationPhase = HostedApplicationOperationPhase.IDLE
     shutdown_execution: HostedApplicationShutdownExecutionSnapshot | None = None
+    _ready_at: datetime | None = field(default=None, repr=False)
     current_failure: HostedApplicationFailureRecord | None = None
     last_failure: HostedApplicationFailureRecord | None = None
     secondary_failures: list[HostedApplicationFailureRecord] = field(default_factory=list)
@@ -240,6 +246,14 @@ class DiagnosticsRecorder:
         self.observer_task_count = 0
         self.secondary_failures.clear()
 
+    def mark_ready(self, *, ready_at: datetime) -> None:
+        self._ready_at = ready_at
+
+    def ready_duration_seconds(self, *, now: datetime) -> float | None:
+        if self._ready_at is None:
+            return None
+        return max(0.0, (now - self._ready_at).total_seconds())
+
     def set_shutdown_execution(
         self,
         snapshot: HostedApplicationShutdownExecutionSnapshot | None,
@@ -252,6 +266,7 @@ class DiagnosticsRecorder:
         lifecycle: HostedApplicationLifecycleSnapshot,
         health: HostedApplicationHealthSnapshot,
     ) -> HostedApplicationDiagnosticSnapshot:
+        now = self.clock.now()
         return HostedApplicationDiagnosticSnapshot(
             application_id=self.application_id,
             instance_id=self.instance_id,
@@ -274,7 +289,9 @@ class DiagnosticsRecorder:
             observer_task_count=self.observer_task_count,
             active_operation_phase=self.active_operation_phase,
             shutdown_execution=self.shutdown_execution,
-            snapshot_timestamp=self.clock.now(),
+            ready_at=self._ready_at,
+            ready_duration_seconds=self.ready_duration_seconds(now=now),
+            snapshot_timestamp=now,
         )
 
     def _validate_failure_id(self, failure_id: str) -> str:

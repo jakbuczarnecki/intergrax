@@ -96,3 +96,46 @@ def test_non_ready_states_reject_work(transition: HostLifecycleState) -> None:
     else:
         lifecycle.transition_to_failed()
     assert lifecycle.accepts_new_work is False
+
+
+def test_readiness_snapshot_preserves_direct_mode_projection() -> None:
+    lifecycle = LocalWorkspaceHostLifecycle()
+    lifecycle.set_executor_available(True)
+    lifecycle.register_component(
+        "runtime",
+        enabled=True,
+        required=True,
+        healthy=True,
+        detail="ok",
+    )
+    starting = lifecycle.readiness_snapshot()
+    assert starting.ready is False
+    assert starting.accepts_new_work is False
+    assert starting.state == "starting"
+    assert starting.detail == "host_state=starting"
+    assert starting.rejection_error_id == "lkw_host_not_ready"
+    assert len(starting.components) == 1
+    assert starting.components[0].name == "runtime"
+    assert starting.components[0].detail == "ok"
+
+    lifecycle.transition_to_ready()
+    ready = lifecycle.readiness_snapshot()
+    assert ready.ready is True
+    assert ready.accepts_new_work is True
+    assert ready.state == "ready"
+    assert ready.detail == "ready"
+    assert ready.rejection_error_id == ""
+    assert len(ready.components) == 1
+    assert ready.components[0].name == "runtime"
+    assert ready.components[0].enabled is True
+    assert ready.components[0].required is True
+    assert ready.components[0].healthy is True
+    assert ready.components[0].detail == "ok"
+
+    lifecycle.transition_to_stopping()
+    stopping = lifecycle.readiness_snapshot()
+    assert stopping.ready is False
+    assert stopping.accepts_new_work is False
+    assert stopping.state == "stopping"
+    assert stopping.detail == "host_state=stopping"
+    assert stopping.rejection_error_id == "lkw_host_stopping"

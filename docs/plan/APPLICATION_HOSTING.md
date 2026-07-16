@@ -154,11 +154,11 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Blocked by APP-HOST-9A (see §4); no `InteractionProfile` unless APP-HOST-6A is also closed |
-| APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | Blocked |
-| APP-HOST-8C | LKW foreground hosted runner and single-instance proof | Blocked |
-| APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
-| APP-HOST-8E | Structured ProofReceipt and reviewer documentation | Blocked |
+| APP-HOST-8A | Define LKW hosted profile using platform contracts only | **Done** — `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn runtime adapter; no live `run_hosted_application()` yet |
+| APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | **Done** — hosted work acceptance projects `HostedApplicationReadinessService`; runtime.ready() is Uvicorn/FastAPI startup only; direct Uvicorn lifecycle retained |
+| APP-HOST-8C | LKW foreground hosted runner and single-instance proof | **Done** — foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + `local.workspace.index`; second process `INSTANCE_CONFLICT`; first process remains READY |
+| APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | **Done** — public foreground CLEAN_STOP + lock release; supervisor restart with new instance_id; same profile/definition digests; real `local.workspace.index` after restart; final CLEAN_STOP + lock reacquisition |
+| APP-HOST-8E | Structured ProofReceipt and reviewer documentation | **Done** — one-command reviewer runner; exact APP-HOST-8C/8D live tests reused; structured JUnit evidence; ProofReceipt persisted through platform DocumentStore; MongoDB write/read/query verification; Mongo Express reviewer inspection |
 
 `LKW.6B` is reframed as adoption/proof work. It must not implement generic Application Hosting internals.
 
@@ -166,7 +166,7 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-9A | `run_hosted_application(profile)` author facade | Planned — depends on APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, 5C; precedes APP-HOST-8A |
+| APP-HOST-9A | `run_hosted_application(profile)` author facade | **Done** |
 | APP-HOST-9B | `HarnessApplication.hosting(...)` integration | Planned |
 | APP-HOST-9C | New-application scaffold/template support | Planned |
 | APP-HOST-9D | Application creation/hosting author guide | Planned |
@@ -187,8 +187,12 @@ APP-HOST-0D                    [Done]
 → APP-HOST-W3                  [Done — process control and supervision]
   → APP-HOST-4A..4E
   → APP-HOST-5A..5C
-→ APP-HOST-9A                  [next — author facade — required before LKW adoption]
-→ APP-HOST-8A...               [LKW adoption + live proof]
+→ APP-HOST-9A                  [Done — author facade]
+→ APP-HOST-8A                  [Done — LKW hosted profile + runtime adapter]
+→ APP-HOST-8B                  [Done — hosted readiness bridge]
+→ APP-HOST-8C                  [Done — foreground/single-instance proof]
+→ APP-HOST-8D                  [Done — stop/restart/lock-release proof]
+→ APP-HOST-8E                  [Done — ProofReceipt/reviewer path]
 ```
 
 Required ordering before first adopter proof:
@@ -376,7 +380,7 @@ LKW reviewer proof updates
 | Satellite §27 health | APP-HOST-2E | health/readiness | aggregate health tests | Planned |
 | Satellite §28 events | APP-HOST-3 | event contracts/publisher | event spine tests | **Contracts Done (W1)** |
 | Satellite §29 policies | APP-HOST-1E,4D,5B | policies | preset/decision tests | **Contracts Done (W1)** |
-| Satellite §30 instance | APP-HOST-4A/4B | instance guard | conflict/stale recovery tests | Planned |
+| Satellite §30 instance | APP-HOST-4A/4B | instance guard | conflict/stale recovery tests | Done |
 | Satellite §31 control | APP-HOST-4C/4E | signal/control bridge | idempotency tests | Planned |
 | Satellite §32 supervisor | APP-HOST-5 | supervisor | restart/backoff proof | Planned |
 | Satellite §33 interactions | APP-HOST-6 | interaction facade | existing intake reuse tests | Planned |
@@ -395,10 +399,24 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-9A — run_hosted_application(profile) author facade
+APP-HOST-8A through APP-HOST-8E complete
 ```
 
-**APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
+**APP-HOST-8E — Structured ProofReceipt and reviewer documentation — Done** (2026-07-16). One-command reviewer runner (`run-lkw-hosting-proof.bat`) reuses the exact accepted APP-HOST-8C/8D live tests; structured JUnit evidence is validated; one `ProofReceipt` (`proof_kind=platform_application_hosting`) is persisted through platform `ProofReceiptStore` → `DocumentStore` → MongoDB; write/read/query verification precedes `proof_result=PASS`; Mongo Express reviewer path is documented in `LKW_PLATFORM_PROOF.md` Steps 10–11. APP-HOST-8A through APP-HOST-8E complete. LKW.6B Closed.
+
+**APP-HOST-8D — Graceful stop + restart + request-after-restart live proof — Done** (2026-07-16). Public foreground LKW process stopped through the platform signal bridge; foreground shutdown produced CLEAN_STOP; a replacement process reached READY in the same instance scope; instance lock release was proven. Typed restart request stopped the first hosted engine gracefully; first attempt released its lease and closed its context; supervisor created a second engine with a new instance_id; profile and definition digests remained unchanged; second hosted instance reached READY; real `local.workspace.index` succeeded after restart; final typed shutdown produced CLEAN_STOP; final lock reacquisition succeeded.
+
+**APP-HOST-8C — LKW foreground hosted runner and single-instance proof — Done** (2026-07-16). Foreground LKW hosted entrypoint delivered (`python -m local_workspace_application.hosting` → `run_hosted_application`); canonical LKW hosted profile has one required boundary component and one blocking `before_ready` hook; real hosted process reached READY; real `local.workspace.index` request succeeded; second real process rejected as `INSTANCE_CONFLICT`; first process remained READY. Platform corrective: refresh component health after `before_ready` before startup gate; Windows busy-lock metadata read is best-effort (`PermissionError` → unknown prior).
+
+**APP-HOST-8B — Migrate LKW.6A lifecycle/readiness to platform engine integration — Done** (2026-07-16). Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`; hosted `runtime.ready()` is limited to Uvicorn/FastAPI startup (no platform READY cycle); direct Uvicorn `LocalWorkspaceHostLifecycle` remains compatible.
+
+**APP-HOST-8A — Define LKW hosted profile using platform contracts only — Done** (2026-07-16). LKW-owned `build_local_workspace_hosted_profile()` in `applications/local_workspace_application/hosting/`; private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; settings/bind snapshot captured once; existing `LocalWorkspaceHostLifecycle` and `uvicorn … host.main:app` entrypoint retained.
+
+**APP-HOST-9A — `run_hosted_application(profile)` author facade — Done** (2026-07-14). Public synchronous foreground runner: `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`; resolves profile once before side effects; assembles reference paths, clocks, logger, process identity, event publisher, control coordinator, signal adapter, instance guard, engine factory, and supervisor internally.
+
+**APP-HOST-W3 — Process Control and Supervision — Done** (2026-07-14; corrective pass). Closes APP-HOST-4A..4E and APP-HOST-5A..5C.
+
+W3 corrective pass hardened: linearizable file-lock acquisition (`HostedApplicationInstanceAcquisitionResult`), truthful lease release/events, effective STOP/RESTART control propagation, one global monotonic shutdown budget across all phases, wrapped exit classification, deterministic restart backoff with stable-window reset, and supervisor restart flow without bypassing cleanup evaluation.
 
 W3 supervisor is **in-process**; W3 file lock and signal bridge are **portable reference implementations**. Full OS adapter/service-manager posture remains **APP-HOST-7**. Profile-source preservation contract remains **APP-HOST-5D**. Process proof harness remains **APP-HOST-5E**.
 

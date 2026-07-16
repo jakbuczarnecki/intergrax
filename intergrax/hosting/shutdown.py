@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,9 +15,24 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict
 
 from intergrax.hosting.contracts.context import HostedApplicationClock
-from intergrax.hosting.contracts.lifecycle import HostedApplicationShutdownRequestSnapshot
+from intergrax.hosting.contracts.lifecycle import HostedApplicationEffectiveControlRequest
 from intergrax.hosting.contracts.policies import ShutdownPolicy, ShutdownStrategy
-from intergrax.hosting.errors import HostedApplicationShutdownTimeoutError
+
+
+@runtime_checkable
+class MonotonicClock(Protocol):
+  """Injectable monotonic clock for bounded shutdown phases."""
+
+  def monotonic(self) -> float: ...
+
+
+class SystemMonotonicClock:
+  """Default monotonic clock backed by time.monotonic()."""
+
+  def monotonic(self) -> float:
+    import time
+
+    return time.monotonic()
 
 
 @runtime_checkable
@@ -45,10 +59,17 @@ class HostedApplicationFlushService(Protocol):
 
 
 class HostedApplicationShutdownPhase(str, Enum):
+  BEFORE_STOP = "before_stop"
   STOP_INTAKE = "stop_intake"
   DRAIN = "drain"
   CANCEL = "cancel"
   FLUSH = "flush"
+  HEALTH_POLL_STOP = "health_poll_stop"
+  COMPONENT_STOP = "component_stop"
+  RUNTIME_STOP = "runtime_stop"
+  AFTER_STOP_OBSERVER = "after_stop_observer"
+  LEASE_RELEASE = "lease_release"
+  TERMINAL_SUBSCRIBER_DRAIN = "terminal_subscriber_drain"
 
 
 class HostedApplicationShutdownPhaseOutcome(str, Enum):
@@ -89,30 +110,39 @@ class HostedApplicationShutdownExecutionSnapshot(BaseModel):
 
 
 @dataclass
-class ShutdownBudget:
-  """Monotonic shutdown deadline budget shared across phases."""
+class HostedApplicationGlobalShutdownBudget:
+  """Shared monotonic shutdown deadline budget across all phases."""
 
   deadline_monotonic: float
+  monotonic_clock: MonotonicClock
 
   def remaining_seconds(self) -> float:
-    return max(0.0, self.deadline_monotonic - time.monotonic())
+    return max(0.0, self.deadline_monotonic - self.monotonic_clock.monotonic())
 
   def exhausted(self) -> bool:
     return self.remaining_seconds() <= 0.0
 
+  def phase_timeout(self, configured_limit: float) -> float:
+    if self.exhausted():
+      return 0.0
+    return min(configured_limit, self.remaining_seconds())
 
-async def _run_bounded(
-  budget: ShutdownBudget,
+
+async def run_bounded_phase(
+  budget: HostedApplicationGlobalShutdownBudget,
+  configured_limit: float,
   coro_factory: Callable[[], Awaitable[None]],
-) -> bool:
-  remaining = budget.remaining_seconds()
-  if remaining <= 0.0:
-    return False
+) -> HostedApplicationShutdownPhaseOutcome:
+  timeout = budget.phase_timeout(configured_limit)
+  if timeout <= 0.0:
+    return HostedApplicationShutdownPhaseOutcome.SKIPPED
   try:
-    await asyncio.wait_for(coro_factory(), timeout=remaining)
-    return True
+    await asyncio.wait_for(coro_factory(), timeout=timeout)
+    return HostedApplicationShutdownPhaseOutcome.COMPLETED
   except TimeoutError:
-    return False
+    return HostedApplicationShutdownPhaseOutcome.TIMED_OUT
+  except Exception:
+    return HostedApplicationShutdownPhaseOutcome.FAILED
 
 
 def compute_shutdown_budget_seconds(
@@ -143,8 +173,42 @@ def compute_shutdown_budget_seconds(
   )
   if explicit_deadline_at is not None:
     wall_remaining = (explicit_deadline_at - clock.now()).total_seconds()
-    return max(0.1, min(internal, wall_remaining))
-  return max(0.1, internal)
+    return max(0.0, min(internal, wall_remaining))
+  return max(0.0, internal)
+
+
+@dataclass
+class ShutdownPhaseRecorder:
+  """Collects shutdown phase records and timeout/forced flags."""
+
+  clock: HostedApplicationClock
+  records: list[HostedApplicationShutdownPhaseRecord] = field(default_factory=list)
+  timed_out: bool = False
+  forced: bool = False
+
+  def record(
+    self,
+    *,
+    phase: HostedApplicationShutdownPhase,
+    outcome: HostedApplicationShutdownPhaseOutcome,
+    started_at: datetime,
+    active_before: int | None = None,
+    flush_id: str = "",
+  ) -> None:
+    if outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+      self.timed_out = True
+    active_after = None
+    self.records.append(
+      HostedApplicationShutdownPhaseRecord(
+        phase=phase,
+        outcome=outcome,
+        started_at=started_at,
+        completed_at=self.clock.now(),
+        flush_id=flush_id,
+        active_work_before=active_before,
+        active_work_after=active_after,
+      )
+    )
 
 
 @dataclass
@@ -153,11 +217,9 @@ class HostedApplicationShutdownExecutor:
 
   shutdown_policy: ShutdownPolicy
   clock: HostedApplicationClock
+  monotonic_clock: MonotonicClock = field(default_factory=SystemMonotonicClock)
   active_work_controller: HostedApplicationActiveWorkController | None = None
   flush_services: tuple[HostedApplicationFlushService, ...] = ()
-  phase_records: list[HostedApplicationShutdownPhaseRecord] = field(default_factory=list)
-  timed_out: bool = False
-  forced: bool = False
 
   def __post_init__(self) -> None:
     seen: set[str] = set()
@@ -170,183 +232,175 @@ class HostedApplicationShutdownExecutor:
   async def execute(
     self,
     *,
-    request: HostedApplicationShutdownRequestSnapshot | None,
-    budget_seconds: float,
-  ) -> HostedApplicationShutdownExecutionSnapshot:
-    requested_at = request.requested_at if request is not None else self.clock.now()
-    effective_deadline_at = request.deadline_at if request is not None else None
-    budget = ShutdownBudget(deadline_monotonic=time.monotonic() + budget_seconds)
+    request: HostedApplicationEffectiveControlRequest | None,
+    budget: HostedApplicationGlobalShutdownBudget,
+    recorder: ShutdownPhaseRecorder,
+  ) -> None:
     active_before = self._active_count()
     strategy = self.shutdown_policy.strategy
 
-    await self._phase_stop_intake(budget, active_before)
+    await self._phase_stop_intake(budget, recorder, active_before)
     if strategy is ShutdownStrategy.CANCEL_IMMEDIATELY:
-      await self._phase_cancel(budget, active_before)
+      await self._phase_cancel(budget, recorder, active_before)
+      if self._active_count() > 0:
+        recorder.forced = True
     elif strategy is ShutdownStrategy.DRAIN_THEN_CANCEL:
-      drained = await self._phase_drain(budget, active_before)
+      drained = await self._phase_drain(budget, recorder, active_before)
       if not drained and self._active_count() > 0:
-        await self._phase_cancel(budget, active_before)
-        self.forced = True
+        await self._phase_cancel(budget, recorder, active_before)
+        recorder.forced = True
     elif strategy is ShutdownStrategy.WAIT_UNTIL_COMPLETE:
-      drained = await self._phase_drain(budget, active_before)
+      drained = await self._phase_drain(budget, recorder, active_before)
       if not drained and self._active_count() > 0:
-        self.timed_out = True
+        recorder.timed_out = True
 
-    await self._phase_flush_all(budget)
-    active_after = self._active_count()
-    completed_at = self.clock.now()
-    snapshot = HostedApplicationShutdownExecutionSnapshot(
-      strategy=strategy,
-      requested_at=requested_at,
-      effective_deadline_at=effective_deadline_at,
-      phase_records=tuple(self.phase_records),
-      active_work_before=active_before,
-      active_work_after=active_after,
-      timed_out=self.timed_out,
-      forced=self.forced,
-      completed_at=completed_at,
-    )
-    if self.timed_out and budget.exhausted():
-      raise HostedApplicationShutdownTimeoutError("shutdown deadline exhausted")
-    return snapshot
+    await self._phase_flush_all(budget, recorder)
 
   def _active_count(self) -> int:
     if self.active_work_controller is None:
       return 0
     return self.active_work_controller.active_work_count()
 
-  async def _record_phase(
+  async def _phase_stop_intake(
     self,
-    *,
-    phase: HostedApplicationShutdownPhase,
-    outcome: HostedApplicationShutdownPhaseOutcome,
-    started_at: datetime,
-    active_before: int | None = None,
-    flush_id: str = "",
+    budget: HostedApplicationGlobalShutdownBudget,
+    recorder: ShutdownPhaseRecorder,
+    active_before: int,
   ) -> None:
-    active_after = self._active_count() if active_before is not None else None
-    self.phase_records.append(
-      HostedApplicationShutdownPhaseRecord(
-        phase=phase,
-        outcome=outcome,
-        started_at=started_at,
-        completed_at=self.clock.now(),
-        flush_id=flush_id,
-        active_work_before=active_before,
-        active_work_after=active_after,
-      )
-    )
-
-  async def _phase_stop_intake(self, budget: ShutdownBudget, active_before: int) -> None:
     started_at = self.clock.now()
     if self.active_work_controller is None:
-      await self._record_phase(
+      recorder.record(
         phase=HostedApplicationShutdownPhase.STOP_INTAKE,
         outcome=HostedApplicationShutdownPhaseOutcome.SKIPPED,
         started_at=started_at,
       )
       return
-    ok = await _run_bounded(budget, self.active_work_controller.stop_intake)
-    outcome = (
-      HostedApplicationShutdownPhaseOutcome.COMPLETED
-      if ok
-      else HostedApplicationShutdownPhaseOutcome.TIMED_OUT
+    outcome = await run_bounded_phase(
+      budget,
+      self.shutdown_policy.drain_timeout_seconds,
+      self.active_work_controller.stop_intake,
     )
-    if not ok:
-      self.timed_out = True
-    await self._record_phase(
+    recorder.record(
       phase=HostedApplicationShutdownPhase.STOP_INTAKE,
       outcome=outcome,
       started_at=started_at,
       active_before=active_before,
     )
 
-  async def _phase_drain(self, budget: ShutdownBudget, active_before: int) -> bool:
+  async def _phase_drain(
+    self,
+    budget: HostedApplicationGlobalShutdownBudget,
+    recorder: ShutdownPhaseRecorder,
+    active_before: int,
+  ) -> bool:
     started_at = self.clock.now()
     if self.active_work_controller is None or self.shutdown_policy.drain_timeout_seconds <= 0:
-      await self._record_phase(
+      recorder.record(
         phase=HostedApplicationShutdownPhase.DRAIN,
         outcome=HostedApplicationShutdownPhaseOutcome.SKIPPED,
         started_at=started_at,
       )
       return True
-    drain_budget = ShutdownBudget(
-      deadline_monotonic=min(
-        budget.deadline_monotonic,
-        time.monotonic() + self.shutdown_policy.drain_timeout_seconds,
-      )
+    outcome = await run_bounded_phase(
+      budget,
+      self.shutdown_policy.drain_timeout_seconds,
+      self.active_work_controller.wait_for_idle,
     )
-    ok = await _run_bounded(drain_budget, self.active_work_controller.wait_for_idle)
-    outcome = (
-      HostedApplicationShutdownPhaseOutcome.COMPLETED
-      if ok and self._active_count() == 0
-      else HostedApplicationShutdownPhaseOutcome.TIMED_OUT
-    )
-    if not ok or self._active_count() > 0:
-      self.timed_out = True
-    await self._record_phase(
+    completed = outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and self._active_count() == 0
+    if outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+      recorder.timed_out = True
+    elif outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+      recorder.timed_out = True
+    record_outcome = outcome
+    if outcome is HostedApplicationShutdownPhaseOutcome.COMPLETED and not completed:
+      record_outcome = HostedApplicationShutdownPhaseOutcome.TIMED_OUT
+      recorder.timed_out = True
+    recorder.record(
       phase=HostedApplicationShutdownPhase.DRAIN,
-      outcome=outcome,
+      outcome=record_outcome,
       started_at=started_at,
       active_before=active_before,
     )
-    return ok and self._active_count() == 0
+    return completed
 
-  async def _phase_cancel(self, budget: ShutdownBudget, active_before: int) -> None:
+  async def _phase_cancel(
+    self,
+    budget: HostedApplicationGlobalShutdownBudget,
+    recorder: ShutdownPhaseRecorder,
+    active_before: int,
+  ) -> None:
     started_at = self.clock.now()
     if self.active_work_controller is None or self.shutdown_policy.cancel_timeout_seconds <= 0:
-      await self._record_phase(
+      recorder.record(
         phase=HostedApplicationShutdownPhase.CANCEL,
         outcome=HostedApplicationShutdownPhaseOutcome.SKIPPED,
         started_at=started_at,
       )
       return
-    cancel_budget = ShutdownBudget(
-      deadline_monotonic=min(
-        budget.deadline_monotonic,
-        time.monotonic() + self.shutdown_policy.cancel_timeout_seconds,
-      )
+    outcome = await run_bounded_phase(
+      budget,
+      self.shutdown_policy.cancel_timeout_seconds,
+      self.active_work_controller.cancel_active_work,
     )
-    ok = await _run_bounded(cancel_budget, self.active_work_controller.cancel_active_work)
-    outcome = (
-      HostedApplicationShutdownPhaseOutcome.COMPLETED
-      if ok
-      else HostedApplicationShutdownPhaseOutcome.TIMED_OUT
-    )
-    if not ok:
-      self.timed_out = True
-      self.forced = True
-    await self._record_phase(
+    if outcome is HostedApplicationShutdownPhaseOutcome.TIMED_OUT:
+      recorder.timed_out = True
+      recorder.forced = True
+    elif outcome is HostedApplicationShutdownPhaseOutcome.FAILED:
+      recorder.forced = True
+    elif outcome is HostedApplicationShutdownPhaseOutcome.SKIPPED and budget.exhausted():
+      recorder.timed_out = True
+      recorder.forced = True
+    recorder.record(
       phase=HostedApplicationShutdownPhase.CANCEL,
       outcome=outcome,
       started_at=started_at,
       active_before=active_before,
     )
 
-  async def _phase_flush_all(self, budget: ShutdownBudget) -> None:
+  async def _phase_flush_all(
+    self,
+    budget: HostedApplicationGlobalShutdownBudget,
+    recorder: ShutdownPhaseRecorder,
+  ) -> None:
     ordered = sorted(self.flush_services, key=lambda service: service.flush_id)
     for service in ordered:
       started_at = self.clock.now()
-      flush_budget = ShutdownBudget(
-        deadline_monotonic=min(
-          budget.deadline_monotonic,
-          time.monotonic() + self.shutdown_policy.flush_timeout_seconds,
-        )
+      outcome = await run_bounded_phase(
+        budget,
+        self.shutdown_policy.flush_timeout_seconds,
+        service.flush,
       )
-      try:
-        ok = await _run_bounded(flush_budget, service.flush)
-        outcome = (
-          HostedApplicationShutdownPhaseOutcome.COMPLETED
-          if ok
-          else HostedApplicationShutdownPhaseOutcome.TIMED_OUT
-        )
-        if not ok:
-          self.timed_out = True
-      except Exception:
-        outcome = HostedApplicationShutdownPhaseOutcome.FAILED
-      await self._record_phase(
+      recorder.record(
         phase=HostedApplicationShutdownPhase.FLUSH,
         outcome=outcome,
         started_at=started_at,
         flush_id=service.flush_id,
       )
+
+
+def build_shutdown_execution_snapshot(
+  *,
+  shutdown_policy: ShutdownPolicy,
+  request: HostedApplicationEffectiveControlRequest | None,
+  clock: HostedApplicationClock,
+  recorder: ShutdownPhaseRecorder,
+  active_work_before: int,
+  active_work_after: int,
+) -> HostedApplicationShutdownExecutionSnapshot:
+  requested_at = request.requested_at if request is not None else clock.now()
+  effective_deadline_at = request.deadline_at if request is not None else None
+  timed_out = recorder.timed_out
+  if effective_deadline_at is not None and clock.now() >= effective_deadline_at:
+    timed_out = True
+  snapshot = HostedApplicationShutdownExecutionSnapshot(
+    strategy=shutdown_policy.strategy,
+    requested_at=requested_at,
+    effective_deadline_at=effective_deadline_at,
+    phase_records=tuple(recorder.records),
+    active_work_before=active_work_before,
+    active_work_after=active_work_after,
+    timed_out=timed_out,
+    forced=recorder.forced,
+    completed_at=clock.now(),
+  )
+  return snapshot

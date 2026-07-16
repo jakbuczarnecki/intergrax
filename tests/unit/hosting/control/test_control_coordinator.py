@@ -11,7 +11,6 @@ from intergrax.hosting.control import (
     HostedApplicationControlCoordinator,
     HostedApplicationControlIntent,
 )
-from intergrax.hosting.errors import HostedApplicationControlError
 from tests.unit.hosting.engine._fakes import FixedClock
 
 pytestmark = pytest.mark.unit
@@ -36,11 +35,24 @@ def test_stop_overrides_restart() -> None:
     assert control.snapshot().effective_intent is HostedApplicationControlIntent.STOP
 
 
-def test_restart_cannot_override_stop() -> None:
+def test_restart_after_stop_preserves_stop() -> None:
     control = _coordinator()
-    control.request_shutdown("stop.one")
-    with pytest.raises(HostedApplicationControlError):
-        control.request_restart("restart.one")
+    control.request_shutdown("stop.one", source_id="signal.sigterm")
+    restart = control.request_restart("restart.one")
+    assert control.is_shutdown_requested()
+    assert control.snapshot().effective_intent is HostedApplicationControlIntent.STOP
+    assert restart.reason_code == "stop.one"
+    effective = control.current_effective_request()
+    assert effective is not None
+    assert effective.source_id == "signal.sigterm"
+
+
+def test_stop_source_id_preserved() -> None:
+    control = _coordinator()
+    control.request_shutdown("stop.one", source_id="operator.cli")
+    effective = control.current_effective_request()
+    assert effective is not None
+    assert effective.source_id == "operator.cli"
 
 
 def test_earlier_deadline_wins() -> None:

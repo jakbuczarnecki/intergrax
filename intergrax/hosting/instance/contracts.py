@@ -10,6 +10,9 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
+
 from intergrax.hosting.contracts.context import HostedApplicationProcessIdentity
 from intergrax.hosting.contracts.public_data import validate_bounded_identifier, validate_instance_id
 
@@ -69,3 +72,24 @@ class HostedApplicationInstanceConflictSnapshot(BaseModel):
   @classmethod
   def _validate_reason_code(cls, value: str) -> str:
     return validate_bounded_identifier(value, field_name="reason_code")
+
+
+@runtime_checkable
+class HostedApplicationInstanceLeasePort(Protocol):
+  """Lease handle returned by the instance guard."""
+
+  def is_valid(self) -> bool: ...
+
+  def verify_ownership(self) -> None: ...
+
+  def public_view(self) -> HostedApplicationInstanceLeasePublicView: ...
+
+  async def release(self) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class HostedApplicationInstanceAcquisitionResult:
+  """Immutable instance guard acquisition outcome."""
+
+  lease: HostedApplicationInstanceLeasePort
+  classification: InstanceAcquisitionClassification

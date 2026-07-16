@@ -8,11 +8,15 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI
 
 from intergrax.applications._shared.fastapi_lifespan import combine_lifespans
+from local_workspace_application.host.readiness import (
+    LocalWorkspaceComponentReadiness,
+    LocalWorkspaceReadinessSnapshot,
+)
 
 
 class HostLifecycleState(str, Enum):
@@ -154,6 +158,32 @@ class LocalWorkspaceHostLifecycle:
                 return f"component_unhealthy:{component.name}"
         return "ready"
 
+    def readiness_snapshot(self) -> LocalWorkspaceReadinessSnapshot:
+        accepts_new_work = self.accepts_new_work
+        if accepts_new_work:
+            rejection_error_id = ""
+        elif self._state is HostLifecycleState.STOPPING:
+            rejection_error_id = "lkw_host_stopping"
+        else:
+            rejection_error_id = "lkw_host_not_ready"
+        return LocalWorkspaceReadinessSnapshot(
+            ready=self.is_ready(),
+            accepts_new_work=accepts_new_work,
+            state=self._state.value,
+            detail=self.readiness_detail(),
+            rejection_error_id=rejection_error_id,
+            components=tuple(
+                LocalWorkspaceComponentReadiness(
+                    name=component.name,
+                    enabled=component.enabled,
+                    required=component.required,
+                    healthy=component.healthy,
+                    detail=component.detail,
+                )
+                for component in self.component_health()
+            ),
+        )
+
 
 def make_lkw_daemon_lifespan(lifecycle: LocalWorkspaceHostLifecycle) -> Any:
     """FastAPI lifespan that transitions LKW host lifecycle on startup/shutdown."""
@@ -177,6 +207,9 @@ def make_lkw_daemon_lifespan(lifecycle: LocalWorkspaceHostLifecycle) -> Any:
 
 def apply_lkw_daemon_lifespan(app: FastAPI, lifecycle: LocalWorkspaceHostLifecycle) -> FastAPI:
     """Append LKW daemon lifecycle so STOPPING happens before other lifespans unwind."""
-    existing = app.router.lifespan_context
-    app.router.lifespan_context = combine_lifespans(existing, make_lkw_daemon_lifespan(lifecycle))
+    existing = cast(Any, app.router.lifespan_context)
+    app.router.lifespan_context = cast(
+        Any,
+        combine_lifespans(existing, make_lkw_daemon_lifespan(lifecycle)),
+    )
     return app

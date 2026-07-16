@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import signal
 import threading
+from typing import Callable, cast
 
 import pytest
 
@@ -39,6 +40,30 @@ def test_install_restore_and_sigint_mapping() -> None:
     handler(signal.SIGINT, None)
     assert coordinator.is_shutdown_requested()
     adapter.restore()
+    adapter.restore()
+
+
+def test_sigterm_then_sighup_preserves_stop() -> None:
+    coordinator = HostedApplicationControlCoordinator(clock=FixedClock())
+    api = FakeSignalApi()
+    adapter = PortableForegroundSignalAdapter(
+        coordinator=coordinator,
+        signal_api=api,
+        enable_sighup_restart=True,
+    )
+    adapter.install()
+    term_handler = cast(Callable[[int, object | None], None], api.handlers[signal.SIGTERM])
+    term_handler(signal.SIGTERM, None)
+    sighup = getattr(signal, "SIGHUP", None)
+    if sighup is not None:
+        hup_handler = cast(Callable[[int, object | None], None], api.handlers[sighup])
+        hup_handler(sighup, None)
+    else:
+        coordinator.request_restart("signal.sighup")
+    assert coordinator.is_shutdown_requested()
+    effective = coordinator.current_effective_request()
+    assert effective is not None
+    assert effective.intent == "stop"
     adapter.restore()
 
 

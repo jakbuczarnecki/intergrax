@@ -19,15 +19,19 @@ from intergrax.hosting import (
     HostedApplicationProcessIdentity,
     HostedApplicationProfile,
     HostedApplicationShutdownCoordinator,
-    HostedApplicationShutdownRequestSnapshot,
 )
 from intergrax.hosting.contracts.context import HostedApplicationClock, HostedApplicationLogger
-from intergrax.hosting.engine.ports import (
-    HostedApplicationInstanceGuardPort,
-    HostedApplicationInstanceLeasePort,
-    HostedApplicationRuntime,
+from intergrax.hosting.contracts.lifecycle import (
+    HostedApplicationEffectiveControlRequest,
+    HostedApplicationShutdownRequestSnapshot,
 )
-from intergrax.hosting.instance.contracts import HostedApplicationInstanceIdentity
+from intergrax.hosting.engine.ports import HostedApplicationInstanceGuardPort, HostedApplicationRuntime
+from intergrax.hosting.instance.contracts import (
+    HostedApplicationInstanceAcquisitionResult,
+    HostedApplicationInstanceIdentity,
+    HostedApplicationInstanceLeasePort,
+    InstanceAcquisitionClassification,
+)
 
 
 class FixedClock(HostedApplicationClock):
@@ -116,12 +120,15 @@ class FakeInstanceGuard(HostedApplicationInstanceGuardPort):
     async def acquire(
         self,
         identity: HostedApplicationInstanceIdentity,
-    ) -> HostedApplicationInstanceLeasePort:
+    ) -> HostedApplicationInstanceAcquisitionResult:
         self.acquire_count += 1
         self.last_identity = identity
         if self.fail_acquire:
             raise RuntimeError("instance acquire rejected")
-        return self.lease
+        return HostedApplicationInstanceAcquisitionResult(
+            lease=self.lease,
+            classification=InstanceAcquisitionClassification.FRESH,
+        )
 
 
 class FakeShutdownCoordinator(HostedApplicationShutdownCoordinator):
@@ -136,25 +143,68 @@ class FakeShutdownCoordinator(HostedApplicationShutdownCoordinator):
     def current_request(self) -> HostedApplicationShutdownRequestSnapshot | None:
         return self._snapshot
 
+    def current_effective_request(self) -> HostedApplicationEffectiveControlRequest | None:
+        if self._snapshot is None:
+            return None
+        return HostedApplicationEffectiveControlRequest(
+            intent="stop",
+            reason_code=self._snapshot.reason_code,
+            requested_at=self._snapshot.requested_at,
+            deadline_at=self._snapshot.deadline_at,
+        )
+
     def request_shutdown(
         self,
         reason_code: str,
         *,
         deadline_at: datetime | None = None,
+        source_id: str = "runtime",
     ) -> HostedApplicationShutdownRequestSnapshot:
         self._requested = True
         self._snapshot = HostedApplicationShutdownRequestSnapshot(
             reason_code=reason_code,
             requested_at=datetime.now(UTC),
             deadline_at=deadline_at,
+            source_id=source_id,
         )
         self._event.set()
         return self._snapshot
 
-    async def wait_until_requested(self) -> HostedApplicationShutdownRequestSnapshot:
+    async def wait_until_requested(self) -> HostedApplicationEffectiveControlRequest:
         await self._event.wait()
         assert self._snapshot is not None
-        return self._snapshot
+        return HostedApplicationEffectiveControlRequest(
+            intent="stop",
+            reason_code=self._snapshot.reason_code,
+            requested_at=self._snapshot.requested_at,
+            deadline_at=self._snapshot.deadline_at,
+        )
+
+
+class FakeMonotonicClock:
+    def __init__(self, start: float = 0.0) -> None:
+        self._value = start
+
+    def monotonic(self) -> float:
+        return self._value
+
+    def advance(self, seconds: float) -> None:
+        self._value += seconds
+
+
+class AdvancingSleeper:
+    def __init__(self, monotonic: FakeMonotonicClock) -> None:
+        self._monotonic = monotonic
+        self.sleep_calls: list[float] = []
+
+    async def sleep(self, seconds: float) -> None:
+        self.sleep_calls.append(seconds)
+        self._monotonic.advance(seconds)
+
+
+class HangingReleaseLease(FakeLease):
+    async def release(self) -> None:
+        await asyncio.sleep(60.0)
 
 
 class FakeRuntime:
