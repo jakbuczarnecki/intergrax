@@ -156,8 +156,8 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 |----|------|--------|
 | APP-HOST-8A | Define LKW hosted profile using platform contracts only | **Done** — `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn runtime adapter; no live `run_hosted_application()` yet |
 | APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | **Done** — hosted work acceptance projects `HostedApplicationReadinessService`; runtime.ready() is Uvicorn/FastAPI startup only; direct Uvicorn lifecycle retained |
-| APP-HOST-8C | LKW foreground hosted runner and single-instance proof | **Planned — next** |
-| APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
+| APP-HOST-8C | LKW foreground hosted runner and single-instance proof | **Done** — foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + `local.workspace.index`; second process `INSTANCE_CONFLICT`; first process remains READY |
+| APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | **Planned — next** |
 | APP-HOST-8E | Structured ProofReceipt and reviewer documentation | Blocked |
 
 `LKW.6B` is reframed as adoption/proof work. It must not implement generic Application Hosting internals.
@@ -190,7 +190,8 @@ APP-HOST-0D                    [Done]
 → APP-HOST-9A                  [Done — author facade]
 → APP-HOST-8A                  [Done — LKW hosted profile + runtime adapter]
 → APP-HOST-8B                  [Done — hosted readiness bridge]
-→ APP-HOST-8C...               [next — foreground/single-instance proof]
+→ APP-HOST-8C                  [Done — foreground/single-instance proof]
+→ APP-HOST-8D...               [next — stop/restart/lock-release proof]
 ```
 
 Required ordering before first adopter proof:
@@ -397,10 +398,12 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-8C — LKW foreground hosted runner and single-instance proof
+APP-HOST-8D — Graceful stop + restart + request-after-restart live proof
 ```
 
-**APP-HOST-8B — Migrate LKW.6A lifecycle/readiness to platform engine integration — Done** (2026-07-16). Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`; hosted `runtime.ready()` is limited to Uvicorn/FastAPI startup (no platform READY cycle); direct Uvicorn `LocalWorkspaceHostLifecycle` remains compatible. Foreground and single-instance proof remain APP-HOST-8C.
+**APP-HOST-8C — LKW foreground hosted runner and single-instance proof — Done** (2026-07-16). Foreground LKW hosted entrypoint delivered (`python -m local_workspace_application.hosting` → `run_hosted_application`); canonical LKW hosted profile has one required boundary component and one blocking `before_ready` hook; real hosted process reached READY; real `local.workspace.index` request succeeded; second real process rejected as `INSTANCE_CONFLICT`; first process remained READY. Stop/restart/lock-release proof remains APP-HOST-8D. Platform corrective: refresh component health after `before_ready` before startup gate; Windows busy-lock metadata read is best-effort (`PermissionError` → unknown prior).
+
+**APP-HOST-8B — Migrate LKW.6A lifecycle/readiness to platform engine integration — Done** (2026-07-16). Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`; hosted `runtime.ready()` is limited to Uvicorn/FastAPI startup (no platform READY cycle); direct Uvicorn `LocalWorkspaceHostLifecycle` remains compatible.
 
 **APP-HOST-8A — Define LKW hosted profile using platform contracts only — Done** (2026-07-16). LKW-owned `build_local_workspace_hosted_profile()` in `applications/local_workspace_application/hosting/`; private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; settings/bind snapshot captured once; existing `LocalWorkspaceHostLifecycle` and `uvicorn … host.main:app` entrypoint retained.
 
