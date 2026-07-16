@@ -33,6 +33,19 @@ ApplicationFactory = Callable[[LocalWorkspaceBackendSettings], FastAPI]
 ServerFactory = Callable[[FastAPI, str, int], _HostedServer]
 
 
+class _HostedServerProcessExit(HostedApplicationRuntimeError):
+    """Normalized process-exit request raised by the embedded server."""
+
+
+async def _serve_hosted_server(server: _HostedServer) -> None:
+    try:
+        await server.serve()
+    except SystemExit as exc:
+        raise _HostedServerProcessExit(
+            "local workspace hosted server requested process exit"
+        ) from exc
+
+
 class _HostedUvicornServer(uvicorn.Server):
     """Uvicorn server that does not install process signal handlers."""
 
@@ -104,7 +117,10 @@ class _LocalWorkspaceHostedRuntime:
         self._server = server
         self._lifecycle = lifecycle
 
-        serve_task = asyncio.create_task(server.serve(), name="lkw-hosted-uvicorn-serve")
+        serve_task = asyncio.create_task(
+            _serve_hosted_server(server),
+            name="lkw-hosted-uvicorn-serve",
+        )
         self._serve_task = serve_task
 
         startup_timeout_seconds = context.profile.lifecycle.default_blocking_hook_timeout_seconds
@@ -136,9 +152,12 @@ class _LocalWorkspaceHostedRuntime:
             ) from exc
         self._clear_references()
         if exception is not None:
+            cause: BaseException = exception
+            if isinstance(exception, _HostedServerProcessExit) and exception.__cause__ is not None:
+                cause = exception.__cause__
             raise HostedApplicationRuntimeError(
                 "local workspace hosted server failed before startup"
-            ) from exception
+            ) from cause
         raise HostedApplicationRuntimeError(
             "local workspace hosted server exited before startup"
         )

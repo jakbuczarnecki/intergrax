@@ -329,6 +329,64 @@ async def test_serve_raises_before_started() -> None:
 
 
 @pytest.mark.asyncio
+async def test_system_exit_before_startup_is_normalized() -> None:
+    settings = LocalWorkspaceBackendSettings()
+    cause = SystemExit(1)
+    server = _FakeServer(failure_before_startup=cause)
+    runtime = _LocalWorkspaceHostedRuntime(
+        settings=settings,
+        bind_host="127.0.0.1",
+        bind_port=8020,
+        application_factory=lambda s: _fake_app_factory(s),
+        server_factory=lambda app, host, port: server,
+    )
+    context = _context_for_runtime()
+    with pytest.raises(HostedApplicationRuntimeError, match="failed before startup") as exc_info:
+        await runtime.start(context)
+    assert isinstance(exc_info.value.__cause__, SystemExit)
+    assert exc_info.value.__cause__ is cause
+    assert runtime._app is None  # noqa: SLF001
+    assert runtime._server is None  # noqa: SLF001
+    assert runtime._serve_task is None  # noqa: SLF001
+    assert runtime._lifecycle is None  # noqa: SLF001
+
+
+@pytest.mark.asyncio
+async def test_system_exit_after_startup_does_not_exit_process() -> None:
+    settings = LocalWorkspaceBackendSettings()
+    cause = SystemExit(1)
+    server = _FakeServer()
+    server.allow_start.set()
+    runtime = _LocalWorkspaceHostedRuntime(
+        settings=settings,
+        bind_host="127.0.0.1",
+        bind_port=8020,
+        application_factory=lambda s: _fake_app_factory(s),
+        server_factory=lambda app, host, port: server,
+    )
+    context = _context_for_runtime()
+    await runtime.start(context)
+    assert await runtime.ready(context) is True
+    server._failure_after_startup = cause  # noqa: SLF001
+    await asyncio.wait_for(server.serve_finished.wait(), timeout=2.0)
+    assert await runtime.ready(context) is False
+    with pytest.raises(HostedApplicationRuntimeError) as exc_info:
+        await runtime.stop(context)
+    assert isinstance(exc_info.value, HostedApplicationRuntimeError)
+    chain: list[BaseException] = []
+    current: BaseException | None = exc_info.value
+    while current is not None:
+        chain.append(current)
+        current = current.__cause__
+    assert any(isinstance(item, SystemExit) for item in chain)
+    assert cause in chain
+    assert runtime._app is None  # noqa: SLF001
+    assert runtime._server is None  # noqa: SLF001
+    assert runtime._serve_task is None  # noqa: SLF001
+    assert runtime._lifecycle is None  # noqa: SLF001
+
+
+@pytest.mark.asyncio
 async def test_serve_exits_before_started() -> None:
     settings = LocalWorkspaceBackendSettings()
     server = _FakeServer(exit_before_startup=True)
