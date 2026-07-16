@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.6B** — Adopt [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md) and provide always-on product proof (see [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../../docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) §34). **LKW.6A** — unified interaction execution boundary and daemon lifecycle semantics — **Closed**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+**Next planned task:** **LKW.6B** — **In progress** (APP-HOST-8A Done; APP-HOST-8B next). Adopt [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md) and provide always-on product proof (see [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../../docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md) §34). **LKW.6A** — unified interaction execution boundary and daemon lifecycle semantics — **Closed**. Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -868,7 +868,7 @@ Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architectu
 | ID | Task | Scope | Status |
 |----|------|-------|--------|
 | LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Unified `LocalWorkspaceTaskExecutor`; platform interaction intake reused; lifecycle/readiness contract; `/run` + `/interactions/intake` share one execution boundary | **Closed** |
-| LKW.6B | Adopt Application Hosting + always-on proof | Adopt platform `APPLICATION_HOSTING`; product-specific hooks/components only; foreground hosted proof — **not** generic engine/supervisor/OS adapters; no service-manager/reboot unless APP-HOST-7 | **Planned — next** |
+| LKW.6B | Adopt Application Hosting + always-on proof | Adopt platform `APPLICATION_HOSTING`; product-specific hooks/components only; foreground hosted proof — **not** generic engine/supervisor/OS adapters; no service-manager/reboot unless APP-HOST-7 | **In progress** (APP-HOST-8A Done; APP-HOST-8B next) |
 | LKW.6C | Implement first OS interaction adapter and live proof | First **product-specific** interaction source or OS-facing input channel wired through intake → executor → Nexus — **not** generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or supervisor integration | **Planned** |
 
 **Expected architecture (LKW.6A):**
@@ -889,8 +889,10 @@ OS-specific interaction adapter
 - `include_interaction_routes=false` by default; `lab_json` surface enabled in test/proof configuration without Slack.
 - **LKW.6A does not include:** OS service packaging, Socket Mode, file watcher, tray, or a second interaction framework.
 
-**LKW.6B will implement (adoption, not generic hosting ownership):**
+**LKW.6B progress (adoption, not generic hosting ownership):**
 
+- **APP-HOST-8A Done:** `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn `HostedApplicationRuntime` adapter under `applications/local_workspace_application/hosting/`; existing LKW lifecycle retained temporarily; existing `uvicorn … host.main:app` entrypoint retained; live adoption proof not started
+- **APP-HOST-8B next:** migrate LKW.6A lifecycle/readiness to platform engine integration
 - adopt [`APPLICATION_HOSTING`](../../../docs/architecture/APPLICATION_HOSTING.md) public contracts **after the required platform foundation closes** (APP-HOST-1A.2, 1F, 2F, 4 minimum foundation, 5C, and APP-HOST-9A — see [`docs/plan/APPLICATION_HOSTING.md`](../../../docs/plan/APPLICATION_HOSTING.md) §4)
 - LKW may add **only**: LKW-specific `HostedApplicationProfile`, LKW-specific hooks, LKW-specific components, integration with the existing LKW application runtime, and live product proof
 - always-on live product proof — the following remain **platform-owned**: `HostedApplicationEngine`, `HostedApplicationSupervisor`, `InstanceGuard`, signal handling, restart mechanics, generic OS adapters, generic lifecycle/readiness contracts

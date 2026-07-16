@@ -803,7 +803,9 @@ Initial LKW adoption does **not** require `InteractionProfile` (APP-HOST-6A). LK
 
 Equivalent consolidated delivery is acceptable only if gates remain independently testable.
 
-## APP-HOST-8A — LKW hosted profile
+## APP-HOST-8A — LKW hosted profile — **Done** (2026-07-16)
+
+**Delivered:** profile builder; private FastAPI/Uvicorn HostedApplicationRuntime adapter; existing LKW lifecycle retained temporarily; existing Uvicorn entrypoint retained; live adoption proof not started.
 
 Initial LKW adoption does **not** require `InteractionProfile`. LKW may host its existing interaction/runtime surfaces through the application runtime adapter. `InteractionProfile` adoption follows **APP-HOST-6A**; an interaction profile in LKW is allowed only when APP-HOST-6A is closed.
 
@@ -818,7 +820,7 @@ hosting presets and metadata
 
 Generic engine, supervisor, control, and OS infrastructure remain platform-owned. No generic engine/supervisor/OS implementation under LKW.
 
-## APP-HOST-8B — Lifecycle migration
+## APP-HOST-8B — Lifecycle migration — **Planned — next**
 
 Replace or adapt LKW.6A local lifecycle/readiness with the platform engine while preserving:
 
@@ -1006,5 +1008,7 @@ supervisor restart evaluation after engine failures without bypassing cleanup ve
 regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
 ```
 
-**APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`. **Next wave:** APP-HOST-8A - Define LKW hosted profile using platform contracts only.
+**APP-HOST-8A - Done** (2026-07-16): LKW `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; existing LKW lifecycle and uvicorn entrypoint retained; live adoption proof not started. **Next wave:** APP-HOST-8B - Migrate LKW.6A lifecycle/readiness to platform engine integration.
+
+**APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`.
 

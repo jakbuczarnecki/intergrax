@@ -154,8 +154,8 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 
 | ID | Task | Status |
 |----|------|--------|
-| APP-HOST-8A | Define LKW hosted profile using platform contracts only | Planned — next (see §4); no `InteractionProfile` unless APP-HOST-6A is also closed |
-| APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | Blocked |
+| APP-HOST-8A | Define LKW hosted profile using platform contracts only | **Done** — `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn runtime adapter; no live `run_hosted_application()` yet |
+| APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | **Planned — next** |
 | APP-HOST-8C | LKW foreground hosted runner and single-instance proof | Blocked |
 | APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | Blocked |
 | APP-HOST-8E | Structured ProofReceipt and reviewer documentation | Blocked |
@@ -188,7 +188,8 @@ APP-HOST-0D                    [Done]
   → APP-HOST-4A..4E
   → APP-HOST-5A..5C
 → APP-HOST-9A                  [Done — author facade]
-→ APP-HOST-8A...               [next — LKW adoption + live proof]
+→ APP-HOST-8A                  [Done — LKW hosted profile + runtime adapter]
+→ APP-HOST-8B...               [next — lifecycle/readiness migration]
 ```
 
 Required ordering before first adopter proof:
@@ -395,8 +396,10 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-8A — Define LKW hosted profile using platform contracts only
+APP-HOST-8B — Migrate LKW.6A lifecycle/readiness to platform engine integration
 ```
+
+**APP-HOST-8A — Define LKW hosted profile using platform contracts only — Done** (2026-07-16). LKW-owned `build_local_workspace_hosted_profile()` in `applications/local_workspace_application/hosting/`; private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; settings/bind snapshot captured once; existing `LocalWorkspaceHostLifecycle` and `uvicorn … host.main:app` entrypoint retained. Live adoption proof and lifecycle migration remain APP-HOST-8B+.
 
 **APP-HOST-9A — `run_hosted_application(profile)` author facade — Done** (2026-07-14). Public synchronous foreground runner: `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`; resolves profile once before side effects; assembles reference paths, clocks, logger, process identity, event publisher, control coordinator, signal adapter, instance guard, engine factory, and supervisor internally.
 
