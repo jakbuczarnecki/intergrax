@@ -411,6 +411,8 @@ class HostedApplicationEngine:
             return
         runtime_ready = await self._runtime.ready(self._context)
         self._health.set_runtime_ready(runtime_ready)
+        # Refresh after before_ready so hook-driven component readiness is visible to the gate.
+        await self._components.refresh_component_health(self._context)
         self._health.update_component_health(
             self._components.component_health(),
             mark_not_ready_failed=self._components.mark_not_ready_component_ids,
