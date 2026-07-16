@@ -826,7 +826,7 @@ Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_Ho
 
 ## APP-HOST-8C — Foreground/single-instance proof — **Done** (2026-07-16)
 
-Foreground LKW hosted entrypoint delivered; canonical LKW hosted profile now has one required boundary component; canonical profile now has one blocking before_ready hook; real hosted process reached READY; real local.workspace.index request succeeded; second real process was rejected as INSTANCE_CONFLICT; first process remained READY; stop/restart/lock-release proof remains APP-HOST-8D.
+Foreground LKW hosted entrypoint delivered; canonical LKW hosted profile now has one required boundary component; canonical profile now has one blocking before_ready hook; real hosted process reached READY; real local.workspace.index request succeeded; second real process was rejected as INSTANCE_CONFLICT; first process remained READY.
 
 Proof delivered:
 
@@ -839,9 +839,11 @@ second instance rejected
 real LKW task succeeds
 ```
 
-## APP-HOST-8D — Stop/restart proof — **Planned — next**
+## APP-HOST-8D — Stop/restart proof — **Done** (2026-07-16)
 
-Proof:
+Public foreground LKW process stopped through the platform signal bridge; foreground shutdown produced CLEAN_STOP; a replacement process reached READY in the same instance scope; instance lock release was proven. Typed restart request stopped the first hosted engine gracefully; first attempt released its lease and closed its context; supervisor created a second engine with a new instance_id; profile and definition digests remained unchanged; second hosted instance reached READY; real local.workspace.index succeeded after restart; final typed shutdown produced CLEAN_STOP; final lock reacquisition succeeded.
+
+Proof delivered:
 
 ```text
 graceful stop
@@ -853,7 +855,7 @@ same profile digest
 real LKW task succeeds after restart
 ```
 
-## APP-HOST-8E — Receipt/reviewer path
+## APP-HOST-8E — Receipt/reviewer path — **Planned — next**
 
 Persist a structured ProofReceipt through the platform store with hosting evidence. Update reviewer docs only after live PASS.
 
@@ -1007,7 +1009,9 @@ regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
 
 **APP-HOST-8B - Done** (2026-07-16): hosted LKW work acceptance projects `HostedApplicationReadinessService`; hosted runtime readiness is Uvicorn/FastAPI startup only; direct Uvicorn lifecycle remains compatible.
 
-**APP-HOST-8C - Done** (2026-07-16): foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + local.workspace.index; second process INSTANCE_CONFLICT; first process remained READY. **Next wave:** APP-HOST-8D - graceful stop + restart + request-after-restart live proof.
+**APP-HOST-8C - Done** (2026-07-16): foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + local.workspace.index; second process INSTANCE_CONFLICT; first process remained READY.
+
+**APP-HOST-8D - Done** (2026-07-16): public foreground CLEAN_STOP + lock release; typed supervisor restart with new instance_id; same profile/definition digests; real local.workspace.index after restart; final CLEAN_STOP + lock reacquisition. **Next wave:** APP-HOST-8E - structured ProofReceipt and reviewer documentation.
 
 **APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`.
 
