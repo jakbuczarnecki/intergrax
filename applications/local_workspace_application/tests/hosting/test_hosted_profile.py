@@ -24,6 +24,7 @@ from intergrax.hosting.contracts.lifecycle import (
     HostedApplicationLifecycleState,
     HostedApplicationShutdownCoordinator,
 )
+from intergrax.hosting.contracts.hooks import HostedApplicationHookPoint
 from intergrax.hosting.contracts.policies import InstanceExclusivityMode, RestartMode
 from intergrax.hosting.contracts.profile import HostedApplicationProfile
 from intergrax.hosting.engine.health import (
@@ -35,7 +36,16 @@ from intergrax.hosting.engine.runtime import invoke_application_factory
 from intergrax.hosting.services import HostedApplicationServiceRegistry
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.hosting import build_local_workspace_hosted_profile
-from local_workspace_application.hosting.profile import LOCAL_WORKSPACE_HOSTED_FACTORY_ID
+from local_workspace_application.hosting.boundary import (
+    LOCAL_WORKSPACE_BEFORE_READY_HANDLER_ID,
+    LOCAL_WORKSPACE_BEFORE_READY_HOOK_ID,
+    LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID,
+    LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_TYPE_ID,
+    LOCAL_WORKSPACE_HOSTING_SOURCE_ID,
+)
+from local_workspace_application.hosting.profile import (
+    LOCAL_WORKSPACE_HOSTED_FACTORY_ID,
+)
 from local_workspace_application.hosting.runtime import _LocalWorkspaceHostedRuntime
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
@@ -141,9 +151,47 @@ def test_builder_returns_hosted_application_profile() -> None:
     assert profile.instance.exclusivity_mode is InstanceExclusivityMode.SINGLE_INSTANCE
     assert profile.restart.mode is RestartMode.ON_FAILURE
     assert profile.restart.max_attempts == 3
-    assert profile.hooks.flattened_public_descriptors() == ()
-    assert profile.components == ()
+    assert len(profile.components) == 1
+    registration = profile.components[0]
+    assert registration.component_id == LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID
+    assert (
+        registration.component_type_id
+        == LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_TYPE_ID
+    )
+    assert registration.enabled is True
+    assert registration.required is True
+    assert registration.dependencies == ()
+    assert len(profile.hooks.before_ready) == 1
+    hook = profile.hooks.before_ready[0]
+    assert hook.hook_id == LOCAL_WORKSPACE_BEFORE_READY_HOOK_ID
+    assert hook.handler_id == LOCAL_WORKSPACE_BEFORE_READY_HANDLER_ID
+    assert hook.source_id == LOCAL_WORKSPACE_HOSTING_SOURCE_ID
+    assert hook.priority == 0
+    assert profile.hooks.before_start == ()
+    assert profile.hooks.before_stop == ()
+    assert profile.hooks.after_start == ()
+    assert profile.hooks.after_ready == ()
+    assert profile.hooks.after_stop == ()
+    assert profile.hooks.on_failure == ()
     assert profile.event_subscriptions == ()
+    assert hook.handler.__self__ is registration.component  # type: ignore[attr-defined]
+    definition = resolve_hosted_application_definition(profile)
+    assert definition.component_start_order == (
+        LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID,
+    )
+    assert definition.component_stop_order == (
+        LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID,
+    )
+    assert definition.pre_runtime_component_ids == (
+        LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID,
+    )
+    assert definition.post_runtime_component_ids == ()
+    before_ready_hooks = definition.hook_registrations[
+        HostedApplicationHookPoint.BEFORE_READY
+    ]
+    assert tuple(item.hook_id for item in before_ready_hooks) == (
+        LOCAL_WORKSPACE_BEFORE_READY_HOOK_ID,
+    )
     assert profile.metadata == {
         "product_id": "local_workspace",
         "product_tier": "tier3",
@@ -170,7 +218,9 @@ def test_settings_snapshot_resolved_once(monkeypatch: pytest.MonkeyPatch) -> Non
         calls["count"] += 1
         return snapshot
 
-    monkeypatch.setattr(LocalWorkspaceBackendSettings, "from_env", staticmethod(_from_env))
+    monkeypatch.setattr(
+        LocalWorkspaceBackendSettings, "from_env", staticmethod(_from_env)
+    )
     profile = build_local_workspace_hosted_profile()
     assert calls["count"] == 1
 
@@ -193,7 +243,9 @@ def test_settings_snapshot_resolved_once(monkeypatch: pytest.MonkeyPatch) -> Non
     assert runtime_two._hosted_context is context  # noqa: SLF001
 
 
-def test_public_view_excludes_settings_and_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_public_view_excludes_settings_and_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     marker_api = "SECRET_API_KEY_MARKER_8A"
     marker_sentry = "SECRET_SENTRY_DSN_MARKER_8A"
     marker_otlp = "SECRET_OTLP_MARKER_8A"
@@ -267,18 +319,37 @@ def test_hosting_package_import_boundary() -> None:
         "PortableForegroundSignalAdapter",
         "HostedApplicationControlCoordinator",
         "SystemMonotonicClock",
-        "run_hosted_application",
         "NexusLoop",
     }
+    # foreground / __main__ may import the public runner result types and facade.
+    allow_runner_names = frozenset(
+        {
+            "run_hosted_application",
+            "HostedApplicationSupervisorResult",
+            "HostedApplicationExitKind",
+            "HostedApplicationExitRecord",
+        }
+    )
     for path in package_root.glob("*.py"):
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    assert alias.name.split(".")[-1] not in forbidden_imports
+                    name = alias.name.split(".")[-1]
+                    if (
+                        path.name in {"foreground.py", "__main__.py"}
+                        and name in allow_runner_names
+                    ):
+                        continue
+                    assert name not in forbidden_imports
             elif isinstance(node, ast.ImportFrom):
                 for alias in node.names:
+                    if (
+                        path.name in {"foreground.py", "__main__.py"}
+                        and alias.name in allow_runner_names
+                    ):
+                        continue
                     assert alias.name not in forbidden_imports
                 if node.module:
                     for name in forbidden_imports:

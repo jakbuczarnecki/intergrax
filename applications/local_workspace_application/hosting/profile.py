@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""LKW HostedApplicationProfile builder (APP-HOST-8A)."""
+"""LKW HostedApplicationProfile builder (APP-HOST-8A/8C)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,14 @@ import os
 from dataclasses import dataclass
 from typing import cast
 
+from intergrax.hosting.contracts.components import (
+    HostedApplicationComponentRegistration,
+)
 from intergrax.hosting.contracts.context import HostedApplicationContext
+from intergrax.hosting.contracts.hooks import (
+    HostedApplicationHook,
+    HostedApplicationHooks,
+)
 from intergrax.hosting.contracts.policies import (
     InstancePolicy,
     LifecyclePolicy,
@@ -18,6 +25,14 @@ from intergrax.hosting.contracts.policies import (
 from intergrax.hosting.contracts.profile import HostedApplicationProfile
 from intergrax.hosting.engine.ports import HostedApplicationRuntime
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.hosting.boundary import (
+    LOCAL_WORKSPACE_BEFORE_READY_HANDLER_ID,
+    LOCAL_WORKSPACE_BEFORE_READY_HOOK_ID,
+    LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID,
+    LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_TYPE_ID,
+    LOCAL_WORKSPACE_HOSTING_SOURCE_ID,
+    _LocalWorkspaceHostingBoundary,
+)
 from local_workspace_application.hosting.runtime import _LocalWorkspaceHostedRuntime
 
 LOCAL_WORKSPACE_HOSTED_FACTORY_ID = (
@@ -46,7 +61,7 @@ def build_local_workspace_hosted_profile(
     *,
     settings: LocalWorkspaceBackendSettings | None = None,
 ) -> HostedApplicationProfile:
-    """Build the LKW-owned hosted application profile (inactive composition path)."""
+    """Build the LKW-owned hosted application profile."""
     resolved_settings = cast(
         LocalWorkspaceBackendSettings,
         settings if settings is not None else LocalWorkspaceBackendSettings.from_env(),
@@ -59,6 +74,14 @@ def build_local_workspace_hosted_profile(
         bind_host=bind_host,
         bind_port=bind_port,
     )
+    boundary = _LocalWorkspaceHostingBoundary()
+    before_ready_hook = HostedApplicationHook(
+        hook_id=LOCAL_WORKSPACE_BEFORE_READY_HOOK_ID,
+        handler=boundary.mark_before_ready,
+        handler_id=LOCAL_WORKSPACE_BEFORE_READY_HANDLER_ID,
+        priority=0,
+        source_id=LOCAL_WORKSPACE_HOSTING_SOURCE_ID,
+    )
     return HostedApplicationProfile(
         application_id="local_workspace",
         application_factory=runtime_factory,
@@ -68,6 +91,19 @@ def build_local_workspace_hosted_profile(
             "product_tier": "tier3",
             "runtime_kind": "fastapi_uvicorn",
         },
+        hooks=HostedApplicationHooks(
+            before_ready=(before_ready_hook,),
+        ),
+        components=(
+            HostedApplicationComponentRegistration(
+                component=boundary,
+                component_id=LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_ID,
+                component_type_id=LOCAL_WORKSPACE_HOSTING_BOUNDARY_COMPONENT_TYPE_ID,
+                enabled=True,
+                required=True,
+                dependencies=(),
+            ),
+        ),
         lifecycle=LifecyclePolicy.standard(),
         shutdown=ShutdownPolicy.standard(),
         restart=RestartPolicy.on_failure(max_attempts=3),
