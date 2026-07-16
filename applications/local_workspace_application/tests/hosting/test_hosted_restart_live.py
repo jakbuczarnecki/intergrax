@@ -11,6 +11,7 @@ import socket
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -252,6 +253,7 @@ def _assert_critical_shutdown_phases(diagnostics: Any) -> None:
 async def test_hosted_lkw_restart_creates_new_instance_and_accepts_work(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    record_property: Callable[[str, object], None],
 ) -> None:
     port = _reserve_free_port()
     workspace = _configure_lkw_env(tmp_path, port, monkeypatch)
@@ -525,6 +527,34 @@ async def test_hosted_lkw_restart_creates_new_instance_and_accepts_work(
         }
         assert acquisition.lease.is_valid()
         await acquisition.lease.release()
+
+        record_property("hosting.restart_requested", "true")
+        record_property("hosting.first_instance_id", attempt0.instance_id)
+        record_property("hosting.second_instance_id", attempt1.instance_id)
+        record_property("hosting.instance_id_changed", "true")
+        record_property(
+            "hosting.first_attempt_exit_kind",
+            attempt0.exit_record.exit_kind.value,
+        )
+        record_property("hosting.first_attempt_cleanup_verified", "true")
+        record_property("hosting.first_lease_released", "true")
+        record_property("hosting.first_context_closed", "true")
+        record_property("hosting.stopped_events_verified", "true")
+        record_property("hosting.restart_events_verified", "true")
+        record_property("hosting.second_instance_ready", "true")
+        record_property("hosting.real_index_after_restart", "true")
+        record_property("hosting.profile_digest", result.profile_digest)
+        record_property("hosting.definition_digest", result.definition_digest)
+        record_property("hosting.profile_digest_preserved", "true")
+        record_property("hosting.definition_digest_preserved", "true")
+        record_property(
+            "hosting.final_exit_kind",
+            result.final_exit.exit_kind.value,
+        )
+        record_property("hosting.final_cleanup_verified", "true")
+        record_property("hosting.final_lease_released", "true")
+        record_property("hosting.final_context_closed", "true")
+        record_property("hosting.final_lock_reacquired", "true")
     finally:
         if not supervisor_task.done():
             if control_holder.control is not None:

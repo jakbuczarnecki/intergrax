@@ -13,6 +13,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -277,6 +278,7 @@ def _assert_clean_stop_payload(
 
 def test_hosted_foreground_process_ready_index_and_instance_conflict(
     tmp_path: Path,
+    record_property: Callable[[str, object], None],
 ) -> None:
     port = _reserve_free_port()
     env = _build_process_env(tmp_path, port)
@@ -379,6 +381,10 @@ def test_hosted_foreground_process_ready_index_and_instance_conflict(
         assert after.get("state") == "ready"
         _assert_boundary_component(after)
         assert first_process.poll() is None
+        record_property("hosting.foreground_ready", "true")
+        record_property("hosting.real_index_before_restart", "true")
+        record_property("hosting.instance_conflict_verified", "true")
+        record_property("hosting.first_process_remained_ready", "true")
     finally:
         if first_process is not None:
             _terminate_process(first_process)
@@ -388,6 +394,7 @@ def test_hosted_foreground_process_ready_index_and_instance_conflict(
 
 def test_hosted_foreground_process_graceful_stop_releases_instance_lock(
     tmp_path: Path,
+    record_property: Callable[[str, object], None],
 ) -> None:
     port = _reserve_free_port()
     env = _build_process_env(tmp_path, port)
@@ -478,6 +485,11 @@ def test_hosted_foreground_process_graceful_stop_releases_instance_lock(
         assert second_payload["final_exit"]["exit_kind"] == "clean_stop"
         assert second_payload["final_exit"]["reason_code"] == second_reason
         assert second_payload["attempts"][0]["cleanup_verified"] is True
+        record_property("hosting.foreground_clean_stop", "true")
+        record_property("hosting.foreground_shutdown_reason", expected_reason)
+        record_property("hosting.replacement_process_ready", "true")
+        record_property("hosting.instance_lock_released", "true")
+        record_property("hosting.replacement_clean_stop", "true")
     finally:
         _cleanup_process(first_process)
         _cleanup_process(second_process)

@@ -15,6 +15,7 @@ This document is the guided reviewer path. Structured ProofReceipt documents per
 4. LKW persists indexed local knowledge across a non-destructive restart.
 5. LKW enqueues and executes background ingest jobs through the real platform message-bus / TaskQueue path with a local provider in the proof stack.
 6. LKW records structured proof evidence through ProofReceiptStore into a real MongoDB DocumentStore vendor and exposes it for reviewer inspection through Mongo Express.
+7. LKW runs through Intergrax Application Hosting as a real foreground process, enforces single-instance ownership, stops gracefully, releases its lock, restarts under the supervisor with a new instance identity, preserves its profile/definition digests and executes real work after restart.
 ```
 
 Local proof endpoints:
@@ -435,6 +436,204 @@ worker_execution=asynchronous
 
 ---
 
+## Step 10 — Run the Application Hosting proof
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-hosting-proof.bat
+```
+
+Optional deterministic reviewer command:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-hosting-proof.bat --run-id lkw-hosting-live-001 --correlation-id lkw-hosting-live-001
+```
+
+The helper is idempotent: it starts or refreshes only MongoDB and Mongo Express before running the proof. It does not start the Docker LKW application, Kafka, Redis, Qdrant, Elasticsearch, or Sentry. The accepted APP-HOST-8C/8D live tests own the real hosted LKW processes.
+
+Expected result:
+
+```text
+proof_result=PASS
+proof_kind=platform_application_hosting
+proof_tests_passed=3
+
+foreground_ready=true
+real_index_before_restart=true
+instance_conflict_verified=true
+first_process_remained_ready=true
+
+foreground_clean_stop=true
+foreground_shutdown_reason=<signal.sigterm|signal.sigbreak>
+replacement_process_ready=true
+instance_lock_released=true
+replacement_clean_stop=true
+
+restart_requested=true
+first_instance_id=<actual first ID>
+second_instance_id=<actual second ID>
+instance_id_changed=true
+
+first_attempt_exit_kind=restart_requested
+first_attempt_cleanup_verified=true
+first_lease_released=true
+first_context_closed=true
+
+stopped_events_verified=true
+restart_events_verified=true
+
+second_instance_ready=true
+real_index_after_restart=true
+
+profile_digest=<sha256 digest>
+definition_digest=<sha256 digest>
+profile_digest_preserved=true
+definition_digest_preserved=true
+
+final_exit_kind=clean_stop
+final_cleanup_verified=true
+final_lease_released=true
+final_context_closed=true
+final_lock_reacquired=true
+
+proof_receipt_recorded=true
+proof_receipt_verified=true
+proof_receipt_query_verified=true
+proof_receipt_store=platform
+document_store_provider=mongodb
+
+proof_receipt_id=<generated_proof_id>
+proof_receipt_run_id=<generated_run_id>
+proof_receipt_result=PASS
+correlation_id=<correlation_id>
+
+mongo_express_url=http://127.0.0.1:8086
+
+inmemory_receipt_store=false
+direct_mongodb_write=false
+direct_pymongo_from_lkw=false
+markdown_source_of_truth=false
+manual_evidence_injection=false
+```
+
+This proof:
+
+- starts only MongoDB and Mongo Express,
+- runs the exact accepted APP-HOST-8C/8D live tests,
+- collects structured JUnit evidence,
+- records one `ProofReceipt`,
+- verifies write/read/query,
+- prints `PASS` only after verification.
+
+A green unit test alone is not APP-HOST-8E acceptance.
+
+The reviewer command must complete with `proof_result=PASS` and a verified MongoDB-backed `ProofReceipt`.
+
+This step does not claim Windows Service, systemd, launchd, reboot persistence, service-manager installation, production HA, multi-node supervision, crash recovery, or restart exhaustion.
+
+---
+
+## Step 11 — Inspect the Application Hosting ProofReceipt in Mongo Express
+
+After Step 10 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted hosting receipt.
+
+### Open Mongo Express
+
+```text
+http://127.0.0.1:8086
+```
+
+### Select
+
+```text
+database: intergrax_proofs
+collection: proof_receipts
+```
+
+### Find the receipt
+
+Use the values printed by Step 10:
+
+```text
+proof_receipt_id
+proof_receipt_run_id
+proof_kind = platform_application_hosting
+```
+
+Each stored document is a MongoDB row mapped from `DocumentRecord`. The `data` field contains the full `ProofReceipt` JSON. Partition and row keys are derived as:
+
+```text
+partition_key = proof_receipts/local_workspace
+row_key       = proof/platform_application_hosting/<run_id>
+```
+
+### Reviewer checks
+
+Verify in the stored `data` object:
+
+```text
+schema_version = intergrax.proof_receipt.v1
+application_id = local_workspace
+proof_kind = platform_application_hosting
+result = PASS
+run_id matches Step 10
+correlation_id matches Step 10
+provider_evidence.foreground_execution = real_subprocess
+provider_evidence.supervisor = HostedApplicationSupervisor
+provider_evidence.engine = HostedApplicationEngine
+provider_evidence.instance_guard = FileHostedApplicationInstanceGuard
+provider_evidence.evidence_source = pytest_junit_properties
+provider_evidence.selected_live_tests = 3
+provider_evidence.receipt_document_store_provider = mongodb
+domain_evidence.foreground_ready = true
+domain_evidence.real_index_before_restart = true
+domain_evidence.instance_conflict_verified = true
+domain_evidence.first_process_remained_ready = true
+domain_evidence.foreground_clean_stop = true
+domain_evidence.instance_lock_released = true
+domain_evidence.restart_requested = true
+domain_evidence.first_instance_id != domain_evidence.second_instance_id
+domain_evidence.instance_id_changed = true
+domain_evidence.first_attempt_exit_kind = restart_requested
+domain_evidence.first_attempt_cleanup_verified = true
+domain_evidence.first_lease_released = true
+domain_evidence.first_context_closed = true
+domain_evidence.restart_events_verified = true
+domain_evidence.second_instance_ready = true
+domain_evidence.real_index_after_restart = true
+domain_evidence.profile_digest_preserved = true
+domain_evidence.definition_digest_preserved = true
+domain_evidence.final_exit_kind = clean_stop
+domain_evidence.final_cleanup_verified = true
+domain_evidence.final_lease_released = true
+domain_evidence.final_context_closed = true
+domain_evidence.final_lock_reacquired = true
+guardrails.mock_hosting_runtime = false
+guardrails.fake_supervisor = false
+guardrails.fake_engine = false
+guardrails.fake_instance_guard = false
+guardrails.inmemory_receipt_store = false
+guardrails.direct_mongodb_write = false
+guardrails.direct_pymongo_from_lkw = false
+guardrails.markdown_source_of_truth = false
+guardrails.manual_evidence_injection = false
+```
+
+### Authority
+
+The MongoDB ProofReceipt is the authoritative outcome for the Application Hosting proof run.
+
+The pytest JUnit file is temporary evidence transport.
+
+The terminal summary is a reviewer convenience.
+
+This markdown page is the execution and inspection guide.
+
+None of those replaces the persisted ProofReceipt.
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -444,6 +643,7 @@ applications\local_workspace_application\scripts\run-sentry-observability-proof.
 applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
 applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
 applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
+applications\local_workspace_application\scripts\run-lkw-hosting-proof.bat
 ```
 
 Then open:
@@ -457,6 +657,7 @@ Mongo Express: http://127.0.0.1:8086
 
 1. Inspect Kafka lifecycle using `run_id` / `correlation_id`.
 2. Inspect MongoDB receipt using `proof_receipt_id` / `proof_receipt_run_id`.
+3. Inspect the Application Hosting receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_application_hosting`.
 
 Kafka topics to inspect:
 

@@ -855,9 +855,23 @@ same profile digest
 real LKW task succeeds after restart
 ```
 
-## APP-HOST-8E — Receipt/reviewer path — **Planned — next**
+## APP-HOST-8E — Receipt/reviewer path — **Done**
 
-Persist a structured ProofReceipt through the platform store with hosting evidence. Update reviewer docs only after live PASS.
+Accepted path:
+
+`	ext
+accepted live hosting tests
+→ JUnit evidence
+→ ProofReceipt
+→ ProofReceiptStore
+→ DocumentStore
+→ MongoDB
+→ Mongo Express inspection
+`
+
+Markdown is not the source of truth. JUnit is not the source of truth. MongoDB ProofReceipt is the source of truth.
+
+One-command reviewer runner: pplications/local_workspace_application/scripts/run-lkw-hosting-proof.bat.
 
 ---
 
@@ -1011,7 +1025,7 @@ regression suites: instance (12), shutdown (7), supervisor (7) W3 tests
 
 **APP-HOST-8C - Done** (2026-07-16): foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + local.workspace.index; second process INSTANCE_CONFLICT; first process remained READY.
 
-**APP-HOST-8D - Done** (2026-07-16): public foreground CLEAN_STOP + lock release; typed supervisor restart with new instance_id; same profile/definition digests; real local.workspace.index after restart; final CLEAN_STOP + lock reacquisition. **Next wave:** APP-HOST-8E - structured ProofReceipt and reviewer documentation.
+**APP-HOST-8D - Done** (2026-07-16): public foreground CLEAN_STOP + lock release; typed supervisor restart with new instance_id; same profile/definition digests; real local.workspace.index after restart; final CLEAN_STOP + lock reacquisition. **APP-HOST-8E - Done** (2026-07-16): accepted live hosting tests → JUnit evidence → ProofReceipt → ProofReceiptStore → DocumentStore → MongoDB → Mongo Express inspection. Markdown/JUnit are not the source of truth; MongoDB ProofReceipt is the source of truth. APP-HOST-8A through APP-HOST-8E complete.
 
 **APP-HOST-9A - Done** (2026-07-14): `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`.
 

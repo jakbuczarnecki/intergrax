@@ -158,7 +158,7 @@ APP-HOST-0 closes with **0D Done**. Runtime implementation began at **APP-HOST-1
 | APP-HOST-8B | Migrate LKW.6A lifecycle/readiness to platform engine integration | **Done** — hosted work acceptance projects `HostedApplicationReadinessService`; runtime.ready() is Uvicorn/FastAPI startup only; direct Uvicorn lifecycle retained |
 | APP-HOST-8C | LKW foreground hosted runner and single-instance proof | **Done** — foreground LKW hosted entrypoint; required boundary component + blocking before_ready; real READY + `local.workspace.index`; second process `INSTANCE_CONFLICT`; first process remains READY |
 | APP-HOST-8D | Graceful stop + restart + request-after-restart live proof | **Done** — public foreground CLEAN_STOP + lock release; supervisor restart with new instance_id; same profile/definition digests; real `local.workspace.index` after restart; final CLEAN_STOP + lock reacquisition |
-| APP-HOST-8E | Structured ProofReceipt and reviewer documentation | **Planned — next** |
+| APP-HOST-8E | Structured ProofReceipt and reviewer documentation | **Done** — one-command reviewer runner; exact APP-HOST-8C/8D live tests reused; structured JUnit evidence; ProofReceipt persisted through platform DocumentStore; MongoDB write/read/query verification; Mongo Express reviewer inspection |
 
 `LKW.6B` is reframed as adoption/proof work. It must not implement generic Application Hosting internals.
 
@@ -192,7 +192,7 @@ APP-HOST-0D                    [Done]
 → APP-HOST-8B                  [Done — hosted readiness bridge]
 → APP-HOST-8C                  [Done — foreground/single-instance proof]
 → APP-HOST-8D                  [Done — stop/restart/lock-release proof]
-→ APP-HOST-8E...               [next — ProofReceipt/reviewer path]
+→ APP-HOST-8E                  [Done — ProofReceipt/reviewer path]
 ```
 
 Required ordering before first adopter proof:
@@ -399,10 +399,12 @@ No architecture section may remain without a plan owner before the domain is dec
 ## 10. Current next task
 
 ```text
-APP-HOST-8E — Structured ProofReceipt and reviewer documentation
+APP-HOST-8A through APP-HOST-8E complete
 ```
 
-**APP-HOST-8D — Graceful stop + restart + request-after-restart live proof — Done** (2026-07-16). Public foreground LKW process stopped through the platform signal bridge; foreground shutdown produced CLEAN_STOP; a replacement process reached READY in the same instance scope; instance lock release was proven. Typed restart request stopped the first hosted engine gracefully; first attempt released its lease and closed its context; supervisor created a second engine with a new instance_id; profile and definition digests remained unchanged; second hosted instance reached READY; real `local.workspace.index` succeeded after restart; final typed shutdown produced CLEAN_STOP; final lock reacquisition succeeded. ProofReceipt/reviewer path remains APP-HOST-8E. LKW.6B remains In progress.
+**APP-HOST-8E — Structured ProofReceipt and reviewer documentation — Done** (2026-07-16). One-command reviewer runner (`run-lkw-hosting-proof.bat`) reuses the exact accepted APP-HOST-8C/8D live tests; structured JUnit evidence is validated; one `ProofReceipt` (`proof_kind=platform_application_hosting`) is persisted through platform `ProofReceiptStore` → `DocumentStore` → MongoDB; write/read/query verification precedes `proof_result=PASS`; Mongo Express reviewer path is documented in `LKW_PLATFORM_PROOF.md` Steps 10–11. APP-HOST-8A through APP-HOST-8E complete. LKW.6B Closed.
+
+**APP-HOST-8D — Graceful stop + restart + request-after-restart live proof — Done** (2026-07-16). Public foreground LKW process stopped through the platform signal bridge; foreground shutdown produced CLEAN_STOP; a replacement process reached READY in the same instance scope; instance lock release was proven. Typed restart request stopped the first hosted engine gracefully; first attempt released its lease and closed its context; supervisor created a second engine with a new instance_id; profile and definition digests remained unchanged; second hosted instance reached READY; real `local.workspace.index` succeeded after restart; final typed shutdown produced CLEAN_STOP; final lock reacquisition succeeded.
 
 **APP-HOST-8C — LKW foreground hosted runner and single-instance proof — Done** (2026-07-16). Foreground LKW hosted entrypoint delivered (`python -m local_workspace_application.hosting` → `run_hosted_application`); canonical LKW hosted profile has one required boundary component and one blocking `before_ready` hook; real hosted process reached READY; real `local.workspace.index` request succeeded; second real process rejected as `INSTANCE_CONFLICT`; first process remained READY. Platform corrective: refresh component health after `before_ready` before startup gate; Windows busy-lock metadata read is best-effort (`PermissionError` → unknown prior).
 
