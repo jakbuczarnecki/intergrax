@@ -288,7 +288,7 @@ This track is executed one task at a time.
 | LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | **Closed — PROOF-RECEIPTS-1A through PROOF-RECEIPTS-1E complete** | Medium |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | **Closed** (LKW.6A/6B/6C) | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned / optional | Medium |
-| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | **In progress** (LKW.7A Done; LKW.7B next) | Medium |
+| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1 Done; LKW.7B2 next) | Medium |
 | LKW.8 | Tray thin client | LKW.6 | Deferred | Low |
 | LKW-H2 | Evidence/maturity wording cleanup | LKW.1 | Planned | Medium |
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.7B** — Cross-platform watcher runtime and existing background-ingest enqueue. **LKW.7** — **In progress** (LKW.7A Done). **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+**Next planned task:** **LKW.7B2** — Cross-platform sidecar process, settings, checkpoint and graceful shutdown. **LKW.7** — **In progress** (LKW.7A Done; LKW.7B In progress; LKW.7B1 Done). **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -911,7 +911,7 @@ OS-specific interaction adapter
 - MongoDB-backed `ProofReceipt` (`proof_kind=platform_windows_interaction`) via one-command reviewer runner
 - Reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13
 
-**LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher remains **LKW.7 — In progress** (LKW.7A Done). Tray remains **LKW.8 — Deferred**.
+**LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher remains **LKW.7 — In progress** (LKW.7A/7B1 Done; LKW.7B2 next). Tray remains **LKW.8 — Deferred**.
 
 **Out of scope for LKW.6C (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS service packaging (**APP-HOST-7**).
 
@@ -921,11 +921,12 @@ OS-specific interaction adapter
 
 | ID | Task | Scope | Status |
 |----|------|-------|--------|
-| LKW.7A | Incremental file-change contract and idempotent watcher batches | snapshots, diff, coalescing, change token, job builder | **Done** |
-| LKW.7B | Cross-platform watcher runtime and existing background-ingest enqueue | sidecar/runtime loop, bounded debounce, message bus | Planned — next |
-| LKW.7C | Persistent incremental-index live proof | real broker, worker, persistent index, ProofReceipt | Planned |
+| LKW.7A | Incremental file-change contracts and batches | snapshots, diff, coalescing, change token, job builder | **Done** |
+| LKW.7B1 | Runtime state machine, bounded debounce and existing enqueue boundary | poll cycle, pending map, debounce/max wait, enqueue helper | **Done** |
+| LKW.7B2 | Cross-platform sidecar process, settings, checkpoint and graceful shutdown | OS process, settings, checkpoint, signals | Planned — next |
+| LKW.7C | Persistent-index live proof and ProofReceipt | real broker, worker, persistent index, ProofReceipt | Planned |
 
-**LKW.7 parent status:** **In progress** (LKW.7A Done). **Next planned task:** **LKW.7B**.
+**LKW.7 parent status:** **In progress**. **LKW.7B status:** **In progress**. **Next planned task:** **LKW.7B2**.
 
 **LKW.7A delivered:**
 
@@ -935,7 +936,16 @@ OS-specific interaction adapter
 - Optional `LkwBackgroundIngestJob.change_token` with legacy idempotency preserved when omitted
 - Job builder `build_file_watcher_ingest_job` — no enqueue, no watcher process
 
-**Out of scope until LKW.7B/7C:** watcher runtime, debounce timer, message-bus enqueue, index deletion, content hashing, ProofReceipt.
+**LKW.7B1 delivered:**
+
+- `FileWatcherRuntime` state machine with injected monotonic clock
+- Initial snapshot as baseline only (no enqueue of existing files)
+- Pending final state per canonical path; quiet debounce + maximum batch wait
+- Deletion-only batches clear pending without enqueue
+- Production binding via `build_file_watcher_runtime` → `enqueue_background_ingest_job`
+- Enqueue failure retains pending state; retry keeps deterministic identity
+
+**Out of scope until LKW.7B2/7C:** sidecar process, sleep/loop, settings/env parsing, checkpoint persistence, index deletion, content hashing, ProofReceipt.
 
 ---
 

@@ -991,7 +991,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
 | **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A Done; LKW.7B next) |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1 Done; LKW.7B2 next) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -1077,15 +1077,17 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 #### LKW.7 — File watcher + incremental index
 
-**Status:** **In progress** — LKW.7A **Done**; LKW.7B **Planned — next**; LKW.7C **Planned**.
+**Status:** **In progress** — LKW.7A **Done**; LKW.7B **In progress**; LKW.7B1 **Done**; LKW.7B2 **Planned — next**; LKW.7C **Planned**.
 
 | ID | Scope | Status |
 |----|-------|--------|
 | **LKW.7A** | Incremental file-change contract and idempotent batches | **Done** |
-| **LKW.7B** | Cross-platform watcher runtime and message-bus enqueue | Planned — next |
+| **LKW.7B** | Watcher runtime + sidecar process | **In progress** |
+| **LKW.7B1** | Runtime state machine, bounded debounce, existing enqueue boundary | **Done** |
+| **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | Planned — next |
 | **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned |
 
-**LKW.7A flow (contract only — no watcher process, no enqueue):**
+**LKW.7A flow (contract only):**
 
 ```text
 allowed roots
@@ -1096,16 +1098,33 @@ allowed roots
   → LkwBackgroundIngestJob(change_token=...)
 ```
 
+**LKW.7B1 flow (runtime state machine — no OS process yet):**
+
+```text
+snapshot
+  → diff
+  → pending final state per canonical path
+  → quiet debounce or maximum wait
+  → IncrementalFileChangeBatch
+  → LkwBackgroundIngestJob
+  → enqueue_background_ingest_job
+  → platform message bus
+```
+
 | Concern | Notes |
 |---------|-------|
 | Version identity | Metadata-based only (`path` + `size_bytes` + `modified_time_ns`); not content hashing |
 | `change_token` | Deterministic identity of final actionable `source_snapshots` in one batch |
-| Deletions | Detected diagnostically; not automatically removed from the index |
-| Runtime | No watcher process yet (LKW.7B) |
-| Enqueue | No message-bus enqueue yet (LKW.7B) |
+| Initial files | Baseline only — not emitted as `created` and not enqueued at start |
+| Pending state | Bounded by changed path count; last change wins per canonical path |
+| Debounce | Quiet period on `last_change_at`, plus bounded `max_batch_wait_seconds` |
+| Deletions | Deletion-only batches do not enqueue; not automatically removed from the index |
+| Enqueue failure | Pending changes retained; retry uses deterministic batch/job identity |
+| Runtime process | No watcher process yet (LKW.7B2) |
+| Checkpoint | No snapshot checkpoint persistence yet (LKW.7B2) |
 | Content | No raw file content enters the job |
 
-**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7B/7C).
+**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7B2/7C).
 
 ---
 
