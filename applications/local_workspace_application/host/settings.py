@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications.contracts.settings import (
+    EnvReader,
+    IntergraxApplicationSettingsBase,
+)
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.runtime.observability.operator_wiring import (
@@ -19,7 +22,6 @@ from intergrax.runtime.observability.operator_wiring import (
     SentryExportOperatorConfig,
     parse_observability_export_backend_id,
 )
-
 
 
 LocalWorkspaceIdentitySource = Literal["body_or_context", "context_only"]
@@ -115,6 +117,14 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_sentry_debug: bool = False
     observability_sentry_flush_after_capture: bool = False
     data_home: str = _DEFAULT_DATA_HOME
+    file_watcher_enabled: bool = False
+    file_watcher_tenant_id: str = ""
+    file_watcher_workspace_id: str = ""
+    file_watcher_collection_id: str = ""
+    file_watcher_poll_interval_seconds: float = 1.0
+    file_watcher_debounce_seconds: float = 1.0
+    file_watcher_max_batch_wait_seconds: float = 10.0
+    file_watcher_priority: str = "normal"
 
     @property
     def config_dir(self) -> str:
@@ -151,7 +161,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         return ids
 
     # ------------------------------------------------------------------
-    def build_observability_export_config(self) -> ObservabilityExportOperatorConfig | None:
+    def build_observability_export_config(
+        self,
+    ) -> ObservabilityExportOperatorConfig | None:
         """Build optional ObservabilityExportOperatorConfig from env-driven settings.
 
         Returns None when export is disabled.  Raises ValueError on
@@ -161,7 +173,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             return None
 
         try:
-            backend_id = parse_observability_export_backend_id(self.observability_export_backend)
+            backend_id = parse_observability_export_backend_id(
+                self.observability_export_backend
+            )
         except ObservabilityExportOperatorConfigError as exc:
             raise ValueError(str(exc)) from exc
 
@@ -201,7 +215,8 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                     "observability export is enabled with backend_id=elasticsearch"
                 )
             failed_delivery_file_path = (
-                self.observability_elasticsearch_failed_delivery_file_path.strip() or None
+                self.observability_elasticsearch_failed_delivery_file_path.strip()
+                or None
             )
             elasticsearch = ElasticsearchExportOperatorConfig(
                 base_url=base_url,
@@ -269,7 +284,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             identity_source = id_src_env
         else:
             identity_source = (
-                "context_only" if environment == ApiEnvironment.PROD else "body_or_context"
+                "context_only"
+                if environment == ApiEnvironment.PROD
+                else "body_or_context"
             )
 
         cors = env.csv_set("BACKEND_CORS_ORIGINS")
@@ -323,7 +340,6 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
                     "LOCAL_WORKSPACE_BACKEND_ALLOW_UNAUTHENTICATED=true."
                 )
 
-
         # Observability export
         observability_export_enabled = env.bool(
             "OBSERVABILITY_EXPORT_ENABLED",
@@ -375,19 +391,27 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         )
         observability_elasticsearch_retry_max_attempts = env.int(
             "OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS",
-            default=cls._field_default("observability_elasticsearch_retry_max_attempts"),  # type: ignore[arg-type]
+            default=cls._field_default(
+                "observability_elasticsearch_retry_max_attempts"
+            ),  # type: ignore[arg-type]
         )
         observability_elasticsearch_retry_initial_backoff_seconds = env.float(
             "OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS",
-            default=cls._field_default("observability_elasticsearch_retry_initial_backoff_seconds"),  # type: ignore[arg-type]
+            default=cls._field_default(
+                "observability_elasticsearch_retry_initial_backoff_seconds"
+            ),  # type: ignore[arg-type]
         )
         observability_elasticsearch_retry_max_backoff_seconds = env.float(
             "OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS",
-            default=cls._field_default("observability_elasticsearch_retry_max_backoff_seconds"),  # type: ignore[arg-type]
+            default=cls._field_default(
+                "observability_elasticsearch_retry_max_backoff_seconds"
+            ),  # type: ignore[arg-type]
         )
         observability_elasticsearch_failed_delivery_file_path = env.str(
             "OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH",
-            default=cls._field_default("observability_elasticsearch_failed_delivery_file_path"),  # type: ignore[arg-type]
+            default=cls._field_default(
+                "observability_elasticsearch_failed_delivery_file_path"
+            ),  # type: ignore[arg-type]
         )
         observability_sentry_dsn = env.str(
             "OBSERVABILITY_SENTRY_DSN",
@@ -422,6 +446,38 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             part.strip() for part in read_roots_raw.split(",") if part.strip()
         )
         data_home = _resolve_data_home(env)
+        file_watcher_enabled = env.bool(
+            "FILE_WATCHER_ENABLED",
+            default=cls._field_default("file_watcher_enabled"),  # type: ignore[arg-type]
+        )
+        file_watcher_tenant_id = env.str(
+            "FILE_WATCHER_TENANT_ID",
+            default=cls._field_default("file_watcher_tenant_id"),  # type: ignore[arg-type]
+        )
+        file_watcher_workspace_id = env.str(
+            "FILE_WATCHER_WORKSPACE_ID",
+            default=cls._field_default("file_watcher_workspace_id"),  # type: ignore[arg-type]
+        )
+        file_watcher_collection_id = env.str(
+            "FILE_WATCHER_COLLECTION_ID",
+            default=cls._field_default("file_watcher_collection_id"),  # type: ignore[arg-type]
+        )
+        file_watcher_poll_interval_seconds = env.float(
+            "FILE_WATCHER_POLL_INTERVAL_SECONDS",
+            default=cls._field_default("file_watcher_poll_interval_seconds"),  # type: ignore[arg-type]
+        )
+        file_watcher_debounce_seconds = env.float(
+            "FILE_WATCHER_DEBOUNCE_SECONDS",
+            default=cls._field_default("file_watcher_debounce_seconds"),  # type: ignore[arg-type]
+        )
+        file_watcher_max_batch_wait_seconds = env.float(
+            "FILE_WATCHER_MAX_BATCH_WAIT_SECONDS",
+            default=cls._field_default("file_watcher_max_batch_wait_seconds"),  # type: ignore[arg-type]
+        )
+        file_watcher_priority = env.str(
+            "FILE_WATCHER_PRIORITY",
+            default=cls._field_default("file_watcher_priority"),  # type: ignore[arg-type]
+        )
 
         return {
             "data_home": data_home,
@@ -461,4 +517,12 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_sentry_shutdown_timeout_seconds": observability_sentry_shutdown_timeout_seconds,
             "observability_sentry_debug": observability_sentry_debug,
             "observability_sentry_flush_after_capture": observability_sentry_flush_after_capture,
+            "file_watcher_enabled": file_watcher_enabled,
+            "file_watcher_tenant_id": file_watcher_tenant_id,
+            "file_watcher_workspace_id": file_watcher_workspace_id,
+            "file_watcher_collection_id": file_watcher_collection_id,
+            "file_watcher_poll_interval_seconds": file_watcher_poll_interval_seconds,
+            "file_watcher_debounce_seconds": file_watcher_debounce_seconds,
+            "file_watcher_max_batch_wait_seconds": file_watcher_max_batch_wait_seconds,
+            "file_watcher_priority": file_watcher_priority,
         }

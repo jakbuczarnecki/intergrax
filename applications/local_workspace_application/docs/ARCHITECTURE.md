@@ -730,6 +730,37 @@ POST /v1/interactions/intake
 
 **LKW.6A does not include:** platform Application Hosting adoption (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
+### 9.3b LKW.6C — Windows PowerShell interaction adapter
+
+**Status: Closed** after the live MongoDB-backed reviewer proof passes.
+
+LKW owns a thin Windows PowerShell product client that serializes the supported `lab_json` payload and posts it to the existing platform interaction intake. No new platform interaction channel is introduced.
+
+```text
+invoke-lkw-interaction.ps1
+  → POST /v1/interactions/intake?execute=true
+  → LabJsonInteractionAdapter (lab_json / channel = lab)
+  → InteractionIntakeService
+  → LocalWorkspaceTaskExecutor
+  → NexusLoop
+  → real LKW capability execution
+```
+
+| Concern | Owner | Notes |
+|---------|-------|-------|
+| Product adapter script | `scripts/invoke-lkw-interaction.ps1` | Adapter identity `lkw.windows_powershell`; source `windows_powershell` |
+| Platform channel | `LabJsonInteractionAdapter` | `interaction_channel` remains `lab` |
+| Task / enrichment / Nexus | Existing LKW host + platform | No Task, agent, or RAG logic in PowerShell |
+| Hosting / instance lock / signals | Platform Application Hosting | No generic OS hosting behavior in LKW |
+| Windows Service | APP-HOST-7 | Not LKW.6C |
+| Slack Socket Mode | LKW.6b (optional) | Not LKW.6C |
+| File watcher | LKW.7 | Not LKW.6C |
+| Tray | LKW.8 | Not LKW.6C |
+
+Enable intake with existing settings: `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=lab_json`, `LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT=true`.
+
+Reviewer command: `applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat` — see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13.
+
 ### 9.4 Slack as optional interaction channel
 
 Slack is **supported and professional** as an **optional** channel — not the product core. Use existing Intergrax **interaction + notification** integrations (`slack` slug). Execution remains on the **local LKW application host** (always-available backend on localhost).
@@ -958,9 +989,9 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.3** | 3 | Filesystem browse + allowlist | Tier-0 tools + Tier-3 policy | LKW.0 | **Done** (T6) |
 | **LKW.4** | 4 | Platform message-bus background ingest proof | Tier-0 message_bus + Tier-3 proof workload | LKW.1 | Planned |
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
-| **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | Planned |
-| **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | Planned |
+| **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
+| **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C next) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -1044,15 +1075,96 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 ---
 
-#### LKW.7 — Background indexer
+#### LKW.7 — File watcher + incremental index
 
-| Task | Owner module | Deliverable |
-|------|--------------|-------------|
-| LKW.7.1 | `host/indexer_worker.py` | File watcher on allowlist roots |
-| LKW.7.2 | background ingest enqueue | `message_bus.enqueue` ingest jobs (platform TaskQueue — LKW.4) |
-| LKW.7.3 | notify | Optional Slack batch complete |
+**Status:** **In progress** — LKW.7A **Done**; LKW.7B **Closed**; LKW.7B1 **Done**; LKW.7B2 **Closed**; LKW.7B2A **Done**; LKW.7B2B **Done**; LKW.7C **Planned — next**.
 
-**Acceptance:** Drop file in watched folder → indexed within N minutes without user command.
+| ID | Scope | Status |
+|----|-------|--------|
+| **LKW.7A** | Incremental file-change contract and idempotent batches | **Done** |
+| **LKW.7B** | Watcher runtime + sidecar process | **Closed** |
+| **LKW.7B1** | Runtime state machine, bounded debounce, existing enqueue boundary | **Done** |
+| **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | **Closed** |
+| **LKW.7B2A** | Durable checkpoint and restart recovery | **Done** |
+| **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | **Done** |
+| **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned — next |
+
+**LKW.7A flow (contract only):**
+
+```text
+allowed roots
+  → metadata snapshot (path + size_bytes + modified_time_ns)
+  → snapshot diff
+  → IncrementalFileChangeBatch
+  → change_token
+  → LkwBackgroundIngestJob(change_token=...)
+```
+
+**LKW.7B1 flow (runtime state machine — no OS process yet):**
+
+```text
+snapshot
+  → diff
+  → pending final state per canonical path
+  → quiet debounce or maximum wait
+  → IncrementalFileChangeBatch
+  → LkwBackgroundIngestJob
+  → enqueue_background_ingest_job
+  → platform message bus
+```
+
+**LKW.7B2A flow (durable checkpoint):**
+
+```text
+runtime baseline + pending final changes
+  → versioned FileWatcherCheckpoint
+  → deterministic JSON
+  → atomic replace under data home
+  → process restart
+  → fail-closed load
+  → runtime restore
+  → first poll detects downtime changes
+  → existing LKW.7B1 debounce / enqueue flow
+```
+
+**LKW.7B2B flow (foreground sidecar process):**
+
+```text
+environment settings
+  → existing Kafka message bus
+  → watcher runtime
+  → checkpoint restore or fresh baseline
+  → immediate poll
+  → checkpoint after every completed cycle
+  → bounded sleep
+  → signal-driven shutdown
+  → final checkpoint
+```
+
+| Concern | Notes |
+|---------|-------|
+| Version identity | Metadata-based only (`path` + `size_bytes` + `modified_time_ns`); not content hashing |
+| `change_token` | Deterministic identity of final actionable `source_snapshots` in one batch |
+| Initial files | Baseline only — not emitted as `created` and not enqueued at start |
+| Pending state | Bounded by changed path count; last change wins per canonical path |
+| Debounce | Quiet period on `last_change_at`, plus bounded `max_batch_wait_seconds` |
+| Deletions | Deletion-only batches do not enqueue; not automatically removed from the index |
+| Enqueue failure | Pending changes retained, checkpointed, and retried; deterministic batch/job identity |
+| Checkpoint | Durable baseline + final pending `FileChange` values; no file content |
+| Monotonic timestamps | Never persisted; restored pending work starts a new debounce window |
+| Missing checkpoint | Valid fresh-start — initialize baseline and persist before first poll |
+| Invalid checkpoint | Fail closed — not silently treated as missing |
+| Identity mismatch | Fail closed when tenant/workspace/collection/roots disagree |
+| Watcher roots | Reuse `INTERGRAX_ALLOWED_READ_ROOTS` / `allowed_read_roots` (no separate roots setting) |
+| Data home | Relative `data_home` resolved to an absolute process path before checkpoint construction |
+| Snapshot failure | Retried after poll interval without mutating or saving runtime state |
+| Checkpoint failure | Stops the sidecar immediately (no further poll/sleep) |
+| Signals | Platform `PortableForegroundSignalAdapter` owns SIGINT / SIGTERM / SIGBREAK |
+| Process entrypoint | `python -m local_workspace_application.file_watcher` |
+| Live proof | No persistent-index live proof yet (LKW.7C) |
+| Content | No raw file content enters the job or checkpoint |
+
+**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7C).
 
 ---
 
