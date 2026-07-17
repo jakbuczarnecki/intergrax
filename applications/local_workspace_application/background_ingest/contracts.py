@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -14,10 +15,13 @@ from pydantic import BaseModel, Field, field_validator
 LKW_BACKGROUND_INGEST_TASK_NAME = "lkw.background_ingest.v1"
 LKW_BACKGROUND_INGEST_SCHEMA_VERSION = "lkw.background_ingest_job.v1"
 _IDEMPOTENCY_KEY_PREFIX = "lkw.background_ingest.v1:"
+_CHANGE_TOKEN_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 class LkwBackgroundIngestJob(BaseModel):
-    schema_version: Literal["lkw.background_ingest_job.v1"] = LKW_BACKGROUND_INGEST_SCHEMA_VERSION
+    schema_version: Literal["lkw.background_ingest_job.v1"] = (
+        LKW_BACKGROUND_INGEST_SCHEMA_VERSION
+    )
     tenant_id: str = Field(..., min_length=1)
     workspace_id: str = Field(..., min_length=1)
     collection_id: str = Field(..., min_length=1)
@@ -27,6 +31,7 @@ class LkwBackgroundIngestJob(BaseModel):
     correlation_id: str | None = None
     reason: str | None = None
     priority: str = "normal"
+    change_token: str | None = None
 
     @field_validator("source_paths", mode="before")
     @classmethod
@@ -43,6 +48,19 @@ class LkwBackgroundIngestJob(BaseModel):
         if any(not path for path in normalized):
             raise ValueError("source_paths must not contain blank strings")
         return normalized
+
+    @field_validator("change_token")
+    @classmethod
+    def _validate_change_token(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("change_token must be a string")
+        if not _CHANGE_TOKEN_PATTERN.fullmatch(value):
+            raise ValueError(
+                "change_token must match sha256:<64 lowercase hexadecimal characters>"
+            )
+        return value
 
 
 def encode_background_ingest_job(job: LkwBackgroundIngestJob) -> bytes:
@@ -61,12 +79,14 @@ def decode_background_ingest_job(payload: bytes) -> LkwBackgroundIngestJob:
 
 
 def background_ingest_idempotency_key(job: LkwBackgroundIngestJob) -> str:
-    identity = {
+    identity: dict[str, object] = {
         "tenant_id": job.tenant_id,
         "workspace_id": job.workspace_id,
         "collection_id": job.collection_id,
         "source_paths": sorted(job.source_paths),
     }
+    if job.change_token is not None:
+        identity["change_token"] = job.change_token
     digest = hashlib.sha256(
         json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()

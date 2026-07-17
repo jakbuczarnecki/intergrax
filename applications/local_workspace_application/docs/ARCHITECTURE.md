@@ -991,7 +991,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
 | **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | Planned — next |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A Done; LKW.7B next) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -1075,15 +1075,37 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 ---
 
-#### LKW.7 — Background indexer
+#### LKW.7 — File watcher + incremental index
 
-| Task | Owner module | Deliverable |
-|------|--------------|-------------|
-| LKW.7.1 | `host/indexer_worker.py` | File watcher on allowlist roots |
-| LKW.7.2 | background ingest enqueue | `message_bus.enqueue` ingest jobs (platform TaskQueue — LKW.4) |
-| LKW.7.3 | notify | Optional Slack batch complete |
+**Status:** **In progress** — LKW.7A **Done**; LKW.7B **Planned — next**; LKW.7C **Planned**.
 
-**Acceptance:** Drop file in watched folder → indexed within N minutes without user command.
+| ID | Scope | Status |
+|----|-------|--------|
+| **LKW.7A** | Incremental file-change contract and idempotent batches | **Done** |
+| **LKW.7B** | Cross-platform watcher runtime and message-bus enqueue | Planned — next |
+| **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned |
+
+**LKW.7A flow (contract only — no watcher process, no enqueue):**
+
+```text
+allowed roots
+  → metadata snapshot (path + size_bytes + modified_time_ns)
+  → snapshot diff
+  → IncrementalFileChangeBatch
+  → change_token
+  → LkwBackgroundIngestJob(change_token=...)
+```
+
+| Concern | Notes |
+|---------|-------|
+| Version identity | Metadata-based only (`path` + `size_bytes` + `modified_time_ns`); not content hashing |
+| `change_token` | Deterministic identity of final actionable `source_snapshots` in one batch |
+| Deletions | Detected diagnostically; not automatically removed from the index |
+| Runtime | No watcher process yet (LKW.7B) |
+| Enqueue | No message-bus enqueue yet (LKW.7B) |
+| Content | No raw file content enters the job |
+
+**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7B/7C).
 
 ---
 
