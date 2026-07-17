@@ -1,9 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Deterministic file-watcher runtime state machine (LKW.7B1).
+"""Deterministic file-watcher runtime state machine (LKW.7B1/7B2A).
 
-Owns one poll cycle, pending coalescing, bounded debounce, and enqueue
-through enqueue_background_ingest_job(). No OS process, sleep, or loop.
+Owns one poll cycle, pending coalescing, bounded debounce, enqueue through
+enqueue_background_ingest_job(), and durable checkpoint export/restore.
+No OS process, sleep, or loop.
 """
 
 from __future__ import annotations
@@ -12,7 +13,14 @@ import math
 from pathlib import Path
 from typing import Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from intergrax.tools.providers.message_bus.contracts import MessageBusEnqueueOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -26,6 +34,10 @@ from local_workspace_application.background_ingest.enqueue import (
 from local_workspace_application.file_watcher.batching import (
     build_file_watcher_ingest_job,
     build_incremental_file_change_batch,
+)
+from local_workspace_application.file_watcher.checkpoint import (
+    FileWatcherCheckpoint,
+    build_file_watcher_checkpoint,
 )
 from local_workspace_application.file_watcher.contracts import (
     FileChange,
@@ -247,6 +259,54 @@ class FileWatcherRuntime:
         self._last_observed_monotonic = None
         return snapshots
 
+    def export_checkpoint(self) -> FileWatcherCheckpoint:
+        """Export current baseline and final pending changes as a checkpoint."""
+        self._require_initialized()
+        ordered_pending = tuple(
+            self._pending_changes_by_key[key]
+            for key in sorted(self._pending_changes_by_key.keys())
+        )
+        return build_file_watcher_checkpoint(
+            tenant_id=self._config.tenant_id,
+            workspace_id=self._config.workspace_id,
+            collection_id=self._config.collection_id,
+            allowed_roots=self._config.allowed_roots,
+            baseline_snapshots=self._baseline_snapshots,
+            pending_changes=ordered_pending,
+        )
+
+    def restore_checkpoint(
+        self,
+        checkpoint: FileWatcherCheckpoint,
+        *,
+        now_monotonic: float,
+    ) -> None:
+        """Restore baseline and pending state; start a new process clock epoch."""
+        accepted = self._validate_restore_monotonic(now_monotonic)
+        try:
+            validated = FileWatcherCheckpoint.model_validate(
+                checkpoint.model_dump(mode="json")
+            )
+        except ValidationError:
+            raise RuntimeError("checkpoint_invalid") from None
+        self._validate_checkpoint_identity(validated)
+
+        pending_map = {
+            normalize_watch_path_key(change.path): change
+            for change in validated.pending_changes
+        }
+
+        self._initialized = True
+        self._baseline_snapshots = validated.baseline_snapshots
+        self._pending_changes_by_key = pending_map
+        self._last_observed_monotonic = accepted
+        if pending_map:
+            self._first_pending_at = accepted
+            self._last_change_at = accepted
+        else:
+            self._first_pending_at = None
+            self._last_change_at = None
+
     def poll_once(self, *, now_monotonic: float) -> FileWatcherCycleResult:
         """Snapshot, diff, merge pending state, then evaluate flush eligibility."""
         self._require_initialized()
@@ -278,6 +338,33 @@ class FileWatcherRuntime:
     def _require_initialized(self) -> None:
         if not self._initialized:
             raise RuntimeError("file_watcher_not_initialized")
+
+    def _validate_restore_monotonic(self, now_monotonic: object) -> float:
+        if isinstance(now_monotonic, bool) or not isinstance(
+            now_monotonic, (int, float)
+        ):
+            raise RuntimeError("invalid_monotonic_time")
+        value = float(now_monotonic)
+        if not math.isfinite(value) or value < 0.0:
+            raise RuntimeError("invalid_monotonic_time")
+        return value
+
+    def _validate_checkpoint_identity(self, checkpoint: FileWatcherCheckpoint) -> None:
+        expected = build_file_watcher_checkpoint(
+            tenant_id=self._config.tenant_id,
+            workspace_id=self._config.workspace_id,
+            collection_id=self._config.collection_id,
+            allowed_roots=self._config.allowed_roots,
+            baseline_snapshots=(),
+            pending_changes=(),
+        )
+        if (
+            checkpoint.tenant_id != expected.tenant_id
+            or checkpoint.workspace_id != expected.workspace_id
+            or checkpoint.collection_id != expected.collection_id
+            or checkpoint.allowed_roots != expected.allowed_roots
+        ):
+            raise RuntimeError("checkpoint_identity_mismatch")
 
     def _validate_monotonic(self, now_monotonic: object) -> float:
         if isinstance(now_monotonic, bool) or not isinstance(

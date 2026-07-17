@@ -991,7 +991,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
 | **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1 Done; LKW.7B2 next) |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1/7B2A Done; LKW.7B2B next) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -1077,14 +1077,16 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 #### LKW.7 — File watcher + incremental index
 
-**Status:** **In progress** — LKW.7A **Done**; LKW.7B **In progress**; LKW.7B1 **Done**; LKW.7B2 **Planned — next**; LKW.7C **Planned**.
+**Status:** **In progress** — LKW.7A **Done**; LKW.7B **In progress**; LKW.7B1 **Done**; LKW.7B2 **In progress**; LKW.7B2A **Done**; LKW.7B2B **Planned — next**; LKW.7C **Planned**.
 
 | ID | Scope | Status |
 |----|-------|--------|
 | **LKW.7A** | Incremental file-change contract and idempotent batches | **Done** |
 | **LKW.7B** | Watcher runtime + sidecar process | **In progress** |
 | **LKW.7B1** | Runtime state machine, bounded debounce, existing enqueue boundary | **Done** |
-| **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | Planned — next |
+| **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | **In progress** |
+| **LKW.7B2A** | Durable checkpoint and restart recovery | **Done** |
+| **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | Planned — next |
 | **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned |
 
 **LKW.7A flow (contract only):**
@@ -1111,6 +1113,20 @@ snapshot
   → platform message bus
 ```
 
+**LKW.7B2A flow (durable checkpoint — no process loop yet):**
+
+```text
+runtime baseline + pending final changes
+  → versioned FileWatcherCheckpoint
+  → deterministic JSON
+  → atomic replace under data home
+  → process restart
+  → fail-closed load
+  → runtime restore
+  → first poll detects downtime changes
+  → existing LKW.7B1 debounce / enqueue flow
+```
+
 | Concern | Notes |
 |---------|-------|
 | Version identity | Metadata-based only (`path` + `size_bytes` + `modified_time_ns`); not content hashing |
@@ -1120,11 +1136,16 @@ snapshot
 | Debounce | Quiet period on `last_change_at`, plus bounded `max_batch_wait_seconds` |
 | Deletions | Deletion-only batches do not enqueue; not automatically removed from the index |
 | Enqueue failure | Pending changes retained; retry uses deterministic batch/job identity |
-| Runtime process | No watcher process yet (LKW.7B2) |
-| Checkpoint | No snapshot checkpoint persistence yet (LKW.7B2) |
-| Content | No raw file content enters the job |
+| Checkpoint | Durable baseline + final pending `FileChange` values; no file content |
+| Monotonic timestamps | Never persisted; restored pending work starts a new debounce window |
+| Missing checkpoint | Valid fresh-start condition for the future sidecar |
+| Invalid checkpoint | Fail closed — not silently treated as missing |
+| Identity mismatch | Fail closed when tenant/workspace/collection/roots disagree |
+| Checkpoint save | Not yet automatically driven by a process loop (LKW.7B2B) |
+| Runtime process | No watcher process yet (LKW.7B2B) |
+| Content | No raw file content enters the job or checkpoint |
 
-**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7B2/7C).
+**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7B2B/7C).
 
 ---
 
