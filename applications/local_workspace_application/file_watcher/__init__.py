@@ -1,11 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""LKW file-watcher package (LKW.7A/7B1/7B2A).
+"""LKW file-watcher package (LKW.7A/7B1/7B2A/7B2B).
 
 LKW.7A: snapshot contracts and job construction.
 LKW.7B1: deterministic runtime state machine and enqueue binding.
 LKW.7B2A: durable checkpoint contracts, atomic JSON store, export/restore.
-No OS watcher process, sleep loop, or automatic checkpoint lifecycle lives here.
+LKW.7B2B: sidecar process, settings, signals, automatic checkpoint lifecycle.
 """
 
 from local_workspace_application.file_watcher.batching import (
@@ -38,6 +38,19 @@ from local_workspace_application.file_watcher.runtime import (
     FileWatcherRuntimeConfig,
     build_file_watcher_runtime,
 )
+from local_workspace_application.file_watcher.sidecar import (
+    FileWatcherCheckpointStore,
+    FileWatcherSidecar,
+    FileWatcherSidecarConfig,
+    FileWatcherSidecarConfigurationError,
+    FileWatcherSidecarExitKind,
+    FileWatcherSidecarResult,
+    FileWatcherSleeper,
+    SystemFileWatcherSleeper,
+    build_file_watcher_sidecar_config,
+    build_local_workspace_file_watcher_sidecar,
+    run_local_workspace_file_watcher_sidecar,
+)
 from local_workspace_application.file_watcher.snapshot import (
     detect_file_changes,
     snapshot_allowed_roots,
@@ -51,23 +64,34 @@ __all__ = [
     "FileSnapshot",
     "FileSnapshotProvider",
     "FileWatcherCheckpoint",
+    "FileWatcherCheckpointStore",
     "FileWatcherCycleResult",
     "FileWatcherCycleStatus",
     "FileWatcherRuntime",
     "FileWatcherRuntimeConfig",
+    "FileWatcherSidecar",
+    "FileWatcherSidecarConfig",
+    "FileWatcherSidecarConfigurationError",
+    "FileWatcherSidecarExitKind",
+    "FileWatcherSidecarResult",
+    "FileWatcherSleeper",
     "IncrementalFileChangeBatch",
     "JsonFileWatcherCheckpointStore",
     "LKW_FILE_WATCHER_CHECKPOINT_SCHEMA_VERSION",
+    "SystemFileWatcherSleeper",
     "build_file_watcher_checkpoint",
     "build_file_watcher_ingest_job",
     "build_file_watcher_runtime",
+    "build_file_watcher_sidecar_config",
     "build_incremental_file_change_batch",
+    "build_local_workspace_file_watcher_sidecar",
     "decode_file_watcher_checkpoint",
     "detect_file_changes",
     "encode_file_watcher_checkpoint",
     "file_change_token",
     "file_watcher_checkpoint_path",
     "restore_file_watcher_runtime",
+    "run_local_workspace_file_watcher_sidecar",
     "snapshot_allowed_roots",
     "snapshot_file",
 ]

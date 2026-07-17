@@ -991,7 +991,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
 | **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1/7B2A Done; LKW.7B2B next) |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C next) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -1077,17 +1077,17 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 #### LKW.7 — File watcher + incremental index
 
-**Status:** **In progress** — LKW.7A **Done**; LKW.7B **In progress**; LKW.7B1 **Done**; LKW.7B2 **In progress**; LKW.7B2A **Done**; LKW.7B2B **Planned — next**; LKW.7C **Planned**.
+**Status:** **In progress** — LKW.7A **Done**; LKW.7B **Closed**; LKW.7B1 **Done**; LKW.7B2 **Closed**; LKW.7B2A **Done**; LKW.7B2B **Done**; LKW.7C **Planned — next**.
 
 | ID | Scope | Status |
 |----|-------|--------|
 | **LKW.7A** | Incremental file-change contract and idempotent batches | **Done** |
-| **LKW.7B** | Watcher runtime + sidecar process | **In progress** |
+| **LKW.7B** | Watcher runtime + sidecar process | **Closed** |
 | **LKW.7B1** | Runtime state machine, bounded debounce, existing enqueue boundary | **Done** |
-| **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | **In progress** |
+| **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | **Closed** |
 | **LKW.7B2A** | Durable checkpoint and restart recovery | **Done** |
-| **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | Planned — next |
-| **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned |
+| **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | **Done** |
+| **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned — next |
 
 **LKW.7A flow (contract only):**
 
@@ -1113,7 +1113,7 @@ snapshot
   → platform message bus
 ```
 
-**LKW.7B2A flow (durable checkpoint — no process loop yet):**
+**LKW.7B2A flow (durable checkpoint):**
 
 ```text
 runtime baseline + pending final changes
@@ -1127,6 +1127,20 @@ runtime baseline + pending final changes
   → existing LKW.7B1 debounce / enqueue flow
 ```
 
+**LKW.7B2B flow (foreground sidecar process):**
+
+```text
+environment settings
+  → existing Kafka message bus
+  → watcher runtime
+  → checkpoint restore or fresh baseline
+  → immediate poll
+  → checkpoint after every completed cycle
+  → bounded sleep
+  → signal-driven shutdown
+  → final checkpoint
+```
+
 | Concern | Notes |
 |---------|-------|
 | Version identity | Metadata-based only (`path` + `size_bytes` + `modified_time_ns`); not content hashing |
@@ -1135,17 +1149,22 @@ runtime baseline + pending final changes
 | Pending state | Bounded by changed path count; last change wins per canonical path |
 | Debounce | Quiet period on `last_change_at`, plus bounded `max_batch_wait_seconds` |
 | Deletions | Deletion-only batches do not enqueue; not automatically removed from the index |
-| Enqueue failure | Pending changes retained; retry uses deterministic batch/job identity |
+| Enqueue failure | Pending changes retained, checkpointed, and retried; deterministic batch/job identity |
 | Checkpoint | Durable baseline + final pending `FileChange` values; no file content |
 | Monotonic timestamps | Never persisted; restored pending work starts a new debounce window |
-| Missing checkpoint | Valid fresh-start condition for the future sidecar |
+| Missing checkpoint | Valid fresh-start — initialize baseline and persist before first poll |
 | Invalid checkpoint | Fail closed — not silently treated as missing |
 | Identity mismatch | Fail closed when tenant/workspace/collection/roots disagree |
-| Checkpoint save | Not yet automatically driven by a process loop (LKW.7B2B) |
-| Runtime process | No watcher process yet (LKW.7B2B) |
+| Watcher roots | Reuse `INTERGRAX_ALLOWED_READ_ROOTS` / `allowed_read_roots` (no separate roots setting) |
+| Data home | Relative `data_home` resolved to an absolute process path before checkpoint construction |
+| Snapshot failure | Retried after poll interval without mutating or saving runtime state |
+| Checkpoint failure | Stops the sidecar immediately (no further poll/sleep) |
+| Signals | Platform `PortableForegroundSignalAdapter` owns SIGINT / SIGTERM / SIGBREAK |
+| Process entrypoint | `python -m local_workspace_application.file_watcher` |
+| Live proof | No persistent-index live proof yet (LKW.7C) |
 | Content | No raw file content enters the job or checkpoint |
 
-**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7B2B/7C).
+**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7C).
 
 ---
 

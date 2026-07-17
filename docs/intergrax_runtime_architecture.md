@@ -199,9 +199,9 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | **LKW.7A** | Incremental file-change contract and idempotent batches | **Done** |
 | **LKW.7B1** | Runtime state machine, bounded debounce and existing enqueue boundary | **Done** |
 | **LKW.7B2A** | Durable checkpoint and restart recovery | **Done** |
-| **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | Planned — next |
-| **LKW.7C** | Persistent incremental-index live proof | Planned |
+| **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | **Done** |
+| **LKW.7C** | Persistent incremental-index live proof | Planned — next |
 
 
-LKW.7 is **In progress**: LKW.7A Done; LKW.7B1 Done; LKW.7B2A Done; LKW.7B2B Planned — next; LKW.7C Planned.
+LKW.7 is **In progress**: LKW.7A Done; LKW.7B1 Done; LKW.7B2A Done; LKW.7B2B Done; LKW.7B Closed; LKW.7C Planned — next.
 LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
