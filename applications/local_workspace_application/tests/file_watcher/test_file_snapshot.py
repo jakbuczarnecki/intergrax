@@ -40,6 +40,19 @@ def test_snapshot_file_returns_canonical_size_and_mtime(tmp_path: Path) -> None:
     assert snapshot.modified_time_ns == stat_result.st_mtime_ns
 
 
+def test_snapshot_file_canonicalizes_lexical_path_segments(tmp_path: Path) -> None:
+    target = tmp_path / "docs" / "a.txt"
+    _write(target, b"hello-world")
+    (tmp_path / "nested").mkdir()
+    lexical = tmp_path / "nested" / ".." / "docs" / "a.txt"
+    roots = frozenset({str(tmp_path.resolve())})
+
+    snapshot = snapshot_file(str(lexical), allowed_roots=roots)
+
+    assert snapshot.path == str(target.resolve())
+    assert ".." not in Path(snapshot.path).parts
+
+
 def test_snapshot_file_rejects_relative_path(tmp_path: Path) -> None:
     roots = frozenset({str(tmp_path.resolve())})
     with pytest.raises(RuntimeError, match="path_must_be_absolute"):
@@ -197,6 +210,36 @@ def test_mtime_change_produces_modified(tmp_path: Path) -> None:
 
     assert len(changes) == 1
     assert changes[0].kind == "modified"
+
+
+def test_snapshot_file_rejects_direct_symlink_before_resolve(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candidate = (tmp_path / "maybe_link.txt").resolve()
+    roots = frozenset({str(tmp_path.resolve())})
+    resolve_called = False
+    original_is_symlink = Path.is_symlink
+
+    def fake_is_symlink(self: Path) -> bool:
+        if Path(self).expanduser() == Path(str(candidate)).expanduser():
+            return True
+        return original_is_symlink(self)
+
+    def fail_if_called(*_args: object, **_kwargs: object) -> Path:
+        nonlocal resolve_called
+        resolve_called = True
+        raise AssertionError("resolve_allowed_path must not be called")
+
+    monkeypatch.setattr(Path, "is_symlink", fake_is_symlink)
+    monkeypatch.setattr(
+        "local_workspace_application.file_watcher.snapshot.resolve_allowed_path",
+        fail_if_called,
+    )
+
+    with pytest.raises(RuntimeError, match="watch_symlink_not_supported"):
+        snapshot_file(str(candidate), allowed_roots=roots)
+    assert resolve_called is False
 
 
 @pytest.mark.skipif(

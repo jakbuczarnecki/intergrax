@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -20,6 +21,10 @@ from local_workspace_application.file_watcher import (
     build_file_watcher_ingest_job,
     build_incremental_file_change_batch,
     file_change_token,
+)
+from local_workspace_application.file_watcher.contracts import (
+    IncrementalFileChangeBatch,
+    normalize_watch_path_key,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -359,3 +364,71 @@ def test_contracts_and_job_payload_exclude_raw_content_fields(tmp_path: Path) ->
         r"\b(content|chunks|prompt|document_text|file_bytes|embedding)\b",
         encoded,
     )
+
+
+def test_equivalent_snapshot_paths_canonicalize_identically(tmp_path: Path) -> None:
+    (tmp_path / "nested").mkdir()
+    canonical = tmp_path / "file.txt"
+    lexical = tmp_path / "nested" / ".." / "file.txt"
+    first = FileSnapshot(path=str(canonical), size_bytes=1, modified_time_ns=10)
+    second = FileSnapshot(path=str(lexical), size_bytes=1, modified_time_ns=10)
+
+    assert first.path == second.path
+    assert normalize_watch_path_key(first.path) == normalize_watch_path_key(second.path)
+    assert ".." not in Path(first.path).parts
+
+
+def test_equivalent_lexical_paths_generate_same_token(tmp_path: Path) -> None:
+    (tmp_path / "nested").mkdir()
+    canonical = tmp_path / "file.txt"
+    lexical = tmp_path / "nested" / ".." / "file.txt"
+    first = FileSnapshot(path=str(canonical), size_bytes=4, modified_time_ns=40)
+    second = FileSnapshot(path=str(lexical), size_bytes=4, modified_time_ns=40)
+
+    assert file_change_token((first,)) == file_change_token((second,))
+
+
+def test_equivalent_paths_coalesce_into_one_batch_entry(tmp_path: Path) -> None:
+    (tmp_path / "nested").mkdir()
+    canonical = tmp_path / "file.txt"
+    lexical = tmp_path / "nested" / ".." / "file.txt"
+    first = FileSnapshot(path=str(canonical), size_bytes=1, modified_time_ns=10)
+    second = FileSnapshot(path=str(lexical), size_bytes=2, modified_time_ns=20)
+    batch = build_incremental_file_change_batch(
+        [
+            FileChange(kind="created", path=first.path, current=first),
+            FileChange(
+                kind="modified",
+                path=second.path,
+                previous=first,
+                current=second,
+            ),
+        ]
+    )
+
+    assert len(batch.source_snapshots) == 1
+    assert batch.source_paths == (second.path,)
+    assert batch.change_token == file_change_token((second,))
+
+
+def test_canonicalized_deleted_paths_cannot_overlap_sources(tmp_path: Path) -> None:
+    (tmp_path / "nested").mkdir()
+    canonical = tmp_path / "file.txt"
+    lexical_deleted = tmp_path / "nested" / ".." / "file.txt"
+    snap = FileSnapshot(path=str(canonical), size_bytes=1, modified_time_ns=1)
+
+    with pytest.raises(ValueError, match="cannot exist in both"):
+        IncrementalFileChangeBatch(
+            source_snapshots=(snap,),
+            deleted_paths=(str(lexical_deleted),),
+            change_token=file_change_token((snap,)),
+        )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path case folding only")
+def test_normalize_watch_path_key_folds_case_on_windows(tmp_path: Path) -> None:
+    base = tmp_path.resolve()
+    upper = str(base / "Docs" / "File.TXT")
+    lower = str(base / "docs" / "file.txt")
+
+    assert normalize_watch_path_key(upper) == normalize_watch_path_key(lower)

@@ -31,8 +31,19 @@ def snapshot_file(
 ) -> FileSnapshot:
     """Snapshot one allowlisted regular file using size and mtime_ns only."""
     roots = require_read_allowlist_roots(allowed_roots)
-    resolved = resolve_allowed_path(str(path), roots)
+    raw_candidate = Path(str(path)).expanduser()
+    if not raw_candidate.is_absolute():
+        raise RuntimeError("path_must_be_absolute")
     try:
+        if raw_candidate.is_symlink():
+            raise RuntimeError("watch_symlink_not_supported")
+    except RuntimeError:
+        raise
+    except OSError:
+        raise RuntimeError("file_snapshot_failed") from None
+
+    try:
+        resolved = resolve_allowed_path(str(path), roots)
         if not resolved.exists():
             raise RuntimeError("watch_file_not_found")
         if resolved.is_symlink():

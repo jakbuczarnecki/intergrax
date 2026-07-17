@@ -9,6 +9,7 @@ This is not cryptographic content-change detection.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -17,9 +18,23 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 FileChangeKind = Literal["created", "modified", "deleted"]
 
 
+def _canonical_watch_path(path: str) -> str:
+    """Return a resolved absolute path without requiring the path to exist."""
+    stripped = path.strip()
+    if not stripped:
+        raise ValueError("path must be non-blank")
+    candidate = Path(stripped).expanduser()
+    if not candidate.is_absolute():
+        raise ValueError("path must be absolute")
+    try:
+        return str(candidate.resolve(strict=False))
+    except (OSError, RuntimeError, ValueError):
+        raise ValueError("path could not be canonicalized") from None
+
+
 def normalize_watch_path_key(path: str) -> str:
     """Deterministic sort/dedupe key for canonical filesystem paths."""
-    return str(Path(path))
+    return os.path.normcase(os.path.normpath(_canonical_watch_path(path)))
 
 
 class FileSnapshot(BaseModel):
@@ -35,13 +50,7 @@ class FileSnapshot(BaseModel):
     @field_validator("path")
     @classmethod
     def _validate_path(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("path must be non-blank")
-        candidate = Path(stripped)
-        if not candidate.is_absolute():
-            raise ValueError("path must be absolute")
-        return str(candidate)
+        return _canonical_watch_path(value)
 
 
 class FileChange(BaseModel):
@@ -58,13 +67,7 @@ class FileChange(BaseModel):
     @field_validator("path")
     @classmethod
     def _validate_path(cls, value: str) -> str:
-        stripped = value.strip()
-        if not stripped:
-            raise ValueError("path must be non-blank")
-        candidate = Path(stripped)
-        if not candidate.is_absolute():
-            raise ValueError("path must be absolute")
-        return str(candidate)
+        return _canonical_watch_path(value)
 
     @model_validator(mode="after")
     def _validate_kind_invariants(self) -> FileChange:
@@ -115,6 +118,15 @@ class IncrementalFileChangeBatch(BaseModel):
     @property
     def source_paths(self) -> tuple[str, ...]:
         return tuple(snapshot.path for snapshot in self.source_snapshots)
+
+    @field_validator("deleted_paths", mode="before")
+    @classmethod
+    def _canonicalize_deleted_paths(cls, value: object) -> tuple[str, ...]:
+        if value is None:
+            return ()
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("deleted_paths must be a list or tuple")
+        return tuple(_canonical_watch_path(str(item)) for item in value)
 
     @model_validator(mode="after")
     def _validate_batch_invariants(self) -> IncrementalFileChangeBatch:
