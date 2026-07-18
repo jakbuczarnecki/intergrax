@@ -34,6 +34,7 @@ docs/_external/
 
 applications/local_workspace_application/.observability/
 applications/local_workspace_application/.proof_docs/
+applications/local_workspace_application/.file_watcher_e2e_state/
 
 .artifacts/
 

@@ -1,0 +1,71 @@
+# © Artur Czarnecki. All rights reserved.
+# LKW.7C1 watcher-triggered persistent search E2E proof overlay.
+# Explicit merge only (not docker-compose.*.yml — excluded from auto-discovery):
+# docker compose \
+#   -f applications/local_workspace_application/docker/docker-compose.yml \
+#   -f applications/local_workspace_application/docker/docker-compose.kafka.yml \
+#   -f applications/local_workspace_application/docker/file-watcher-e2e.compose.yml \
+#   up --build
+
+services:
+  lkw-file-watcher:
+    build:
+      context: ../../..
+      dockerfile: applications/local_workspace_application/docker/Dockerfile
+    image: local_workspace-application:latest
+    command:
+      - python
+      - -m
+      - local_workspace_application.file_watcher
+    env_file:
+      - ../.env
+    environment:
+      INTERGRAX_ENV: dev
+      LOCAL_WORKSPACE_BACKEND_ENV: dev
+      LOCAL_WORKSPACE_FILE_WATCHER_ENABLED: "true"
+      LOCAL_WORKSPACE_FILE_WATCHER_TENANT_ID: lkw-file-watcher-e2e
+      LOCAL_WORKSPACE_FILE_WATCHER_WORKSPACE_ID: lkw-file-watcher-e2e
+      LOCAL_WORKSPACE_FILE_WATCHER_COLLECTION_ID: lkw-file-watcher-e2e
+      LOCAL_WORKSPACE_FILE_WATCHER_POLL_INTERVAL_SECONDS: "0.5"
+      LOCAL_WORKSPACE_FILE_WATCHER_DEBOUNCE_SECONDS: "1.0"
+      LOCAL_WORKSPACE_FILE_WATCHER_MAX_BATCH_WAIT_SECONDS: "5.0"
+      LOCAL_WORKSPACE_FILE_WATCHER_PRIORITY: normal
+      LOCAL_WORKSPACE_DATA_HOME: /data/file_watcher_state
+      INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
+      LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
+      LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
+      LOCAL_WORKSPACE_ENABLE_REDIS: "true"
+      INTERGRAX_REDIS_URL: redis://lkw-redis:6379/0
+      INTERGRAX_KAFKA_BOOTSTRAP_SERVERS: lkw-kafka:9092
+      INTERGRAX_KAFKA_TOPIC: intergrax.tasks
+      INTERGRAX_KAFKA_EVENTS_TOPIC: intergrax.task-events
+      INTERGRAX_KAFKA_STATUS_TOPIC: intergrax.task-status
+      INTERGRAX_KAFKA_RESULTS_TOPIC: intergrax.task-results
+      INTERGRAX_KAFKA_CONSUMER_GROUP: lkw-file-watcher-e2e
+    volumes:
+      - ../.proof_docs:/data/user_docs:rw
+      - ../.file_watcher_e2e_state:/data/file_watcher_state:rw
+    depends_on:
+      lkw-kafka:
+        condition: service_started
+      lkw-kafka-topics:
+        condition: service_completed_successfully
+      lkw-redis:
+        condition: service_started
+    restart: "no"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >
+          from pathlib import Path;
+          raise SystemExit(
+              0 if Path(
+                  "/data/file_watcher_state/data/file_watcher/checkpoint.json"
+              ).is_file() else 1
+          )
+      interval: 1s
+      timeout: 3s
+      retries: 120
+      start_period: 3s
