@@ -1,10 +1,10 @@
 # Proof Receipts — Architecture
 
-**Status:** Canonical architecture (domain pair 1:1)  
-**Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../plan/PROOF_RECEIPTS.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)  
-**Last updated:** 2026-07-10 — **PROOF-RECEIPTS-1E closed**
+**Status:** Canonical architecture (domain pair 1:1)
+**Plan (1:1):** [`plan/PROOF_RECEIPTS.md`](../plan/PROOF_RECEIPTS.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Proof consumer:** LKW ([`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PR)
+**Last updated:** 2026-07-19 — **LKW.7C2 closed** (PROOF-RECEIPTS-1E remains closed)
 
 ---
 
@@ -139,8 +139,8 @@ Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{p
 
 ## I. PROOF-RECEIPTS-1D — LKW MongoDB Docker proof stack (closed)
 
-**Overlay:** `applications/local_workspace_application/docker/docker-compose.mongodb.yml`  
-**Runner:** `applications/local_workspace_application/scripts/run-lkw-mongodb-proof-stack.bat`  
+**Overlay:** `applications/local_workspace_application/docker/docker-compose.mongodb.yml`
+**Runner:** `applications/local_workspace_application/scripts/run-lkw-mongodb-proof-stack.bat`
 **Validator:** `applications/local_workspace_application/scripts/verify_lkw_mongodb_stack.py`
 
 ```text
@@ -186,20 +186,48 @@ LKW background-task workload
 
 ---
 
-## K. Future reviewer path (target)
+## K. LKW.7C2 — File watcher persistent-search receipt
 
-After PROOF-RECEIPTS-1C–1E closeout:
+**Workload proof:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.py`
+**Runner:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.bat`
+**Verification guide:** `applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md`
+**Public Steps:** 14–15 in `docs/public-adoption/LKW_PLATFORM_PROOF.md`
 
-1. Run LKW proof workload (background task proof with receipt recording).
+```text
+filesystem create (after watcher baseline)
+  → watcher sidecar enqueue
+  → Kafka
+  → asynchronous background worker
+  → persistent Qdrant search evidence
+  → checkpoint restore evidence
+  → ProofReceipt (proof_kind=file_watcher_persistent_search)
+  → ProofReceiptStore
+  → DocumentStore
+  → MongoDBDocumentStoreIntegration
+  → MongoDB
+  → Mongo Express reviewer inspection
+```
+
+- LKW does not write MongoDB directly.
+- The ProofReceipt is authoritative.
+- The verification markdown is not authoritative.
+- No in-memory fallback is accepted.
+- Platform PROOF-RECEIPTS-1A through 1E remain closed and are not reopened by LKW.7C2.
+
+## L. Future reviewer path (target)
+
+After PROOF-RECEIPTS-1C–1E and LKW.7C2 closeout:
+
+1. Run LKW proof workload (background task or file-watcher proof with receipt recording).
 2. Application records a `ProofReceipt` through `ProofReceiptStore`.
 3. `IntegrationProfile` selects `document_store=mongodb`.
 4. Reviewer inspects receipt in **Mongo Express** / Mongo UI — not by opening markdown closeout files.
 
-Public Step 9 in `LKW_PLATFORM_PROOF.md` is available for Mongo Express receipt inspection.
+Public Steps 9 / 14–15 in `LKW_PLATFORM_PROOF.md` document Mongo Express receipt inspection.
 
 ---
 
-## L. Code references
+## M. Code references
 
 | Artifact | Path |
 |----------|------|

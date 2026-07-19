@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Static/unit guardrails for LKW.7C1 watcher-triggered E2E proof."""
+"""Static/unit guardrails for LKW.7C1/C2 watcher-triggered E2E proof."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -50,17 +51,8 @@ _REQUIRED_PROOF_CONCEPTS = (
     "lkw-background-worker",
     "local_workspace",
     "qdrant",
-)
-
-_FORBIDDEN_RECEIPT_PATTERNS = (
-    "ProofReceipt",
-    "ProofReceiptStore",
-    "record_and_verify_proof_receipt",
-    "create_mongodb_integration",
-    "MongoDBDocumentStoreIntegration",
-    "pymongo",
-    "MongoClient",
-    "mongo_express",
+    "embedding_warmup",
+    "proof_phase",
 )
 
 _REQUIRED_PASS_FIELDS = (
@@ -95,8 +87,24 @@ _REQUIRED_PASS_FIELDS = (
     "duplicate_enqueue_after_restart",
     "search_results_after_restart",
     "source_ref_found_after_restart",
+    "embedding_warmup_completed",
+    "reviewer_rerun_required",
     "proof_receipt_recorded",
+    "proof_receipt_verified",
+    "proof_receipt_query_verified",
+    "proof_receipt_store",
+    "document_store_provider",
+    "document_store_integration",
+    "proof_receipt_id",
+    "proof_receipt_run_id",
+    "proof_receipt_result",
+    "proof_receipt_application_id",
     "proof_receipt_task",
+    "mongo_express_url",
+    "markdown_source_of_truth",
+    "direct_mongodb_write",
+    "direct_pymongo_from_lkw",
+    "manual_evidence_injection",
 )
 
 
@@ -113,6 +121,16 @@ def _load_proof_module() -> Any:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _fake_verified_receipt(proof: Any) -> Any:
+    return proof.ProofReceipt(
+        proof_id="local_workspace:file_watcher_persistent_search:run-1",
+        proof_kind="file_watcher_persistent_search",
+        application_id="local_workspace",
+        result=proof.ProofReceiptResult.PASS,
+        run_id="run-1",
+    )
 
 
 def test_overlay_filename_guardrail() -> None:
@@ -167,12 +185,30 @@ def test_proof_script_trigger_guardrails() -> None:
         assert concept in text, concept
 
 
-def test_proof_script_receipt_boundary() -> None:
-    text = _read(_PROOF_SCRIPT)
-    compose = _read(_WATCHER_COMPOSE)
-    for pattern in _FORBIDDEN_RECEIPT_PATTERNS:
-        assert pattern not in text, pattern
-        assert pattern not in compose, pattern
+def test_four_file_compose_command_includes_mongodb() -> None:
+    proof = _load_proof_module()
+    command = proof.build_compose_command(
+        "ps",
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
+    )
+    assert command == [
+        "docker",
+        "compose",
+        "-f",
+        "base.yml",
+        "-f",
+        "kafka.yml",
+        "-f",
+        "watcher.yml",
+        "-f",
+        "mongodb.yml",
+        "ps",
+    ]
+    assert "--mongodb-compose" in _read(_PROOF_SCRIPT)
+    assert "docker-compose.mongodb.yml" in _read(_PROOF_SCRIPT)
 
 
 def test_search_diagnostic_parsing_success_and_rejection() -> None:
@@ -187,6 +223,8 @@ def test_search_diagnostic_parsing_success_and_rejection() -> None:
                         "evidence_count": 2,
                         "source_refs": [expected, "/data/user_docs/other.txt"],
                         "raw_tool_reason": "ok",
+                        "used": True,
+                        "reason": "retrieve_complete",
                     }
                 }
             }
@@ -197,6 +235,8 @@ def test_search_diagnostic_parsing_success_and_rejection() -> None:
     assert diagnostics.num_results == 2
     assert diagnostics.evidence_count == 2
     assert diagnostics.raw_tool_reason == "ok"
+    assert diagnostics.used is True
+    assert diagnostics.reason == "retrieve_complete"
     assert proof.search_attempt_succeeded(diagnostics, expected_source_path=expected)
 
     wrong_source = {
@@ -258,6 +298,147 @@ def test_search_diagnostic_parsing_success_and_rejection() -> None:
     )
 
 
+def test_warmup_request_shape() -> None:
+    proof = _load_proof_module()
+    request = proof.build_warmup_search_request("LKW_FILE_WATCHER_E2E_PREWARM_ab12")
+    assert request["capability"] == "local.workspace.search"
+    assert request["tenant_id"] == "lkw-file-watcher-e2e"
+    assert request["workspace_id"] == "lkw-file-watcher-e2e"
+    assert request["user_id"] == "lkw.file_watcher"
+    metadata = request["metadata"]
+    assert isinstance(metadata, dict)
+    assert metadata["collection_id"] == "lkw-file-watcher-e2e"
+    assert metadata["top_k"] == 1
+    assert metadata["proof_phase"] == "embedding_warmup"
+    assert metadata["query"] == "LKW_FILE_WATCHER_E2E_PREWARM_ab12"
+    serialized = str(request)
+    assert "local.workspace.index" not in serialized
+    assert "source_paths" not in serialized
+
+
+def test_warmup_diagnostic_success_and_rejection() -> None:
+    proof = _load_proof_module()
+    complete = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason=None,
+        used=True,
+        reason="retrieve_complete",
+    )
+    assert proof.warmup_attempt_succeeded(complete) is True
+
+    live_redacted = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason="no_hits",
+        used=None,
+        reason=None,
+        terminal_status="succeeded",
+    )
+    assert proof.warmup_attempt_succeeded(live_redacted) is True
+
+    failed = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason="boom",
+        used=True,
+        reason="retrieve_failed",
+    )
+    assert proof.warmup_attempt_succeeded(failed) is False
+    assert proof.warmup_attempt_succeeded(None) is False
+    missing_signals = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason=None,
+        used=None,
+        reason=None,
+        terminal_status=None,
+    )
+    assert proof.warmup_attempt_succeeded(missing_signals) is False
+
+
+def test_warmup_retry_success_and_failure() -> None:
+    proof = _load_proof_module()
+    cold = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "terminal_status": "failed",
+                "diagnostics": {
+                    "lkw.search_summary.v1": {
+                        "num_results": 0,
+                        "evidence_count": 0,
+                        "source_refs": [],
+                        "used": False,
+                        "reason": "retrieve_failed",
+                        "raw_tool_reason": "cold",
+                    }
+                },
+            }
+        }
+    }
+    warm = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "terminal_status": "succeeded",
+                "diagnostics": {
+                    "lkw.search_summary.v1": {
+                        "num_results": 0,
+                        "evidence_count": 0,
+                        "source_refs": [],
+                        "raw_tool_reason": "no_hits",
+                    }
+                },
+            }
+        }
+    }
+    with (
+        patch.object(proof, "request_json", side_effect=[cold, warm]),
+        patch.object(proof.time, "sleep"),
+        patch.object(proof.time, "monotonic", side_effect=[0.0, 1.0, 2.0, 3.0]),
+    ):
+        result = proof.run_embedding_warmup(
+            base_url="http://127.0.0.1:8020",
+            timeout_seconds=10.0,
+        )
+    assert result.completed is True
+    assert result.attempt_count == 2
+    assert result.last_reason in {"retrieve_complete", "terminal_succeeded"}
+
+    with (
+        patch.object(proof, "request_json", side_effect=[cold, cold, cold]),
+        patch.object(proof.time, "sleep"),
+        patch.object(proof.time, "monotonic", side_effect=[0.0, 1.0, 2.0, 11.0]),
+    ):
+        failed = proof.run_embedding_warmup(
+            base_url="http://127.0.0.1:8020",
+            timeout_seconds=10.0,
+        )
+    assert failed.completed is False
+    assert failed.last_reason == "retrieve_failed"
+    assert "embedding_warmup_failed" in _read(_PROOF_SCRIPT)
+
+
+def test_warmup_before_kafka_and_file_ordering() -> None:
+    source = _read(_PROOF_SCRIPT)
+    main_start = source.index("def main(")
+    main_body = source[main_start:]
+    warmup_idx = main_body.index("run_embedding_warmup")
+    kafka_before_idx = main_body.index("task_count_before_file = inspect_kafka")
+    create_doc_idx = main_body.index("create_proof_document")
+    assert warmup_idx < kafka_before_idx < create_doc_idx
+
+
+def test_timeout_defaults() -> None:
+    proof = _load_proof_module()
+    args = proof._parse_args([])
+    assert args.timeout_seconds == 600
+    assert args.warmup_timeout_seconds == 300
+
+
 def test_kafka_delta_helpers() -> None:
     proof = _load_proof_module()
     assert proof.kafka_topic_increased(before=1, after=2) is True
@@ -311,10 +492,12 @@ def test_restart_command_targets() -> None:
         base_compose=Path("base.yml"),
         kafka_compose=Path("kafka.yml"),
         watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
     )
     joined = " ".join(command)
     assert command[:2] == ["docker", "compose"]
     assert "restart" in command
+    assert "mongodb.yml" in command
     for service in (
         "lkw-file-watcher",
         "lkw-background-worker",
@@ -328,6 +511,7 @@ def test_restart_command_targets() -> None:
     assert "system prune" not in joined
     assert "lkw-kafka" not in command[command.index("restart") + 1 :]
     assert "lkw-redis" not in command[command.index("restart") + 1 :]
+    assert "lkw-mongodb" not in command[command.index("restart") + 1 :]
 
 
 def test_bat_runner_ordering_and_services() -> None:
@@ -337,24 +521,40 @@ def test_bat_runner_ordering_and_services() -> None:
     start_idx = text.lower().index("starting watcher e2e proof stack")
     health_idx = text.lower().index("waiting for lkw health")
     watcher_ready_idx = text.lower().index("waiting for watcher baseline checkpoint")
+    mongo_idx = text.lower().index("waiting for mongodb health")
+    mongo_express_idx = text.lower().index("waiting for mongo express")
+    kafka_ui_idx = text.lower().index("waiting for kafka ui")
     invoke_idx = text.lower().index("invoking python watcher e2e proof workload")
     assert reset_idx < validate_idx < start_idx < health_idx < watcher_ready_idx
-    assert watcher_ready_idx < invoke_idx
+    assert watcher_ready_idx < mongo_idx < mongo_express_idx < kafka_ui_idx < invoke_idx
     assert "watcher_container_running=true" in text
     assert "watcher_checkpoint_ready=true" in text
+    assert "mongodb_container_healthy=true" in text
+    assert "mongo_express_available=true" in text
+    assert "kafka_ui=ok" in text
     for service in (
         "local_workspace",
         "lkw-background-worker",
         "lkw-file-watcher",
         "lkw-kafka",
         "lkw-kafka-topics",
+        "lkw-kafka-ui",
         "lkw-redis",
         "qdrant",
         "ollama",
+        "lkw-mongodb",
+        "lkw-mongo-express",
     ):
         assert service in text
-    assert "lkw-mongodb" not in text
-    assert "lkw-mongo-express" not in text
+    assert "docker-compose.mongodb.yml" in text
+    assert "--extra integrations-mongodb" in text
+    assert "INTERGRAX_MONGODB_URI=" in text
+    assert "INTERGRAX_MONGODB_DATABASE=" in text
+    assert "INTERGRAX_MONGODB_COLLECTION=" in text
+    assert "--mongodb-compose" in text
+    assert "--mongo-express" in text
+    assert "echo %INTERGRAX_MONGODB_URI%" not in text
+    assert "echo INTERGRAX_MONGODB_URI" not in text
     assert "docker compose down" not in text
     assert "down -v" not in text
     assert "volume rm" not in text
@@ -363,6 +563,7 @@ def test_bat_runner_ordering_and_services() -> None:
 
 def test_pass_output_fields() -> None:
     proof = _load_proof_module()
+    receipt = _fake_verified_receipt(proof)
     evidence = proof.build_pass_evidence(
         marker="MARKER",
         filename="file.txt",
@@ -375,28 +576,37 @@ def test_pass_output_fields() -> None:
         search_results_after_restart=1,
         watcher_restored_after_restart=True,
         source_file_modified_after_index=False,
+        embedding_warmup_completed=True,
+        verified_receipt=receipt,
+        integration_class="MongoDBDocumentStoreIntegration",
+        mongo_express_url="http://127.0.0.1:8086",
     )
     for field in _REQUIRED_PASS_FIELDS:
         assert field in evidence
     assert evidence["watcher_restored_after_restart"] is True
     assert evidence["source_file_modified_after_index"] is False
-    assert evidence["proof_receipt_recorded"] is False
+    assert evidence["embedding_warmup_completed"] is True
+    assert evidence["reviewer_rerun_required"] is False
+    assert evidence["proof_receipt_recorded"] is True
+    assert evidence["proof_receipt_verified"] is True
+    assert evidence["proof_receipt_query_verified"] is True
     assert evidence["proof_receipt_task"] == "LKW.7C2"
     rendered = proof.format_pass_output(evidence)
     assert "proof_result=PASS" in rendered
     assert "watcher_restored_after_restart=true" in rendered
     assert "source_file_modified_after_index=false" in rendered
-    assert "proof_receipt_recorded=false" in rendered
+    assert "embedding_warmup_completed=true" in rendered
+    assert "reviewer_rerun_required=false" in rendered
+    assert "proof_receipt_recorded=true" in rendered
     assert "proof_receipt_task=LKW.7C2" in rendered
-    assert "mongodb" not in rendered.lower()
     assert "redis://" not in rendered.lower()
     assert "password" not in rendered.lower()
-    assert "embedding" not in rendered.lower()
     assert "This file was created" not in rendered
 
 
 def test_pass_evidence_derives_measured_fields() -> None:
     proof = _load_proof_module()
+    receipt = _fake_verified_receipt(proof)
     kwargs = {
         "marker": "MARKER",
         "filename": "file.txt",
@@ -407,6 +617,10 @@ def test_pass_evidence_derives_measured_fields() -> None:
         "task_count_before_restart": 2,
         "task_count_after_restart": 2,
         "search_results_after_restart": 1,
+        "embedding_warmup_completed": True,
+        "verified_receipt": receipt,
+        "integration_class": "MongoDBDocumentStoreIntegration",
+        "mongo_express_url": "http://127.0.0.1:8086",
     }
     measured = proof.build_pass_evidence(
         **kwargs,
@@ -548,18 +762,22 @@ def test_watcher_evidence_compose_commands() -> None:
         base_compose=Path("base.yml"),
         kafka_compose=Path("kafka.yml"),
         watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
     )
     logs_cmd = proof.build_watcher_logs_command(
         base_compose=Path("base.yml"),
         kafka_compose=Path("kafka.yml"),
         watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
     )
     resume_cmd = proof.build_watcher_resume_command(
         base_compose=Path("base.yml"),
         kafka_compose=Path("kafka.yml"),
         watcher_compose=Path("watcher.yml"),
+        mongodb_compose=Path("mongodb.yml"),
     )
     assert stop_cmd[-4:] == ["stop", "--timeout", "30", "lkw-file-watcher"]
+    assert "mongodb.yml" in stop_cmd
     assert logs_cmd[-6:] == [
         "logs",
         "--no-color",
@@ -583,6 +801,12 @@ def test_main_flow_evidence_ordering() -> None:
     first_poll = main_body.index("_poll_search_until_indexed")
     second_poll = main_body.index("_poll_search_until_indexed", first_poll + 1)
     markers = [
+        ("warmup", main_body.index("run_embedding_warmup")),
+        (
+            "kafka_before_file",
+            main_body.index("task_count_before_file = inspect_kafka"),
+        ),
+        ("create_document", main_body.index("create_proof_document")),
         ("first_search", first_poll),
         (
             "source_stat_after_index",
@@ -606,6 +830,10 @@ def test_main_flow_evidence_ordering() -> None:
             main_body.index("sidecar_result_proves_checkpoint_restore"),
         ),
         ("resume_watcher", main_body.index('"up"')),
+        (
+            "record_receipt",
+            main_body.index("record_file_watcher_e2e_proof_receipt"),
+        ),
         ("pass_evidence", main_body.index("build_pass_evidence")),
         ("pass_output", main_body.index("format_pass_output")),
     ]
