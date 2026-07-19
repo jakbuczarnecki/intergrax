@@ -25,6 +25,7 @@ from typing import Any
 
 _PROOF_KIND = "file_watcher_persistent_search"
 _PROOF_RUNNER = "run-lkw-file-watcher-e2e-proof.py"
+_SIDECAR_RESULT_SCHEMA = "lkw.file_watcher_sidecar_result.v1"
 
 _TENANT_ID = "lkw-file-watcher-e2e"
 _WORKSPACE_ID = "lkw-file-watcher-e2e"
@@ -67,11 +68,86 @@ class ProofDocument:
 
 
 @dataclass(frozen=True)
+class ProofFileStat:
+    size_bytes: int
+    modified_time_ns: int
+
+
+@dataclass(frozen=True)
 class SearchDiagnostics:
     num_results: int
     evidence_count: int
     source_refs: tuple[str, ...]
     raw_tool_reason: str | None
+
+
+def capture_proof_file_stat(path: Path) -> ProofFileStat:
+    st = path.stat()
+    return ProofFileStat(size_bytes=st.st_size, modified_time_ns=st.st_mtime_ns)
+
+
+def proof_file_stat_unchanged(
+    *,
+    before: ProofFileStat,
+    after: ProofFileStat,
+) -> bool:
+    return (
+        before.size_bytes == after.size_bytes
+        and before.modified_time_ns == after.modified_time_ns
+    )
+
+
+def _strip_optional_compose_log_prefix(line: str) -> str:
+    stripped = line.strip()
+    if " | " not in stripped:
+        return stripped
+    prefix, remainder = stripped.split(" | ", 1)
+    candidate = remainder.strip()
+    if candidate.startswith("{") and prefix and not prefix.startswith("{"):
+        return candidate
+    return stripped
+
+
+def extract_last_file_watcher_sidecar_result(
+    log_output: str,
+) -> dict[str, object] | None:
+    last: dict[str, object] | None = None
+    for line in log_output.splitlines():
+        if not line.strip():
+            continue
+        candidate = _strip_optional_compose_log_prefix(line)
+        if not candidate.startswith("{"):
+            continue
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        if parsed.get("schema_version") != _SIDECAR_RESULT_SCHEMA:
+            continue
+        last = parsed
+    return last
+
+
+def sidecar_result_proves_checkpoint_restore(
+    result: dict[str, object] | None,
+) -> bool:
+    if result is None:
+        return False
+    if result.get("schema_version") != _SIDECAR_RESULT_SCHEMA:
+        return False
+    if result.get("exit_kind") != "clean_stop":
+        return False
+    if result.get("exit_code") != 0:
+        return False
+    if result.get("restored_from_checkpoint") is not True:
+        return False
+    if result.get("final_checkpoint_saved") is not True:
+        return False
+    if result.get("error_id") is not None:
+        return False
+    return True
 
 
 def fail(reason: str, **safe_fields: object) -> int:
@@ -406,6 +482,81 @@ def build_restart_command(
     )
 
 
+def build_watcher_graceful_stop_command(
+    *,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+) -> list[str]:
+    return build_compose_command(
+        "stop",
+        "--timeout",
+        "30",
+        _WATCHER_SERVICE,
+        base_compose=base_compose,
+        kafka_compose=kafka_compose,
+        watcher_compose=watcher_compose,
+    )
+
+
+def build_watcher_logs_command(
+    *,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+) -> list[str]:
+    return build_compose_command(
+        "logs",
+        "--no-color",
+        "--no-log-prefix",
+        "--tail",
+        "200",
+        _WATCHER_SERVICE,
+        base_compose=base_compose,
+        kafka_compose=kafka_compose,
+        watcher_compose=watcher_compose,
+    )
+
+
+def build_watcher_resume_command(
+    *,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+) -> list[str]:
+    return build_compose_command(
+        "up",
+        "-d",
+        _WATCHER_SERVICE,
+        base_compose=base_compose,
+        kafka_compose=kafka_compose,
+        watcher_compose=watcher_compose,
+    )
+
+
+def wait_for_watcher_ready(
+    *,
+    base_compose: Path,
+    kafka_compose: Path,
+    watcher_compose: Path,
+    timeout_seconds: float,
+) -> bool:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if watcher_container_running(
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+        ) and watcher_checkpoint_ready(
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+        ):
+            return True
+        time.sleep(1.0)
+    return False
+
+
 def format_pass_output(evidence: dict[str, object]) -> str:
     lines = [
         "proof_result=PASS",
@@ -430,6 +581,8 @@ def build_pass_evidence(
     task_count_before_restart: int,
     task_count_after_restart: int,
     search_results_after_restart: int,
+    watcher_restored_after_restart: bool,
+    source_file_modified_after_index: bool,
 ) -> dict[str, object]:
     return {
         "trigger": "filesystem_create",
@@ -441,7 +594,7 @@ def build_pass_evidence(
         "vector_store_provider": "qdrant",
         "persistent_index": True,
         "watcher_checkpoint_ready": True,
-        "watcher_restored_after_restart": True,
+        "watcher_restored_after_restart": watcher_restored_after_restart,
         "tenant_id": _TENANT_ID,
         "workspace_id": _WORKSPACE_ID,
         "collection_id": _COLLECTION_ID,
@@ -456,7 +609,7 @@ def build_pass_evidence(
         "source_ref_found_before_restart": True,
         "restart_mode": "non_destructive",
         "volumes_removed": False,
-        "source_file_modified_after_index": False,
+        "source_file_modified_after_index": source_file_modified_after_index,
         "reindexed_after_restart": False,
         "task_count_before_restart": task_count_before_restart,
         "task_count_after_restart": task_count_after_restart,
@@ -605,6 +758,11 @@ def main(argv: list[str] | None = None) -> int:
         return fail("expected_source_ref_missing", **fields)
 
     try:
+        source_stat_after_index = capture_proof_file_stat(document.host_path)
+    except OSError:
+        return fail("source_file_stat_failed")
+
+    try:
         task_count_after_file = inspect_kafka_topic_message_count(
             bootstrap=str(args.kafka_bootstrap),
             topic=str(args.topic),
@@ -715,6 +873,121 @@ def main(argv: list[str] | None = None) -> int:
             ),
         )
 
+    try:
+        source_stat_after_restart = capture_proof_file_stat(document.host_path)
+    except OSError:
+        return fail("source_file_stat_failed")
+
+    source_file_modified_after_index = not proof_file_stat_unchanged(
+        before=source_stat_after_index,
+        after=source_stat_after_restart,
+    )
+    if source_file_modified_after_index:
+        return fail(
+            "source_file_modified_after_index",
+            size_changed=(
+                source_stat_after_index.size_bytes
+                != source_stat_after_restart.size_bytes
+            ),
+            modified_time_changed=(
+                source_stat_after_index.modified_time_ns
+                != source_stat_after_restart.modified_time_ns
+            ),
+        )
+
+    try:
+        run_compose(
+            "stop",
+            "--timeout",
+            "30",
+            _WATCHER_SERVICE,
+            base_compose=base_compose,
+            kafka_compose=kafka_compose,
+            watcher_compose=watcher_compose,
+            check=True,
+            timeout=60.0,
+        )
+    except (RuntimeError, subprocess.TimeoutExpired):
+        return fail("watcher_graceful_stop_failed")
+
+    evidence_failure: str | None = None
+    evidence_fields: dict[str, object] = {}
+    watcher_restored_after_restart = False
+    try:
+        try:
+            logs_completed = run_compose(
+                "logs",
+                "--no-color",
+                "--no-log-prefix",
+                "--tail",
+                "200",
+                _WATCHER_SERVICE,
+                base_compose=base_compose,
+                kafka_compose=kafka_compose,
+                watcher_compose=watcher_compose,
+                check=True,
+                timeout=60.0,
+            )
+        except (RuntimeError, subprocess.TimeoutExpired):
+            evidence_failure = "watcher_result_read_failed"
+        else:
+            sidecar_result = extract_last_file_watcher_sidecar_result(
+                logs_completed.stdout
+            )
+            if sidecar_result is None:
+                evidence_failure = "watcher_result_missing"
+            elif not sidecar_result_proves_checkpoint_restore(sidecar_result):
+                evidence_failure = "watcher_restore_not_proven"
+                evidence_fields = {
+                    "sidecar_exit_kind": sidecar_result.get("exit_kind"),
+                    "sidecar_exit_code": sidecar_result.get("exit_code"),
+                    "sidecar_restored_from_checkpoint": sidecar_result.get(
+                        "restored_from_checkpoint"
+                    ),
+                    "sidecar_final_checkpoint_saved": sidecar_result.get(
+                        "final_checkpoint_saved"
+                    ),
+                    "sidecar_error_id": sidecar_result.get("error_id"),
+                }
+            else:
+                watcher_restored_after_restart = True
+    finally:
+        resume_ok = False
+        try:
+            run_compose(
+                "up",
+                "-d",
+                _WATCHER_SERVICE,
+                base_compose=base_compose,
+                kafka_compose=kafka_compose,
+                watcher_compose=watcher_compose,
+                check=True,
+                timeout=180.0,
+            )
+            resume_ok = wait_for_watcher_ready(
+                base_compose=base_compose,
+                kafka_compose=kafka_compose,
+                watcher_compose=watcher_compose,
+                timeout_seconds=min(120.0, timeout_seconds),
+            )
+        except (RuntimeError, subprocess.TimeoutExpired):
+            resume_ok = False
+
+    if not resume_ok:
+        if evidence_failure is not None:
+            return fail(
+                "watcher_resume_failed",
+                previous_failure_reason=evidence_failure,
+                **evidence_fields,
+            )
+        return fail("watcher_resume_failed")
+
+    if evidence_failure is not None:
+        return fail(evidence_failure, **evidence_fields)
+
+    if not watcher_restored_after_restart:
+        return fail("watcher_restore_not_proven")
+
     evidence = build_pass_evidence(
         marker=document.marker,
         filename=document.filename,
@@ -725,6 +998,8 @@ def main(argv: list[str] | None = None) -> int:
         task_count_before_restart=task_count_before_restart,
         task_count_after_restart=task_count_after_restart,
         search_results_after_restart=search_results_after_restart,
+        watcher_restored_after_restart=watcher_restored_after_restart,
+        source_file_modified_after_index=source_file_modified_after_index,
     )
     print(format_pass_output(evidence))
     print(f"proof_runner={_PROOF_RUNNER}")

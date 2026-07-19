@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import sys
 import tempfile
@@ -372,13 +373,19 @@ def test_pass_output_fields() -> None:
         task_count_before_restart=2,
         task_count_after_restart=2,
         search_results_after_restart=1,
+        watcher_restored_after_restart=True,
+        source_file_modified_after_index=False,
     )
     for field in _REQUIRED_PASS_FIELDS:
         assert field in evidence
+    assert evidence["watcher_restored_after_restart"] is True
+    assert evidence["source_file_modified_after_index"] is False
     assert evidence["proof_receipt_recorded"] is False
     assert evidence["proof_receipt_task"] == "LKW.7C2"
     rendered = proof.format_pass_output(evidence)
     assert "proof_result=PASS" in rendered
+    assert "watcher_restored_after_restart=true" in rendered
+    assert "source_file_modified_after_index=false" in rendered
     assert "proof_receipt_recorded=false" in rendered
     assert "proof_receipt_task=LKW.7C2" in rendered
     assert "mongodb" not in rendered.lower()
@@ -388,9 +395,230 @@ def test_pass_output_fields() -> None:
     assert "This file was created" not in rendered
 
 
+def test_pass_evidence_derives_measured_fields() -> None:
+    proof = _load_proof_module()
+    kwargs = {
+        "marker": "MARKER",
+        "filename": "file.txt",
+        "container_source_path": "/data/user_docs/file.txt",
+        "task_count_before_file": 1,
+        "task_count_after_file": 2,
+        "search_results_before_restart": 1,
+        "task_count_before_restart": 2,
+        "task_count_after_restart": 2,
+        "search_results_after_restart": 1,
+    }
+    measured = proof.build_pass_evidence(
+        **kwargs,
+        watcher_restored_after_restart=True,
+        source_file_modified_after_index=False,
+    )
+    opposite = proof.build_pass_evidence(
+        **kwargs,
+        watcher_restored_after_restart=False,
+        source_file_modified_after_index=True,
+    )
+    assert measured["watcher_restored_after_restart"] is True
+    assert measured["source_file_modified_after_index"] is False
+    assert opposite["watcher_restored_after_restart"] is False
+    assert opposite["source_file_modified_after_index"] is True
+    source = _read(_PROOF_SCRIPT)
+    fn_start = source.index("def build_pass_evidence(")
+    fn_end = source.index("\ndef ", fn_start + 1)
+    body = source[fn_start:fn_end]
+    assert '"watcher_restored_after_restart": True' not in body
+    assert '"source_file_modified_after_index": False' not in body
+
+
+def test_proof_file_stat_unchanged_comparisons() -> None:
+    proof = _load_proof_module()
+    same = proof.ProofFileStat(size_bytes=10, modified_time_ns=100)
+    assert (
+        proof.proof_file_stat_unchanged(
+            before=same,
+            after=proof.ProofFileStat(size_bytes=10, modified_time_ns=100),
+        )
+        is True
+    )
+    assert (
+        proof.proof_file_stat_unchanged(
+            before=same,
+            after=proof.ProofFileStat(size_bytes=11, modified_time_ns=100),
+        )
+        is False
+    )
+    assert (
+        proof.proof_file_stat_unchanged(
+            before=same,
+            after=proof.ProofFileStat(size_bytes=10, modified_time_ns=101),
+        )
+        is False
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "proof.txt"
+        path.write_text("hello", encoding="utf-8")
+        captured = proof.capture_proof_file_stat(path)
+        assert captured.size_bytes == path.stat().st_size
+        assert captured.modified_time_ns == path.stat().st_mtime_ns
+
+
+def test_extract_last_file_watcher_sidecar_result() -> None:
+    proof = _load_proof_module()
+    valid = {
+        "schema_version": "lkw.file_watcher_sidecar_result.v1",
+        "exit_kind": "clean_stop",
+        "exit_code": 0,
+        "restored_from_checkpoint": True,
+        "cycles_completed": 5,
+        "last_cycle_status": "idle",
+        "final_checkpoint_saved": True,
+        "error_id": None,
+    }
+    valid_json = json.dumps(valid)
+    assert proof.extract_last_file_watcher_sidecar_result(valid_json) == valid
+
+    multi = "\n".join(
+        [
+            "INFO starting",
+            json.dumps({**valid, "cycles_completed": 1}),
+            "not-json",
+            "{broken",
+            json.dumps({"schema_version": "other.v1"}),
+            json.dumps({"hello": "world"}),
+            f"lkw-file-watcher  | {json.dumps({**valid, 'cycles_completed': 9})}",
+        ]
+    )
+    last = proof.extract_last_file_watcher_sidecar_result(multi)
+    assert last is not None
+    assert last["cycles_completed"] == 9
+    assert proof.extract_last_file_watcher_sidecar_result("INFO only\n") is None
+
+
+def test_sidecar_result_proves_checkpoint_restore() -> None:
+    proof = _load_proof_module()
+    valid = {
+        "schema_version": "lkw.file_watcher_sidecar_result.v1",
+        "exit_kind": "clean_stop",
+        "exit_code": 0,
+        "restored_from_checkpoint": True,
+        "final_checkpoint_saved": True,
+        "error_id": None,
+    }
+    assert proof.sidecar_result_proves_checkpoint_restore(valid) is True
+    assert proof.sidecar_result_proves_checkpoint_restore(None) is False
+    assert (
+        proof.sidecar_result_proves_checkpoint_restore(
+            {**valid, "restored_from_checkpoint": False}
+        )
+        is False
+    )
+    assert (
+        proof.sidecar_result_proves_checkpoint_restore(
+            {**valid, "exit_kind": "startup_failed"}
+        )
+        is False
+    )
+    assert (
+        proof.sidecar_result_proves_checkpoint_restore(
+            {**valid, "exit_kind": "checkpoint_failed"}
+        )
+        is False
+    )
+    assert (
+        proof.sidecar_result_proves_checkpoint_restore({**valid, "exit_code": 1})
+        is False
+    )
+    assert (
+        proof.sidecar_result_proves_checkpoint_restore(
+            {**valid, "final_checkpoint_saved": False}
+        )
+        is False
+    )
+    assert (
+        proof.sidecar_result_proves_checkpoint_restore(
+            {**valid, "error_id": "checkpoint_failed"}
+        )
+        is False
+    )
+
+
+def test_watcher_evidence_compose_commands() -> None:
+    proof = _load_proof_module()
+    stop_cmd = proof.build_watcher_graceful_stop_command(
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+    )
+    logs_cmd = proof.build_watcher_logs_command(
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+    )
+    resume_cmd = proof.build_watcher_resume_command(
+        base_compose=Path("base.yml"),
+        kafka_compose=Path("kafka.yml"),
+        watcher_compose=Path("watcher.yml"),
+    )
+    assert stop_cmd[-4:] == ["stop", "--timeout", "30", "lkw-file-watcher"]
+    assert logs_cmd[-6:] == [
+        "logs",
+        "--no-color",
+        "--no-log-prefix",
+        "--tail",
+        "200",
+        "lkw-file-watcher",
+    ]
+    assert resume_cmd[-3:] == ["up", "-d", "lkw-file-watcher"]
+    text = _read(_PROOF_SCRIPT)
+    assert "docker kill" not in text
+    assert "docker rm" not in text
+    assert "docker compose down" not in text
+    assert "down -v" not in text
+
+
+def test_main_flow_evidence_ordering() -> None:
+    source = _read(_PROOF_SCRIPT)
+    main_start = source.index("def main(")
+    main_body = source[main_start:]
+    first_poll = main_body.index("_poll_search_until_indexed")
+    second_poll = main_body.index("_poll_search_until_indexed", first_poll + 1)
+    markers = [
+        ("first_search", first_poll),
+        (
+            "source_stat_after_index",
+            main_body.index("source_stat_after_index = capture_proof_file_stat"),
+        ),
+        ("component_restart", main_body.index("*_RESTART_SERVICES")),
+        ("duplicate_enqueue", main_body.index("duplicate_enqueue_detected")),
+        ("post_restart_search", second_poll),
+        (
+            "source_stat_after_restart",
+            main_body.index("source_stat_after_restart = capture_proof_file_stat"),
+        ),
+        ("compare_source_stat", main_body.index("proof_file_stat_unchanged")),
+        ("graceful_stop", main_body.index('"stop"')),
+        (
+            "read_watcher_result",
+            main_body.index("extract_last_file_watcher_sidecar_result"),
+        ),
+        (
+            "validate_restore",
+            main_body.index("sidecar_result_proves_checkpoint_restore"),
+        ),
+        ("resume_watcher", main_body.index('"up"')),
+        ("pass_evidence", main_body.index("build_pass_evidence")),
+        ("pass_output", main_body.index("format_pass_output")),
+    ]
+    positions = [index for _, index in markers]
+    assert positions == sorted(positions)
+    assert main_body.index("search_after_restart_failed") < main_body.index('"stop"')
+
+
 def test_destructive_compose_absent_from_python_proof() -> None:
     text = _read(_PROOF_SCRIPT)
     assert "docker compose down" not in text
     assert "down -v" not in text
     assert "volume rm" not in text
     assert "system prune" not in text
+    assert "docker kill" not in text
+    assert "docker rm" not in text
