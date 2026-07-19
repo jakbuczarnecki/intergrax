@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
 import io
 import re
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -44,25 +46,31 @@ def _load_proof_module():
     return module
 
 
-def _sample_workload_evidence() -> dict[str, object]:
-    return {
+def _sample_workload_evidence(proof: Any, **overrides: Any) -> Any:
+    values: dict[str, Any] = {
         "marker": "LKW_FILE_WATCHER_E2E_20260719T120000Z_ab12cd34",
         "proof_filename": "lkw_file_watcher_e2e_20260719T120000Z_ab12cd34.txt",
         "container_source_path": (
             "/data/user_docs/lkw_file_watcher_e2e_20260719T120000Z_ab12cd34.txt"
         ),
+        "watcher_checkpoint_ready": True,
+        "embedding_warmup_completed": True,
         "task_count_before_file": 3,
         "task_count_after_file": 4,
         "search_results_before_restart": 1,
+        "source_ref_found_before_restart": True,
         "task_count_before_restart": 4,
         "task_count_after_restart": 4,
         "search_results_after_restart": 1,
+        "source_ref_found_after_restart": True,
         "watcher_restored_after_restart": True,
         "watcher_final_checkpoint_saved": True,
         "source_file_modified_after_index": False,
-        "embedding_warmup_completed": True,
-        "reviewer_rerun_required": False,
+        "restart_mode": "non_destructive",
+        "volumes_removed": False,
     }
+    values.update(overrides)
+    return proof.FileWatcherE2EWorkloadEvidence(**values)
 
 
 def test_build_file_watcher_proof_id_valid_and_blank() -> None:
@@ -81,7 +89,7 @@ def test_build_file_watcher_proof_id_valid_and_blank() -> None:
 def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     proof = _load_proof_module()
     run_id = "LKW_FILE_WATCHER_E2E_20260719T120000Z_ab12cd34"
-    evidence = _sample_workload_evidence()
+    evidence = _sample_workload_evidence(proof)
     receipt = proof.build_file_watcher_e2e_proof_receipt(
         run_id=run_id,
         workload_evidence=evidence,
@@ -105,18 +113,26 @@ def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     assert provider["enqueue_trigger"] == "filesystem_create"
     assert provider["watcher_process"] == "foreground_sidecar"
     assert provider["watcher_checkpoint_store"] == "json_file"
-    assert provider["checkpoint_restore_verified"] is True
-    assert provider["watcher_final_checkpoint_saved"] is True
+    assert (
+        provider["checkpoint_restore_verified"] is evidence.checkpoint_restore_verified
+    )
+    assert (
+        provider["watcher_final_checkpoint_saved"]
+        is evidence.watcher_final_checkpoint_saved
+    )
     assert provider["vector_store_provider"] == "qdrant"
     assert provider["persistent_index"] is True
     assert provider["document_store_provider"] == "mongodb"
     assert provider["kafka_task_topic"] == "intergrax.tasks"
-    assert provider["task_count_before_file"] == 3
-    assert provider["task_count_after_file"] == 4
-    assert provider["task_topic_increased"] is True
-    assert provider["task_count_before_restart"] == 4
-    assert provider["task_count_after_restart"] == 4
-    assert provider["duplicate_enqueue_after_restart"] is False
+    assert provider["task_count_before_file"] == evidence.task_count_before_file
+    assert provider["task_count_after_file"] == evidence.task_count_after_file
+    assert provider["task_topic_increased"] is evidence.task_topic_increased
+    assert provider["task_count_before_restart"] == evidence.task_count_before_restart
+    assert provider["task_count_after_restart"] == evidence.task_count_after_restart
+    assert (
+        provider["duplicate_enqueue_after_restart"]
+        is evidence.duplicate_enqueue_after_restart
+    )
     assert provider["restart_services"] == [
         "lkw-file-watcher",
         "lkw-background-worker",
@@ -129,21 +145,38 @@ def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     assert domain["tenant_id"] == "lkw-file-watcher-e2e"
     assert domain["workspace_id"] == "lkw-file-watcher-e2e"
     assert domain["collection_id"] == "lkw-file-watcher-e2e"
-    assert domain["marker"] == run_id
-    assert domain["proof_filename"] == evidence["proof_filename"]
-    assert domain["container_source_path"] == evidence["container_source_path"]
-    assert domain["embedding_warmup_completed"] is True
-    assert domain["reviewer_rerun_required"] is False
-    assert domain["watcher_checkpoint_ready"] is True
-    assert domain["watcher_restored_after_restart"] is True
-    assert domain["search_results_before_restart"] == 1
-    assert domain["source_ref_found_before_restart"] is True
-    assert domain["restart_mode"] == "non_destructive"
-    assert domain["volumes_removed"] is False
-    assert domain["source_file_modified_after_index"] is False
-    assert domain["reindexed_after_restart"] is False
-    assert domain["search_results_after_restart"] == 1
-    assert domain["source_ref_found_after_restart"] is True
+    assert domain["marker"] == evidence.marker
+    assert domain["proof_filename"] == evidence.proof_filename
+    assert domain["container_source_path"] == evidence.container_source_path
+    assert domain["embedding_warmup_completed"] is evidence.embedding_warmup_completed
+    assert domain["reviewer_rerun_required"] is evidence.reviewer_rerun_required
+    assert domain["watcher_checkpoint_ready"] is evidence.watcher_checkpoint_ready
+    assert (
+        domain["watcher_restored_after_restart"]
+        is evidence.watcher_restored_after_restart
+    )
+    assert (
+        domain["search_results_before_restart"]
+        == evidence.search_results_before_restart
+    )
+    assert (
+        domain["source_ref_found_before_restart"]
+        is evidence.source_ref_found_before_restart
+    )
+    assert domain["restart_mode"] == evidence.restart_mode
+    assert domain["volumes_removed"] is evidence.volumes_removed
+    assert (
+        domain["source_file_modified_after_index"]
+        is evidence.source_file_modified_after_index
+    )
+    assert domain["reindexed_after_restart"] is evidence.reindexed_after_restart
+    assert (
+        domain["search_results_after_restart"] == evidence.search_results_after_restart
+    )
+    assert (
+        domain["source_ref_found_after_restart"]
+        is evidence.source_ref_found_after_restart
+    )
 
     guardrails = receipt.guardrails
     assert guardrails["manual_index_command"] is False
@@ -172,11 +205,150 @@ def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     )
 
 
+def test_receipt_rejects_loose_dictionary() -> None:
+    proof = _load_proof_module()
+    with pytest.raises(TypeError, match="workload_evidence_must_be_typed"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id="LKW_FILE_WATCHER_E2E_20260719T120000Z_ab12cd34",
+            workload_evidence={"marker": "x"},
+        )
+
+
+def test_receipt_rejects_missing_checkpoint_proof() -> None:
+    proof = _load_proof_module()
+    base = _sample_workload_evidence(proof)
+    missing_final = dataclasses.replace(
+        base,
+        watcher_final_checkpoint_saved=False,
+    )
+    with pytest.raises(ValueError, match="watcher_final_checkpoint_not_saved"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=base.marker,
+            workload_evidence=missing_final,
+        )
+    missing_restore = dataclasses.replace(
+        base,
+        watcher_restored_after_restart=False,
+    )
+    with pytest.raises(ValueError, match="watcher_restore_not_proven"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=base.marker,
+            workload_evidence=missing_restore,
+        )
+
+
+def test_receipt_rejects_failed_warmup() -> None:
+    proof = _load_proof_module()
+    evidence = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        embedding_warmup_completed=False,
+    )
+    with pytest.raises(ValueError, match="embedding_warmup_not_completed"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=evidence.marker,
+            workload_evidence=evidence,
+        )
+
+
+def test_receipt_rejects_modified_file() -> None:
+    proof = _load_proof_module()
+    evidence = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        source_file_modified_after_index=True,
+    )
+    with pytest.raises(ValueError, match="source_file_modified_after_index"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=evidence.marker,
+            workload_evidence=evidence,
+        )
+
+
+def test_receipt_rejects_missing_kafka_increase() -> None:
+    proof = _load_proof_module()
+    evidence = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        task_count_before_file=4,
+        task_count_after_file=4,
+    )
+    with pytest.raises(ValueError, match="kafka_task_topic_did_not_increase"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=evidence.marker,
+            workload_evidence=evidence,
+        )
+
+
+def test_receipt_rejects_duplicate_enqueue() -> None:
+    proof = _load_proof_module()
+    evidence = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        task_count_before_restart=4,
+        task_count_after_restart=5,
+    )
+    with pytest.raises(ValueError, match="duplicate_enqueue_after_restart"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=evidence.marker,
+            workload_evidence=evidence,
+        )
+
+
+def test_receipt_rejects_kafka_regression() -> None:
+    proof = _load_proof_module()
+    evidence = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        task_count_before_restart=5,
+        task_count_after_restart=4,
+    )
+    with pytest.raises(ValueError, match="kafka_task_topic_regressed_after_restart"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=evidence.marker,
+            workload_evidence=evidence,
+        )
+
+
+def test_receipt_rejects_missing_source_refs() -> None:
+    proof = _load_proof_module()
+    before = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        source_ref_found_before_restart=False,
+    )
+    with pytest.raises(ValueError, match="source_ref_before_restart_missing"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=before.marker,
+            workload_evidence=before,
+        )
+    after = dataclasses.replace(
+        _sample_workload_evidence(proof),
+        source_ref_found_after_restart=False,
+    )
+    with pytest.raises(ValueError, match="source_ref_after_restart_missing"):
+        proof.build_file_watcher_e2e_proof_receipt(
+            run_id=after.marker,
+            workload_evidence=after,
+        )
+
+
+def test_receipt_builder_has_no_measured_defaults() -> None:
+    text = _read(_PROOF_SCRIPT)
+    fn_start = text.index("def build_file_watcher_e2e_proof_receipt(")
+    fn_end = text.index("\ndef ", fn_start + 1)
+    body = text[fn_start:fn_end]
+    assert "workload_evidence.get(" not in body
+    assert '"watcher_final_checkpoint_saved", True' not in body
+    assert '"checkpoint_restore_verified": True' not in body
+    assert '"task_topic_increased": True' not in body
+    assert '"duplicate_enqueue_after_restart": False' not in body
+    assert '"embedding_warmup_completed": True' not in body
+    assert '"watcher_restored_after_restart": True' not in body
+    assert '"source_ref_found_before_restart": True' not in body
+    assert '"source_file_modified_after_index": False' not in body
+    assert '"source_ref_found_after_restart": True' not in body
+
+
 def test_file_watcher_receipt_has_no_credentials_or_content() -> None:
     proof = _load_proof_module()
     receipt = proof.build_file_watcher_e2e_proof_receipt(
         run_id="LKW_FILE_WATCHER_E2E_20260719T120000Z_ab12cd34",
-        workload_evidence=_sample_workload_evidence(),
+        workload_evidence=_sample_workload_evidence(proof),
     )
     serialized = receipt.model_dump_json()
     assert "mongodb://" not in serialized
@@ -216,10 +388,15 @@ def test_file_watcher_pass_prints_after_receipt_verification() -> None:
     receipt_record_index = text.index("record_file_watcher_e2e_proof_receipt")
     pass_output_index = text.index("print(format_pass_output(evidence))")
     assert receipt_record_index < pass_output_index
+    main_start = text.index("def main(")
+    main_body = text[main_start:]
+    assert "workload_evidence=workload_evidence" in main_body
+    assert main_body.count("workload_evidence=workload_evidence") >= 2
     fn_start = text.index("def build_pass_evidence(")
     fn_end = text.index("\ndef ", fn_start + 1)
     body = text[fn_start:fn_end]
     assert "verified_receipt" in body
+    assert "workload_evidence" in body
 
 
 def test_file_watcher_receipt_failure_reports_safe_fields() -> None:
@@ -282,6 +459,10 @@ def test_verification_document_authority_and_boundaries() -> None:
     assert "Non-authoritative reviewer convenience" in text
     assert "Markdown is the source of truth" not in text
     assert "markdown is the source of truth" not in text.lower()
+    assert "used = true" in text or "used=true" in text
+    assert "retrieve_complete" in text
+    assert "terminal_status=succeeded alone is not accepted" in text
+    assert "FileWatcherE2EWorkloadEvidence" in text
 
 
 def test_plan_status_documents_agree_lkw7_closed() -> None:

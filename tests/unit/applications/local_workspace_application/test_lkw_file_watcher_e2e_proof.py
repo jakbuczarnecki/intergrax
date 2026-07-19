@@ -133,6 +133,33 @@ def _fake_verified_receipt(proof: Any) -> Any:
     )
 
 
+def _sample_workload_evidence(proof: Any, **overrides: Any) -> Any:
+    values: dict[str, Any] = {
+        "marker": "LKW_FILE_WATCHER_E2E_20260719T120000Z_ab12cd34",
+        "proof_filename": "lkw_file_watcher_e2e_20260719T120000Z_ab12cd34.txt",
+        "container_source_path": (
+            "/data/user_docs/lkw_file_watcher_e2e_20260719T120000Z_ab12cd34.txt"
+        ),
+        "watcher_checkpoint_ready": True,
+        "embedding_warmup_completed": True,
+        "task_count_before_file": 1,
+        "task_count_after_file": 2,
+        "search_results_before_restart": 1,
+        "source_ref_found_before_restart": True,
+        "task_count_before_restart": 2,
+        "task_count_after_restart": 2,
+        "search_results_after_restart": 1,
+        "source_ref_found_after_restart": True,
+        "watcher_restored_after_restart": True,
+        "watcher_final_checkpoint_saved": True,
+        "source_file_modified_after_index": False,
+        "restart_mode": "non_destructive",
+        "volumes_removed": False,
+    }
+    values.update(overrides)
+    return proof.FileWatcherE2EWorkloadEvidence(**values)
+
+
 def test_overlay_filename_guardrail() -> None:
     assert _WATCHER_COMPOSE.name == "file-watcher-e2e.compose.yml"
     assert not re.fullmatch(r"docker-compose\..+\.yml", _WATCHER_COMPOSE.name)
@@ -328,7 +355,7 @@ def test_warmup_diagnostic_success_and_rejection() -> None:
     )
     assert proof.warmup_attempt_succeeded(complete) is True
 
-    live_redacted = proof.SearchDiagnostics(
+    terminal_only = proof.SearchDiagnostics(
         num_results=0,
         evidence_count=0,
         source_refs=(),
@@ -337,9 +364,19 @@ def test_warmup_diagnostic_success_and_rejection() -> None:
         reason=None,
         terminal_status="succeeded",
     )
-    assert proof.warmup_attempt_succeeded(live_redacted) is True
+    assert proof.warmup_attempt_succeeded(terminal_only) is False
 
-    failed = proof.SearchDiagnostics(
+    used_false = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason="boom",
+        used=False,
+        reason="retrieve_failed",
+    )
+    assert proof.warmup_attempt_succeeded(used_false) is False
+
+    used_true_failed = proof.SearchDiagnostics(
         num_results=0,
         evidence_count=0,
         source_refs=(),
@@ -347,18 +384,28 @@ def test_warmup_diagnostic_success_and_rejection() -> None:
         used=True,
         reason="retrieve_failed",
     )
-    assert proof.warmup_attempt_succeeded(failed) is False
-    assert proof.warmup_attempt_succeeded(None) is False
-    missing_signals = proof.SearchDiagnostics(
+    assert proof.warmup_attempt_succeeded(used_true_failed) is False
+
+    used_true_missing_reason = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason=None,
+        used=True,
+        reason=None,
+    )
+    assert proof.warmup_attempt_succeeded(used_true_missing_reason) is False
+
+    missing_used = proof.SearchDiagnostics(
         num_results=0,
         evidence_count=0,
         source_refs=(),
         raw_tool_reason=None,
         used=None,
-        reason=None,
-        terminal_status=None,
+        reason="retrieve_complete",
     )
-    assert proof.warmup_attempt_succeeded(missing_signals) is False
+    assert proof.warmup_attempt_succeeded(missing_used) is False
+    assert proof.warmup_attempt_succeeded(None) is False
 
 
 def test_warmup_retry_success_and_failure() -> None:
@@ -389,6 +436,8 @@ def test_warmup_retry_success_and_failure() -> None:
                         "num_results": 0,
                         "evidence_count": 0,
                         "source_refs": [],
+                        "used": True,
+                        "reason": "retrieve_complete",
                         "raw_tool_reason": "no_hits",
                     }
                 },
@@ -406,7 +455,7 @@ def test_warmup_retry_success_and_failure() -> None:
         )
     assert result.completed is True
     assert result.attempt_count == 2
-    assert result.last_reason in {"retrieve_complete", "terminal_succeeded"}
+    assert result.last_reason == "retrieve_complete"
 
     with (
         patch.object(proof, "request_json", side_effect=[cold, cold, cold]),
@@ -564,29 +613,30 @@ def test_bat_runner_ordering_and_services() -> None:
 def test_pass_output_fields() -> None:
     proof = _load_proof_module()
     receipt = _fake_verified_receipt(proof)
-    evidence = proof.build_pass_evidence(
+    workload = _sample_workload_evidence(
+        proof,
         marker="MARKER",
-        filename="file.txt",
+        proof_filename="file.txt",
         container_source_path="/data/user_docs/file.txt",
-        task_count_before_file=1,
-        task_count_after_file=2,
-        search_results_before_restart=1,
-        task_count_before_restart=2,
-        task_count_after_restart=2,
-        search_results_after_restart=1,
-        watcher_restored_after_restart=True,
-        source_file_modified_after_index=False,
-        embedding_warmup_completed=True,
+    )
+    evidence = proof.build_pass_evidence(
+        workload_evidence=workload,
         verified_receipt=receipt,
         integration_class="MongoDBDocumentStoreIntegration",
         mongo_express_url="http://127.0.0.1:8086",
     )
     for field in _REQUIRED_PASS_FIELDS:
         assert field in evidence
-    assert evidence["watcher_restored_after_restart"] is True
-    assert evidence["source_file_modified_after_index"] is False
-    assert evidence["embedding_warmup_completed"] is True
-    assert evidence["reviewer_rerun_required"] is False
+    assert evidence["watcher_restored_after_restart"] is (
+        workload.watcher_restored_after_restart
+    )
+    assert evidence["source_file_modified_after_index"] is (
+        workload.source_file_modified_after_index
+    )
+    assert evidence["embedding_warmup_completed"] is (
+        workload.embedding_warmup_completed
+    )
+    assert evidence["reviewer_rerun_required"] is workload.reviewer_rerun_required
     assert evidence["proof_receipt_recorded"] is True
     assert evidence["proof_receipt_verified"] is True
     assert evidence["proof_receipt_query_verified"] is True
@@ -604,44 +654,61 @@ def test_pass_output_fields() -> None:
     assert "This file was created" not in rendered
 
 
-def test_pass_evidence_derives_measured_fields() -> None:
+def test_pass_evidence_maps_typed_workload_object() -> None:
     proof = _load_proof_module()
     receipt = _fake_verified_receipt(proof)
-    kwargs = {
-        "marker": "MARKER",
-        "filename": "file.txt",
-        "container_source_path": "/data/user_docs/file.txt",
-        "task_count_before_file": 1,
-        "task_count_after_file": 2,
-        "search_results_before_restart": 1,
-        "task_count_before_restart": 2,
-        "task_count_after_restart": 2,
-        "search_results_after_restart": 1,
-        "embedding_warmup_completed": True,
-        "verified_receipt": receipt,
-        "integration_class": "MongoDBDocumentStoreIntegration",
-        "mongo_express_url": "http://127.0.0.1:8086",
-    }
+    workload = _sample_workload_evidence(proof)
     measured = proof.build_pass_evidence(
-        **kwargs,
-        watcher_restored_after_restart=True,
-        source_file_modified_after_index=False,
+        workload_evidence=workload,
+        verified_receipt=receipt,
+        integration_class="MongoDBDocumentStoreIntegration",
+        mongo_express_url="http://127.0.0.1:8086",
     )
-    opposite = proof.build_pass_evidence(
-        **kwargs,
+    assert measured["watcher_checkpoint_ready"] is workload.watcher_checkpoint_ready
+    assert (
+        measured["watcher_restored_after_restart"]
+        is workload.watcher_restored_after_restart
+    )
+    assert measured["task_topic_increased"] is workload.task_topic_increased
+    assert (
+        measured["source_ref_found_before_restart"]
+        is workload.source_ref_found_before_restart
+    )
+    assert (
+        measured["source_file_modified_after_index"]
+        is workload.source_file_modified_after_index
+    )
+    assert measured["reindexed_after_restart"] is workload.reindexed_after_restart
+    assert (
+        measured["duplicate_enqueue_after_restart"]
+        is workload.duplicate_enqueue_after_restart
+    )
+    assert (
+        measured["source_ref_found_after_restart"]
+        is workload.source_ref_found_after_restart
+    )
+    assert measured["embedding_warmup_completed"] is workload.embedding_warmup_completed
+    assert measured["reviewer_rerun_required"] is workload.reviewer_rerun_required
+
+    invalid = _sample_workload_evidence(
+        proof,
         watcher_restored_after_restart=False,
-        source_file_modified_after_index=True,
     )
-    assert measured["watcher_restored_after_restart"] is True
-    assert measured["source_file_modified_after_index"] is False
-    assert opposite["watcher_restored_after_restart"] is False
-    assert opposite["source_file_modified_after_index"] is True
+    with pytest.raises(ValueError, match="watcher_restore_not_proven"):
+        proof.build_pass_evidence(
+            workload_evidence=invalid,
+            verified_receipt=receipt,
+            integration_class="MongoDBDocumentStoreIntegration",
+            mongo_express_url="http://127.0.0.1:8086",
+        )
+
     source = _read(_PROOF_SCRIPT)
     fn_start = source.index("def build_pass_evidence(")
     fn_end = source.index("\ndef ", fn_start + 1)
     body = source[fn_start:fn_end]
     assert '"watcher_restored_after_restart": True' not in body
     assert '"source_file_modified_after_index": False' not in body
+    assert "validate_file_watcher_e2e_workload_evidence" in body
 
 
 def test_proof_file_stat_unchanged_comparisons() -> None:

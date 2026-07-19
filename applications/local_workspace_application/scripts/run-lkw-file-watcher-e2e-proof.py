@@ -125,17 +125,96 @@ class FileWatcherE2EWorkloadEvidence:
     marker: str
     proof_filename: str
     container_source_path: str
+    watcher_checkpoint_ready: bool
+    embedding_warmup_completed: bool
     task_count_before_file: int
     task_count_after_file: int
     search_results_before_restart: int
+    source_ref_found_before_restart: bool
     task_count_before_restart: int
     task_count_after_restart: int
     search_results_after_restart: int
+    source_ref_found_after_restart: bool
     watcher_restored_after_restart: bool
     watcher_final_checkpoint_saved: bool
     source_file_modified_after_index: bool
-    embedding_warmup_completed: bool
-    reviewer_rerun_required: bool
+    restart_mode: str
+    volumes_removed: bool
+
+    @property
+    def task_topic_increased(self) -> bool:
+        return self.task_count_after_file > self.task_count_before_file
+
+    @property
+    def duplicate_enqueue_after_restart(self) -> bool:
+        return self.task_count_after_restart > self.task_count_before_restart
+
+    @property
+    def task_topic_regressed_after_restart(self) -> bool:
+        return self.task_count_after_restart < self.task_count_before_restart
+
+    @property
+    def reindexed_after_restart(self) -> bool:
+        return self.task_count_after_restart != self.task_count_before_restart
+
+    @property
+    def checkpoint_restore_verified(self) -> bool:
+        return (
+            self.watcher_restored_after_restart and self.watcher_final_checkpoint_saved
+        )
+
+    @property
+    def reviewer_rerun_required(self) -> bool:
+        return not self.embedding_warmup_completed
+
+
+def validate_file_watcher_e2e_workload_evidence(
+    evidence: FileWatcherE2EWorkloadEvidence,
+) -> None:
+    if not evidence.marker.strip():
+        raise ValueError("workload_marker_missing")
+    if not evidence.proof_filename.strip():
+        raise ValueError("workload_filename_missing")
+    source_path = evidence.container_source_path.strip()
+    if not source_path or not source_path.startswith(f"{_CONTAINER_DOCS_ROOT}/"):
+        raise ValueError("workload_source_path_invalid")
+    if not evidence.embedding_warmup_completed or evidence.reviewer_rerun_required:
+        raise ValueError("embedding_warmup_not_completed")
+    if not evidence.watcher_checkpoint_ready:
+        raise ValueError("watcher_checkpoint_not_ready")
+    if (
+        evidence.task_count_before_file < 0
+        or evidence.task_count_after_file < 0
+        or evidence.task_count_before_restart < 0
+        or evidence.task_count_after_restart < 0
+    ):
+        raise ValueError("kafka_task_count_invalid")
+    if not evidence.task_topic_increased:
+        raise ValueError("kafka_task_topic_did_not_increase")
+    if evidence.search_results_before_restart <= 0:
+        raise ValueError("search_before_restart_missing")
+    if not evidence.source_ref_found_before_restart:
+        raise ValueError("source_ref_before_restart_missing")
+    if evidence.restart_mode != "non_destructive":
+        raise ValueError("restart_mode_not_non_destructive")
+    if evidence.volumes_removed:
+        raise ValueError("volumes_removed")
+    if evidence.duplicate_enqueue_after_restart:
+        raise ValueError("duplicate_enqueue_after_restart")
+    if evidence.task_topic_regressed_after_restart:
+        raise ValueError("kafka_task_topic_regressed_after_restart")
+    if evidence.search_results_after_restart <= 0:
+        raise ValueError("search_after_restart_missing")
+    if not evidence.source_ref_found_after_restart:
+        raise ValueError("source_ref_after_restart_missing")
+    if not evidence.watcher_restored_after_restart:
+        raise ValueError("watcher_restore_not_proven")
+    if not evidence.watcher_final_checkpoint_saved:
+        raise ValueError("watcher_final_checkpoint_not_saved")
+    if not evidence.checkpoint_restore_verified:
+        raise ValueError("watcher_restore_not_proven")
+    if evidence.source_file_modified_after_index:
+        raise ValueError("source_file_modified_after_index")
 
 
 def capture_proof_file_stat(path: Path) -> ProofFileStat:
@@ -556,7 +635,10 @@ def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics
     used_value = summary.get("used")
     used = used_value if isinstance(used_value, bool) else None
     reason_value = summary.get("reason")
-    reason = str(reason_value) if reason_value is not None else None
+    if isinstance(reason_value, str) and reason_value.strip():
+        reason: str | None = reason_value.strip()
+    else:
+        reason = None
     terminal_raw = evidence.get("terminal_status")
     terminal_status = str(terminal_raw) if terminal_raw is not None else None
     return SearchDiagnostics(
@@ -571,27 +653,16 @@ def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics
 
 
 def warmup_attempt_succeeded(diagnostics: SearchDiagnostics | None) -> bool:
-    """Accept retrieve-complete when typed fields exist or live evidence succeeded.
+    """Accept warm-up only when typed retrieve outcome proves success.
 
-    Live ``lkw.search_summary.v1`` redacts agent ``used``/``reason``; a present
-    summary with ``terminal_status=succeeded`` proves the retrieve path ran.
-    Zero hits (``raw_tool_reason=no_hits``) are acceptable for warm-up.
+    Requires ``used=true`` and ``reason=retrieve_complete``. Zero hits are
+    acceptable. ``terminal_status`` alone is never sufficient.
     """
-    if diagnostics is None:
-        return False
-    if diagnostics.reason in {
-        "retrieve_failed",
-        "tool_gateway_not_available",
-        "query_missing",
-    }:
-        return False
-    if diagnostics.used is False:
-        return False
-    if diagnostics.used is True and diagnostics.reason == "retrieve_complete":
-        return True
-    if diagnostics.terminal_status == "succeeded":
-        return True
-    return False
+    return (
+        diagnostics is not None
+        and diagnostics.used is True
+        and diagnostics.reason == "retrieve_complete"
+    )
 
 
 def search_attempt_succeeded(
@@ -760,9 +831,12 @@ def wait_for_watcher_ready(
 def build_file_watcher_e2e_proof_receipt(
     *,
     run_id: str,
-    workload_evidence: dict[str, object],
+    workload_evidence: FileWatcherE2EWorkloadEvidence,
     mongo_express_url: str = _DEFAULT_MONGO_EXPRESS_URL,
 ) -> ProofReceipt:
+    if not isinstance(workload_evidence, FileWatcherE2EWorkloadEvidence):
+        raise TypeError("workload_evidence_must_be_typed")
+    validate_file_watcher_e2e_workload_evidence(workload_evidence)
     return ProofReceipt(
         proof_id=build_file_watcher_proof_id(run_id),
         proof_kind=_PROOF_KIND,
@@ -777,20 +851,24 @@ def build_file_watcher_e2e_proof_receipt(
             "enqueue_trigger": "filesystem_create",
             "watcher_process": "foreground_sidecar",
             "watcher_checkpoint_store": "json_file",
-            "checkpoint_restore_verified": True,
-            "watcher_final_checkpoint_saved": bool(
-                workload_evidence.get("watcher_final_checkpoint_saved", True)
+            "checkpoint_restore_verified": (
+                workload_evidence.checkpoint_restore_verified
+            ),
+            "watcher_final_checkpoint_saved": (
+                workload_evidence.watcher_final_checkpoint_saved
             ),
             "vector_store_provider": "qdrant",
             "persistent_index": True,
             "document_store_provider": "mongodb",
             "kafka_task_topic": _TASK_TOPIC,
-            "task_count_before_file": workload_evidence["task_count_before_file"],
-            "task_count_after_file": workload_evidence["task_count_after_file"],
-            "task_topic_increased": True,
-            "task_count_before_restart": workload_evidence["task_count_before_restart"],
-            "task_count_after_restart": workload_evidence["task_count_after_restart"],
-            "duplicate_enqueue_after_restart": False,
+            "task_count_before_file": workload_evidence.task_count_before_file,
+            "task_count_after_file": workload_evidence.task_count_after_file,
+            "task_topic_increased": workload_evidence.task_topic_increased,
+            "task_count_before_restart": (workload_evidence.task_count_before_restart),
+            "task_count_after_restart": workload_evidence.task_count_after_restart,
+            "duplicate_enqueue_after_restart": (
+                workload_evidence.duplicate_enqueue_after_restart
+            ),
             "restart_services": list(_RESTART_SERVICES),
         },
         domain_evidence={
@@ -798,25 +876,35 @@ def build_file_watcher_e2e_proof_receipt(
             "tenant_id": _TENANT_ID,
             "workspace_id": _WORKSPACE_ID,
             "collection_id": _COLLECTION_ID,
-            "marker": workload_evidence["marker"],
-            "proof_filename": workload_evidence["proof_filename"],
-            "container_source_path": workload_evidence["container_source_path"],
-            "embedding_warmup_completed": True,
-            "reviewer_rerun_required": False,
-            "watcher_checkpoint_ready": True,
-            "watcher_restored_after_restart": True,
-            "search_results_before_restart": workload_evidence[
-                "search_results_before_restart"
-            ],
-            "source_ref_found_before_restart": True,
-            "restart_mode": "non_destructive",
-            "volumes_removed": False,
-            "source_file_modified_after_index": False,
-            "reindexed_after_restart": False,
-            "search_results_after_restart": workload_evidence[
-                "search_results_after_restart"
-            ],
-            "source_ref_found_after_restart": True,
+            "marker": workload_evidence.marker,
+            "proof_filename": workload_evidence.proof_filename,
+            "container_source_path": workload_evidence.container_source_path,
+            "embedding_warmup_completed": (
+                workload_evidence.embedding_warmup_completed
+            ),
+            "reviewer_rerun_required": workload_evidence.reviewer_rerun_required,
+            "watcher_checkpoint_ready": workload_evidence.watcher_checkpoint_ready,
+            "watcher_restored_after_restart": (
+                workload_evidence.watcher_restored_after_restart
+            ),
+            "search_results_before_restart": (
+                workload_evidence.search_results_before_restart
+            ),
+            "source_ref_found_before_restart": (
+                workload_evidence.source_ref_found_before_restart
+            ),
+            "restart_mode": workload_evidence.restart_mode,
+            "volumes_removed": workload_evidence.volumes_removed,
+            "source_file_modified_after_index": (
+                workload_evidence.source_file_modified_after_index
+            ),
+            "reindexed_after_restart": workload_evidence.reindexed_after_restart,
+            "search_results_after_restart": (
+                workload_evidence.search_results_after_restart
+            ),
+            "source_ref_found_after_restart": (
+                workload_evidence.source_ref_found_after_restart
+            ),
         },
         guardrails={
             "manual_index_command": False,
@@ -929,22 +1017,14 @@ def format_pass_output(evidence: dict[str, object]) -> str:
 
 def build_pass_evidence(
     *,
-    marker: str,
-    filename: str,
-    container_source_path: str,
-    task_count_before_file: int,
-    task_count_after_file: int,
-    search_results_before_restart: int,
-    task_count_before_restart: int,
-    task_count_after_restart: int,
-    search_results_after_restart: int,
-    watcher_restored_after_restart: bool,
-    source_file_modified_after_index: bool,
-    embedding_warmup_completed: bool,
+    workload_evidence: FileWatcherE2EWorkloadEvidence,
     verified_receipt: ProofReceipt,
     integration_class: str,
     mongo_express_url: str,
 ) -> dict[str, object]:
+    if not isinstance(workload_evidence, FileWatcherE2EWorkloadEvidence):
+        raise TypeError("workload_evidence_must_be_typed")
+    validate_file_watcher_e2e_workload_evidence(workload_evidence)
     return {
         "trigger": "filesystem_create",
         "manual_index_command": False,
@@ -954,31 +1034,45 @@ def build_pass_evidence(
         "worker_execution": "asynchronous",
         "vector_store_provider": "qdrant",
         "persistent_index": True,
-        "watcher_checkpoint_ready": True,
-        "watcher_restored_after_restart": watcher_restored_after_restart,
+        "watcher_checkpoint_ready": workload_evidence.watcher_checkpoint_ready,
+        "watcher_restored_after_restart": (
+            workload_evidence.watcher_restored_after_restart
+        ),
         "tenant_id": _TENANT_ID,
         "workspace_id": _WORKSPACE_ID,
         "collection_id": _COLLECTION_ID,
-        "marker": marker,
-        "proof_filename": filename,
-        "container_source_path": container_source_path,
+        "marker": workload_evidence.marker,
+        "proof_filename": workload_evidence.proof_filename,
+        "container_source_path": workload_evidence.container_source_path,
         "task_topic": _TASK_TOPIC,
-        "task_count_before_file": task_count_before_file,
-        "task_count_after_file": task_count_after_file,
-        "task_topic_increased": True,
-        "search_results_before_restart": search_results_before_restart,
-        "source_ref_found_before_restart": True,
-        "restart_mode": "non_destructive",
-        "volumes_removed": False,
-        "source_file_modified_after_index": source_file_modified_after_index,
-        "reindexed_after_restart": False,
-        "task_count_before_restart": task_count_before_restart,
-        "task_count_after_restart": task_count_after_restart,
-        "duplicate_enqueue_after_restart": False,
-        "search_results_after_restart": search_results_after_restart,
-        "source_ref_found_after_restart": True,
-        "embedding_warmup_completed": embedding_warmup_completed,
-        "reviewer_rerun_required": False,
+        "task_count_before_file": workload_evidence.task_count_before_file,
+        "task_count_after_file": workload_evidence.task_count_after_file,
+        "task_topic_increased": workload_evidence.task_topic_increased,
+        "search_results_before_restart": (
+            workload_evidence.search_results_before_restart
+        ),
+        "source_ref_found_before_restart": (
+            workload_evidence.source_ref_found_before_restart
+        ),
+        "restart_mode": workload_evidence.restart_mode,
+        "volumes_removed": workload_evidence.volumes_removed,
+        "source_file_modified_after_index": (
+            workload_evidence.source_file_modified_after_index
+        ),
+        "reindexed_after_restart": workload_evidence.reindexed_after_restart,
+        "task_count_before_restart": workload_evidence.task_count_before_restart,
+        "task_count_after_restart": workload_evidence.task_count_after_restart,
+        "duplicate_enqueue_after_restart": (
+            workload_evidence.duplicate_enqueue_after_restart
+        ),
+        "search_results_after_restart": (
+            workload_evidence.search_results_after_restart
+        ),
+        "source_ref_found_after_restart": (
+            workload_evidence.source_ref_found_after_restart
+        ),
+        "embedding_warmup_completed": (workload_evidence.embedding_warmup_completed),
+        "reviewer_rerun_required": workload_evidence.reviewer_rerun_required,
         "proof_receipt_recorded": True,
         "proof_receipt_verified": True,
         "proof_receipt_query_verified": True,
@@ -1092,12 +1186,13 @@ def main(argv: list[str] | None = None) -> int:
     ):
         return fail("watcher_not_running")
 
-    if not watcher_checkpoint_ready(
+    watcher_checkpoint_ready_before_file = watcher_checkpoint_ready(
         base_compose=base_compose,
         kafka_compose=kafka_compose,
         watcher_compose=watcher_compose,
         mongodb_compose=mongodb_compose,
-    ):
+    )
+    if not watcher_checkpoint_ready_before_file:
         return fail("watcher_checkpoint_not_ready")
 
     warmup = run_embedding_warmup(
@@ -1111,7 +1206,7 @@ def main(argv: list[str] | None = None) -> int:
             last_warmup_raw_tool_reason=warmup.last_raw_tool_reason,
             warmup_attempt_count=warmup.attempt_count,
             embedding_warmup_completed=False,
-            reviewer_rerun_required=False,
+            reviewer_rerun_required=True,
         )
 
     # Fresh proof workload deadline after successful warm-up.
@@ -1139,6 +1234,10 @@ def main(argv: list[str] | None = None) -> int:
         expected_source_path=document.container_source_path,
         deadline=deadline,
     )
+    source_ref_found_before_restart = (
+        diagnostics is not None
+        and document.container_source_path in diagnostics.source_refs
+    )
     if not search_attempt_succeeded(
         diagnostics, expected_source_path=document.container_source_path
     ):
@@ -1156,12 +1255,19 @@ def main(argv: list[str] | None = None) -> int:
             "last_raw_tool_reason": (
                 diagnostics.raw_tool_reason if diagnostics is not None else None
             ),
+            "source_ref_found_before_restart": source_ref_found_before_restart,
         }
         if diagnostics is None:
             return fail("search_results_missing", **fields)
         if diagnostics.num_results <= 0 and diagnostics.evidence_count <= 0:
             return fail("search_results_missing", **fields)
         return fail("expected_source_ref_missing", **fields)
+    if not source_ref_found_before_restart:
+        return fail(
+            "expected_source_ref_missing",
+            expected_source_path=document.container_source_path,
+            source_ref_found_before_restart=False,
+        )
 
     try:
         source_stat_after_index = capture_proof_file_stat(document.host_path)
@@ -1248,7 +1354,7 @@ def main(argv: list[str] | None = None) -> int:
         before=task_count_before_restart, after=task_count_after_restart
     ):
         return fail(
-            "duplicate_enqueue_after_restart",
+            "kafka_task_topic_regressed_after_restart",
             task_count_before_restart=task_count_before_restart,
             task_count_after_restart=task_count_after_restart,
         )
@@ -1268,6 +1374,10 @@ def main(argv: list[str] | None = None) -> int:
         expected_source_path=document.container_source_path,
         deadline=time.monotonic() + min(60.0, max(10.0, timeout_seconds / 4.0)),
     )
+    source_ref_found_after_restart = (
+        post_diagnostics is not None
+        and document.container_source_path in post_diagnostics.source_refs
+    )
     if not search_attempt_succeeded(
         post_diagnostics, expected_source_path=document.container_source_path
     ):
@@ -1280,6 +1390,13 @@ def main(argv: list[str] | None = None) -> int:
             last_evidence_count=(
                 post_diagnostics.evidence_count if post_diagnostics is not None else 0
             ),
+            source_ref_found_after_restart=source_ref_found_after_restart,
+        )
+    if not source_ref_found_after_restart:
+        return fail(
+            "search_after_restart_failed",
+            expected_source_path=document.container_source_path,
+            source_ref_found_after_restart=False,
         )
 
     try:
@@ -1402,39 +1519,33 @@ def main(argv: list[str] | None = None) -> int:
 
     if not watcher_restored_after_restart:
         return fail("watcher_restore_not_proven")
+    if not watcher_final_checkpoint_saved:
+        return fail("watcher_final_checkpoint_not_saved")
 
-    workload = FileWatcherE2EWorkloadEvidence(
+    workload_evidence = FileWatcherE2EWorkloadEvidence(
         marker=document.marker,
         proof_filename=document.filename,
         container_source_path=document.container_source_path,
+        watcher_checkpoint_ready=watcher_checkpoint_ready_before_file,
+        embedding_warmup_completed=warmup.completed,
         task_count_before_file=task_count_before_file,
         task_count_after_file=task_count_after_file,
         search_results_before_restart=search_results_before_restart,
+        source_ref_found_before_restart=source_ref_found_before_restart,
         task_count_before_restart=task_count_before_restart,
         task_count_after_restart=task_count_after_restart,
         search_results_after_restart=search_results_after_restart,
+        source_ref_found_after_restart=source_ref_found_after_restart,
         watcher_restored_after_restart=watcher_restored_after_restart,
         watcher_final_checkpoint_saved=watcher_final_checkpoint_saved,
         source_file_modified_after_index=source_file_modified_after_index,
-        embedding_warmup_completed=True,
-        reviewer_rerun_required=False,
+        restart_mode="non_destructive",
+        volumes_removed=False,
     )
-    workload_evidence: dict[str, object] = {
-        "marker": workload.marker,
-        "proof_filename": workload.proof_filename,
-        "container_source_path": workload.container_source_path,
-        "task_count_before_file": workload.task_count_before_file,
-        "task_count_after_file": workload.task_count_after_file,
-        "search_results_before_restart": workload.search_results_before_restart,
-        "task_count_before_restart": workload.task_count_before_restart,
-        "task_count_after_restart": workload.task_count_after_restart,
-        "search_results_after_restart": workload.search_results_after_restart,
-        "watcher_restored_after_restart": workload.watcher_restored_after_restart,
-        "watcher_final_checkpoint_saved": workload.watcher_final_checkpoint_saved,
-        "source_file_modified_after_index": workload.source_file_modified_after_index,
-        "embedding_warmup_completed": workload.embedding_warmup_completed,
-        "reviewer_rerun_required": workload.reviewer_rerun_required,
-    }
+    try:
+        validate_file_watcher_e2e_workload_evidence(workload_evidence)
+    except ValueError as exc:
+        return fail(str(exc))
 
     receipt = build_file_watcher_e2e_proof_receipt(
         run_id=document.marker,
@@ -1454,18 +1565,7 @@ def main(argv: list[str] | None = None) -> int:
         return fail_receipt_recording(exc)
 
     evidence = build_pass_evidence(
-        marker=document.marker,
-        filename=document.filename,
-        container_source_path=document.container_source_path,
-        task_count_before_file=task_count_before_file,
-        task_count_after_file=task_count_after_file,
-        search_results_before_restart=search_results_before_restart,
-        task_count_before_restart=task_count_before_restart,
-        task_count_after_restart=task_count_after_restart,
-        search_results_after_restart=search_results_after_restart,
-        watcher_restored_after_restart=watcher_restored_after_restart,
-        source_file_modified_after_index=source_file_modified_after_index,
-        embedding_warmup_completed=True,
+        workload_evidence=workload_evidence,
         verified_receipt=verified_receipt,
         integration_class=type(integration).__name__,
         mongo_express_url=mongo_express_url,

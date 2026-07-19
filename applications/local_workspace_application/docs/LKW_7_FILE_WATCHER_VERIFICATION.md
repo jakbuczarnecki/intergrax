@@ -59,10 +59,18 @@ Services:
 
 Before Kafka baseline counts and proof-file creation, the Python runner issues bounded
 `POST /v1/local_workspace/run` requests with `capability=local.workspace.search` and
-`proof_phase=embedding_warmup`. Warm-up succeeds only when diagnostics show
-`used=true` and `reason=retrieve_complete`. Zero hits are acceptable. The warm-up
-does not index or enqueue. Successful runs print `embedding_warmup_completed=true`
-and `reviewer_rerun_required=false`.
+`proof_phase=embedding_warmup`. Warm-up succeeds only when the redacted typed
+`lkw.search_summary.v1` diagnostic contains:
+
+```text
+used = true
+reason = retrieve_complete
+```
+
+terminal_status=succeeded alone is not accepted. Zero search hits are acceptable
+when retrieve completed successfully. The warm-up does not index or enqueue.
+Successful runs print `embedding_warmup_completed=true` and
+`reviewer_rerun_required=false`.
 
 ## Baseline-before-file invariant
 
@@ -113,6 +121,10 @@ LKW maps in-memory live evidence into a platform `ProofReceipt` and records it t
 `ProofReceiptStore` → `DocumentStore` → `MongoDBDocumentStoreIntegration`.
 LKW does not write MongoDB directly.
 
+The ProofReceipt builder accepts only typed `FileWatcherE2EWorkloadEvidence` and
+validates all required PASS invariants before constructing `ProofReceiptResult.PASS`.
+Missing or contradictory measured evidence is rejected.
+
 ## Mongo Express inspection
 
 ```text
@@ -151,19 +163,19 @@ Closing LKW.7 does not close these separate future concerns.
 Non-authoritative reviewer convenience
 
 ```text
-recorded_at_utc: 2026-07-19T12:19:18Z
+recorded_at_utc: 2026-07-19T13:34:15Z
 proof_result: PASS
-proof_receipt_id: local_workspace:file_watcher_persistent_search:LKW_FILE_WATCHER_E2E_20260719T121918Z_140fd6a9
-proof_receipt_run_id: LKW_FILE_WATCHER_E2E_20260719T121918Z_140fd6a9
+proof_receipt_id: local_workspace:file_watcher_persistent_search:LKW_FILE_WATCHER_E2E_20260719T133415Z_18ecb1f4
+proof_receipt_run_id: LKW_FILE_WATCHER_E2E_20260719T133415Z_18ecb1f4
 proof_receipt_result: PASS
-marker: LKW_FILE_WATCHER_E2E_20260719T121918Z_140fd6a9
-container_source_path: /data/user_docs/lkw_file_watcher_e2e_20260719T121918Z_140fd6a9.txt
-task_count_before_file: 4
-task_count_after_file: 5
-task_count_before_restart: 5
-task_count_after_restart: 5
-search_results_before_restart: 4
-search_results_after_restart: 4
+marker: LKW_FILE_WATCHER_E2E_20260719T133415Z_18ecb1f4
+container_source_path: /data/user_docs/lkw_file_watcher_e2e_20260719T133415Z_18ecb1f4.txt
+task_count_before_file: 5
+task_count_after_file: 6
+task_count_before_restart: 6
+task_count_after_restart: 6
+search_results_before_restart: 5
+search_results_after_restart: 5
 watcher_restored_after_restart: true
 source_file_modified_after_index: false
 duplicate_enqueue_after_restart: false
