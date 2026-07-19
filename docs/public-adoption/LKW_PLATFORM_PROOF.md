@@ -17,6 +17,7 @@ This document is the guided reviewer path. Structured ProofReceipt documents per
 6. LKW records structured proof evidence through ProofReceiptStore into a real MongoDB DocumentStore vendor and exposes it for reviewer inspection through Mongo Express.
 7. LKW runs through Intergrax Application Hosting as a real foreground process, enforces single-instance ownership, stops gracefully, releases its lock, restarts under the supervisor with a new instance identity, preserves its profile/definition digests and executes real work after restart.
 8. A real Windows PowerShell client sends work through the platform interaction intake into the shared LKW executor and Nexus path, performing real index and search work.
+9. A file created in a watched folder is automatically indexed through the real Kafka/worker path, remains searchable after a non-destructive restart, and produces a verified MongoDB-backed ProofReceipt.
 ```
 
 Local proof endpoints:
@@ -798,6 +799,139 @@ Markdown is the execution and inspection guide.
 
 ---
 
+## Step 14 — Run the File Watcher E2E proof
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-file-watcher-e2e-proof.bat
+```
+
+The command:
+
+```text
+starts the required stack
+warms the real search/embedding path
+creates the file only after baseline
+uses no manual indexing command
+verifies exact source_ref
+restarts the mechanism non-destructively
+verifies checkpoint restore
+records and verifies ProofReceipt
+```
+
+Expected core PASS fields:
+
+```text
+proof_result=PASS
+proof_kind=file_watcher_persistent_search
+embedding_warmup_completed=true
+reviewer_rerun_required=false
+trigger=filesystem_create
+manual_index_command=false
+direct_enqueue=false
+message_bus_provider=kafka
+worker_execution=asynchronous
+vector_store_provider=qdrant
+persistent_index=true
+watcher_checkpoint_ready=true
+watcher_restored_after_restart=true
+task_topic_increased=true
+source_ref_found_before_restart=true
+restart_mode=non_destructive
+volumes_removed=false
+source_file_modified_after_index=false
+reindexed_after_restart=false
+duplicate_enqueue_after_restart=false
+source_ref_found_after_restart=true
+proof_receipt_recorded=true
+proof_receipt_verified=true
+proof_receipt_query_verified=true
+proof_receipt_store=platform
+document_store_provider=mongodb
+proof_receipt_result=PASS
+proof_receipt_application_id=local_workspace
+proof_receipt_task=LKW.7C2
+markdown_source_of_truth=false
+direct_mongodb_write=false
+direct_pymongo_from_lkw=false
+manual_evidence_injection=false
+```
+
+---
+
+## Step 15 — Inspect the File Watcher ProofReceipt in Mongo Express
+
+After Step 14 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted file-watcher receipt.
+
+Open:
+
+```text
+http://127.0.0.1:8086
+```
+
+Select:
+
+```text
+database:
+  intergrax_proofs
+
+collection:
+  proof_receipts
+```
+
+Document identity:
+
+```text
+partition_key =
+  proof_receipts/local_workspace
+
+row_key =
+  proof/file_watcher_persistent_search/<run_id>
+```
+
+Reviewer checks:
+
+```text
+schema_version = intergrax.proof_receipt.v1
+application_id = local_workspace
+proof_kind = file_watcher_persistent_search
+result = PASS
+run_id matches printed proof_receipt_run_id
+provider_evidence.message_bus_provider = kafka
+provider_evidence.worker_execution = asynchronous
+provider_evidence.enqueue_trigger = filesystem_create
+provider_evidence.checkpoint_restore_verified = true
+provider_evidence.vector_store_provider = qdrant
+provider_evidence.persistent_index = true
+provider_evidence.document_store_provider = mongodb
+provider_evidence.task_topic_increased = true
+provider_evidence.duplicate_enqueue_after_restart = false
+domain_evidence.embedding_warmup_completed = true
+domain_evidence.reviewer_rerun_required = false
+domain_evidence.source_ref_found_before_restart = true
+domain_evidence.source_ref_found_after_restart = true
+domain_evidence.source_file_modified_after_index = false
+domain_evidence.reindexed_after_restart = false
+guardrails.manual_index_command = false
+guardrails.direct_enqueue = false
+guardrails.direct_indexer_call = false
+guardrails.direct_ingest_call = false
+guardrails.direct_mongodb_write = false
+guardrails.direct_pymongo_from_lkw = false
+guardrails.markdown_source_of_truth = false
+```
+
+### Authority
+
+The MongoDB-backed ProofReceipt is authoritative.
+
+Terminal output is a reviewer convenience.
+
+This markdown page is the execution and inspection guide.
+
+---
+
 ## Reviewer shortcut
 
 ```bat
@@ -809,6 +943,7 @@ applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
 applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 applications\local_workspace_application\scripts\run-lkw-hosting-proof.bat
 applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
+applications\local_workspace_application\scripts\run-lkw-file-watcher-e2e-proof.bat
 ```
 
 Then open:
@@ -824,6 +959,7 @@ Mongo Express: http://127.0.0.1:8086
 2. Inspect MongoDB receipt using `proof_receipt_id` / `proof_receipt_run_id`.
 3. Inspect the Application Hosting receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_application_hosting`.
 4. Inspect the Windows Interaction receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_windows_interaction`.
+5. Inspect the File Watcher receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=file_watcher_persistent_search`.
 
 Kafka topics to inspect:
 

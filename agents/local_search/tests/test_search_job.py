@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
 from unittest.mock import AsyncMock
 
 import pytest
 
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.contracts.tool_request import (
+    ToolRequest,
+    ToolResponse,
+    ToolResponseStatus,
+)
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
+from local_search.diagnostics import SearchSummaryReason
 from local_search.steps.search_job import run_search_job
 
 
@@ -32,6 +38,12 @@ def _step_ctx(
     )
 
 
+def _search_summary(output: dict[str, object]) -> dict[str, Any]:
+    summary = output["search_summary"]
+    assert isinstance(summary, dict)
+    return cast(dict[str, Any], summary)
+
+
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run_search_job_fails_safe_without_query() -> None:
@@ -49,21 +61,23 @@ async def test_run_search_job_fails_safe_without_query() -> None:
         ),
     )
 
-    output = await run_search_job(_step_ctx(exec_ctx))
+    summary = _search_summary(await run_search_job(_step_ctx(exec_ctx)))
 
-    assert output["search_summary"]["used"] is False
-    assert output["search_summary"]["reason"] == "query_missing"
-    assert output["search_summary"]["evidence"] == []
+    assert summary["used"] is False
+    assert summary["reason"] == SearchSummaryReason.QUERY_MISSING.value
+    assert summary["evidence"] == []
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run_search_job_fails_safe_without_tool_gateway() -> None:
-    output = await run_search_job(_step_ctx(None, message="find docs about X"))
+    summary = _search_summary(
+        await run_search_job(_step_ctx(None, message="find docs about X"))
+    )
 
-    assert output["search_summary"]["used"] is False
-    assert output["search_summary"]["reason"] == "tool_gateway_not_available"
-    assert output["search_summary"]["query"] == "find docs about X"
+    assert summary["used"] is False
+    assert summary["reason"] == (SearchSummaryReason.TOOL_GATEWAY_NOT_AVAILABLE.value)
+    assert summary["query"] == "find docs about X"
 
 
 @pytest.mark.unit
@@ -113,11 +127,10 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
         tool_gateway=gateway,
     )
 
-    output = await run_search_job(_step_ctx(exec_ctx))
+    summary = _search_summary(await run_search_job(_step_ctx(exec_ctx)))
 
-    summary = output["search_summary"]
     assert summary["used"] is True
-    assert summary["reason"] == "retrieve_complete"
+    assert summary["reason"] == SearchSummaryReason.RETRIEVE_COMPLETE.value
     assert summary["query"] == "project X"
     assert summary["collection_id"] == "ws-1"
     assert summary["num_results"] == 1
@@ -164,10 +177,12 @@ async def test_run_search_job_fails_safe_on_retrieve_error() -> None:
         tool_gateway=gateway,
     )
 
-    output = await run_search_job(_step_ctx(exec_ctx, message="find something"))
+    summary = _search_summary(
+        await run_search_job(_step_ctx(exec_ctx, message="find something"))
+    )
 
-    assert output["search_summary"]["used"] is False
-    assert output["search_summary"]["reason"] == "retrieve_failed"
+    assert summary["used"] is False
+    assert summary["reason"] == SearchSummaryReason.RETRIEVE_FAILED.value
 
 
 @pytest.mark.unit
@@ -197,15 +212,17 @@ async def test_run_search_job_preserves_raw_tool_reason() -> None:
         tool_gateway=gateway,
     )
 
-    output = await run_search_job(_step_ctx(exec_ctx, message="find marker"))
+    summary = _search_summary(
+        await run_search_job(_step_ctx(exec_ctx, message="find marker"))
+    )
 
-    assert output["search_summary"]["reason"] == "retrieve_failed"
-    assert output["search_summary"]["raw_tool_reason"] == "retriever_failed"
+    assert summary["reason"] == SearchSummaryReason.RETRIEVE_FAILED.value
+    assert summary["raw_tool_reason"] == "retriever_failed"
 
 
 @pytest.mark.unit
 def test_run_search_job_output_attaches_search_summary_diagnostic() -> None:
-    output = {
+    output: dict[str, object] = {
         "search_summary": {
             "query": "find docs",
             "num_results": 1,

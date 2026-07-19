@@ -991,7 +991,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
 | **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | **Closed** (LKW.6A/6B/6C) |
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
-| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C next) |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 
 ### 15.2 Wave detail (tasks + acceptance)
@@ -1077,7 +1077,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 #### LKW.7 — File watcher + incremental index
 
-**Status:** **In progress** — LKW.7A **Done**; LKW.7B **Closed**; LKW.7B1 **Done**; LKW.7B2 **Closed**; LKW.7B2A **Done**; LKW.7B2B **Done**; LKW.7C **Planned — next**.
+**Status:** **Closed** — LKW.7A **Done**; LKW.7B **Closed**; LKW.7B1 **Done**; LKW.7B2 **Closed**; LKW.7B2A **Done**; LKW.7B2B **Done**; LKW.7C **Closed**; LKW.7C1 **Done**; LKW.7C2 **Done**.
 
 | ID | Scope | Status |
 |----|-------|--------|
@@ -1087,7 +1087,9 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.7B2** | Cross-platform sidecar process, settings, checkpoint, graceful shutdown | **Closed** |
 | **LKW.7B2A** | Durable checkpoint and restart recovery | **Done** |
 | **LKW.7B2B** | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | **Done** |
-| **LKW.7C** | Persistent-index live proof and ProofReceipt | Planned — next |
+| **LKW.7C** | Persistent-index live proof and ProofReceipt | **Closed** |
+| **LKW.7C1** | Watcher-triggered persistent search E2E workload | **Done** |
+| **LKW.7C2** | ProofReceipt recording, reviewer guide and final LKW.7 closeout | **Done** |
 
 **LKW.7A flow (contract only):**
 
@@ -1141,6 +1143,47 @@ environment settings
   → final checkpoint
 ```
 
+**LKW.7C1 live path (watcher-triggered E2E workload):**
+
+```text
+file created after watcher baseline
+  → watcher metadata diff
+  → deterministic background-ingest job
+  → Kafka
+  → background worker
+  → LocalIndexerAgent
+  → rag.ingest_document
+  → persistent Qdrant
+  → LocalSearchAgent
+  → exact source_ref match
+```
+
+**LKW.7C1 restart path:**
+
+```text
+restart watcher + worker + backend + Qdrant
+  → checkpoint restore
+  → unchanged source does not enqueue again
+  → persistent search still returns source
+```
+
+**LKW.7C2 final path (ProofReceipt closeout):**
+
+```text
+filesystem create
+  → watcher
+  → Kafka
+  → worker
+  → persistent Qdrant
+  → search
+  → non-destructive restart
+  → search
+  → verified ProofReceipt
+  → MongoDB DocumentStore
+```
+
+LKW.7C2 records the live workload evidence through platform `ProofReceiptStore` → `DocumentStore` → MongoDB. Reviewer path: [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 14–15.
+
 | Concern | Notes |
 |---------|-------|
 | Version identity | Metadata-based only (`path` + `size_bytes` + `modified_time_ns`); not content hashing |
@@ -1161,10 +1204,10 @@ environment settings
 | Checkpoint failure | Stops the sidecar immediately (no further poll/sleep) |
 | Signals | Platform `PortableForegroundSignalAdapter` owns SIGINT / SIGTERM / SIGBREAK |
 | Process entrypoint | `python -m local_workspace_application.file_watcher` |
-| Live proof | No persistent-index live proof yet (LKW.7C) |
+| Live proof | LKW.7 Closed — watcher E2E + verified MongoDB-backed ProofReceipt |
 | Content | No raw file content enters the job or checkpoint |
 
-**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command (requires LKW.7C).
+**Acceptance (full LKW.7):** Drop file in watched folder → indexed within N minutes without user command → verified `ProofReceipt` in MongoDB. **Met.**
 
 ---
 

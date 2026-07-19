@@ -6,11 +6,38 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 _SEARCH_SUMMARY_V1 = "lkw.search_summary.v1"
+
+
+class SearchSummaryReason(str, Enum):
+    QUERY_MISSING = "query_missing"
+    TOOL_GATEWAY_NOT_AVAILABLE = "tool_gateway_not_available"
+    RETRIEVE_FAILED = "retrieve_failed"
+    RETRIEVE_COMPLETE = "retrieve_complete"
+
+
+def parse_search_summary_reason(
+    value: object,
+) -> SearchSummaryReason | None:
+    if isinstance(value, SearchSummaryReason):
+        return value
+
+    if not isinstance(value, str):
+        return None
+
+    normalized = value.strip()
+    if not normalized:
+        return None
+
+    try:
+        return SearchSummaryReason(normalized)
+    except ValueError:
+        return None
 
 
 def _as_dict(value: object) -> dict[str, Any]:
@@ -34,6 +61,8 @@ class SearchSummaryDiagnostic(DiagnosticPayload):
     source_refs: tuple[str, ...] = ()
     tenant_id: str | None = None
     workspace_id: str | None = None
+    used: bool | None = None
+    reason: SearchSummaryReason | None = None
 
     @classmethod
     def schema_id(cls) -> str:
@@ -49,6 +78,8 @@ class SearchSummaryDiagnostic(DiagnosticPayload):
             source_refs=self.source_refs,
             tenant_id=self.tenant_id,
             workspace_id=self.workspace_id,
+            used=self.used,
+            reason=self.reason,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -68,6 +99,10 @@ class SearchSummaryDiagnostic(DiagnosticPayload):
             payload["tenant_id"] = self.tenant_id
         if self.workspace_id:
             payload["workspace_id"] = self.workspace_id
+        if self.used is not None:
+            payload["used"] = self.used
+        if self.reason is not None:
+            payload["reason"] = self.reason.value
         return payload
 
 
@@ -77,7 +112,9 @@ def search_diagnostic_from_output(output: dict[str, object]) -> SearchSummaryDia
     evidence_count = len(evidence) if isinstance(evidence, list) else 0
     num_results = int(summary.get("num_results") or 0)
     query = summary.get("query")
-    query_text = str(query).strip() if query is not None and str(query).strip() else None
+    query_text = (
+        str(query).strip() if query is not None and str(query).strip() else None
+    )
     source_refs: list[str] = []
     if isinstance(evidence, list):
         for item in evidence:
@@ -89,6 +126,9 @@ def search_diagnostic_from_output(output: dict[str, object]) -> SearchSummaryDia
     collection_id = summary.get("collection_id")
     workspace_id = str(collection_id).strip() if collection_id else None
     raw_tool_reason = summary.get("raw_tool_reason")
+    used_raw = summary.get("used")
+    used = used_raw if isinstance(used_raw, bool) else None
+    reason = parse_search_summary_reason(summary.get("reason"))
     return SearchSummaryDiagnostic(
         num_results=num_results,
         evidence_count=evidence_count,
@@ -97,4 +137,6 @@ def search_diagnostic_from_output(output: dict[str, object]) -> SearchSummaryDia
         raw_tool_reason=str(raw_tool_reason) if raw_tool_reason else None,
         source_refs=tuple(source_refs),
         workspace_id=workspace_id,
+        used=used,
+        reason=reason,
     )

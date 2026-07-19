@@ -25,6 +25,7 @@ TODO.txt
 htmlcov/
 .coverage
 .coverage.*
+tmp_pytest_basetemp_*/
 
 # Generated build artifacts
 build/agent_fleet_inventory.json
@@ -34,6 +35,7 @@ docs/_external/
 
 applications/local_workspace_application/.observability/
 applications/local_workspace_application/.proof_docs/
+applications/local_workspace_application/.file_watcher_e2e_state/
 
 .artifacts/
 

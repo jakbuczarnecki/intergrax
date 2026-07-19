@@ -288,7 +288,7 @@ This track is executed one task at a time.
 | LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | **Closed — PROOF-RECEIPTS-1A through PROOF-RECEIPTS-1E complete** | Medium |
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | **Closed** (LKW.6A/6B/6C) | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned / optional | Medium |
-| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | **In progress** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C next) | Medium |
+| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) | Medium |
 | LKW.8 | Tray thin client | LKW.6 | Deferred | Low |
 | LKW-H2 | Evidence/maturity wording cleanup | LKW.1 | Planned | Medium |
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
@@ -296,7 +296,7 @@ This track is executed one task at a time.
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
 
-**Next planned task:** **LKW.7C** — Persistent-index live proof and ProofReceipt. **LKW.7** — **In progress** (LKW.7A Done; LKW.7B Closed; LKW.7B1 Done; LKW.7B2 Closed; LKW.7B2A Done; LKW.7B2B Done). **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+**Next planned task:** **LKW.8** (Deferred) or **LKW.6b** (optional Slack Socket Mode). **LKW.7** — **Closed** (LKW.7A Done; LKW.7B Closed; LKW.7B1 Done; LKW.7B2 Closed; LKW.7B2A Done; LKW.7B2B Done; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed). **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 
 **Platform proof pattern (same as observability):**
 
@@ -911,7 +911,7 @@ OS-specific interaction adapter
 - MongoDB-backed `ProofReceipt` (`proof_kind=platform_windows_interaction`) via one-command reviewer runner
 - Reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13
 
-**LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher remains **LKW.7 — In progress** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C next). Tray remains **LKW.8 — Deferred**.
+**LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher is **LKW.7 — Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed). Tray remains **LKW.8 — Deferred**.
 
 **Out of scope for LKW.6C (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS service packaging (**APP-HOST-7**).
 
@@ -926,9 +926,11 @@ OS-specific interaction adapter
 | LKW.7B2A | Durable checkpoint and restart recovery | versioned checkpoint, atomic JSON store, export/restore | **Done** |
 | LKW.7B2B | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | OS process, settings, signals, automatic save | **Done** |
 | LKW.7B | Watcher runtime and sidecar process | LKW.7B1 + LKW.7B2 | **Closed** |
-| LKW.7C | Persistent-index live proof and ProofReceipt | real broker, worker, persistent index, ProofReceipt | Planned — next |
+| LKW.7C | Persistent-index live proof and ProofReceipt | real broker, worker, persistent index, ProofReceipt | **Closed** |
+| LKW.7C1 | Watcher-triggered persistent search E2E workload | Compose overlay, one-command runner, Kafka + search + restart proof | **Done** |
+| LKW.7C2 | ProofReceipt, reviewer runner and final closeout | receipt recording, reviewer guide, LKW.7 closeout | **Done** |
 
-**LKW.7 parent status:** **In progress**. **LKW.7B status:** **Closed**. **LKW.7B2 status:** **Closed**. **Next planned task:** **LKW.7C**.
+**LKW.7 parent status:** **Closed**. **LKW.7B status:** **Closed**. **LKW.7C status:** **Closed**. **LKW.7C1 status:** **Done**. **LKW.7C2 status:** **Done**. No remaining LKW.7 subtask.
 
 **LKW.7A delivered:**
 
@@ -965,7 +967,23 @@ OS-specific interaction adapter
 - Graceful shutdown final checkpoint; safe structured `FileWatcherSidecarResult`
 - Entrypoint `python -m local_workspace_application.file_watcher`
 
-**Out of scope until LKW.7C:** persistent-index live proof, ProofReceipt, index deletion, content hashing, Docker/OS-service packaging.
+**LKW.7C1 delivered:**
+
+- Dedicated Compose overlay `file-watcher-e2e.compose.yml` with `lkw-file-watcher` sidecar service
+- Isolated checkpoint state under `.file_watcher_e2e_state` (outside watched `/data/user_docs`)
+- One-command Windows runner + Python live workload proving filesystem create → Kafka → worker → persistent search
+- Non-destructive restart of watcher/worker/backend/Qdrant with duplicate-enqueue negative control
+
+**LKW.7C2 delivered:**
+
+- Cold-start-safe embedding/search warm-up through `local.workspace.search` before proof-file creation
+- ProofReceipt mapping from live workload evidence (`proof_kind=file_watcher_persistent_search`)
+- Platform `ProofReceiptStore` → `DocumentStore` → `MongoDBDocumentStoreIntegration` write/read/query verification
+- One-command reviewer BAT with Kafka + MongoDB overlays; Mongo Express inspection path
+- Verification document [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md)
+- Public reviewer Steps 14–15 in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
+
+**Final boundaries (not delivered by LKW.7):** index deletion on filesystem delete, content hashing for change identity, native filesystem events (polling remains), OS-service packaging (APP-HOST-7), multi-collection sidecar fan-out.
 
 ---
 
