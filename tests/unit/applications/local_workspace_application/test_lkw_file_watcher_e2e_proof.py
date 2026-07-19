@@ -263,7 +263,7 @@ def test_search_diagnostic_parsing_success_and_rejection() -> None:
     assert diagnostics.evidence_count == 2
     assert diagnostics.raw_tool_reason == "ok"
     assert diagnostics.used is True
-    assert diagnostics.reason == "retrieve_complete"
+    assert diagnostics.reason is proof.SearchSummaryReason.RETRIEVE_COMPLETE
     assert proof.search_attempt_succeeded(diagnostics, expected_source_path=expected)
 
     wrong_source = {
@@ -345,13 +345,14 @@ def test_warmup_request_shape() -> None:
 
 def test_warmup_diagnostic_success_and_rejection() -> None:
     proof = _load_proof_module()
+    reason = proof.SearchSummaryReason
     complete = proof.SearchDiagnostics(
         num_results=0,
         evidence_count=0,
         source_refs=(),
         raw_tool_reason=None,
         used=True,
-        reason="retrieve_complete",
+        reason=reason.RETRIEVE_COMPLETE,
     )
     assert proof.warmup_attempt_succeeded(complete) is True
 
@@ -372,7 +373,7 @@ def test_warmup_diagnostic_success_and_rejection() -> None:
         source_refs=(),
         raw_tool_reason="boom",
         used=False,
-        reason="retrieve_failed",
+        reason=reason.RETRIEVE_FAILED,
     )
     assert proof.warmup_attempt_succeeded(used_false) is False
 
@@ -382,9 +383,29 @@ def test_warmup_diagnostic_success_and_rejection() -> None:
         source_refs=(),
         raw_tool_reason="boom",
         used=True,
-        reason="retrieve_failed",
+        reason=reason.RETRIEVE_FAILED,
     )
     assert proof.warmup_attempt_succeeded(used_true_failed) is False
+
+    used_true_query_missing = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason=None,
+        used=True,
+        reason=reason.QUERY_MISSING,
+    )
+    assert proof.warmup_attempt_succeeded(used_true_query_missing) is False
+
+    used_true_gateway_unavailable = proof.SearchDiagnostics(
+        num_results=0,
+        evidence_count=0,
+        source_refs=(),
+        raw_tool_reason=None,
+        used=True,
+        reason=reason.TOOL_GATEWAY_NOT_AVAILABLE,
+    )
+    assert proof.warmup_attempt_succeeded(used_true_gateway_unavailable) is False
 
     used_true_missing_reason = proof.SearchDiagnostics(
         num_results=0,
@@ -402,10 +423,30 @@ def test_warmup_diagnostic_success_and_rejection() -> None:
         source_refs=(),
         raw_tool_reason=None,
         used=None,
-        reason="retrieve_complete",
+        reason=reason.RETRIEVE_COMPLETE,
     )
     assert proof.warmup_attempt_succeeded(missing_used) is False
     assert proof.warmup_attempt_succeeded(None) is False
+
+    unknown_wire = {
+        "metadata": {
+            "lkw_evidence.v1": {
+                "diagnostics": {
+                    "lkw.search_summary.v1": {
+                        "num_results": 0,
+                        "evidence_count": 0,
+                        "source_refs": [],
+                        "used": True,
+                        "reason": "future_unknown_reason",
+                    }
+                }
+            }
+        }
+    }
+    unknown_diagnostics = proof.extract_search_diagnostics(unknown_wire)
+    assert unknown_diagnostics is not None
+    assert unknown_diagnostics.reason is None
+    assert proof.warmup_attempt_succeeded(unknown_diagnostics) is False
 
 
 def test_warmup_retry_success_and_failure() -> None:

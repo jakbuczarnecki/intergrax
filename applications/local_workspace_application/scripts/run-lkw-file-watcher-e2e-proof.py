@@ -15,6 +15,7 @@ import json
 import os
 import secrets
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -38,6 +39,15 @@ from intergrax.proofs.receipts.contracts import (
 from intergrax.proofs.receipts.recording import (
     ProofReceiptVerificationError,
     record_and_verify_proof_receipt,
+)
+
+_AGENTS_ROOT = Path(__file__).resolve().parents[3] / "agents"
+if str(_AGENTS_ROOT) not in sys.path:
+    sys.path.append(str(_AGENTS_ROOT))
+
+from local_search.diagnostics import (  # noqa: E402  # pyright: ignore[reportMissingImports]
+    SearchSummaryReason,
+    parse_search_summary_reason,
 )
 
 _APPLICATION_ID = "local_workspace"
@@ -108,7 +118,7 @@ class SearchDiagnostics:
     source_refs: tuple[str, ...]
     raw_tool_reason: str | None
     used: bool | None = None
-    reason: str | None = None
+    reason: SearchSummaryReason | None = None
     terminal_status: str | None = None
 
 
@@ -634,11 +644,7 @@ def extract_search_diagnostics(response: dict[str, object]) -> SearchDiagnostics
     )
     used_value = summary.get("used")
     used = used_value if isinstance(used_value, bool) else None
-    reason_value = summary.get("reason")
-    if isinstance(reason_value, str) and reason_value.strip():
-        reason: str | None = reason_value.strip()
-    else:
-        reason = None
+    reason = parse_search_summary_reason(summary.get("reason"))
     terminal_raw = evidence.get("terminal_status")
     terminal_status = str(terminal_raw) if terminal_raw is not None else None
     return SearchDiagnostics(
@@ -661,7 +667,7 @@ def warmup_attempt_succeeded(diagnostics: SearchDiagnostics | None) -> bool:
     return (
         diagnostics is not None
         and diagnostics.used is True
-        and diagnostics.reason == "retrieve_complete"
+        and diagnostics.reason is SearchSummaryReason.RETRIEVE_COMPLETE
     )
 
 
@@ -701,13 +707,13 @@ def run_embedding_warmup(
             diagnostics = extract_search_diagnostics(response)
             if diagnostics is not None:
                 if diagnostics.reason is not None:
-                    last_reason = diagnostics.reason
+                    last_reason = diagnostics.reason.value
                 elif diagnostics.terminal_status is not None:
                     last_reason = f"terminal_{diagnostics.terminal_status}"
                 last_raw_tool_reason = diagnostics.raw_tool_reason
             if warmup_attempt_succeeded(diagnostics):
                 if last_reason is None:
-                    last_reason = "retrieve_complete"
+                    last_reason = SearchSummaryReason.RETRIEVE_COMPLETE.value
                 return WarmupResult(
                     completed=True,
                     attempt_count=attempt_count,

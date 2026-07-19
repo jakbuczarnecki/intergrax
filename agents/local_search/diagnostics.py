@@ -6,11 +6,38 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
 _SEARCH_SUMMARY_V1 = "lkw.search_summary.v1"
+
+
+class SearchSummaryReason(str, Enum):
+    QUERY_MISSING = "query_missing"
+    TOOL_GATEWAY_NOT_AVAILABLE = "tool_gateway_not_available"
+    RETRIEVE_FAILED = "retrieve_failed"
+    RETRIEVE_COMPLETE = "retrieve_complete"
+
+
+def parse_search_summary_reason(
+    value: object,
+) -> SearchSummaryReason | None:
+    if isinstance(value, SearchSummaryReason):
+        return value
+
+    if not isinstance(value, str):
+        return None
+
+    normalized = value.strip()
+    if not normalized:
+        return None
+
+    try:
+        return SearchSummaryReason(normalized)
+    except ValueError:
+        return None
 
 
 def _as_dict(value: object) -> dict[str, Any]:
@@ -35,7 +62,7 @@ class SearchSummaryDiagnostic(DiagnosticPayload):
     tenant_id: str | None = None
     workspace_id: str | None = None
     used: bool | None = None
-    reason: str | None = None
+    reason: SearchSummaryReason | None = None
 
     @classmethod
     def schema_id(cls) -> str:
@@ -74,8 +101,8 @@ class SearchSummaryDiagnostic(DiagnosticPayload):
             payload["workspace_id"] = self.workspace_id
         if self.used is not None:
             payload["used"] = self.used
-        if self.reason is not None and self.reason.strip():
-            payload["reason"] = self.reason
+        if self.reason is not None:
+            payload["reason"] = self.reason.value
         return payload
 
 
@@ -101,11 +128,7 @@ def search_diagnostic_from_output(output: dict[str, object]) -> SearchSummaryDia
     raw_tool_reason = summary.get("raw_tool_reason")
     used_raw = summary.get("used")
     used = used_raw if isinstance(used_raw, bool) else None
-    reason_raw = summary.get("reason")
-    if isinstance(reason_raw, str) and reason_raw.strip():
-        reason: str | None = reason_raw.strip()
-    else:
-        reason = None
+    reason = parse_search_summary_reason(summary.get("reason"))
     return SearchSummaryDiagnostic(
         num_results=num_results,
         evidence_count=evidence_count,

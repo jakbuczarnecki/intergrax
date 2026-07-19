@@ -14,6 +14,7 @@ from intergrax.agents.authoring.runtime_tool_helpers import (
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RAG_RETRIEVE_TOOL_ID
+from local_search.diagnostics import SearchSummaryReason
 
 SEARCH_STEP_ID = "local_search_step"
 
@@ -40,7 +41,9 @@ def _optional_int(metadata: dict[str, Any], key: str) -> int | None:
 
 
 def _resolve_query(step_ctx: AgentStepContext, metadata: dict[str, Any]) -> str:
-    run_input = step_ctx.metadata.get(AcpRunContextKey.RUN_INPUT, metadata.get("message", ""))
+    run_input = step_ctx.metadata.get(
+        AcpRunContextKey.RUN_INPUT, metadata.get("message", "")
+    )
     if isinstance(run_input, dict):
         run_input = str(run_input.get("message") or run_input.get("summary") or "")
     return str(metadata.get("query") or run_input or step_ctx.message or "").strip()
@@ -67,18 +70,23 @@ def _format_evidence_item(
     return item
 
 
-def _format_evidence(chunks: list[Any], citations: list[Any]) -> list[dict[str, object]]:
+def _format_evidence(
+    chunks: list[Any], citations: list[Any]
+) -> list[dict[str, object]]:
     evidence: list[dict[str, object]] = []
     for chunk in chunks:
         if not isinstance(chunk, dict):
             continue
-        meta = chunk.get("metadata") if isinstance(chunk.get("metadata"), dict) else {}
+        metadata = chunk.get("metadata")
+        meta: dict[str, Any] = metadata if isinstance(metadata, dict) else {}
         source_path = meta.get("source_path") or meta.get("source") or meta.get("file")
         item = _format_evidence_item(
             text=str(chunk.get("text") or ""),
             source_path=str(source_path) if source_path else None,
             chunk_id=str(chunk.get("id")) if chunk.get("id") is not None else None,
-            score=chunk.get("score") if isinstance(chunk.get("score"), (int, float)) else None,
+            score=chunk.get("score")
+            if isinstance(chunk.get("score"), (int, float))
+            else None,
         )
         if item:
             evidence.append(item)
@@ -89,13 +97,18 @@ def _format_evidence(chunks: list[Any], citations: list[Any]) -> list[dict[str, 
     for citation in citations:
         if not isinstance(citation, dict):
             continue
-        meta = citation.get("metadata") if isinstance(citation.get("metadata"), dict) else {}
+        metadata = citation.get("metadata")
+        meta = metadata if isinstance(metadata, dict) else {}
         source_path = meta.get("source_path") or citation.get("source_label")
         item = _format_evidence_item(
             text=str(citation.get("excerpt") or ""),
             source_path=str(source_path) if source_path else None,
-            chunk_id=str(citation.get("chunk_id")) if citation.get("chunk_id") is not None else None,
-            score=citation.get("score") if isinstance(citation.get("score"), (int, float)) else None,
+            chunk_id=str(citation.get("chunk_id"))
+            if citation.get("chunk_id") is not None
+            else None,
+            score=citation.get("score")
+            if isinstance(citation.get("score"), (int, float))
+            else None,
         )
         if item:
             evidence.append(item)
@@ -106,7 +119,7 @@ def _output(
     *,
     run_id: str,
     used: bool,
-    reason: str,
+    reason: SearchSummaryReason,
     query: str = "",
     collection_id: str | None = None,
     evidence: list[dict[str, object]] | None = None,
@@ -117,14 +130,14 @@ def _output(
     if used:
         answer = f"local_search: search job — query={query!r}, results={num_results}"
     else:
-        answer = f"local_search: search failed — {reason}"
+        answer = f"local_search: search failed — {reason.value}"
     return {
         "summary": answer,
         "answer": answer,
         "run_id": run_id,
         "search_summary": {
             "used": used,
-            "reason": reason,
+            "reason": reason.value,
             "query": query,
             "collection_id": collection_id,
             "evidence": evidence,
@@ -149,22 +162,32 @@ def _resolved_tenant_id(
 async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     """LKW.1.2 — rag.retrieve via catalog tool; evidence-first search_summary."""
     exec_ctx = exec_ctx_from_step(step_ctx)
-    metadata = request_metadata(exec_ctx, step_ctx, fallback_keys=_LKW_SEARCH_METADATA_KEYS)
+    metadata = request_metadata(
+        exec_ctx, step_ctx, fallback_keys=_LKW_SEARCH_METADATA_KEYS
+    )
     scope = resolve_request_scope(exec_ctx)
     tenant_id = _resolved_tenant_id(scope, metadata)
     query = _resolve_query(step_ctx, metadata)
     collection_id_raw = metadata.get("collection_id")
-    collection_id = str(collection_id_raw).strip() if collection_id_raw is not None and str(collection_id_raw).strip() else None
+    collection_id = (
+        str(collection_id_raw).strip()
+        if collection_id_raw is not None and str(collection_id_raw).strip()
+        else None
+    )
     top_k = _optional_int(metadata, "top_k")
 
     if not query:
-        return _output(run_id=step_ctx.run_id, used=False, reason="query_missing")
+        return _output(
+            run_id=step_ctx.run_id,
+            used=False,
+            reason=SearchSummaryReason.QUERY_MISSING,
+        )
 
     if exec_ctx is None:
         return _output(
             run_id=step_ctx.run_id,
             used=False,
-            reason="tool_gateway_not_available",
+            reason=SearchSummaryReason.TOOL_GATEWAY_NOT_AVAILABLE,
             query=query,
             collection_id=collection_id,
         )
@@ -191,13 +214,14 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         summary = _output(
             run_id=step_ctx.run_id,
             used=False,
-            reason="retrieve_failed",
+            reason=SearchSummaryReason.RETRIEVE_FAILED,
             query=query,
             collection_id=collection_id,
         )
         raw_reason = entry.get("reason")
         if raw_reason:
-            search_summary = dict(summary["search_summary"])
+            raw_summary = summary["search_summary"]
+            search_summary = dict(raw_summary) if isinstance(raw_summary, dict) else {}
             search_summary["raw_tool_reason"] = str(raw_reason)
             summary["search_summary"] = search_summary
         return summary
@@ -208,7 +232,7 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     return _output(
         run_id=step_ctx.run_id,
         used=True,
-        reason="retrieve_complete",
+        reason=SearchSummaryReason.RETRIEVE_COMPLETE,
         query=query,
         collection_id=collection_id,
         evidence=evidence,
