@@ -1,6 +1,6 @@
 # Governed Contractor Application — architecture
 
-**Status:** GEC-0…GEC-4 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation composition; HITL UX/policy/receipts/providers deferred  
+**Status:** GEC-0…GEC-5 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation + meaningful side-effect policy injection; HITL UX/product policy packs/receipts/providers deferred  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -150,17 +150,30 @@ The adapter **must not** invent acceptance, auto-approve quotes, bypass HITL, or
 
 ---
 
-## 7. Side-effect policy boundary
+## 7. Side-effect policy boundary (GEC-5)
 
-Meaningful side effects (external task mutation after quote, deliverable write, external publication) are subject to **runtime policy bundles** configured by the Tier-3 host.
+Meaningful external side effects are authorized by the **platform policy boundary** before provider-bound execution ([ADR-POLICY-SIDE-EFFECT-001](../../../docs/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)).
+
+```text
+Tier-3 composition root
+  → settings.meaningful_side_effect_policy  (MeaningfulSideEffectEvaluator)
+  → ExternalContractorAdapterAgent
+  → ExternalWorkAdapter (describe action → evaluate → ALLOW/DENY/REQUIRE_HUMAN)
+```
+
+| Outcome | Host / adapter behavior |
+|---------|-------------------------|
+| ALLOW | Provider-bound call may proceed |
+| DENY | Structured adapter result; no provider mutation |
+| REQUIRE_HUMAN / ESCALATE | Compose `GovernedContinuationRequest` (GEC-4); no provider call |
 
 | Allowed in adapter | Prohibited in adapter |
 |--------------------|-----------------------|
-| Call external APIs through governed integration/tools | Decide policy allow/deny |
-| Report proposed side effects / tool evidence | Escape workspace allowlists |
-| Retry idempotent reads / safe status sync | Publish externally without Tier-3/runtime approval |
+| Describe proposed side effect + call injected evaluator | Embed spend limits / quote thresholds |
+| Forward evidence only after ALLOW | Treat evidence or resume as allow |
+| Observational reads (`get_quote`, timeline, …) without mutation policy | Escape workspace allowlists |
 
-Reusable policy mechanisms stay in platform policy infrastructure — GEC only supplies product-specific rule packs under the host when needed.
+Quote **receipt** is observational (continuation surface only). Quote **acceptance** is meaningful (`ACCEPT_QUOTE`). Product policy packs / business rules remain deferred — host injects a deterministic evaluator when proving the path.
 
 ---
 

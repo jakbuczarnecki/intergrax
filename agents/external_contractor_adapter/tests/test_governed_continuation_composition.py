@@ -23,6 +23,10 @@ from external_contractor_adapter.external_work_adapter import (
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
+from external_contractor_adapter.tests.fakes.deterministic_side_effect_policy import (
+    DeterministicMeaningfulSideEffectPolicy,
+)
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.external_work import ExternalWorkStatus, QuoteAcceptanceEvidence
 from intergrax.contracts.governed_continuation import (
@@ -65,6 +69,18 @@ def _meta(**overrides: object) -> dict[str, object]:
     return payload
 
 
+
+def _allow_policy() -> DeterministicMeaningfulSideEffectPolicy:
+    return DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
+
+
+def _adapter(fake: DeterministicExternalWorkFake | None = None) -> ExternalWorkAdapter:
+    return ExternalWorkAdapter(
+        fake or DeterministicExternalWorkFake(),
+        side_effect_policy=_allow_policy(),
+    )
+
+
 def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
     payload: dict[str, object] = {
         "acceptance_id": "acc-gec4-1",
@@ -86,13 +102,15 @@ def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
 @pytest.mark.gate
 def test_continuation_blocker_surfaced_for_quote() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake)
+    adapter = _adapter(fake)
     mapped = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-gec4",
             run_id="run-gec4",
             metadata=_meta(),
-        )
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     blocker = adapter.surface_continuation_blocker(mapped, run_id="run-gec4")
     assert blocker is not None
@@ -113,13 +131,15 @@ def test_continuation_blocker_surfaced_for_quote() -> None:
 @pytest.mark.gate
 def test_continuation_preserves_distinct_task_and_run_identity() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake)
+    adapter = _adapter(fake)
     mapped = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-123",
             run_id="run-456",
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-identity"}),
-        )
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     continuation = adapter.surface_continuation_blocker(mapped, run_id="run-456")
     assert continuation is not None
@@ -135,17 +155,32 @@ def test_continuation_preserves_distinct_task_and_run_identity() -> None:
 @pytest.mark.gate
 def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake)
-    mapped = adapter.create_and_map(
+    policy = _allow_policy()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    # GEC-5: meaningful create requires real Nexus run_id (fail closed).
+    denied_create = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-no-run",
             run_id=None,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run"}),
-        )
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert denied_create.used is False
+    assert denied_create.reason == "side_effect_identity_missing"
+    # Create with a real run_id, then prove continuation surface never fabricates one.
+    mapped = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-no-run",
+            run_id="run-for-snapshot",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run"}),
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     assert mapped.snapshot is not None
     assert mapped.snapshot.correlation.task_id == "task-no-run"
-    # Explicit empty / missing run identity — never use task_id as fabricated run_id.
     blocker = adapter.surface_continuation_blocker(mapped, run_id="")
     assert blocker is None
     result = adapter.with_continuation_surface(mapped, run_id=None)
@@ -156,7 +191,6 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     assert result.error_message is not None
     assert "run identity" in result.error_message.lower()
     assert result.reason == "continuation_correlation_failed"
-    # Prove no fabricated run identity equal to task_id was attached.
     summary = result.to_domain_summary()
     assert summary.get("continuation") is None
     via_step = adapt_from_step_metadata(
@@ -165,11 +199,11 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
         run_id=None,
         message="scope",
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run-step"}),
+        side_effect_policy=policy,
     )
+    assert via_step.used is False
     assert via_step.continuation is None
-    assert via_step.error_code is not None
-    assert via_step.error_message is not None
-    assert "run identity" in via_step.error_message.lower()
+    assert via_step.reason == "side_effect_identity_missing"
     source = _ADAPTER_PY.read_text(encoding="utf-8")
     assert "correlation.run_id or correlation.task_id" not in source
     assert "or correlation.task_id" not in source
@@ -179,13 +213,15 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
 @pytest.mark.gate
 def test_interrupt_composition_reuses_nexus_handler() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake)
+    adapter = _adapter(fake)
     mapped = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-int",
             run_id="run-int",
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-int"}),
-        )
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     blocker = adapter.surface_continuation_blocker(mapped, run_id="run-int")
     assert blocker is not None
@@ -206,7 +242,14 @@ def test_correlation_preserved_across_continuation_surface() -> None:
         task_id="task-corr",
         run_id="run-corr",
         message="scope",
-        metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-corr"}),
+        metadata=_meta(
+            **{
+                META_IDEMPOTENCY_KEY: "idem-corr",
+                "external_work.principal_id": "u1",
+                "external_work.tenant_id": "tenant-a",
+            }
+        ),
+        side_effect_policy=_allow_policy(),
     )
     assert result.used is True
     assert result.reason == "continuation_blocked"
@@ -224,7 +267,7 @@ def test_correlation_preserved_across_continuation_surface() -> None:
 @pytest.mark.gate
 def test_continuation_evidence_propagation_without_tier2_governance() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake)
+    adapter = _adapter(fake)
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-ev",
@@ -232,6 +275,8 @@ def test_continuation_evidence_propagation_without_tier2_governance() -> None:
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-ev"}),
         ),
         enrich=False,
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     assert created.snapshot is not None and created.quote is not None
     evidence = attach_continuation_refs_to_quote_acceptance(
@@ -264,11 +309,13 @@ def test_tier2_never_evaluates_governance_or_resumes() -> None:
         "resolve_decision",
         "resolve_interrupt",
         "HumanPauseCoordinator",
-        "PolicyEngine",
         "evaluate_interrupt",
         "HumanResponseVerdict",
     ):
         assert needle not in source
+    # May compose MeaningfulSideEffectEvaluator; must not embed approval rules.
+    assert "spending_limit" not in source.lower()
+    assert "quote_value_threshold" not in source.lower()
     assert "does not own governance" in source.lower() or "never decide" in source.lower()
     assert "forward_continuation_evidence" in source
 
@@ -307,13 +354,16 @@ def test_no_transport_coupling_in_continuation_path() -> None:
 @pytest.mark.gate
 def test_adapt_metadata_resume_forwards_evidence() -> None:
     fake = DeterministicExternalWorkFake()
-    boot = ExternalWorkAdapter(fake).create_and_map(
-        ExternalWorkAdapter(fake).build_create_request(
+    policy = _allow_policy()
+    boot = ExternalWorkAdapter(fake, side_effect_policy=policy).create_and_map(
+        ExternalWorkAdapter(fake, side_effect_policy=policy).build_create_request(
             task_id="task-resume",
             run_id="run-resume",
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-resume"}),
         ),
         enrich=False,
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     assert boot.quote is not None
     result = adapt_from_step_metadata(
@@ -328,6 +378,7 @@ def test_adapt_metadata_resume_forwards_evidence() -> None:
                 META_ACCEPTANCE_IDEMPOTENCY_KEY: "idem-accept-resume",
             }
         ),
+        side_effect_policy=policy,
     )
     assert result.used is True
     assert result.status == ExternalWorkStatus.ACCEPTED
@@ -339,7 +390,7 @@ def test_adapt_metadata_resume_forwards_evidence() -> None:
 @pytest.mark.gate
 def test_non_quote_continuation_reason_not_owned_by_adapter() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = ExternalWorkAdapter(fake)
+    adapter = _adapter(fake)
     created = adapter.create_and_map(
         adapter.build_create_request(
             task_id="task-sec",
@@ -347,6 +398,8 @@ def test_non_quote_continuation_reason_not_owned_by_adapter() -> None:
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-sec"}),
         ),
         enrich=False,
+        principal_id="u1",
+        tenant_id="tenant-a",
     )
     assert created.snapshot is not None and created.quote is not None
     result = adapter.forward_continuation_evidence(

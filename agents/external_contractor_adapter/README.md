@@ -23,10 +23,15 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
 
 registry = AgentRegistry()
-registry.register(ExternalContractorAdapterAgent(external_work=my_integration))
+registry.register(
+    ExternalContractorAdapterAgent(
+        external_work=my_integration,
+        side_effect_policy=my_side_effect_policy,
+    )
+)
 ```
 
-See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring. Host may inject via ``settings.external_work_integration``.
+See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring. Host may inject via ``settings.external_work_integration`` and ``settings.meaningful_side_effect_policy``.
 
 ## Capabilities
 

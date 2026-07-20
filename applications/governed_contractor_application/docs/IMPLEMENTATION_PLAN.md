@@ -2,7 +2,7 @@
 
 **The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0…GEC-4 Done**; GEC-5…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) — **GEC-0…GEC-5 Done**; GEC-6…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)  
@@ -48,7 +48,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **GEC-2** | Canonical external-work model + provider-neutral integration boundary | **Done** | High |
 | **GEC-3** | Tier-2 adapter agent | **Done** | High |
 | **GEC-4** | Governed Continuation composition (External Work first consumer) | **Done** | High |
-| **GEC-5** | Meaningful side-effect policy | Planned | High |
+| **GEC-5** | Meaningful side-effect policy | **Done** | High |
 | **GEC-6** | Governed contractor receipt | Planned | High |
 | **GEC-7** | Tier-3 API and proof workflow | Planned | High |
 | **GEC-8** | Partner handoff and mapping | Planned | Medium |
@@ -188,15 +188,15 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 | Field | Content |
 |-------|---------|
-| **Goal** | Enforce policy on post-acceptance external mutations and deliverable writes |
-| **Architecture impact** | Host policy bundles; runtime enforcement; adapter remains decision-free |
-| **Implementation tasks** | Policy pack for GEC side effects; deny/allow tests; document rule ownership |
-| **Files / packages** | `host/policy/` + platform policy wiring |
-| **Tests** | Policy unit tests; denied path does not call external mutate |
-| **Acceptance gates** | Side effects covered; bypass impossible from adapter alone |
-| **Non-goals** | Full enterprise policy authoring UX |
+| **Goal** | Authorize meaningful external side effects via platform policy before provider execution |
+| **Architecture impact** | Platform `MeaningfulSideEffectRequest` + `evaluate_meaningful_side_effect`; host injects evaluator; adapter remains rule-free |
+| **Implementation tasks** | Platform contract + PolicyEngine method; Tier-2 gates CREATE/ACCEPT/CANCEL; host DI; docs/ADR |
+| **Files / packages** | `intergrax/contracts/meaningful_side_effect.py`; `intergrax/runtime/policy/`; adapter; `host/agent_builders.py` |
+| **Tests** | Ordering ALLOW/DENY/REQUIRE_HUMAN; fail-closed; observational quote receipt; host smoke |
+| **Acceptance gates** | Policy before mutation; evidence ≠ allow; no Tier-2 rules; boundaries intact |
+| **Non-goals** | Payment/wallet; product policy packs; policy admin UX; provider transport |
 | **Dependencies** | GEC-4 |
-| **Closeout evidence** | Policy tests + ARCHITECTURE §7 confirmation |
+| **Closeout evidence** | `test_meaningful_side_effect_policy.py` + ARCHITECTURE §7 + ADR-POLICY-SIDE-EFFECT-001 |
 
 ---
 
@@ -322,6 +322,6 @@ curl -s http://127.0.0.1:8000/health
 
 ---
 
-## 3. Recommended first task after GEC-4
+## 3. Recommended first task after GEC-5
 
-**GEC-5:** Meaningful side-effect policy — compose existing policy infrastructure for post-continuation external mutations (still no wallet/payment product).
+**GEC-6:** Governed contractor receipt — map normalized external-work evidence into the existing ProofReceipt path (still no wallet/payment product).

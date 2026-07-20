@@ -20,6 +20,7 @@ from intergrax.contracts.external_work import (
     ExternalWorkTimelineEvent,
 )
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
+from intergrax.contracts.runtime_policy import PolicyDecision
 
 
 class ExternalWorkAdapterResult(BaseModel):
@@ -42,6 +43,7 @@ class ExternalWorkAdapterResult(BaseModel):
     provider: ExternalWorkProviderDescriptor | None = None
     unsupported_capabilities: tuple[ExternalWorkCapability, ...] = ()
     continuation: GovernedContinuationRequest | None = None
+    policy_decision: PolicyDecision | None = None
     error_code: ExternalWorkErrorCode | None = None
     error_message: str | None = None
     error_retryable: bool | None = None
@@ -74,6 +76,8 @@ class ExternalWorkAdapterResult(BaseModel):
             summary["provider"] = self.provider.model_dump(mode="json")
         if self.continuation is not None:
             summary["continuation"] = self.continuation.model_dump(mode="json")
+        if self.policy_decision is not None:
+            summary["policy_decision"] = self.policy_decision.model_dump(mode="json")
         if self.metadata:
             summary["metadata"] = dict(self.metadata)
         return summary

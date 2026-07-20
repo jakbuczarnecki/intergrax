@@ -2,7 +2,7 @@
 
 **The implementation map** for the Tier-2 GEC adapter agent.
 
-**Status:** Working draft (2026-07-20) — **GEC-0…GEC-4 Done** (mapping + governed continuation compose/forward); HITL UX / policy deferred  
+**Status:** Working draft (2026-07-20) — **GEC-0…GEC-5 Done** (mapping + continuation + side-effect policy composition); HITL UX / product policy packs deferred  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Host tracker:** [`applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)
@@ -50,7 +50,9 @@ Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** 
 | GEC-3.4 | Status + evidence normalization | **Done** | High | Timeline / deliverables / evidence refs |
 | GEC-3.5 | Resume/stop on HITL decision signal | **Done** (compose) | High | Surface blocker + forward evidence; Nexus owns resume |
 | GEC-4.1 | Consume `governed_continuation` contracts | **Done** | High | `ContinuationReason.QUOTE` only |
-| GEC-4.2 | Surface / forward continuation without governance | **Done** | High | No interrupt handler / policy in Tier-2 |
+| GEC-4.2 | Surface / forward continuation without governance | **Done** | High | No interrupt handler / policy rules in Tier-2 |
+| GEC-5.1 | Compose `MeaningfulSideEffectRequest` + policy boundary | **Done** | High | Fail closed; External Work first consumer |
+| GEC-5.2 | Gate CREATE / ACCEPT_QUOTE / CANCEL before provider | **Done** | High | Quote receipt remains observational |
 | GEC-A1 | Extend prompts only if needed | Planned | Low | Prefer deterministic Protocol calls |
 | GEC-A2 | Agent ADR for pattern evolution (if leaving reflex) | Planned | Medium | |
 
@@ -61,7 +63,7 @@ Host-owned phases (HITL UX, policy packs, receipts, public API, partner handoff,
 ## 2. Verification
 
 ```bash
-uv run pytest tests/unit/contracts/test_governed_continuation.py agents/external_contractor_adapter/tests -q
+uv run pytest tests/unit/contracts/test_governed_continuation.py tests/unit/runtime/policy/test_meaningful_side_effect_policy.py agents/external_contractor_adapter/tests -q
 uv run pytest applications/governed_contractor_application/tests -q
 ```
 
@@ -75,4 +77,4 @@ uv run pytest applications/governed_contractor_application/tests -q
 - Local competing contractor agent
 - ProofReceipt store ownership
 - Polling, background workers, retry engines, resume ownership
-- Marking host GEC-5…GEC-11 complete from this file
+- Marking host GEC-6…GEC-11 complete from this file

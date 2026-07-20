@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
+from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyDecision as RuntimePolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.replay.metrics import ExecutionMetrics
@@ -56,6 +57,13 @@ class PolicyEngine:
 
     def evaluate_interrupt(self, interrupt: ExecutionInterrupt) -> RuntimePolicyDecision:
         return self.runtime.evaluate_interrupt(interrupt)
+
+    def evaluate_meaningful_side_effect(
+        self,
+        request: MeaningfulSideEffectRequest,
+    ) -> RuntimePolicyDecision:
+        """Authorize a proposed meaningful external side effect (GEC-5). Fail closed."""
+        return self.runtime.evaluate_meaningful_side_effect(request)
 
     def evaluate_pre_llm(
         self,

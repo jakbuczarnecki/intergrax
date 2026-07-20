@@ -244,7 +244,32 @@ execution → surface GovernedContinuationRequest → ExecutionInterrupt
 
 **Reuse audit (GEC-4):** platform already supported continuation via interrupt + HITL + resume; only a generic reason discriminator and composition helpers were added. Forbidden: `ContinuationRuntime`, `QuoteLifecycleEngine`, quote-specific interrupt types.
 
-**Deferred:** quote UX, meaningful side-effect policy (GEC-5), receipts (GEC-6), provider transport.
+**Deferred:** quote UX, receipts (GEC-6), provider transport.
+
+---
+
+## Meaningful side-effect policy (composition — GEC-5)
+
+**Capability:** authorize proposed external actions that may create commitments, mutations, disclosures, or irreversible consequences **before** provider-bound execution.
+
+**Not** a quote-approval engine, payment policy, or second policy runtime. Reuses `PolicyDecision` / `PolicyAction` and `PolicyEngine` / `RuntimePolicyEngine.evaluate_meaningful_side_effect`. Request contract: `intergrax.contracts.meaningful_side_effect` ([ADR-POLICY-SIDE-EFFECT-001](../adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)).
+
+```text
+proposed external action → MeaningfulSideEffectRequest → policy evaluate
+  → ALLOW → execute  |  DENY → stop  |  REQUIRE_HUMAN → GovernedContinuationRequest
+```
+
+| Rule | Detail |
+|------|--------|
+| Fail closed | Missing evaluator, principal, run identity, or indeterminate → DENY (no silent allow) |
+| Quote receipt | Observational — not a side-effect gate |
+| Quote acceptance | Meaningful — policy before `submit_quote_acceptance` |
+| Evidence ≠ allow | Continuation evidence still requires policy ALLOW unless architecture defines a trusted final authorization artifact (not assumed here) |
+| First consumer | External Work (`CREATE_EXTERNAL_WORK` / `ACCEPT_QUOTE` / `CANCEL_EXTERNAL_WORK`) |
+
+**Composition with GEC-4:** REQUIRE_HUMAN maps to existing Governed Continuation / Nexus interrupt — policy does not resume Nexus.
+
+**Deferred:** product policy packs, spend thresholds, payment/wallet, receipts (GEC-6).
 
 ---
 

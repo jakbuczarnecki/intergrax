@@ -1,6 +1,6 @@
 # external_contractor_adapter — architecture
 
-**Status:** GEC-3 + GEC-4 baseline (2026-07-20) — provider-neutral mapping + governed continuation surfacing/forwarding; no transport / partner SDK  
+**Status:** GEC-3…GEC-5 baseline (2026-07-20) — mapping + governed continuation + meaningful side-effect policy composition; no transport / partner SDK  
 **Vertical:** Governed External Contractor (GEC)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
@@ -74,6 +74,8 @@ Depends only on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC
 | Correlation + idempotency **forwarding** | Retry/poll/resume engines |
 | Forwarding `QuoteAcceptanceEvidence` / continuation evidence | Creating acceptance or HITL decisions |
 | Surfacing `GovernedContinuationRequest` (`reason=QUOTE`) | Evaluating approvals / resuming Nexus |
+| Describing proposed side effects + composing policy boundary | Implementing policy rules / spend limits |
+| Forwarding evidence **only after** policy ALLOW | Inferring allow from evidence / resume |
 | Structured `ExternalWorkError` surfacing | ProofReceipt signing / persistence |
 | `ExternalWorkStatus` as adapter state | Extending Nexus `TaskState` with commercial stages |
 
@@ -83,22 +85,46 @@ External Work is the **first specialization** of platform Governed Continuation 
 
 ```text
 map quote → surface continuation (QUOTE) → Nexus interrupt (existing)
-  → human/policy decision → QuoteAcceptanceEvidence → forward via Protocol
+  → human/policy decision → QuoteAcceptanceEvidence
+  → side-effect policy (ACCEPT_QUOTE) → ALLOW → forward via Protocol
 ```
 
 **Identity rule:** task identity and run identity are distinct. Governed continuation is correlated to a real Nexus `run_id` forwarded from the execution context. Consumers must never synthesize run identity from `task_id`. Missing run identity fails closed (structured correlation error) — Tier-2 does not invent Nexus execution identity.
 
 Adapter APIs: `surface_continuation_blocker` / `with_continuation_surface` / `forward_continuation_evidence`. No `ContinuationRuntime` or quote lifecycle engine here.
 
-Deferred: HITL UX presentation, policy packs (GEC-5), receipts (GEC-6), workspace publication, polling engines, real providers.
+### Meaningful side-effect policy (GEC-5 consumer)
+
+Platform contract: `MeaningfulSideEffectRequest` + existing `PolicyDecision` / `PolicyAction` ([ADR-POLICY-SIDE-EFFECT-001](../../../docs/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)).
+
+| Concept | Rule |
+|---------|------|
+| Meaningful side effect | External action that may create commitment, mutation, disclosure, access change, or irreversible consequence |
+| Quote receipt | **Observational** — surfaces governed continuation; does not gate `get_quote` as a mutation |
+| Quote acceptance | **Meaningful** (`ACCEPT_QUOTE`) — policy before `submit_quote_acceptance` |
+| Evidence vs policy | `QuoteAcceptanceEvidence` is continuation evidence, not an allow decision |
+| Fail closed | Missing evaluator / principal / run identity / indeterminate → no provider call |
+| Ownership | Rules in platform/host policy; Tier-2 only describes + composes |
+
+Domain actions (not platform enums): `CREATE_EXTERNAL_WORK`, `ACCEPT_QUOTE`, `CANCEL_EXTERNAL_WORK`.
+
+Provider-bound method classification (`PROVIDER_METHOD_SIDE_EFFECT_CLASS`):
+
+| Method | Class |
+|--------|-------|
+| `create_work`, `submit_quote_acceptance`, `cancel_work` | meaningful side effect |
+| `discover`, `get_work`, `get_quote`, `get_timeline`, `get_deliverables`, `get_evidence` | observational |
+
+Deferred: HITL UX, product policy packs / business rules, receipts (GEC-6), workspace publication, polling engines, real providers.
 
 ---
 
-## Synchronous mapping flow (GEC-3)
+## Synchronous mapping flow (GEC-3 + GEC-5 gate)
 
 ```text
-discover → create_work (idempotent) → optional submit_quote_acceptance (forward only)
-  → get_quote / get_timeline / get_deliverables / get_evidence (capability-gated)
+discover → policy(CREATE) → create_work (idempotent)
+  → [no acceptance] enrich reads (observational) → optional QUOTE continuation surface
+  → [acceptance] policy(ACCEPT_QUOTE) → submit_quote_acceptance (forward only)
 ```
 
 No poll loops, sleep, background workers, or retry engines in this package.

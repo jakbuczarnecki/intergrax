@@ -3,6 +3,7 @@
 
 """Runtime governance policy (architecture §42.11)."""
 
+from intergrax.runtime.policy.meaningful_side_effect import MeaningfulSideEffectEvaluator
 from intergrax.runtime.policy.policy_engine import (
     PolicyEngine,
     coerce_policy_engine,
@@ -11,6 +12,7 @@ from intergrax.runtime.policy.policy_engine import (
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 __all__ = [
+    "MeaningfulSideEffectEvaluator",
     "PolicyEngine",
     "RuntimePolicyEngine",
     "coerce_policy_engine",
