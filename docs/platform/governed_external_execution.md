@@ -221,3 +221,5 @@ Review of ownership from user intent through `GovernedProofProfile` found **no u
 ```bash
 uv run pytest tests/unit/contracts/test_governed_continuation.py tests/unit/contracts/test_governed_proof.py tests/unit/runtime/policy/test_meaningful_side_effect_policy.py agents/external_contractor_adapter/tests applications/governed_contractor_application/tests -q
 ```
+
+Partner-facing readiness / five-point matrix (claims boundaries, demo path): [`docs/integrations/impeachmentright_validation_readiness.md`](../integrations/impeachmentright_validation_readiness.md).
