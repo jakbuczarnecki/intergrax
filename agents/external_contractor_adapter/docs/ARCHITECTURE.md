@@ -106,6 +106,8 @@ Platform contract: `MeaningfulSideEffectRequest` + existing `PolicyDecision` / `
 | Fail closed | Missing evaluator / principal / run identity / indeterminate → no provider call |
 | Ownership | Rules in platform/host policy; Tier-2 only describes + composes |
 
+Missing execution identity is represented explicitly and never encoded as a synthetic identifier or placeholder value.
+
 Domain actions (not platform enums): `CREATE_EXTERNAL_WORK`, `ACCEPT_QUOTE`, `CANCEL_EXTERNAL_WORK`.
 
 Provider-bound method classification (`PROVIDER_METHOD_SIDE_EFFECT_CLASS`):

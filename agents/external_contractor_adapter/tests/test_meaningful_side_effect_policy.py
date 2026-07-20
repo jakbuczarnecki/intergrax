@@ -346,6 +346,73 @@ def test_evidence_presence_is_not_authorization() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+def test_execution_identity_forwarded_or_explicitly_missing() -> None:
+    """Valid run_id is forwarded unchanged; missing is None — never \"\"."""
+    policy = _allow()
+    fake = DeterministicExternalWorkFake()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+
+    created = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-id-sem",
+            run_id="run-id-sem",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-id-sem"}),
+        ),
+        enrich=False,
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert created.used is True
+    assert len(policy.calls) == 1
+    assert policy.calls[0].run_id == "run-id-sem"
+    assert policy.calls[0].run_id != ""
+    assert created.snapshot is not None
+    assert created.snapshot.correlation.run_id == "run-id-sem"
+
+    policy.calls.clear()
+    missing = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-id-missing",
+            run_id=None,
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-id-missing"}),
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert missing.used is False
+    assert missing.reason == "side_effect_identity_missing"
+    assert policy.calls == []
+    assert fake.create_calls == 1  # only the successful create above
+    # Correlation on the denied path stays unset — no fabricated run identity.
+    assert missing.snapshot is None
+
+    # ACCEPT_QUOTE / CANCEL with correlation.run_id is None fail before policy.
+    assert created.quote is not None
+    corr = created.snapshot.correlation.model_copy(update={"run_id": None})
+    assert corr.run_id is None
+    accept_denied = adapter.forward_quote_acceptance(
+        corr,
+        _acceptance(quote_id=created.quote.quote_id),
+        idempotency_key="idem-accept-missing-run",
+    )
+    assert accept_denied.reason == "side_effect_identity_missing"
+    assert policy.calls == []
+    cancel_denied = adapter.cancel_and_map(
+        corr,
+        idempotency_key="idem-cancel-missing-run",
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert cancel_denied.reason == "side_effect_identity_missing"
+    assert policy.calls == []
+
+    source = _ADAPTER_PY.read_text(encoding="utf-8")
+    assert "request.run_id or \"\"" not in source
+    assert "correlation.run_id or \"\"" not in source
+
+
+@pytest.mark.unit
+@pytest.mark.gate
 def test_preserves_identity_correlation_idempotency_and_payload() -> None:
     policy = _allow()
     fake = DeterministicExternalWorkFake()

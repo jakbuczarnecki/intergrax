@@ -195,7 +195,7 @@ class ExternalWorkAdapter:
                 action=ACTION_CREATE_EXTERNAL_WORK,
                 kinds=(MeaningfulSideEffectKind.MUTATION,),
                 task_id=request.task_id,
-                run_id=request.run_id or "",
+                run_id=request.run_id,
                 principal_id=principal_id,
                 tenant_id=tenant_id,
                 resource=request.scope_digest,
@@ -309,7 +309,7 @@ class ExternalWorkAdapter:
                     MeaningfulSideEffectKind.MUTATION,
                 ),
                 task_id=correlation.task_id,
-                run_id=correlation.run_id or "",
+                run_id=correlation.run_id,
                 principal_id=resolved_principal,
                 tenant_id=resolved_tenant,
                 resource=acceptance.scope_digest,
@@ -372,7 +372,7 @@ class ExternalWorkAdapter:
                 action=ACTION_CANCEL_EXTERNAL_WORK,
                 kinds=(MeaningfulSideEffectKind.MUTATION,),
                 task_id=correlation.task_id,
-                run_id=correlation.run_id or "",
+                run_id=correlation.run_id,
                 principal_id=principal_id,
                 tenant_id=tenant_id,
                 resource=correlation.external_task_id,
@@ -545,7 +545,7 @@ class ExternalWorkAdapter:
         action: str,
         kinds: tuple[MeaningfulSideEffectKind, ...],
         task_id: str,
-        run_id: str,
+        run_id: str | None,
         principal_id: str | None,
         tenant_id: str | None,
         resource: str | None,
@@ -558,6 +558,9 @@ class ExternalWorkAdapter:
 
         Returns ``None`` when ALLOW (caller may proceed). Otherwise returns a
         structured deny / governance / fail-closed result with no provider call.
+
+        ``MeaningfulSideEffectRequest.run_id`` is mandatory and non-empty — missing
+        execution identity fails closed before request construction (never ``""``).
         """
         if self._side_effect_policy is None:
             return ExternalWorkAdapterResult(
@@ -576,10 +579,13 @@ class ExternalWorkAdapter:
                 metadata={"side_effect_action": action},
             )
 
-        resolved_task = (task_id or "").strip()
-        resolved_run = (run_id or "").strip()
+        resolved_task = task_id.strip() if task_id else ""
+        # Preserve platform optional semantics: absence is None, not "".
+        resolved_run = run_id.strip() if run_id is not None else None
+        if resolved_run is not None:
+            resolved_run = resolved_run or None
         resolved_principal = (principal_id or "").strip()
-        if not resolved_task or not resolved_run:
+        if not resolved_task or resolved_run is None:
             return ExternalWorkAdapterResult(
                 used=False,
                 reason="side_effect_identity_missing",
@@ -641,22 +647,9 @@ class ExternalWorkAdapter:
             return None
 
         if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
-            resolved_run = (run_id or "").strip()
-            if not resolved_run:
-                return ExternalWorkAdapterResult(
-                    used=False,
-                    reason="side_effect_governance_correlation_failed",
-                    error_code=ExternalWorkErrorCode.INVALID_REQUEST,
-                    error_message=(
-                        "REQUIRE_HUMAN side-effect decision needs a real Nexus run_id"
-                    ),
-                    error_retryable=False,
-                    policy_decision=decision,
-                    metadata={"side_effect_action": action},
-                )
             blocker = GovernedContinuationRequest(
                 reason=continuation_reason,
-                task_id=task_id,
+                task_id=resolved_task,
                 run_id=resolved_run,
                 source_agent_id="external_contractor_adapter",
                 prompt=(
