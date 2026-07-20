@@ -23,6 +23,7 @@ from external_contractor_adapter.external_work_adapter import (
 )
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
+    ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
@@ -268,3 +269,164 @@ def test_create_then_accept_in_one_call_composes_accept_proof() -> None:
     assert result.proof.action == ACTION_ACCEPT_QUOTE
     assert result.proof.governance_evidence is not None
     assert result.proof.governance_evidence.evidence_id == "acc-gec6-1"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_cancel_under_allow_always_returns_non_null_proof() -> None:
+    fake = DeterministicExternalWorkFake()
+    policy = _allow()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    created = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-gec6-cancel",
+            run_id="run-gec6-cancel",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-gec6-cancel"}),
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
+        enrich=False,
+    )
+    assert created.snapshot is not None
+    cancelled = adapter.cancel_and_map(
+        created.snapshot.correlation,
+        idempotency_key="idem-gec6-cancel-op",
+        principal_id="u1",
+        tenant_id="tenant-a",
+        enrich=False,
+    )
+    assert cancelled.used is True
+    assert cancelled.error_code is None
+    assert cancelled.proof is not None
+    assert cancelled.proof.action == ACTION_CANCEL_EXTERNAL_WORK
+    assert cancelled.proof.governance_evidence is None
+    assert cancelled.proof.run_id == "run-gec6-cancel"
+    assert cancelled.proof.principal_id == "u1"
+    assert cancelled.policy_decision is not None
+    assert cancelled.proof.policy_action is cancelled.policy_decision.action
+    assert fake.cancel_calls == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_create_and_accept_proof_mandatory_no_missing_run_id_fallback() -> None:
+    """Successful side effects always carry proof; missing run_id never maps success."""
+    fake = DeterministicExternalWorkFake()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=_allow())
+    result = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-proof-must",
+            run_id="run-proof-must",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-proof-must"}),
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert result.used is True
+    assert result.error_code is None
+    assert result.proof is not None
+    assert result.proof.governance_evidence is None
+
+    missing = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-proof-missing-run",
+            run_id=None,
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-proof-missing-run"}),
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert missing.proof is None
+    assert missing.error_code is not None
+    assert missing.used is False
+    assert missing.reason == "side_effect_identity_missing"
+    assert fake.create_calls == 1  # only the successful create above
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_missing_proof_identity_fails_before_provider_accept_and_cancel() -> None:
+    fake = DeterministicExternalWorkFake()
+    policy = _allow()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    created = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-pre-provider",
+            run_id="run-pre-provider",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-pre-provider"}),
+        ),
+        principal_id="u1",
+        tenant_id="tenant-a",
+        enrich=False,
+    )
+    assert created.snapshot is not None and created.quote is not None
+    corr = created.snapshot.correlation.model_copy(update={"run_id": None})
+    create_calls_before = fake.create_calls
+    accept_calls_before = fake.accept_calls
+    cancel_calls_before = fake.cancel_calls
+
+    accept_denied = adapter.forward_quote_acceptance(
+        corr,
+        _acceptance(quote_id=created.quote.quote_id),
+        idempotency_key="idem-accept-no-run",
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert accept_denied.proof is None
+    assert accept_denied.error_code is not None
+    assert accept_denied.reason == "side_effect_identity_missing"
+    assert fake.accept_calls == accept_calls_before
+
+    cancel_denied = adapter.cancel_and_map(
+        corr,
+        idempotency_key="idem-cancel-no-run",
+        principal_id="u1",
+        tenant_id="tenant-a",
+    )
+    assert cancel_denied.proof is None
+    assert cancel_denied.error_code is not None
+    assert cancel_denied.reason == "side_effect_identity_missing"
+    assert fake.cancel_calls == cancel_calls_before
+    assert fake.create_calls == create_calls_before
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_policy_and_proof_share_validated_run_id_and_principal() -> None:
+    policy = _allow()
+    adapter = ExternalWorkAdapter(
+        DeterministicExternalWorkFake(), side_effect_policy=policy
+    )
+    result = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-same-id",
+            run_id="run-same-id",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-same-id"}),
+        ),
+        principal_id="principal-same",
+        tenant_id="tenant-a",
+        enrich=False,
+    )
+    assert result.used is True
+    assert result.proof is not None
+    assert len(policy.calls) == 1
+    assert policy.calls[0].run_id == "run-same-id"
+    assert policy.calls[0].principal_id == "principal-same"
+    assert result.proof.run_id == policy.calls[0].run_id
+    assert result.proof.principal_id == policy.calls[0].principal_id
+    assert result.policy_decision is not None
+    assert result.proof.policy_action is result.policy_decision.action
+    assert result.proof.policy_rule_id == result.policy_decision.policy_rule_id
+    assert result.proof.policy_reason == result.policy_decision.reason
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_no_silent_post_execution_proof_fallback_in_source() -> None:
+    source = _ADAPTER_PY.read_text(encoding="utf-8")
+    assert "if create_run_id is None or not create_run_id.strip():" not in source
+    assert "if accept_run_id is None or not accept_run_id.strip():" not in source
+    assert "if cancel_run_id is None or not cancel_run_id.strip():" not in source
+    assert "_AuthorizedSideEffect" in source
+    assert "proof_composition_invariant_failed" in source
+    assert "Proof composition is mandatory" in source or "mandatory" in source.lower()

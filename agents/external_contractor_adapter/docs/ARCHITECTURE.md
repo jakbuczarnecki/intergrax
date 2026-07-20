@@ -122,6 +122,8 @@ Provider-bound method classification (`PROVIDER_METHOD_SIDE_EFFECT_CLASS`):
 
 > A proof profile is a description of governed execution, not a receipt, not an audit log, and not an authorization mechanism.
 
+**Invariant:** Every successful policy-authorized meaningful side effect produces a `GovernedProofProfile`. Proof composition is mandatory, not best-effort. Proof-required identities (principal / task / run) are validated before the provider-bound call and reused for policy, execution correlation, and proof — a successful side effect must never return without proof.
+
 After a meaningful side effect succeeds under policy ALLOW, the adapter composes `GovernedProofProfile` ([ADR-GOVERNED-PROOF-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)):
 
 | Included | Rule |

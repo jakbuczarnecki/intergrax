@@ -12,7 +12,7 @@ via an injected policy boundary before provider-bound side effects.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, NamedTuple
 
 from intergrax.contracts.external_work import (
     CommercialQuote,
@@ -99,6 +99,20 @@ _OBSERVATIONAL_PROVIDER_METHODS: frozenset[str] = frozenset(
         "get_evidence",
     }
 )
+
+_PROOF_INVARIANT_MESSAGE = (
+    "A governed side effect completed without the metadata required to "
+    "compose its proof profile."
+)
+
+
+class _AuthorizedSideEffect(NamedTuple):
+    """Validated identities + ALLOW decision shared by policy, provider, proof."""
+
+    decision: PolicyDecision
+    task_id: str
+    run_id: str
+    principal_id: str
 
 # Documented classification for ExternalWorkIntegration methods (GEC-5).
 PROVIDER_METHOD_SIDE_EFFECT_CLASS: dict[str, str] = {
@@ -219,7 +233,7 @@ class ExternalWorkAdapter:
             )
             if isinstance(create_gate, ExternalWorkAdapterResult):
                 return create_gate.model_copy(update={"provider": provider})
-            create_decision = create_gate
+            authorized = create_gate
 
             snapshot = self._integration.create_work(request)
             if acceptance is not None:
@@ -263,18 +277,15 @@ class ExternalWorkAdapter:
                 )
             else:
                 mapped = self._enrich(snapshot, provider=provider)
-            # run_id already validated by side-effect policy (ALLOW path).
-            create_run_id = request.run_id
-            if create_run_id is None or not create_run_id.strip():
-                return mapped
+            # Proof uses the same validated identities as policy (pre-provider).
             return self._with_proof(
                 mapped,
-                decision=create_decision,
+                decision=authorized.decision,
                 action=ACTION_CREATE_EXTERNAL_WORK,
-                principal_id=(principal_id or "").strip(),
+                principal_id=authorized.principal_id,
                 tenant_id=tenant_id,
-                task_id=request.task_id,
-                run_id=create_run_id,
+                task_id=authorized.task_id,
+                run_id=authorized.run_id,
                 provider_id=request.provider_id,
                 resource=request.scope_digest,
                 idempotency_key=request.idempotency_key,
@@ -362,7 +373,7 @@ class ExternalWorkAdapter:
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
-            accept_decision = gate
+            authorized = gate
 
             # Forward unchanged idempotency key — policy must not mint a new one.
             snapshot = self._integration.submit_quote_acceptance(
@@ -381,17 +392,14 @@ class ExternalWorkAdapter:
                 )
             else:
                 mapped = self._enrich(snapshot, provider=provider)
-            accept_run_id = correlation.run_id
-            if accept_run_id is None or not accept_run_id.strip():
-                return mapped.model_copy(update={"policy_decision": accept_decision})
             return self._with_proof(
                 mapped,
-                decision=accept_decision,
+                decision=authorized.decision,
                 action=ACTION_ACCEPT_QUOTE,
-                principal_id=resolved_principal,
+                principal_id=authorized.principal_id,
                 tenant_id=resolved_tenant,
-                task_id=correlation.task_id,
-                run_id=accept_run_id,
+                task_id=authorized.task_id,
+                run_id=authorized.run_id,
                 provider_id=correlation.provider_id,
                 resource=acceptance.scope_digest,
                 idempotency_key=idempotency_key,
@@ -442,7 +450,7 @@ class ExternalWorkAdapter:
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
-            cancel_decision = gate
+            authorized = gate
 
             snapshot = self._integration.cancel_work(
                 correlation,
@@ -460,17 +468,14 @@ class ExternalWorkAdapter:
                 )
             else:
                 mapped = self._enrich(snapshot, provider=provider)
-            cancel_run_id = correlation.run_id
-            if cancel_run_id is None or not cancel_run_id.strip():
-                return mapped.model_copy(update={"policy_decision": cancel_decision})
             return self._with_proof(
                 mapped,
-                decision=cancel_decision,
+                decision=authorized.decision,
                 action=ACTION_CANCEL_EXTERNAL_WORK,
-                principal_id=(principal_id or "").strip(),
+                principal_id=authorized.principal_id,
                 tenant_id=tenant_id,
-                task_id=correlation.task_id,
-                run_id=cancel_run_id,
+                task_id=authorized.task_id,
+                run_id=authorized.run_id,
                 provider_id=correlation.provider_id,
                 resource=correlation.external_task_id,
                 idempotency_key=idempotency_key,
@@ -628,29 +633,66 @@ class ExternalWorkAdapter:
     ) -> ExternalWorkAdapterResult:
         """Attach a descriptive proof profile after a successful side effect.
 
-        Composes metadata only — no persistence, signing, or receipt generation.
+        Proof composition is mandatory after ALLOW + successful provider execution —
+        never best-effort. Composes metadata only — no persistence, signing, or
+        receipt generation.
         """
-        if not result.used or not principal_id or not run_id.strip():
-            return result.model_copy(update={"policy_decision": decision})
-        proof: GovernedProofProfile = compose_governed_proof_profile(
-            principal_id=principal_id,
-            tenant_id=tenant_id,
-            task_id=task_id,
-            run_id=run_id,
-            action=action,
-            resource=resource,
-            provider_id=provider_id,
-            policy_action=decision.action,
-            policy_rule_id=decision.policy_rule_id,
-            policy_reason=decision.reason,
-            governance_evidence=governance_evidence,
-            continuation_reason=continuation_reason,
-            idempotency_key=idempotency_key,
-            correlation_id=correlation_id,
-            execution_ref=run_id,
-        )
+        if (
+            not result.used
+            or not principal_id.strip()
+            or not run_id.strip()
+            or not task_id.strip()
+        ):
+            return self._proof_invariant_failure(result, decision=decision)
+        try:
+            proof: GovernedProofProfile = compose_governed_proof_profile(
+                principal_id=principal_id,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                run_id=run_id,
+                action=action,
+                resource=resource,
+                provider_id=provider_id,
+                policy_action=decision.action,
+                policy_rule_id=decision.policy_rule_id,
+                policy_reason=decision.reason,
+                governance_evidence=governance_evidence,
+                continuation_reason=continuation_reason,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+                execution_ref=run_id,
+            )
+        except Exception:  # noqa: BLE001 — never suppress into success-without-proof
+            return self._proof_invariant_failure(result, decision=decision)
         return result.model_copy(
             update={"proof": proof, "policy_decision": decision}
+        )
+
+    @staticmethod
+    def _proof_invariant_failure(
+        result: ExternalWorkAdapterResult,
+        *,
+        decision: PolicyDecision,
+    ) -> ExternalWorkAdapterResult:
+        """Last-resort structured error when proof cannot be composed after success."""
+        return ExternalWorkAdapterResult(
+            used=False,
+            reason="proof_composition_invariant_failed",
+            error_code=ExternalWorkErrorCode.INVALID_REQUEST,
+            error_message=_PROOF_INVARIANT_MESSAGE,
+            error_retryable=False,
+            policy_decision=decision,
+            snapshot=result.snapshot,
+            status=result.status,
+            quote=result.quote,
+            provider=result.provider,
+            timeline=result.timeline,
+            deliverables=result.deliverables,
+            evidence=result.evidence,
+            metadata={
+                **dict(result.metadata),
+                "proof_invariant": "missing_required_identity",
+            },
         )
 
     def _evaluate_side_effect(
@@ -667,15 +709,16 @@ class ExternalWorkAdapter:
         correlation: Mapping[str, Any],
         context: Mapping[str, Any],
         continuation_reason: ContinuationReason,
-    ) -> PolicyDecision | ExternalWorkAdapterResult:
+    ) -> _AuthorizedSideEffect | ExternalWorkAdapterResult:
         """Evaluate policy before a meaningful provider call.
 
-        Returns the ALLOW ``PolicyDecision`` when the caller may proceed.
-        Otherwise returns a structured deny / governance / fail-closed result
-        with no provider call.
+        On ALLOW, returns validated identities + decision for reuse by provider
+        correlation and mandatory proof composition. Otherwise returns a structured
+        deny / governance / fail-closed result with no provider call.
 
         ``MeaningfulSideEffectRequest.run_id`` is mandatory and non-empty — missing
         execution identity fails closed before request construction (never ``""``).
+        Proof-required fields are therefore guaranteed before the provider call.
         """
         if self._side_effect_policy is None:
             return ExternalWorkAdapterResult(
@@ -759,7 +802,12 @@ class ExternalWorkAdapter:
             )
 
         if decision.action is PolicyAction.ALLOW:
-            return decision
+            return _AuthorizedSideEffect(
+                decision=decision,
+                task_id=resolved_task,
+                run_id=resolved_run,
+                principal_id=resolved_principal,
+            )
 
         if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
             blocker = GovernedContinuationRequest(

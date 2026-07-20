@@ -60,8 +60,11 @@ class DeterministicExternalWorkFake:
         self._timeline: dict[str, list[ExternalWorkTimelineEvent]] = {}
         self._deliverables: dict[str, list[ExternalDeliverableRef]] = {}
         self._evidence: dict[str, list[ExternalProviderEvidenceRef]] = {}
+        self._cancel_keys: dict[str, ExternalWorkSnapshot] = {}
         self._seq = 0
         self.create_calls = 0
+        self.accept_calls = 0
+        self.cancel_calls = 0
 
     def discover(self) -> ExternalWorkProviderDescriptor:
         return ExternalWorkProviderDescriptor(
@@ -205,6 +208,7 @@ class DeterministicExternalWorkFake:
         *,
         idempotency_key: str,
     ) -> ExternalWorkSnapshot:
+        self.accept_calls += 1
         if cached := self._accept_keys.get(idempotency_key):
             return cached
         current = self.get_work(correlation)
@@ -241,12 +245,31 @@ class DeterministicExternalWorkFake:
         idempotency_key: str,
         reason: str = "",
     ) -> ExternalWorkSnapshot:
-        _ = idempotency_key, reason
-        raise ExternalWorkError(
-            "cancel not used in GEC-3 adapter proof",
-            code=ExternalWorkErrorCode.OPERATION_NOT_SUPPORTED,
-            provider_id=correlation.provider_id,
+        self.cancel_calls += 1
+        _ = reason
+        if "cancel_work" in self._unsupported_ops:
+            raise ExternalWorkError(
+                "cancel not supported",
+                code=ExternalWorkErrorCode.OPERATION_NOT_SUPPORTED,
+                provider_id=correlation.provider_id,
+            )
+        if cached := self._cancel_keys.get(idempotency_key):
+            return cached
+        current = self.get_work(correlation)
+        updated = ExternalWorkSnapshot(
+            correlation=current.correlation,
+            status=ExternalWorkStatus.CANCELLED,
+            quote=current.quote,
+            created_at=current.created_at,
+            updated_at=_T0 + timedelta(minutes=10),
+            provider_state_label="cancelled",
+            deliverable_count=current.deliverable_count,
         )
+        self._by_external_task[correlation.external_task_id] = updated
+        if current.correlation.idempotency_key:
+            self._by_idempotency[current.correlation.idempotency_key] = updated
+        self._cancel_keys[idempotency_key] = updated
+        return updated
 
     def get_timeline(
         self,

@@ -54,7 +54,7 @@ Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** 
 | GEC-5.1 | Compose `MeaningfulSideEffectRequest` + policy boundary | **Done** | High | Fail closed; External Work first consumer |
 | GEC-5.2 | Gate CREATE / ACCEPT_QUOTE / CANCEL before provider | **Done** | High | Quote receipt remains observational |
 | GEC-6.1 | Consume `GovernedProofProfile` (platform) | **Done** | High | Descriptive only; ADR-GOVERNED-PROOF-001 |
-| GEC-6.2 | Compose proof after ALLOW + side effect | **Done** | High | No persistence / signing / receipts |
+| GEC-6.2 | Compose proof after ALLOW + side effect | **Done** | High | Mandatory proof; no silent post-execution fallback; no persistence / signing / receipts |
 | GEC-A1 | Extend prompts only if needed | Planned | Low | Prefer deterministic Protocol calls |
 | GEC-A2 | Agent ADR for pattern evolution (if leaving reflex) | Planned | Medium | |
 
