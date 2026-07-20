@@ -94,6 +94,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-HOST-001](entries/2026-07-13/ADR-HOST-001.md) | Application Hosting as a Dedicated Platform Domain | Accepted |
 | [ADR-EXTWORK-001](entries/2026-07-20/ADR-EXTWORK-001.md) | Provider-neutral external work contracts (money + status) | Accepted |
 | [ADR-EXTWORK-002](entries/2026-07-20/ADR-EXTWORK-002.md) | Provider-neutral ExternalWorkIntegration boundary | Accepted |
+| [ADR-GOVERNED-CONTINUATION-001](entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md) | Governed Continuation as Nexus composition | Accepted |
 
 ---
 

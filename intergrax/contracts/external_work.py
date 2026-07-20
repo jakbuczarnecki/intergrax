@@ -6,8 +6,13 @@ Composes existing Intergrax identity, HITL, interrupt, digest, and money primiti
 GEC-2 adds the interaction model (request/snapshot/timeline/evidence/capabilities)
 consumed by the provider-neutral integration boundary.
 
-Does not own transport implementations, adapter lifecycle (GEC-3), HITL UX (GEC-4),
+Does not own transport implementations, adapter lifecycle (GEC-3),
+governed continuation composition (GEC-4 — see ``governed_continuation``),
 policy gates (GEC-5), or receipts (GEC-6).
+
+``QuoteAcceptanceEvidence`` is the QUOTE specialization of continuation
+evidence: it carries HITL / interrupt / policy refs and is forwarded, never
+decided, by Tier-2.
 """
 
 from __future__ import annotations

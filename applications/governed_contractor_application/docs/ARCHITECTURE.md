@@ -1,6 +1,6 @@
 # Governed Contractor Application — architecture
 
-**Status:** GEC-0…GEC-3 (2026-07-20) — product-profile scaffold + Tier-2 provider-neutral mapping baseline; HITL/policy/receipts/providers deferred  
+**Status:** GEC-0…GEC-4 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation composition; HITL UX/policy/receipts/providers deferred  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -112,9 +112,28 @@ intake
 | Stage | Owner |
 |-------|-------|
 | Quote retrieval / forwarding | Tier-2 adapter |
+| Surface governed continuation (`reason=QUOTE`) | Tier-2 adapter (mapping only) |
 | Quote presentation | Tier-3 application |
 | Quote acceptance / rejection | Runtime HITL + Tier-3 surfaces — **not** the adapter |
-| Continue after acceptance | Nexus + policy after HITL decision |
+| Continue after acceptance | Nexus + policy after HITL decision; Tier-2 forwards evidence |
+
+### Governed Continuation (GEC-4)
+
+Reusable platform capability — not a quote lifecycle engine ([ADR-GOVERNED-CONTINUATION-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)):
+
+```text
+External Work quote → GovernedContinuationRequest(QUOTE)
+  → existing Nexus ExecutionInterrupt → human/policy decision
+  → QuoteAcceptanceEvidence → Nexus resume → Tier-2 forward → Protocol
+```
+
+| Owns | Does not own |
+|------|----------------|
+| Platform composition helpers + generic `ContinuationReason` | New interruption runtime |
+| Tier-2 surface + evidence forward | Approval evaluation |
+| Nexus interrupt / HITL / resume | Quote-specific interrupt types |
+
+HITL UX presentation remains deferred; GEC-4 proves composition only.
 
 ---
 
@@ -123,11 +142,11 @@ intake
 | Concern | Owner |
 |---------|-------|
 | HITL protocol, pause/resume, decision records | Intergrax runtime (Tier-0/1) |
-| Quote accept / reject UX or API | Tier-3 application |
+| Quote accept / reject UX or API | Tier-3 application (deferred product surface) |
 | Wallet / payment approval (if ever in scope) | Tier-3 + runtime — **never** adapter |
-| Adapter reaction to acceptance decision | Tier-2 continues or stops per runtime signal |
+| Adapter reaction to continuation evidence | Tier-2 forwards pre-authorized evidence only |
 
-The adapter **must not** invent acceptance, auto-approve quotes, or bypass HITL.
+The adapter **must not** invent acceptance, auto-approve quotes, bypass HITL, or resume Nexus.
 
 ---
 
@@ -241,7 +260,7 @@ Tier-3 governed_contractor_application
   → Deterministic fake (GEC-3 tests) | future provider (GEC-9/10)
 ```
 
-GEC-3 proves the abstraction **without transport**. Host may inject via `settings.external_work_integration`. Tier-2 owns mapping/correlation/normalization; Tier-3 + runtime own governance (HITL, policy, receipts) in later phases. Adding a new partner should require **mapping + configuration**, not a fork of Nexus or a new Tier-3 product core.
+GEC-3 proves the abstraction **without transport**. GEC-4 proves **Governed Continuation** composition (External Work = first consumer). Host may inject via `settings.external_work_integration`. Tier-2 owns mapping/correlation/normalization/forwarding; Tier-3 + runtime own governance decisions (HITL UX, policy packs, receipts) in later phases. Adding a new partner should require **mapping + configuration**, not a fork of Nexus or a new Tier-3 product core.
 
 ---
 

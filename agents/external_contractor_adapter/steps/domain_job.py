@@ -15,9 +15,10 @@ async def run_domain_job(
     *,
     external_work: ExternalWorkIntegration | None = None,
 ) -> dict[str, object]:
-    """Map Intergrax intent through ExternalWorkIntegration (GEC-3).
+    """Map Intergrax intent through ExternalWorkIntegration (GEC-3/GEC-4).
 
-    Sync boundary calls only — no poll/retry/HITL ownership.
+    Sync boundary calls only — may surface a governed continuation blocker.
+    Does not own HITL decisions, policy evaluation, or Nexus resume.
     """
     exec_ctx = exec_ctx_from_step(step_ctx)
     meta = request_metadata(exec_ctx, step_ctx)

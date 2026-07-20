@@ -2,7 +2,7 @@
 
 **The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0…GEC-3 Done**; GEC-4…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) — **GEC-0…GEC-4 Done**; GEC-5…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)  
@@ -47,7 +47,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **GEC-1** | Contractor domain contracts | **Done** | High |
 | **GEC-2** | Canonical external-work model + provider-neutral integration boundary | **Done** | High |
 | **GEC-3** | Tier-2 adapter agent | **Done** | High |
-| **GEC-4** | Quote-first HITL lifecycle | Planned | High |
+| **GEC-4** | Governed Continuation composition (External Work first consumer) | **Done** | High |
 | **GEC-5** | Meaningful side-effect policy | Planned | High |
 | **GEC-6** | Governed contractor receipt | Planned | High |
 | **GEC-7** | Tier-3 API and proof workflow | Planned | High |
@@ -111,7 +111,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 - `ExternalWorkStatus`: quote/commercial stages are reusable for any external-work integration; polluting Nexus `TaskState` would couple orchestration to commerce.
 - Correlation / quote / acceptance / deliverable models: multiple future apps need the same Intergrax↔external join vocabulary; Tier-2/3 packages must remain consumers.
 
-**Deferred (from GEC-1 closeout):** GEC-2 transport/integration (**Done** — see GEC-2 below); GEC-3 adapter sync; GEC-4 HITL UX; GEC-5 policy/wallet; GEC-6 receipts.
+**Deferred (from GEC-1 closeout):** GEC-2…GEC-4 (**Done**); GEC-5 policy/wallet; GEC-6 receipts; HITL UX product surfaces.
 
 ---
 
@@ -145,7 +145,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 **Why “External Work” not “Contractor”:** same boundary serves AI contractors, human services, SaaS jobs, and future protocols. GEC remains the first consumer.
 
-**Deferred:** provider packages (A2A/REST), `PROVIDER_CATEGORY_CONTRACT_REGISTRY` slug, Tier-2 lifecycle (GEC-3), HITL (GEC-4), policy (GEC-5), receipts (GEC-6).
+**Deferred:** provider packages (A2A/REST), `PROVIDER_CATEGORY_CONTRACT_REGISTRY` slug, HITL UX product, policy (GEC-5), receipts (GEC-6).
 
 ---
 
@@ -166,19 +166,21 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-4 — Quote-first HITL lifecycle
+## GEC-4 — Governed Continuation composition
 
 | Field | Content |
 |-------|---------|
-| **Goal** | Pause for quote acceptance via existing runtime HITL; continue only after accept |
-| **Architecture impact** | Nexus + HITL own gate; Tier-3 presents quote; adapter resumes on decision |
-| **Implementation tasks** | Wire HITL decision points; map accept/reject to adapter continue/stop; tests for both paths |
-| **Files / packages** | Runtime HITL usage from host/adapter boundary; Tier-3 presentation hooks |
-| **Tests** | Unit/integration: reject stops side effects; accept allows continue |
-| **Acceptance gates** | No continue-after-quote without HITL accept record |
-| **Non-goals** | Wallet/payment product; Slack/tray UX |
+| **Goal** | Compose reusable Governed Continuation over existing Nexus interrupt/HITL/resume; External Work supplies `reason=QUOTE` only |
+| **Architecture impact** | Platform `governed_continuation` helpers; Tier-2 surfaces/forwards; Nexus remains sole orchestration runtime |
+| **Implementation tasks** | `ContinuationReason` + composition helpers; adapter surface/forward; deterministic composition tests; docs + ADR |
+| **Files / packages** | `intergrax/contracts/governed_continuation.py`; Tier-2 adapter; ADR-GOVERNED-CONTINUATION-001 |
+| **Tests** | Interrupt composition, resume evidence refs, correlation, Tier-2 non-governance, no duplicate runtime |
+| **Acceptance gates** | No new interruption framework; quote is first consumer only; evidence propagated without interpretation |
+| **Non-goals** | HITL UX product; quote-specific lifecycle engine; payment/wallet; resume engines; transport |
 | **Dependencies** | GEC-3 |
-| **Closeout evidence** | HITL path tests; trace shows decision correlation |
+| **Closeout evidence** | `test_governed_continuation*.py` green; architecture gates; ADR accepted |
+
+**Reuse audit:** Nexus interrupt + HITL + resume already sufficient; only generic reason + composition helpers added.
 
 ---
 
@@ -297,12 +299,13 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 ## 2. Verification
 
 ```bash
-# GEC-1 / GEC-2 platform contracts + integration boundary
+# GEC-1 / GEC-2 / GEC-4 platform contracts + integration boundary
 uv run pytest tests/unit/contracts/test_money.py tests/unit/contracts/test_external_work.py -q
+uv run pytest tests/unit/contracts/test_governed_continuation.py -q
 uv run pytest tests/unit/integrations/test_external_work_integration.py -q
 uv run pytest tests/unit/contracts/test_agent_run_roundtrip.py -q
 
-# GEC host / adapter smoke
+# GEC host / adapter smoke (+ GEC-4 continuation composition)
 uv run pytest agents/external_contractor_adapter/tests -q
 uv run pytest applications/governed_contractor_application/tests -q
 uv run pytest tests/unit/applications/test_application_deploy_triad.py -q -k governed_contractor
@@ -319,6 +322,6 @@ curl -s http://127.0.0.1:8000/health
 
 ---
 
-## 3. Recommended first task after GEC-3
+## 3. Recommended first task after GEC-4
 
-**GEC-4:** Quote-first HITL lifecycle — pause for acceptance via runtime HITL; adapter continues only after authorized evidence (still no accept ownership in Tier-2).
+**GEC-5:** Meaningful side-effect policy — compose existing policy infrastructure for post-continuation external mutations (still no wallet/payment product).

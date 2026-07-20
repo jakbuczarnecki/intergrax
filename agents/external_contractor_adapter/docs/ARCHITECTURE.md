@@ -1,12 +1,12 @@
 # external_contractor_adapter — architecture
 
-**Status:** GEC-3 implemented baseline (2026-07-20) — provider-neutral mapping over `ExternalWorkIntegration`; no transport / partner SDK  
+**Status:** GEC-3 + GEC-4 baseline (2026-07-20) — provider-neutral mapping + governed continuation surfacing/forwarding; no transport / partner SDK  
 **Vertical:** Governed External Contractor (GEC)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
 **Host architecture:** [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../applications/governed_contractor_application/docs/ARCHITECTURE.md)
 
-This agent is a **Tier-2 domain adapter**, not a second orchestration system. Nexus owns multi-step task orchestration; this package maps external work into Intergrax contracts via the GEC-2 Protocol.
+This agent is a **Tier-2 domain adapter**, not a second orchestration system. Nexus owns multi-step task orchestration; this package maps external work into Intergrax contracts via the GEC-2 Protocol and may **surface** a governed continuation blocker / **forward** continuation evidence (GEC-4).
 
 ---
 
@@ -72,11 +72,23 @@ Depends only on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC
 | Request → `ExternalWorkCreateRequest` | Quote accept/reject decisions |
 | Snapshot / quote / timeline / deliverables / evidence normalization | Policy, wallet, payment, spend auth |
 | Correlation + idempotency **forwarding** | Retry/poll/resume engines |
-| Forwarding `QuoteAcceptanceEvidence` | Creating acceptance or HITL |
+| Forwarding `QuoteAcceptanceEvidence` / continuation evidence | Creating acceptance or HITL decisions |
+| Surfacing `GovernedContinuationRequest` (`reason=QUOTE`) | Evaluating approvals / resuming Nexus |
 | Structured `ExternalWorkError` surfacing | ProofReceipt signing / persistence |
 | `ExternalWorkStatus` as adapter state | Extending Nexus `TaskState` with commercial stages |
 
-Deferred to later phases: HITL UX (GEC-4), policy (GEC-5), receipts (GEC-6), workspace publication, polling/resume, real providers.
+### Governed Continuation (GEC-4 consumer)
+
+External Work is the **first specialization** of platform Governed Continuation ([ADR-GOVERNED-CONTINUATION-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)):
+
+```text
+map quote → surface continuation (QUOTE) → Nexus interrupt (existing)
+  → human/policy decision → QuoteAcceptanceEvidence → forward via Protocol
+```
+
+Adapter APIs: `surface_continuation_blocker` / `with_continuation_surface` / `forward_continuation_evidence`. No `ContinuationRuntime` or quote lifecycle engine here.
+
+Deferred: HITL UX presentation, policy packs (GEC-5), receipts (GEC-6), workspace publication, polling engines, real providers.
 
 ---
 

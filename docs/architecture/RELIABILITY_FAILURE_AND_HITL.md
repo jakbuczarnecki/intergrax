@@ -223,6 +223,31 @@ Terminal outcomes **SHOULD** include a clear **stop reason** (architectural voca
 
 ---
 
+## Governed Continuation (composition — GEC-4)
+
+**Capability:** reusable pause-for-governance → decision → continuation evidence → resume.
+
+**Not** a new runtime. Composes existing Nexus `ExecutionInterrupt` / `ExecutionInterruptHandler`, HITL `HumanDecisionRecord`, and ACP/UAEP resume. Contract helpers: `intergrax.contracts.governed_continuation` ([ADR-GOVERNED-CONTINUATION-001](../adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)).
+
+```text
+execution → surface GovernedContinuationRequest → ExecutionInterrupt
+         → governance decision (policy / HITL) → continuation evidence → Nexus resume
+```
+
+| Concept | Owner |
+|---------|--------|
+| `ContinuationReason` (generic: quote, security, legal, …) | Platform contracts |
+| Interrupt / pause / resume | Nexus + HITL |
+| Approval / deny | Policy + human decision |
+| Surface blocker + forward evidence | Tier-2 adapter (mapping only) |
+| First consumer | External Work (`ContinuationReason.QUOTE` + `QuoteAcceptanceEvidence`) |
+
+**Reuse audit (GEC-4):** platform already supported continuation via interrupt + HITL + resume; only a generic reason discriminator and composition helpers were added. Forbidden: `ContinuationRuntime`, `QuoteLifecycleEngine`, quote-specific interrupt types.
+
+**Deferred:** quote UX, meaningful side-effect policy (GEC-5), receipts (GEC-6), provider transport.
+
+---
+
 ## Cursor review checklist
 
 Before adding or modifying retry/failure/HITL behavior, Cursor must verify:

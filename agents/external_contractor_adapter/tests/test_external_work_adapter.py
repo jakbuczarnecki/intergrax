@@ -279,7 +279,10 @@ async def test_agent_run_with_injected_fake() -> None:
     domain = output.get("domain_summary")
     assert isinstance(domain, dict)
     assert domain.get("used") is True
-    assert domain.get("reason") == "mapped"
+    # GEC-4: quote without continuation evidence surfaces a blocker (not a decision).
+    assert domain.get("reason") == "continuation_blocked"
+    assert isinstance(domain.get("continuation"), dict)
+    assert domain["continuation"].get("reason") == "quote"
     assert "external_contractor.adapt" in str(output)
 
 
