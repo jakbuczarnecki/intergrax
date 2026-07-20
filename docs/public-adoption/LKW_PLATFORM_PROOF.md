@@ -2,22 +2,66 @@
 
 **Prerequisite:** Complete the [README Quick start](../../README.md#quick-start) (lab host, ~5 min) before this platform proof.
 
-This document is the guided reviewer path. Structured ProofReceipt documents persisted through the platform DocumentStore are the source of truth for proof outcomes. Follow the steps in order. A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
+This document is the guided reviewer path for two proof categories:
+
+```text
+Core Platform Proof
+Optional Operating-System Interaction Proofs
+```
+
+The Core Platform Proof verifies platform and application
+capabilities that are not specific to one interaction client.
+
+Operating-system interaction proofs are optional extensions.
+A reviewer runs only the optional proof that matches the
+reviewer's operating system.
+
+Skipping an OS-specific interaction proof does not invalidate
+the Core Platform Proof.
+
+MongoDB-backed ProofReceipt documents are authoritative.
+Terminal output is reviewer convenience.
+Markdown is execution and inspection guidance.
+
+A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
 
 ---
 
-## What this proves
+## Core platform claims
 
 ```text
 1. LKW starts as a real Tier-3 Intergrax application.
 2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
 3. LKW emits controlled problem signals into local Sentry.
 4. LKW persists indexed local knowledge across a non-destructive restart.
-5. LKW enqueues and executes background ingest jobs through the real platform message-bus / TaskQueue path with a local provider in the proof stack.
-6. LKW records structured proof evidence through ProofReceiptStore into a real MongoDB DocumentStore vendor and exposes it for reviewer inspection through Mongo Express.
-7. LKW runs through Intergrax Application Hosting as a real foreground process, enforces single-instance ownership, stops gracefully, releases its lock, restarts under the supervisor with a new instance identity, preserves its profile/definition digests and executes real work after restart.
-8. A real Windows PowerShell client sends work through the platform interaction intake into the shared LKW executor and Nexus path, performing real index and search work.
-9. A file created in a watched folder is automatically indexed through the real Kafka/worker path, remains searchable after a non-destructive restart, and produces a verified MongoDB-backed ProofReceipt.
+5. LKW enqueues and executes background-ingest jobs through the real platform message-bus and worker path.
+6. LKW records structured proof evidence through ProofReceiptStore into a real MongoDB DocumentStore.
+7. LKW runs through Intergrax Application Hosting as a real foreground process, including readiness, single-instance ownership, graceful stop, lock release and supervised restart.
+8. A file created in a watched folder is automatically indexed through the real Kafka/worker path, remains searchable after a non-destructive restart and produces a verified ProofReceipt.
+```
+
+## Optional operating-system interaction claims
+
+These proofs validate one concrete operating-system client
+adapter. They are not required to complete the Core Platform Proof.
+
+```text
+Windows:
+  implemented and live-certified
+
+Linux:
+  planned, not implemented, not certified
+
+macOS:
+  planned, not implemented, not certified
+```
+
+Windows claim (optional):
+
+```text
+A real Windows PowerShell client sends work through
+/v1/interactions/intake into the shared LKW executor and Nexus
+path, performing real index and search work.
 ```
 
 Local proof endpoints:
@@ -33,16 +77,139 @@ Sentry UI       http://127.0.0.1:9000
 
 ---
 
-## Prerequisites
+## Choose your operating system
+
+### Windows
+
+Shared core entrypoint implemented and live-tested.
+
+Complete the Core Platform Proof through the shared Python runner
+(Windows BAT launcher) or the numbered core steps below.
+
+Optional Windows PowerShell interaction proof remains separate.
+
+The Windows interaction proof is not required for core completion.
+
+### Linux
+
+Shared core entrypoint implemented.
+
+The Linux launcher invokes the same Python core-proof runner.
+
+Linux core execution is not live-certified until
+PROOF-PORTABILITY-1D.
+
+The optional Linux interaction proof is planned under
+PROOF-PORTABILITY-1C.
+
+Do not run Windows .bat or Windows PowerShell interaction steps.
+
+### macOS
+
+Shared core entrypoint implemented.
+
+The macOS launcher invokes the same Python core-proof runner.
+
+macOS core execution is not live-certified until
+PROOF-PORTABILITY-1D.
+
+The optional macOS interaction proof is planned under
+PROOF-PORTABILITY-1C.
+
+Do not run Windows .bat or Windows PowerShell interaction steps.
+
+---
+
+## Operating-system proof status
+
+| Operating system | Core reviewer path                       | Optional OS interaction proof      | Certification status       |
+| ---------------- | ---------------------------------------- | ---------------------------------- | -------------------------- |
+| Windows          | Shared Python runner through Windows BAT | Windows PowerShell proof available | Core live-certified        |
+| Linux            | Shared Python runner through Linux SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
+| macOS            | Shared Python runner through macOS SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
 
 ```text
-Docker Desktop / Docker Compose
-Python 3.12
-uv
-PowerShell on Windows
+Implemented:
+  executable repository path exists and is contract-tested
+
+Live-certified:
+  the path has completed a real run on that OS and produced
+  its required persisted evidence
+
+Planned:
+  no implementation or certification claim is made
 ```
 
+---
+
+## Core prerequisites
+
+```text
+Docker Desktop or Docker Engine with Docker Compose
+Python 3.12
+uv
+repository checkout
+```
+
+## Current reviewer-command requirements
+
+```text
+Windows:
+  Docker, Python 3.12 and uv
+  Windows PowerShell required only for the optional Windows
+  interaction proof
+
+Linux:
+  Docker Engine/Desktop with Compose, Python 3.12, uv,
+  POSIX /bin/sh
+
+macOS:
+  Docker Desktop with Compose, Python 3.12, uv,
+  POSIX /bin/sh
+```
+
+This describes the current reviewer command wrappers only.
+It does not imply that the hosting engine itself is Windows-only.
+
 Run all commands from the repository root.
+
+---
+
+## Recommended one-command Core Platform Proof
+
+### Windows
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-core-platform-proof-windows.bat
+```
+
+### Linux
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-linux.sh
+```
+
+### macOS
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-macos.sh
+```
+
+```text
+All three launchers invoke the same Python implementation.
+
+The launchers contain no proof workload or acceptance logic.
+
+The numbered Core Steps 1–13 below define the proof phases,
+expected evidence and manual inspection boundaries.
+
+A reviewer using the one-command entrypoint does not run the
+optional OS interaction proof as part of core completion.
+
+The shared core entrypoint was delivered by PROOF-PORTABILITY-1B.
+Linux/macOS live certification remains PROOF-PORTABILITY-1D.
+Optional Linux/macOS interaction remains PROOF-PORTABILITY-1C.
+```
 
 ---
 
@@ -636,7 +803,162 @@ None of those replaces the persisted ProofReceipt.
 
 ---
 
-## Step 12 — Run the Windows PowerShell interaction proof
+## Step 12 — Run the File Watcher E2E proof
+
+Run:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-file-watcher-e2e-proof.bat
+```
+
+The command:
+
+```text
+starts the required stack
+warms the real search/embedding path
+creates the file only after baseline
+uses no manual indexing command
+verifies exact source_ref
+restarts the mechanism non-destructively
+verifies checkpoint restore
+records and verifies ProofReceipt
+```
+
+Expected core PASS fields:
+
+```text
+proof_result=PASS
+proof_kind=file_watcher_persistent_search
+embedding_warmup_completed=true
+reviewer_rerun_required=false
+trigger=filesystem_create
+manual_index_command=false
+direct_enqueue=false
+message_bus_provider=kafka
+worker_execution=asynchronous
+vector_store_provider=qdrant
+persistent_index=true
+watcher_checkpoint_ready=true
+watcher_restored_after_restart=true
+task_topic_increased=true
+source_ref_found_before_restart=true
+restart_mode=non_destructive
+volumes_removed=false
+source_file_modified_after_index=false
+reindexed_after_restart=false
+duplicate_enqueue_after_restart=false
+source_ref_found_after_restart=true
+proof_receipt_recorded=true
+proof_receipt_verified=true
+proof_receipt_query_verified=true
+proof_receipt_store=platform
+document_store_provider=mongodb
+proof_receipt_result=PASS
+proof_receipt_application_id=local_workspace
+proof_receipt_task=LKW.7C2
+markdown_source_of_truth=false
+direct_mongodb_write=false
+direct_pymongo_from_lkw=false
+manual_evidence_injection=false
+```
+
+---
+
+## Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express
+
+After Step 12 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted file-watcher receipt.
+
+Open:
+
+```text
+http://127.0.0.1:8086
+```
+
+Select:
+
+```text
+database:
+  intergrax_proofs
+
+collection:
+  proof_receipts
+```
+
+Document identity:
+
+```text
+partition_key =
+  proof_receipts/local_workspace
+
+row_key =
+  proof/file_watcher_persistent_search/<run_id>
+```
+
+Reviewer checks:
+
+```text
+schema_version = intergrax.proof_receipt.v1
+application_id = local_workspace
+proof_kind = file_watcher_persistent_search
+result = PASS
+run_id matches printed proof_receipt_run_id
+provider_evidence.message_bus_provider = kafka
+provider_evidence.worker_execution = asynchronous
+provider_evidence.enqueue_trigger = filesystem_create
+provider_evidence.checkpoint_restore_verified = true
+provider_evidence.vector_store_provider = qdrant
+provider_evidence.persistent_index = true
+provider_evidence.document_store_provider = mongodb
+provider_evidence.task_topic_increased = true
+provider_evidence.duplicate_enqueue_after_restart = false
+domain_evidence.embedding_warmup_completed = true
+domain_evidence.reviewer_rerun_required = false
+domain_evidence.source_ref_found_before_restart = true
+domain_evidence.source_ref_found_after_restart = true
+domain_evidence.source_file_modified_after_index = false
+domain_evidence.reindexed_after_restart = false
+guardrails.manual_index_command = false
+guardrails.direct_enqueue = false
+guardrails.direct_indexer_call = false
+guardrails.direct_ingest_call = false
+guardrails.direct_mongodb_write = false
+guardrails.direct_pymongo_from_lkw = false
+guardrails.markdown_source_of_truth = false
+```
+
+### Authority
+
+The MongoDB-backed ProofReceipt is authoritative.
+
+Terminal output is a reviewer convenience.
+
+This markdown page is the execution and inspection guide.
+
+---
+
+## Core Platform Proof completion
+
+The Core Platform Proof is complete when the required core steps
+have produced their expected PASS results and authoritative
+ProofReceipt records.
+
+No operating-system interaction proof is required for core
+completion.
+
+---
+
+# Optional operating-system interaction proofs
+
+Run this section only on Windows.
+
+This section is optional.
+
+Its PASS result extends the evidence set with a Windows client
+adapter proof.
+
+Its omission does not invalidate the Core Platform Proof.
+
+## Windows users — Optional W1: Run the Windows PowerShell interaction proof
 
 Run:
 
@@ -713,9 +1035,9 @@ markdown_source_of_truth=false
 
 ---
 
-## Step 13 — Inspect the Windows Interaction ProofReceipt in Mongo Express
+## Windows users — Optional W2: Inspect the Windows Interaction ProofReceipt
 
-After Step 12 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted Windows interaction receipt.
+After Optional W1 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted Windows interaction receipt.
 
 Open:
 
@@ -799,140 +1121,50 @@ Markdown is the execution and inspection guide.
 
 ---
 
-## Step 14 — Run the File Watcher E2E proof
+## Linux users — Optional interaction proof
 
-Run:
+Status: planned
+
+The Linux interaction client and its live ProofReceipt path are
+not implemented in the current repository state.
+
+Do not substitute the Windows PowerShell proof.
+
+This path is planned under PROOF-PORTABILITY-1C.
+
+Linux is not certified.
+
+---
+
+## macOS users — Optional interaction proof
+
+Status: planned
+
+The macOS interaction client and its live ProofReceipt path are
+not implemented in the current repository state.
+
+Do not substitute the Windows PowerShell proof.
+
+This path is planned under PROOF-PORTABILITY-1C.
+
+macOS is not certified.
+
+---
+
+## Core reviewer shortcuts
+
+Recommended one-command Core Platform Proof launchers:
 
 ```bat
-applications\local_workspace_application\scripts\run-lkw-file-watcher-e2e-proof.bat
+applications\local_workspace_application\scripts\run-lkw-core-platform-proof-windows.bat
 ```
 
-The command:
-
-```text
-starts the required stack
-warms the real search/embedding path
-creates the file only after baseline
-uses no manual indexing command
-verifies exact source_ref
-restarts the mechanism non-destructively
-verifies checkpoint restore
-records and verifies ProofReceipt
+```sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-linux.sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-macos.sh
 ```
 
-Expected core PASS fields:
-
-```text
-proof_result=PASS
-proof_kind=file_watcher_persistent_search
-embedding_warmup_completed=true
-reviewer_rerun_required=false
-trigger=filesystem_create
-manual_index_command=false
-direct_enqueue=false
-message_bus_provider=kafka
-worker_execution=asynchronous
-vector_store_provider=qdrant
-persistent_index=true
-watcher_checkpoint_ready=true
-watcher_restored_after_restart=true
-task_topic_increased=true
-source_ref_found_before_restart=true
-restart_mode=non_destructive
-volumes_removed=false
-source_file_modified_after_index=false
-reindexed_after_restart=false
-duplicate_enqueue_after_restart=false
-source_ref_found_after_restart=true
-proof_receipt_recorded=true
-proof_receipt_verified=true
-proof_receipt_query_verified=true
-proof_receipt_store=platform
-document_store_provider=mongodb
-proof_receipt_result=PASS
-proof_receipt_application_id=local_workspace
-proof_receipt_task=LKW.7C2
-markdown_source_of_truth=false
-direct_mongodb_write=false
-direct_pymongo_from_lkw=false
-manual_evidence_injection=false
-```
-
----
-
-## Step 15 — Inspect the File Watcher ProofReceipt in Mongo Express
-
-After Step 14 prints `proof_receipt_recorded=true` and `proof_receipt_verified=true`, inspect the persisted file-watcher receipt.
-
-Open:
-
-```text
-http://127.0.0.1:8086
-```
-
-Select:
-
-```text
-database:
-  intergrax_proofs
-
-collection:
-  proof_receipts
-```
-
-Document identity:
-
-```text
-partition_key =
-  proof_receipts/local_workspace
-
-row_key =
-  proof/file_watcher_persistent_search/<run_id>
-```
-
-Reviewer checks:
-
-```text
-schema_version = intergrax.proof_receipt.v1
-application_id = local_workspace
-proof_kind = file_watcher_persistent_search
-result = PASS
-run_id matches printed proof_receipt_run_id
-provider_evidence.message_bus_provider = kafka
-provider_evidence.worker_execution = asynchronous
-provider_evidence.enqueue_trigger = filesystem_create
-provider_evidence.checkpoint_restore_verified = true
-provider_evidence.vector_store_provider = qdrant
-provider_evidence.persistent_index = true
-provider_evidence.document_store_provider = mongodb
-provider_evidence.task_topic_increased = true
-provider_evidence.duplicate_enqueue_after_restart = false
-domain_evidence.embedding_warmup_completed = true
-domain_evidence.reviewer_rerun_required = false
-domain_evidence.source_ref_found_before_restart = true
-domain_evidence.source_ref_found_after_restart = true
-domain_evidence.source_file_modified_after_index = false
-domain_evidence.reindexed_after_restart = false
-guardrails.manual_index_command = false
-guardrails.direct_enqueue = false
-guardrails.direct_indexer_call = false
-guardrails.direct_ingest_call = false
-guardrails.direct_mongodb_write = false
-guardrails.direct_pymongo_from_lkw = false
-guardrails.markdown_source_of_truth = false
-```
-
-### Authority
-
-The MongoDB-backed ProofReceipt is authoritative.
-
-Terminal output is a reviewer convenience.
-
-This markdown page is the execution and inspection guide.
-
----
-
-## Reviewer shortcut
+### Legacy/manual Windows phase commands
 
 ```bat
 applications\local_workspace_application\scripts\hard-reset-local-docker-all.bat
@@ -942,7 +1174,6 @@ applications\local_workspace_application\scripts\run-lkw-elasticsearch-proof.bat
 applications\local_workspace_application\scripts\run-lkw-persistence-proof.bat
 applications\local_workspace_application\scripts\run-lkw-background-task-proof.bat
 applications\local_workspace_application\scripts\run-lkw-hosting-proof.bat
-applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
 applications\local_workspace_application\scripts\run-lkw-file-watcher-e2e-proof.bat
 ```
 
@@ -958,8 +1189,7 @@ Mongo Express: http://127.0.0.1:8086
 1. Inspect Kafka lifecycle using `run_id` / `correlation_id`.
 2. Inspect MongoDB receipt using `proof_receipt_id` / `proof_receipt_run_id`.
 3. Inspect the Application Hosting receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_application_hosting`.
-4. Inspect the Windows Interaction receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_windows_interaction`.
-5. Inspect the File Watcher receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=file_watcher_persistent_search`.
+4. Inspect the File Watcher receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=file_watcher_persistent_search`.
 
 Kafka topics to inspect:
 
@@ -975,6 +1205,16 @@ Expected in Kafka UI:
 - `TaskRequest` message exists for `run_id` / `correlation_id` in `intergrax.tasks`,
 - lifecycle events `task.enqueued`, `task.started`, `task.succeeded`, `task.result_stored` exist in `intergrax.task-events`,
 - status/result records exist in `intergrax.task-status` / `intergrax.task-results`.
+
+---
+
+## Optional Windows reviewer shortcut
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
+```
+
+Inspect the Windows Interaction receipt using `proof_receipt_id` / `proof_receipt_run_id` and `proof_kind=platform_windows_interaction`.
 
 ---
 

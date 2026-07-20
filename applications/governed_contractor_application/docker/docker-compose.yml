@@ -1,0 +1,21 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/governed_contractor_application/docker/docker-compose.yml up --build
+
+name: intergrax_governed_contractor
+
+services:
+  governed_contractor:
+    build:
+      context: ../../..
+      dockerfile: applications/governed_contractor_application/docker/Dockerfile
+    image: governed_contractor-application:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    environment:
+      INTERGRAX_ENV: dev
+      GOVERNED_CONTRACTOR_BACKEND_ENV: dev
+      GOVERNED_CONTRACTOR_BACKEND_HOST: "0.0.0.0"
+      GOVERNED_CONTRACTOR_BACKEND_PORT: "8000"
+      GOVERNED_CONTRACTOR_INCLUDE_MCP: "false"

@@ -191,7 +191,7 @@ LKW background-task workload
 **Workload proof:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.py`
 **Runner:** `applications/local_workspace_application/scripts/run-lkw-file-watcher-e2e-proof.bat`
 **Verification guide:** `applications/local_workspace_application/docs/LKW_7_FILE_WATCHER_VERIFICATION.md`
-**Public Steps:** 14–15 in `docs/public-adoption/LKW_PLATFORM_PROOF.md`
+**Public Steps:** Steps 12–13 in `docs/public-adoption/LKW_PLATFORM_PROOF.md`
 
 ```text
 filesystem create (after watcher baseline)
@@ -223,7 +223,7 @@ After PROOF-RECEIPTS-1C–1E and LKW.7C2 closeout:
 3. `IntegrationProfile` selects `document_store=mongodb`.
 4. Reviewer inspects receipt in **Mongo Express** / Mongo UI — not by opening markdown closeout files.
 
-Public Steps 9 / 14–15 in `LKW_PLATFORM_PROOF.md` document Mongo Express receipt inspection.
+Public Steps 9 / Steps 12–13 in `LKW_PLATFORM_PROOF.md` document Mongo Express receipt inspection.
 
 ---
 

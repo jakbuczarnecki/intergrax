@@ -20,6 +20,7 @@ AGENTS_WITH_DOC_PAIR = (
     "local_indexer",
     "local_search",
     "local_synthesizer",
+    "external_contractor_adapter",
 )
 
 APPLICATIONS_WITH_DOC_PAIR = (
@@ -29,6 +30,7 @@ APPLICATIONS_WITH_DOC_PAIR = (
     "research_application",
     "local_workspace_application",
     "attestation_demo",
+    "governed_contractor_application",
 )
 
 

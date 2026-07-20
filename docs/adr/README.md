@@ -91,6 +91,14 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-OBS-003](entries/2026-06-17/ADR-OBS-003.md) | Layered runtime event identity — spine + event_kind + EventCatalog | Accepted |
 | [ADR-MOD-001](entries/2026-06-19/ADR-MOD-001.md) | Speech provider slug identity via Integration Library (no enum) | Accepted |
 | [ADR-SEC-001](entries/2026-06-19/ADR-SEC-001.md) | Security & Trust Planes — S1/S2/S3 discipline and `intergrax.security_defenses` EP | Accepted |
+| [ADR-HOST-001](entries/2026-07-13/ADR-HOST-001.md) | Application Hosting as a Dedicated Platform Domain | Accepted |
+| [ADR-EXTWORK-001](entries/2026-07-20/ADR-EXTWORK-001.md) | Provider-neutral external work contracts (money + status) | Accepted |
+| [ADR-EXTWORK-002](entries/2026-07-20/ADR-EXTWORK-002.md) | Provider-neutral ExternalWorkIntegration boundary | Accepted |
+| [ADR-GOVERNED-CONTINUATION-001](entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md) | Governed Continuation as Nexus composition | Accepted |
+| [ADR-POLICY-SIDE-EFFECT-001](entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md) | Meaningful external side effects require policy before execution | Accepted |
+| [ADR-GOVERNED-PROOF-001](entries/2026-07-20/ADR-GOVERNED-PROOF-001.md) | Governed proof profiles describe, but do not own, execution evidence | Accepted |
+
+**Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 — [`docs/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
 ---
 

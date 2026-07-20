@@ -759,7 +759,26 @@ invoke-lkw-interaction.ps1
 
 Enable intake with existing settings: `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=lab_json`, `LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT=true`.
 
-Reviewer command: `applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat` — see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13.
+Reviewer command: `applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat` — see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional Windows interaction section.
+
+### 9.3c Cross-platform Core Platform Proof entrypoints
+
+```text
+Windows BAT ─┐
+Linux SH ────┼→ shared Python core-proof runner
+macOS SH ────┘
+```
+
+OS launchers are transport-only entrypoints.
+
+Proof orchestration and acceptance live in Python.
+
+OS-specific interaction adapters remain a separate optional layer.
+
+Shared runner: `scripts/run-lkw-core-platform-proof.py`. Thin launchers:
+`run-lkw-core-platform-proof-windows.bat`,
+`run-lkw-core-platform-proof-linux.sh`,
+`run-lkw-core-platform-proof-macos.sh`.
 
 ### 9.4 Slack as optional interaction channel
 
@@ -1182,7 +1201,7 @@ filesystem create
   → MongoDB DocumentStore
 ```
 
-LKW.7C2 records the live workload evidence through platform `ProofReceiptStore` → `DocumentStore` → MongoDB. Reviewer path: [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 14–15.
+LKW.7C2 records the live workload evidence through platform `ProofReceiptStore` → `DocumentStore` → MongoDB. Reviewer path: [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13.
 
 | Concern | Notes |
 |---------|-------|

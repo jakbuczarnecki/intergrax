@@ -90,6 +90,10 @@ from intergrax.integrations.contracts.vision_serving import VisionInferenceResul
 from intergrax.integrations.contracts.ml_inference_host import InferencePrediction, MlInferenceHostBackend
 from intergrax.integrations.contracts.billing_meter import BillingMeterBackend, MeterEvent, MeterEventBatch
 from intergrax.integrations.contracts.crm import CrmAccount, CrmBackend, CrmContact, CrmTicket
+from intergrax.integrations.contracts.external_work import (
+    ExternalWorkError,
+    ExternalWorkIntegration,
+)
 
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
@@ -174,6 +178,8 @@ __all__ = [
     "CrmAccount",
     "CrmContact",
     "CrmTicket",
+    "ExternalWorkError",
+    "ExternalWorkIntegration",
     "TaskHandle",
     "TaskQueue",
     "TaskRequest",

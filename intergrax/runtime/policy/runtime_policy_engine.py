@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
+from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
 
 
@@ -22,6 +23,89 @@ class RuntimePolicyEngine:
 
     def __init__(self, rules: Optional[List[Dict[str, Any]]] = None) -> None:
         self._rules = rules or []
+
+    def evaluate_meaningful_side_effect(
+        self,
+        request: MeaningfulSideEffectRequest,
+    ) -> PolicyDecision:
+        """Authorize a proposed external side effect — fail closed by default.
+
+        Unlike ``evaluate_decision`` (default allow), missing identity or no
+        matching rule yields DENY. Does not execute the side effect.
+        """
+        if not (request.task_id or "").strip() or not (request.run_id or "").strip():
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="meaningful_side_effect_identity_missing",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.meaningful_side_effect.identity",
+                audit_payload={
+                    "action": request.action,
+                    "task_id": request.task_id,
+                    "run_id": request.run_id,
+                },
+            )
+        if not (request.principal_id or "").strip():
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="meaningful_side_effect_principal_missing",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.meaningful_side_effect.principal",
+                audit_payload={"action": request.action},
+            )
+
+        matched: PolicyDecision | None = None
+        for rule in self._rules:
+            if str(rule.get("type", "")).strip() != "meaningful_side_effect":
+                continue
+            action_filter = rule.get("action")
+            if action_filter is not None and str(action_filter).strip() != request.action:
+                continue
+            decision_raw = str(rule.get("decision", "")).strip().lower()
+            try:
+                action = PolicyAction(decision_raw)
+            except ValueError:
+                return PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="meaningful_side_effect_indeterminate",
+                    enforcement_level=EnforcementLevel.MANDATORY,
+                    policy_rule_id=str(rule.get("id") or "default.meaningful_side_effect.bad_rule"),
+                    audit_payload={"action": request.action, "decision_raw": decision_raw},
+                )
+            if action is PolicyAction.MODIFY:
+                # Side-effect gate does not support payload mutation via MODIFY.
+                return PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="meaningful_side_effect_unsupported_decision",
+                    enforcement_level=EnforcementLevel.MANDATORY,
+                    policy_rule_id=str(rule.get("id") or "default.meaningful_side_effect.modify"),
+                    audit_payload={"action": request.action},
+                )
+            matched = PolicyDecision(
+                action=action,
+                reason=str(rule.get("reason") or f"meaningful_side_effect:{action.value}"),
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id=str(rule.get("id") or "meaningful_side_effect.rule"),
+                audit_payload={
+                    "action": request.action,
+                    "kinds": [k.value for k in request.kinds],
+                    "external_target": request.external_target,
+                },
+            )
+            break
+
+        if matched is None:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="meaningful_side_effect_indeterminate",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.meaningful_side_effect.indeterminate",
+                audit_payload={
+                    "action": request.action,
+                    "kinds": [k.value for k in request.kinds],
+                },
+            )
+        return matched
 
     def evaluate_decision(
         self,

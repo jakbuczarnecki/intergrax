@@ -21,8 +21,7 @@ def test_lkw_platform_proof_step_4_is_self_contained() -> None:
     assert "admin@intergrax.local" in text
     assert "proof-local-only" in text
     assert (
-        "http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2"
-        in text
+        "http://127.0.0.1:9000/organizations/intergrax-local/issues/?project=2" in text
     )
     assert (
         "Use the local proof credentials from "
@@ -66,7 +65,9 @@ def test_lkw_platform_proof_documents_persistent_storage_step() -> None:
     assert "volumes_removed=false" in text
     assert "reindexed_after_restart=false" in text
     assert "Do not use hard-reset-local-docker-all" in text
-    assert "LKW persists indexed local knowledge across a non-destructive restart." in text
+    assert (
+        "LKW persists indexed local knowledge across a non-destructive restart." in text
+    )
     assert "LKW_5_PERSISTENCE_VERIFICATION.md" in text
 
 
@@ -112,9 +113,9 @@ def test_windows_hard_reset_launcher_delegates_to_powershell() -> None:
 
 
 def test_windows_status_checker_delegates_to_powershell() -> None:
-    text = (
-        _SCRIPTS / "check-lkw-platform-proof-status.bat"
-    ).read_text(encoding="utf-8")
+    text = (_SCRIPTS / "check-lkw-platform-proof-status.bat").read_text(
+        encoding="utf-8"
+    )
     assert "check-lkw-platform-proof-status.ps1" in text
     assert "-NoProfile" in text
     assert "-ExecutionPolicy Bypass" in text
@@ -144,9 +145,7 @@ def test_elasticsearch_proof_helper_waits_for_lkw_health_before_post() -> None:
 
 
 def test_elasticsearch_overlay_configures_policy_safe_backend() -> None:
-    text = (
-        _DOCKER / "docker-compose.elasticsearch.yml"
-    ).read_text(encoding="utf-8")
+    text = (_DOCKER / "docker-compose.elasticsearch.yml").read_text(encoding="utf-8")
     assert 'LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"' in text
     assert "LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: elasticsearch" in text
     assert (
@@ -167,3 +166,269 @@ def test_sentry_events_consumer_waits_for_kafka_topics() -> None:
     assert kafka_topics_index < events_consumer_index
     consumer_block = text[events_consumer_index:]
     assert "condition: service_completed_successfully" in consumer_block
+
+
+_IMPL_PLAN = (
+    _REPO_ROOT / "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md"
+)
+_LKW_ARCHITECTURE = (
+    _REPO_ROOT / "applications/local_workspace_application/docs/ARCHITECTURE.md"
+)
+_PROOF_RECEIPTS = _REPO_ROOT / "docs/architecture/PROOF_RECEIPTS.md"
+_RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/intergrax_runtime_architecture.md"
+_FILE_WATCHER_SYNC_DOCS = (
+    _IMPL_PLAN,
+    _LKW_ARCHITECTURE,
+    _PROOF_RECEIPTS,
+    _RUNTIME_ARCHITECTURE,
+)
+_STALE_FILE_WATCHER_STEP_REFS = (
+    "Public reviewer Steps 14–15",
+    "File Watcher Steps 14–15",
+    "Step 14 — Run the File Watcher E2E proof",
+    "Step 15 — Inspect the File Watcher ProofReceipt",
+    "Steps 14–15",
+    "Public Steps:** 14–15",
+    " / 14–15",
+)
+_CURRENT_FILE_WATCHER_STEP_HEADINGS = (
+    "Step 12 — Run the File Watcher E2E proof",
+    "Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express",
+)
+
+
+def _proof_text() -> str:
+    return _LKW_PLATFORM_PROOF.read_text(encoding="utf-8")
+
+
+def _lkw7c2_reviewer_path_snippet(text: str) -> str | None:
+    marker = "LKW.7C2 records the live workload"
+    if marker not in text:
+        return None
+    idx = text.index(marker)
+    return text[idx : idx + 500]
+
+
+def _has_current_file_watcher_compact_or_headings(text: str) -> bool:
+    if all(heading in text for heading in _CURRENT_FILE_WATCHER_STEP_HEADINGS):
+        return True
+    return (
+        "Public reviewer Steps 12–13" in text
+        or "File Watcher Steps 12–13" in text
+        or "Public Steps:** Steps 12–13" in text
+        or "/ Steps 12–13" in text
+    )
+
+
+def _has_numbered_file_watcher_public_ref(text: str) -> bool:
+    if any(stale in text for stale in _STALE_FILE_WATCHER_STEP_REFS):
+        return True
+    if _has_current_file_watcher_compact_or_headings(text):
+        return True
+    snippet = _lkw7c2_reviewer_path_snippet(text)
+    if snippet is None:
+        return False
+    return "Steps 12–13" in snippet or "Steps 14–15" in snippet
+
+
+def _uses_current_file_watcher_public_numbering(text: str) -> bool:
+    if _has_current_file_watcher_compact_or_headings(text):
+        return True
+    snippet = _lkw7c2_reviewer_path_snippet(text)
+    if snippet is None:
+        return False
+    return "Steps 12–13" in snippet and "Steps 14–15" not in snippet
+
+
+def test_lkw_platform_proof_core_and_optional_headings() -> None:
+    text = _proof_text()
+    for heading in (
+        "## Core platform claims",
+        "## Optional operating-system interaction claims",
+        "## Choose your operating system",
+        "## Operating-system proof status",
+        "## Core Platform Proof completion",
+        "# Optional operating-system interaction proofs",
+    ):
+        assert heading in text
+
+
+def test_lkw_platform_proof_names_windows_linux_macos() -> None:
+    text = _proof_text()
+    assert "### Windows" in text
+    assert "### Linux" in text
+    assert "### macOS" in text
+    assert "| Windows" in text
+    assert "| Linux" in text
+    assert "| macOS" in text
+
+
+def test_lkw_platform_proof_core_prerequisites_exclude_powershell_on_windows() -> None:
+    text = _proof_text()
+    core_start = text.index("## Core prerequisites")
+    commands_start = text.index("## Current reviewer-command requirements")
+    core_section = text[core_start:commands_start]
+    assert "PowerShell on Windows" not in core_section
+
+
+def test_lkw_platform_proof_windows_optional_contract() -> None:
+    text = _proof_text()
+    assert "Windows users — Optional W1" in text
+    assert "Windows users — Optional W2" in text
+    assert "This section is optional" in text
+    assert "Its omission does not invalidate the Core Platform Proof" in text
+    assert "run-lkw-windows-interaction-proof.bat" in text
+
+
+def test_lkw_platform_proof_linux_honesty() -> None:
+    text = _proof_text()
+    start = text.index("## Linux users — Optional interaction proof")
+    end = text.index("## macOS users — Optional interaction proof")
+    linux_section = text[start:end]
+    assert "Status: planned" in linux_section
+    assert "not implemented" in linux_section
+    assert "not certified" in linux_section
+    for forbidden in (
+        "proof_result=PASS",
+        "proof_kind=platform_linux_interaction",
+        "run-lkw-linux-interaction-proof",
+        "lkw.linux_shell",
+    ):
+        assert forbidden not in linux_section
+
+
+def test_lkw_platform_proof_macos_honesty() -> None:
+    text = _proof_text()
+    start = text.index("## macOS users — Optional interaction proof")
+    end = text.index("## Core reviewer shortcuts")
+    macos_section = text[start:end]
+    assert "Status: planned" in macos_section
+    assert "not implemented" in macos_section
+    assert "not certified" in macos_section
+    for forbidden in (
+        "proof_result=PASS",
+        "proof_kind=platform_macos_interaction",
+        "run-lkw-macos-interaction-proof",
+        "lkw.macos_shell",
+    ):
+        assert forbidden not in macos_section
+
+
+def test_lkw_platform_proof_core_numbering() -> None:
+    text = _proof_text()
+    assert "Step 12 — Run the File Watcher E2E proof" in text
+    assert "Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express" in text
+    assert "Step 12 — Run the Windows PowerShell interaction proof" not in text
+    assert "Step 13 — Inspect the Windows Interaction ProofReceipt" not in text
+
+
+def test_lkw_platform_proof_document_ordering() -> None:
+    text = _proof_text()
+    markers = [
+        "## Core platform claims",
+        "## Core prerequisites",
+        "## Recommended one-command Core Platform Proof",
+        "## Step 1 — Start a clean local proof stack",
+        "## Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express",
+        "## Core Platform Proof completion",
+        "# Optional operating-system interaction proofs",
+        "## Windows users — Optional W1",
+        "## Linux users — Optional interaction proof",
+        "## macOS users — Optional interaction proof",
+    ]
+    positions = [text.index(marker) for marker in markers]
+    assert positions == sorted(positions)
+
+
+def test_lkw_platform_proof_core_independence() -> None:
+    text = _proof_text()
+    assert (
+        "Skipping an OS-specific interaction proof does not invalidate\n"
+        "the Core Platform Proof."
+    ) in text
+    assert (
+        "No operating-system interaction proof is required for core\ncompletion."
+    ) in text
+
+
+def test_lkw_platform_proof_certification_matrix() -> None:
+    text = _proof_text()
+    assert "Core live-certified" in text
+    assert "Implemented, not certified" in text
+    windows_row_idx = text.index("| Windows")
+    linux_row_idx = text.index("| Linux")
+    macos_row_idx = text.index("| macOS")
+    assert "Core live-certified" in text[windows_row_idx : windows_row_idx + 220]
+    assert "Implemented, not certified" in text[linux_row_idx : linux_row_idx + 220]
+    assert "Implemented, not certified" in text[macos_row_idx : macos_row_idx + 220]
+    assert "Shared Python runner through Windows BAT" in text
+    assert "Shared Python runner through Linux SH" in text
+    assert "Shared Python runner through macOS SH" in text
+    assert "PROOF-PORTABILITY-1B" in text
+    assert "PROOF-PORTABILITY-1C" in text
+
+
+def test_lkw_platform_proof_shared_core_entrypoint_commands() -> None:
+    text = _proof_text()
+    assert "## Recommended one-command Core Platform Proof" in text
+    assert (
+        r"applications\local_workspace_application\scripts\run-lkw-core-platform-proof-windows.bat"
+        in text
+    )
+    assert (
+        "./applications/local_workspace_application/scripts/"
+        "run-lkw-core-platform-proof-linux.sh"
+    ) in text
+    assert (
+        "./applications/local_workspace_application/scripts/"
+        "run-lkw-core-platform-proof-macos.sh"
+    ) in text
+    assert "All three launchers invoke the same Python implementation." in text
+    assert "The launchers contain no proof workload or acceptance logic." in text
+    assert (_SCRIPTS / "run-lkw-core-platform-proof.py").is_file()
+    assert (_SCRIPTS / "run-lkw-core-platform-proof-windows.bat").is_file()
+    assert (_SCRIPTS / "run-lkw-core-platform-proof-linux.sh").is_file()
+    assert (_SCRIPTS / "run-lkw-core-platform-proof-macos.sh").is_file()
+
+
+def test_lkw_platform_proof_powershell_optional_only() -> None:
+    text = _proof_text()
+    commands_start = text.index("## Current reviewer-command requirements")
+    commands_end = text.index("## Recommended one-command Core Platform Proof")
+    commands_section = text[commands_start:commands_end]
+    assert (
+        "Windows PowerShell required only for the optional Windows" in commands_section
+    )
+    assert "PowerShell required only for the optional" in commands_section
+    core_start = text.index("## Core prerequisites")
+    core_section = text[core_start:commands_start]
+    assert "PowerShell" not in core_section
+
+
+def test_lkw_platform_proof_plan_portability_contract() -> None:
+    text = _IMPL_PLAN.read_text(encoding="utf-8")
+    assert "PROOF-PORTABILITY-1A" in text
+    assert "PROOF-PORTABILITY-1B" in text
+    assert "PROOF-PORTABILITY-1C" in text
+    assert "PROOF-PORTABILITY-1D" in text
+    a_idx = text.index("PROOF-PORTABILITY-1A")
+    b_idx = text.index("PROOF-PORTABILITY-1B")
+    c_idx = text.index("PROOF-PORTABILITY-1C")
+    d_idx = text.index("PROOF-PORTABILITY-1D")
+    assert "**Done**" in text[a_idx : a_idx + 160]
+    assert "**Done**" in text[b_idx : b_idx + 160]
+    assert "**Planned**" in text[c_idx : c_idx + 160]
+    assert "**Planned**" in text[d_idx : d_idx + 160]
+    assert "shared entrypoint implemented and live-recorded" in text
+    assert "shared entrypoint implemented, not live-certified" in text
+
+
+def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None:
+    for path in _FILE_WATCHER_SYNC_DOCS:
+        text = path.read_text(encoding="utf-8")
+        for stale in _STALE_FILE_WATCHER_STEP_REFS:
+            assert stale not in text, f"{path.name} still contains {stale!r}"
+        if _has_numbered_file_watcher_public_ref(text):
+            assert _uses_current_file_watcher_public_numbering(text), (
+                f"{path.name} lacks current File Watcher Steps 12–13 numbering"
+            )

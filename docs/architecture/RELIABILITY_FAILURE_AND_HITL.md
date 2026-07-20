@@ -223,6 +223,87 @@ Terminal outcomes **SHOULD** include a clear **stop reason** (architectural voca
 
 ---
 
+## Governed Continuation (composition — GEC-4)
+
+**Platform reference:** [`governed_external_execution.md`](../platform/governed_external_execution.md).
+
+**Capability:** reusable pause-for-governance → decision → continuation evidence → resume.
+
+**Not** a new runtime. Composes existing Nexus `ExecutionInterrupt` / `ExecutionInterruptHandler`, HITL `HumanDecisionRecord`, and ACP/UAEP resume. Contract helpers: `intergrax.contracts.governed_continuation` ([ADR-GOVERNED-CONTINUATION-001](../adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)).
+
+```text
+execution → surface GovernedContinuationRequest → ExecutionInterrupt
+         → governance decision (policy / HITL) → continuation evidence → Nexus resume
+```
+
+| Concept | Owner |
+|---------|--------|
+| `ContinuationReason` (generic: quote, security, legal, …) | Platform contracts |
+| Interrupt / pause / resume | Nexus + HITL |
+| Approval / deny | Policy + human decision |
+| Surface blocker + forward evidence | Tier-2 adapter (mapping only) |
+| First consumer | External Work (`ContinuationReason.QUOTE` + `QuoteAcceptanceEvidence`) |
+
+**Reuse audit (GEC-4):** platform already supported continuation via interrupt + HITL + resume; only a generic reason discriminator and composition helpers were added. Forbidden: `ContinuationRuntime`, `QuoteLifecycleEngine`, quote-specific interrupt types.
+
+**Deferred:** quote UX, receipt persistence, provider transport.
+
+---
+
+## Meaningful side-effect policy (composition — GEC-5)
+
+**Capability:** authorize proposed external actions that may create commitments, mutations, disclosures, or irreversible consequences **before** provider-bound execution.
+
+**Not** a quote-approval engine, payment policy, or second policy runtime. Reuses `PolicyDecision` / `PolicyAction` and `PolicyEngine` / `RuntimePolicyEngine.evaluate_meaningful_side_effect`. Request contract: `intergrax.contracts.meaningful_side_effect` ([ADR-POLICY-SIDE-EFFECT-001](../adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)).
+
+```text
+proposed external action → MeaningfulSideEffectRequest → policy evaluate
+  → ALLOW → execute  |  DENY → stop  |  REQUIRE_HUMAN → GovernedContinuationRequest
+```
+
+| Rule | Detail |
+|------|--------|
+| Fail closed | Missing evaluator, principal, run identity, or indeterminate → DENY (no silent allow) |
+| Quote receipt | Observational — not a side-effect gate |
+| Quote acceptance | Meaningful — policy before `submit_quote_acceptance` |
+| Evidence ≠ allow | Continuation evidence still requires policy ALLOW unless architecture defines a trusted final authorization artifact (not assumed here) |
+| First consumer | External Work (`CREATE_EXTERNAL_WORK` / `ACCEPT_QUOTE` / `CANCEL_EXTERNAL_WORK`) |
+
+**Composition with GEC-4:** REQUIRE_HUMAN maps to existing Governed Continuation / Nexus interrupt — policy does not resume Nexus.
+
+**Composition with GEC-6:** after ALLOW + successful side effect, consumers **must** compose a descriptive `GovernedProofProfile` that **references** this policy outcome (does not recompute it). Platform consolidation: [`governed_external_execution.md`](../platform/governed_external_execution.md).
+
+**Deferred:** product policy packs, spend thresholds, payment/wallet, ProofReceipt persistence.
+
+---
+
+## Governed proof profile (composition — GEC-6)
+
+**Capability:** describe the minimum facts required to prove that a governed external side effect occurred under proper platform governance.
+
+> A proof profile is a description of governed execution, not a receipt, not an audit log, and not an authorization mechanism.
+
+**Not** persistence, signatures, cryptography, receipts, audit storage, or a verification engine. Contract: `intergrax.contracts.governed_proof` ([ADR-GOVERNED-PROOF-001](../adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)).
+
+```text
+ALLOW + side effect succeeds → compose GovernedProofProfile
+  (principal, task/run, action, resource, provider, PolicyAction refs,
+   governance evidence refs, correlation/idempotency, optional ContinuationReason)
+```
+
+| Rule | Detail |
+|------|--------|
+| Descriptive only | Never authorizes, resumes, evaluates policy, signs, stores, or publishes |
+| Policy | Records `PolicyAction` / rule refs — does not recompute |
+| Evidence | References artifacts (e.g. `QuoteAcceptanceEvidence` by id) — does not embed payloads |
+| Identity | Preserves existing `task_id` / `run_id` / `correlation_id` / `idempotency_key` |
+| Provider neutrality | No SDK objects, HTTP/REST/JSON-RPC payloads, or transport headers |
+| First consumer | External Work (Tier-2 composes; does not own receipt product) |
+
+**Deferred:** ProofReceipt persistence, signing, audit databases, verification/replay engines.
+
+---
+
 ## Cursor review checklist
 
 Before adding or modifying retry/failure/HITL behavior, Cursor must verify:

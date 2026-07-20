@@ -80,6 +80,7 @@ class PlatformIntegrationKind(StrEnum):
     VISION_SERVING = "vision_serving"
     ML_INFERENCE_HOST = "ml_inference_host"
     LLM_GUARDRAIL = "llm_guardrail"
+    EXTERNAL_WORK = "external_work"
 
 
 class PlatformIntegrationCapability(StrEnum):

@@ -981,9 +981,42 @@ OS-specific interaction adapter
 - Platform `ProofReceiptStore` → `DocumentStore` → `MongoDBDocumentStoreIntegration` write/read/query verification
 - One-command reviewer BAT with Kafka + MongoDB overlays; Mongo Express inspection path
 - Verification document [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md)
-- Public reviewer Steps 14–15 in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
+- Public reviewer Steps 12–13 in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 **Final boundaries (not delivered by LKW.7):** index deletion on filesystem delete, content hashing for change identity, native filesystem events (polling remains), OS-service packaging (APP-HOST-7), multi-collection sidecar fan-out.
+
+---
+
+### Proof portability
+
+| ID | Scope | Status |
+|----|-------|--------|
+| PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
+| PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
+| PROOF-PORTABILITY-1C | Add optional Linux and macOS interaction clients and receipts | **Planned** |
+| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Planned** |
+
+Current proof certification:
+
+```text
+Windows core reviewer path:
+  shared entrypoint implemented and live-recorded
+
+Windows optional interaction proof:
+  available and live-recorded
+
+Linux core reviewer path:
+  shared entrypoint implemented, not live-certified
+
+Linux optional interaction proof:
+  not implemented
+
+macOS core reviewer path:
+  shared entrypoint implemented, not live-certified
+
+macOS optional interaction proof:
+  not implemented
+```
 
 ---
 

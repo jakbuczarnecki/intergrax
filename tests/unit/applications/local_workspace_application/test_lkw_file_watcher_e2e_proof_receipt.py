@@ -433,20 +433,39 @@ def test_file_watcher_bat_runner_composes_mongodb_overlay() -> None:
     assert "echo %INTERGRAX_MONGODB_URI%" not in text
 
 
-def test_public_reviewer_document_contains_steps_14_and_15() -> None:
+def test_public_reviewer_document_contains_core_steps_12_and_13() -> None:
     text = _read(_PUBLIC_PLATFORM_PROOF)
-    assert "## Step 14 — Run the File Watcher E2E proof" in text
-    assert "## Step 15 — Inspect the File Watcher ProofReceipt in Mongo Express" in text
+    assert "## Step 12 — Run the File Watcher E2E proof" in text
+    assert "## Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express" in text
+    assert "Step 14 — Run the File Watcher E2E proof" not in text
+    assert "Step 15 — Inspect the File Watcher ProofReceipt" not in text
+    assert "run-lkw-file-watcher-e2e-proof.bat" in text
+    assert "proof_kind=file_watcher_persistent_search" in text
     assert "proof_kind = file_watcher_persistent_search" in text
+    assert "proof_receipt_recorded=true" in text
+    assert "proof_receipt_verified=true" in text
+    assert "proof_receipt_query_verified=true" in text
+    assert "proof_receipts/local_workspace" in text
     assert "row_key =\n  proof/file_watcher_persistent_search/<run_id>" in text or (
         "proof/file_watcher_persistent_search/<run_id>" in text
     )
     assert "ProofReceipt is authoritative" in text or (
         "MongoDB-backed ProofReceipt is the authoritative" in text
     )
-    shortcut = text.split("## Reviewer shortcut", 1)[1]
-    assert "run-lkw-file-watcher-e2e-proof.bat" in shortcut
-    assert "proof_kind=file_watcher_persistent_search" in shortcut
+    completion_idx = text.index("## Core Platform Proof completion")
+    assert text.index("## Step 12 — Run the File Watcher E2E proof") < completion_idx
+    assert (
+        text.index(
+            "## Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express"
+        )
+        < completion_idx
+    )
+    core_shortcuts = text.split("## Core reviewer shortcuts", 1)[1].split(
+        "## Optional Windows reviewer shortcut", 1
+    )[0]
+    assert "run-lkw-file-watcher-e2e-proof.bat" in core_shortcuts
+    assert "proof_kind=file_watcher_persistent_search" in core_shortcuts
+    assert "run-lkw-windows-interaction-proof.bat" not in core_shortcuts
 
 
 def test_verification_document_authority_and_boundaries() -> None:

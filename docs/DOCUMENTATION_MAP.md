@@ -26,6 +26,8 @@ This file does **not** duplicate canon content; it routes to the authoritative s
 | Layer closeout (LCM 1–6) | [LAYER_COMPLETION_MODE.md](guides/LAYER_COMPLETION_MODE.md) |
 | Milestone narrative log | [implementation-journal/README.md](implementation-journal/README.md) |
 | Architectural decisions | [adr/README.md](adr/README.md) |
+| **Governed external execution** (ownership, lifecycle, invariants) | [platform/governed_external_execution.md](platform/governed_external_execution.md) |
+| **Partner validation readiness** (GEC / ImpeachmentRight five-point matrix) | [integrations/impeachmentright_validation_readiness.md](integrations/impeachmentright_validation_readiness.md) |
 | Contributing / PR process | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 Domain pair index (22 names): [audit/README.md § Domain index](audit/README.md#domain-index-22-pairs) or [architecture hub](intergrax_runtime_architecture.md).
@@ -45,6 +47,8 @@ Domain pair index (22 names): [audit/README.md § Domain index](audit/README.md#
 | `docs/features/plan/<FEATURE>.md` | **Cross-layer feature plan** — phases across domains; domain rows stay in owning `docs/plan/<DOMAIN>.md` | Standalone domain plan |
 | `docs/features/architecture/satellites/` · `docs/features/plan/satellites/` | Feature satellite registers (`.cursorignore`; explicit `@` / `Read` only) | Feature root `satellites/` |
 | [guides/](guides/README.md) | Cross-cutting strategy, invariants, authoring, audit methodology | Domain canon |
+| [platform/governed_external_execution.md](platform/governed_external_execution.md) | Cross-cutting platform capability: governed external execution (ownership · lifecycle · invariants) | ADR text, GEC product trackers |
+| [integrations/impeachmentright_validation_readiness.md](integrations/impeachmentright_validation_readiness.md) | Partner-facing readiness / five-point compatibility matrix for governed external execution | Platform architecture canon, attestation/EBE design |
 | [AGENTS.md](../AGENTS.md) | Cursor auto-load **stub** (~350 tok) | Full agent instructions |
 | [AGENT_INSTRUCTIONS.md](guides/AGENT_INSTRUCTIONS.md) | Full AI agent reference (routing, verification, ADR, O1 output) | Human onboarding doc |
 | [.cursor/rules/](../.cursor/rules/README.md) | Always-on / triggered Cursor rules | Replacement for AGENT_INSTRUCTIONS |

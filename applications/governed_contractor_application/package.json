@@ -1,0 +1,605 @@
+{
+  "app_id": "governed_contractor",
+  "dependencies": [
+    {
+      "kind": "agent",
+      "optional": false,
+      "ref": "external_contractor_adapter",
+      "version_constraint": "=0.1.0"
+    },
+    {
+      "kind": "integration",
+      "optional": false,
+      "ref": "postgresql",
+      "version_constraint": "*"
+    },
+    {
+      "kind": "profile_fragment",
+      "optional": false,
+      "ref": "governed_contractor.product",
+      "version_constraint": "=1.0.0"
+    }
+  ],
+  "distribution": {
+    "artifact_uri": null,
+    "channel": "local",
+    "checksum": "644f9e1fc2adedec26659d63329f053c2936da9954f279e56c26902d582d4f36",
+    "signature_ref": null
+  },
+  "manifest": {
+    "agents": [
+      {
+        "budget_slice": null,
+        "builder_key": null,
+        "capabilities": [
+          "external_contractor.adapt"
+        ],
+        "config": {},
+        "contract_id": null,
+        "default": true,
+        "enabled": true,
+        "factory_path": null,
+        "import_path": "external_contractor_adapter.external_contractor_adapter_agent.ExternalContractorAdapterAgent",
+        "memory_scope_override": null,
+        "org_role_id": null,
+        "rag_collection_override": null,
+        "requires_uaep": false,
+        "tool_allowlist_extra": [],
+        "tool_denylist": []
+      }
+    ],
+    "app_id": "governed_contractor",
+    "default_capability": null,
+    "default_host": "127.0.0.1",
+    "default_port": 8000,
+    "description": "Governed External Contractor (GEC) Tier-3 proof host",
+    "env_prefix": "GOVERNED_CONTRACTOR_",
+    "environment": {
+      "capabilities": {
+        "context": {
+          "assembly_options": {
+            "include_shared_artifacts": false,
+            "include_shared_handoffs": true,
+            "max_prior_chars": 4000,
+            "max_prior_entries": 32,
+            "schema_version": "task_context_assembly.v1",
+            "summary_tier": "full"
+          },
+          "budget_policy": null,
+          "context_plugin_ids": [],
+          "decision": {
+            "include_session_history": true,
+            "max_memory_entries_in_context": 8,
+            "prefer_longterm_memory": true,
+            "prefer_rag_when_enabled": true
+          },
+          "default_history_compression": "summarize_oldest",
+          "drift_alert_threshold": 0.35,
+          "drift_monitoring_enabled": true,
+          "enable_rag": false,
+          "enable_websearch": false,
+          "engine_preset": "default",
+          "engine_ref": null,
+          "semantic_compression_enabled": true
+        },
+        "integrations": {
+          "async_task_index_slug": null,
+          "billing_meter": null,
+          "browser_automation": null,
+          "ci_cd": null,
+          "cloud_platform": null,
+          "collaboration_suite": null,
+          "crm": null,
+          "document_parser": null,
+          "document_store": null,
+          "feature_flag": null,
+          "graph_store": null,
+          "identity_provider": null,
+          "interaction_surface": null,
+          "issue_tracker": null,
+          "key_value_cache": null,
+          "llm_guardrail": null,
+          "message_bus": null,
+          "ml_inference_host": null,
+          "notification_channel": null,
+          "object_storage": null,
+          "observability_backend": null,
+          "options": {
+            "postgresql": {
+              "tenant_schema": "tenant_default"
+            }
+          },
+          "relational_store": {
+            "instance": null,
+            "manifest": {
+              "categories": [
+                "relational_store"
+              ],
+              "description": "",
+              "env_prefix": "INTERGRAX_POSTGRESQL",
+              "requires_local_container": false,
+              "slug": "postgresql",
+              "status": "stable"
+            },
+            "plugin": null,
+            "slug": null
+          },
+          "rerank_provider": null,
+          "sandbox_host": null,
+          "search_provider": null,
+          "secrets_store": null,
+          "security_scanner": null,
+          "speech_provider": null,
+          "vector_store": null,
+          "vision_serving": null,
+          "wiki_knowledge": null,
+          "workflow_orchestrator": null
+        },
+        "llm": null,
+        "llm_routing": null,
+        "llm_routing_evaluating_secondary": false,
+        "memory": {
+          "consolidation_mode": "manual",
+          "enable_entity_graph_memory": true,
+          "enable_long_term_memory": false,
+          "enable_org_memory": false,
+          "enable_session_vector_index": false,
+          "enable_task_memory": false,
+          "enable_user_memory": false,
+          "include_cross_session_episodic": false,
+          "retention_days": null,
+          "scope_boundary": "tenant",
+          "session_index_roles": [
+            "user",
+            "assistant"
+          ],
+          "session_index_score_threshold": null,
+          "session_index_top_k": 8,
+          "vector_index_namespace": null
+        },
+        "modality": {
+          "allowed_planes": [
+            "dedicated_inference",
+            "media_ingest"
+          ],
+          "allowed_tool_ids": [
+            "vision.detect",
+            "vision.ocr_regions",
+            "ml.predict"
+          ],
+          "max_media_bytes": null,
+          "profile_id": "product.plane_c",
+          "require_deterministic_cv": true,
+          "tts_voice_id": null,
+          "vision_model_ids": []
+        },
+        "prompt": {
+          "approval_required": true,
+          "catalog_path": null,
+          "load_on_startup": true
+        },
+        "skills": {
+          "enabled": [],
+          "enabled_bundles": [],
+          "register_all_catalog_bundles": false
+        },
+        "tool_invocation": {
+          "max_parallel": 8,
+          "mode": "single_pass"
+        },
+        "tool_selection": {
+          "mode": "static",
+          "top_k": 20
+        },
+        "tools": {
+          "enabled": [],
+          "enabled_bundles": [],
+          "options": {},
+          "register_all_catalog_bundles": false
+        }
+      },
+      "cognition": {
+        "adaptive": {
+          "business_outcome_webhook": null,
+          "canary_tenant_allowlist": [],
+          "canary_traffic_percent": 0.0,
+          "capability_marketplace_enabled": true,
+          "debug_readonly_routes": false,
+          "enabled": true,
+          "enabled_loops": [
+            "execution_strategy_tuning",
+            "routing_tuning"
+          ],
+          "feature_flag_slug": null,
+          "human_approver_group": null,
+          "live_model_routing_enabled": true,
+          "mode": "recommend",
+          "profile_pointers_db_path": null,
+          "profile_versions_db_path": null,
+          "proposal_store_path": null,
+          "rollout_flag_key": "harness.adaptive.recommend",
+          "signal_store_path": null,
+          "utility_weights": {
+            "latency_slo_ms": 30000,
+            "max_hitl_interventions": 3,
+            "w_business": 0.0,
+            "w_cost": 0.25,
+            "w_hitl": 0.1,
+            "w_latency": 0.1,
+            "w_quality": 0.5,
+            "w_regression": 0.05
+          }
+        },
+        "codecraft": null,
+        "critic": {
+          "critic_llm_profile": null,
+          "critic_llm_profile_ref": null,
+          "default_rubric_ref": null,
+          "evaluator_loop_max_iterations": 2,
+          "judge_threshold": 0.75,
+          "l2_borderline_margin": 0.05,
+          "l2_human_required": false,
+          "require_critic_on_completion": false,
+          "scopes": {
+            "graph_final": true,
+            "node_partial": false,
+            "uaep_step": false
+          },
+          "semantic_judge_enabled": false,
+          "trajectory_eval_enabled": false
+        },
+        "evaluation": {
+          "evaluation_assets_ref": null,
+          "offline_eval_runner_enabled": false,
+          "online_registry_enabled": true,
+          "registry_path": null,
+          "require_baseline_for_release": true,
+          "shadow_eval_enabled": false,
+          "trend_comparison_enabled": true
+        },
+        "orchestration": {
+          "allow_dynamic_replan": false,
+          "classifier_kind": null,
+          "coordination_pattern": null,
+          "emit_coordination_advisory": false,
+          "intent_routes": [],
+          "long_running_enabled": true,
+          "max_delegation_depth": 4,
+          "max_inflight_nodes": null,
+          "max_parallel_nodes": null,
+          "max_run_retries": 0,
+          "merge_strategy": "concat",
+          "multi_agent_order": "registry",
+          "planner_kind": null,
+          "retry_policy_name": null
+        },
+        "reasoning": {
+          "classifier_prompt_id": "nexus_task_classifier",
+          "denied_planner_model_ids": [],
+          "engine_planner_prompt_id": "planner_default",
+          "planner_llm_profile": null,
+          "planner_llm_profile_id": null,
+          "planner_parse_retries": 0,
+          "planner_prompt_id": "nexus_task_planner",
+          "tool_planner_prompt_id": "tools_agent_planner"
+        }
+      },
+      "extensions": {
+        "domain_policy_fragments": {
+          "fragments": {}
+        }
+      },
+      "governance": {
+        "agent": {
+          "approval_policy": {
+            "allow_staging_in_balanced": true,
+            "allowed_states_for_strict": [
+              "production",
+              "staging"
+            ]
+          },
+          "certifications": []
+        },
+        "boundary_export": null,
+        "capability": {
+          "aliases": [],
+          "minimum_alias_window_days": 14
+        },
+        "cost": {
+          "budget_enforcement_enabled": true,
+          "budget_reaction": {
+            "custom_hook_id": null,
+            "notify_channels": [
+              "trace_only",
+              "in_app"
+            ],
+            "on_agent_limit_exceeded": "hitl",
+            "on_environment_limit_exceeded": "abort",
+            "user_message_template": null,
+            "warn_threshold_ratio": 0.8
+          },
+          "enforcement_mode": "abort",
+          "forecasting_enabled": true,
+          "max_llm_calls": 32,
+          "max_planner_iterations": null,
+          "max_tool_calls": 64,
+          "max_total_tokens": 32000,
+          "optimization_recommendations_enabled": true,
+          "quota_degrade_threshold_ratio": 0.9,
+          "tenant_fairness_quotas_enabled": true
+        },
+        "deployment": {
+          "business_agents_deploy_enabled": true,
+          "lkw_daemon_bind_host": "127.0.0.1",
+          "lkw_daemon_port": 8020,
+          "lkw_hybrid_daemon_enabled": false
+        },
+        "integration_marketplace": {
+          "catalog_hot_reload_enabled": true,
+          "marketplace_catalog_enabled": true
+        },
+        "observability": {
+          "causal_diagnostics_enabled": true,
+          "debug_surface_override": false,
+          "event_subscriptions": [],
+          "health_dashboard_enabled": true,
+          "metrics_plugins_enabled": true,
+          "otel_enabled": true,
+          "trace_sqlite_enabled": true,
+          "unified_observability_dashboard_enabled": true
+        },
+        "platform": {
+          "architecture_health_metrics_enabled": true,
+          "governance_dashboard_enabled": true,
+          "quarterly_strategy_review_enabled": true
+        },
+        "reliability": {
+          "checkpoint_interval_steps": 1,
+          "circuit_breaker_failure_threshold": 5,
+          "compensation_enabled": true,
+          "default_autonomy_level": "ask",
+          "idempotency_enabled": true,
+          "long_running_scheduler_enabled": true,
+          "middleware_hook_timeout_seconds": 0.25,
+          "partial_results_enabled": true,
+          "recovery_contract": {
+            "max_resume_attempts": 3,
+            "on_corrupt_checkpoint": "replay_from_snapshot",
+            "on_graph_node_failure": "retry_node",
+            "on_host_restart": "resume_scheduler",
+            "on_task_interrupted": "resume",
+            "preserve_snapshot_id": true
+          },
+          "resilience_policy": {
+            "allow_partial_result": false,
+            "alternate_agent_ids": [],
+            "backoff": "exponential",
+            "checkpoint_on_pause": true,
+            "max_attempts": 3,
+            "on_dependency_error": "retry",
+            "on_quality_error": "retry_alternate",
+            "on_runtime_error": "recovery_reboot",
+            "on_timeout": "retry_run",
+            "policy_id": "harness.default",
+            "reboot_strategy": "re_execute_node",
+            "version": "1"
+          },
+          "tenant_autonomy_ceiling": null
+        },
+        "scaling": {
+          "policy": {
+            "enabled": true,
+            "max_actions_per_hour": 6,
+            "require_hitl_for_scale_up": false,
+            "rules": []
+          },
+          "production_adapters_enabled": true
+        }
+      },
+      "isolation": {
+        "sandbox": {
+          "enable_exec_tool": true,
+          "root": null
+        },
+        "shadow_workspace": null
+      },
+      "meta": {
+        "application_profile": "product",
+        "execution_mode": "strict",
+        "features": {
+          "agent_simulator_enabled": true,
+          "checkpoint_introspection_enabled": true,
+          "debug_surface": false,
+          "durable_async_index_default": true,
+          "graph_editor_enabled": true,
+          "interaction_routes": false,
+          "long_running_scheduler": true,
+          "modality_worker_pool_enabled": true,
+          "openapi": false,
+          "replay_environment_enabled": true,
+          "streaming_intake_enabled": true,
+          "task_sandbox_default": false,
+          "trace_explorer_enabled": true
+        },
+        "profile_id": "governed_contractor.product",
+        "spec_version": "1.0.0"
+      },
+      "security": {
+        "application_security": {
+          "audit_trail_regions": [
+            "eu-central-1",
+            "us-east-1"
+          ],
+          "defense_bundle_ids": [
+            "harness.strict_injection"
+          ],
+          "defense_plugin_ids": [],
+          "encryption_enforcement_enabled": false,
+          "immutable_audit_trail_enabled": true,
+          "prompt_defense_enabled": true,
+          "require_secrets_store_for_encryption": false,
+          "retrieval_poisoning_defense_enabled": true,
+          "tenant_security_verify_enabled": true,
+          "tool_injection_defense_enabled": true
+        },
+        "compliance": {
+          "domain_class": "regulated",
+          "enabled": true
+        },
+        "guardrails": {
+          "bedrock_guardrail_policy_id": null,
+          "colang_config_path": null,
+          "enabled": false,
+          "inference_slug": null,
+          "scan_input": true,
+          "scan_output": true,
+          "scan_tool_calls": false,
+          "secondary_slug": null
+        },
+        "identity": {
+          "api_key_env": "INTERGRAX_HARNESS_API_KEY",
+          "critical_action_signing_enabled": true,
+          "critical_action_signing_secret_env": "INTERGRAX_CRITICAL_ACTION_SIGNING_KEY",
+          "require_api_key": true,
+          "role_claims_header": null,
+          "service_identities": {},
+          "tenant_required": true
+        },
+        "organizational_policy": null,
+        "policy_rules": null
+      },
+      "topology": {
+        "graph_spec": null
+      }
+    },
+    "features": {
+      "agent_simulator_enabled": true,
+      "checkpoint_introspection_enabled": true,
+      "debug_surface": false,
+      "durable_async_index_default": true,
+      "graph_editor_enabled": true,
+      "interaction_routes": false,
+      "long_running_scheduler": true,
+      "modality_worker_pool_enabled": true,
+      "openapi": false,
+      "replay_environment_enabled": true,
+      "streaming_intake_enabled": true,
+      "task_sandbox_default": false,
+      "trace_explorer_enabled": true
+    },
+    "integration_profile": {
+      "async_task_index_slug": null,
+      "billing_meter": null,
+      "browser_automation": null,
+      "ci_cd": null,
+      "cloud_platform": null,
+      "collaboration_suite": null,
+      "crm": null,
+      "document_parser": {
+        "instance": null,
+        "manifest": {
+          "categories": [
+            "document_parser"
+          ],
+          "description": "",
+          "env_prefix": "",
+          "requires_local_container": false,
+          "slug": "docling",
+          "status": "stable"
+        },
+        "plugin": null,
+        "slug": null
+      },
+      "document_store": null,
+      "feature_flag": null,
+      "graph_store": null,
+      "identity_provider": null,
+      "interaction_surface": {
+        "instance": null,
+        "manifest": {
+          "categories": [
+            "interaction_surface"
+          ],
+          "description": "",
+          "env_prefix": "",
+          "requires_local_container": false,
+          "slug": "lab_json",
+          "status": "stable"
+        },
+        "plugin": null,
+        "slug": null
+      },
+      "issue_tracker": null,
+      "key_value_cache": null,
+      "llm_guardrail": null,
+      "message_bus": null,
+      "ml_inference_host": null,
+      "notification_channel": {
+        "instance": null,
+        "manifest": {
+          "categories": [
+            "notification_channel"
+          ],
+          "description": "",
+          "env_prefix": "",
+          "requires_local_container": false,
+          "slug": "log",
+          "status": "stable"
+        },
+        "plugin": null,
+        "slug": null
+      },
+      "object_storage": null,
+      "observability_backend": {
+        "instance": null,
+        "manifest": {
+          "categories": [
+            "observability_backend"
+          ],
+          "description": "",
+          "env_prefix": "",
+          "requires_local_container": false,
+          "slug": "otel",
+          "status": "stable"
+        },
+        "plugin": null,
+        "slug": null
+      },
+      "options": {
+        "otel": {}
+      },
+      "relational_store": {
+        "instance": null,
+        "manifest": {
+          "categories": [
+            "relational_store"
+          ],
+          "description": "SQLite relational facade for lab and product defaults.",
+          "env_prefix": "INTERGRAX_SQLITE",
+          "requires_local_container": false,
+          "slug": "sqlite",
+          "status": "stable"
+        },
+        "plugin": null,
+        "slug": null
+      },
+      "rerank_provider": null,
+      "sandbox_host": null,
+      "search_provider": null,
+      "secrets_store": null,
+      "security_scanner": null,
+      "speech_provider": null,
+      "vector_store": null,
+      "vision_serving": null,
+      "wiki_knowledge": null,
+      "workflow_orchestrator": null
+    },
+    "name": "Governed Contractor API",
+    "ownership": null,
+    "profile": "product",
+    "route_prefix": "/v1/governed_contractor",
+    "version": "0.1.0"
+  },
+  "package_id": "com.intergrax.governed_contractor",
+  "version": "0.1.0"
+}

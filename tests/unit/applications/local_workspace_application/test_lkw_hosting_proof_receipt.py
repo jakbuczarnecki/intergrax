@@ -522,6 +522,19 @@ def test_public_reviewer_document_contains_hosting_steps() -> None:
     assert "proof_receipt_verified=true" in text
     assert "proof_receipt_query_verified=true" in text
     assert "markdown_source_of_truth=false" in text
-    shortcut = text.split("## Reviewer shortcut", 1)[1]
-    assert "run-lkw-hosting-proof.bat" in shortcut
-    assert "platform_application_hosting" in shortcut
+    assert "MongoDB ProofReceipt is the authoritative" in text
+    step10_idx = text.index("## Step 10 — Run the Application Hosting proof")
+    completion_idx = text.index("## Core Platform Proof completion")
+    assert step10_idx < completion_idx
+    assert (
+        text.index(
+            "## Step 11 — Inspect the Application Hosting ProofReceipt in Mongo Express"
+        )
+        < completion_idx
+    )
+    core_shortcuts = text.split("## Core reviewer shortcuts", 1)[1].split(
+        "## Optional Windows reviewer shortcut", 1
+    )[0]
+    assert "run-lkw-hosting-proof.bat" in core_shortcuts
+    assert "platform_application_hosting" in core_shortcuts
+    assert "run-lkw-windows-interaction-proof.bat" not in core_shortcuts
