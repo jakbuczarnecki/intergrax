@@ -33,6 +33,7 @@ AGENTS_WITH_ADR = (
     "local_indexer",
     "local_search",
     "local_synthesizer",
+    "external_contractor_adapter",
 )
 
 APPLICATIONS_WITH_ADR = (
@@ -42,6 +43,7 @@ APPLICATIONS_WITH_ADR = (
     "research_application",
     "local_workspace_application",
     "attestation_demo",
+    "governed_contractor_application",
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

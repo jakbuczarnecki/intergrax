@@ -14,6 +14,7 @@ APPLICATIONS = (
     "poc_template_application",
     "research_application",
     "attestation_demo",
+    "governed_contractor_application",
 )
 
 

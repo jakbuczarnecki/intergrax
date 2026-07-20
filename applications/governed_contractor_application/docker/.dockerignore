@@ -1,0 +1,19 @@
+# Per-application ignore file — monorepo root as context.
+# BuildKit: docker buildx build -f applications/governed_contractor_application/docker/Dockerfile \
+#   --ignorefile applications/governed_contractor_application/docker/.dockerignore -t governed_contractor-application .
+# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+
+.git
+.venv
+build/
+**/__pycache__/
+*.pyc
+.pytest_cache
+notebooks/
+docs/
+tests/
+infra/
+applications/*
+!applications/governed_contractor_application/
+agents/*
+!agents/external_contractor_adapter/
