@@ -51,6 +51,11 @@ _FORBIDDEN_OWNERSHIP = {
     "hash_proof",
     "persist_proof",
     "publish_proof",
+    "HostAttestor",
+    "Ed25519HostAttestor",
+    "produce_proof_receipt",
+    "ExecutionBoundaryEvent",
+    "runtime.execution_evidence",
 }
 
 
