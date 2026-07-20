@@ -2,7 +2,7 @@
 
 **The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0…GEC-5 Done**; GEC-6…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) — **GEC-0…GEC-6 Done**; GEC-7…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)  
@@ -49,7 +49,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **GEC-3** | Tier-2 adapter agent | **Done** | High |
 | **GEC-4** | Governed Continuation composition (External Work first consumer) | **Done** | High |
 | **GEC-5** | Meaningful side-effect policy | **Done** | High |
-| **GEC-6** | Governed contractor receipt | Planned | High |
+| **GEC-6** | Governed proof profile (descriptive) | **Done** | High |
 | **GEC-7** | Tier-3 API and proof workflow | Planned | High |
 | **GEC-8** | Partner handoff and mapping | Planned | Medium |
 | **GEC-9** | Deterministic stub integration | Planned | High |
@@ -111,7 +111,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 - `ExternalWorkStatus`: quote/commercial stages are reusable for any external-work integration; polluting Nexus `TaskState` would couple orchestration to commerce.
 - Correlation / quote / acceptance / deliverable models: multiple future apps need the same Intergrax↔external join vocabulary; Tier-2/3 packages must remain consumers.
 
-**Deferred (from GEC-1 closeout):** GEC-2…GEC-4 (**Done**); GEC-5 policy/wallet; GEC-6 receipts; HITL UX product surfaces.
+**Deferred (from GEC-1 closeout):** GEC-2…GEC-6 (**Done**); HITL UX product surfaces; ProofReceipt persistence (later).
 
 ---
 
@@ -140,12 +140,12 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | Result/error model | `IntegrationError` family | **extend** — `ExternalWorkError` + `ExternalWorkErrorCode` |
 | Cancellation / idempotency | Idempotency keys on correlation + tool ledger (tools only) | **reuse** keys on mutating ops; document retry rules (no new middleware) |
 | Timeline | Runtime traces / events (different domain) | **new** — `ExternalWorkTimelineEvent` (provider-observed facts) |
-| Provider evidence | ProofReceipt (GEC-6) | **new** refs only — `ExternalProviderEvidenceRef` (distinct from proof) |
+| Provider evidence | ProofReceipt (later) / `GovernedProofProfile` (GEC-6) | **new** refs only — `ExternalProviderEvidenceRef` (distinct from proof) |
 | Registry/binding | `IntegrationProfile` / `IntegrationCategory` | **reuse** — `external_work` slot; catalog slug deferred to provider phase |
 
 **Why “External Work” not “Contractor”:** same boundary serves AI contractors, human services, SaaS jobs, and future protocols. GEC remains the first consumer.
 
-**Deferred:** provider packages (A2A/REST), `PROVIDER_CATEGORY_CONTRACT_REGISTRY` slug, HITL UX product, policy (GEC-5), receipts (GEC-6).
+**Deferred:** provider packages (A2A/REST), `PROVIDER_CATEGORY_CONTRACT_REGISTRY` slug, HITL UX product, ProofReceipt persistence.
 
 ---
 
@@ -200,19 +200,19 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## GEC-6 — Governed contractor receipt
+## GEC-6 — Governed proof profile
 
 | Field | Content |
 |-------|---------|
-| **Goal** | Emit/store governed receipt via existing ProofReceipt / DocumentStore path |
-| **Architecture impact** | Receipt schema for GEC evidence; Tier-3 exposure later in GEC-7 |
-| **Implementation tasks** | Map normalized evidence → receipt; persist; unit tests |
-| **Files / packages** | Platform proof receipt usage; thin host glue only |
-| **Tests** | Receipt create/load; correlation to `run_id` / external task id |
-| **Acceptance gates** | No parallel receipt stack inside the application package |
-| **Non-goals** | Partner cryptographic attestation product |
+| **Goal** | Define reusable descriptive `GovernedProofProfile` for governed external side effects |
+| **Architecture impact** | Platform contract + Tier-2 composition; not a receipt/persistence product |
+| **Implementation tasks** | Reuse audit; contract + ADR; compose after ALLOW; deterministic tests; docs |
+| **Files / packages** | `intergrax/contracts/governed_proof.py`; Tier-2 adapter; ADR-GOVERNED-PROOF-001 |
+| **Tests** | Profile composition; identity/policy/evidence refs; no transport/persistence/signing |
+| **Acceptance gates** | Descriptive only; provider-neutral; GEC-5 flow unchanged |
+| **Non-goals** | Persistence, signatures, ProofReceipt store, audit DB, verification engine |
 | **Dependencies** | GEC-3…GEC-5 |
-| **Closeout evidence** | Receipt tests; schema id documented |
+| **Closeout evidence** | Contract + adapter tests green; architecture docs updated |
 
 ---
 
@@ -322,6 +322,6 @@ curl -s http://127.0.0.1:8000/health
 
 ---
 
-## 3. Recommended first task after GEC-5
+## 3. Recommended first task after GEC-6
 
-**GEC-6:** Governed contractor receipt — map normalized external-work evidence into the existing ProofReceipt path (still no wallet/payment product).
+**GEC-7:** Tier-3 API and proof workflow — expose intake/quote/status and proof-profile surfaces (still no wallet/payment product; ProofReceipt persistence remains later).

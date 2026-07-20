@@ -96,6 +96,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-EXTWORK-002](entries/2026-07-20/ADR-EXTWORK-002.md) | Provider-neutral ExternalWorkIntegration boundary | Accepted |
 | [ADR-GOVERNED-CONTINUATION-001](entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md) | Governed Continuation as Nexus composition | Accepted |
 | [ADR-POLICY-SIDE-EFFECT-001](entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md) | Meaningful external side effects require policy before execution | Accepted |
+| [ADR-GOVERNED-PROOF-001](entries/2026-07-20/ADR-GOVERNED-PROOF-001.md) | Governed proof profiles describe, but do not own, execution evidence | Accepted |
 
 ---
 

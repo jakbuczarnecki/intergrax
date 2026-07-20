@@ -1,6 +1,6 @@
 # Governed Contractor Application — architecture
 
-**Status:** GEC-0…GEC-5 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation + meaningful side-effect policy injection; HITL UX/product policy packs/receipts/providers deferred  
+**Status:** GEC-0…GEC-6 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation + side-effect policy + descriptive proof profile; HITL UX/product policy packs/ProofReceipt persistence/providers deferred  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -177,6 +177,21 @@ Quote **receipt** is observational (continuation surface only). Quote **acceptan
 
 ---
 
+## 7.1 Governed proof profile (GEC-6)
+
+> A proof profile is a description of governed execution, not a receipt, not an audit log, and not an authorization mechanism.
+
+After a meaningful side effect succeeds under policy ALLOW, Tier-2 composes `GovernedProofProfile` ([ADR-GOVERNED-PROOF-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)). The host may surface it later (GEC-7+); it must not treat the profile as a signed receipt or authorization token.
+
+| Host may | Host must not (in GEC-6) |
+|----------|--------------------------|
+| Observe proof metadata on adapter results | Persist / sign / hash proofs as a product receipt |
+| Join evidence refs to HITL / policy artifacts | Embed provider transport payloads into proofs |
+
+`ProofReceipt` / DocumentStore remain the later persistence path — distinct from the descriptive profile.
+
+---
+
 ## 8. External integration boundary
 
 External work access is a **platform integration concern** (GEC-2 — Done):
@@ -206,7 +221,7 @@ ExternalWorkIntegration  (intergrax/integrations/contracts/external_work.py)
 
 - Boundary transmits already-authorized `QuoteAcceptanceEvidence` — it does not decide accept/reject.
 - Mutating ops require idempotency keys; reads may retry; mutating ops are not retried blindly.
-- `ExternalProviderEvidenceRef` ≠ Intergrax ProofReceipt (GEC-6).
+- `ExternalProviderEvidenceRef` ≠ `GovernedProofProfile` ≠ Intergrax `ProofReceipt`.
 - Concrete partner mappers (A2A/REST) and catalog slugs land in later phases; Tier-3 supplies credentials/config only.
 - Tier-2 consumes the Protocol; it does not own the boundary.
 
@@ -256,10 +271,11 @@ Deliverables retrieved from the external agent land only in **allowlisted worksp
 | HOS / Nexus trace | Platform runtime | Unchanged spine |
 | Provider evidence references | `ExternalProviderEvidenceRef` via integration boundary | GEC-2 — refs only, not proof |
 | External tool evidence (normalized) | Adapter → platform evidence shapes | GEC-3+ — no partner hardcoding in core |
-| Governed contractor receipt | Platform ProofReceipt (or equivalent) + Tier-3 exposure | GEC-6 |
+| Governed proof profile (descriptive) | Platform `GovernedProofProfile` composed by Tier-2 | GEC-6 |
+| Governed contractor receipt (persistence) | Platform ProofReceipt + Tier-3 exposure | Later (post GEC-6) |
 | Partner-native receipts | External product (optional) | Mapped, not reimplemented |
 
-Provider-supplied evidence and Intergrax-generated proof remain distinct. GEC reuses ProofReceipt / DocumentStore for GEC-6; it does not invent a parallel receipt product inside the application.
+Provider-supplied evidence, descriptive proof profiles, and Intergrax-generated ProofReceipts remain distinct. GEC-6 defines the descriptive profile only; receipt persistence stays a later platform capability.
 
 ---
 

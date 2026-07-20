@@ -1,6 +1,6 @@
 # external_contractor_adapter — architecture
 
-**Status:** GEC-3…GEC-5 baseline (2026-07-20) — mapping + governed continuation + meaningful side-effect policy composition; no transport / partner SDK  
+**Status:** GEC-3…GEC-6 baseline (2026-07-20) — mapping + governed continuation + side-effect policy + descriptive proof profile composition; no transport / partner SDK / receipt persistence  
 **Vertical:** Governed External Contractor (GEC)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
@@ -76,7 +76,8 @@ Depends only on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC
 | Surfacing `GovernedContinuationRequest` (`reason=QUOTE`) | Evaluating approvals / resuming Nexus |
 | Describing proposed side effects + composing policy boundary | Implementing policy rules / spend limits |
 | Forwarding evidence **only after** policy ALLOW | Inferring allow from evidence / resume |
-| Structured `ExternalWorkError` surfacing | ProofReceipt signing / persistence |
+| Composing descriptive `GovernedProofProfile` | ProofReceipt signing / persistence / publication |
+| Structured `ExternalWorkError` surfacing | Audit storage / cryptographic attestation |
 | `ExternalWorkStatus` as adapter state | Extending Nexus `TaskState` with commercial stages |
 
 ### Governed Continuation (GEC-4 consumer)
@@ -117,16 +118,33 @@ Provider-bound method classification (`PROVIDER_METHOD_SIDE_EFFECT_CLASS`):
 | `create_work`, `submit_quote_acceptance`, `cancel_work` | meaningful side effect |
 | `discover`, `get_work`, `get_quote`, `get_timeline`, `get_deliverables`, `get_evidence` | observational |
 
-Deferred: HITL UX, product policy packs / business rules, receipts (GEC-6), workspace publication, polling engines, real providers.
+### Governed proof profile (GEC-6 consumer)
+
+> A proof profile is a description of governed execution, not a receipt, not an audit log, and not an authorization mechanism.
+
+After a meaningful side effect succeeds under policy ALLOW, the adapter composes `GovernedProofProfile` ([ADR-GOVERNED-PROOF-001](../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)):
+
+| Included | Rule |
+|----------|------|
+| principal / tenant / task_id / run_id | Preserved — never invented |
+| action / resource / provider_id | Canonical platform identifiers |
+| `PolicyAction` + rule/reason | Referenced from the ALLOW decision — not recomputed |
+| `GovernanceEvidenceRef` | Points at artifacts (e.g. quote acceptance id) — no payload embed |
+| `correlation_id` / `idempotency_key` | Preserved from the request |
+| Optional `ContinuationReason` | When continuation evidence was involved |
+
+Tier-2 does **not** sign, hash, store, or publish proofs. `ProofReceipt` persistence remains a later platform capability.
+
+Deferred: HITL UX, product policy packs / business rules, ProofReceipt persistence, workspace publication, polling engines, real providers.
 
 ---
 
-## Synchronous mapping flow (GEC-3 + GEC-5 gate)
+## Synchronous mapping flow (GEC-3 + GEC-5 gate + GEC-6 proof)
 
 ```text
-discover → policy(CREATE) → create_work (idempotent)
+discover → policy(CREATE) → create_work (idempotent) → compose GovernedProofProfile
   → [no acceptance] enrich reads (observational) → optional QUOTE continuation surface
-  → [acceptance] policy(ACCEPT_QUOTE) → submit_quote_acceptance (forward only)
+  → [acceptance] policy(ACCEPT_QUOTE) → submit_quote_acceptance → compose proof (evidence refs)
 ```
 
 No poll loops, sleep, background workers, or retry engines in this package.

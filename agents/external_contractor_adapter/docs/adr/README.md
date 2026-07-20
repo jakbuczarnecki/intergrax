@@ -39,8 +39,12 @@ ADR-EXTERNAL_CONTRACTOR_ADAPTER-{NNN}.md
 | [ADR-EXTERNAL_CONTRACTOR_ADAPTER-001](ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) | Tier-2 domain adapter (not orchestrator) | Accepted |
 | [ADR-EXTERNAL_CONTRACTOR_ADAPTER-002](ADR-EXTERNAL_CONTRACTOR_ADAPTER-002.md) | Mapping ownership and fake-provider proof (GEC-3) | Accepted |
 
-Platform continuation ADR: [`ADR-GOVERNED-CONTINUATION-001`](../../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md) (no agent-local ADR — composition owned by platform).
+Platform ADRs (composition owned by platform — no agent-local ADR):
+
+- [`ADR-GOVERNED-CONTINUATION-001`](../../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)
+- [`ADR-POLICY-SIDE-EFFECT-001`](../../../../docs/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)
+- [`ADR-GOVERNED-PROOF-001`](../../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)
 
 ---
 
-*GEC-4 baseline: 2026-07-20*
+*GEC-6 baseline: 2026-07-20*

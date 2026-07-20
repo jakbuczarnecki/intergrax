@@ -244,7 +244,7 @@ execution → surface GovernedContinuationRequest → ExecutionInterrupt
 
 **Reuse audit (GEC-4):** platform already supported continuation via interrupt + HITL + resume; only a generic reason discriminator and composition helpers were added. Forbidden: `ContinuationRuntime`, `QuoteLifecycleEngine`, quote-specific interrupt types.
 
-**Deferred:** quote UX, receipts (GEC-6), provider transport.
+**Deferred:** quote UX, receipt persistence, provider transport.
 
 ---
 
@@ -269,7 +269,36 @@ proposed external action → MeaningfulSideEffectRequest → policy evaluate
 
 **Composition with GEC-4:** REQUIRE_HUMAN maps to existing Governed Continuation / Nexus interrupt — policy does not resume Nexus.
 
-**Deferred:** product policy packs, spend thresholds, payment/wallet, receipts (GEC-6).
+**Composition with GEC-6:** after ALLOW + successful side effect, consumers may compose a descriptive `GovernedProofProfile` that **references** this policy outcome (does not recompute it).
+
+**Deferred:** product policy packs, spend thresholds, payment/wallet, ProofReceipt persistence.
+
+---
+
+## Governed proof profile (composition — GEC-6)
+
+**Capability:** describe the minimum facts required to prove that a governed external side effect occurred under proper platform governance.
+
+> A proof profile is a description of governed execution, not a receipt, not an audit log, and not an authorization mechanism.
+
+**Not** persistence, signatures, cryptography, receipts, audit storage, or a verification engine. Contract: `intergrax.contracts.governed_proof` ([ADR-GOVERNED-PROOF-001](../adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)).
+
+```text
+ALLOW + side effect succeeds → compose GovernedProofProfile
+  (principal, task/run, action, resource, provider, PolicyAction refs,
+   governance evidence refs, correlation/idempotency, optional ContinuationReason)
+```
+
+| Rule | Detail |
+|------|--------|
+| Descriptive only | Never authorizes, resumes, evaluates policy, signs, stores, or publishes |
+| Policy | Records `PolicyAction` / rule refs — does not recompute |
+| Evidence | References artifacts (e.g. `QuoteAcceptanceEvidence` by id) — does not embed payloads |
+| Identity | Preserves existing `task_id` / `run_id` / `correlation_id` / `idempotency_key` |
+| Provider neutrality | No SDK objects, HTTP/REST/JSON-RPC payloads, or transport headers |
+| First consumer | External Work (Tier-2 composes; does not own receipt product) |
+
+**Deferred:** ProofReceipt persistence, signing, audit databases, verification/replay engines.
 
 ---
 

@@ -1,12 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Provider-neutral Tier-2 external-work adapter (GEC-3…GEC-5).
+"""Provider-neutral Tier-2 external-work adapter (GEC-3…GEC-6).
 
 Owns mapping / correlation / normalization, continuation-evidence forwarding,
-and composition with meaningful side-effect policy evaluation. Does not own
-governance rules, HITL decisions, payments, receipts, polling, resume engines,
-or transport. Tier-2 never decides accept/reject — it only evaluates via an
-injected policy boundary before provider-bound side effects.
+composition with meaningful side-effect policy evaluation, and composition of
+descriptive ``GovernedProofProfile`` metadata. Does not own governance rules,
+HITL decisions, payments, receipts, signing, persistence, polling, resume
+engines, or transport. Tier-2 never decides accept/reject — it only evaluates
+via an injected policy boundary before provider-bound side effects.
 """
 
 from __future__ import annotations
@@ -30,6 +31,12 @@ from intergrax.contracts.external_work import (
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
+)
+from intergrax.contracts.governed_proof import (
+    GovernanceEvidenceRef,
+    GovernedProofProfile,
+    compose_governed_proof_profile,
+    governance_evidence_ref_from_quote_acceptance,
 )
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -210,8 +217,9 @@ class ExternalWorkAdapter:
                 context={"requested_capability": request.requested_capability},
                 continuation_reason=ContinuationReason.PROCUREMENT,
             )
-            if create_gate is not None:
+            if isinstance(create_gate, ExternalWorkAdapterResult):
                 return create_gate.model_copy(update={"provider": provider})
+            create_decision = create_gate
 
             snapshot = self._integration.create_work(request)
             if acceptance is not None:
@@ -245,7 +253,7 @@ class ExternalWorkAdapter:
                     return forwarded.model_copy(update={"provider": provider})
                 return forwarded
             if not enrich:
-                return ExternalWorkAdapterResult(
+                mapped = ExternalWorkAdapterResult(
                     used=True,
                     reason="mapped",
                     status=snapshot.status,
@@ -253,7 +261,26 @@ class ExternalWorkAdapter:
                     quote=snapshot.quote,
                     provider=provider,
                 )
-            return self._enrich(snapshot, provider=provider)
+            else:
+                mapped = self._enrich(snapshot, provider=provider)
+            # run_id already validated by side-effect policy (ALLOW path).
+            create_run_id = request.run_id
+            if create_run_id is None or not create_run_id.strip():
+                return mapped
+            return self._with_proof(
+                mapped,
+                decision=create_decision,
+                action=ACTION_CREATE_EXTERNAL_WORK,
+                principal_id=(principal_id or "").strip(),
+                tenant_id=tenant_id,
+                task_id=request.task_id,
+                run_id=create_run_id,
+                provider_id=request.provider_id,
+                resource=request.scope_digest,
+                idempotency_key=request.idempotency_key,
+                correlation_id=request.correlation_id
+                or snapshot.correlation.correlation_id,
+            )
         except ExternalWorkError as exc:
             return _error_result(exc, provider=None)
 
@@ -333,8 +360,9 @@ class ExternalWorkAdapter:
                 },
                 continuation_reason=ContinuationReason.QUOTE,
             )
-            if gate is not None:
+            if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
+            accept_decision = gate
 
             # Forward unchanged idempotency key — policy must not mint a new one.
             snapshot = self._integration.submit_quote_acceptance(
@@ -343,7 +371,7 @@ class ExternalWorkAdapter:
                 idempotency_key=idempotency_key,
             )
             if not enrich:
-                return ExternalWorkAdapterResult(
+                mapped = ExternalWorkAdapterResult(
                     used=True,
                     reason="mapped",
                     status=snapshot.status,
@@ -351,7 +379,31 @@ class ExternalWorkAdapter:
                     quote=snapshot.quote,
                     provider=provider,
                 )
-            return self._enrich(snapshot, provider=provider)
+            else:
+                mapped = self._enrich(snapshot, provider=provider)
+            accept_run_id = correlation.run_id
+            if accept_run_id is None or not accept_run_id.strip():
+                return mapped.model_copy(update={"policy_decision": accept_decision})
+            return self._with_proof(
+                mapped,
+                decision=accept_decision,
+                action=ACTION_ACCEPT_QUOTE,
+                principal_id=resolved_principal,
+                tenant_id=resolved_tenant,
+                task_id=correlation.task_id,
+                run_id=accept_run_id,
+                provider_id=correlation.provider_id,
+                resource=acceptance.scope_digest,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation.correlation_id,
+                governance_evidence=governance_evidence_ref_from_quote_acceptance(
+                    acceptance_id=acceptance.acceptance_id,
+                    hitl_decision_id=acceptance.hitl_decision_id,
+                    interrupt_id=acceptance.interrupt_id,
+                    policy_decision_ref=acceptance.policy_decision_ref,
+                ),
+                continuation_reason=ContinuationReason.QUOTE,
+            )
         except ExternalWorkError as exc:
             return _error_result(exc, provider=None)
 
@@ -388,8 +440,9 @@ class ExternalWorkAdapter:
                 context={"cancel_reason": reason},
                 continuation_reason=ContinuationReason.PROCUREMENT,
             )
-            if gate is not None:
+            if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
+            cancel_decision = gate
 
             snapshot = self._integration.cancel_work(
                 correlation,
@@ -397,7 +450,7 @@ class ExternalWorkAdapter:
                 reason=reason,
             )
             if not enrich:
-                return ExternalWorkAdapterResult(
+                mapped = ExternalWorkAdapterResult(
                     used=True,
                     reason="mapped",
                     status=snapshot.status,
@@ -405,7 +458,24 @@ class ExternalWorkAdapter:
                     quote=snapshot.quote,
                     provider=provider,
                 )
-            return self._enrich(snapshot, provider=provider)
+            else:
+                mapped = self._enrich(snapshot, provider=provider)
+            cancel_run_id = correlation.run_id
+            if cancel_run_id is None or not cancel_run_id.strip():
+                return mapped.model_copy(update={"policy_decision": cancel_decision})
+            return self._with_proof(
+                mapped,
+                decision=cancel_decision,
+                action=ACTION_CANCEL_EXTERNAL_WORK,
+                principal_id=(principal_id or "").strip(),
+                tenant_id=tenant_id,
+                task_id=correlation.task_id,
+                run_id=cancel_run_id,
+                provider_id=correlation.provider_id,
+                resource=correlation.external_task_id,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation.correlation_id,
+            )
         except ExternalWorkError as exc:
             return _error_result(exc, provider=None)
 
@@ -539,6 +609,50 @@ class ExternalWorkAdapter:
             }
         )
 
+    def _with_proof(
+        self,
+        result: ExternalWorkAdapterResult,
+        *,
+        decision: PolicyDecision,
+        action: str,
+        principal_id: str,
+        tenant_id: str | None,
+        task_id: str,
+        run_id: str,
+        provider_id: str,
+        resource: str | None,
+        idempotency_key: str | None,
+        correlation_id: str | None,
+        governance_evidence: GovernanceEvidenceRef | None = None,
+        continuation_reason: ContinuationReason | None = None,
+    ) -> ExternalWorkAdapterResult:
+        """Attach a descriptive proof profile after a successful side effect.
+
+        Composes metadata only — no persistence, signing, or receipt generation.
+        """
+        if not result.used or not principal_id or not run_id.strip():
+            return result.model_copy(update={"policy_decision": decision})
+        proof: GovernedProofProfile = compose_governed_proof_profile(
+            principal_id=principal_id,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            action=action,
+            resource=resource,
+            provider_id=provider_id,
+            policy_action=decision.action,
+            policy_rule_id=decision.policy_rule_id,
+            policy_reason=decision.reason,
+            governance_evidence=governance_evidence,
+            continuation_reason=continuation_reason,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+            execution_ref=run_id,
+        )
+        return result.model_copy(
+            update={"proof": proof, "policy_decision": decision}
+        )
+
     def _evaluate_side_effect(
         self,
         *,
@@ -553,11 +667,12 @@ class ExternalWorkAdapter:
         correlation: Mapping[str, Any],
         context: Mapping[str, Any],
         continuation_reason: ContinuationReason,
-    ) -> ExternalWorkAdapterResult | None:
+    ) -> PolicyDecision | ExternalWorkAdapterResult:
         """Evaluate policy before a meaningful provider call.
 
-        Returns ``None`` when ALLOW (caller may proceed). Otherwise returns a
-        structured deny / governance / fail-closed result with no provider call.
+        Returns the ALLOW ``PolicyDecision`` when the caller may proceed.
+        Otherwise returns a structured deny / governance / fail-closed result
+        with no provider call.
 
         ``MeaningfulSideEffectRequest.run_id`` is mandatory and non-empty — missing
         execution identity fails closed before request construction (never ``""``).
@@ -644,7 +759,7 @@ class ExternalWorkAdapter:
             )
 
         if decision.action is PolicyAction.ALLOW:
-            return None
+            return decision
 
         if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
             blocker = GovernedContinuationRequest(
