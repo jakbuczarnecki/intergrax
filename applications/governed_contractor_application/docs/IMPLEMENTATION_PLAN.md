@@ -2,7 +2,7 @@
 
 **The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0 Done**; **GEC-1 Done**; **GEC-2 Done**; GEC-3…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) — **GEC-0…GEC-3 Done**; GEC-4…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)  
@@ -46,7 +46,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **GEC-0** | Bootstrap and canonical documentation | **Done** | High |
 | **GEC-1** | Contractor domain contracts | **Done** | High |
 | **GEC-2** | Canonical external-work model + provider-neutral integration boundary | **Done** | High |
-| **GEC-3** | Tier-2 adapter agent | Planned | High |
+| **GEC-3** | Tier-2 adapter agent | **Done** | High |
 | **GEC-4** | Quote-first HITL lifecycle | Planned | High |
 | **GEC-5** | Meaningful side-effect policy | Planned | High |
 | **GEC-6** | Governed contractor receipt | Planned | High |
@@ -155,13 +155,14 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |-------|---------|
 | **Goal** | Implement `ExternalContractorAdapterAgent` as domain adapter (map external lifecycle → Intergrax contracts) |
 | **Architecture impact** | Typed steps/hooks; correlation; idempotency; **no** orchestration ownership |
-| **Implementation tasks** | Replace scaffold stubs in `steps/` / agent hooks; wire integration dependency; agent tests |
-| **Files / packages** | `agents/external_contractor_adapter/` |
-| **Tests** | Agent unit tests with stub integration; capability `external_contractor.adapt` |
-| **Acceptance gates** | Adapter has no HITL accept/reject; no policy decisions; no `applications/` imports |
-| **Non-goals** | Public API; ProofReceipt store; partner-specific URLs in agent code |
+| **Implementation tasks** | `ExternalWorkAdapter` mapping; DI for `ExternalWorkIntegration`; deterministic fake tests |
+| **Files / packages** | `agents/external_contractor_adapter/` (+ host builder injection hook) |
+| **Tests** | Agent unit tests with `DeterministicExternalWorkFake`; capability `external_contractor.adapt` |
+| **Acceptance gates** | Adapter has no HITL accept/reject; no policy decisions; no `applications/` imports; no transport |
+| **Non-goals** | Public API; ProofReceipt store; partner-specific URLs; polling/resume; real providers |
 | **Dependencies** | GEC-1, GEC-2 |
-| **Closeout evidence** | Agent tests green; agent ARCHITECTURE updated to “implemented baseline” |
+| **Status** | **Done** (2026-07-20) |
+| **Closeout evidence** | `uv run pytest agents/external_contractor_adapter/tests -q`; agent ARCHITECTURE “GEC-3 implemented baseline” |
 
 ---
 
@@ -318,6 +319,6 @@ curl -s http://127.0.0.1:8000/health
 
 ---
 
-## 3. Recommended first task after GEC-2
+## 3. Recommended first task after GEC-3
 
-**GEC-3:** Implement Tier-2 `ExternalContractorAdapterAgent` lifecycle mapping against `ExternalWorkIntegration` (inject via host profile) — still no partner hardcoding in the agent.
+**GEC-4:** Quote-first HITL lifecycle — pause for acceptance via runtime HITL; adapter continues only after authorized evidence (still no accept ownership in Tier-2).

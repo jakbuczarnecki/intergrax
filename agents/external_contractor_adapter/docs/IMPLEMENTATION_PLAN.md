@@ -2,12 +2,12 @@
 
 **The implementation map** for the Tier-2 GEC adapter agent.
 
-**Status:** Working draft (2026-07-20) — **GEC-0 scaffold Done**; platform contracts **GEC-1 Done**; integration boundary **GEC-2 Done** (consume in GEC-3); domain adapter work tracked under host plan **GEC-3**  
+**Status:** Working draft (2026-07-20) — **GEC-0…GEC-3 Done** (provider-neutral mapping baseline); HITL resume deferred to host **GEC-4**  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Host tracker:** [`applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)
 
-Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** · **no orchestration ownership**
+Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** · **no orchestration ownership** · **mapping ≠ governance**
 
 ---
 
@@ -28,10 +28,12 @@ Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** 
 |-------|-------|
 | Agent id | `external_contractor_adapter` |
 | Class | `ExternalContractorAdapterAgent` |
+| Mapper | `ExternalWorkAdapter` |
 | Primary capability | `external_contractor.adapt` |
-| Pattern | ACP reflex (scaffold) |
+| Pattern | ACP reflex |
 | Tier | Tier-2 (`agents/external_contractor_adapter/`) |
 | Host | `applications/governed_contractor_application/` |
+| Integration | Injected `ExternalWorkIntegration` only |
 
 ---
 
@@ -40,17 +42,17 @@ Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** 
 | ID | Task | Status | Priority | Notes |
 |----|------|--------|----------|-------|
 | GEC-0 | Canonical ACP scaffold + architecture docs | **Done** | High | `new-agent` |
-| GEC-1 | Platform external-work contracts (consume-only) | **Done** | High | Owned under `intergrax/contracts/`; see host plan reuse audit |
-| GEC-2 | Provider-neutral `ExternalWorkIntegration` (platform) | **Done** | High | Consume-only in this agent; see host plan + ADR-EXTWORK-002 |
-| GEC-3.1 | Consume platform contractor contracts (GEC-1) | Planned | High | Import `external_work` / `money`; no app-local contracts |
-| GEC-3.2 | Wire `ExternalWorkIntegration` from host (GEC-2) | Planned | High | Inject Protocol; no partner SDK in agent |
-| GEC-3.3 | Implement lifecycle mapping in `steps/` | Planned | High | Idempotent correlate |
-| GEC-3.4 | Status + evidence normalization | Planned | High | |
-| GEC-3.5 | Resume/stop on HITL decision signal | Planned | High | No accept ownership |
-| GEC-A1 | Extend prompts only if needed | Planned | Low | Prefer deterministic tools |
+| GEC-1 | Platform external-work contracts (consume-only) | **Done** | High | Owned under `intergrax/contracts/` |
+| GEC-2 | Provider-neutral `ExternalWorkIntegration` (platform) | **Done** | High | Consume-only; ADR-EXTWORK-002 |
+| GEC-3.1 | Consume platform contractor contracts (GEC-1) | **Done** | High | No app-local contracts |
+| GEC-3.2 | Wire `ExternalWorkIntegration` via DI | **Done** | High | Agent ctor + host `settings.external_work_integration` |
+| GEC-3.3 | Lifecycle mapping in `ExternalWorkAdapter` / `steps/` | **Done** | High | Sync only; idempotent correlate |
+| GEC-3.4 | Status + evidence normalization | **Done** | High | Timeline / deliverables / evidence refs |
+| GEC-3.5 | Resume/stop on HITL decision signal | Deferred | High | Host **GEC-4** — adapter may forward evidence only |
+| GEC-A1 | Extend prompts only if needed | Planned | Low | Prefer deterministic Protocol calls |
 | GEC-A2 | Agent ADR for pattern evolution (if leaving reflex) | Planned | Medium | |
 
-Host-owned phases (HITL UX, policy packs, receipts, public API, partner handoff, stub/live proof) remain in the application plan — not duplicated as Done here.
+Host-owned phases (HITL UX, policy packs, receipts, public API, partner handoff, stub/live proof) remain in the application plan.
 
 ---
 
@@ -66,7 +68,9 @@ uv run pytest applications/governed_contractor_application/tests -q
 ## 3. Non-goals (agent package)
 
 - Quote acceptance, payment approval, policy decisions
-- Partner URL hardcoding
+- Transport (HTTP / A2A / REST / JSON-RPC)
+- Partner URL hardcoding / provider registries
 - Local competing contractor agent
 - ProofReceipt store ownership
-- Marking GEC-3…GEC-11 complete from this file alone
+- Polling, background workers, retry engines, resume ownership
+- Marking host GEC-4…GEC-11 complete from this file

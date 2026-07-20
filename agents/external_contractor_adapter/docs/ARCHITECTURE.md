@@ -1,27 +1,27 @@
 # external_contractor_adapter — architecture
 
-**Status:** GEC-0 scaffold + GEC-1 contracts + GEC-2 `ExternalWorkIntegration` available (2026-07-20) — ACP **reflex** stub; domain adapter logic planned GEC-3  
+**Status:** GEC-3 implemented baseline (2026-07-20) — provider-neutral mapping over `ExternalWorkIntegration`; no transport / partner SDK  
 **Vertical:** Governed External Contractor (GEC)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
 **Host architecture:** [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../applications/governed_contractor_application/docs/ARCHITECTURE.md)
 
-This agent is a **Tier-2 domain adapter**, not a second orchestration system. Nexus owns multi-step task orchestration; this package maps an external contractor product into Intergrax contracts.
+This agent is a **Tier-2 domain adapter**, not a second orchestration system. Nexus owns multi-step task orchestration; this package maps external work into Intergrax contracts via the GEC-2 Protocol.
 
 ---
 
 ## Purpose
 
-Adapt an external A2A-style contractor agent into the governed GEC flow:
+Prove that GEC-1/GEC-2 abstractions are sufficient for a reusable Tier-2 adapter:
 
 ```text
-Nexus Task
-  → ExternalContractorAdapterAgent
-  → External contractor integration
-  → External A2A Contractor Agent
+Tier-3 Application
+  → ExternalContractorAdapterAgent / ExternalWorkAdapter
+  → ExternalWorkIntegration  (injected)
+  → Deterministic fake (tests) | future provider implementation
 ```
 
-The external product remains responsible for domain execution. This adapter owns discovery, lifecycle mapping, correlation, and normalization only.
+The adapter owns discovery, create/correlate, quote/timeline/deliverable/evidence **normalization**, and correlation preservation only. It does **not** own governance.
 
 ---
 
@@ -29,13 +29,13 @@ The external product remains responsible for domain execution. This adapter owns
 
 | Capability | Role |
 |------------|------|
-| `external_contractor.adapt` | Primary adapter capability (scaffold + host default) |
+| `external_contractor.adapt` | Primary adapter capability (host default) |
 
-Additional fine-grained capabilities (quote sync, deliverable fetch, etc.) may be added in GEC-3 without moving ownership of HITL or policy into this package.
+Provider feature tokens (`ExternalWorkCapability`) are discovered at runtime — never assumed.
 
 ---
 
-## Typed inputs and outputs (GEC-1 platform; wired in GEC-3)
+## Typed inputs and outputs (GEC-1 platform; consumed in GEC-3)
 
 | Direction | Platform type | Notes |
 |-----------|---------------|-------|
@@ -54,34 +54,50 @@ Integration boundary (GEC-2 Done): `intergrax.integrations.contracts.external_wo
 
 ## External integration dependency
 
-Depends on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC-2). GEC-3 will inject a host-bound implementation and map lifecycle steps onto `discover` / `create_work` / `get_quote` / `submit_quote_acceptance` / `get_work` / `get_timeline` / `get_deliverables` / `get_evidence`. Partner URLs and credentials are supplied by the Tier-3 host — never hardcoded in this agent. The agent must not own the integration boundary.
+Depends only on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC-2).
+
+| Rule | Detail |
+|------|--------|
+| Injection | Constructor `external_work=` on the agent; host may supply via `settings.external_work_integration` |
+| Mapping entry | `ExternalWorkAdapter` + `steps/domain_job.py` |
+| Provider neutrality | No `if provider == …` / transport / partner SDK / A2A / HTTP |
+| Fake | `tests/fakes/DeterministicExternalWorkFake` — GEC-3 proof only, not GEC-8/9 stub |
 
 ---
 
-## Lifecycle states (adapter view)
+## Ownership (GEC-3)
+
+| Owns (mapping) | Does **not** own (governance / lifecycle) |
+|----------------|-------------------------------------------|
+| Request → `ExternalWorkCreateRequest` | Quote accept/reject decisions |
+| Snapshot / quote / timeline / deliverables / evidence normalization | Policy, wallet, payment, spend auth |
+| Correlation + idempotency **forwarding** | Retry/poll/resume engines |
+| Forwarding `QuoteAcceptanceEvidence` | Creating acceptance or HITL |
+| Structured `ExternalWorkError` surfacing | ProofReceipt signing / persistence |
+| `ExternalWorkStatus` as adapter state | Extending Nexus `TaskState` with commercial stages |
+
+Deferred to later phases: HITL UX (GEC-4), policy (GEC-5), receipts (GEC-6), workspace publication, polling/resume, real providers.
+
+---
+
+## Synchronous mapping flow (GEC-3)
 
 ```text
-discover_card
-  → create_or_correlate_external_task
-  → fetch_quote
-  → await_acceptance (runtime HITL — not adapter-owned)
-  → continue_after_accept | stop_after_reject
-  → sync_status
-  → fetch_deliverables
-  → emit_normalized_evidence
+discover → create_work (idempotent) → optional submit_quote_acceptance (forward only)
+  → get_quote / get_timeline / get_deliverables / get_evidence (capability-gated)
 ```
 
-Idempotency keys must cover create/continue/status transitions (GEC-3).
+No poll loops, sleep, background workers, or retry engines in this package.
 
 ---
 
 ## `Agent.run()` / typed `on_next_step` alignment
 
-| Item | GEC-0 scaffold | Target |
-|------|----------------|--------|
-| Pattern | ACP **reflex** (`CognitivePattern.REFLEX`) | May evolve (ADR) if multi-phase mapping needs another pattern |
-| Entry | Typed cognitive hooks / `on_next_step` | Domain work in `steps/domain_job.py` (and successors) |
-| LLM | Stub adapter for offline smoke | Real LLM only if mapping needs it; prefer deterministic tool/integration calls |
+| Item | GEC-3 baseline |
+|------|----------------|
+| Pattern | ACP **reflex** (`CognitivePattern.REFLEX`) |
+| Entry | `perceive` / `act` → `run_domain_job` → `ExternalWorkAdapter` |
+| LLM | Stub adapter for offline smoke; mapping is deterministic Protocol calls |
 
 Do **not** build an internal orchestration graph that duplicates Nexus.
 
@@ -150,13 +166,13 @@ Surface correlation in adapter outputs so Tier-3 receipts and traces can join fa
 
 | Path | Role |
 |------|------|
-| `external_contractor_adapter_agent.py` | `ExternalContractorAdapterAgent` — cognitive pattern hooks |
+| `external_contractor_adapter_agent.py` | Reflex agent + DI for `ExternalWorkIntegration` |
+| `external_work_adapter.py` | Provider-neutral mapping translator |
 | `contract.py` | `AgentContract` + `cognitive_pattern` |
 | `capabilities.py` | Capability ids |
-| `steps/domain_job.py` | Domain step entry — GEC-3 implementation point |
-| `prompts/system.md` | Prompt assets |
-| `schemas/` | Agent-local I/O helpers (prefer platform contracts when shared) |
-| `tests/` | Agent smoke / unit tests |
+| `steps/domain_job.py` | Domain step entry |
+| `schemas/adapt_result.py` | Composed adapter result (platform contracts) |
+| `tests/` + `tests/fakes/` | Agent tests + deterministic fake |
 | `docs/adr/` | Agent ADRs |
 
 ---

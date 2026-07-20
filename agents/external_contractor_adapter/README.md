@@ -1,6 +1,6 @@
 # external_contractor_adapter agent
 
-Typed **reflex** cognitive agent — standalone smoke tests under ``agents/external_contractor_adapter/tests/``.
+Typed **reflex** Tier-2 external-work adapter (GEC-3) — maps via injected ``ExternalWorkIntegration``.
 
 **Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
 
@@ -14,7 +14,7 @@ From repository root:
 uv run pytest agents/external_contractor_adapter/tests -q
 ```
 
-Stub LLM in ``external_contractor_adapter_agent.py`` keeps tests offline — no Tier-3 host required.
+Stub LLM + ``tests/fakes/DeterministicExternalWorkFake`` keep tests offline — no network / Tier-3 host required.
 
 ## Register (programmatic)
 
@@ -23,10 +23,10 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
 
 registry = AgentRegistry()
-registry.register(ExternalContractorAdapterAgent())
+registry.register(ExternalContractorAdapterAgent(external_work=my_integration))
 ```
 
-See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring.
+See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring. Host may inject via ``settings.external_work_integration``.
 
 ## Capabilities
 

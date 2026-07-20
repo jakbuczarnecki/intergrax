@@ -37,7 +37,8 @@ ADR-EXTERNAL_CONTRACTOR_ADAPTER-{NNN}.md
 | ADR | Title | Status |
 |-----|-------|--------|
 | [ADR-EXTERNAL_CONTRACTOR_ADAPTER-001](ADR-EXTERNAL_CONTRACTOR_ADAPTER-001.md) | Tier-2 domain adapter (not orchestrator) | Accepted |
+| [ADR-EXTERNAL_CONTRACTOR_ADAPTER-002](ADR-EXTERNAL_CONTRACTOR_ADAPTER-002.md) | Mapping ownership and fake-provider proof (GEC-3) | Accepted |
 
 ---
 
-*Scaffold baseline: 2026-07-20*
+*GEC-3 baseline: 2026-07-20*

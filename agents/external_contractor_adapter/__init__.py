@@ -1,3 +1,4 @@
 from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
+from external_contractor_adapter.external_work_adapter import ExternalWorkAdapter
 
-__all__ = ["ExternalContractorAdapterAgent"]
+__all__ = ["ExternalContractorAdapterAgent", "ExternalWorkAdapter"]

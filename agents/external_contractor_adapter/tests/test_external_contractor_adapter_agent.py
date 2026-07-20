@@ -2,7 +2,9 @@
 
 import pytest
 
-from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
+from external_contractor_adapter.external_contractor_adapter_agent import (
+    ExternalContractorAdapterAgent,
+)
 from external_contractor_adapter.contract import build_agent_contract
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus
@@ -24,3 +26,4 @@ async def test_external_contractor_adapter_typed_run_smoke():
     )
     assert result.status == AgentRunStatus.SUCCEEDED
     assert "external_contractor.adapt" in str(result.output)
+    assert "external_work_integration_missing" in str(result.output)

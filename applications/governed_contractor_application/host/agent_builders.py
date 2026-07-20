@@ -6,16 +6,36 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding
-from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
+from external_contractor_adapter.external_contractor_adapter_agent import (
+    ExternalContractorAdapterAgent,
+)
 
 
-def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
-    def _build(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
-        return agent_cls()
+def _external_work_from_context(ctx: ApplicationBuildContext) -> ExternalWorkIntegration | None:
+    """Optional host injection via settings — Tier-2 never constructs providers."""
+    settings = ctx.settings
+    if settings is None:
+        return None
+    raw = getattr(settings, "external_work_integration", None)
+    if raw is None:
+        return None
+    if not isinstance(raw, ExternalWorkIntegration):
+        raise TypeError(
+            "settings.external_work_integration must implement ExternalWorkIntegration"
+        )
+    return raw
 
-    return _build
+
+def _build_external_contractor_adapter(
+    ctx: ApplicationBuildContext,
+    _binding: AgentBinding,
+) -> Agent:
+    return ExternalContractorAdapterAgent(
+        external_work=_external_work_from_context(ctx),
+    )
 
 
 GOVERNED_CONTRACTOR_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
-    ExternalContractorAdapterAgent: _zero_arg_factory(ExternalContractorAdapterAgent),
+    ExternalContractorAdapterAgent: _build_external_contractor_adapter,
 }

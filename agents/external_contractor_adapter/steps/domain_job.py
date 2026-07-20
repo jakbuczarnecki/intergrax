@@ -2,27 +2,47 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
+from external_contractor_adapter.external_work_adapter import adapt_from_step_metadata
 
 DOMAIN_STEP_ID = "external_contractor_adapter_step"
 
 
-async def run_domain_job(step_ctx: AgentStepContext) -> dict[str, object]:
-    """Cursor implementation point — see intergrax/agents/authoring/runtime_tool_helpers.py."""
-    _ = exec_ctx_from_step(step_ctx), request_metadata(None), DOMAIN_STEP_ID
-    # Capability id kept in smoke output until GEC-3 implements real mapping.
+async def run_domain_job(
+    step_ctx: AgentStepContext,
+    *,
+    external_work: ExternalWorkIntegration | None = None,
+) -> dict[str, object]:
+    """Map Intergrax intent through ExternalWorkIntegration (GEC-3).
+
+    Sync boundary calls only — no poll/retry/HITL ownership.
+    """
+    exec_ctx = exec_ctx_from_step(step_ctx)
+    meta = request_metadata(exec_ctx, step_ctx)
+    # ACP merges AgentRunRequest.metadata into step_ctx.metadata.
+    merged: dict[str, object] = {**dict(step_ctx.metadata or {}), **meta}
+    task_id = (step_ctx.task_id or "").strip() or (step_ctx.run_id or "").strip() or "unknown-task"
+    run_id = (step_ctx.run_id or "").strip() or None
+    result = adapt_from_step_metadata(
+        external_work,
+        task_id=task_id,
+        run_id=run_id,
+        message=step_ctx.message or "",
+        metadata=merged,
+    )
+    summary = result.to_domain_summary()
     answer = (
-        "external_contractor_adapter: domain job not implemented "
-        "(external_contractor.adapt)"
+        f"external_contractor_adapter: {result.reason}"
+        if result.used
+        else f"external_contractor_adapter: {result.reason} (external_contractor.adapt)"
     )
     return {
         "summary": answer,
         "answer": answer,
         "run_id": step_ctx.run_id,
-        "domain_summary": {
-            "used": False,
-            "reason": "not_implemented",
-            "capability": "external_contractor.adapt",
-        },
+        "domain_summary": summary,
+        "external_work": summary,
+        "domain_step_id": DOMAIN_STEP_ID,
     }

@@ -1,6 +1,6 @@
 # Governed Contractor Application — architecture
 
-**Status:** GEC-0 bootstrap + GEC-1 contracts + GEC-2 integration boundary (2026-07-20) — product-profile scaffold; domain runtime (GEC-3+) not yet implemented  
+**Status:** GEC-0…GEC-3 (2026-07-20) — product-profile scaffold + Tier-2 provider-neutral mapping baseline; HITL/policy/receipts/providers deferred  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -234,14 +234,14 @@ Provider-supplied evidence and Intergrax-generated proof remain distinct. GEC re
 ## 12. Provider-neutral partner adapter model
 
 ```text
-Partner product
-  → partner mapping (handoff / config)
+Tier-3 governed_contractor_application
+  → ExternalContractorAdapterAgent (inject ExternalWorkIntegration)
+  → ExternalWorkAdapter (Tier-2 mapping only)
   → ExternalWorkIntegration (platform Protocol)
-  → ExternalContractorAdapterAgent (Tier-2)
-  → Governed Contractor Application (Tier-3)
+  → Deterministic fake (GEC-3 tests) | future provider (GEC-9/10)
 ```
 
-Adding a new partner should require **mapping + configuration**, not a fork of Nexus or a new Tier-3 product core.
+GEC-3 proves the abstraction **without transport**. Host may inject via `settings.external_work_integration`. Tier-2 owns mapping/correlation/normalization; Tier-3 + runtime own governance (HITL, policy, receipts) in later phases. Adding a new partner should require **mapping + configuration**, not a fork of Nexus or a new Tier-3 product core.
 
 ---
 
