@@ -94,15 +94,85 @@ def test_continuation_blocker_surfaced_for_quote() -> None:
             metadata=_meta(),
         )
     )
-    blocker = adapter.surface_continuation_blocker(mapped)
+    blocker = adapter.surface_continuation_blocker(mapped, run_id="run-gec4")
     assert blocker is not None
     assert blocker.reason is ContinuationReason.QUOTE
+    assert blocker.task_id == "task-gec4"
+    assert blocker.run_id == "run-gec4"
+    assert blocker.run_id != blocker.task_id
     assert blocker.correlation["external_task_id"].startswith("ext-gec3-")
     assert blocker.context["quote_id"] == "q-gec3-1"
-    surfaced = adapter.with_continuation_surface(mapped)
+    surfaced = adapter.with_continuation_surface(mapped, run_id="run-gec4")
     assert surfaced.reason == "continuation_blocked"
     assert surfaced.continuation is not None
     assert surfaced.continuation.reason is ContinuationReason.QUOTE
+    assert surfaced.continuation.run_id == "run-gec4"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_continuation_preserves_distinct_task_and_run_identity() -> None:
+    fake = DeterministicExternalWorkFake()
+    adapter = ExternalWorkAdapter(fake)
+    mapped = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-123",
+            run_id="run-456",
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-identity"}),
+        )
+    )
+    continuation = adapter.surface_continuation_blocker(mapped, run_id="run-456")
+    assert continuation is not None
+    assert continuation.task_id == "task-123"
+    assert continuation.run_id == "run-456"
+    assert continuation.run_id != continuation.task_id
+    # Correlation fields remain unchanged (optional run_id forwarded as stored).
+    assert continuation.correlation["task_id"] == "task-123"
+    assert continuation.correlation["run_id"] == "run-456"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_missing_run_id_fails_closed_without_task_fallback() -> None:
+    fake = DeterministicExternalWorkFake()
+    adapter = ExternalWorkAdapter(fake)
+    mapped = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id="task-no-run",
+            run_id=None,
+            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run"}),
+        )
+    )
+    assert mapped.snapshot is not None
+    assert mapped.snapshot.correlation.task_id == "task-no-run"
+    # Explicit empty / missing run identity — never use task_id as fabricated run_id.
+    blocker = adapter.surface_continuation_blocker(mapped, run_id="")
+    assert blocker is None
+    result = adapter.with_continuation_surface(mapped, run_id=None)
+    assert result.continuation is None
+    assert result.used is False
+    assert result.error_code is not None
+    assert result.error_code.value == "invalid_request"
+    assert result.error_message is not None
+    assert "run identity" in result.error_message.lower()
+    assert result.reason == "continuation_correlation_failed"
+    # Prove no fabricated run identity equal to task_id was attached.
+    summary = result.to_domain_summary()
+    assert summary.get("continuation") is None
+    via_step = adapt_from_step_metadata(
+        fake,
+        task_id="task-no-run-step",
+        run_id=None,
+        message="scope",
+        metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run-step"}),
+    )
+    assert via_step.continuation is None
+    assert via_step.error_code is not None
+    assert via_step.error_message is not None
+    assert "run identity" in via_step.error_message.lower()
+    source = _ADAPTER_PY.read_text(encoding="utf-8")
+    assert "correlation.run_id or correlation.task_id" not in source
+    assert "or correlation.task_id" not in source
 
 
 @pytest.mark.unit
@@ -117,8 +187,9 @@ def test_interrupt_composition_reuses_nexus_handler() -> None:
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-int"}),
         )
     )
-    blocker = adapter.surface_continuation_blocker(mapped)
+    blocker = adapter.surface_continuation_blocker(mapped, run_id="run-int")
     assert blocker is not None
+    assert blocker.run_id == "run-int"
     interrupt = compose_continuation_interrupt(blocker)
     resolution = ExecutionInterruptHandler().resolve_interrupt(interrupt)
     assert resolution.should_pause is True
@@ -145,6 +216,8 @@ def test_correlation_preserved_across_continuation_surface() -> None:
     assert result.continuation.correlation["external_task_id"] == corr.external_task_id
     assert result.continuation.correlation["idempotency_key"] == "idem-corr"
     assert result.continuation.task_id == "task-corr"
+    assert result.continuation.run_id == "run-corr"
+    assert result.continuation.run_id != result.continuation.task_id
 
 
 @pytest.mark.unit

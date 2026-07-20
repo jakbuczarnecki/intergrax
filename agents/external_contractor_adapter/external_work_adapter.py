@@ -247,12 +247,14 @@ class ExternalWorkAdapter:
         self,
         result: ExternalWorkAdapterResult,
         *,
+        run_id: str,
         source_agent_id: str = "external_contractor_adapter",
         source_step_id: str | None = None,
     ) -> GovernedContinuationRequest | None:
         """Detect a QUOTE continuation blocker from a mapped result.
 
         Surfaces a ``GovernedContinuationRequest`` for Nexus interrupt composition.
+        Requires a real Nexus ``run_id`` — never synthesizes one from ``task_id``.
         Does not create interrupts, call policy, or resume execution.
         """
         if not result.used or result.snapshot is None:
@@ -261,11 +263,14 @@ class ExternalWorkAdapter:
             return None
         if result.quote is None:
             return None
+        resolved_run_id = (run_id or "").strip()
+        if not resolved_run_id:
+            return None
         correlation = result.snapshot.correlation
         return GovernedContinuationRequest(
             reason=ContinuationReason.QUOTE,
             task_id=correlation.task_id,
-            run_id=(correlation.run_id or correlation.task_id),
+            run_id=resolved_run_id,
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
             prompt="External work quote requires governed continuation before side effects",
@@ -291,12 +296,35 @@ class ExternalWorkAdapter:
         self,
         result: ExternalWorkAdapterResult,
         *,
+        run_id: str | None,
         source_agent_id: str = "external_contractor_adapter",
         source_step_id: str | None = None,
     ) -> ExternalWorkAdapterResult:
-        """Attach continuation blocker when quote awaits governance evidence."""
+        """Attach continuation blocker when quote awaits governance evidence.
+
+        Fail-closed when a blocker is required but no real Nexus run identity
+        is available — never substitutes ``task_id`` for ``run_id``.
+        """
+        if not _needs_quote_continuation(result):
+            return result
+        resolved_run_id = (run_id or "").strip()
+        if not resolved_run_id:
+            return result.model_copy(
+                update={
+                    "used": False,
+                    "reason": "continuation_correlation_failed",
+                    "continuation": None,
+                    "error_code": ExternalWorkErrorCode.INVALID_REQUEST,
+                    "error_message": (
+                        "A governed continuation blocker requires a real "
+                        "Nexus run identity."
+                    ),
+                    "error_retryable": False,
+                }
+            )
         blocker = self.surface_continuation_blocker(
             result,
+            run_id=resolved_run_id,
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
         )
@@ -409,9 +437,20 @@ def adapt_from_step_metadata(
         enrich=enrich,
     )
     # When no continuation evidence was supplied, surface the blocker for Nexus.
+    # Forward the real Nexus run_id from execution context — never invent one.
     if acceptance is None and mapped.used:
-        return adapter.with_continuation_surface(mapped)
+        return adapter.with_continuation_surface(mapped, run_id=run_id)
     return mapped
+
+
+def _needs_quote_continuation(result: ExternalWorkAdapterResult) -> bool:
+    """True when mapped state requires a QUOTE governed-continuation blocker."""
+    return (
+        result.used
+        and result.snapshot is not None
+        and result.quote is not None
+        and result.status in _QUOTE_CONTINUATION_STATUSES
+    )
 
 
 def _error_result(

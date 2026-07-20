@@ -86,6 +86,8 @@ map quote → surface continuation (QUOTE) → Nexus interrupt (existing)
   → human/policy decision → QuoteAcceptanceEvidence → forward via Protocol
 ```
 
+**Identity rule:** task identity and run identity are distinct. Governed continuation is correlated to a real Nexus `run_id` forwarded from the execution context. Consumers must never synthesize run identity from `task_id`. Missing run identity fails closed (structured correlation error) — Tier-2 does not invent Nexus execution identity.
+
 Adapter APIs: `surface_continuation_blocker` / `with_continuation_surface` / `forward_continuation_evidence`. No `ContinuationRuntime` or quote lifecycle engine here.
 
 Deferred: HITL UX presentation, policy packs (GEC-5), receipts (GEC-6), workspace publication, polling engines, real providers.
