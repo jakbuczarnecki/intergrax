@@ -482,11 +482,34 @@ def test_live_test_emits_required_evidence_keys() -> None:
 
 def test_public_reviewer_document_contains_windows_interaction_steps() -> None:
     text = _read(_PUBLIC_PLATFORM_PROOF)
-    assert "## Step 12 — Run the Windows PowerShell interaction proof" in text
+    assert "# Optional operating-system interaction proofs" in text
     assert (
-        "## Step 13 — Inspect the Windows Interaction ProofReceipt in Mongo Express"
-    ) in text
+        "## Windows users — Optional W1: Run the Windows PowerShell interaction proof"
+        in text
+    )
+    assert (
+        "## Windows users — Optional W2: Inspect the Windows Interaction ProofReceipt"
+        in text
+    )
+    assert "Step 12 — Run the Windows PowerShell interaction proof" not in text
+    assert "Step 13 — Inspect the Windows Interaction ProofReceipt" not in text
     assert "run-lkw-windows-interaction-proof.bat" in text
     assert "proof_kind=platform_windows_interaction" in text
-    shortcut = text.split("## Reviewer shortcut", 1)[1]
-    assert "run-lkw-windows-interaction-proof.bat" in shortcut
+    assert "os_family=windows" in text
+    assert "adapter_id=lkw.windows_powershell" in text
+    assert "intake_endpoint=/v1/interactions/intake" in text
+    assert "proof_receipt_recorded=true" in text
+    assert "proof_receipt_verified=true" in text
+    assert "proof_receipt_query_verified=true" in text
+    assert "Run this section only on Windows." in text
+    assert "This section is optional." in text
+    assert "Its omission does not invalidate the Core Platform Proof." in text
+    assert text.index("## Core Platform Proof completion") < text.index(
+        "## Windows users — Optional W1"
+    )
+    core_shortcuts = text.split("## Core reviewer shortcuts", 1)[1].split(
+        "## Optional Windows reviewer shortcut", 1
+    )[0]
+    assert "run-lkw-windows-interaction-proof.bat" not in core_shortcuts
+    optional_shortcut = text.split("## Optional Windows reviewer shortcut", 1)[1]
+    assert "run-lkw-windows-interaction-proof.bat" in optional_shortcut

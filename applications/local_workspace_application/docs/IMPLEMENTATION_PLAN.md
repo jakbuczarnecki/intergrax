@@ -987,6 +987,39 @@ OS-specific interaction adapter
 
 ---
 
+### Proof portability
+
+| ID | Scope | Status |
+|----|-------|--------|
+| PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
+| PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Planned** |
+| PROOF-PORTABILITY-1C | Add optional Linux and macOS interaction clients and receipts | **Planned** |
+| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Planned** |
+
+Current proof certification:
+
+```text
+Windows core reviewer path:
+  available and live-recorded
+
+Windows optional interaction proof:
+  available and live-recorded
+
+Linux core reviewer path:
+  not yet available as a supported one-command path
+
+Linux optional interaction proof:
+  not implemented
+
+macOS core reviewer path:
+  not yet available as a supported one-command path
+
+macOS optional interaction proof:
+  not implemented
+```
+
+---
+
 ## 7. Post-LKW.1 hardening and adoption waves
 
 ### LKW-H2 — evidence/maturity wording cleanup
