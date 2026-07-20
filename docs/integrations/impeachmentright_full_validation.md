@@ -15,7 +15,7 @@
 | 1 | Is `governed_execution_boundary_event.v1` produced by the host? | **Yes** — `governed_contractor_application.host.execution_evidence` |
 | 2 | Is it host-signed? | **Yes** — Ed25519 `HostAttestor` (DI; test attestor offline) |
 | 3 | Is there one portable attested export? | **Yes** — `execution_evidence.proof_receipt.v1` |
-| 4 | Does it bind policy decision, runtime policy bundle, provider invocation, task/run identity and proof? | **Yes** — event sections + digests |
+| 4 | Does it bind policy decision, runtime policy bundle identity/digest, provider invocation reference, task/run identity and proof? | **Yes** — event sections + digests (not full pack body embed) |
 | 5 | Can it be verified offline? | **Yes** — `verify_proof_receipt` (no provider network) |
 | 6 | What remains explicitly outside scope? | DocumentStore/public registry persistence, replay, live/paid providers, wallets, remote KMS/HSM, default HTTP product UX packaging |
 
@@ -35,13 +35,17 @@
 
 ```text
 CREATE_EXTERNAL_WORK
-  → policy bundle evaluation → ALLOW → provider create
-  → GovernedProofProfile → ExecutionBoundaryEvent → HostAttestation → verified ProofReceipt
+  → policy evaluation (decision bound to immutable pack identity/digest) → ALLOW → provider create
+  → GovernedProofProfile → governed ExecutionBoundaryEvent → HostAttestation → verified ProofReceipt
 
 QUOTE continuation → QuoteAcceptanceEvidence → ACCEPT_QUOTE
-  → policy bundle evaluation → ALLOW → provider accept
-  → GovernedProofProfile → ExecutionBoundaryEvent → HostAttestation → verified ProofReceipt
+  → policy evaluation (decision bound to immutable pack identity/digest) → ALLOW → provider accept
+  → GovernedProofProfile → governed ExecutionBoundaryEvent → HostAttestation → verified ProofReceipt
 ```
+
+**Wording note:** demo evaluator stamps `ImmutableRuntimePolicyBundle` identity onto
+`PolicyDecision`; it is not a claim that production `RuntimePolicyBundle` / live
+policy engines already consume that immutable pack as their sole rule source.
 
 **Command:**
 

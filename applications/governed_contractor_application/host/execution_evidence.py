@@ -59,9 +59,12 @@ def produce_attested_receipt_for_adapter_result(
         and provider_invoked
     )
     operation = _resolve_operation(result)
+    # Prefer explicit per-invocation ids only. Bare ``external_task_id`` is a
+    # task correlation key shared across CREATE/ACCEPT/CANCEL — not unique.
     invocation_id = invocation_id_from_adapter_metadata(
         dict(result.metadata),
         fallback=_fallback_invocation_id(result),
+        prefer_keys=("provider_invocation_id", "invocation_id"),
     )
     completed_at = occurred_at or datetime.now(timezone.utc)
     return attest_after_governed_side_effect(
@@ -109,13 +112,30 @@ def _resolve_operation(result: ExternalWorkAdapterResult) -> str:
 
 
 def _fallback_invocation_id(result: ExternalWorkAdapterResult) -> str:
+    """Stable invocation reference when adapter metadata lacks provider_invocation_id.
+
+    Prefer ``action:external_task_id:idempotency_key`` so CREATE / ACCEPT / CANCEL
+    on the same external task remain distinct. Bare ``external_task_id`` alone is
+    insufficient as a per-invocation identity.
+    """
+    action = result.proof.action if result.proof is not None else ""
+    idem = ""
+    if result.proof is not None and result.proof.idempotency_key:
+        idem = result.proof.idempotency_key.strip()
+    external_id = ""
     if result.snapshot is not None:
         corr = result.snapshot.correlation
-        external_id = getattr(corr, "external_task_id", None)
-        if isinstance(external_id, str) and external_id.strip():
-            return external_id.strip()
-        if result.proof and result.proof.idempotency_key:
-            return f"{result.proof.action}:{result.proof.idempotency_key}"
+        raw = getattr(corr, "external_task_id", None)
+        if isinstance(raw, str) and raw.strip():
+            external_id = raw.strip()
+    if action and external_id and idem:
+        return f"{action}:{external_id}:{idem}"
+    if action and idem:
+        return f"{action}:{idem}"
+    if action and external_id:
+        return f"{action}:{external_id}"
+    if external_id:
+        return external_id
     if result.proof is not None:
         return f"{result.proof.task_id}:{result.proof.run_id}:{result.proof.action}"
     return "invocation:unknown"

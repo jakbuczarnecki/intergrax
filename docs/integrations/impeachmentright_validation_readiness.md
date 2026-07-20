@@ -163,13 +163,13 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 
 ## Recommended response strategy
 
-1. **Lead with architecture + demo command** — point to platform canon + `test_partner_validation_demo.py`.
-2. **Map the five points honestly** using the matrix above; emphasize descriptive proof vs attestation.
-3. **Acknowledge their three gaps as category D** — Host Attestation / EBE / attested export / partner policy-bundle adoption — complementary future work, not missing GEC-6.1 core.
-4. **Invite next step:** provider behind `ExternalWorkIntegration` + host policy pack injection; attestation/EBE when their security plane requires signed boundary events.
-5. **Do not oversell** host product UX or signed receipts.
+1. **Lead with attested demo** — `test_partner_attested_execution_demo.py` + platform canon for Execution Evidence.
+2. **Map the five points honestly** using the matrix above; separate descriptive `GovernedProofProfile` from host-signed portable receipt.
+3. **Close their three gaps with precise naming** — governed sibling `governed_execution_boundary_event.v1` (not harness tool/step `execution_boundary_event.v1`); portable `execution_evidence.proof_receipt.v1`; decision bound to `ImmutableRuntimePolicyBundle` identity/digest (not a claim that partner contractor-local packs are already replaced).
+4. **Invite next step:** live provider behind `ExternalWorkIntegration` + host policy pack injection + product HTTP/CLI packaging.
+5. **Do not oversell** production KMS/HSM, receipt registry, replay, wallets, or default host UX.
 
-**Recommended next engineering action (optional, out of this review):** host-local deterministic demo settings + metadata-aware run path (still no attestation) — closes gap B/C packaging only.
+**Still open as packaging / product (not attestation capability):** default host HTTP/CLI orchestration of quote→accept→receipt.
 
 ---
 

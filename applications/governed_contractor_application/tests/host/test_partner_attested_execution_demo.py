@@ -38,6 +38,7 @@ from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.governed_continuation import ContinuationReason
 from intergrax.contracts.governed_proof import EVIDENCE_KIND_QUOTE_ACCEPTANCE
 from intergrax.contracts.money import MoneyAmount
+from intergrax.contracts.execution_evidence.receipt import ProofReceipt
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_bundle import (
     PolicyBundleRule,
@@ -112,8 +113,11 @@ def _assert_receipt_fields(receipt, *, action: str, evidence_kind: str | None) -
     assert event.policy.action is PolicyAction.ALLOW
     assert event.governed_proof.proof_digest.startswith("sha256:")
     assert event.provider_invocation.invocation_id
+    assert event.provider_invocation.outcome == "success"
+    assert action in event.provider_invocation.invocation_id
     assert att.key_id
     assert att.signature
+    assert att.payload_schema == "governed_execution_boundary_event.v1"
     assert att.payload_digest == stable_payload_hash(event.canonical_payload())
     if evidence_kind is None:
         assert event.governance_evidence is None
@@ -227,6 +231,23 @@ def test_partner_attested_create_and_accept_lifecycle() -> None:
     assert accept_vr.valid is True
     assert accept_vr.key_id == attestor.key_id
 
+    create_inv = (
+        create_outcome.receipt.execution_boundary_event.provider_invocation.invocation_id
+    )
+    accept_inv = (
+        accept_outcome.receipt.execution_boundary_event.provider_invocation.invocation_id
+    )
+    assert create_inv != accept_inv
+    assert "ext-gec3-" in create_inv
+    assert ACTION_CREATE_EXTERNAL_WORK in create_inv
+    assert ACTION_ACCEPT_QUOTE in accept_inv
+
+    # Portable JSON round-trip remains verifiable offline.
+    restored = ProofReceipt.model_validate_json(
+        accept_outcome.receipt.model_dump_json()
+    )
+    assert verify_proof_receipt(restored, key_resolver=resolver).valid is True
+
     # Attestation after accept must not re-invoke provider.
     assert fake.accept_calls == accept_calls_before + 1
     assert fake.create_calls == create_calls_before_accept
@@ -290,4 +311,91 @@ def test_attestation_failure_does_not_repeat_provider() -> None:
     assert not outcome.attestation_succeeded
     assert outcome.receipt is None
     assert fake.create_calls == create_calls
+    assert fake.accept_calls == accept_calls
+
+
+def test_signer_exception_after_create_does_not_retry_provider() -> None:
+    class _ThrowingAttestor:
+        def attest(self, payload: bytes, *, schema: str):
+            raise RuntimeError("signer_boom")
+
+    bundle = _bundle()
+    policy = DeterministicMeaningfulSideEffectPolicy(
+        default=PolicyAction.ALLOW,
+        policy_bundle=bundle,
+    )
+    fake = DeterministicExternalWorkFake()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    created = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            metadata=_meta(),
+        ),
+        principal_id="partner-demo-user",
+        tenant_id="partner-demo-tenant",
+    )
+    create_calls = fake.create_calls
+    outcome = produce_attested_receipt_for_adapter_result(
+        created,
+        attestor=_ThrowingAttestor(),  # type: ignore[arg-type]
+        attestation_required=True,
+        occurred_at=_T0,
+    )
+    assert outcome.execution_succeeded
+    assert not outcome.attestation_succeeded
+    assert outcome.receipt is None
+    assert fake.create_calls == create_calls
+
+
+def test_attestation_failure_after_accept_does_not_repeat_accept() -> None:
+    bundle = _bundle()
+    policy = DeterministicMeaningfulSideEffectPolicy(
+        default=PolicyAction.ALLOW,
+        policy_bundle=bundle,
+    )
+    fake = DeterministicExternalWorkFake()
+    adapter = ExternalWorkAdapter(fake, side_effect_policy=policy)
+    created = adapter.create_and_map(
+        adapter.build_create_request(
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            metadata=_meta(),
+        ),
+        principal_id="partner-demo-user",
+        tenant_id="partner-demo-tenant",
+    )
+    acceptance = QuoteAcceptanceEvidence.model_validate(
+        {
+            "acceptance_id": "acc-partner-attest-fail",
+            "quote_id": created.quote.quote_id,  # type: ignore[union-attr]
+            "quote_version": 1,
+            "scope_digest": _DIGEST,
+            "actor": ActorIdentity(
+                kind=ActorKind.USER,
+                actor_id="partner-demo-user",
+                tenant_id="partner-demo-tenant",
+            ),
+            "accepted_at": _T0 + timedelta(minutes=5),
+            "hitl_decision_id": "hdec-partner-attest-fail",
+            "interrupt_id": "intr-partner-attest-fail",
+            "policy_decision_ref": "pol-partner-attest-fail",
+        }
+    )
+    accepted = adapter.forward_quote_acceptance(
+        created.snapshot.correlation,  # type: ignore[union-attr]
+        acceptance,
+        idempotency_key=_ACCEPT_IDEMP,
+        principal_id="partner-demo-user",
+        tenant_id="partner-demo-tenant",
+    )
+    accept_calls = fake.accept_calls
+    outcome = produce_attested_receipt_for_adapter_result(
+        accepted,
+        attestor=None,
+        attestation_required=True,
+    )
+    assert outcome.execution_succeeded
+    assert not outcome.attestation_succeeded
+    assert outcome.receipt is None
     assert fake.accept_calls == accept_calls

@@ -60,6 +60,14 @@ def compose_execution_boundary_event(
         raise ValueError("boundary_event_requires_allow_decision")
     if proof.policy_action is not PolicyAction.ALLOW:
         raise ValueError("boundary_event_requires_allow_proof")
+    if proof.policy_action is not policy_decision.action:
+        raise ValueError("proof_policy_action_mismatch")
+    if (
+        proof.policy_rule_id.strip()
+        and policy_decision.policy_rule_id.strip()
+        and proof.policy_rule_id != policy_decision.policy_rule_id
+    ):
+        raise ValueError("proof_policy_rule_mismatch")
     if require_policy_bundle and not policy_decision.has_attested_policy_bundle_refs():
         raise ValueError("policy_bundle_identity_missing")
 
@@ -250,12 +258,17 @@ def invocation_id_from_adapter_metadata(
     metadata: Mapping[str, Any],
     *,
     fallback: str,
-) -> str:
-    for key in (
+    prefer_keys: tuple[str, ...] = (
         "provider_invocation_id",
-        "external_task_id",
         "invocation_id",
-    ):
+    ),
+) -> str:
+    """Resolve an explicit per-invocation id from metadata, else ``fallback``.
+
+    Do not treat bare ``external_task_id`` as a unique invocation id — it is
+    shared across CREATE / ACCEPT / CANCEL for the same external task.
+    """
+    for key in prefer_keys:
         raw = metadata.get(key)
         if isinstance(raw, str) and raw.strip():
             return raw.strip()

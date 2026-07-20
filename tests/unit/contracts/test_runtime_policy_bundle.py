@@ -64,3 +64,54 @@ def test_bundle_field_change_changes_digest() -> None:
         issued_at=_T0,
     )
     assert base.canonical_digest != other.canonical_digest
+
+
+def test_naive_issued_at_rejected() -> None:
+    from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
+
+    naive = datetime(2026, 7, 20, 12, 0, 0)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        ImmutableRuntimePolicyBundle(
+            bundle_id="bundle-demo",
+            version="1.0.0",
+            rules=(PolicyBundleRule(rule_id="r1"),),
+            issued_at=naive,
+            canonical_digest="",
+        ).compute_digest()
+
+
+def test_with_canonical_digest_detects_mismatch() -> None:
+    from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
+
+    bundle = ImmutableRuntimePolicyBundle(
+        bundle_id="bundle-demo",
+        version="1.0.0",
+        rules=(PolicyBundleRule(rule_id="r1"),),
+        issued_at=_T0,
+        canonical_digest="sha256:" + ("ff" * 32),
+    )
+    with pytest.raises(ValueError, match="canonical_digest does not match"):
+        bundle.with_canonical_digest()
+
+
+def test_bundle_id_and_issued_at_change_digest() -> None:
+    a = build_immutable_runtime_policy_bundle(
+        bundle_id="bundle-a",
+        version="1.0.0",
+        rules=(PolicyBundleRule(rule_id="r1"),),
+        issued_at=_T0,
+    )
+    b = build_immutable_runtime_policy_bundle(
+        bundle_id="bundle-b",
+        version="1.0.0",
+        rules=(PolicyBundleRule(rule_id="r1"),),
+        issued_at=_T0,
+    )
+    c = build_immutable_runtime_policy_bundle(
+        bundle_id="bundle-a",
+        version="1.0.0",
+        rules=(PolicyBundleRule(rule_id="r1"),),
+        issued_at=datetime(2026, 7, 21, 12, 0, 0, tzinfo=timezone.utc),
+    )
+    assert a.canonical_digest != b.canonical_digest
+    assert a.canonical_digest != c.canonical_digest
