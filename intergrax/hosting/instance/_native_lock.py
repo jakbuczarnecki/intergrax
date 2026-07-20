@@ -10,6 +10,8 @@ import stat
 import sys
 from pathlib import Path
 
+from intergrax.utils import attribute_access
+
 
 class NativeFileLockError(OSError):
     """Raised when native file locking fails."""
@@ -18,7 +20,7 @@ class NativeFileLockError(OSError):
 def open_lock_fd(lock_path: Path) -> int:
     """Open or create the lock file without acquiring the native lock."""
     open_flags = os.O_CREAT | os.O_RDWR
-    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    nofollow = attribute_access.optional(os, "O_NOFOLLOW", 0)
     open_flags |= nofollow
     try:
         return os.open(str(lock_path), open_flags, 0o600)

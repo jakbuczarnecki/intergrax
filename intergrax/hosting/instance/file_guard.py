@@ -38,6 +38,7 @@ from intergrax.hosting.instance.contracts import (
   HostedApplicationInstanceLeasePublicView,
   InstanceAcquisitionClassification,
 )
+from intergrax.utils import attribute_access
 
 _METADATA_SCHEMA_VERSION = "1.0"
 _MAX_METADATA_BYTES = 4096
@@ -327,7 +328,7 @@ def _best_effort_read_metadata(lock_path: Path) -> _LeaseMetadata | None:
   if not lock_path.exists():
     return None
   try:
-    fd = os.open(str(lock_path), os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    fd = os.open(str(lock_path), os.O_RDONLY | attribute_access.optional(os, "O_NOFOLLOW", 0))
   except OSError:
     return None
   try:

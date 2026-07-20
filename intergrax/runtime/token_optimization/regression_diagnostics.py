@@ -13,6 +13,7 @@ from intergrax.runtime.token_optimization.regression import (
     TokenRegressionCaseExecution,
     TokenRegressionExecution,
 )
+from intergrax.utils import attribute_access
 
 _DIAGNOSTIC_JSON_KWARGS: dict[str, Any] = {
     "indent": 2,
@@ -163,46 +164,46 @@ def _extract_input_output(
 
 
 def _extract_context_pack_io(outcome: object) -> tuple[dict[str, Any], dict[str, Any]]:
-    original_fragments = getattr(outcome, "original_fragments", None) or ()
-    optimized_fragments = getattr(outcome, "optimized_fragments", None) or ()
+    original_fragments = attribute_access.optional(outcome, "original_fragments", None) or ()
+    optimized_fragments = attribute_access.optional(outcome, "optimized_fragments", None) or ()
 
     input_payload: dict[str, Any] = {
         "fragments": [_fragment_to_input_dict(fragment) for fragment in original_fragments],
-        "original_content": _coerce_str(getattr(outcome, "original_content", "")),
+        "original_content": _coerce_str(attribute_access.optional(outcome, "original_content", "")),
     }
     output_payload: dict[str, Any] = {
         "fragments": [_fragment_to_output_dict(fragment) for fragment in optimized_fragments],
-        "optimized_content": _coerce_str(getattr(outcome, "optimized_content", "")),
+        "optimized_content": _coerce_str(attribute_access.optional(outcome, "optimized_content", "")),
     }
     return input_payload, output_payload
 
 
 def _fragment_to_input_dict(fragment: object) -> dict[str, Any]:
     return {
-        "fragment_id": getattr(fragment, "fragment_id", ""),
-        "required": bool(getattr(fragment, "required", False)),
-        "metadata": dict(getattr(fragment, "metadata", {}) or {}),
-        "original_content": _coerce_str(getattr(fragment, "content", "")),
+        "fragment_id": attribute_access.optional(fragment, "fragment_id", ""),
+        "required": bool(attribute_access.optional(fragment, "required", False)),
+        "metadata": dict(attribute_access.optional(fragment, "metadata", {}) or {}),
+        "original_content": _coerce_str(attribute_access.optional(fragment, "content", "")),
     }
 
 
 def _fragment_to_output_dict(fragment: object) -> dict[str, Any]:
     return {
-        "fragment_id": getattr(fragment, "fragment_id", ""),
-        "required": bool(getattr(fragment, "required", False)),
-        "metadata": dict(getattr(fragment, "metadata", {}) or {}),
-        "optimized_content": _coerce_str(getattr(fragment, "content", "")),
+        "fragment_id": attribute_access.optional(fragment, "fragment_id", ""),
+        "required": bool(attribute_access.optional(fragment, "required", False)),
+        "metadata": dict(attribute_access.optional(fragment, "metadata", {}) or {}),
+        "optimized_content": _coerce_str(attribute_access.optional(fragment, "content", "")),
     }
 
 
 def _extract_memory_summary_io(outcome: object) -> tuple[dict[str, Any], dict[str, Any]]:
     original = (
-        getattr(outcome, "original_summary", None)
-        or getattr(outcome, "original_content", "")
+        attribute_access.optional(outcome, "original_summary", None)
+        or attribute_access.optional(outcome, "original_content", "")
     )
     optimized = (
-        getattr(outcome, "optimized_summary", None)
-        or getattr(outcome, "optimized_content", "")
+        attribute_access.optional(outcome, "optimized_summary", None)
+        or attribute_access.optional(outcome, "optimized_content", "")
     )
     return (
         {"original_summary": _coerce_str(original)},
@@ -212,12 +213,12 @@ def _extract_memory_summary_io(outcome: object) -> tuple[dict[str, Any], dict[st
 
 def _extract_tool_schema_io(outcome: object) -> tuple[dict[str, Any], dict[str, Any]]:
     original = (
-        getattr(outcome, "original_catalog", None)
-        or getattr(outcome, "original_content", "")
+        attribute_access.optional(outcome, "original_catalog", None)
+        or attribute_access.optional(outcome, "original_content", "")
     )
     optimized = (
-        getattr(outcome, "optimized_catalog", None)
-        or getattr(outcome, "optimized_content", "")
+        attribute_access.optional(outcome, "optimized_catalog", None)
+        or attribute_access.optional(outcome, "optimized_content", "")
     )
     return (
         {"original_tool_catalog": _coerce_str(original)},
@@ -227,8 +228,8 @@ def _extract_tool_schema_io(outcome: object) -> tuple[dict[str, Any], dict[str, 
 
 def _extract_generic_io(outcome: object) -> tuple[dict[str, Any], dict[str, Any]]:
     return (
-        {"original_content": _coerce_str(getattr(outcome, "original_content", ""))},
-        {"optimized_content": _coerce_str(getattr(outcome, "optimized_content", ""))},
+        {"original_content": _coerce_str(attribute_access.optional(outcome, "original_content", ""))},
+        {"optimized_content": _coerce_str(attribute_access.optional(outcome, "optimized_content", ""))},
     )
 
 

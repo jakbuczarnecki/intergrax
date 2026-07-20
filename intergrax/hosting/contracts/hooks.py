@@ -18,6 +18,7 @@ from intergrax.hosting.contracts.public_data import (
     validate_bounded_priority,
     validate_positive_bounded_seconds,
 )
+from intergrax.utils import attribute_access
 
 if TYPE_CHECKING:
     from intergrax.hosting.contracts.context import HostedApplicationContext
@@ -181,7 +182,7 @@ class HostedApplicationHooks(BaseModel):
         return self
 
     def hooks_for_point(self, point: HostedApplicationHookPoint) -> tuple[HostedApplicationHook, ...]:
-        return getattr(self, point.value)
+        return attribute_access.optional(self, point.value)
 
     def flattened_public_descriptors(self) -> tuple[HostedApplicationHookPublicDescriptor, ...]:
         descriptors: list[HostedApplicationHookPublicDescriptor] = []

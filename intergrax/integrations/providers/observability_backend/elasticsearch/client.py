@@ -18,6 +18,8 @@ from intergrax.integrations.contracts.observability_backend import (
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
 
+from intergrax.utils import attribute_access
+
 _ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID = "elasticsearch"
 _RETRIABLE_HTTP_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504})
 _NON_RETRIABLE_HTTP_STATUS_CODES = frozenset({400, 401, 403, 404})
@@ -81,10 +83,10 @@ def _is_connection_error(exc: BaseException) -> bool:
 
 
 def _http_status_code(exc: BaseException) -> int | None:
-    response = getattr(exc, "response", None)
+    response = attribute_access.optional(exc, "response", None)
     if response is None:
         return None
-    status_code = getattr(response, "status_code", None)
+    status_code = attribute_access.optional(response, "status_code", None)
     return int(status_code) if isinstance(status_code, int) else None
 
 

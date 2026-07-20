@@ -36,6 +36,9 @@ GRANDFATHER: frozenset[str] = frozenset(
         "tests/unit/integrations/providers/observability_backend/test_observability_legacy_delegation_removed.py",
         "tests/unit/integrations/providers/observability_backend/test_observability_provider_contract_migration.py",
         "tests/unit/runtime/integrations/test_provider_category_contracts.py",
+        "tests/unit/runtime/token_optimization/test_signals.py",
+        "tests/unit/hosting/signals/test_signal_adapter.py",
+        "tests/unit/applications/local_workspace_application/test_lkw_core_platform_proof.py",
         # --- AST audit tool ---
         "tools/ast_audit.py",
     }

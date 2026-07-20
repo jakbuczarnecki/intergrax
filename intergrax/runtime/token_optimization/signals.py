@@ -24,6 +24,8 @@ from intergrax.runtime.token_optimization.contracts import (
 from intergrax.runtime.token_optimization.receipts import CompressionReceipt
 from intergrax.runtime.token_optimization.tool_schema import ToolSchemaOptimizationOutcome
 
+from intergrax.utils import attribute_access
+
 if TYPE_CHECKING:
     from intergrax.runtime.token_optimization.regression import (
         TokenRegressionResult,
@@ -469,22 +471,22 @@ def build_token_optimization_signal(
         request = outcome.request
         result = outcome.result
         resolved_attribution = attribution or request.attribution
-        source_type = getattr(outcome, "source_type", None) or request.source_type
-        strategy = getattr(outcome, "strategy", None) or result.strategy
+        source_type = attribute_access.optional(outcome, "source_type", None) or request.source_type
+        strategy = attribute_access.optional(outcome, "strategy", None) or result.strategy
 
-        direct_baseline = getattr(outcome, "original_tokens", None)
-        direct_optimized = getattr(outcome, "optimized_tokens", None)
-        direct_saved = getattr(outcome, "saved_tokens", None)
-        direct_ratio = getattr(outcome, "saved_ratio", None)
-        direct_validation = getattr(outcome, "validation_status", None)
-        direct_fallback = getattr(outcome, "fallback_status", None)
+        direct_baseline = attribute_access.optional(outcome, "original_tokens", None)
+        direct_optimized = attribute_access.optional(outcome, "optimized_tokens", None)
+        direct_saved = attribute_access.optional(outcome, "saved_tokens", None)
+        direct_ratio = attribute_access.optional(outcome, "saved_ratio", None)
+        direct_validation = attribute_access.optional(outcome, "validation_status", None)
+        direct_fallback = attribute_access.optional(outcome, "fallback_status", None)
 
         signal = _build_from_result(
             result,
             source_type=source_type,
             attribution=resolved_attribution,
-            receipt=getattr(outcome, "receipt", None),
-            receipt_ref=getattr(outcome, "receipt_ref", None),
+            receipt=attribute_access.optional(outcome, "receipt", None),
+            receipt_ref=attribute_access.optional(outcome, "receipt_ref", None),
             strategy=strategy,
             metadata=_merge_metadata(outcome.metadata, metadata),
             signal_id=signal_id,

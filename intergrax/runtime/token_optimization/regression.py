@@ -36,6 +36,7 @@ from intergrax.runtime.token_optimization.tool_schema import (
     ToolSchemaOptimizationOutcome,
     optimize_tool_schema_catalog,
 )
+from intergrax.utils import attribute_access
 
 TokenCounter = Callable[[str], int]
 RegressionRunner = Callable[[TokenCounter], object]
@@ -656,10 +657,10 @@ def _resolve_token_metrics(
     outcome: object,
     token_counter: TokenCounter,
 ) -> tuple[int, int, int, float]:
-    original_tokens = getattr(outcome, "original_tokens", None)
-    optimized_tokens = getattr(outcome, "optimized_tokens", None)
-    saved_tokens = getattr(outcome, "saved_tokens", None)
-    saved_ratio = getattr(outcome, "saved_ratio", None)
+    original_tokens = attribute_access.optional(outcome, "original_tokens", None)
+    optimized_tokens = attribute_access.optional(outcome, "optimized_tokens", None)
+    saved_tokens = attribute_access.optional(outcome, "saved_tokens", None)
+    saved_ratio = attribute_access.optional(outcome, "saved_ratio", None)
     if (
         isinstance(original_tokens, int)
         and isinstance(optimized_tokens, int)
@@ -668,8 +669,8 @@ def _resolve_token_metrics(
     ):
         return original_tokens, optimized_tokens, saved_tokens, saved_ratio
 
-    result = getattr(outcome, "result", None)
-    measurement = getattr(result, "measurement", None) if result is not None else None
+    result = attribute_access.optional(outcome, "result", None)
+    measurement = attribute_access.optional(result, "measurement", None) if result is not None else None
     if measurement is not None:
         return (
             measurement.baseline_tokens,
@@ -678,8 +679,8 @@ def _resolve_token_metrics(
             measurement.saved_ratio,
         )
 
-    original_content = getattr(outcome, "original_content", "")
-    optimized_content = getattr(outcome, "optimized_content", "")
+    original_content = attribute_access.optional(outcome, "original_content", "")
+    optimized_content = attribute_access.optional(outcome, "optimized_content", "")
     if not isinstance(original_content, str):
         original_content = ""
     if not isinstance(optimized_content, str):
@@ -692,13 +693,13 @@ def _resolve_token_metrics(
 
 
 def _resolve_validation_status(outcome: object) -> str:
-    direct = getattr(outcome, "validation_status", None)
+    direct = attribute_access.optional(outcome, "validation_status", None)
     if isinstance(direct, ProtectedRegionValidationStatus):
         return direct.value
     if isinstance(direct, str):
         return direct
 
-    protected = getattr(outcome, "protected_region_validation", None)
+    protected = attribute_access.optional(outcome, "protected_region_validation", None)
     if protected is not None and hasattr(protected, "status"):
         status = protected.status
         if isinstance(status, ProtectedRegionValidationStatus):
@@ -706,8 +707,8 @@ def _resolve_validation_status(outcome: object) -> str:
         if isinstance(status, str):
             return status
 
-    result = getattr(outcome, "result", None)
-    validation = getattr(result, "validation", None) if result is not None else None
+    result = attribute_access.optional(outcome, "result", None)
+    validation = attribute_access.optional(result, "validation", None) if result is not None else None
     if validation is not None and hasattr(validation, "status"):
         status = validation.status
         if isinstance(status, ProtectedRegionValidationStatus):
@@ -726,36 +727,36 @@ _PASS_LIKE_VALIDATION_STATUSES = frozenset(
 
 
 def _resolve_fallback_status(outcome: object) -> bool:
-    direct = getattr(outcome, "fallback_status", None)
+    direct = attribute_access.optional(outcome, "fallback_status", None)
     if isinstance(direct, bool):
         return direct
-    result = getattr(outcome, "result", None)
+    result = attribute_access.optional(outcome, "result", None)
     if result is not None:
-        fallback_used = getattr(result, "fallback_used", None)
+        fallback_used = attribute_access.optional(result, "fallback_used", None)
         if isinstance(fallback_used, bool):
             return fallback_used
     return False
 
 
 def _resolve_receipt_present(outcome: object) -> bool:
-    if getattr(outcome, "receipt", None) is not None:
+    if attribute_access.optional(outcome, "receipt", None) is not None:
         return True
-    if getattr(outcome, "receipt_ref", None) is not None:
+    if attribute_access.optional(outcome, "receipt_ref", None) is not None:
         return True
-    result = getattr(outcome, "result", None)
-    if result is not None and getattr(result, "receipt_ref", None) is not None:
+    result = attribute_access.optional(outcome, "result", None)
+    if result is not None and attribute_access.optional(result, "receipt_ref", None) is not None:
         return True
     return False
 
 
 def _resolve_strategy_id(outcome: object) -> str | None:
-    direct = getattr(outcome, "strategy", None)
+    direct = attribute_access.optional(outcome, "strategy", None)
     if isinstance(direct, TokenOptimizationStrategyRef):
         return direct.strategy_id
 
-    result = getattr(outcome, "result", None)
+    result = attribute_access.optional(outcome, "result", None)
     if result is not None:
-        strategy = getattr(result, "strategy", None)
+        strategy = attribute_access.optional(result, "strategy", None)
         if isinstance(strategy, TokenOptimizationStrategyRef):
             return strategy.strategy_id
     return None
