@@ -81,57 +81,60 @@ Sentry UI       http://127.0.0.1:9000
 
 ### Windows
 
-Use the currently available Windows reviewer commands.
+Shared core entrypoint implemented and live-tested.
 
-Complete all Core Platform Proof steps.
+Complete the Core Platform Proof through the shared Python runner
+(Windows BAT launcher) or the numbered core steps below.
 
-You may then run the optional Windows PowerShell interaction proof.
+Optional Windows PowerShell interaction proof remains separate.
 
 The Windows interaction proof is not required for core completion.
 
 ### Linux
 
-Do not run Windows .bat or Windows PowerShell interaction steps.
+Shared core entrypoint implemented.
 
-The portable core runner and Linux shell wrappers are planned
-under PROOF-PORTABILITY-1B.
+The Linux launcher invokes the same Python core-proof runner.
+
+Linux core execution is not live-certified until
+PROOF-PORTABILITY-1D.
 
 The optional Linux interaction proof is planned under
 PROOF-PORTABILITY-1C.
 
-Linux is not yet live-certified by this guide.
-Linux is not certified.
+Do not run Windows .bat or Windows PowerShell interaction steps.
 
 ### macOS
 
-Do not run Windows .bat or Windows PowerShell interaction steps.
+Shared core entrypoint implemented.
 
-The portable core runner and macOS shell wrappers are planned
-under PROOF-PORTABILITY-1B.
+The macOS launcher invokes the same Python core-proof runner.
+
+macOS core execution is not live-certified until
+PROOF-PORTABILITY-1D.
 
 The optional macOS interaction proof is planned under
 PROOF-PORTABILITY-1C.
 
-macOS is not yet live-certified by this guide.
-macOS is not certified.
+Do not run Windows .bat or Windows PowerShell interaction steps.
 
 ---
 
 ## Operating-system proof status
 
-| Operating system | Core reviewer path                               | Optional OS interaction proof      | Certification status |
-| ---------------- | ------------------------------------------------ | ---------------------------------- | -------------------- |
-| Windows          | Available through current `.bat` commands        | Windows PowerShell proof available | Live-certified       |
-| Linux            | Portable wrapper planned in PROOF-PORTABILITY-1B | Planned in PROOF-PORTABILITY-1C    | Not certified        |
-| macOS            | Portable wrapper planned in PROOF-PORTABILITY-1B | Planned in PROOF-PORTABILITY-1C    | Not certified        |
+| Operating system | Core reviewer path                       | Optional OS interaction proof      | Certification status       |
+| ---------------- | ---------------------------------------- | ---------------------------------- | -------------------------- |
+| Windows          | Shared Python runner through Windows BAT | Windows PowerShell proof available | Core live-certified        |
+| Linux            | Shared Python runner through Linux SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
+| macOS            | Shared Python runner through macOS SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
 
 ```text
-Available:
-  an executable reviewer path exists in the repository
+Implemented:
+  executable repository path exists and is contract-tested
 
 Live-certified:
-  the path has completed a real live proof and produced
-  authoritative persisted evidence
+  the path has completed a real run on that OS and produced
+  its required persisted evidence
 
 Planned:
   no implementation or certification claim is made
@@ -152,20 +155,61 @@ repository checkout
 
 ```text
 Windows:
-  the currently available reviewer wrappers use .bat and
-  Windows PowerShell
+  Docker, Python 3.12 and uv
+  Windows PowerShell required only for the optional Windows
+  interaction proof
 
 Linux:
-  portable core wrapper not yet available
+  Docker Engine/Desktop with Compose, Python 3.12, uv,
+  POSIX /bin/sh
 
 macOS:
-  portable core wrapper not yet available
+  Docker Desktop with Compose, Python 3.12, uv,
+  POSIX /bin/sh
 ```
 
 This describes the current reviewer command wrappers only.
 It does not imply that the hosting engine itself is Windows-only.
 
 Run all commands from the repository root.
+
+---
+
+## Recommended one-command Core Platform Proof
+
+### Windows
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-core-platform-proof-windows.bat
+```
+
+### Linux
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-linux.sh
+```
+
+### macOS
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-macos.sh
+```
+
+```text
+All three launchers invoke the same Python implementation.
+
+The launchers contain no proof workload or acceptance logic.
+
+The numbered Core Steps 1–13 below define the proof phases,
+expected evidence and manual inspection boundaries.
+
+A reviewer using the one-command entrypoint does not run the
+optional OS interaction proof as part of core completion.
+
+The shared core entrypoint was delivered by PROOF-PORTABILITY-1B.
+Linux/macOS live certification remains PROOF-PORTABILITY-1D.
+Optional Linux/macOS interaction remains PROOF-PORTABILITY-1C.
+```
 
 ---
 
@@ -1108,6 +1152,19 @@ macOS is not certified.
 ---
 
 ## Core reviewer shortcuts
+
+Recommended one-command Core Platform Proof launchers:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-core-platform-proof-windows.bat
+```
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-linux.sh
+./applications/local_workspace_application/scripts/run-lkw-core-platform-proof-macos.sh
+```
+
+### Legacy/manual Windows phase commands
 
 ```bat
 applications\local_workspace_application\scripts\hard-reset-local-docker-all.bat

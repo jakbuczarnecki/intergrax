@@ -327,6 +327,7 @@ def test_lkw_platform_proof_document_ordering() -> None:
     markers = [
         "## Core platform claims",
         "## Core prerequisites",
+        "## Recommended one-command Core Platform Proof",
         "## Step 1 — Start a clean local proof stack",
         "## Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express",
         "## Core Platform Proof completion",
@@ -352,16 +353,56 @@ def test_lkw_platform_proof_core_independence() -> None:
 
 def test_lkw_platform_proof_certification_matrix() -> None:
     text = _proof_text()
-    assert "Live-certified" in text
-    assert "Not certified" in text
+    assert "Core live-certified" in text
+    assert "Implemented, not certified" in text
     windows_row_idx = text.index("| Windows")
     linux_row_idx = text.index("| Linux")
     macos_row_idx = text.index("| macOS")
-    assert "Live-certified" in text[windows_row_idx : windows_row_idx + 200]
-    assert "Not certified" in text[linux_row_idx : linux_row_idx + 200]
-    assert "Not certified" in text[macos_row_idx : macos_row_idx + 200]
+    assert "Core live-certified" in text[windows_row_idx : windows_row_idx + 220]
+    assert "Implemented, not certified" in text[linux_row_idx : linux_row_idx + 220]
+    assert "Implemented, not certified" in text[macos_row_idx : macos_row_idx + 220]
+    assert "Shared Python runner through Windows BAT" in text
+    assert "Shared Python runner through Linux SH" in text
+    assert "Shared Python runner through macOS SH" in text
     assert "PROOF-PORTABILITY-1B" in text
     assert "PROOF-PORTABILITY-1C" in text
+
+
+def test_lkw_platform_proof_shared_core_entrypoint_commands() -> None:
+    text = _proof_text()
+    assert "## Recommended one-command Core Platform Proof" in text
+    assert (
+        r"applications\local_workspace_application\scripts\run-lkw-core-platform-proof-windows.bat"
+        in text
+    )
+    assert (
+        "./applications/local_workspace_application/scripts/"
+        "run-lkw-core-platform-proof-linux.sh"
+    ) in text
+    assert (
+        "./applications/local_workspace_application/scripts/"
+        "run-lkw-core-platform-proof-macos.sh"
+    ) in text
+    assert "All three launchers invoke the same Python implementation." in text
+    assert "The launchers contain no proof workload or acceptance logic." in text
+    assert (_SCRIPTS / "run-lkw-core-platform-proof.py").is_file()
+    assert (_SCRIPTS / "run-lkw-core-platform-proof-windows.bat").is_file()
+    assert (_SCRIPTS / "run-lkw-core-platform-proof-linux.sh").is_file()
+    assert (_SCRIPTS / "run-lkw-core-platform-proof-macos.sh").is_file()
+
+
+def test_lkw_platform_proof_powershell_optional_only() -> None:
+    text = _proof_text()
+    commands_start = text.index("## Current reviewer-command requirements")
+    commands_end = text.index("## Recommended one-command Core Platform Proof")
+    commands_section = text[commands_start:commands_end]
+    assert (
+        "Windows PowerShell required only for the optional Windows" in commands_section
+    )
+    assert "PowerShell required only for the optional" in commands_section
+    core_start = text.index("## Core prerequisites")
+    core_section = text[core_start:commands_start]
+    assert "PowerShell" not in core_section
 
 
 def test_lkw_platform_proof_plan_portability_contract() -> None:
@@ -375,9 +416,11 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     c_idx = text.index("PROOF-PORTABILITY-1C")
     d_idx = text.index("PROOF-PORTABILITY-1D")
     assert "**Done**" in text[a_idx : a_idx + 160]
-    assert "**Planned**" in text[b_idx : b_idx + 160]
+    assert "**Done**" in text[b_idx : b_idx + 160]
     assert "**Planned**" in text[c_idx : c_idx + 160]
     assert "**Planned**" in text[d_idx : d_idx + 160]
+    assert "shared entrypoint implemented and live-recorded" in text
+    assert "shared entrypoint implemented, not live-certified" in text
 
 
 def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None:
