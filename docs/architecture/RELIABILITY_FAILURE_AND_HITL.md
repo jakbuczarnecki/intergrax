@@ -225,6 +225,8 @@ Terminal outcomes **SHOULD** include a clear **stop reason** (architectural voca
 
 ## Governed Continuation (composition — GEC-4)
 
+**Platform reference:** [`governed_external_execution.md`](../platform/governed_external_execution.md).
+
 **Capability:** reusable pause-for-governance → decision → continuation evidence → resume.
 
 **Not** a new runtime. Composes existing Nexus `ExecutionInterrupt` / `ExecutionInterruptHandler`, HITL `HumanDecisionRecord`, and ACP/UAEP resume. Contract helpers: `intergrax.contracts.governed_continuation` ([ADR-GOVERNED-CONTINUATION-001](../adr/entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md)).
@@ -269,7 +271,7 @@ proposed external action → MeaningfulSideEffectRequest → policy evaluate
 
 **Composition with GEC-4:** REQUIRE_HUMAN maps to existing Governed Continuation / Nexus interrupt — policy does not resume Nexus.
 
-**Composition with GEC-6:** after ALLOW + successful side effect, consumers may compose a descriptive `GovernedProofProfile` that **references** this policy outcome (does not recompute it).
+**Composition with GEC-6:** after ALLOW + successful side effect, consumers **must** compose a descriptive `GovernedProofProfile` that **references** this policy outcome (does not recompute it). Platform consolidation: [`governed_external_execution.md`](../platform/governed_external_execution.md).
 
 **Deferred:** product policy packs, spend thresholds, payment/wallet, ProofReceipt persistence.
 

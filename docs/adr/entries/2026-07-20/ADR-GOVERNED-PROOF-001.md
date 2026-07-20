@@ -1,11 +1,11 @@
-﻿# ADR-GOVERNED-PROOF-001: Governed proof profiles describe, but do not own, execution evidence
+# ADR-GOVERNED-PROOF-001: Governed proof profiles describe, but do not own, execution evidence
 
 | Field | Value |
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC |
-| **Related** | [ADR-GOVERNED-CONTINUATION-001](ADR-GOVERNED-CONTINUATION-001.md) · [ADR-POLICY-SIDE-EFFECT-001](ADR-POLICY-SIDE-EFFECT-001.md) · [ADR-EXTWORK-002](ADR-EXTWORK-002.md) · GEC-6 |
+| **Related** | [ADR-GOVERNED-CONTINUATION-001](ADR-GOVERNED-CONTINUATION-001.md) · [ADR-POLICY-SIDE-EFFECT-001](ADR-POLICY-SIDE-EFFECT-001.md) · [ADR-EXTWORK-002](ADR-EXTWORK-002.md) · GEC-6 · Platform consolidation [`governed_external_execution.md`](../../../platform/governed_external_execution.md) |
 
 ## Context
 
@@ -28,7 +28,7 @@ Without an explicit descriptive contract, consumers risk embedding transport pay
 1. Introduce a minimal reusable `GovernedProofProfile` (+ `GovernanceEvidenceRef`) in `intergrax.contracts.governed_proof`.
 2. The profile is **descriptive only** — it never authorizes, resumes, evaluates policy, signs, hashes, stores, or publishes.
 3. Record `PolicyAction` and policy rule/reason strings; do not recompute decisions or embed full nested policy/HITL objects.
-4. Reference governance evidence by kind + id (External Work: `quote_acceptance_evidence` → `acceptance_id`).
+4. Reference governance evidence by kind + id (External Work: `quote_acceptance_evidence` › `acceptance_id`).
 5. Preserve existing `task_id`, `run_id`, `correlation_id`, and `idempotency_key` — never mint new identity.
 6. External Work is the first consumer; Tier-2 may compose the profile after a meaningful side effect succeeds under policy ALLOW.
 

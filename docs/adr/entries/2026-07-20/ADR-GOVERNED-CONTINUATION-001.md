@@ -1,18 +1,18 @@
-﻿# ADR-GOVERNED-CONTINUATION-001: Governed Continuation as Nexus composition
+# ADR-GOVERNED-CONTINUATION-001: Governed Continuation as Nexus composition
 
 | Field | Value |
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC |
-| **Related** | [`ADR-EXTWORK-001`](ADR-EXTWORK-001.md) · [`ADR-EXTWORK-002`](ADR-EXTWORK-002.md) · GEC host / Tier-2 plans |
+| **Related** | [`ADR-EXTWORK-001`](ADR-EXTWORK-001.md) · [`ADR-EXTWORK-002`](ADR-EXTWORK-002.md) · GEC host / Tier-2 plans · Platform consolidation [`governed_external_execution.md`](../../../platform/governed_external_execution.md) |
 
 ## Context
 
 GEC-4 must prove:
 
 ```text
-execution → governance interruption → governance decision → continuation evidence → resume
+execution › governance interruption › governance decision › continuation evidence › resume
 ```
 
 without inventing a second orchestration stack. The platform already provides `ExecutionInterrupt`, `ExecutionInterruptHandler`, HITL `HumanDecisionRecord`, ACP/UAEP resume, and (for External Work) `QuoteAcceptanceEvidence` with `hitl_decision_id` / `interrupt_id` / `policy_decision_ref`.

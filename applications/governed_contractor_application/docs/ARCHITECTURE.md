@@ -1,6 +1,7 @@
 # Governed Contractor Application — architecture
 
 **Status:** GEC-0…GEC-6 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation + side-effect policy + descriptive proof profile; HITL UX/product policy packs/ProofReceipt persistence/providers deferred  
+**Platform reference:** [`docs/platform/governed_external_execution.md`](../../../docs/platform/governed_external_execution.md) — ownership · lifecycle · invariants  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -106,7 +107,8 @@ intake
   → continue external work only after acceptance
   → sync status timeline
   → retrieve deliverables into workspace
-  → normalize evidence + emit governed receipt
+  → normalize evidence + compose GovernedProofProfile
+  → (host) persist / expose receipts  ← beyond platform GEC-6 boundary
 ```
 
 | Stage | Owner |

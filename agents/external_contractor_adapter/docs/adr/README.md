@@ -45,6 +45,8 @@ Platform ADRs (composition owned by platform — no agent-local ADR):
 - [`ADR-POLICY-SIDE-EFFECT-001`](../../../../docs/adr/entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md)
 - [`ADR-GOVERNED-PROOF-001`](../../../../docs/adr/entries/2026-07-20/ADR-GOVERNED-PROOF-001.md)
 
+**Consolidation:** [`docs/platform/governed_external_execution.md`](../../../../docs/platform/governed_external_execution.md)
+
 ---
 
 *GEC-6 baseline: 2026-07-20*

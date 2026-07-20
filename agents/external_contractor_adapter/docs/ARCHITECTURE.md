@@ -2,6 +2,7 @@
 
 **Status:** GEC-3…GEC-6 baseline (2026-07-20) — mapping + governed continuation + side-effect policy + descriptive proof profile composition; no transport / partner SDK / receipt persistence  
 **Vertical:** Governed External Contractor (GEC)  
+**Platform reference:** [`docs/platform/governed_external_execution.md`](../../../docs/platform/governed_external_execution.md) — ownership · lifecycle · invariants  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
 **Host architecture:** [`applications/governed_contractor_application/docs/ARCHITECTURE.md`](../../../applications/governed_contractor_application/docs/ARCHITECTURE.md)

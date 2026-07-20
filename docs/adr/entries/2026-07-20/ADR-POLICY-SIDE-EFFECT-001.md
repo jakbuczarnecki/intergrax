@@ -1,11 +1,11 @@
-﻿# ADR-POLICY-SIDE-EFFECT-001: Meaningful external side effects require policy authorization before execution
+# ADR-POLICY-SIDE-EFFECT-001: Meaningful external side effects require policy authorization before execution
 
 | Field | Value |
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC |
-| **Related** | [ADR-GOVERNED-CONTINUATION-001](ADR-GOVERNED-CONTINUATION-001.md) · [ADR-EXTWORK-002](ADR-EXTWORK-002.md) · GEC-5 |
+| **Related** | [ADR-GOVERNED-CONTINUATION-001](ADR-GOVERNED-CONTINUATION-001.md) · [ADR-EXTWORK-002](ADR-EXTWORK-002.md) · GEC-5 · Platform consolidation [`governed_external_execution.md`](../../../platform/governed_external_execution.md) |
 
 ## Context
 

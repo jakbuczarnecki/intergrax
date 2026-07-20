@@ -1,11 +1,11 @@
-﻿# ADR-EXTWORK-002: Provider-neutral ExternalWorkIntegration boundary
+# ADR-EXTWORK-002: Provider-neutral ExternalWorkIntegration boundary
 
 | Field | Value |
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-07-20 |
 | **Deciders** | Platform / GEC bootstrap |
-| **Related** | [`ADR-EXTWORK-001`](ADR-EXTWORK-001.md) · GEC host plan · agent adapter plan |
+| **Related** | [`ADR-EXTWORK-001`](ADR-EXTWORK-001.md) · GEC host plan · agent adapter plan · Platform consolidation [`governed_external_execution.md`](../../../platform/governed_external_execution.md) |
 
 ## Context
 
