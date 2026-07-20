@@ -1182,7 +1182,7 @@ filesystem create
   → MongoDB DocumentStore
 ```
 
-LKW.7C2 records the live workload evidence through platform `ProofReceiptStore` → `DocumentStore` → MongoDB. Reviewer path: [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 14–15.
+LKW.7C2 records the live workload evidence through platform `ProofReceiptStore` → `DocumentStore` → MongoDB. Reviewer path: [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13.
 
 | Concern | Notes |
 |---------|-------|

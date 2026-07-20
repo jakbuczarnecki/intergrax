@@ -171,10 +171,73 @@ def test_sentry_events_consumer_waits_for_kafka_topics() -> None:
 _IMPL_PLAN = (
     _REPO_ROOT / "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md"
 )
+_LKW_ARCHITECTURE = (
+    _REPO_ROOT / "applications/local_workspace_application/docs/ARCHITECTURE.md"
+)
+_PROOF_RECEIPTS = _REPO_ROOT / "docs/architecture/PROOF_RECEIPTS.md"
+_RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/intergrax_runtime_architecture.md"
+_FILE_WATCHER_SYNC_DOCS = (
+    _IMPL_PLAN,
+    _LKW_ARCHITECTURE,
+    _PROOF_RECEIPTS,
+    _RUNTIME_ARCHITECTURE,
+)
+_STALE_FILE_WATCHER_STEP_REFS = (
+    "Public reviewer Steps 14–15",
+    "File Watcher Steps 14–15",
+    "Step 14 — Run the File Watcher E2E proof",
+    "Step 15 — Inspect the File Watcher ProofReceipt",
+    "Steps 14–15",
+    "Public Steps:** 14–15",
+    " / 14–15",
+)
+_CURRENT_FILE_WATCHER_STEP_HEADINGS = (
+    "Step 12 — Run the File Watcher E2E proof",
+    "Step 13 — Inspect the File Watcher ProofReceipt in Mongo Express",
+)
 
 
 def _proof_text() -> str:
     return _LKW_PLATFORM_PROOF.read_text(encoding="utf-8")
+
+
+def _lkw7c2_reviewer_path_snippet(text: str) -> str | None:
+    marker = "LKW.7C2 records the live workload"
+    if marker not in text:
+        return None
+    idx = text.index(marker)
+    return text[idx : idx + 500]
+
+
+def _has_current_file_watcher_compact_or_headings(text: str) -> bool:
+    if all(heading in text for heading in _CURRENT_FILE_WATCHER_STEP_HEADINGS):
+        return True
+    return (
+        "Public reviewer Steps 12–13" in text
+        or "File Watcher Steps 12–13" in text
+        or "Public Steps:** Steps 12–13" in text
+        or "/ Steps 12–13" in text
+    )
+
+
+def _has_numbered_file_watcher_public_ref(text: str) -> bool:
+    if any(stale in text for stale in _STALE_FILE_WATCHER_STEP_REFS):
+        return True
+    if _has_current_file_watcher_compact_or_headings(text):
+        return True
+    snippet = _lkw7c2_reviewer_path_snippet(text)
+    if snippet is None:
+        return False
+    return "Steps 12–13" in snippet or "Steps 14–15" in snippet
+
+
+def _uses_current_file_watcher_public_numbering(text: str) -> bool:
+    if _has_current_file_watcher_compact_or_headings(text):
+        return True
+    snippet = _lkw7c2_reviewer_path_snippet(text)
+    if snippet is None:
+        return False
+    return "Steps 12–13" in snippet and "Steps 14–15" not in snippet
 
 
 def test_lkw_platform_proof_core_and_optional_headings() -> None:
@@ -315,3 +378,14 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     assert "**Planned**" in text[b_idx : b_idx + 160]
     assert "**Planned**" in text[c_idx : c_idx + 160]
     assert "**Planned**" in text[d_idx : d_idx + 160]
+
+
+def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None:
+    for path in _FILE_WATCHER_SYNC_DOCS:
+        text = path.read_text(encoding="utf-8")
+        for stale in _STALE_FILE_WATCHER_STEP_REFS:
+            assert stale not in text, f"{path.name} still contains {stale!r}"
+        if _has_numbered_file_watcher_public_ref(text):
+            assert _uses_current_file_watcher_public_numbering(text), (
+                f"{path.name} lacks current File Watcher Steps 12–13 numbering"
+            )

@@ -981,7 +981,7 @@ OS-specific interaction adapter
 - Platform `ProofReceiptStore` → `DocumentStore` → `MongoDBDocumentStoreIntegration` write/read/query verification
 - One-command reviewer BAT with Kafka + MongoDB overlays; Mongo Express inspection path
 - Verification document [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md)
-- Public reviewer Steps 14–15 in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
+- Public reviewer Steps 12–13 in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 **Final boundaries (not delivered by LKW.7):** index deletion on filesystem delete, content hashing for change identity, native filesystem events (polling remains), OS-service packaging (APP-HOST-7), multi-collection sidecar fan-out.
 
