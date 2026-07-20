@@ -48,6 +48,7 @@ class IntegrationCategory(str, Enum):
     BILLING_METER = "billing_meter"
     CRM = "crm"
     LLM_GUARDRAIL = "llm_guardrail"
+    EXTERNAL_WORK = "external_work"
 
 
 @dataclass(frozen=True)
@@ -164,6 +165,7 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.BILLING_METER.value: "billing_meter",
     IntegrationCategory.CRM.value: "crm",
     IntegrationCategory.LLM_GUARDRAIL.value: "llm_guardrail",
+    IntegrationCategory.EXTERNAL_WORK.value: "external_work",
 }
 
 

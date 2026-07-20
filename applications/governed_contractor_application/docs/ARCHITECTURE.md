@@ -1,6 +1,6 @@
 # Governed Contractor Application — architecture
 
-**Status:** GEC-0 bootstrap + GEC-1 platform contracts (2026-07-20) — product-profile scaffold; domain runtime not yet implemented  
+**Status:** GEC-0 bootstrap + GEC-1 contracts + GEC-2 integration boundary (2026-07-20) — product-profile scaffold; domain runtime (GEC-3+) not yet implemented  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -147,12 +147,36 @@ Reusable policy mechanisms stay in platform policy infrastructure — GEC only s
 
 ## 8. External integration boundary
 
-External contractor access is an **integration concern**:
+External work access is a **platform integration concern** (GEC-2 — Done):
 
-- GEC-2 defines a provider-neutral external contractor integration contract in platform space.
-- Concrete partner adapters map partner schemas → that contract.
-- Tier-2 agent consumes the integration; it does not embed partner SDKs as business logic ownership.
-- Partner URLs and credentials live in Tier-3 environment configuration.
+```text
+Intergrax runtime / Tier-2 adapter
+        │
+        ▼
+ExternalWorkIntegration  (intergrax/integrations/contracts/external_work.py)
+        │
+   ┌────┼─────────────┐
+   ▼    ▼             ▼
+ A2A   REST         Future provider   (deferred — not in GEC-2)
+```
+
+| Item | Canonical owner |
+|------|-----------------|
+| Interaction model (request/snapshot/timeline/evidence/capabilities) | `intergrax.contracts.external_work` |
+| Integration Protocol | `ExternalWorkIntegration` |
+| Structured errors | `ExternalWorkError` + `ExternalWorkErrorCode` |
+| DI slot | `IntegrationCategory.EXTERNAL_WORK` / `IntegrationProfile.external_work` |
+| ADR | [`ADR-EXTWORK-002`](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-002.md) |
+
+**Semantic operations:** `discover` · `create_work` · `get_work` · `get_quote` · `submit_quote_acceptance` · `cancel_work` · `get_timeline` · `get_deliverables` · `get_evidence`
+
+**Rules:**
+
+- Boundary transmits already-authorized `QuoteAcceptanceEvidence` — it does not decide accept/reject.
+- Mutating ops require idempotency keys; reads may retry; mutating ops are not retried blindly.
+- `ExternalProviderEvidenceRef` ≠ Intergrax ProofReceipt (GEC-6).
+- Concrete partner mappers (A2A/REST) and catalog slugs land in later phases; Tier-3 supplies credentials/config only.
+- Tier-2 consumes the Protocol; it does not own the boundary.
 
 ---
 
@@ -167,13 +191,15 @@ External contractor access is an **integration concern**:
 
 Architecture rule: every external call that can mutate contractor state must carry deterministic idempotency material derived from Intergrax identity + lifecycle stage.
 
-**GEC-1 platform schemas** (canonical owner — not this application package):
+**GEC-1 / GEC-2 platform schemas** (canonical owner — not this application package):
 
 | Concept | Module |
 |---------|--------|
 | Money | `intergrax.contracts.money.MoneyAmount` |
-| External work status / correlation / quote / acceptance / deliverable | `intergrax.contracts.external_work` |
-| ADR | [`ADR-EXTWORK-001`](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-001.md) |
+| Status / correlation / quote / acceptance / deliverable | `intergrax.contracts.external_work` |
+| Create request / snapshot / timeline / provider evidence / capabilities | `intergrax.contracts.external_work` |
+| Integration boundary | `intergrax.integrations.contracts.external_work.ExternalWorkIntegration` |
+| ADRs | [`ADR-EXTWORK-001`](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-001.md), [`ADR-EXTWORK-002`](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-002.md) |
 
 Nexus `TaskState` is **not** extended with commercial/quote stages — use `ExternalWorkStatus` at the external-work boundary.
 
@@ -196,11 +222,12 @@ Deliverables retrieved from the external agent land only in **allowlisted worksp
 | Artifact | Owner | Notes |
 |----------|-------|-------|
 | HOS / Nexus trace | Platform runtime | Unchanged spine |
-| External tool evidence (normalized) | Adapter → platform evidence shapes | No partner hardcoding in core |
+| Provider evidence references | `ExternalProviderEvidenceRef` via integration boundary | GEC-2 — refs only, not proof |
+| External tool evidence (normalized) | Adapter → platform evidence shapes | GEC-3+ — no partner hardcoding in core |
 | Governed contractor receipt | Platform ProofReceipt (or equivalent) + Tier-3 exposure | GEC-6 |
 | Partner-native receipts | External product (optional) | Mapped, not reimplemented |
 
-GEC reuses existing ProofReceipt / DocumentStore infrastructure; it does not invent a parallel receipt product inside the application.
+Provider-supplied evidence and Intergrax-generated proof remain distinct. GEC reuses ProofReceipt / DocumentStore for GEC-6; it does not invent a parallel receipt product inside the application.
 
 ---
 
@@ -209,7 +236,7 @@ GEC reuses existing ProofReceipt / DocumentStore infrastructure; it does not inv
 ```text
 Partner product
   → partner mapping (handoff / config)
-  → ExternalContractor integration contract (platform)
+  → ExternalWorkIntegration (platform Protocol)
   → ExternalContractorAdapterAgent (Tier-2)
   → Governed Contractor Application (Tier-3)
 ```

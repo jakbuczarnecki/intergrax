@@ -98,6 +98,7 @@ class IntegrationProfile(BaseModel):
     billing_meter: IntegrationBinding | None = None
     crm: IntegrationBinding | None = None
     llm_guardrail: IntegrationBinding | None = None
+    external_work: IntegrationBinding | None = None
 
     async_task_index_slug: str | None = None
 
@@ -373,4 +374,5 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "billing_meter": lambda profile: profile.billing_meter,
     "crm": lambda profile: profile.crm,
     "llm_guardrail": lambda profile: profile.llm_guardrail,
+    "external_work": lambda profile: profile.external_work,
 }

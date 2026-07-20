@@ -2,7 +2,7 @@
 
 **The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0 Done**; **GEC-1 Done**; GEC-2…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) — **GEC-0 Done**; **GEC-1 Done**; **GEC-2 Done**; GEC-3…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)  
@@ -45,7 +45,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |----|-------|--------|----------|
 | **GEC-0** | Bootstrap and canonical documentation | **Done** | High |
 | **GEC-1** | Contractor domain contracts | **Done** | High |
-| **GEC-2** | External contractor integration contract | Planned | High |
+| **GEC-2** | Canonical external-work model + provider-neutral integration boundary | **Done** | High |
 | **GEC-3** | Tier-2 adapter agent | Planned | High |
 | **GEC-4** | Quote-first HITL lifecycle | Planned | High |
 | **GEC-5** | Meaningful side-effect policy | Planned | High |
@@ -111,23 +111,41 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 - `ExternalWorkStatus`: quote/commercial stages are reusable for any external-work integration; polluting Nexus `TaskState` would couple orchestration to commerce.
 - Correlation / quote / acceptance / deliverable models: multiple future apps need the same Intergrax↔external join vocabulary; Tier-2/3 packages must remain consumers.
 
-**Deferred:** GEC-2 transport/integration; GEC-3 adapter sync; GEC-4 HITL UX; GEC-5 policy/wallet; GEC-6 receipts.
+**Deferred (from GEC-1 closeout):** GEC-2 transport/integration (**Done** — see GEC-2 below); GEC-3 adapter sync; GEC-4 HITL UX; GEC-5 policy/wallet; GEC-6 receipts.
 
 ---
 
-## GEC-2 — External contractor integration contract
+## GEC-2 — Canonical External Work model and provider-neutral integration boundary
 
 | Field | Content |
 |-------|---------|
-| **Goal** | Platform integration surface for external contractor agents (discover, create task, quote, status, deliverables) |
-| **Architecture impact** | Provider-neutral integration category/protocol; stub + future partner providers |
-| **Implementation tasks** | Integration contract + registry wiring pattern; no partner hardcoding in core |
-| **Files / packages** | `intergrax/integrations/` (contract + optional stub provider) |
-| **Tests** | Integration contract tests; fail-closed on missing config |
-| **Acceptance gates** | Adapter can depend on integration API without importing applications |
-| **Non-goals** | Live partner SDK; Tier-3 serving routes; HITL |
+| **Goal** | Platform-owned interaction model (GEC-2A) + sync `ExternalWorkIntegration` Protocol (GEC-2B) for any external-work provider |
+| **Architecture impact** | Reusable beyond contractors; Tier-2/3 consume only; no transport implementation |
+| **Implementation tasks** | Domain models + Protocol + `IntegrationCategory.EXTERNAL_WORK` profile binding + contract tests + ADR |
+| **Files / packages** | `intergrax/contracts/external_work.py`, `intergrax/integrations/contracts/external_work.py`, profile/category wiring |
+| **Tests** | `tests/unit/integrations/test_external_work_integration.py`, GEC-1 contract tests extended |
+| **Acceptance gates** | Deterministic in-memory fake implements Protocol; no HTTP/A2A; no Tier-2/3 ownership of boundary |
+| **Non-goals** | Live provider; A2A/REST clients; GEC-8 stub provider; HITL/policy/receipts |
 | **Dependencies** | GEC-1 |
-| **Closeout evidence** | Integration unit tests; ADR if category/shape is non-obvious |
+| **Closeout evidence** | Contract tests green; [`ADR-EXTWORK-002`](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-002.md) |
+
+### GEC-2 reuse audit (summary)
+
+| Concern | Existing mechanism | Decision |
+|---------|-------------------|----------|
+| Provider / work identity | `ExternalContractorIdentity`, `ExternalTaskCorrelation` | **reuse** |
+| Quote / acceptance / status / deliverables | GEC-1 models | **reuse** |
+| Discovery metadata | No external-work descriptor | **new** — `ExternalWorkProviderDescriptor` (+ `ExternalWorkCapability`) |
+| Integration interface style | Sync `Protocol` under `integrations/contracts/` | **extend** — `ExternalWorkIntegration` |
+| Result/error model | `IntegrationError` family | **extend** — `ExternalWorkError` + `ExternalWorkErrorCode` |
+| Cancellation / idempotency | Idempotency keys on correlation + tool ledger (tools only) | **reuse** keys on mutating ops; document retry rules (no new middleware) |
+| Timeline | Runtime traces / events (different domain) | **new** — `ExternalWorkTimelineEvent` (provider-observed facts) |
+| Provider evidence | ProofReceipt (GEC-6) | **new** refs only — `ExternalProviderEvidenceRef` (distinct from proof) |
+| Registry/binding | `IntegrationProfile` / `IntegrationCategory` | **reuse** — `external_work` slot; catalog slug deferred to provider phase |
+
+**Why “External Work” not “Contractor”:** same boundary serves AI contractors, human services, SaaS jobs, and future protocols. GEC remains the first consumer.
+
+**Deferred:** provider packages (A2A/REST), `PROVIDER_CATEGORY_CONTRACT_REGISTRY` slug, Tier-2 lifecycle (GEC-3), HITL (GEC-4), policy (GEC-5), receipts (GEC-6).
 
 ---
 
@@ -278,8 +296,9 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 ## 2. Verification
 
 ```bash
-# GEC-1 platform contracts
+# GEC-1 / GEC-2 platform contracts + integration boundary
 uv run pytest tests/unit/contracts/test_money.py tests/unit/contracts/test_external_work.py -q
+uv run pytest tests/unit/integrations/test_external_work_integration.py -q
 uv run pytest tests/unit/contracts/test_agent_run_roundtrip.py -q
 
 # GEC host / adapter smoke
@@ -299,6 +318,6 @@ curl -s http://127.0.0.1:8000/health
 
 ---
 
-## 3. Recommended first task after GEC-1
+## 3. Recommended first task after GEC-2
 
-**GEC-2:** Provider-neutral external contractor integration contract under `intergrax/integrations/` (discover / create / quote / status / deliverables) — no partner hardcoding.
+**GEC-3:** Implement Tier-2 `ExternalContractorAdapterAgent` lifecycle mapping against `ExternalWorkIntegration` (inject via host profile) — still no partner hardcoding in the agent.

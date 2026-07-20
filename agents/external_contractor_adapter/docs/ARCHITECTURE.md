@@ -1,6 +1,6 @@
 # external_contractor_adapter — architecture
 
-**Status:** GEC-0 scaffold + GEC-1 contracts available (2026-07-20) — ACP **reflex** stub; domain adapter logic planned GEC-3  
+**Status:** GEC-0 scaffold + GEC-1 contracts + GEC-2 `ExternalWorkIntegration` available (2026-07-20) — ACP **reflex** stub; domain adapter logic planned GEC-3  
 **Vertical:** Governed External Contractor (GEC)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
@@ -48,11 +48,13 @@ Additional fine-grained capabilities (quote sync, deliverable fetch, etc.) may b
 
 Canonical modules: `intergrax.contracts.external_work`, `intergrax.contracts.money` ([ADR-EXTWORK-001](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-001.md)).
 
+Integration boundary (GEC-2 Done): `intergrax.integrations.contracts.external_work.ExternalWorkIntegration` ([ADR-EXTWORK-002](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-002.md)).
+
 ---
 
 ## External integration dependency
 
-Depends on the **provider-neutral external contractor integration** (GEC-2). Partner URLs and credentials are supplied by the Tier-3 host environment — never hardcoded in this agent.
+Depends on the **provider-neutral `ExternalWorkIntegration`** Protocol (GEC-2). GEC-3 will inject a host-bound implementation and map lifecycle steps onto `discover` / `create_work` / `get_quote` / `submit_quote_acceptance` / `get_work` / `get_timeline` / `get_deliverables` / `get_evidence`. Partner URLs and credentials are supplied by the Tier-3 host — never hardcoded in this agent. The agent must not own the integration boundary.
 
 ---
 

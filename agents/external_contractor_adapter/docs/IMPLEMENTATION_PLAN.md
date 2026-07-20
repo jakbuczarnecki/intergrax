@@ -2,7 +2,7 @@
 
 **The implementation map** for the Tier-2 GEC adapter agent.
 
-**Status:** Working draft (2026-07-20) — **GEC-0 scaffold Done**; platform contracts **GEC-1 Done** (consume in GEC-3); domain adapter work tracked under host plan **GEC-3**  
+**Status:** Working draft (2026-07-20) — **GEC-0 scaffold Done**; platform contracts **GEC-1 Done**; integration boundary **GEC-2 Done** (consume in GEC-3); domain adapter work tracked under host plan **GEC-3**  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Host tracker:** [`applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md`](../../../applications/governed_contractor_application/docs/IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)
@@ -41,8 +41,9 @@ Principle: **domain adapter only** · **reuse Tier-0** · **no Tier-3 imports** 
 |----|------|--------|----------|-------|
 | GEC-0 | Canonical ACP scaffold + architecture docs | **Done** | High | `new-agent` |
 | GEC-1 | Platform external-work contracts (consume-only) | **Done** | High | Owned under `intergrax/contracts/`; see host plan reuse audit |
+| GEC-2 | Provider-neutral `ExternalWorkIntegration` (platform) | **Done** | High | Consume-only in this agent; see host plan + ADR-EXTWORK-002 |
 | GEC-3.1 | Consume platform contractor contracts (GEC-1) | Planned | High | Import `external_work` / `money`; no app-local contracts |
-| GEC-3.2 | Wire external contractor integration (GEC-2) | Planned | High | Provider-neutral |
+| GEC-3.2 | Wire `ExternalWorkIntegration` from host (GEC-2) | Planned | High | Inject Protocol; no partner SDK in agent |
 | GEC-3.3 | Implement lifecycle mapping in `steps/` | Planned | High | Idempotent correlate |
 | GEC-3.4 | Status + evidence normalization | Planned | High | |
 | GEC-3.5 | Resume/stop on HITL decision signal | Planned | High | No accept ownership |

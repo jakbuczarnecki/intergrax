@@ -14,10 +14,19 @@ from intergrax.contracts.external_work import (
     CommercialQuote,
     ExternalContractorIdentity,
     ExternalDeliverableRef,
+    ExternalProviderEvidenceKind,
+    ExternalProviderEvidenceRef,
     ExternalTaskCorrelation,
+    ExternalWorkCapability,
+    ExternalWorkCreateRequest,
+    ExternalWorkErrorCode,
+    ExternalWorkProviderDescriptor,
+    ExternalWorkSnapshot,
     ExternalWorkStatus,
+    ExternalWorkTimelineEvent,
     QuoteAcceptanceEvidence,
     QuoteLifecycleState,
+    is_retryable_external_work_error,
     is_terminal_external_work_status,
     validate_content_digest,
     validate_quote_acceptance_match,
@@ -263,3 +272,78 @@ def test_external_work_modules_have_no_applications_or_agents_imports() -> None:
         source = path.read_text(encoding="utf-8")
         for token in forbidden:
             assert token not in source, f"{path} contains {token}"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_provider_descriptor_and_snapshot_compose_gec1_types() -> None:
+    identity = ExternalContractorIdentity(
+        provider_id="partner_stub",
+        contractor_id="c-1",
+        protocol_id="intergrax.external_work.v1",
+    )
+    descriptor = ExternalWorkProviderDescriptor(
+        identity=identity,
+        capabilities=(ExternalWorkCapability.QUOTE_FIRST, ExternalWorkCapability.TIMELINE),
+        protocol_id="intergrax.external_work.v1",
+    )
+    assert descriptor.supports(ExternalWorkCapability.QUOTE_FIRST)
+    assert not descriptor.supports(ExternalWorkCapability.CANCELLATION)
+
+    correlation = ExternalTaskCorrelation(
+        task_id="task-1",
+        provider_id="partner_stub",
+        external_task_id="ext-1",
+        idempotency_key="idem-1",
+    )
+    snapshot = ExternalWorkSnapshot(
+        correlation=correlation,
+        status=ExternalWorkStatus.EXECUTING,
+        created_at=_T0,
+        updated_at=_T0 + timedelta(minutes=1),
+        provider_state_label="running",
+    )
+    assert snapshot.is_terminal is False
+    terminal = snapshot.model_copy(update={"status": ExternalWorkStatus.COMPLETED})
+    assert terminal.is_terminal is True
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_create_request_timeline_and_provider_evidence_refs() -> None:
+    request = ExternalWorkCreateRequest(
+        provider_id="partner_stub",
+        task_id="task-1",
+        requested_capability="external_contractor.adapt",
+        scope_description="scope",
+        scope_digest=_DIGEST,
+        idempotency_key="idem-1",
+    )
+    restored = ExternalWorkCreateRequest.model_validate(request.model_dump(mode="json"))
+    assert restored.idempotency_key == "idem-1"
+
+    event = ExternalWorkTimelineEvent(
+        event_id="e-1",
+        task_id="task-1",
+        external_task_id="ext-1",
+        provider_id="partner_stub",
+        event_kind="status",
+        status=ExternalWorkStatus.EXECUTING,
+        provider_timestamp=_T0,
+        summary="executing",
+        provider_sequence=2,
+    )
+    assert event.event_kind == "status"
+
+    evidence = ExternalProviderEvidenceRef(
+        evidence_id="pev-1",
+        task_id="task-1",
+        external_task_id="ext-1",
+        provider_id="partner_stub",
+        kind=ExternalProviderEvidenceKind.TOOL_LOG,
+        resource_uri="provider://tools/1",
+        created_at=_T0,
+    )
+    assert evidence.kind is ExternalProviderEvidenceKind.TOOL_LOG
+    assert is_retryable_external_work_error(ExternalWorkErrorCode.PROVIDER_UNAVAILABLE)
+    assert not is_retryable_external_work_error(ExternalWorkErrorCode.INVALID_REQUEST)
