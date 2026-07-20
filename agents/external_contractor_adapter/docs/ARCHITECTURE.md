@@ -1,6 +1,6 @@
 # external_contractor_adapter — architecture
 
-**Status:** GEC-0 scaffold baseline (2026-07-20) — ACP **reflex** stub; domain adapter logic planned GEC-3  
+**Status:** GEC-0 scaffold + GEC-1 contracts available (2026-07-20) — ACP **reflex** stub; domain adapter logic planned GEC-3  
 **Vertical:** Governed External Contractor (GEC)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
@@ -35,18 +35,18 @@ Additional fine-grained capabilities (quote sync, deliverable fetch, etc.) may b
 
 ---
 
-## Typed inputs and outputs (planned — GEC-1/GEC-3)
+## Typed inputs and outputs (GEC-1 platform; wired in GEC-3)
 
-| Direction | Conceptual type | Notes |
-|-----------|-----------------|-------|
-| In | Governed task / run context | Tenant, workspace, correlation, acceptance decision refs |
-| In | Quote acceptance decision (from runtime HITL) | Adapter consumes; does not create |
-| Out | Normalized quote view | For Tier-3 presentation |
-| Out | External status timeline | Normalized states |
-| Out | Deliverable references | Workspace-safe paths/refs only |
+| Direction | Platform type | Notes |
+|-----------|---------------|-------|
+| In | Governed `task_id` / `run_id` + `ExternalTaskCorrelation` | Intergrax identity remains primary |
+| In | `QuoteAcceptanceEvidence` (from runtime HITL refs) | Adapter consumes; does not create |
+| Out | `CommercialQuote` / `MoneyAmount` | For Tier-3 presentation |
+| Out | `ExternalWorkStatus` timeline | Not Nexus `TaskState` |
+| Out | `ExternalDeliverableRef` | Workspace-safe resource URI |
 | Out | Normalized tool/evidence facts | For receipts — not partner hardcoding |
 
-Exact schemas live in platform contracts (GEC-1), not in the Tier-3 application package.
+Canonical modules: `intergrax.contracts.external_work`, `intergrax.contracts.money` ([ADR-EXTWORK-001](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-001.md)).
 
 ---
 

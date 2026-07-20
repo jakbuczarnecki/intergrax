@@ -2,7 +2,7 @@
 
 **The implementation map** for the Governed External Contractor (GEC) vertical — phases, status, and verification.
 
-**Status:** Working draft (2026-07-20) — **GEC-0 Done**; GEC-1…GEC-11 Planned  
+**Status:** Working draft (2026-07-20) — **GEC-0 Done**; **GEC-1 Done**; GEC-2…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Agent tracker:** [`agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md`](../../../agents/external_contractor_adapter/docs/IMPLEMENTATION_PLAN.md)  
@@ -44,7 +44,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | ID | Phase | Status | Priority |
 |----|-------|--------|----------|
 | **GEC-0** | Bootstrap and canonical documentation | **Done** | High |
-| **GEC-1** | Contractor domain contracts | Planned | High |
+| **GEC-1** | Contractor domain contracts | **Done** | High |
 | **GEC-2** | External contractor integration contract | Planned | High |
 | **GEC-3** | Tier-2 adapter agent | Planned | High |
 | **GEC-4** | Quote-first HITL lifecycle | Planned | High |
@@ -80,13 +80,38 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |-------|---------|
 | **Goal** | Define reusable, provider-neutral contractor/quote/status/deliverable contracts in platform space |
 | **Architecture impact** | Shared types for quote-first lifecycle; consumed by adapter and host; **not** owned by Tier-3 |
-| **Implementation tasks** | Draft pydantic/dataclass contracts; version schema ids; unit tests for validation and serialization |
-| **Files / packages** | Likely `intergrax/contracts/` (or agreed platform package) — exact path decided in GEC-1 |
-| **Tests** | Contract unit tests; JSON round-trip; reject invalid quote/acceptance payloads |
+| **Implementation tasks** | Reuse audit; platform contracts in `intergrax/contracts/`; unit tests; ADR-EXTWORK-001 |
+| **Files / packages** | `intergrax/contracts/money.py`, `intergrax/contracts/external_work.py` |
+| **Tests** | `tests/unit/contracts/test_money.py`, `tests/unit/contracts/test_external_work.py` |
 | **Acceptance gates** | Contracts importable without `applications/` or partner URLs; docs updated |
 | **Non-goals** | HTTP client, partner mapping, HITL UI, adapter lifecycle logic |
 | **Dependencies** | GEC-0 |
-| **Closeout evidence** | Contract tests green; ARCHITECTURE §5/§9/§11 cross-links updated |
+| **Closeout evidence** | Contract tests green; reuse audit below; ADR-EXTWORK-001 accepted |
+
+### GEC-1 reuse audit
+
+| Required GEC concept | Existing Intergrax mechanism | Decision |
+|----------------------|------------------------------|----------|
+| Intergrax task identity | `Task.task_id`, `AgentRunRequest` / result `run_id` strings | **reuse** |
+| External task identity | No external-task foreign-key contract | **new** — `ExternalTaskCorrelation.external_task_id` (foreign key only) |
+| Correlation | `AgentRunRequest.correlation_id` field pattern | **reuse** (optional string on correlation model) |
+| Idempotency | Tool/runtime `idempotency_key` string + `IdempotencyStore` | **reuse** (optional key field; no new store) |
+| Contractor identity | Integration catalog `provider_id` / slug; no Agent Card type | **compose/new** — `ExternalContractorIdentity` wraps `provider_id` + external ids + optional descriptor ref/digest (no URL) |
+| Contractor status | Nexus `TaskState` (orchestration); no quote commercial stages | **new** — `ExternalWorkStatus` (Nexus `TaskState` unchanged) |
+| Quote / money | `AgentRunCost` float USD token proxy; budgets are token/limit scopes | **new** — `MoneyAmount` (`Decimal`) + `CommercialQuote` |
+| Quote acceptance | `HumanDecisionRecord.decision_id`, `ExecutionInterrupt.interrupt_id`, `ActorIdentity`, `PolicyDecision` | **compose/new** — `QuoteAcceptanceEvidence` refs only; no authz/payment |
+| Deliverable reference | `ArtifactRef` / `ApplicationArtifactRef` / workspace refs (require harness provenance) | **compose/new** — `ExternalDeliverableRef` (workspace-safe URI + digest/size conventions) |
+| Content digest | Hosted `sha256:<64 hex>` convention | **reuse** — `validate_content_digest` |
+| Expiration | Per-model datetime validators elsewhere | **reuse** pattern — aware UTC + `expires_at > created_at` |
+| Acceptance matching | `ValidationResult` | **reuse** — `validate_quote_acceptance_match` |
+
+**Why new abstractions are platform-level**
+
+- `MoneyAmount`: commercial exact money is reusable beyond GEC; float LLM cost rollups are a different domain.
+- `ExternalWorkStatus`: quote/commercial stages are reusable for any external-work integration; polluting Nexus `TaskState` would couple orchestration to commerce.
+- Correlation / quote / acceptance / deliverable models: multiple future apps need the same Intergrax↔external join vocabulary; Tier-2/3 packages must remain consumers.
+
+**Deferred:** GEC-2 transport/integration; GEC-3 adapter sync; GEC-4 HITL UX; GEC-5 policy/wallet; GEC-6 receipts.
 
 ---
 
@@ -250,9 +275,14 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 
 ---
 
-## 2. Verification (GEC-0)
+## 2. Verification
 
 ```bash
+# GEC-1 platform contracts
+uv run pytest tests/unit/contracts/test_money.py tests/unit/contracts/test_external_work.py -q
+uv run pytest tests/unit/contracts/test_agent_run_roundtrip.py -q
+
+# GEC host / adapter smoke
 uv run pytest agents/external_contractor_adapter/tests -q
 uv run pytest applications/governed_contractor_application/tests -q
 uv run pytest tests/unit/applications/test_application_deploy_triad.py -q -k governed_contractor
@@ -269,6 +299,6 @@ curl -s http://127.0.0.1:8000/health
 
 ---
 
-## 3. Recommended first task after GEC-0
+## 3. Recommended first task after GEC-1
 
-**GEC-1:** Introduce provider-neutral contractor domain contracts (quote, acceptance decision ref, external task correlation, status, deliverable refs) under `intergrax/` — not under this application package.
+**GEC-2:** Provider-neutral external contractor integration contract under `intergrax/integrations/` (discover / create / quote / status / deliverables) — no partner hardcoding.

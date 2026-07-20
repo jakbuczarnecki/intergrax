@@ -1,6 +1,6 @@
 # Governed Contractor Application — architecture
 
-**Status:** GEC-0 bootstrap (2026-07-20) — product-profile scaffold; domain runtime not yet implemented  
+**Status:** GEC-0 bootstrap + GEC-1 platform contracts (2026-07-20) — product-profile scaffold; domain runtime not yet implemented  
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -165,7 +165,17 @@ External contractor access is an **integration concern**:
 | Quote id | Bound to external task + Intergrax run |
 | Correlation / idempotency keys | Required for create/continue/status sync |
 
-Architecture rule: every external call that can mutate contractor state must carry deterministic idempotency material derived from Intergrax identity + lifecycle stage (exact schemas in GEC-1/GEC-2).
+Architecture rule: every external call that can mutate contractor state must carry deterministic idempotency material derived from Intergrax identity + lifecycle stage.
+
+**GEC-1 platform schemas** (canonical owner — not this application package):
+
+| Concept | Module |
+|---------|--------|
+| Money | `intergrax.contracts.money.MoneyAmount` |
+| External work status / correlation / quote / acceptance / deliverable | `intergrax.contracts.external_work` |
+| ADR | [`ADR-EXTWORK-001`](../../../docs/adr/entries/2026-07-20/ADR-EXTWORK-001.md) |
+
+Nexus `TaskState` is **not** extended with commercial/quote stages — use `ExternalWorkStatus` at the external-work boundary.
 
 ---
 
