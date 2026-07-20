@@ -25,7 +25,10 @@ TODO.txt
 htmlcov/
 .coverage
 .coverage.*
+tmp_pytest*/
+tmp_pytest_basetemp/
 tmp_pytest_basetemp_*/
+tmp_pytest_cache*/
 
 # Generated build artifacts
 build/agent_fleet_inventory.json
