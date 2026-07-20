@@ -658,16 +658,13 @@ def extract_search_result_count(response: Mapping[str, Any]) -> int:
     search_summary = _as_mapping(diagnostics.get("lkw.search_summary.v1"))
     if not search_summary:
         return 0
-    used = search_summary.get("used")
-    if used is False:
+    if search_summary.get("used") is not True:
         return 0
     reason = search_summary.get("reason")
-    if reason is not None:
-        if (
-            not isinstance(reason, str)
-            or reason.strip() != _SEARCH_REASON_RETRIEVE_COMPLETE
-        ):
-            return 0
+    if not isinstance(reason, str):
+        return 0
+    if reason.strip() != _SEARCH_REASON_RETRIEVE_COMPLETE:
+        return 0
     for field_name in ("evidence_count", "num_results"):
         raw = search_summary.get(field_name)
         if raw is None:

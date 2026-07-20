@@ -8,7 +8,7 @@ import sys
 from contextlib import redirect_stdout
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import pytest
 
@@ -342,53 +342,209 @@ def test_positive_ingest_and_missing_evidence(core: ModuleType) -> None:
     assert exc.value.reason == "index_not_ingested"
 
 
-def test_positive_search_and_unknown_reason(core: ModuleType) -> None:
-    ok = {
+def _search_response(
+    *,
+    used: Any = True,
+    reason: Any = "retrieve_complete",
+    evidence_count: Any = 3,
+    num_results: Any = None,
+    include_reason: bool = True,
+    include_used: bool = True,
+    include_evidence_count: bool = True,
+    include_num_results: bool = False,
+) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    if include_used:
+        summary["used"] = used
+    if include_reason:
+        summary["reason"] = reason
+    if include_evidence_count:
+        summary["evidence_count"] = evidence_count
+    if include_num_results:
+        summary["num_results"] = num_results
+    return {
         "metadata": {
             "lkw_evidence.v1": {
                 "diagnostics": {
-                    "lkw.search_summary.v1": {
-                        "used": True,
-                        "reason": "retrieve_complete",
-                        "evidence_count": 3,
-                    }
+                    "lkw.search_summary.v1": summary,
                 }
             }
         }
     }
-    assert core.require_positive_search(ok) == 3
-    unknown = {
-        "metadata": {
-            "lkw_evidence.v1": {
-                "diagnostics": {
-                    "lkw.search_summary.v1": {
-                        "used": True,
-                        "reason": "future_unknown_reason",
-                        "evidence_count": 3,
-                    }
-                }
-            }
-        }
-    }
+
+
+def test_positive_search_requires_retrieve_complete_reason(core: ModuleType) -> None:
+    assert (
+        core.require_positive_search(
+            _search_response(evidence_count=3, include_num_results=False)
+        )
+        == 3
+    )
+    assert (
+        core.require_positive_search(
+            _search_response(
+                include_evidence_count=False,
+                include_num_results=True,
+                num_results=2,
+            )
+        )
+        == 2
+    )
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        pytest.param(None, id="none"),
+        pytest.param("", id="empty"),
+        pytest.param("   ", id="whitespace"),
+        pytest.param(123, id="int"),
+        pytest.param(True, id="bool"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
+        pytest.param("future_unknown_reason", id="unknown"),
+        pytest.param("Retrieve_Complete", id="wrong_case"),
+        pytest.param("retrieve_complete_extra", id="extra_suffix"),
+    ],
+)
+def test_positive_search_rejects_missing_or_malformed_reason(
+    core: ModuleType, reason: Any
+) -> None:
+    response = _search_response(reason=reason, evidence_count=3)
     with pytest.raises(core.CoreProofError) as exc:
-        core.require_positive_search(unknown)
+        core.require_positive_search(response)
     assert exc.value.reason == "search_results_missing"
-    missing = {
+
+
+def test_positive_search_rejects_absent_reason_key(core: ModuleType) -> None:
+    response = _search_response(include_reason=False, evidence_count=3)
+    with pytest.raises(core.CoreProofError) as exc:
+        core.require_positive_search(response)
+    assert exc.value.reason == "search_results_missing"
+
+
+@pytest.mark.parametrize(
+    ("include_used", "used"),
+    [
+        pytest.param(False, True, id="absent"),
+        pytest.param(True, False, id="false"),
+        pytest.param(True, None, id="none"),
+        pytest.param(True, 1, id="int_one"),
+        pytest.param(True, "true", id="string_true"),
+    ],
+)
+def test_positive_search_rejects_nonexact_used(
+    core: ModuleType, include_used: bool, used: Any
+) -> None:
+    response = _search_response(
+        include_used=include_used,
+        used=used,
+        reason="retrieve_complete",
+        evidence_count=3,
+    )
+    with pytest.raises(core.CoreProofError) as exc:
+        core.require_positive_search(response)
+    assert exc.value.reason == "search_results_missing"
+
+
+@pytest.mark.parametrize(
+    "summary_overrides",
+    [
+        pytest.param(
+            {"evidence_count": 0, "num_results": 0, "include_num_results": True},
+            id="both_zero",
+        ),
+        pytest.param(
+            {
+                "include_evidence_count": False,
+                "include_num_results": False,
+            },
+            id="both_absent",
+        ),
+        pytest.param(
+            {"evidence_count": -1, "include_num_results": False},
+            id="negative_evidence",
+        ),
+        pytest.param(
+            {
+                "include_evidence_count": False,
+                "include_num_results": True,
+                "num_results": -2,
+            },
+            id="negative_num_results",
+        ),
+        pytest.param(
+            {"evidence_count": "abc", "include_num_results": False},
+            id="non_numeric_evidence",
+        ),
+        pytest.param(
+            {
+                "include_evidence_count": False,
+                "include_num_results": True,
+                "num_results": "xyz",
+            },
+            id="non_numeric_num_results",
+        ),
+    ],
+)
+def test_positive_search_rejects_nonpositive_result_count(
+    core: ModuleType, summary_overrides: dict[str, Any]
+) -> None:
+    response = _search_response(
+        used=True,
+        reason="retrieve_complete",
+        **summary_overrides,
+    )
+    with pytest.raises(core.CoreProofError) as exc:
+        core.require_positive_search(response)
+    assert exc.value.reason == "search_results_missing"
+
+
+@pytest.mark.parametrize("bad_position", ["before", "after"])
+def test_persistence_fails_closed_when_search_missing_reason(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    bad_position: str,
+) -> None:
+    index_response = {
         "metadata": {
             "lkw_evidence.v1": {
                 "diagnostics": {
-                    "lkw.search_summary.v1": {
-                        "used": True,
-                        "reason": "retrieve_complete",
-                        "evidence_count": 0,
-                        "num_results": 0,
-                    }
+                    "lkw.index_summary.v1": {"ingested_count": 1},
                 }
             }
         }
     }
-    with pytest.raises(core.CoreProofError):
-        core.require_positive_search(missing)
+    good_search = _search_response(evidence_count=2)
+    bad_search = _search_response(include_reason=False, evidence_count=2)
+    search_calls = {"n": 0}
+
+    def fake_http_post_json(
+        _url: str, body: Mapping[str, Any], **_kwargs: Any
+    ) -> dict[str, Any]:
+        capability = body.get("capability")
+        if capability == "local.workspace.index":
+            return index_response
+        if capability == "local.workspace.search":
+            search_calls["n"] += 1
+            if bad_position == "before" and search_calls["n"] == 1:
+                return bad_search
+            if bad_position == "after" and search_calls["n"] == 2:
+                return bad_search
+            return good_search
+        raise AssertionError(f"unexpected capability: {capability!r}")
+
+    monkeypatch.setattr(core, "discover_compose_files", lambda: [])
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "http_post_json", fake_http_post_json)
+    monkeypatch.setattr(core, "compose_restart", lambda *_a, **_k: None)
+    monkeypatch.setattr(core, "_SAMPLE_DOCS_DIR", tmp_path)
+
+    with pytest.raises(core.CoreProofError) as exc:
+        core.phase_persistence(_config(core))
+    assert exc.value.reason == "search_results_missing"
+    assert search_calls["n"] == (1 if bad_position == "before" else 2)
 
 
 def test_search_retrieve_ready_accepts_zero_hit_complete(core: ModuleType) -> None:
