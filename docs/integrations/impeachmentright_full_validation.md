@@ -1,9 +1,10 @@
 # ImpeachmentRight — full validation (Execution Evidence)
 
-**Date:** 2026-07-20  
-**Verdict:** `FULLY_DEMONSTRABLE`  
+**Date:** 2026-07-21  
+**Verdict:** `FULLY_DEMONSTRABLE` (attestation) · platform completion → [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) (`FULLY_PLATFORM_READY`)  
 **Upstream GEC canon:** [`docs/platform/governed_external_execution.md`](../platform/governed_external_execution.md)  
 **Capability canon:** [`docs/platform/execution_evidence_and_host_attestation.md`](../platform/execution_evidence_and_host_attestation.md)  
+**Host lifecycle:** [`docs/platform/governed_external_work_host_lifecycle.md`](../platform/governed_external_work_host_lifecycle.md)  
 **Readiness (lifecycle through proof):** [`impeachmentright_validation_readiness.md`](impeachmentright_validation_readiness.md)
 
 ---
@@ -15,9 +16,9 @@
 | 1 | Is `governed_execution_boundary_event.v1` produced by the host? | **Yes** — `governed_contractor_application.host.execution_evidence` |
 | 2 | Is it host-signed? | **Yes** — Ed25519 `HostAttestor` (DI; test attestor offline) |
 | 3 | Is there one portable attested export? | **Yes** — `execution_evidence.proof_receipt.v1` |
-| 4 | Does it bind policy decision, runtime policy bundle identity/digest, provider invocation reference, task/run identity and proof? | **Yes** — event sections + digests (not full pack body embed) |
-| 5 | Can it be verified offline? | **Yes** — `verify_proof_receipt` (no provider network) |
-| 6 | What remains explicitly outside scope? | DocumentStore/public registry persistence, replay, live/paid providers, wallets, remote KMS/HSM, default HTTP product UX packaging |
+| 4 | Does it bind policy decision, runtime policy bundle identity/digest, provider invocation reference, task/run identity and proof? | **Yes** — `GovernedExecutionResult` + first-class `ProviderInvocation`; pack body via `policy_bundle_artifact` |
+| 5 | Can it be verified offline? | **Yes** — `verify_proof_receipt` recomputes event + pack digests (no provider network) |
+| 6 | What remains explicitly outside scope? | DocumentStore/public registry persistence, replay, live/paid providers, wallets, remote KMS/HSM, partner A2A adapter |
 
 ---
 
@@ -43,14 +44,18 @@ QUOTE continuation → QuoteAcceptanceEvidence → ACCEPT_QUOTE
   → GovernedProofProfile → governed ExecutionBoundaryEvent → HostAttestation → verified ProofReceipt
 ```
 
-**Wording note:** demo evaluator stamps `ImmutableRuntimePolicyBundle` identity onto
-`PolicyDecision`; it is not a claim that production `RuntimePolicyBundle` / live
-policy engines already consume that immutable pack as their sole rule source.
+**Wording note:** attested host path uses `RuntimePolicyBundleEvaluator`, which
+**interprets** `ImmutableRuntimePolicyBundle` rules directly into
+`EvaluatedPolicyDecision`. Legacy deterministic fakes may still stamp pack
+identity for older demos; production attestation should use the bundle evaluator.
 
-**Command:**
+**Commands:**
 
 ```bash
 uv run pytest applications/governed_contractor_application/tests/host/test_partner_attested_execution_demo.py -q
+uv run pytest applications/governed_contractor_application/tests/host/test_platform_completion.py -q
+uv run intergrax demo governed-contractor --offline --store build/external_work_demo
+uv run intergrax receipt verify build/external_work_demo/export/accept_receipt.json
 ```
 
 Supporting:
@@ -58,6 +63,8 @@ Supporting:
 ```bash
 uv run pytest \
   tests/unit/contracts/test_runtime_policy_bundle.py \
+  tests/unit/contracts/test_governed_execution_result.py \
+  tests/unit/runtime/policy/test_runtime_policy_bundle_evaluator.py \
   tests/unit/execution_evidence \
   tests/unit/contracts/test_governed_proof.py \
   tests/unit/runtime/policy/test_meaningful_side_effect_policy.py \

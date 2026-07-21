@@ -2,8 +2,14 @@
 
 """Host orchestration: GovernedProofProfile → EBE → HostAttestation → ProofReceipt.
 
+Preferred production path: ``GovernedExecutionResult`` via
+``attest_governed_execution_result`` (orchestrator). This module retains the
+legacy adapter-result composer for compatibility demos.
+
 Tier-2 owns provider execution + proof composition. This module never retries
-provider side effects when attestation fails.
+provider side effects when attestation fails. Heuristic invocation fallback is
+compatibility-only — strict attested paths require first-class
+``ProviderInvocation.invocation_id``.
 """
 
 from __future__ import annotations
@@ -19,9 +25,12 @@ from external_contractor_adapter.side_effect_actions import (
 )
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from intergrax.runtime.execution_evidence.compose import (
     AttestationOutcome,
     attest_after_governed_side_effect,
+    attest_governed_execution_result,
     invocation_id_from_adapter_metadata,
 )
 
@@ -30,6 +39,31 @@ _ACTION_TO_OPERATION: Mapping[str, str] = {
     ACTION_ACCEPT_QUOTE: "submit_quote_acceptance",
     ACTION_CANCEL_EXTERNAL_WORK: "cancel_work",
 }
+
+
+def produce_attested_receipt_for_governed_result(
+    result: GovernedExecutionResult,
+    *,
+    attestor: HostAttestor | None,
+    policy_bundle_artifact: ImmutableRuntimePolicyBundle | None = None,
+    attestation_required: bool = True,
+    actor: str = "governed_contractor_host",
+    event_id: str | None = None,
+    receipt_id: str | None = None,
+    occurred_at: datetime | None = None,
+) -> AttestationOutcome:
+    """Preferred host path — atomic GER, strict first-class invocation."""
+    return attest_governed_execution_result(
+        result,
+        attestor=attestor,
+        policy_bundle_artifact=policy_bundle_artifact,
+        attestation_required=attestation_required,
+        actor=actor,
+        event_id=event_id,
+        receipt_id=receipt_id,
+        occurred_at=occurred_at,
+        require_first_class_invocation=True,
+    )
 
 
 def produce_attested_receipt_for_adapter_result(
@@ -41,6 +75,7 @@ def produce_attested_receipt_for_adapter_result(
     event_id: str | None = None,
     receipt_id: str | None = None,
     occurred_at: datetime | None = None,
+    allow_invocation_fallback: bool = True,
 ) -> AttestationOutcome:
     """Compose and sign a portable receipt after a successful governed side effect.
 
@@ -61,11 +96,29 @@ def produce_attested_receipt_for_adapter_result(
     operation = _resolve_operation(result)
     # Prefer explicit per-invocation ids only. Bare ``external_task_id`` is a
     # task correlation key shared across CREATE/ACCEPT/CANCEL — not unique.
+    fallback = (
+        _fallback_invocation_id(result)
+        if allow_invocation_fallback
+        else "invocation:unknown"
+    )
     invocation_id = invocation_id_from_adapter_metadata(
         dict(result.metadata),
-        fallback=_fallback_invocation_id(result),
+        fallback=fallback,
         prefer_keys=("provider_invocation_id", "invocation_id"),
     )
+    if (
+        attestation_required
+        and not allow_invocation_fallback
+        and invocation_id == "invocation:unknown"
+    ):
+        return AttestationOutcome(
+            execution_succeeded=execution_succeeded,
+            attestation_succeeded=False,
+            receipt=None,
+            event=None,
+            reason="first_class_invocation_id_required",
+            provider_invoked=provider_invoked,
+        )
     completed_at = occurred_at or datetime.now(timezone.utc)
     return attest_after_governed_side_effect(
         proof=result.proof,

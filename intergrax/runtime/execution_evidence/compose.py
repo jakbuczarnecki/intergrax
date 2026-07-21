@@ -19,8 +19,11 @@ from intergrax.contracts.execution_evidence.boundary_event import (
     SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1,
 )
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
+from intergrax.contracts.governed_execution_result import GovernedExecutionResult
 from intergrax.contracts.governed_proof import GovernedProofProfile
+from intergrax.contracts.provider_invocation import ProviderInvocationStatus
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from intergrax.runtime.attestation.canonical_json import (
     canonical_json_bytes,
     stable_payload_hash,
@@ -125,6 +128,7 @@ def produce_proof_receipt(
     event: ExecutionBoundaryEvent,
     attestor: HostAttestor,
     receipt_id: str | None = None,
+    policy_bundle_artifact: ImmutableRuntimePolicyBundle | None = None,
 ) -> ProofReceipt:
     """Sign canonical event bytes and bind into a portable ProofReceipt."""
     payload = canonical_json_bytes(event.canonical_payload())
@@ -136,6 +140,137 @@ def produce_proof_receipt(
         receipt_id=receipt_id or f"rcpt-{uuid.uuid4().hex}",
         execution_boundary_event=event,
         host_attestation=attestation,
+        policy_bundle_artifact=policy_bundle_artifact,
+    )
+
+
+def compose_execution_boundary_event_from_result(
+    result: GovernedExecutionResult,
+    *,
+    event_id: str | None = None,
+    occurred_at: datetime | None = None,
+    actor: str = "",
+) -> ExecutionBoundaryEvent:
+    """Compose EBE from an atomic ``GovernedExecutionResult`` (PC-4)."""
+    if result.provider_outcome.status is not ProviderInvocationStatus.SUCCEEDED:
+        raise ValueError("boundary_event_requires_succeeded_outcome")
+    return compose_execution_boundary_event(
+        proof=result.proof,
+        policy_decision=result.evaluated_policy_decision.decision,
+        provider_operation=result.provider_invocation.operation,
+        invocation_id=result.provider_invocation.invocation_id,
+        invocation_completed_at=result.provider_outcome.completed_at,
+        event_id=event_id,
+        occurred_at=occurred_at or result.execution_completed_at,
+        actor=actor,
+        require_policy_bundle=True,
+    )
+
+
+def attest_governed_execution_result(
+    result: GovernedExecutionResult,
+    *,
+    attestor: HostAttestor | None,
+    policy_bundle_artifact: ImmutableRuntimePolicyBundle | None = None,
+    attestation_required: bool = True,
+    actor: str = "",
+    event_id: str | None = None,
+    receipt_id: str | None = None,
+    occurred_at: datetime | None = None,
+    require_first_class_invocation: bool = True,
+) -> AttestationOutcome:
+    """Host attestation from atomic GER — preferred production path (PC-4)."""
+    if require_first_class_invocation:
+        inv_id = result.provider_invocation.invocation_id.strip()
+        if not inv_id or inv_id == "invocation:unknown":
+            return AttestationOutcome(
+                execution_succeeded=True,
+                attestation_succeeded=False,
+                receipt=None,
+                event=None,
+                reason="first_class_invocation_id_required",
+                provider_invoked=True,
+            )
+    if attestation_required and attestor is None:
+        try:
+            event = compose_execution_boundary_event_from_result(
+                result,
+                event_id=event_id,
+                occurred_at=occurred_at,
+                actor=actor,
+            )
+        except ValueError:
+            event = None
+        return AttestationOutcome(
+            execution_succeeded=True,
+            attestation_succeeded=False,
+            receipt=None,
+            event=event,
+            reason="host_attestor_missing",
+            provider_invoked=True,
+        )
+    try:
+        event = compose_execution_boundary_event_from_result(
+            result,
+            event_id=event_id,
+            occurred_at=occurred_at,
+            actor=actor,
+        )
+    except ValueError as exc:
+        return AttestationOutcome(
+            execution_succeeded=True,
+            attestation_succeeded=False,
+            receipt=None,
+            event=None,
+            reason=str(exc),
+            provider_invoked=True,
+        )
+    if policy_bundle_artifact is not None:
+        try:
+            result.evaluated_policy_decision.assert_consistent_with_bundle(
+                policy_bundle_artifact
+            )
+        except ValueError as exc:
+            return AttestationOutcome(
+                execution_succeeded=True,
+                attestation_succeeded=False,
+                receipt=None,
+                event=event,
+                reason=str(exc),
+                provider_invoked=True,
+            )
+    if attestor is None:
+        return AttestationOutcome(
+            execution_succeeded=True,
+            attestation_succeeded=False,
+            receipt=None,
+            event=event,
+            reason="host_attestor_missing",
+            provider_invoked=True,
+        )
+    try:
+        receipt = produce_proof_receipt(
+            event=event,
+            attestor=attestor,
+            receipt_id=receipt_id,
+            policy_bundle_artifact=policy_bundle_artifact,
+        )
+    except Exception:  # noqa: BLE001 — never claim attested on signer failure
+        return AttestationOutcome(
+            execution_succeeded=True,
+            attestation_succeeded=False,
+            receipt=None,
+            event=event,
+            reason="attestation_failed",
+            provider_invoked=True,
+        )
+    return AttestationOutcome(
+        execution_succeeded=True,
+        attestation_succeeded=True,
+        receipt=receipt,
+        event=event,
+        reason="attested",
+        provider_invoked=True,
     )
 
 

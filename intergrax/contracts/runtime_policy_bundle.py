@@ -22,13 +22,19 @@ _NON_EMPTY = Field(min_length=1)
 
 
 class PolicyBundleRule(BaseModel):
-    """Single ordered rule entry inside an immutable pack."""
+    """Single ordered rule entry inside an immutable pack.
+
+    ``match_action`` binds the rule to a consumer action id (e.g.
+    ``CREATE_EXTERNAL_WORK``). ``effect`` is a ``PolicyAction`` value
+    (``allow`` / ``deny`` / ``require_human`` / …).
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     rule_id: str = _NON_EMPTY
     description: str = ""
     effect: str = ""
+    match_action: str = ""
 
     @field_validator("rule_id")
     @classmethod
@@ -37,6 +43,11 @@ class PolicyBundleRule(BaseModel):
         if not normalized:
             raise ValueError("rule_id must be non-empty")
         return normalized
+
+    @field_validator("match_action", "effect")
+    @classmethod
+    def _strip_optional_fields(cls, value: str) -> str:
+        return value.strip()
 
 
 class ImmutableRuntimePolicyBundle(BaseModel):

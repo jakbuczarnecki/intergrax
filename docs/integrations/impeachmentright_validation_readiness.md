@@ -122,7 +122,8 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 ### B. Demonstration gap
 
 - Full flow was covered by multiple unit tests but lacked one named partner demo until `test_partner_validation_demo.py`.
-- Host HTTP/CLI still does not package the flow as a single operator command.
+- ~~Host HTTP/CLI still does not package the flow as a single operator command.~~ → **closed** via
+  `uv run intergrax demo governed-contractor --offline` (see platform completion audit).
 
 ### C. Host product gap
 
@@ -135,6 +136,8 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 - ~~Host-signed governed Execution Boundary Event~~ → **closed** via Execution Evidence
 - ~~Single cryptographically attested export~~ → **closed** (`execution_evidence.proof_receipt.v1`)
 - ~~Runtime policy bundle identity/digest~~ → **closed** (`ImmutableRuntimePolicyBundle`)
+- ~~Bundle-backed evaluation + pack body offline verify~~ → **closed** (`RuntimePolicyBundleEvaluator`, `policy_bundle_artifact`)
+- ~~First-class provider invocation + atomic GER + host orchestrator/recovery~~ → **closed** (PC-3…PC-7)
 - Still out of scope: DocumentStore/public registry persistence, replay, paid providers, wallets, remote KMS/HSM
 - Contractor-local policy remaining on the partner side until they consume Intergrax runtime policy packs (partner adoption work + host packs)
 
@@ -147,14 +150,15 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 - Real Nexus `task_id` / `run_id` are required and fail closed when missing.
 - Quote acceptance evidence is **not** an allow token; policy re-evaluates before accept.
 - Continuation surfaces interruption; it does not execute the side effect.
-- Offline deterministic proof of the lifecycle is reproducible via the demo pytest above.
+- Offline deterministic proof of the lifecycle is reproducible via the demo pytest **and**
+  `uv run intergrax demo governed-contractor --offline`.
 - Architecture is closed through GEC-6.1 per [`governed_external_execution.md`](../platform/governed_external_execution.md).
 
 ## What must not be claimed yet
 
 - That harness tool/step BoundaryAttest EBE is the same artefact as governed `governed_execution_boundary_event.v1` (siblings).
 - Production partner transport (A2A/HTTP), paid tasks, wallets, or live provider integration.
-- That the default governed_contractor HTTP API already demos the full quote→accept→attested-receipt product flow (host companion pytest does).
+- That the default governed_contractor HTTP API already demos the full quote→accept→attested-receipt product flow (CLI + pytest do; HTTP product UX still optional).
 - That `GovernedProofProfile` itself is a ProofReceipt, audit log, or authorization mechanism.
 - Production key custody / remote KMS/HSM (local Ed25519 test attestor only).
 - That Intergrax has replaced contractor-local policy packs on the partner’s side.
@@ -166,10 +170,10 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 1. **Lead with attested demo** — `test_partner_attested_execution_demo.py` + platform canon for Execution Evidence.
 2. **Map the five points honestly** using the matrix above; separate descriptive `GovernedProofProfile` from host-signed portable receipt.
 3. **Close their three gaps with precise naming** — governed sibling `governed_execution_boundary_event.v1` (not harness tool/step `execution_boundary_event.v1`); portable `execution_evidence.proof_receipt.v1`; decision bound to `ImmutableRuntimePolicyBundle` identity/digest (not a claim that partner contractor-local packs are already replaced).
-4. **Invite next step:** live provider behind `ExternalWorkIntegration` + host policy pack injection + product HTTP/CLI packaging.
-5. **Do not oversell** production KMS/HSM, receipt registry, replay, wallets, or default host UX.
+4. **Invite next step:** live provider behind `ExternalWorkIntegration` (partner translation adapter) + wallet/payment evidence.
+5. **Do not oversell** production KMS/HSM, receipt registry, replay, or wallets.
 
-**Still open as packaging / product (not attestation capability):** default host HTTP/CLI orchestration of quote→accept→receipt.
+**Platform completion audit:** [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) — verdict `FULLY_PLATFORM_READY`.
 
 ---
 

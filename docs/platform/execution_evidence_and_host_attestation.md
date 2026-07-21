@@ -25,10 +25,11 @@ This capability closes those gaps **without** reopening GEC ownership.
 ```text
 policy ALLOW → provider execution → GovernedProofProfile
 ======== GEC / platform governed-external boundary ========
-GovernedProofProfile
+GovernedExecutionResult (atomic: EvaluatedPolicyDecision + ProviderInvocation + proof)
   → ExecutionBoundaryEvent (governed_execution_boundary_event.v1)
   → HostAttestation
-  → ProofReceipt (execution_evidence.proof_receipt.v1)
+  → ProofReceipt (execution_evidence.proof_receipt.v1
+       + optional policy_bundle_artifact for offline pack recompute)
   → offline verification
 ```
 
@@ -84,9 +85,19 @@ New:
 
 ## Runtime policy bundle
 
-Immutable pack: `bundle_id`, `version`, ordered `rules`, `issued_at`, `canonical_digest`.  
-`PolicyDecision` may carry `policy_bundle_id` / `policy_bundle_version` / `policy_bundle_digest`.  
-When attestation is required, missing pack identity fails closed.
+Immutable pack: `bundle_id`, `version`, ordered `rules` (`rule_id`, `effect`, `match_action`), `issued_at`, `canonical_digest`.  
+`RuntimePolicyBundleEvaluator` **interprets pack rules directly** and emits
+`EvaluatedPolicyDecision` (decision + bundle identity/digest + matched rule +
+request digest + evaluation timestamp). Pack identity is set at evaluation time
+— never stamped afterwards.
+
+`PolicyDecision` carries `policy_bundle_id` / `policy_bundle_version` /
+`policy_bundle_digest`. When attestation is required, missing pack identity
+fails closed.
+
+**PC-2:** portable receipts may embed `policy_bundle_artifact` so offline
+verifiers recompute the pack digest and bind `policy_rule_id` / action to the
+pack body (Model B).
 
 ---
 
@@ -102,12 +113,24 @@ Digest: `sha256:<hex>`. Schema id is part of signed bytes.
 `HostAttestor.attest(payload: bytes, *, schema: str) -> HostAttestation`  
 Default test/local: Ed25519 over canonical event bytes. DI-replaceable by KMS/HSM. No production key custody claimed.
 
+Preferred composer input: `GovernedExecutionResult` via
+`attest_governed_execution_result` (strict first-class `invocation_id`).  
+Legacy adapter-result compose may use heuristic invocation fallback only for
+non-attested / compatibility paths — never for strict attested production.
+
+**PC-10 ports:** `HostKeyResolver`, `HostKeyMetadataProvider` (current key id,
+algorithm allowlist, deprecated verification keys).
+
 ---
 
 ## Receipt & verification
 
-`ProofReceipt` binds the full event + host attestation.  
-Verifier recalculates bytes/digest and checks signature offline. No provider network. No authorization side effects.
+`ProofReceipt` binds the full event + host attestation (+ optional pack artifact).  
+Verifier recalculates event bytes/digest, checks signature, and when an artifact
+is present recomputes the pack digest / rule / action binding offline.  
+No provider network. No authorization side effects.
+
+Host lifecycle / recovery / CLI: [`governed_external_work_host_lifecycle.md`](governed_external_work_host_lifecycle.md).
 
 ---
 

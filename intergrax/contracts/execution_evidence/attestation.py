@@ -55,3 +55,29 @@ class HostAttestor(Protocol):
     ) -> HostAttestation:
         """Sign canonical payload bytes; return an explicit attestation record."""
         ...
+
+
+@runtime_checkable
+class HostKeyResolver(Protocol):
+    """Resolve verification public keys by ``key_id`` (PC-10)."""
+
+    def resolve_public_key(self, key_id: str) -> bytes | None:
+        """Return raw public key bytes, or None when unknown."""
+        ...
+
+
+@runtime_checkable
+class HostKeyMetadataProvider(Protocol):
+    """Expose current / deprecated key metadata for verifiers (PC-10)."""
+
+    def current_signing_key_id(self) -> str:
+        """Key id used for new attestations."""
+        ...
+
+    def is_algorithm_allowed(self, algorithm: str) -> bool:
+        """Allowlist check for verification algorithms."""
+        ...
+
+    def is_key_deprecated_for_verification(self, key_id: str) -> bool:
+        """True when ``key_id`` may verify historical receipts but must not sign."""
+        ...
