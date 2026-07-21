@@ -133,13 +133,19 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
     assert summary["reason"] == SearchSummaryReason.RETRIEVE_COMPLETE.value
     assert summary["query"] == "project X"
     assert summary["collection_id"] == "ws-1"
+    assert summary["workspace_id"] == "ws-1"
     assert summary["num_results"] == 1
+    assert summary["result_count"] == 1
     assert summary["evidence"] == [
         {
             "text": "Project X overview",
+            "snippet": "Project X overview",
             "source_path": "/data/report.txt",
             "chunk_id": "chunk-1",
             "score": 0.91,
+            "workspace_id": "ws-1",
+            "file_name": "report.txt",
+            "metadata": {"source_path": "/data/report.txt"},
         }
     ]
 

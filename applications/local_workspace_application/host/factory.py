@@ -44,6 +44,7 @@ from local_workspace_application.serving.background_task_proof_routes import (
 from local_workspace_application.serving.fastapi_router import mount_local_workspace_routes
 from local_workspace_application.serving.readiness_routes import mount_local_workspace_readiness_routes
 from local_workspace_application.serving.sentry_proof_routes import mount_local_workspace_sentry_proof_routes
+from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
 
 
 def create_local_workspace_backend_app(
@@ -178,6 +179,12 @@ def create_local_workspace_backend_app(
         task_executor=lkw_task_executor,
         prefix=resolved_settings.route_prefix,
         default_agent_id=resolved_settings.default_agent_id,
+    )
+    mount_managed_workspace_routes(
+        app,
+        task_executor=lkw_task_executor,
+        settings=resolved_settings,
+        prefix=resolved_settings.route_prefix,
     )
     mount_local_workspace_readiness_routes(
         app,

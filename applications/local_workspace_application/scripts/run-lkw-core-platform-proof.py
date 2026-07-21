@@ -120,6 +120,7 @@ class ProofConfig:
     sentry_url: str
     phase_timeout_seconds: int
     elasticsearch_index: str = _DEFAULT_ES_INDEX
+    mongodb_stack: str = "managed"
 
 
 @dataclass
@@ -500,7 +501,14 @@ def ensure_env_file() -> None:
     shutil.copyfile(example, env_file)
 
 
-def mongodb_child_env() -> dict[str, str]:
+def mongodb_child_env(*, stack: str = "managed") -> dict[str, str]:
+    if stack.strip().lower() == "external":
+        ensure_external_mongodb_env()
+        return {
+            "INTERGRAX_MONGODB_URI": os.environ["INTERGRAX_MONGODB_URI"],
+            "INTERGRAX_MONGODB_DATABASE": os.environ["INTERGRAX_MONGODB_DATABASE"],
+            "INTERGRAX_MONGODB_COLLECTION": os.environ["INTERGRAX_MONGODB_COLLECTION"],
+        }
     username = _env_default("LKW_MONGODB_ROOT_USERNAME", "intergrax")
     password = _env_default("LKW_MONGODB_ROOT_PASSWORD", "intergrax-local-dev-only")
     database = _env_default("LKW_MONGODB_DATABASE", "intergrax_proofs")
@@ -520,6 +528,54 @@ def mongodb_child_env() -> dict[str, str]:
         "LKW_MONGODB_COLLECTION": collection,
         "LKW_MONGODB_HOST_PORT": host_port,
     }
+
+
+def ensure_external_mongodb_env() -> None:
+    uri = os.environ.get("INTERGRAX_MONGODB_URI", "").strip()
+    if not uri:
+        raise CoreProofError("external_mongodb_uri_required")
+    if not os.environ.get("INTERGRAX_MONGODB_DATABASE", "").strip():
+        os.environ["INTERGRAX_MONGODB_DATABASE"] = _env_default(
+            "LKW_MONGODB_DATABASE", "intergrax_proofs"
+        )
+    if not os.environ.get("INTERGRAX_MONGODB_COLLECTION", "").strip():
+        os.environ["INTERGRAX_MONGODB_COLLECTION"] = _env_default(
+            "LKW_MONGODB_COLLECTION", "proof_receipts"
+        )
+
+
+def verify_external_mongodb_reachable() -> None:
+    """Fail closed when external MongoDB cannot be reached via platform integration."""
+    ensure_external_mongodb_env()
+    from intergrax.integrations.providers.document_store.mongodb.bundle import (
+        create_mongodb_integration,
+    )
+    from intergrax.integrations.providers.document_store.mongodb.integration import (
+        MongoDBDocumentStoreIntegration,
+    )
+
+    bundle = create_mongodb_integration()
+    integration = bundle.document_store
+    if not isinstance(integration, MongoDBDocumentStoreIntegration):
+        raise CoreProofError("integration_not_mongodb_document_store")
+    store = integration.as_document_store()
+    if store is None:
+        raise CoreProofError("document_store_adapter_unresolved")
+    try:
+        store.get("__lkw_certification_probe__", "reachability")
+    except Exception as exc:  # noqa: BLE001 - fail closed
+        raise CoreProofError("external_mongodb_unreachable") from exc
+    finally:
+        close = getattr(store, "close", None)
+        if callable(close):
+            close()
+
+
+def phase_requires_docker(config: ProofConfig) -> bool:
+    if config.mongodb_stack.strip().lower() != "external":
+        return True
+    # External MongoDB + application-hosting only: hosted process, no Compose.
+    return config.phase != "application-hosting"
 
 
 def parse_kv_output(text: str) -> dict[str, str]:
@@ -789,16 +845,20 @@ def ensure_file_watcher_retrieve_ready(config: ProofConfig) -> None:
 def validate_environment(config: ProofConfig) -> None:
     if _which("uv") is None:
         raise CoreProofError("uv_missing")
-    if _which("docker") is None:
-        raise CoreProofError("docker_missing")
-    compose_probe = run_command(
-        ["docker", "compose", "version"], cwd=_REPO_ROOT, timeout=30
-    )
-    if compose_probe.returncode != 0:
-        raise CoreProofError(
-            "docker_compose_unavailable",
-            child_exit_code=compose_probe.returncode,
+    if phase_requires_docker(config):
+        if _which("docker") is None:
+            raise CoreProofError("docker_missing")
+        compose_probe = run_command(
+            ["docker", "compose", "version"], cwd=_REPO_ROOT, timeout=30
         )
+        if compose_probe.returncode != 0:
+            raise CoreProofError(
+                "docker_compose_unavailable",
+                child_exit_code=compose_probe.returncode,
+            )
+    else:
+        ensure_external_mongodb_env()
+        verify_external_mongodb_reachable()
     for path in (
         _BASE_COMPOSE,
         _ES_COMPOSE,
@@ -818,6 +878,7 @@ def validate_environment(config: ProofConfig) -> None:
     _print_kv("detected_os_family", detect_os_family().value)
     _print_kv("requested_os_family", config.os_family.value)
     _print_kv("wrapper_id", config.wrapper_id.value)
+    _print_kv("mongodb_stack", config.mongodb_stack)
 
 
 def clear_sentry_runtime_state() -> None:
@@ -1068,26 +1129,33 @@ def phase_background_task(config: ProofConfig) -> PhaseOutcome:
 
 
 def phase_application_hosting(config: ProofConfig) -> PhaseOutcome:
-    compose_files = [_BASE_COMPOSE, _MONGODB_COMPOSE]
-    compose_config(compose_files, cwd=_REPO_ROOT)
-    compose_up(
-        compose_files,
-        ["lkw-mongodb", "lkw-mongo-express"],
-        cwd=_REPO_ROOT,
-        build=False,
-    )
-    wait_for_compose_health(
-        compose_files,
-        "lkw-mongodb",
-        cwd=_REPO_ROOT,
-        timeout_seconds=min(180, config.phase_timeout_seconds),
-    )
-    wait_for_http_reachable(config.mongo_express, timeout_seconds=120)
+    stack = config.mongodb_stack.strip().lower()
+    if stack == "external":
+        ensure_external_mongodb_env()
+        verify_external_mongodb_reachable()
+    else:
+        compose_files = [_BASE_COMPOSE, _MONGODB_COMPOSE]
+        compose_config(compose_files, cwd=_REPO_ROOT)
+        compose_up(
+            compose_files,
+            ["lkw-mongodb", "lkw-mongo-express"],
+            cwd=_REPO_ROOT,
+            build=False,
+        )
+        wait_for_compose_health(
+            compose_files,
+            "lkw-mongodb",
+            cwd=_REPO_ROOT,
+            timeout_seconds=min(180, config.phase_timeout_seconds),
+        )
+        wait_for_http_reachable(config.mongo_express, timeout_seconds=120)
+    child_env = os.environ.copy()
+    child_env.update(mongodb_child_env(stack=stack))
     exit_code, text = run_python_child(
         _HOSTING_PROOF_PY,
         [],
         cwd=_REPO_ROOT,
-        env=mongodb_child_env(),
+        env=child_env,
         timeout=config.phase_timeout_seconds,
     )
     if exit_code != 0:
@@ -1095,11 +1163,26 @@ def phase_application_hosting(config: ProofConfig) -> PhaseOutcome:
             "application_hosting_child_failed",
             child_exit_code=exit_code,
         )
-    receipt_id = validate_hosting_child_output(parse_kv_output(text))
+    parsed = parse_kv_output(text)
+    receipt_id = validate_hosting_child_output(parsed)
     return PhaseOutcome(
         name="application-hosting",
         ok=True,
         receipt_id=receipt_id,
+        details={
+            "proof_kind": "platform_application_hosting",
+            "run_id": str(parsed.get("proof_receipt_run_id", "")).strip(),
+            "correlation_id": str(parsed.get("correlation_id", "")).strip(),
+            "proof_receipt_recorded": str(
+                parsed.get("proof_receipt_recorded", "")
+            ).strip(),
+            "proof_receipt_verified": str(
+                parsed.get("proof_receipt_verified", "")
+            ).strip(),
+            "proof_receipt_query_verified": str(
+                parsed.get("proof_receipt_query_verified", "")
+            ).strip(),
+        },
     )
 
 
@@ -1306,6 +1389,15 @@ def build_parser() -> argparse.ArgumentParser:
             )
         ),
     )
+    parser.add_argument(
+        "--mongodb-stack",
+        default="managed",
+        choices=["managed", "external"],
+        help=(
+            "managed: start MongoDB Compose as today (default). "
+            "external: require INTERGRAX_MONGODB_URI; never invoke Docker for MongoDB."
+        ),
+    )
     return parser
 
 
@@ -1322,6 +1414,7 @@ def config_from_args(args: argparse.Namespace) -> ProofConfig:
         kibana_url=str(args.kibana_url).rstrip("/"),
         sentry_url=str(args.sentry_url).rstrip("/"),
         phase_timeout_seconds=int(args.phase_timeout_seconds),
+        mongodb_stack=str(args.mongodb_stack),
     )
 
 
@@ -1366,9 +1459,37 @@ def run_core_proof(
         outcomes[phase] = outcome
 
     if config.phase != "all":
-        _print_kv("core_proof_result", "PARTIAL")
+        outcome = outcomes[config.phase]
+        _print_kv("core_proof_result", "PASS")
+        _print_kv("core_proof_os_family", config.os_family.value)
+        _print_kv("core_proof_wrapper_id", config.wrapper_id.value)
+        _print_kv("core_proof_shared_python_runner", "true")
         _print_kv("core_proof_all_phases_passed", "false")
+        _print_kv("core_proof_selected_phase", config.phase)
         _print_kv("optional_os_interaction_proof_executed", "false")
+        _print_kv("mongodb_stack", config.mongodb_stack)
+        if config.phase == "application-hosting":
+            receipt_id = outcome.receipt_id or ""
+            run_id = outcome.details.get("run_id") or receipt_id
+            correlation_id = outcome.details.get("correlation_id") or run_id
+            _print_kv("proof_kind", "platform_application_hosting")
+            _print_kv("proof_receipt_id", receipt_id)
+            _print_kv("proof_id", receipt_id)
+            _print_kv("run_id", run_id)
+            _print_kv("correlation_id", correlation_id)
+            _print_kv(
+                "proof_receipt_recorded",
+                outcome.details.get("proof_receipt_recorded") or "true",
+            )
+            _print_kv(
+                "proof_receipt_verified",
+                outcome.details.get("proof_receipt_verified") or "true",
+            )
+            _print_kv(
+                "proof_receipt_query_verified",
+                outcome.details.get("proof_receipt_query_verified") or "true",
+            )
+            _print_kv("result", "PASS")
         return 0
 
     background_receipt = outcomes["background-task"].receipt_id

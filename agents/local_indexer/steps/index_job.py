@@ -29,7 +29,19 @@ _LKW_INDEX_METADATA_KEYS = frozenset(
         "tenant_id",
         "user_id",
         "workspace_id",
+        "source_id",
+        "document_id",
+        "content_hash",
+        "operation_id",
     }
+)
+
+_INGEST_PROVENANCE_METADATA_KEYS = (
+    "source_id",
+    "document_id",
+    "content_hash",
+    "operation_id",
+    "workspace_id",
 )
 
 
@@ -100,21 +112,38 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
             if collection_id_raw is not None and str(collection_id_raw).strip()
             else None
         )
+        workspace_id_raw = metadata.get("workspace_id")
+        workspace_id = (
+            str(workspace_id_raw).strip()
+            if workspace_id_raw is not None and str(workspace_id_raw).strip()
+            else collection_id
+        )
         if collection_id:
             ingest_metadata["collection_id"] = collection_id
+        if workspace_id:
+            ingest_metadata["workspace_id"] = workspace_id
         if chunking := metadata.get("chunking_strategy_id"):
             ingest_metadata["chunking_strategy_id"] = chunking
+        for key in _INGEST_PROVENANCE_METADATA_KEYS:
+            if key == "workspace_id":
+                continue
+            raw = metadata.get(key)
+            if raw is not None and str(raw).strip():
+                ingest_metadata[key] = str(raw).strip()
         for path in validated:
+            path_metadata = dict(ingest_metadata)
+            path_metadata.setdefault("source_path", str(path))
+            path_metadata.setdefault("file_name", path.name)
             tool_input: dict[str, Any] = {
                 "source_path": str(path),
-                "metadata": ingest_metadata,
+                "metadata": path_metadata,
             }
             if scope["tenant_id"]:
                 tool_input["tenant_id"] = scope["tenant_id"]
             if scope["user_id"]:
                 tool_input["user_id"] = scope["user_id"]
-            if collection_id:
-                tool_input["workspace_id"] = collection_id
+            if workspace_id:
+                tool_input["workspace_id"] = workspace_id
             entry = await invoke_catalog_tool(
                 exec_ctx,
                 tool_name=RAG_INGEST_TOOL_ID,

@@ -506,6 +506,14 @@ class UAEPExecutor:
                 break
 
         answer = self._build_answer(exec_ctx, last_output, run_id)
+        if last_output is not None and isinstance(last_output.data, dict):
+            # Promote typed domain summaries into TaskResult.structured_data via route.extra.
+            for key in ("search_summary", "ingest_summary", "domain_summary"):
+                value = last_output.data.get(key)
+                if isinstance(value, dict) and value:
+                    if answer.route is None:
+                        answer.route = RouteInfo(extra={})
+                    answer.route.extra[key] = dict(value)
         bridged_kernel = exec_ctx.metadata.get(UaepBridgeMetadataKey.KERNEL_SESSION)
         if bridged_kernel is not None:
             if answer.route is None:

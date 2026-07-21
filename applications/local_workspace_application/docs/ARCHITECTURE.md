@@ -168,6 +168,7 @@ LKW is a **personal Agent OS instance** on the user's computer:
 | Client | Technology | Talks to | Wave |
 |--------|------------|----------|------|
 | **HTTP API** | any HTTP client | `POST /v1/local_workspace/run` | LKW.0 Done |
+| **Managed workspaces API** | any HTTP client | `/v1/local_workspace/workspaces`, sources, sync, operations, search | **LKW-PRODUCT-1 Done** |
 | **MCP** | Cursor, Claude Desktop | `http://127.0.0.1:8020/mcp` | LKW.0 Done |
 | **LKW Tray** | Tauri/Electron or native | localhost HTTP + folder picker | LKW.8 |
 | **Slack** | Slack App (Socket Mode) | intake via platform interaction stack on LKW host | LKW.6b |
@@ -730,14 +731,43 @@ POST /v1/interactions/intake
 
 **LKW.6A does not include:** platform Application Hosting adoption (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
-### 9.3b LKW.6C — Windows PowerShell interaction adapter
+### 9.3b LKW.6C — OS interaction adapters (Windows + Linux Docker)
 
-**Status: Closed** after the live MongoDB-backed reviewer proof passes.
+**Status: Closed** for native Windows shared-runner certification
+profile `windows_native_runtime` and for Linux Docker runtime
+certification profile `linux_docker_runtime` (PROOF-PORTABILITY-1D):
 
-LKW owns a thin Windows PowerShell product client that serializes the supported `lab_json` payload and posts it to the existing platform interaction intake. No new platform interaction channel is introduced.
+- Windows Application Hosting Proof and Windows Optional OS Interaction
+  Proof are live-certified on native Windows through the current shared
+  Python client / OS proof runner.
+- Linux Application Hosting Proof and Linux Optional OS Interaction
+  Proof are live-certified in Linux Docker runtime.
+- Full multi-phase Core Platform Proof is not re-certified by either
+  profile in this refresh.
+
+Native Linux host deployment and macOS remain not live-certified.
+
+PROOF-PORTABILITY-1C adds shared cross-platform client/proof plumbing;
+PROOF-PORTABILITY-1D records:
+
+- `docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
+- `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
+
+PROOF-PORTABILITY-1D-MATRIX consolidates the current certification state
+into the authoritative cross-platform matrix (no new live proofs; macOS
+and native Linux remain not live-certified):
+
+- `docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md`
+- `docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json`
+
+LKW owns thin OS wrappers that launch one shared Python interaction
+client. The shared client serializes the supported `lab_json` payload
+and posts it to the existing platform interaction intake. No new
+platform interaction channel is introduced.
 
 ```text
-invoke-lkw-interaction.ps1
+Windows PowerShell / Linux SH / macOS SH
+  → invoke-lkw-interaction.py
   → POST /v1/interactions/intake?execute=true
   → LabJsonInteractionAdapter (lab_json / channel = lab)
   → InteractionIntakeService
@@ -748,9 +778,13 @@ invoke-lkw-interaction.ps1
 
 | Concern | Owner | Notes |
 |---------|-------|-------|
-| Product adapter script | `scripts/invoke-lkw-interaction.ps1` | Adapter identity `lkw.windows_powershell`; source `windows_powershell` |
+| Shared Python client | `scripts/invoke-lkw-interaction.py` | Payload, HTTP, normalized JSON result |
+| Windows wrapper | `scripts/invoke-lkw-interaction.ps1` | Adapter identity `lkw.windows_powershell`; source `windows_powershell` |
+| Linux wrapper | `scripts/invoke-lkw-interaction-linux.sh` | Adapter identity `lkw.linux_shell`; source `linux_shell` |
+| macOS wrapper | `scripts/invoke-lkw-interaction-macos.sh` | Adapter identity `lkw.macos_shell`; source `macos_shell` |
+| Shared proof runner | `scripts/run-lkw-os-interaction-proof.py` | OS-family selection, evidence, ProofReceipt |
 | Platform channel | `LabJsonInteractionAdapter` | `interaction_channel` remains `lab` |
-| Task / enrichment / Nexus | Existing LKW host + platform | No Task, agent, or RAG logic in PowerShell |
+| Task / enrichment / Nexus | Existing LKW host + platform | No Task, agent, or RAG logic in OS wrappers |
 | Hosting / instance lock / signals | Platform Application Hosting | No generic OS hosting behavior in LKW |
 | Windows Service | APP-HOST-7 | Not LKW.6C |
 | Slack Socket Mode | LKW.6b (optional) | Not LKW.6C |
@@ -759,7 +793,11 @@ invoke-lkw-interaction.ps1
 
 Enable intake with existing settings: `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=lab_json`, `LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT=true`.
 
-Reviewer command: `applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat` — see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional Windows interaction section.
+Reviewer commands:
+`run-lkw-windows-interaction-proof.bat`,
+`run-lkw-linux-interaction-proof.sh`,
+`run-lkw-macos-interaction-proof.sh`
+— see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional OS interaction section.
 
 ### 9.3c Cross-platform Core Platform Proof entrypoints
 
@@ -773,9 +811,18 @@ OS launchers are transport-only entrypoints.
 
 Proof orchestration and acceptance live in Python.
 
-OS-specific interaction adapters remain a separate optional layer.
+OS-specific interaction adapters use the same shared-Python pattern:
 
-Shared runner: `scripts/run-lkw-core-platform-proof.py`. Thin launchers:
+```text
+Windows BAT / PowerShell ─┐
+Linux SH ─────────────────┼→ shared Python interaction client / proof runner
+macOS SH ─────────────────┘
+```
+
+Shared interaction client: `scripts/invoke-lkw-interaction.py`.
+Shared interaction proof runner: `scripts/run-lkw-os-interaction-proof.py`.
+
+Shared core runner: `scripts/run-lkw-core-platform-proof.py`. Thin launchers:
 `run-lkw-core-platform-proof-windows.bat`,
 `run-lkw-core-platform-proof-linux.sh`,
 `run-lkw-core-platform-proof-macos.sh`.
@@ -1012,6 +1059,43 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
 | **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
+| **LKW-PRODUCT-1** | P1 | Managed workspaces + folder sources | Tier-3 product API + DocumentStore state | LKW.1, LKW.3 | **Done** |
+| **LKW-PRODUCT-1-HARDENING** | P1 | Durable sync + structured search evidence | MessageBus DocumentStoreTaskQueue + TaskResult search_summary | LKW-PRODUCT-1 | **Done** |
+
+#### LKW-PRODUCT-1 — Managed workspaces and folder sources (Done)
+
+First complete product scenario:
+
+```text
+create workspace → attach local folder → validate filesystem policy → sync
+  → ingest/index real files → persist source/document state → search in workspace
+```
+
+| Owns (LKW) | Reuses (platform) |
+|------------|-------------------|
+| `Workspace` / `WorkspaceSource` / `WorkspaceOperation` / `WorkspaceDocumentReference` | `DocumentStore` persistence boundary |
+| Public HTTP routes under `/v1/local_workspace/workspaces*` and `/operations/{id}` | Filesystem allowlist (`INTERGRAX_ALLOWED_READ_ROOTS`) |
+| Sync operation lifecycle + idempotency (content hash) | `local.workspace.index` / `local.workspace.search` via task executor |
+| Tenant + workspace isolation (fail-closed 404) | RAG ingest/retrieve metadata filters |
+
+#### LKW-PRODUCT-1-HARDENING — Durable sync and structured search evidence (Done)
+
+Removes temporary PRODUCT-1 workarounds:
+
+```text
+HTTP sync → persist WorkspaceOperation(queued) → MessageBus enqueue
+  → DocumentStoreTaskQueue / co-located worker → ManagedWorkspaceSyncService
+  → local.workspace.index → operation completed|failed
+```
+
+| Concern | Contract |
+|---------|----------|
+| Sync execution | Platform `message_bus.enqueue` + durable `DocumentStoreTaskQueue` (not `asyncio.create_task`) |
+| Concurrent sync | `409 Conflict` when another sync for the same tenant/workspace/source is `queued` or `running` |
+| Restart | Queued messages survive DocumentStore; interrupted `running` messages/operations fail closed |
+| Search evidence | Complete typed `TaskResult.execution_result.structured_data["search_summary"]`; router verifies provenance only — no filesystem snippet reconstruction |
+
+Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `managed_workspace_folder_sync`.
 
 ### 15.2 Wave detail (tasks + acceptance)
 

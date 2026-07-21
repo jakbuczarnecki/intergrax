@@ -76,7 +76,5 @@ class LocalSearchAgent(DiagnosticReflexAgent):
         search_summary = output.get("search_summary")
         if not isinstance(search_summary, dict) or not search_summary:
             return
-        evidence = search_summary.get("evidence")
-        has_evidence = isinstance(evidence, list) and any(isinstance(item, dict) for item in evidence)
-        if has_evidence or bool(search_summary.get("used")):
-            result.structured_data["search_summary"] = dict(search_summary)
+        # Always export the typed summary when present — product APIs require it on TaskResult.
+        result.structured_data["search_summary"] = dict(search_summary)

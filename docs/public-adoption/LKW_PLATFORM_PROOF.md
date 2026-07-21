@@ -20,6 +20,8 @@ Skipping an OS-specific interaction proof does not invalidate
 the Core Platform Proof.
 
 MongoDB-backed ProofReceipt documents are authoritative.
+Structured ProofReceipt documents persisted through the platform DocumentStore
+are the live source of truth for recorded proof outcomes.
 Terminal output is reviewer convenience.
 Markdown is execution and inspection guidance.
 
@@ -46,23 +48,155 @@ These proofs validate one concrete operating-system client
 adapter. They are not required to complete the Core Platform Proof.
 
 ```text
-Windows:
-  implemented and live-certified
+Windows Application Hosting Proof:
+  live-certified on native Windows through current shared runner
 
-Linux:
-  planned, not implemented, not certified
+Windows Optional OS Interaction Proof:
+  live-certified on native Windows through shared Python client/proof runner
+
+Linux Application Hosting Proof:
+  live-certified in Linux Docker runtime
+
+Linux Optional OS Interaction Proof:
+  live-certified in Linux Docker runtime
+
+Linux full multi-phase Core Platform Proof:
+  not separately certified by Linux Docker profile
+
+Linux native-host deployment:
+  not separately certified
 
 macOS:
-  planned, not implemented, not certified
+  implemented, not live-certified
 ```
 
 Windows claim (optional):
 
 ```text
-A real Windows PowerShell client sends work through
+A real Windows PowerShell wrapper launches the shared Python
+interaction client, which sends work through
 /v1/interactions/intake into the shared LKW executor and Nexus
 path, performing real index and search work.
 ```
+
+Linux claim (optional, Docker runtime):
+
+```text
+A real Linux POSIX shell wrapper launches the shared Python
+interaction client inside a Linux Docker certification container,
+performing real index and search work with MongoDB-backed
+ProofReceipt verification. Native Linux host deployment is not
+separately certified.
+```
+
+Shared interaction architecture:
+
+```text
+Windows PowerShell wrapper ─┐
+Linux shell wrapper ────────┼→ invoke-lkw-interaction.py
+macOS shell wrapper ────────┘
+
+Windows BAT ─┐
+Linux SH ────┼→ run-lkw-os-interaction-proof.py
+macOS SH ────┘
+```
+
+Frozen OS identities:
+
+```text
+windows / lkw.windows_powershell / windows_powershell / windows_powershell
+linux   / lkw.linux_shell        / linux_shell        / posix_sh
+macos   / lkw.macos_shell        / macos_shell        / posix_sh
+```
+
+Implementation is shared. Live certification is OS-specific.
+
+Authoritative cross-platform certification status and evidence summary:
+
+```text
+docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md
+docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json
+```
+
+This proof guide remains the execution path. The matrix consolidates
+receipt-backed certification artifacts for `windows_native_runtime` and
+`linux_docker_runtime`, and records that native Linux host and macOS
+remain not live-certified (PROOF-PORTABILITY-1D-MATRIX).
+
+```text
+Windows Application Hosting Proof:
+  live-certified on native Windows through current shared runner
+
+Windows Optional OS Interaction Proof:
+  live-certified on native Windows through shared Python client/proof runner
+
+Linux Application Hosting Proof:
+  live-certified in Linux Docker runtime
+
+Linux Optional OS Interaction Proof:
+  live-certified in Linux Docker runtime
+
+Linux full multi-phase Core Platform Proof:
+  not separately certified by Linux Docker profile
+
+Linux native-host deployment:
+  not separately certified
+
+macOS:
+  implemented, not live-certified
+```
+
+Certification profile `windows_native_runtime` certifies:
+
+```text
+platform_application_hosting
+platform_windows_interaction
+```
+
+Evidence:
+
+```text
+docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+```
+
+Not certified by this Windows native profile:
+
+```text
+full multi-phase Core Platform Proof (not re-executed by this run)
+Windows Service installation
+Windows desktop or tray integration
+Linux native-host
+macOS
+```
+
+Historical Windows full Core Platform Proof reviewer evidence remains
+valid and is not silently downgraded by this refresh. This profile
+adds a receipt-backed validation of the current shared architecture.
+
+Certification profile `linux_docker_runtime` certifies:
+
+```text
+platform_application_hosting
+platform_linux_interaction
+```
+
+Not certified by this Linux Docker profile:
+
+```text
+full multi-phase Core Platform Proof
+native Linux host deployment
+systemd service integration
+native Linux desktop integration
+native package installation
+macOS
+```
+
+Do not read Linux Docker runtime certification as universal Linux
+distribution certification, native-host deployment certification, or
+full multi-phase Core Platform Proof certification.
+
+Do not read Windows Application Hosting certification as the complete
+multi-phase Core Platform Proof.
 
 Local proof endpoints:
 
@@ -94,13 +228,30 @@ The Windows interaction proof is not required for core completion.
 
 Shared core entrypoint implemented.
 
-The Linux launcher invokes the same Python core-proof runner.
+The Linux launcher invokes the same Python core-platform runner.
 
-Linux core execution is not live-certified until
-PROOF-PORTABILITY-1D.
+```text
+Linux Application Hosting Proof:
+  live-certified in Linux Docker runtime
 
-The optional Linux interaction proof is planned under
-PROOF-PORTABILITY-1C.
+Linux full multi-phase Core Platform Proof:
+  not separately certified in Linux Docker runtime
+```
+
+Native Linux host installation was not separately certified.
+
+Optional Linux interaction is live-certified in Linux Docker runtime
+via:
+
+```text
+applications/local_workspace_application/scripts/run-lkw-linux-container-certification.bat
+```
+
+Evidence artifact:
+
+```text
+docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+```
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
 
@@ -110,11 +261,10 @@ Shared core entrypoint implemented.
 
 The macOS launcher invokes the same Python core-proof runner.
 
-macOS core execution is not live-certified until
-PROOF-PORTABILITY-1D.
+macOS core execution is not live-certified.
 
-The optional macOS interaction proof is planned under
-PROOF-PORTABILITY-1C.
+The optional macOS interaction client and proof runner are
+implemented under PROOF-PORTABILITY-1C and are not live-certified.
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
 
@@ -122,11 +272,11 @@ Do not run Windows .bat or Windows PowerShell interaction steps.
 
 ## Operating-system proof status
 
-| Operating system | Core reviewer path                       | Optional OS interaction proof      | Certification status       |
-| ---------------- | ---------------------------------------- | ---------------------------------- | -------------------------- |
-| Windows          | Shared Python runner through Windows BAT | Windows PowerShell proof available | Core live-certified        |
-| Linux            | Shared Python runner through Linux SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
-| macOS            | Shared Python runner through macOS SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
+| Operating system | Core reviewer path                       | Optional OS interaction proof                         | Certification status                          |
+| ---------------- | ---------------------------------------- | ----------------------------------------------------- | --------------------------------------------- |
+| Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Application hosting + interaction live-certified on native Windows (`windows_native_runtime`); historical full Core reviewer path preserved |
+| Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Application hosting + interaction live-certified in Linux Docker runtime; full multi-phase Core Platform Proof not separately certified |
+| macOS            | Shared Python runner through macOS SH    | Shared Python interaction proof through macOS SH      | Implemented, not certified                    |
 
 ```text
 Implemented:
@@ -207,8 +357,11 @@ A reviewer using the one-command entrypoint does not run the
 optional OS interaction proof as part of core completion.
 
 The shared core entrypoint was delivered by PROOF-PORTABILITY-1B.
-Linux/macOS live certification remains PROOF-PORTABILITY-1D.
-Optional Linux/macOS interaction remains PROOF-PORTABILITY-1C.
+Shared OS interaction client/proof plumbing was delivered by
+PROOF-PORTABILITY-1C.
+macOS live certification remains open; Linux Docker runtime and
+native Windows shared-runner refresh certifications are recorded
+under PROOF-PORTABILITY-1D.
 ```
 
 ---
@@ -936,6 +1089,127 @@ This markdown page is the execution and inspection guide.
 
 ---
 
+## Managed Workspace and Folder Source
+
+This section verifies the first complete LKW product scenario on a
+real host through public HTTP endpoints only:
+
+```text
+create workspace
+→ attach local folder
+→ request sync (202 + persisted queued operation)
+→ interrupt / restart host while durable work is pending
+→ observe durable execution resume or fail-closed retry
+→ completed operation
+→ search inside the workspace with complete structured evidence
+→ confirm source references and isolation
+→ verify receipt (no router filesystem fallback)
+```
+
+It is not a separate infrastructure proof. It exercises the product
+API and records proof kind `managed_workspace_folder_sync`.
+
+Hardening (`LKW-PRODUCT-1-HARDENING`) requires durable MessageBus
+execution for sync and typed `search_summary` evidence on `TaskResult`
+— the HTTP router must not read source files or invent scores/snippets.
+
+### Windows (current certified product path)
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-managed-workspace-live-proof.bat
+```
+
+The launcher starts MongoDB (durable workspace state), runs a real
+LKW host, creates a temporary folder with two marker files, and
+drives the public API end-to-end.
+
+### Linux / macOS
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-managed-workspace-live-proof.sh
+```
+
+Do not treat Linux/macOS as certified for this product flow until
+the launcher has been run on that OS.
+
+### Public endpoints used by the proof
+
+| Step | Method | Path |
+|------|--------|------|
+| Create workspace | `POST` | `/v1/local_workspace/workspaces` |
+| Register folder source | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources` |
+| Start sync | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources/{source_id}/sync` |
+| Poll operation | `GET` | `/v1/local_workspace/operations/{operation_id}` |
+| Search workspace | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/search` |
+
+Tenant scope is taken from request context or the `X-Tenant-Id`
+header. Do not pass another tenant's id in the body to cross
+tenant boundaries.
+
+### Manual reviewer checks (optional)
+
+1. Create a workspace with a clear name (for example `Buildlogic Legal Case`).
+2. Register an allowlisted local folder as `source_type=local_folder`.
+3. Confirm a path outside the allowlist returns `400`.
+4. Start sync and poll until `status=completed`.
+5. Search for each marker and confirm `source_path` / `file_name`.
+6. Create a second workspace and confirm the first marker is absent.
+7. Restart the host and `GET` the original workspace — it must still exist.
+8. Inspect the ProofReceipt in Mongo Express for
+   `proof_kind=managed_workspace_folder_sync`.
+
+### Expected PASS signals
+
+```text
+proof_result=PASS
+proof_kind=managed_workspace_folder_sync
+receipt_recorded=true
+receipt_verified=true
+```
+
+Domain evidence must include:
+
+```text
+workspace_created=true
+source_registered=true
+source_policy_verified=true
+sync_operation_completed=true
+documents_indexed>=2
+search_results_verified=true
+source_references_verified=true
+workspace_isolation_verified=true
+second_sync_idempotent=true
+direct_provider_write=false
+original_files_modified=false
+sync_requested=true
+operation_persisted=true
+operation_queued=true
+host_or_worker_interrupted=true
+operation_not_lost=true
+operation_completed_after_restart=true
+duplicate_delivery_safe=true
+concurrent_sync_blocked_or_reused=true
+search_structured_evidence_present=true
+document_id_present=true
+source_id_present=true
+workspace_id_present=true
+source_path_present=true
+file_name_present=true
+real_score_present=true
+real_snippet_present=true
+metadata_present=true
+router_file_read_used=false
+diagnostic_reconstruction_used=false
+synthetic_score_used=false
+```
+
+### Authority
+
+The live launcher and the recorded ProofReceipt are authoritative.
+This markdown page is the external execution guide.
+
+---
+
 ## Core Platform Proof completion
 
 The Core Platform Proof is complete when the required core steps
@@ -949,18 +1223,36 @@ completion.
 
 # Optional operating-system interaction proofs
 
-Run this section only on Windows.
-
 This section is optional.
 
-Its PASS result extends the evidence set with a Windows client
-adapter proof.
+A PASS result extends the evidence set with one OS-specific client
+adapter proof recorded through the shared Python interaction proof
+runner.
 
 Its omission does not invalidate the Core Platform Proof.
 
+Run the matching OS launcher only on that operating system.
+
 ## Windows users — Optional W1: Run the Windows PowerShell interaction proof
 
-Run:
+Windows optional interaction remains implemented and live-certified
+on native Windows through the shared Python client and shared OS
+interaction proof runner.
+
+Native Windows certification profile `windows_native_runtime`
+live-certifies Application Hosting plus this interaction proof:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-windows-native-certification.bat
+```
+
+Evidence:
+
+```text
+docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+```
+
+Run the interaction proof alone:
 
 ```bat
 applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
@@ -972,15 +1264,18 @@ Optional deterministic reviewer command:
 applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat --run-id lkw-windows-interaction-live-001 --correlation-id lkw-windows-interaction-live-001
 ```
 
-The command starts only MongoDB and Mongo Express.
+The public BAT delegates to `run-lkw-os-interaction-proof.py --os-family windows`.
+
+The shared runner starts only MongoDB and Mongo Express.
 
 The live test starts hosted LKW itself.
 
-The live test invokes the real PowerShell adapter.
+The live test invokes the thin PowerShell wrapper, which launches
+the shared Python interaction client.
 
-The PowerShell adapter calls only `/v1/interactions/intake`.
+The shared client calls only `/v1/interactions/intake`.
 
-A green static/unit test alone does not close LKW.6C.
+A green static/unit test alone does not close live certification.
 
 Expected result:
 
@@ -991,6 +1286,8 @@ proof_tests_passed=1
 os_family=windows
 adapter_invoked=true
 adapter_id=lkw.windows_powershell
+client_runtime=python
+wrapper_runtime=windows_powershell
 powershell_runtime=Windows PowerShell
 transport=http
 intake_endpoint=/v1/interactions/intake
@@ -1078,7 +1375,8 @@ proof_kind = platform_windows_interaction
 result = PASS
 provider_evidence.os_family = windows
 provider_evidence.os_adapter = lkw.windows_powershell
-provider_evidence.client_runtime = Windows PowerShell
+provider_evidence.client_runtime = python
+provider_evidence.wrapper_runtime = windows_powershell
 provider_evidence.intake_endpoint = /v1/interactions/intake
 provider_evidence.intake_service = InteractionIntakeService
 provider_evidence.execution_boundary = LocalWorkspaceTaskExecutor
@@ -1086,6 +1384,7 @@ provider_evidence.orchestrator = NexusLoop
 domain_evidence.adapter_invoked = true
 domain_evidence.interaction_surface = lab_json
 domain_evidence.interaction_channel = lab
+domain_evidence.powershell_runtime = Windows PowerShell
 domain_evidence.index_executed = true
 domain_evidence.index_state = completed
 domain_evidence.index_task_id is non-empty
@@ -1123,31 +1422,92 @@ Markdown is the execution and inspection guide.
 
 ## Linux users — Optional interaction proof
 
-Status: planned
+Status: implemented and live-certified in Linux Docker runtime
 
-The Linux interaction client and its live ProofReceipt path are
-not implemented in the current repository state.
+Linux has a thin shell wrapper and shares the Python interaction
+client and OS interaction proof runner.
+
+Native Linux host deployment is not separately certified.
+
+Automated Linux Docker runtime certification profile
+`linux_docker_runtime` live-certifies:
+
+```text
+Linux Application Hosting Proof (platform_application_hosting)
+Linux Optional OS Interaction Proof (platform_linux_interaction)
+```
+
+The full multi-phase Core Platform Proof is not separately certified
+in Linux Docker runtime.
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-linux-container-certification.bat
+```
+
+Evidence:
+
+```text
+docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+```
+
+Direct Linux host launcher (when already on Linux):
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-linux-interaction-proof.sh
+```
+
+Frozen identity:
+
+```text
+os_family=linux
+proof_kind=platform_linux_interaction
+adapter_id=lkw.linux_shell
+source=linux_shell
+wrapper_runtime=posix_sh
+```
 
 Do not substitute the Windows PowerShell proof.
 
-This path is planned under PROOF-PORTABILITY-1C.
+Do not describe Linux Docker runtime certification as native Linux
+host certification, as certification of every Linux distribution, or
+as full multi-phase Core Platform Proof certification.
 
-Linux is not certified.
+A Linux ProofReceipt can only be produced by a real successful run
+on Linux (native or Linux container). Source-code existence is not
+live evidence.
 
 ---
 
 ## macOS users — Optional interaction proof
 
-Status: planned
+Status: implemented, not live-certified
 
-The macOS interaction client and its live ProofReceipt path are
-not implemented in the current repository state.
+macOS has a thin shell wrapper and shares the Python interaction
+client and OS interaction proof runner.
+
+Run only on macOS:
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-macos-interaction-proof.sh
+```
+
+Frozen identity:
+
+```text
+os_family=macos
+proof_kind=platform_macos_interaction
+adapter_id=lkw.macos_shell
+source=macos_shell
+wrapper_runtime=posix_sh
+```
 
 Do not substitute the Windows PowerShell proof.
 
-This path is planned under PROOF-PORTABILITY-1C.
+A macOS ProofReceipt can only be produced by a real successful run
+on macOS. Source-code existence is not live evidence.
 
-macOS is not certified.
+macOS optional interaction is not live-certified until
+PROOF-PORTABILITY-1D.
 
 ---
 

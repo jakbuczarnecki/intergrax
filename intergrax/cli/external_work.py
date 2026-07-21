@@ -178,7 +178,7 @@ def run_external_work(args: argparse.Namespace) -> int:
         return _retry_attestation(
             Path(args.store),
             args.execution_id,
-            demo_key=bool(getattr(args, "demo_key", False)),
+            demo_key=bool(args.demo_key),
         )
     print(f"Unknown external-work command: {cmd}", file=sys.stderr)
     return 2
@@ -188,9 +188,7 @@ def run_demo(args: argparse.Namespace) -> int:
     if args.demo_command == "governed-contractor":
         return _run_full_demo(
             Path(args.store),
-            simulate_signing_failure=bool(
-                getattr(args, "simulate_signing_failure", False)
-            ),
+            simulate_signing_failure=bool(args.simulate_signing_failure),
         )
     print(f"Unknown demo command: {args.demo_command}", file=sys.stderr)
     return 2
@@ -206,7 +204,7 @@ def run_receipt(args: argparse.Namespace) -> int:
             if args.public_key_file is not None
             else None,
             key_id=args.key_id,
-            demo_key=bool(getattr(args, "demo_key", False)),
+            demo_key=bool(args.demo_key),
         )
     print(f"Unknown receipt command: {args.receipt_command}", file=sys.stderr)
     return 2

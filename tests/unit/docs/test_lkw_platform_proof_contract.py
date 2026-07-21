@@ -285,16 +285,17 @@ def test_lkw_platform_proof_linux_honesty() -> None:
     start = text.index("## Linux users — Optional interaction proof")
     end = text.index("## macOS users — Optional interaction proof")
     linux_section = text[start:end]
-    assert "Status: planned" in linux_section
-    assert "not implemented" in linux_section
-    assert "not certified" in linux_section
-    for forbidden in (
-        "proof_result=PASS",
-        "proof_kind=platform_linux_interaction",
-        "run-lkw-linux-interaction-proof",
-        "lkw.linux_shell",
-    ):
-        assert forbidden not in linux_section
+    assert "live-certified in Linux Docker runtime" in linux_section
+    assert "not separately certified" in linux_section
+    assert "run-lkw-linux-interaction-proof.sh" in linux_section
+    assert "run-lkw-linux-container-certification.bat" in linux_section
+    assert "LKW_LINUX_DOCKER_CERTIFICATION.json" in linux_section
+    assert "proof_kind=platform_linux_interaction" in linux_section
+    assert "lkw.linux_shell" in linux_section
+    assert "native Linux host" in linux_section.lower() or (
+        "Native Linux host" in linux_section
+    )
+    assert "every Linux distribution" in linux_section
 
 
 def test_lkw_platform_proof_macos_honesty() -> None:
@@ -302,16 +303,179 @@ def test_lkw_platform_proof_macos_honesty() -> None:
     start = text.index("## macOS users — Optional interaction proof")
     end = text.index("## Core reviewer shortcuts")
     macos_section = text[start:end]
-    assert "Status: planned" in macos_section
-    assert "not implemented" in macos_section
-    assert "not certified" in macos_section
-    for forbidden in (
-        "proof_result=PASS",
-        "proof_kind=platform_macos_interaction",
-        "run-lkw-macos-interaction-proof",
-        "lkw.macos_shell",
-    ):
-        assert forbidden not in macos_section
+    assert "Status: implemented, not live-certified" in macos_section
+    assert "not live-certified" in macos_section
+    assert "run-lkw-macos-interaction-proof.sh" in macos_section
+    assert "proof_kind=platform_macos_interaction" in macos_section
+    assert "lkw.macos_shell" in macos_section
+    assert "proof_result=PASS" not in macos_section
+    assert "live-certified" not in macos_section.replace("not live-certified", "")
+
+
+def test_lkw_platform_proof_certification_matrix() -> None:
+    text = _proof_text()
+    assert "live-certified on native Windows" in text
+    assert "live-certified in Linux Docker runtime" in text
+    assert "Implemented, not certified" in text
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in text
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.json" in text
+    assert "PROOF-PORTABILITY-1D-MATRIX" in text
+    assert "remain not live-certified" in text
+    windows_row_idx = text.index("| Windows")
+    linux_row_idx = text.index("| Linux")
+    macos_row_idx = text.index("| macOS")
+    windows_row = text[windows_row_idx : windows_row_idx + 320]
+    assert "Application hosting + interaction live-certified on native Windows" in (
+        windows_row
+    )
+    assert "windows_native_runtime" in windows_row
+    linux_row = text[linux_row_idx : linux_row_idx + 420]
+    assert "Application hosting + interaction live-certified in Linux Docker runtime" in (
+        linux_row
+    )
+    assert "full multi-phase Core Platform Proof not separately certified" in linux_row
+    assert "Implemented, not certified" in text[macos_row_idx : macos_row_idx + 220]
+    assert "Shared Python runner through Windows BAT" in text
+    assert "Shared Python runner through Linux SH" in text
+    assert "Shared Python runner through macOS SH" in text
+    assert "PROOF-PORTABILITY-1B" in text
+    assert "PROOF-PORTABILITY-1C" in text
+    assert "native Linux host" in text.lower() or "Native Linux host" in text
+    assert "LKW_WINDOWS_NATIVE_CERTIFICATION.json" in text
+    assert (
+        _SCRIPTS / "run-lkw-windows-native-certification.py"
+    ).is_file()
+    assert (
+        _SCRIPTS / "run-lkw-windows-native-certification.bat"
+    ).is_file()
+    assert (
+        _SCRIPTS / "generate-lkw-platform-certification-matrix.py"
+    ).is_file()
+    matrix_md = (
+        _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+    )
+    assert matrix_md.is_file()
+    matrix_text = matrix_md.read_text(encoding="utf-8")
+    assert "live-certified" in matrix_text
+    assert "not live-certified" in matrix_text
+    assert "Application Hosting certification is not the same as complete" in (
+        matrix_text
+    )
+
+
+def test_lkw_platform_proof_plan_portability_contract() -> None:
+    text = _IMPL_PLAN.read_text(encoding="utf-8")
+    assert "PROOF-PORTABILITY-1A" in text
+    assert "PROOF-PORTABILITY-1B" in text
+    assert "PROOF-PORTABILITY-1C" in text
+    assert "PROOF-PORTABILITY-1D" in text
+    assert "PROOF-PORTABILITY-1D-MATRIX" in text
+    a_idx = text.index("PROOF-PORTABILITY-1A")
+    b_idx = text.index("PROOF-PORTABILITY-1B")
+    c_idx = text.index("PROOF-PORTABILITY-1C")
+    d_idx = text.index("PROOF-PORTABILITY-1D")
+    assert "**Done**" in text[a_idx : a_idx + 160]
+    assert "**Done**" in text[b_idx : b_idx + 160]
+    assert "**Done**" in text[c_idx : c_idx + 200]
+    assert "**Partial**" in text[d_idx : d_idx + 500]
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in text
+    assert "live-certified on native Windows through current shared runner" in text
+    assert "live-certified in Linux Docker runtime" in text
+    assert "implemented, not live-certified" in text or (
+        "implemented, not live-certified" in text.lower()
+    )
+    assert "not separately certified" in text
+    assert "Linux Application Hosting Proof" in text
+    assert "Windows Application Hosting Proof" in text
+    assert "full multi-phase Core Platform Proof" in text
+    assert "linux_docker_runtime" in text
+    assert "windows_native_runtime" in text
+    assert "LKW_WINDOWS_NATIVE_CERTIFICATION.json" in text
+    assert "macos_native_runtime" in text or "macOS" in text
+    assert "not live-certified" in text
+
+
+def test_lkw_platform_proof_shared_os_interaction_architecture() -> None:
+    text = _proof_text()
+    assert "invoke-lkw-interaction.py" in text
+    assert "run-lkw-os-interaction-proof.py" in text
+    assert "Windows PowerShell wrapper" in text
+    assert "Linux shell wrapper" in text
+    assert "macOS shell wrapper" in text
+    assert "lkw.windows_powershell" in text
+    assert "lkw.linux_shell" in text
+    assert "lkw.macos_shell" in text
+    assert "platform_windows_interaction" in text
+    assert "platform_linux_interaction" in text
+    assert "platform_macos_interaction" in text
+    assert (
+        "Windows Application Hosting Proof:\n"
+        "  live-certified on native Windows through current shared runner"
+        in text
+    )
+    assert (
+        "Windows Optional OS Interaction Proof:\n"
+        "  live-certified on native Windows through shared Python client/proof runner"
+        in text
+    )
+    assert (
+        "Linux Application Hosting Proof:\n  live-certified in Linux Docker runtime"
+        in text
+    )
+    assert (
+        "Linux Optional OS Interaction Proof:\n"
+        "  live-certified in Linux Docker runtime"
+        in text
+    )
+    assert (
+        "Linux full multi-phase Core Platform Proof:\n"
+        "  not separately certified by Linux Docker profile"
+        in text
+    )
+    assert "macOS:\n  implemented, not live-certified" in text
+    assert "Linux native-host deployment:\n  not separately certified" in text
+    assert "planned, not implemented, not certified" not in text
+    assert (_SCRIPTS / "invoke-lkw-interaction.py").is_file()
+    assert (_SCRIPTS / "run-lkw-os-interaction-proof.py").is_file()
+    assert (_SCRIPTS / "run-lkw-linux-container-certification.py").is_file()
+    assert (_SCRIPTS / "run-lkw-linux-container-certification.bat").is_file()
+    assert (_SCRIPTS / "run-lkw-windows-native-certification.py").is_file()
+    assert (_SCRIPTS / "run-lkw-windows-native-certification.bat").is_file()
+    assert (
+        _DOCKER / "Dockerfile.linux-certification"
+    ).is_file()
+    assert (_DOCKER / "linux-certification.compose.yml").is_file()
+    compose = (_DOCKER / "linux-certification.compose.yml").read_text(encoding="utf-8")
+    assert "docker.sock" not in compose
+    assert "lkw-linux-certification-mongodb" in compose
+    assert "lkw-linux-certification:" in compose
+    assert "privileged: true" not in compose
+
+
+def test_lkw_linux_docker_certification_docs_do_not_overclaim() -> None:
+    text = _proof_text()
+    forbidden = (
+        "Linux fully certified on native host",
+        "Linux native deployment certified",
+        "all Linux distributions certified",
+        "Linux desktop certified",
+        "Linux Core Platform Proof certified",
+        "Linux core proof certified",
+        "full Linux platform proof certified",
+        "Linux fully certified",
+        "Linux native certified",
+        "all Linux environments certified",
+    )
+    for phrase in forbidden:
+        assert phrase not in text
+    assert "live-certified in Linux Docker runtime" in text
+    assert "not separately certified" in text
+    assert "Linux Application Hosting Proof" in text
+    assert "full multi-phase Core Platform Proof" in text
+    assert "linux_docker_runtime" in text
+    # Forbidden heading for application-hosting-only blocks.
+    assert "\nCore proof\n" not in text
+    assert "Linux core proof:" not in text
 
 
 def test_lkw_platform_proof_core_numbering() -> None:
@@ -351,23 +515,6 @@ def test_lkw_platform_proof_core_independence() -> None:
     ) in text
 
 
-def test_lkw_platform_proof_certification_matrix() -> None:
-    text = _proof_text()
-    assert "Core live-certified" in text
-    assert "Implemented, not certified" in text
-    windows_row_idx = text.index("| Windows")
-    linux_row_idx = text.index("| Linux")
-    macos_row_idx = text.index("| macOS")
-    assert "Core live-certified" in text[windows_row_idx : windows_row_idx + 220]
-    assert "Implemented, not certified" in text[linux_row_idx : linux_row_idx + 220]
-    assert "Implemented, not certified" in text[macos_row_idx : macos_row_idx + 220]
-    assert "Shared Python runner through Windows BAT" in text
-    assert "Shared Python runner through Linux SH" in text
-    assert "Shared Python runner through macOS SH" in text
-    assert "PROOF-PORTABILITY-1B" in text
-    assert "PROOF-PORTABILITY-1C" in text
-
-
 def test_lkw_platform_proof_shared_core_entrypoint_commands() -> None:
     text = _proof_text()
     assert "## Recommended one-command Core Platform Proof" in text
@@ -403,24 +550,6 @@ def test_lkw_platform_proof_powershell_optional_only() -> None:
     core_start = text.index("## Core prerequisites")
     core_section = text[core_start:commands_start]
     assert "PowerShell" not in core_section
-
-
-def test_lkw_platform_proof_plan_portability_contract() -> None:
-    text = _IMPL_PLAN.read_text(encoding="utf-8")
-    assert "PROOF-PORTABILITY-1A" in text
-    assert "PROOF-PORTABILITY-1B" in text
-    assert "PROOF-PORTABILITY-1C" in text
-    assert "PROOF-PORTABILITY-1D" in text
-    a_idx = text.index("PROOF-PORTABILITY-1A")
-    b_idx = text.index("PROOF-PORTABILITY-1B")
-    c_idx = text.index("PROOF-PORTABILITY-1C")
-    d_idx = text.index("PROOF-PORTABILITY-1D")
-    assert "**Done**" in text[a_idx : a_idx + 160]
-    assert "**Done**" in text[b_idx : b_idx + 160]
-    assert "**Planned**" in text[c_idx : c_idx + 160]
-    assert "**Planned**" in text[d_idx : d_idx + 160]
-    assert "shared entrypoint implemented and live-recorded" in text
-    assert "shared entrypoint implemented, not live-certified" in text
 
 
 def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None:

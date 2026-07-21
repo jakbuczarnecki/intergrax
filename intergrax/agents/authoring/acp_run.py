@@ -446,10 +446,16 @@ async def run_acp_session(
         ),
     }
     structured_data.update(isolation_structured_data_from_exec_ctx(_exec_ctx_from_step(step_ctx)))
+    # Preserve typed domain summaries for TaskResult / product handoff (LKW search/index).
+    if isinstance(last_outcome.output, dict):
+        for key in ("search_summary", "ingest_summary", "domain_summary"):
+            value = last_outcome.output.get(key)
+            if isinstance(value, dict) and value:
+                structured_data[key] = dict(value)
 
     result = AgentRunResult(
         status=status,
-        output=last_outcome.output or "",
+        output=last_outcome.output if last_outcome.output is not None else "",
         state=dict(kernel_ctx.state_root),
         artifacts=list(last_outcome.artifacts),
         artifact_refs=artifact_refs,

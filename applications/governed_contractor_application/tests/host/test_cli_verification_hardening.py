@@ -1,13 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""CLI verification hardening (FH-1…FH-14) — offline, no network."""
+"""CLI verification hardening (FH-1…FH-14) — offline, no network.
+
+Most coverage runs in-process via ``intergrax.cli.main`` (fast).
+A small subprocess smoke set proves fresh-process portability without
+paying ``uv run`` startup on every case.
+"""
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
 import sys
+from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -15,6 +23,7 @@ import pytest
 from governed_contractor_application.host.offline_demo import (
     run_offline_governed_contractor_demo,
 )
+from intergrax.cli.main import main as cli_main
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
 from intergrax.runtime.execution_evidence.attestor import build_deterministic_test_attestor
 from intergrax.runtime.execution_evidence.key_store import (
@@ -27,15 +36,35 @@ from intergrax.runtime.execution_evidence.verify import verify_proof_receipt
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO = Path(__file__).resolve().parents[4]
+_BANNED_HELP_CHARS = ("\u2192", "\u2713", "\u2717", "\u2022", "\u2014", "\u2013")
 
 
-def _uv_intergrax(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+@dataclass(frozen=True, slots=True)
+class _CliResult:
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+def _cli(*args: str) -> _CliResult:
+    """Fast in-process CLI invocation (same process as pytest)."""
+    out = io.StringIO()
+    err = io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        try:
+            code = cli_main(list(args))
+        except SystemExit as exc:
+            code = int(exc.code or 0)
+    return _CliResult(returncode=int(code), stdout=out.getvalue(), stderr=err.getvalue())
+
+
+def _cli_subprocess(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    """True fresh process — uses venv python, not ``uv run``."""
     env = os.environ.copy()
-    # Force a narrow stdout encoding to catch UnicodeEncodeError in help paths.
     env.pop("PYTHONUTF8", None)
     env["PYTHONIOENCODING"] = "cp1252"
     return subprocess.run(
-        ["uv", "run", "intergrax", *args],
+        [sys.executable, "-m", "intergrax.cli", *args],
         cwd=str(cwd or _REPO),
         capture_output=True,
         text=True,
@@ -46,6 +75,15 @@ def _uv_intergrax(*args: str, cwd: Path | None = None) -> subprocess.CompletedPr
     )
 
 
+@pytest.fixture(scope="module")
+def demo_store(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, object]:
+    """One offline demo for the module — avoid re-signing for every negative case."""
+    store = tmp_path_factory.mktemp("demo")
+    report = run_offline_governed_contractor_demo(store_root=store)
+    assert report.verification_valid is True
+    return store, report
+
+
 def test_filesystem_key_resolver_roundtrip(tmp_path: Path) -> None:
     attestor = build_deterministic_test_attestor(key_id=DEMO_OFFLINE_KEY_ID)
     path = write_verification_key_artifact(
@@ -54,8 +92,8 @@ def test_filesystem_key_resolver_roundtrip(tmp_path: Path) -> None:
         public_key_bytes=attestor.public_key_bytes,
     )
     text = path.read_text(encoding="utf-8")
-    assert "private" not in text.lower() or "private_key" not in text
-    assert "seed" not in text.lower()
+    assert "private_key" not in text
+    assert '"seed"' not in text.lower()
     resolver = FilesystemHostKeyResolver(tmp_path)
     assert resolver.resolve_public_key(attestor.key_id) == attestor.public_key_bytes
     assert resolver.resolve_public_key("unknown") is None
@@ -102,7 +140,7 @@ def test_filesystem_key_resolver_malformed_and_deprecated(tmp_path: Path) -> Non
         FilesystemHostKeyResolver(tmp_path).resolve_public_key("algo")
 
 
-def test_cli_help_ascii_safe() -> None:
+def test_cli_help_ascii_safe_inprocess() -> None:
     commands = [
         ["--help"],
         ["demo", "--help"],
@@ -112,59 +150,67 @@ def test_cli_help_ascii_safe() -> None:
         ["external-work", "--help"],
         ["external-work", "retry-attestation", "--help"],
     ]
-    banned = ("\u2192", "\u2713", "\u2717", "\u2022", "\u2014", "\u2013")
     for cmd in commands:
-        proc = _uv_intergrax(*cmd)
-        assert proc.returncode == 0, (cmd, proc.stderr)
-        combined = (proc.stdout or "") + (proc.stderr or "")
-        for ch in banned:
+        result = _cli(*cmd)
+        assert result.returncode == 0, (cmd, result.stderr)
+        combined = result.stdout + result.stderr
+        for ch in _BANNED_HELP_CHARS:
             assert ch not in combined, f"{cmd} contains {ch!r}"
 
 
-def test_verify_requires_explicit_key_source(tmp_path: Path) -> None:
-    report = run_offline_governed_contractor_demo(store_root=tmp_path / "demo")
-    receipt = Path(report.receipt_absolute_path)
-    proc = _uv_intergrax("receipt", "verify", str(receipt))
-    assert proc.returncode != 0
-    assert "verification_key_source_required" in proc.stdout
-
-
-def test_verify_store_backed_subprocess(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    assert report.verification_valid is True
-    proc = _uv_intergrax(
-        "receipt",
-        "verify",
-        str(Path(report.receipt_absolute_path)),
-        "--store",
-        str(store),
-    )
+def test_cli_help_cp1252_subprocess_smoke() -> None:
+    """One real process under narrow encoding — Windows help contract."""
+    proc = _cli_subprocess("demo", "governed-contractor", "--help")
     assert proc.returncode == 0, proc.stderr
-    payload = json.loads(proc.stdout)
-    assert payload["valid"] is True
-    assert payload["key_source"] == "store"
-    assert payload["signature_valid"] is True
+    combined = (proc.stdout or "") + (proc.stderr or "")
+    for ch in _BANNED_HELP_CHARS:
+        assert ch not in combined
 
 
-def test_verify_public_key_hex_and_conflict(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    attestor = build_deterministic_test_attestor(key_id=report.key_id)
-    receipt = str(Path(report.receipt_absolute_path))
-    ok = _uv_intergrax(
+def test_verify_key_sources_and_negatives(demo_store: tuple[Path, object]) -> None:
+    store, report = demo_store
+    receipt = str(Path(report.receipt_absolute_path))  # type: ignore[attr-defined]
+    attestor = build_deterministic_test_attestor(key_id=report.key_id)  # type: ignore[attr-defined]
+
+    missing = _cli("receipt", "verify", receipt)
+    assert missing.returncode != 0
+    assert "verification_key_source_required" in missing.stdout
+
+    store_ok = _cli("receipt", "verify", receipt, "--store", str(store))
+    assert store_ok.returncode == 0
+    assert json.loads(store_ok.stdout)["key_source"] == "store"
+
+    hex_ok = _cli(
         "receipt",
         "verify",
         receipt,
         "--public-key-hex",
         attestor.public_key_bytes.hex(),
         "--key-id",
-        report.key_id,
+        report.key_id,  # type: ignore[attr-defined]
     )
-    assert ok.returncode == 0
-    assert json.loads(ok.stdout)["key_source"] == "public_key_hex"
+    assert hex_ok.returncode == 0
+    assert json.loads(hex_ok.stdout)["key_source"] == "public_key_hex"
 
-    conflict = _uv_intergrax(
+    key_file = store / "pub.hex"
+    key_file.write_text(attestor.public_key_bytes.hex(), encoding="utf-8")
+    file_ok = _cli(
+        "receipt",
+        "verify",
+        receipt,
+        "--public-key-file",
+        str(key_file),
+        "--key-id",
+        report.key_id,  # type: ignore[attr-defined]
+    )
+    assert file_ok.returncode == 0
+    assert json.loads(file_ok.stdout)["key_source"] == "public_key_file"
+
+    demo_ok = _cli("receipt", "verify", receipt, "--demo-key")
+    assert demo_ok.returncode == 0
+    assert json.loads(demo_ok.stdout)["key_source"] == "demo_key"
+
+    conflict = _cli(
         "receipt",
         "verify",
         receipt,
@@ -173,131 +219,120 @@ def test_verify_public_key_hex_and_conflict(tmp_path: Path) -> None:
         "--public-key-hex",
         attestor.public_key_bytes.hex(),
         "--key-id",
-        report.key_id,
+        report.key_id,  # type: ignore[attr-defined]
     )
     assert conflict.returncode != 0
     assert "exactly_one_verification_key_source_required" in conflict.stdout
 
-
-def test_verify_public_key_file(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    attestor = build_deterministic_test_attestor(key_id=report.key_id)
-    key_file = tmp_path / "pub.hex"
-    key_file.write_text(attestor.public_key_bytes.hex(), encoding="utf-8")
-    proc = _uv_intergrax(
+    mismatch = _cli(
         "receipt",
         "verify",
-        str(Path(report.receipt_absolute_path)),
-        "--public-key-file",
-        str(key_file),
-        "--key-id",
-        report.key_id,
-    )
-    assert proc.returncode == 0
-    assert json.loads(proc.stdout)["key_source"] == "public_key_file"
-
-
-def test_verify_demo_key_and_mismatch(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    ok = _uv_intergrax(
-        "receipt",
-        "verify",
-        str(Path(report.receipt_absolute_path)),
-        "--demo-key",
-    )
-    assert ok.returncode == 0
-    assert json.loads(ok.stdout)["key_source"] == "demo_key"
-
-    receipt = ProofReceipt.model_validate_json(
-        Path(report.receipt_absolute_path).read_text(encoding="utf-8")
-    )
-    mutated = receipt.model_copy(
-        update={
-            "host_attestation": receipt.host_attestation.model_copy(
-                update={"key_id": "other-key"}
-            )
-        }
-    )
-    bad_path = tmp_path / "bad_key.json"
-    bad_path.write_text(mutated.model_dump_json(), encoding="utf-8")
-    bad = _uv_intergrax("receipt", "verify", str(bad_path), "--demo-key")
-    assert bad.returncode != 0
-    assert "demo_key_id_mismatch" in bad.stdout
-
-
-def test_verify_wrong_key_and_mutated_receipt(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    receipt_path = Path(report.receipt_absolute_path)
-    other = build_deterministic_test_attestor(
-        key_id=report.key_id,
-        seed=b"\x11" * 32,
-    )
-    wrong = _uv_intergrax(
-        "receipt",
-        "verify",
-        str(receipt_path),
-        "--public-key-hex",
-        other.public_key_bytes.hex(),
-        "--key-id",
-        report.key_id,
-    )
-    assert wrong.returncode != 0
-    assert json.loads(wrong.stdout)["valid"] is False
-
-    receipt = ProofReceipt.model_validate_json(receipt_path.read_text(encoding="utf-8"))
-    event = receipt.execution_boundary_event.model_copy(update={"actor": "mutated"})
-    mutated = receipt.model_copy(update={"execution_boundary_event": event})
-    mut_path = store / "export" / "accept_receipt_mutated.json"
-    mut_path.write_text(mutated.model_dump_json(indent=2), encoding="utf-8")
-    mut = _uv_intergrax("receipt", "verify", str(mut_path), "--store", str(store))
-    assert mut.returncode != 0
-    payload = json.loads(mut.stdout)
-    assert payload["valid"] is False
-    assert "digest_mismatch" in payload["errors"]
-
-
-def test_verify_key_id_mismatch_flag(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    attestor = build_deterministic_test_attestor(key_id=report.key_id)
-    proc = _uv_intergrax(
-        "receipt",
-        "verify",
-        str(Path(report.receipt_absolute_path)),
+        receipt,
         "--public-key-hex",
         attestor.public_key_bytes.hex(),
         "--key-id",
         "wrong-id",
     )
-    assert proc.returncode != 0
-    assert "key_id_mismatch" in proc.stdout
+    assert mismatch.returncode != 0
+    assert "key_id_mismatch" in mismatch.stdout
 
-
-def test_verify_missing_store_and_missing_key(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    receipt = str(Path(report.receipt_absolute_path))
-    missing_store = _uv_intergrax(
-        "receipt", "verify", receipt, "--store", str(tmp_path / "nope")
-    )
+    missing_store = _cli("receipt", "verify", receipt, "--store", str(store / "nope"))
     assert missing_store.returncode != 0
     assert "store_not_found" in missing_store.stdout
 
-    empty = tmp_path / "empty_store"
+    empty = store / "empty_keys"
     empty.mkdir()
-    no_key = _uv_intergrax("receipt", "verify", receipt, "--store", str(empty))
+    no_key = _cli("receipt", "verify", receipt, "--store", str(empty))
     assert no_key.returncode != 0
-    payload = json.loads(no_key.stdout)
-    assert payload["valid"] is False
-    assert "unknown_key_id" in payload["errors"]
+    assert "unknown_key_id" in json.loads(no_key.stdout)["errors"]
+
+    other = build_deterministic_test_attestor(
+        key_id=report.key_id,  # type: ignore[attr-defined]
+        seed=b"\x11" * 32,
+    )
+    wrong = _cli(
+        "receipt",
+        "verify",
+        receipt,
+        "--public-key-hex",
+        other.public_key_bytes.hex(),
+        "--key-id",
+        report.key_id,  # type: ignore[attr-defined]
+    )
+    assert wrong.returncode != 0
+    assert json.loads(wrong.stdout)["valid"] is False
+
+    receipt_obj = ProofReceipt.model_validate_json(Path(receipt).read_text(encoding="utf-8"))
+    event = receipt_obj.execution_boundary_event.model_copy(update={"actor": "mutated"})
+    mutated = receipt_obj.model_copy(update={"execution_boundary_event": event})
+    mut_path = store / "export" / "accept_receipt_mutated.json"
+    mut_path.write_text(mutated.model_dump_json(indent=2), encoding="utf-8")
+    mut = _cli("receipt", "verify", str(mut_path), "--store", str(store))
+    assert mut.returncode != 0
+    mut_payload = json.loads(mut.stdout)
+    assert mut_payload["valid"] is False
+    assert "digest_mismatch" in mut_payload["errors"]
+
+    bad_key_receipt = receipt_obj.model_copy(
+        update={
+            "host_attestation": receipt_obj.host_attestation.model_copy(
+                update={"key_id": "other-key"}
+            )
+        }
+    )
+    bad_path = store / "bad_key.json"
+    bad_path.write_text(bad_key_receipt.model_dump_json(), encoding="utf-8")
+    demo_mismatch = _cli("receipt", "verify", str(bad_path), "--demo-key")
+    assert demo_mismatch.returncode != 0
+    assert "demo_key_id_mismatch" in demo_mismatch.stdout
 
 
-def test_signer_failure_recovery_cli_subprocess(tmp_path: Path) -> None:
+def test_offline_demo_exports_verification_key(demo_store: tuple[Path, object]) -> None:
+    store, report = demo_store
+    key_path = store / "keys" / f"{DEMO_OFFLINE_KEY_ID}.json"
+    assert key_path.is_file()
+    assert "--store" in report.verification_command  # type: ignore[attr-defined]
+    resolver = FilesystemHostKeyResolver(store)
+    receipt = ProofReceipt.model_validate_json(
+        Path(report.receipt_absolute_path).read_text(encoding="utf-8")  # type: ignore[attr-defined]
+    )
+    assert verify_proof_receipt(
+        receipt, key_resolver=resolver, require_policy_bundle_artifact=True
+    ).valid
+
+
+def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -> None:
+    store = tmp_path / "empty"
+    store.mkdir()
+    missing = _cli(
+        "external-work",
+        "retry-attestation",
+        "no-such-exec",
+        "--store",
+        str(store),
+    )
+    assert missing.returncode != 0
+    assert "signing_key_source_required" in missing.stdout
+
+    run_offline_governed_contractor_demo(
+        store_root=store,
+        simulate_signing_failure=True,
+    )
+    bad_id = _cli(
+        "external-work",
+        "retry-attestation",
+        "missing-exec",
+        "--store",
+        str(store),
+    )
+    assert bad_id.returncode != 0
+    assert "execution_result_missing" in bad_id.stdout
+
+
+def test_signer_failure_recovery_fresh_process(tmp_path: Path) -> None:
+    """Fresh-process proof: demo fail -> retry -> verify -> idempotent retry."""
     store = tmp_path / "recovery"
-    fail = _uv_intergrax(
+    fail = _cli_subprocess(
         "demo",
         "governed-contractor",
         "--offline",
@@ -311,12 +346,11 @@ def test_signer_failure_recovery_cli_subprocess(tmp_path: Path) -> None:
     assert fail_payload["provider_execution_succeeded"] is True
     assert fail_payload["attestation_succeeded"] is False
     assert fail_payload.get("receipt_path") in (None, "")
-    assert (store / "provider_calls.json").is_file()
     ledger = json.loads((store / "provider_calls.json").read_text(encoding="utf-8"))
     assert ledger["create_calls"] == 1
     assert ledger["accept_calls"] == 1
 
-    retry = _uv_intergrax(
+    retry = _cli_subprocess(
         "external-work",
         "retry-attestation",
         "exec-offline-accept",
@@ -331,13 +365,13 @@ def test_signer_failure_recovery_cli_subprocess(tmp_path: Path) -> None:
     export = store / "export" / "accept_receipt.json"
     assert export.is_file()
 
-    verify = _uv_intergrax(
+    verify = _cli_subprocess(
         "receipt", "verify", str(export), "--store", str(store)
     )
     assert verify.returncode == 0
     assert json.loads(verify.stdout)["valid"] is True
 
-    again = _uv_intergrax(
+    again = _cli_subprocess(
         "external-work",
         "retry-attestation",
         "exec-offline-accept",
@@ -348,66 +382,18 @@ def test_signer_failure_recovery_cli_subprocess(tmp_path: Path) -> None:
     again_payload = json.loads(again.stdout)
     assert again_payload["reason"] == "attested_idempotent"
     assert again_payload["provider_invoked"] is False
+    assert json.loads((store / "provider_calls.json").read_text(encoding="utf-8")) == ledger
 
-    ledger2 = json.loads((store / "provider_calls.json").read_text(encoding="utf-8"))
-    assert ledger2 == ledger
-
-    # Security: no private material in store keys / receipts.
     for path in store.rglob("*.json"):
         text = path.read_text(encoding="utf-8").lower()
         assert "private_key" not in text
         assert '"seed"' not in text
 
 
-def test_retry_invalid_execution_and_without_signer(tmp_path: Path) -> None:
-    store = tmp_path / "empty"
-    store.mkdir()
-    missing = _uv_intergrax(
-        "external-work",
-        "retry-attestation",
-        "no-such-exec",
-        "--store",
-        str(store),
-    )
-    # No demo_mode marker -> signing source required
-    assert missing.returncode != 0
-    assert "signing_key_source_required" in missing.stdout
-
-    run_offline_governed_contractor_demo(
-        store_root=store,
-        simulate_signing_failure=True,
-    )
-    bad_id = _uv_intergrax(
-        "external-work",
-        "retry-attestation",
-        "missing-exec",
-        "--store",
-        str(store),
-    )
-    assert bad_id.returncode != 0
-    assert "execution_result_missing" in bad_id.stdout
-
-
-def test_offline_demo_exports_verification_key(tmp_path: Path) -> None:
-    store = tmp_path / "demo"
-    report = run_offline_governed_contractor_demo(store_root=store)
-    key_path = store / "keys" / f"{DEMO_OFFLINE_KEY_ID}.json"
-    assert key_path.is_file()
-    assert "verification_key_path" in report.as_dict()
-    assert "verification_command" in report.as_dict()
-    assert "--store" in report.verification_command
-    resolver = FilesystemHostKeyResolver(store)
-    receipt = ProofReceipt.model_validate_json(
-        Path(report.receipt_absolute_path).read_text(encoding="utf-8")
-    )
-    assert verify_proof_receipt(
-        receipt, key_resolver=resolver, require_policy_bundle_artifact=True
-    ).valid
-
-
-def test_cli_demo_subprocess_then_verify(tmp_path: Path) -> None:
+def test_demo_then_verify_fresh_process(tmp_path: Path) -> None:
+    """Fresh-process proof: demo process exits, verifier process validates via --store."""
     store = tmp_path / "cli_demo"
-    demo = _uv_intergrax(
+    demo = _cli_subprocess(
         "demo",
         "governed-contractor",
         "--offline",
@@ -418,8 +404,8 @@ def test_cli_demo_subprocess_then_verify(tmp_path: Path) -> None:
     payload = json.loads(demo.stdout)
     assert payload["verification_valid"] is True
     assert "verification_key_path" in payload
-    # Fresh process verifies via store.
-    verify = _uv_intergrax(
+
+    verify = _cli_subprocess(
         "receipt",
         "verify",
         str(store / "export" / "accept_receipt.json"),

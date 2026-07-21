@@ -1,6 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
-# LKW Windows PowerShell interaction adapter (LKW.6C).
-# Thin localhost client for POST /v1/interactions/intake (lab_json payload).
+# Thin Windows PowerShell launcher for the shared LKW interaction client.
 
 [CmdletBinding()]
 param(
@@ -34,129 +33,160 @@ catch {
 }
 $OutputEncoding = New-Object System.Text.UTF8Encoding $false
 
-$script:AdapterSchemaVersion = "local_workspace.windows_interaction_adapter_result.v1"
-$script:AdapterId = "lkw.windows_powershell"
-$script:IntakeEndpoint = "/v1/interactions/intake"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ClientScript = Join-Path $ScriptDir "invoke-lkw-interaction.py"
 
-function Write-AdapterFailure {
+if (-not (Test-Path -LiteralPath $ClientScript)) {
+    Write-Error "Missing shared interaction client: $ClientScript"
+    exit 1
+}
+
+$python = $null
+if ($env:VIRTUAL_ENV) {
+    $candidate = Join-Path $env:VIRTUAL_ENV "Scripts\python.exe"
+    if (Test-Path -LiteralPath $candidate) {
+        $python = $candidate
+    }
+}
+if (-not $python) {
+    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCmd) {
+        $python = $pythonCmd.Source
+    }
+}
+if (-not $python) {
+    $pyCmd = Get-Command py -ErrorAction SilentlyContinue
+    if ($null -ne $pyCmd) {
+        $python = $pyCmd.Source
+    }
+}
+if (-not $python) {
+    Write-Error "Python interpreter was not found on PATH."
+    exit 1
+}
+
+# Build argv explicitly. Never pass optional flag names without values —
+# PowerShell splatting drops empty strings, which breaks Python argparse.
+$argumentList = @(
+    $ClientScript,
+    "--os-family", "windows",
+    "--adapter-id", "lkw.windows_powershell",
+    "--source", "windows_powershell",
+    "--wrapper-runtime", "windows_powershell",
+    "--message", $Message,
+    "--timeout-seconds", "$TimeoutSeconds"
+)
+
+if (-not [string]::IsNullOrWhiteSpace($BaseUrl)) {
+    $argumentList += @("--base-url", $BaseUrl)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($Capability)) {
+    $argumentList += @("--capability", $Capability)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($TenantId)) {
+    $argumentList += @("--tenant-id", $TenantId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($UserId)) {
+    $argumentList += @("--user-id", $UserId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($SessionId)) {
+    $argumentList += @("--session-id", $SessionId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($InteractionId)) {
+    $argumentList += @("--interaction-id", $InteractionId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($MetadataJson)) {
+    $argumentList += @("--metadata-json", $MetadataJson)
+}
+
+# Test-only argv dump (unit tests); never used by live proof paths.
+if (-not [string]::IsNullOrWhiteSpace($env:LKW_PS1_ARGV_DUMP)) {
+    $jsonItems = foreach ($arg in $argumentList) {
+        $escaped = ([string]$arg).Replace('\', '\\').Replace('"', '\"')
+        '"' + $escaped + '"'
+    }
+    ("[" + ($jsonItems -join ",") + "]") |
+        Out-File -FilePath $env:LKW_PS1_ARGV_DUMP -Encoding utf8
+}
+
+function ConvertTo-WindowsArgumentString {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$ErrorId,
-
-        [int]$ExitCode,
-
-        [object]$HttpStatus = $null
+        [string[]]$Arguments
     )
 
-    $payload = [ordered]@{
-        schema_version = $script:AdapterSchemaVersion
-        adapter_id     = $script:AdapterId
-        result         = "FAIL"
-        error_id       = $ErrorId
-    }
-    if ($null -ne $HttpStatus) {
-        $payload["http_status"] = [int]$HttpStatus
-    }
-    $json = ($payload | ConvertTo-Json -Compress -Depth 6)
-    [Console]::Error.WriteLine($json)
-    exit $ExitCode
-}
-
-function Resolve-BaseUrl {
-    param([string]$RawBaseUrl)
-
-    $resolved = $RawBaseUrl
-    if ([string]::IsNullOrWhiteSpace($resolved)) {
-        $resolved = [string]$env:LOCAL_WORKSPACE_BACKEND_BASE_URL
-    }
-    if ([string]::IsNullOrWhiteSpace($resolved)) {
-        $resolved = "http://127.0.0.1:8020"
-    }
-    $resolved = $resolved.Trim()
-    while ($resolved.EndsWith("/")) {
-        $resolved = $resolved.Substring(0, $resolved.Length - 1)
-    }
-    return $resolved
-}
-
-if ([string]::IsNullOrWhiteSpace($Message)) {
-    Write-AdapterFailure -ErrorId "invalid_adapter_input" -ExitCode 2
-}
-if ([string]::IsNullOrWhiteSpace($TenantId)) {
-    Write-AdapterFailure -ErrorId "invalid_adapter_input" -ExitCode 2
-}
-if ([string]::IsNullOrWhiteSpace($UserId)) {
-    Write-AdapterFailure -ErrorId "invalid_adapter_input" -ExitCode 2
-}
-if ($TimeoutSeconds -le 0) {
-    Write-AdapterFailure -ErrorId "invalid_adapter_input" -ExitCode 2
-}
-
-$metadataObject = $null
-try {
-    if ([string]::IsNullOrWhiteSpace($MetadataJson)) {
-        $MetadataJson = "{}"
-    }
-    $metadataObject = $MetadataJson | ConvertFrom-Json
-}
-catch {
-    Write-AdapterFailure -ErrorId "invalid_adapter_input" -ExitCode 2
-}
-if ($null -eq $metadataObject -or $metadataObject -is [System.Array] -or $metadataObject -is [string] -or $metadataObject -is [ValueType]) {
-    Write-AdapterFailure -ErrorId "invalid_adapter_input" -ExitCode 2
-}
-
-$resolvedBaseUrl = Resolve-BaseUrl -RawBaseUrl $BaseUrl
-$encodedTenant = [System.Uri]::EscapeDataString($TenantId.Trim())
-$uri = "{0}{1}?execute=true&tenant={2}" -f $resolvedBaseUrl, $script:IntakeEndpoint, $encodedTenant
-
-$body = [ordered]@{
-    tenant_id = $TenantId.Trim()
-    user_id   = $UserId.Trim()
-    message   = $Message
-    source    = "windows_powershell"
-    metadata  = $metadataObject
-}
-if (-not [string]::IsNullOrWhiteSpace($Capability)) {
-    $body["capability"] = $Capability.Trim()
-}
-if (-not [string]::IsNullOrWhiteSpace($SessionId)) {
-    $body["session_id"] = $SessionId.Trim()
-}
-if (-not [string]::IsNullOrWhiteSpace($InteractionId)) {
-    $body["interaction_id"] = $InteractionId.Trim()
-}
-
-$bodyJson = $body | ConvertTo-Json -Compress -Depth 32
-
-try {
-    $response = Invoke-RestMethod `
-        -Method Post `
-        -Uri $uri `
-        -ContentType "application/json; charset=utf-8" `
-        -Headers @{ Accept = "application/json" } `
-        -Body $bodyJson `
-        -TimeoutSec $TimeoutSeconds
-}
-catch {
-    $statusCode = $null
-    try {
-        if ($null -ne $_.Exception.Response -and $null -ne $_.Exception.Response.StatusCode) {
-            $statusCode = [int]$_.Exception.Response.StatusCode
+    # Escape for CreateProcess / CommandLineToArgvW so JSON quotes survive.
+    # Do not use `& native @args` — Windows PowerShell re-encodes and strips quotes.
+    $parts = foreach ($arg in $Arguments) {
+        $value = [string]$arg
+        if ($value.Length -eq 0) {
+            '""'
+            continue
         }
+        $needsQuotes = ($value.IndexOfAny([char[]]@(' ', "`t", '"')) -ge 0)
+        if (-not $needsQuotes) {
+            $value
+            continue
+        }
+        $sb = New-Object System.Text.StringBuilder
+        [void]$sb.Append('"')
+        $backslashes = 0
+        foreach ($ch in $value.ToCharArray()) {
+            if ($ch -eq [char]'\' ) {
+                $backslashes++
+                continue
+            }
+            if ($ch -eq [char]'"') {
+                if ($backslashes -gt 0) {
+                    [void]$sb.Append('\', $backslashes * 2)
+                    $backslashes = 0
+                }
+                [void]$sb.Append('\"')
+                continue
+            }
+            if ($backslashes -gt 0) {
+                [void]$sb.Append('\', $backslashes)
+                $backslashes = 0
+            }
+            [void]$sb.Append($ch)
+        }
+        if ($backslashes -gt 0) {
+            [void]$sb.Append('\', $backslashes * 2)
+        }
+        [void]$sb.Append('"')
+        $sb.ToString()
     }
-    catch {
-        $statusCode = $null
-    }
-    Write-AdapterFailure -ErrorId "interaction_request_failed" -ExitCode 3 -HttpStatus $statusCode
+    return ($parts -join ' ')
 }
 
-$result = [ordered]@{
-    schema_version = $script:AdapterSchemaVersion
-    adapter_id     = $script:AdapterId
-    endpoint       = $script:IntakeEndpoint
-    execute        = $true
-    response       = $response
+$psi = New-Object System.Diagnostics.ProcessStartInfo
+$psi.FileName = $python
+$psi.Arguments = ConvertTo-WindowsArgumentString -Arguments $argumentList
+$psi.UseShellExecute = $false
+$psi.RedirectStandardOutput = $true
+$psi.RedirectStandardError = $true
+$psi.RedirectStandardInput = $true
+$psi.CreateNoWindow = $true
+$psi.WorkingDirectory = (Get-Location).Path
+
+$process = New-Object System.Diagnostics.Process
+$process.StartInfo = $psi
+[void]$process.Start()
+$stdout = $process.StandardOutput.ReadToEnd()
+$stderr = $process.StandardError.ReadToEnd()
+$process.WaitForExit()
+
+if (-not [string]::IsNullOrEmpty($stdout)) {
+    [Console]::Out.Write($stdout)
 }
-Write-Output ($result | ConvertTo-Json -Compress -Depth 32)
-exit 0
+if (-not [string]::IsNullOrEmpty($stderr)) {
+    [Console]::Error.Write($stderr)
+}
+
+exit $process.ExitCode
