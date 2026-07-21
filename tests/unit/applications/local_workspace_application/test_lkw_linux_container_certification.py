@@ -60,11 +60,14 @@ def _pass_summary() -> dict[str, Any]:
         "client_runtime": "python",
         "wrapper_runtime": "posix_sh",
         "source_commit": "abc",
-        "core_proof": {
+        "full_core_platform_proof_certified": False,
+        "application_hosting_proof": {
             "proof_kind": "platform_application_hosting",
-            "proof_id": "core-id",
-            "run_id": "core-run",
-            "correlation_id": "core-corr",
+            "certified_scope": "application_hosting_phase",
+            "full_core_platform_proof": False,
+            "proof_id": "hosting-id",
+            "run_id": "hosting-run",
+            "correlation_id": "hosting-corr",
             "result": "PASS",
             "receipt_recorded": True,
             "receipt_verified": True,
@@ -143,7 +146,7 @@ def test_accepts_linux_docker_engine(
     assert meta["docker_engine_version"] == "27.5.1"
 
 
-def test_parse_image_id_and_digest_rules(
+def test_empty_repo_digests_yields_unavailable(
     orch: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -164,8 +167,44 @@ def test_parse_image_id_and_digest_rules(
 
     monkeypatch.setattr(orch, "_run", _fake_run)
     meta = orch.resolve_image_metadata("intergrax-lkw-linux-certification:local")
+    assert meta["certification_image_reference"] == (
+        "intergrax-lkw-linux-certification:local"
+    )
     assert meta["certification_image_id"] == "sha256:abc123"
     assert meta["certification_image_repo_digest"] == "unavailable"
+    assert meta["raw_repo_digests"] == []
+    assert meta["certification_image_repo_digest"] != meta["certification_image_id"]
+
+
+def test_real_repo_digest_is_parsed(
+    orch: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _fake_run(args: list[str], **_k: Any) -> Any:
+        class _R:
+            returncode = 0
+            stderr = ""
+
+            def __init__(self) -> None:
+                if "{{.Id}}" in args:
+                    self.stdout = "sha256:localimageid\n"
+                elif "RepoDigests" in args[-1]:
+                    self.stdout = (
+                        '["registry.example/intergrax@sha256:repodigest99"]\n'
+                    )
+                else:
+                    self.stdout = "\n"
+
+        return _R()
+
+    monkeypatch.setattr(orch, "_run", _fake_run)
+    meta = orch.resolve_image_metadata("intergrax-lkw-linux-certification:local")
+    assert meta["certification_image_id"] == "sha256:localimageid"
+    assert meta["certification_image_repo_digest"] == "sha256:repodigest99"
+    assert meta["raw_repo_digests"] == [
+        "registry.example/intergrax@sha256:repodigest99"
+    ]
+    assert meta["certification_image_repo_digest"] != meta["certification_image_id"]
 
 
 def test_does_not_invent_repository_digest(orch: ModuleType) -> None:
@@ -193,11 +232,12 @@ def test_distinguishes_host_and_execution_os(orch: ModuleType) -> None:
             "container_base_image_digest": "sha256:deadbeef",
         },
         image_meta={
+            "certification_image_reference": "intergrax-lkw-linux-certification:local",
             "certification_image_id": "sha256:img",
             "certification_image_repo_digest": "unavailable",
         },
         inside=_pass_summary(),
-        source_commit="022d3f9dadbf250051f69bf513d408fc05d0a333",
+        source_commit="40a73fbb455def6d5106180d74a7e65388457465",
         source_tree_dirty=True,
         source_tree_diff_sha256="abc",
     )
@@ -205,6 +245,9 @@ def test_distinguishes_host_and_execution_os(orch: ModuleType) -> None:
     assert evidence["docker_engine_os"] == "linux"
     assert evidence["execution_os_family"] == "linux"
     assert evidence["native_linux_host_certified"] is False
+    assert evidence["full_core_platform_proof_certified"] is False
+    assert "application_hosting_proof" in evidence
+    assert "core_proof" not in evidence
 
 
 def test_rejects_malformed_inside_output(orch: ModuleType) -> None:
@@ -214,11 +257,13 @@ def test_rejects_malformed_inside_output(orch: ModuleType) -> None:
         orch.extract_json_summary("not json at all")
 
 
-def test_rejects_failed_core_and_interaction(orch: ModuleType) -> None:
-    bad_core = _pass_summary()
-    bad_core["core_proof"]["result"] = "FAIL"
-    with pytest.raises(orch.CertificationOrchestratorError, match="core_proof_failed"):
-        orch.validate_inside_summary(bad_core)
+def test_rejects_failed_application_hosting_and_interaction(orch: ModuleType) -> None:
+    bad_hosting = _pass_summary()
+    bad_hosting["application_hosting_proof"]["result"] = "FAIL"
+    with pytest.raises(
+        orch.CertificationOrchestratorError, match="application_hosting_proof_failed"
+    ):
+        orch.validate_inside_summary(bad_hosting)
 
     bad_ix = _pass_summary()
     bad_ix["interaction_proof"]["receipt_verified"] = False
@@ -226,6 +271,38 @@ def test_rejects_failed_core_and_interaction(orch: ModuleType) -> None:
         orch.CertificationOrchestratorError, match="interaction_false_receipt_flag"
     ):
         orch.validate_inside_summary(bad_ix)
+
+
+def test_rejects_legacy_core_proof_only_summary(orch: ModuleType) -> None:
+    legacy = _pass_summary()
+    legacy["core_proof"] = legacy.pop("application_hosting_proof")
+    with pytest.raises(
+        orch.CertificationOrchestratorError, match="missing_application_hosting_proof"
+    ):
+        orch.validate_inside_summary(legacy)
+
+
+def test_rejects_missing_interaction_proof(orch: ModuleType) -> None:
+    bad = _pass_summary()
+    del bad["interaction_proof"]
+    with pytest.raises(
+        orch.CertificationOrchestratorError, match="missing_interaction_proof"
+    ):
+        orch.validate_inside_summary(bad)
+
+
+def test_rejects_full_core_platform_proof_certified_true(orch: ModuleType) -> None:
+    bad = _pass_summary()
+    bad["full_core_platform_proof_certified"] = True
+    with pytest.raises(
+        orch.CertificationOrchestratorError,
+        match="full_core_platform_proof_must_not_be_certified",
+    ):
+        orch.validate_inside_summary(bad)
+
+
+def test_accepts_corrected_pass_summary(orch: ModuleType) -> None:
+    orch.validate_inside_summary(_pass_summary())
 
 
 def test_evidence_schema_deterministic(orch: ModuleType) -> None:
@@ -240,11 +317,12 @@ def test_evidence_schema_deterministic(orch: ModuleType) -> None:
             "container_base_image_digest": "sha256:deadbeef",
         },
         image_meta={
+            "certification_image_reference": "intergrax-lkw-linux-certification:local",
             "certification_image_id": "sha256:img",
             "certification_image_repo_digest": "unavailable",
         },
         inside=_pass_summary(),
-        source_commit="022d3f9dadbf250051f69bf513d408fc05d0a333",
+        source_commit="40a73fbb455def6d5106180d74a7e65388457465",
         source_tree_dirty=True,
         source_tree_diff_sha256="abc",
     )
@@ -252,10 +330,21 @@ def test_evidence_schema_deterministic(orch: ModuleType) -> None:
     assert "schema_version" in text
     assert "certification_profile" in text
     assert "linux_docker_runtime" in text
+    assert "application_hosting_proof" in text
+    assert "full_core_platform_proof_certified" in text
+    assert "certification_image_reference" in text
+    assert '"core_proof"' not in text
     assert "mongodb://" not in text.lower()
+    assert evidence["application_hosting_proof"]["proof_kind"] == (
+        "platform_application_hosting"
+    )
+    assert evidence["application_hosting_proof"]["certified_scope"] == (
+        "application_hosting_phase"
+    )
+    assert evidence["application_hosting_proof"]["full_core_platform_proof"] is False
 
 
-def test_inside_stops_after_core_failure(
+def test_inside_stops_after_application_hosting_failure(
     inside: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -271,8 +360,8 @@ def test_inside_stops_after_core_failure(
     )
     monkeypatch.setenv("INTERGRAX_MONGODB_URI", "mongodb://example/db")
 
-    def _fail_core(**_k: Any) -> dict[str, Any]:
-        raise inside.CertificationInsideError("core_proof_failed:boom")
+    def _fail_hosting(**_k: Any) -> dict[str, Any]:
+        raise inside.CertificationInsideError("application_hosting_proof_failed:boom")
 
     called: list[str] = []
 
@@ -280,7 +369,7 @@ def test_inside_stops_after_core_failure(
         called.append("interaction")
         return {}
 
-    monkeypatch.setattr(inside, "run_core_proof", _fail_core)
+    monkeypatch.setattr(inside, "run_application_hosting_proof", _fail_hosting)
     monkeypatch.setattr(inside, "run_interaction_proof", _interaction)
     code = inside.main([])
     assert code == 1
@@ -293,15 +382,17 @@ def test_inside_rejects_non_linux(inside: ModuleType, monkeypatch: pytest.Monkey
         inside.detect_linux_runtime()
 
 
-def test_inside_build_summary_requires_pass_fields(inside: ModuleType) -> None:
+def test_inside_build_summary_uses_application_hosting_fields(inside: ModuleType) -> None:
     summary = inside.build_summary(
         runtime={
             "os_version": "v",
             "kernel_release": "k",
             "architecture": "a",
         },
-        core={
+        application_hosting={
             "proof_kind": "platform_application_hosting",
+            "certified_scope": "application_hosting_phase",
+            "full_core_platform_proof": False,
             "proof_id": "c",
             "run_id": "r",
             "correlation_id": "x",
@@ -328,3 +419,17 @@ def test_inside_build_summary_requires_pass_fields(inside: ModuleType) -> None:
     assert summary["certification_result"] == "PASS"
     assert summary["execution_os_family"] == "linux"
     assert summary["wrapper_runtime"] == "posix_sh"
+    assert "application_hosting_proof" in summary
+    assert "core_proof" not in summary
+    assert summary["full_core_platform_proof_certified"] is False
+    assert summary["application_hosting_proof"]["proof_kind"] == (
+        "platform_application_hosting"
+    )
+    assert summary["application_hosting_proof"]["certified_scope"] == (
+        "application_hosting_phase"
+    )
+    assert summary["application_hosting_proof"]["full_core_platform_proof"] is False
+    assert summary["interaction_proof"]["adapter_id"] == "lkw.linux_shell"
+    assert summary["interaction_proof"]["source"] == "linux_shell"
+    assert summary["interaction_proof"]["client_runtime"] == "python"
+    assert summary["interaction_proof"]["wrapper_runtime"] == "posix_sh"

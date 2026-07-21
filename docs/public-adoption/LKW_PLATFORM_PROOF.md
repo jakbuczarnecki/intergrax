@@ -51,8 +51,14 @@ adapter. They are not required to complete the Core Platform Proof.
 Windows optional interaction:
   implemented and live-certified on native Windows
 
+Linux Application Hosting Proof:
+  implemented and live-certified in Linux Docker runtime
+
 Linux optional interaction:
   implemented and live-certified in Linux Docker runtime
+
+Linux full multi-phase Core Platform Proof:
+  not separately certified in Linux Docker runtime
 
 Linux native-host deployment:
   not separately certified
@@ -103,22 +109,49 @@ macos   / lkw.macos_shell        / macos_shell        / posix_sh
 Implementation is shared. Live certification is OS-specific.
 
 ```text
+Windows Application Hosting / Core reviewer path:
+  existing Windows certification unchanged
+
 Windows optional interaction:
   live-certified on native Windows
 
-Linux optional interaction:
+Linux Application Hosting Proof:
   live-certified in Linux Docker runtime
 
-Linux core proof:
+Linux Optional OS Interaction Proof:
   live-certified in Linux Docker runtime
-  (platform_application_hosting path; native host not separately certified)
+
+Linux full multi-phase Core Platform Proof:
+  not separately certified in Linux Docker runtime
+
+Linux native-host deployment:
+  not separately certified
 
 macOS optional interaction:
   implemented, not live-certified
 ```
 
+Certification profile `linux_docker_runtime` certifies:
+
+```text
+platform_application_hosting
+platform_linux_interaction
+```
+
+Not certified by this profile:
+
+```text
+full multi-phase Core Platform Proof
+native Linux host deployment
+systemd service integration
+native Linux desktop integration
+native package installation
+macOS
+```
+
 Do not read Linux Docker runtime certification as universal Linux
-distribution certification or native-host deployment certification.
+distribution certification, native-host deployment certification, or
+full multi-phase Core Platform Proof certification.
 
 Local proof endpoints:
 
@@ -150,11 +183,14 @@ The Windows interaction proof is not required for core completion.
 
 Shared core entrypoint implemented.
 
-The Linux launcher invokes the same Python core-proof runner.
+The Linux launcher invokes the same Python core-platform runner.
 
 ```text
-Linux core proof:
+Linux Application Hosting Proof:
   live-certified in Linux Docker runtime
+
+Linux full multi-phase Core Platform Proof:
+  not separately certified in Linux Docker runtime
 ```
 
 Native Linux host installation was not separately certified.
@@ -194,7 +230,7 @@ Do not run Windows .bat or Windows PowerShell interaction steps.
 | Operating system | Core reviewer path                       | Optional OS interaction proof                         | Certification status                          |
 | ---------------- | ---------------------------------------- | ----------------------------------------------------- | --------------------------------------------- |
 | Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Core live-certified                           |
-| Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Linux Docker runtime live-certified           |
+| Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Application hosting + interaction live-certified in Linux Docker runtime; full multi-phase Core Platform Proof not separately certified |
 | macOS            | Shared Python runner through macOS SH    | Shared Python interaction proof through macOS SH      | Implemented, not certified                    |
 
 ```text
@@ -1211,8 +1247,16 @@ client and OS interaction proof runner.
 
 Native Linux host deployment is not separately certified.
 
-Automated Linux Docker runtime certification (core hosting path +
-optional interaction):
+Automated Linux Docker runtime certification profile
+`linux_docker_runtime` live-certifies:
+
+```text
+Linux Application Hosting Proof (platform_application_hosting)
+Linux Optional OS Interaction Proof (platform_linux_interaction)
+```
+
+The full multi-phase Core Platform Proof is not separately certified
+in Linux Docker runtime.
 
 ```bat
 applications\local_workspace_application\scripts\run-lkw-linux-container-certification.bat
@@ -1243,7 +1287,8 @@ wrapper_runtime=posix_sh
 Do not substitute the Windows PowerShell proof.
 
 Do not describe Linux Docker runtime certification as native Linux
-host certification or as certification of every Linux distribution.
+host certification, as certification of every Linux distribution, or
+as full multi-phase Core Platform Proof certification.
 
 A Linux ProofReceipt can only be produced by a real successful run
 on Linux (native or Linux container). Source-code existence is not

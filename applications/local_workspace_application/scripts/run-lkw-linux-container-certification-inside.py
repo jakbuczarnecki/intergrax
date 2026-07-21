@@ -3,9 +3,13 @@
 
 """In-container LKW Linux Docker runtime certification runner.
 
-Executes Linux Core Platform Proof (application-hosting phase) then Linux
-Optional OS Interaction Proof, both with ``--mongodb-stack external``.
-Emits one structured JSON summary only after both proofs pass.
+Executes the Linux Application Hosting Proof (``application-hosting`` phase of
+the shared core-platform runner) then the Linux Optional OS Interaction Proof,
+both with ``--mongodb-stack external``. Emits one structured JSON summary only
+after both proofs pass.
+
+This profile does **not** execute the full multi-phase Linux Core Platform
+Proof.
 """
 
 from __future__ import annotations
@@ -24,9 +28,9 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _APP_DIR = _SCRIPT_DIR.parent
 _REPO_ROOT = _APP_DIR.parent.parent
 
-_CORE_PROOF_PY = _SCRIPT_DIR / "run-lkw-core-platform-proof.py"
+_CORE_PLATFORM_RUNNER_PY = _SCRIPT_DIR / "run-lkw-core-platform-proof.py"
 _INTERACTION_PROOF_SH = _SCRIPT_DIR / "run-lkw-linux-interaction-proof.sh"
-_CORE_PROOF_KIND = "platform_application_hosting"
+_APPLICATION_HOSTING_PROOF_KIND = "platform_application_hosting"
 _INTERACTION_PROOF_KIND = "platform_linux_interaction"
 _CERT_PROFILE = "linux_docker_runtime"
 _KV_LINE = re.compile(r"^([A-Za-z0-9_.-]+)=(.*)$")
@@ -94,11 +98,15 @@ def _run(command: list[str], *, cwd: Path, env: Mapping[str, str]) -> tuple[int,
     return int(completed.returncode), combined
 
 
-def run_core_proof(*, env: Mapping[str, str]) -> dict[str, Any]:
+def run_application_hosting_proof(*, env: Mapping[str, str]) -> dict[str, Any]:
+    """Run the shared core-platform runner ``application-hosting`` phase only.
+
+    This is not the full multi-phase Core Platform Proof.
+    """
     code, output = _run(
         [
             sys.executable,
-            str(_CORE_PROOF_PY),
+            str(_CORE_PLATFORM_RUNNER_PY),
             "--os-family",
             "linux",
             "--wrapper-id",
@@ -114,10 +122,11 @@ def run_core_proof(*, env: Mapping[str, str]) -> dict[str, Any]:
     values = _parse_kv(output)
     if code != 0:
         raise CertificationInsideError(
-            f"core_proof_failed:{values.get('failure_reason', 'nonzero_exit')}"
+            "application_hosting_proof_failed:"
+            f"{values.get('failure_reason', 'nonzero_exit')}"
         )
     _require_value(values, "core_proof_result", "PASS")
-    _require_value(values, "proof_kind", _CORE_PROOF_KIND)
+    _require_value(values, "proof_kind", _APPLICATION_HOSTING_PROOF_KIND)
     _require_true(values, "proof_receipt_recorded")
     _require_true(values, "proof_receipt_verified")
     _require_true(values, "proof_receipt_query_verified")
@@ -125,7 +134,9 @@ def run_core_proof(*, env: Mapping[str, str]) -> dict[str, Any]:
     run_id = _require_nonblank(values, "run_id")
     correlation_id = _require_nonblank(values, "correlation_id")
     return {
-        "proof_kind": _CORE_PROOF_KIND,
+        "proof_kind": _APPLICATION_HOSTING_PROOF_KIND,
+        "certified_scope": "application_hosting_phase",
+        "full_core_platform_proof": False,
         "proof_id": proof_id,
         "run_id": run_id,
         "correlation_id": correlation_id,
@@ -190,7 +201,7 @@ def run_interaction_proof(*, env: Mapping[str, str]) -> dict[str, Any]:
 def build_summary(
     *,
     runtime: Mapping[str, str],
-    core: Mapping[str, Any],
+    application_hosting: Mapping[str, Any],
     interaction: Mapping[str, Any],
 ) -> dict[str, Any]:
     source_commit = os.environ.get("LKW_CERTIFICATION_SOURCE_COMMIT", "").strip()
@@ -208,15 +219,18 @@ def build_summary(
         "client_runtime": "python",
         "wrapper_runtime": "posix_sh",
         "source_commit": source_commit,
-        "core_proof": {
-            "proof_kind": core["proof_kind"],
-            "proof_id": core["proof_id"],
-            "run_id": core["run_id"],
-            "correlation_id": core["correlation_id"],
-            "result": core["result"],
-            "receipt_recorded": core["receipt_recorded"],
-            "receipt_verified": core["receipt_verified"],
-            "receipt_query_verified": core["receipt_query_verified"],
+        "full_core_platform_proof_certified": False,
+        "application_hosting_proof": {
+            "proof_kind": application_hosting["proof_kind"],
+            "certified_scope": application_hosting["certified_scope"],
+            "full_core_platform_proof": False,
+            "proof_id": application_hosting["proof_id"],
+            "run_id": application_hosting["run_id"],
+            "correlation_id": application_hosting["correlation_id"],
+            "result": application_hosting["result"],
+            "receipt_recorded": application_hosting["receipt_recorded"],
+            "receipt_verified": application_hosting["receipt_verified"],
+            "receipt_query_verified": application_hosting["receipt_query_verified"],
         },
         "interaction_proof": {
             "proof_kind": interaction["proof_kind"],
@@ -247,15 +261,20 @@ def main(argv: list[str] | None = None) -> int:
         runtime = detect_linux_runtime()
         if not env.get("INTERGRAX_MONGODB_URI", "").strip():
             raise CertificationInsideError("external_mongodb_uri_required")
-        core = run_core_proof(env=env)
+        application_hosting = run_application_hosting_proof(env=env)
         interaction = run_interaction_proof(env=env)
-        summary = build_summary(runtime=runtime, core=core, interaction=interaction)
+        summary = build_summary(
+            runtime=runtime,
+            application_hosting=application_hosting,
+            interaction=interaction,
+        )
     except CertificationInsideError as exc:
         failure = {
             "schema_version": "lkw.linux_docker_certification_inside.v1",
             "certification_result": "FAIL",
             "certification_profile": _CERT_PROFILE,
             "failure_reason": exc.reason,
+            "full_core_platform_proof_certified": False,
             "certification_id": f"fail-{uuid.uuid4().hex[:12]}",
         }
         print(json.dumps(failure, sort_keys=True), flush=True)

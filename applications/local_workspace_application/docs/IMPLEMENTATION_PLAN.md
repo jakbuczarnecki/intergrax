@@ -995,24 +995,25 @@ OS-specific interaction adapter
 | PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
 | PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
 | PROOF-PORTABILITY-1C | Add shared cross-platform OS interaction client/proof runner with thin OS wrappers | **Done** |
-| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Linux Docker runtime live-certified; native Linux host and macOS not live-certified |
+| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Linux Application Hosting + Linux interaction live-certified in Linux Docker runtime; full multi-phase Core Platform Proof, native Linux host and macOS not live-certified |
 
 Current proof certification:
 
 ```text
-Windows core reviewer path:
-  shared entrypoint implemented and live-recorded
+Windows Application Hosting / Core reviewer path:
+  existing Windows certification unchanged
 
 Windows optional interaction proof:
   implemented and live-certified on native Windows
 
-Linux core reviewer path:
-  shared entrypoint implemented;
-  live-certified in Linux Docker runtime
-  (platform_application_hosting; native host not separately certified)
+Linux Application Hosting Proof:
+  implemented and live-certified in Linux Docker runtime
 
 Linux optional interaction proof:
   implemented and live-certified in Linux Docker runtime
+
+Linux full multi-phase Core Platform Proof:
+  not separately certified in Linux Docker runtime
 
 Linux native-host deployment:
   not separately certified
@@ -1038,6 +1039,7 @@ PROOF-PORTABILITY-1D (Linux Docker runtime slice) delivered:
 - Dedicated certification image + Compose project (no Docker socket / no DinD)
 - Host orchestrator `run-lkw-linux-container-certification.py` (+ BAT/SH)
 - External MongoDB mode on shared proof runners
+- Profile `linux_docker_runtime` certifies `platform_application_hosting` + `platform_linux_interaction` only
 - Evidence: `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
 
 ---

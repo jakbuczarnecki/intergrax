@@ -38,7 +38,7 @@ _INSIDE_SCRIPT = (
 _EVIDENCE_PATH = (
     _REPO_ROOT / "docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
 )
-_EXPECTED_PARENT = "022d3f9dadbf250051f69bf513d408fc05d0a333"
+_EXPECTED_PARENT = "40a73fbb455def6d5106180d74a7e65388457465"
 _CERT_PROFILE = "linux_docker_runtime"
 _IMAGE_TAG = "intergrax-lkw-linux-certification:local"
 _COMPOSE_PROJECT = "lkw-linux-certification"
@@ -160,7 +160,14 @@ def git_diff_sha256() -> tuple[bool, str]:
     return dirty, digest
 
 
-def resolve_image_metadata(image_ref: str) -> dict[str, str]:
+def resolve_image_metadata(image_ref: str) -> dict[str, Any]:
+    """Resolve local image id and optional real repository digest.
+
+    ``certification_image_id`` always comes from ``.Id``.
+    ``certification_image_repo_digest`` is set only from a real
+    ``repository-name@sha256:<digest>`` RepoDigests entry. A local image id is
+    never copied into the repository digest field.
+    """
     inspect_id = _run(
         ["docker", "image", "inspect", image_ref, "--format", "{{.Id}}"],
         cwd=_REPO_ROOT,
@@ -185,6 +192,7 @@ def resolve_image_metadata(image_ref: str) -> dict[str, str]:
         timeout=60,
     )
     repo_digest = "unavailable"
+    raw_repo_digests: list[str] = []
     if digests.returncode == 0 and (digests.stdout or "").strip():
         try:
             parsed = json.loads(digests.stdout)
@@ -193,12 +201,24 @@ def resolve_image_metadata(image_ref: str) -> dict[str, str]:
         if isinstance(parsed, list):
             for item in parsed:
                 text = str(item).strip()
-                if "@sha256:" in text:
-                    repo_digest = text.split("@", 1)[1]
+                if text:
+                    raw_repo_digests.append(text)
+                # Real registry digest form: repository-name@sha256:<digest>
+                if "@sha256:" not in text:
+                    continue
+                repo_name, digest_part = text.split("@", 1)
+                if not repo_name.strip():
+                    continue
+                if digest_part.startswith("sha256:") and len(digest_part) > len(
+                    "sha256:"
+                ):
+                    repo_digest = digest_part
                     break
     return {
+        "certification_image_reference": image_ref,
         "certification_image_id": image_id,
         "certification_image_repo_digest": repo_digest,
+        "raw_repo_digests": raw_repo_digests,
     }
 
 
@@ -330,15 +350,41 @@ def validate_inside_summary(summary: Mapping[str, Any]) -> None:
     if summary.get("wrapper_runtime") != "posix_sh":
         raise CertificationOrchestratorError("unexpected_wrapper_runtime")
 
-    core = summary.get("core_proof")
+    if "core_proof" in summary and "application_hosting_proof" not in summary:
+        raise CertificationOrchestratorError("missing_application_hosting_proof")
+    if summary.get("full_core_platform_proof_certified") is True:
+        raise CertificationOrchestratorError(
+            "full_core_platform_proof_must_not_be_certified"
+        )
+    if summary.get("full_core_platform_proof_certified") is not False:
+        raise CertificationOrchestratorError(
+            "missing_full_core_platform_proof_certified_false"
+        )
+
+    hosting = summary.get("application_hosting_proof")
     interaction = summary.get("interaction_proof")
-    if not isinstance(core, dict) or not isinstance(interaction, dict):
-        raise CertificationOrchestratorError("missing_proof_blocks")
-    if core.get("proof_kind") != "platform_application_hosting":
-        raise CertificationOrchestratorError("unexpected_core_proof_kind")
+    if not isinstance(hosting, dict):
+        raise CertificationOrchestratorError("missing_application_hosting_proof")
+    if not isinstance(interaction, dict):
+        raise CertificationOrchestratorError("missing_interaction_proof")
+    if hosting.get("proof_kind") != "platform_application_hosting":
+        raise CertificationOrchestratorError(
+            "unexpected_application_hosting_proof_kind"
+        )
+    if hosting.get("certified_scope") != "application_hosting_phase":
+        raise CertificationOrchestratorError(
+            "unexpected_application_hosting_certified_scope"
+        )
+    if hosting.get("full_core_platform_proof") is not False:
+        raise CertificationOrchestratorError(
+            "application_hosting_must_not_claim_full_core"
+        )
     if interaction.get("proof_kind") != "platform_linux_interaction":
         raise CertificationOrchestratorError("unexpected_interaction_proof_kind")
-    for block_name, block in (("core", core), ("interaction", interaction)):
+    for block_name, block in (
+        ("application_hosting", hosting),
+        ("interaction", interaction),
+    ):
         if block.get("result") != "PASS":
             raise CertificationOrchestratorError(f"{block_name}_proof_failed")
         for flag in (
@@ -357,6 +403,10 @@ def validate_inside_summary(summary: Mapping[str, Any]) -> None:
         raise CertificationOrchestratorError("unexpected_adapter_id")
     if interaction.get("source") != "linux_shell":
         raise CertificationOrchestratorError("unexpected_source")
+    if interaction.get("client_runtime") != "python":
+        raise CertificationOrchestratorError("unexpected_interaction_client_runtime")
+    if interaction.get("wrapper_runtime") != "posix_sh":
+        raise CertificationOrchestratorError("unexpected_interaction_wrapper_runtime")
 
 
 _SECRET_PATTERN = re.compile(
@@ -416,21 +466,29 @@ def build_evidence(
         "container_runtime": "docker",
         "container_base_image": base_image["container_base_image"],
         "container_base_image_digest": base_image["container_base_image_digest"],
+        "certification_image_reference": image_meta.get(
+            "certification_image_reference", _IMAGE_TAG
+        ),
         "certification_image_id": image_meta["certification_image_id"],
         "certification_image_repo_digest": image_meta[
             "certification_image_repo_digest"
         ],
-        "core_proof": inside["core_proof"],
+        "application_hosting_proof": inside["application_hosting_proof"],
         "interaction_proof": inside["interaction_proof"],
+        "full_core_platform_proof_certified": False,
         "native_linux_host_certified": False,
         "limitations": (
-            "Proof ran inside a Linux Docker runtime. The Docker engine may itself "
-            "be hosted by Docker Desktop/WSL2. Native Linux host installation was "
-            "not separately tested. systemd, native desktop integration and host "
-            "package installation are outside this certification. Full multi-phase "
-            "core (Elasticsearch/Kafka/Sentry/file-watcher Compose stacks) is not "
-            "re-executed inside the certification container; the certified core "
-            "path is platform_application_hosting with external MongoDB."
+            "Linux Application Hosting Proof (application-hosting phase, "
+            "proof_kind=platform_application_hosting) was live-certified in a "
+            "Linux Docker runtime. Linux Optional OS Interaction Proof "
+            "(proof_kind=platform_linux_interaction) was live-certified in the "
+            "same Linux Docker runtime. The full multi-phase Core Platform Proof "
+            "was not executed in this container certification. Elasticsearch, "
+            "Kafka, Sentry and file-watcher Compose phases were not re-executed. "
+            "The Docker engine was hosted through Docker Desktop/WSL2. Native "
+            "Linux host installation was not separately tested. systemd, native "
+            "desktop integration and native package installation remain outside "
+            "scope."
         ),
         "reproduction_command": (
             "applications\\local_workspace_application\\scripts\\"
@@ -603,12 +661,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_evidence(evidence)
         print("certification_result=PASS", flush=True)
         print(f"evidence_file={path}", flush=True)
+        print(
+            "certification_image_reference="
+            f"{image_meta.get('certification_image_reference', _IMAGE_TAG)}",
+            flush=True,
+        )
         print(f"certification_image_id={image_meta['certification_image_id']}", flush=True)
+        print(
+            "raw_repo_digests="
+            f"{json.dumps(image_meta.get('raw_repo_digests', []))}",
+            flush=True,
+        )
         print(
             "certification_image_repo_digest="
             f"{image_meta['certification_image_repo_digest']}",
             flush=True,
         )
+        print("full_core_platform_proof_certified=false", flush=True)
         return 0
     except CertificationOrchestratorError as exc:
         print("certification_result=FAIL", flush=True)

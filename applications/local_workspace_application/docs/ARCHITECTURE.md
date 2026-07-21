@@ -733,7 +733,11 @@ POST /v1/interactions/intake
 ### 9.3b LKW.6C — OS interaction adapters (Windows + Linux Docker)
 
 **Status: Closed** for the Windows live MongoDB-backed reviewer proof
-and for Linux Docker runtime certification (PROOF-PORTABILITY-1D).
+and for Linux Docker runtime certification profile `linux_docker_runtime`
+(PROOF-PORTABILITY-1D): Linux Application Hosting Proof and Linux
+Optional OS Interaction Proof are live-certified in Linux Docker
+runtime. The full multi-phase Linux Core Platform Proof is not
+separately certified by that profile.
 
 Native Linux host deployment and macOS remain not live-certified.
 
