@@ -25,6 +25,7 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationStrategyKind,
     TokenOptimizationStrategyRef,
 )
+from intergrax.utils import attribute_access
 
 _LAYER_ID = "builtin.extractive_filtering"
 _STRATEGY_NAME = "extractive_filtering"
@@ -328,7 +329,7 @@ class ExtractiveFilteringLayer:
 def _resolve_protected_regions(
     request: TokenOptimizationLayerRequest,
 ) -> tuple[ProtectedRegion, ...]:
-    regions = getattr(request, "protected_regions", None)
+    regions = attribute_access.optional(request, "protected_regions", None)
     if regions:
         return tuple(regions)
     meta_regions = request.metadata.get("protected_regions")

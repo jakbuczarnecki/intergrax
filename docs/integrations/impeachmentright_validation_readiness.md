@@ -3,7 +3,7 @@
 **Date:** 2026-07-20  
 **Scope:** Partner-facing readiness after GEC-0…GEC-6.1 architecture closure  
 **Platform canon:** [`docs/platform/governed_external_execution.md`](../platform/governed_external_execution.md)  
-**Not:** Host Attestation / EBE / ProofReceipt implementation
+**Related:** [`execution_evidence_and_host_attestation.md`](../platform/execution_evidence_and_host_attestation.md) · [`impeachmentright_full_validation.md`](impeachmentright_full_validation.md)
 
 This document answers whether Intergrax can honestly demonstrate the maintainer’s five observable compatibility areas using repository-backed evidence. It does **not** restate platform ownership matrices; those live in the platform reference above.
 
@@ -15,7 +15,7 @@ This document answers whether Intergrax can honestly demonstrate the maintainer�
 
 Platform + Tier-2 adapter implement the full governed lifecycle through mandatory `GovernedProofProfile`. A single offline demonstration path exists and passes. The host application mounts the agent and DI slots but does **not** yet expose a product HTTP/CLI orchestration of the quote→accept flow — that is a host product / demonstration packaging gap, not a platform capability gap.
 
-Future Host Attestation / Execution Boundary Events / attested export remain **out of scope** for this closure and must not be claimed.
+Host Attestation / governed Execution Boundary Events / attested export are implemented as the downstream capability [`execution_evidence_and_host_attestation.md`](../platform/execution_evidence_and_host_attestation.md). Full closure verdict: [`impeachmentright_full_validation.md`](impeachmentright_full_validation.md).
 
 ---
 
@@ -107,7 +107,7 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 | 1. Agent / application / runtime boundary | Tier-2 adapter maps only; host injects Protocol + policy; Nexus owns run identity / interrupt | Platform doc · `external_work_adapter.py` · `agent_builders.py` · tier import rules | **Demonstrable now** (via Tier-2 demo; host boundary wiring demonstrable as DI, not full product UX) |
 | 2. Policy before meaningful action | `MeaningfulSideEffectRequest` + evaluator before CREATE / ACCEPT_QUOTE / CANCEL | `test_meaningful_side_effect_policy.py` · `test_partner_validation_demo.py` | **Demonstrable now** |
 | 3. Human checkpoint / escalation | Governed Continuation (`ContinuationReason.QUOTE`) over Nexus interrupt composition; Tier-2 surfaces/forwards only | `test_governed_continuation_composition.py` · demo continuation assert | **Demonstrable now** (composition + evidence forward; product HITL UX is host gap) |
-| 4. Evidence after execution | Mandatory descriptive `GovernedProofProfile` (refs, not signed receipt) | `test_governed_proof_profile.py` · demo final proof | **Demonstrable now** as descriptive proof; **Future capability** for host-signed EBE / attested export / ProofReceipt |
+| 4. Evidence after execution | Mandatory descriptive `GovernedProofProfile` + host-attested governed EBE / portable ProofReceipt | `test_governed_proof_profile.py` · `test_partner_attested_execution_demo.py` | **Demonstrable now** (descriptive proof + host-signed attested export) |
 | 5. Controlled tools | Provider-bound mutations only behind Protocol after ALLOW; observational reads ungated as mutations | `PROVIDER_METHOD_SIDE_EFFECT_CLASS` · Protocol + fake | **Demonstrable now** (Protocol/tool boundary; not a partner SDK tool catalog) |
 
 ---
@@ -122,7 +122,8 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 ### B. Demonstration gap
 
 - Full flow was covered by multiple unit tests but lacked one named partner demo until `test_partner_validation_demo.py`.
-- Host HTTP/CLI still does not package the flow as a single operator command.
+- ~~Host HTTP/CLI still does not package the flow as a single operator command.~~ → **closed** via
+  `uv run intergrax demo governed-contractor --offline` (see platform completion audit).
 
 ### C. Host product gap
 
@@ -132,10 +133,13 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 
 ### D. Platform capability gap (not a GEC defect)
 
-- Host-signed Execution Boundary Event / BoundaryAttest
-- Single cryptographically attested export joining policy → tool invocation → task id
-- ProofReceipt persistence, verification, replay, public evidence export
-- Contractor-local policy remaining on the partner side until they consume Intergrax runtime policy bundles (partner adoption work + host packs)
+- ~~Host-signed governed Execution Boundary Event~~ → **closed** via Execution Evidence
+- ~~Single cryptographically attested export~~ → **closed** (`execution_evidence.proof_receipt.v1`)
+- ~~Runtime policy bundle identity/digest~~ → **closed** (`ImmutableRuntimePolicyBundle`)
+- ~~Bundle-backed evaluation + pack body offline verify~~ → **closed** (`RuntimePolicyBundleEvaluator`, `policy_bundle_artifact`)
+- ~~First-class provider invocation + atomic GER + host orchestrator/recovery~~ → **closed** (PC-3…PC-7)
+- Still out of scope: DocumentStore/public registry persistence, replay, paid providers, wallets, remote KMS/HSM
+- Contractor-local policy remaining on the partner side until they consume Intergrax runtime policy packs (partner adoption work + host packs)
 
 ---
 
@@ -146,29 +150,30 @@ Supporting gate tests: `test_governed_proof_profile.py`, `test_meaningful_side_e
 - Real Nexus `task_id` / `run_id` are required and fail closed when missing.
 - Quote acceptance evidence is **not** an allow token; policy re-evaluates before accept.
 - Continuation surfaces interruption; it does not execute the side effect.
-- Offline deterministic proof of the lifecycle is reproducible via the demo pytest above.
+- Offline deterministic proof of the lifecycle is reproducible via the demo pytest **and**
+  `uv run intergrax demo governed-contractor --offline`.
 - Architecture is closed through GEC-6.1 per [`governed_external_execution.md`](../platform/governed_external_execution.md).
 
 ## What must not be claimed yet
 
-- Host-signed EBE / BoundaryAttest or cryptographic host attestation of the boundary.
-- A single persisted/attested export equivalent to a signed receipt chain.
+- That harness tool/step BoundaryAttest EBE is the same artefact as governed `governed_execution_boundary_event.v1` (siblings).
 - Production partner transport (A2A/HTTP), paid tasks, wallets, or live provider integration.
-- That the default governed_contractor HTTP API already demos the full quote→accept→proof product flow.
-- That `GovernedProofProfile` is a ProofReceipt, audit log, or authorization mechanism.
+- That the default governed_contractor HTTP API already demos the full quote→accept→attested-receipt product flow (CLI + pytest do; HTTP product UX still optional).
+- That `GovernedProofProfile` itself is a ProofReceipt, audit log, or authorization mechanism.
+- Production key custody / remote KMS/HSM (local Ed25519 test attestor only).
 - That Intergrax has replaced contractor-local policy packs on the partner’s side.
 
 ---
 
 ## Recommended response strategy
 
-1. **Lead with architecture + demo command** — point to platform canon + `test_partner_validation_demo.py`.
-2. **Map the five points honestly** using the matrix above; emphasize descriptive proof vs attestation.
-3. **Acknowledge their three gaps as category D** — Host Attestation / EBE / attested export / partner policy-bundle adoption — complementary future work, not missing GEC-6.1 core.
-4. **Invite next step:** provider behind `ExternalWorkIntegration` + host policy pack injection; attestation/EBE when their security plane requires signed boundary events.
-5. **Do not oversell** host product UX or signed receipts.
+1. **Lead with attested demo** — `test_partner_attested_execution_demo.py` + platform canon for Execution Evidence.
+2. **Map the five points honestly** using the matrix above; separate descriptive `GovernedProofProfile` from host-signed portable receipt.
+3. **Close their three gaps with precise naming** — governed sibling `governed_execution_boundary_event.v1` (not harness tool/step `execution_boundary_event.v1`); portable `execution_evidence.proof_receipt.v1`; decision bound to `ImmutableRuntimePolicyBundle` identity/digest (not a claim that partner contractor-local packs are already replaced).
+4. **Invite next step:** live provider behind `ExternalWorkIntegration` (partner translation adapter) + wallet/payment evidence.
+5. **Do not oversell** production KMS/HSM, receipt registry, replay, or wallets.
 
-**Recommended next engineering action (optional, out of this review):** host-local deterministic demo settings + metadata-aware run path (still no attestation) — closes gap B/C packaging only.
+**Platform completion audit:** [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) — verdict `FULLY_PLATFORM_READY`.
 
 ---
 

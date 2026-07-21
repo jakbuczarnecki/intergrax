@@ -102,6 +102,8 @@ from intergrax.tools.providers.workflow.service import (
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
 
+from intergrax.utils import attribute_access
+
 _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.SECURITY_SCANNER: (
         SECURITY_SCAN_TOOL_ID,
@@ -238,7 +240,7 @@ def _resolved_context_value(ctx: ToolWiringContext, category: IntegrationCategor
     accessor = _CONTEXT_ACCESSORS.get(category)
     if accessor is None:
         return None
-    return getattr(ctx, accessor, None)
+    return attribute_access.optional(ctx, accessor, None)
 
 
 def apply_resolved_integration_tool_guardrails(

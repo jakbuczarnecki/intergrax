@@ -71,6 +71,7 @@ from intergrax.hosting.shutdown import (
 )
 from intergrax.hosting.eventing import HostingEventDispatcher
 from intergrax.hosting.services import HostedApplicationServiceRegistry
+from intergrax.utils import attribute_access
 
 
 class _ReadinessServiceAdapter:
@@ -474,7 +475,7 @@ class HostedApplicationEngine:
             return None
         if isinstance(current, HostedApplicationEffectiveControlRequest):
             return current
-        source_id = getattr(current, "source_id", "runtime")
+        source_id = attribute_access.optional(current, "source_id", "runtime")
         return HostedApplicationEffectiveControlRequest(
             intent="stop",
             reason_code=current.reason_code,

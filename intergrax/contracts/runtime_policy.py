@@ -36,5 +36,19 @@ class PolicyDecision(BaseModel):
     modified_decision: Optional[AgentDecision] = None
     enforcement_level: EnforcementLevel = EnforcementLevel.MANDATORY
     policy_rule_id: str = ""
+    # Optional immutable pack identity (Execution Evidence / ADR-RUNTIME-POLICY-BUNDLE-001).
+    # Empty when the evaluator does not stamp a digestable bundle (fail closed when attestation required).
+    policy_bundle_id: str = ""
+    policy_bundle_version: str = ""
+    policy_bundle_digest: str = ""
+    decision_id: str = ""
     audit_payload: Dict[str, Any] = Field(default_factory=dict)
     schema_version: str = "policy_decision.v1"
+
+    def has_attested_policy_bundle_refs(self) -> bool:
+        """True when bundle id, version, and digest are all non-empty."""
+        return bool(
+            self.policy_bundle_id.strip()
+            and self.policy_bundle_version.strip()
+            and self.policy_bundle_digest.strip()
+        )

@@ -28,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     from intergrax.cli.mvp_evolution import register_parser as register_mvp
     from intergrax.cli.apps import register_parser as register_apps
     from intergrax.cli.envs import register_parser as register_envs
+    from intergrax.cli.external_work import register_parser as register_external_work
 
     register_run(sub)
     register_doctor(sub)
@@ -39,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     register_trace(sub)
     register_evidence(sub)
     register_mvp(sub)
+    register_external_work(sub)
     return parser
 
 
@@ -100,6 +102,18 @@ def main(argv: list[str] | None = None) -> int:
         from intergrax.cli.evidence import run_evidence
 
         return run_evidence(args)
+    if args.command == "external-work":
+        from intergrax.cli.external_work import run_external_work
+
+        return run_external_work(args)
+    if args.command == "demo":
+        from intergrax.cli.external_work import run_demo
+
+        return run_demo(args)
+    if args.command == "receipt":
+        from intergrax.cli.external_work import run_receipt
+
+        return run_receipt(args)
     parser.error(f"Unknown command: {args.command}")
     return 2
 

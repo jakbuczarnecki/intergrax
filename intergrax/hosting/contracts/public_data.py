@@ -16,6 +16,8 @@ from typing import Any
 from pydantic import JsonValue
 from pydantic.types import SecretBytes, SecretStr
 
+from intergrax.utils import attribute_access
+
 _BOUNDED_IDENTIFIER_MAX_LENGTH = 256
 _INSTANCE_ID_MAX_LENGTH = 128
 _SAFE_IDENTIFIER_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9._:-]*$")
@@ -152,8 +154,8 @@ def derive_stable_callable_id(
         raise ValueError(
             f"{field_name} is not reliably stable; provide an explicit stable identifier"
         )
-    module = getattr(callback, "__module__", None)
-    qualname = getattr(callback, "__qualname__", None)
+    module = attribute_access.optional(callback, "__module__", None)
+    qualname = attribute_access.optional(callback, "__qualname__", None)
     if not module or not qualname:
         raise ValueError(
             f"{field_name} is not reliably stable; provide an explicit stable identifier"
@@ -172,8 +174,8 @@ def derive_stable_type_id(
 ) -> str:
     """Derive a stable type identifier from a class or runtime-checkable component."""
     candidate = value if isinstance(value, type) else type(value)
-    module = getattr(candidate, "__module__", None)
-    qualname = getattr(candidate, "__qualname__", None)
+    module = attribute_access.optional(candidate, "__module__", None)
+    qualname = attribute_access.optional(candidate, "__qualname__", None)
     if not module or not qualname or "<locals>" in qualname:
         raise ValueError(
             f"{field_name} is not reliably stable; provide an explicit stable identifier"
@@ -183,6 +185,6 @@ def derive_stable_type_id(
 
 def stable_service_type_id(service_type: type[object]) -> str:
     """Return a deterministic service type identifier for diagnostics."""
-    module = getattr(service_type, "__module__", "unknown")
-    qualname = getattr(service_type, "__qualname__", service_type.__name__)
+    module = attribute_access.optional(service_type, "__module__", "unknown")
+    qualname = attribute_access.optional(service_type, "__qualname__", service_type.__name__)
     return f"{module}.{qualname}"

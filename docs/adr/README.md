@@ -97,6 +97,9 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GOVERNED-CONTINUATION-001](entries/2026-07-20/ADR-GOVERNED-CONTINUATION-001.md) | Governed Continuation as Nexus composition | Accepted |
 | [ADR-POLICY-SIDE-EFFECT-001](entries/2026-07-20/ADR-POLICY-SIDE-EFFECT-001.md) | Meaningful external side effects require policy before execution | Accepted |
 | [ADR-GOVERNED-PROOF-001](entries/2026-07-20/ADR-GOVERNED-PROOF-001.md) | Governed proof profiles describe, but do not own, execution evidence | Accepted |
+| [ADR-RUNTIME-POLICY-BUNDLE-001](entries/2026-07-20/ADR-RUNTIME-POLICY-BUNDLE-001.md) | Immutable attested policy bundle identity | Accepted |
+| [ADR-EXECUTION-BOUNDARY-EVENT-001](entries/2026-07-20/ADR-EXECUTION-BOUNDARY-EVENT-001.md) | Governed execution boundary event (host-owned) | Accepted |
+| [ADR-HOST-ATTESTATION-001](entries/2026-07-20/ADR-HOST-ATTESTATION-001.md) | Host attestor and portable ProofReceipt | Accepted |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 — [`docs/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

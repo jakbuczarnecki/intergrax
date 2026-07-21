@@ -1,8 +1,9 @@
 # Governed External Execution
 
-**Status:** Architecture closure (GEC-0…GEC-6.1) — 2026-07-20  
+**Status:** Architecture closure (GEC-0…GEC-6.1) + host platform completion (PC-1…PC-10) — 2026-07-21  
 **Role:** Primary architectural reference for the reusable platform capability  
-**Not:** Implementation tracker, product UX spec, or ADR substitute
+**Not:** Implementation tracker, product UX spec, or ADR substitute  
+**Host lifecycle:** [`governed_external_work_host_lifecycle.md`](governed_external_work_host_lifecycle.md)
 
 This document consolidates ownership, lifecycle, invariants, and extensibility for **governed external execution**. Decision rationale lives in ADRs; vertical product detail lives in the GEC host and Tier-2 adapter docs.
 
@@ -18,7 +19,9 @@ This document consolidates ownership, lifecycle, invariants, and extensibility f
 | **Governed Continuation** | Composition over Nexus interrupt / HITL / resume — not a second runtime |
 | **Meaningful side effect** | External action that may create commitment, mutation, disclosure, access change, or irreversible consequence |
 | **GovernedProofProfile** | Descriptive post-execution proof metadata — not a receipt, audit log, or authorization token |
-| **ProofReceipt** | Later persistence / receipt product (outside GEC-6 closure) |
+| **Execution Evidence & Host Attestation** | Downstream host capability after proof — see [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md) |
+| **ProofReceipt (execution evidence)** | Portable host-attested export of a governed boundary event — **not** owned by GEC |
+| **ProofReceipt (DocumentStore)** | Separate LKW persistence product (`intergrax.proofs.receipts`) |
 
 ---
 
@@ -83,8 +86,15 @@ Policy evaluation  ← MeaningfulSideEffectRequest
 ========│========  PLATFORM BOUNDARY  ========
         ▼
 Host capabilities begin
-  (receipt persistence, UX, publication, partner transport, …)
+  (GovernedExecutionResult → governed EBE → HostAttestation → ProofReceipt;
+   persistence / attestation recovery / offline CLI demo;
+   UX, publication, partner transport, …)
 ```
+
+Downstream (not GEC):
+
+- [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md)
+- [`governed_external_work_host_lifecycle.md`](governed_external_work_host_lifecycle.md)
 
 External Work specialization of the optional continuation branch uses `ContinuationReason.QUOTE` only.
 
@@ -107,12 +117,12 @@ Exactly one primary owner per capability. “Does not” columns eliminate ambig
 | **Host (Tier-3)** | `applications/governed_contractor_application/` | Inject integrations + policy evaluator; tenant/env; public API; workspace allowlists; present quotes / HITL surfaces (product); observe proof metadata | Own External Work contracts; evaluate policy rules in the adapter; implement providers; treat proof as receipt/authz |
 | **Tier-2 adapter** | `agents/external_contractor_adapter/` | Map/normalize External Work; preserve correlation + idempotency; surface/forward continuation; describe side effects; compose `GovernedProofProfile` after ALLOW + success | Decide accept/reject; resume Nexus; embed policy rules; persist/sign proofs; poll/retry engines; import `applications.*` |
 | **Provider** | Implements `ExternalWorkIntegration` | Execute discover/create/quote/accept/cancel/timeline/deliverables/evidence behind the Protocol | Evaluate policy; authorize acceptance; compose Intergrax proofs; own Nexus identity |
-| **Policy** | Runtime `PolicyEngine` / injected `MeaningfulSideEffectEvaluator` | Authorize or deny meaningful side effects before provider calls; map REQUIRE_HUMAN to continuation | Resume Nexus; execute provider transport; invent business rules inside Tier-2 |
+| **Policy** | Runtime `PolicyEngine` / injected `MeaningfulSideEffectEvaluator` (prefer `RuntimePolicyBundleEvaluator` for attested packs) | Authorize or deny meaningful side effects before provider calls against a concrete `ImmutableRuntimePolicyBundle`; map REQUIRE_HUMAN to continuation | Resume Nexus; execute provider transport; invent business rules inside Tier-2 |
 | **Continuation** | Platform composition + Nexus/HITL | Pause for governance; carry decision evidence; resume orchestration | Execute external work; decide commercial outcomes inside Tier-2; introduce `ContinuationRuntime` |
 | **Proof (`GovernedProofProfile`)** | Platform contract; Tier-2 composes | Describe who/what/run/policy refs/evidence refs/correlation after success | Authorize, resume, sign, hash, store, publish |
-| **Future Receipt (`ProofReceipt`)** | Platform persistence + host exposure (later) | Persist / expose receipts joining proof + artifacts | Replace descriptive proof; authorize side effects |
+| **Execution Evidence & Host Attestation** | Host + platform contracts (downstream of GEC) | Compose governed EBE, sign, emit portable ProofReceipt, verify offline | Own provider execution; live inside Tier-2; authorize side effects |
+| **DocumentStore ProofReceipt** | Platform persistence (LKW path) | Persist structured proof results | Replace descriptive proof or governed attested export |
 | **Future Audit** | Platform audit storage (later) | Durable audit of governed executions | Live inside Tier-2 mapping modules |
-| **Future Attestation** | Host / security plane (later; related: boundary-event signing) | Cryptographic statements about process at boundaries | Implied by `GovernedProofProfile` alone |
 
 ### Stage owners (intent → proof)
 
@@ -128,7 +138,7 @@ Exactly one primary owner per capability. “Does not” columns eliminate ambig
 | Continuation surface + evidence forward | Tier-2 (mapping only) |
 | Provider-bound mutation | Provider (after ALLOW) |
 | Descriptive proof composition | Tier-2 (mandatory after success) |
-| Receipt / audit / attestation products | Future (host + platform) — beyond this closure |
+| Receipt / audit / attestation products | Downstream Execution Evidence (host) — see dedicated platform doc; beyond GEC closure |
 
 ---
 
@@ -162,7 +172,8 @@ Target path:
 1. Implement ExternalWorkIntegration (sync Protocol)
 2. Bind via IntegrationProfile.external_work / host settings
 3. Inject into ExternalContractorAdapterAgent (or equivalent consumer)
-4. Supply MeaningfulSideEffectEvaluator + principal + real run_id
+4. Supply MeaningfulSideEffectEvaluator (bundle-backed for attestation) + principal + real run_id
+5. Host orchestrator: ProviderInvocation → GovernedExecutionResult → attested receipt
 ```
 
 ### Must not require changes
@@ -194,11 +205,11 @@ Outside GEC-0…GEC-6.1 closure. Documented as boundaries only — no contracts 
 
 | Capability | Boundary vs governed external execution |
 |------------|----------------------------------------|
-| **Proof Receipt** | Persistence / queryable receipt product joining proof metadata + artifacts; does not replace `GovernedProofProfile` |
+| **Execution Evidence & Host Attestation** | Implemented downstream capability — [`execution_evidence_and_host_attestation.md`](execution_evidence_and_host_attestation.md); does not reopen GEC |
+| **DocumentStore Proof Receipt** | Persistence / queryable LKW receipt product; does not replace `GovernedProofProfile` or governed attested export |
 | **Persistent Audit** | Durable audit store for governed executions; complementary to descriptive proof and HOS trace |
-| **Host Attestation** | Cryptographic statements about process at host boundaries (related existing work: boundary-event signing) — not implied by proof profiles |
-| **Execution Boundary Events** | Observability / signing plane for boundary crossings; complementary spine, not External Work transport |
-| **Verification** | Critic / verification engines that judge outcomes; distinct from descriptive proof composition |
+| **Harness Execution Boundary Events** | Tool/step BoundaryAttest export (`execution_boundary_event.v1`) — sibling of governed EBE |
+| **Verification (critic)** | Critic / verification engines that judge outcomes; distinct from descriptive proof and receipt signature verify |
 | **Replay** | Reconstruct or re-drive runs from trace; does not authorize side effects |
 | **Provider transport & catalog** | A2A/REST mappers, partner stubs, catalog slugs — behind Protocol; not governance |
 | **Product HITL UX / policy packs** | Host product surfaces and business rule packs — consumers of continuation + policy, not new runtimes |

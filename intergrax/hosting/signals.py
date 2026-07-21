@@ -14,6 +14,9 @@ from intergrax.hosting.control import HostedApplicationControlCoordinator
 from intergrax.hosting.errors import HostedApplicationControlError, HostedApplicationSignalError
 
 
+from intergrax.utils import attribute_access
+
+
 @runtime_checkable
 class HostedApplicationSignalBridge(Protocol):
   """Bridge translating OS signals into typed control requests."""
@@ -59,7 +62,7 @@ class PortableForegroundSignalAdapter:
     if hasattr(signal, "SIGBREAK"):
       signals.append(signal.SIGBREAK)
     if self.enable_sighup_restart and hasattr(signal, "SIGHUP"):
-      signals.append(getattr(signal, "SIGHUP"))
+      signals.append(attribute_access.optional(signal, "SIGHUP"))
     for signum in signals:
       self._previous_handlers[signum] = self.signal_api.getsignal(signum)
       self.signal_api.signal(signum, self._make_handler(signum))
@@ -86,7 +89,7 @@ class PortableForegroundSignalAdapter:
       elif (
         self.enable_sighup_restart
         and hasattr(signal, "SIGHUP")
-        and signum == getattr(signal, "SIGHUP")
+        and signum == attribute_access.optional(signal, "SIGHUP")
       ):
         try:
           self.coordinator.request_restart("signal.sighup")

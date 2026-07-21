@@ -60,6 +60,14 @@ class GovernedContractorBackendSettings(IntergraxApplicationSettingsBase):
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     interaction_execute_default: bool = True
 
+    # Programmatic DI slots (not env-backed) — Execution Evidence / GEC wiring.
+    # Set on a settings instance or build-context settings object before mount.
+    external_work_integration: object | None = None
+    meaningful_side_effect_policy: object | None = None
+    runtime_policy_bundle: object | None = None
+    host_attestor: object | None = None
+    attestation_required: bool = False
+
     # ------------------------------------------------------------------
     # Application-specific settings
     # Add your own env-backed fields here.
