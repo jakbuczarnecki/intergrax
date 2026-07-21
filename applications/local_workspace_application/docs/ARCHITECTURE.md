@@ -730,14 +730,20 @@ POST /v1/interactions/intake
 
 **LKW.6A does not include:** platform Application Hosting adoption (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
-### 9.3b LKW.6C — Windows PowerShell interaction adapter
+### 9.3b LKW.6C — OS interaction adapters (Windows live-certified)
 
-**Status: Closed** after the live MongoDB-backed reviewer proof passes.
+**Status: Closed** for the Windows live MongoDB-backed reviewer proof.
+PROOF-PORTABILITY-1C adds shared cross-platform client/proof plumbing;
+Linux/macOS remain implemented but not live-certified.
 
-LKW owns a thin Windows PowerShell product client that serializes the supported `lab_json` payload and posts it to the existing platform interaction intake. No new platform interaction channel is introduced.
+LKW owns thin OS wrappers that launch one shared Python interaction
+client. The shared client serializes the supported `lab_json` payload
+and posts it to the existing platform interaction intake. No new
+platform interaction channel is introduced.
 
 ```text
-invoke-lkw-interaction.ps1
+Windows PowerShell / Linux SH / macOS SH
+  → invoke-lkw-interaction.py
   → POST /v1/interactions/intake?execute=true
   → LabJsonInteractionAdapter (lab_json / channel = lab)
   → InteractionIntakeService
@@ -748,9 +754,13 @@ invoke-lkw-interaction.ps1
 
 | Concern | Owner | Notes |
 |---------|-------|-------|
-| Product adapter script | `scripts/invoke-lkw-interaction.ps1` | Adapter identity `lkw.windows_powershell`; source `windows_powershell` |
+| Shared Python client | `scripts/invoke-lkw-interaction.py` | Payload, HTTP, normalized JSON result |
+| Windows wrapper | `scripts/invoke-lkw-interaction.ps1` | Adapter identity `lkw.windows_powershell`; source `windows_powershell` |
+| Linux wrapper | `scripts/invoke-lkw-interaction-linux.sh` | Adapter identity `lkw.linux_shell`; source `linux_shell` |
+| macOS wrapper | `scripts/invoke-lkw-interaction-macos.sh` | Adapter identity `lkw.macos_shell`; source `macos_shell` |
+| Shared proof runner | `scripts/run-lkw-os-interaction-proof.py` | OS-family selection, evidence, ProofReceipt |
 | Platform channel | `LabJsonInteractionAdapter` | `interaction_channel` remains `lab` |
-| Task / enrichment / Nexus | Existing LKW host + platform | No Task, agent, or RAG logic in PowerShell |
+| Task / enrichment / Nexus | Existing LKW host + platform | No Task, agent, or RAG logic in OS wrappers |
 | Hosting / instance lock / signals | Platform Application Hosting | No generic OS hosting behavior in LKW |
 | Windows Service | APP-HOST-7 | Not LKW.6C |
 | Slack Socket Mode | LKW.6b (optional) | Not LKW.6C |
@@ -759,7 +769,11 @@ invoke-lkw-interaction.ps1
 
 Enable intake with existing settings: `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=lab_json`, `LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT=true`.
 
-Reviewer command: `applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat` — see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional Windows interaction section.
+Reviewer commands:
+`run-lkw-windows-interaction-proof.bat`,
+`run-lkw-linux-interaction-proof.sh`,
+`run-lkw-macos-interaction-proof.sh`
+— see [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional OS interaction section.
 
 ### 9.3c Cross-platform Core Platform Proof entrypoints
 
@@ -773,9 +787,18 @@ OS launchers are transport-only entrypoints.
 
 Proof orchestration and acceptance live in Python.
 
-OS-specific interaction adapters remain a separate optional layer.
+OS-specific interaction adapters use the same shared-Python pattern:
 
-Shared runner: `scripts/run-lkw-core-platform-proof.py`. Thin launchers:
+```text
+Windows BAT / PowerShell ─┐
+Linux SH ─────────────────┼→ shared Python interaction client / proof runner
+macOS SH ─────────────────┘
+```
+
+Shared interaction client: `scripts/invoke-lkw-interaction.py`.
+Shared interaction proof runner: `scripts/run-lkw-os-interaction-proof.py`.
+
+Shared core runner: `scripts/run-lkw-core-platform-proof.py`. Thin launchers:
 `run-lkw-core-platform-proof-windows.bat`,
 `run-lkw-core-platform-proof-linux.sh`,
 `run-lkw-core-platform-proof-macos.sh`.

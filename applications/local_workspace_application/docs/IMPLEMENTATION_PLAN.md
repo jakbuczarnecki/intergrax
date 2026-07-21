@@ -904,12 +904,13 @@ OS-specific interaction adapter
 
 **LKW.6C delivered (closed):**
 
-- Windows PowerShell localhost interaction adapter (`scripts/invoke-lkw-interaction.ps1`) — thin client only; `POST /v1/interactions/intake?execute=true`
-- Existing platform `lab_json` / `LabJsonInteractionAdapter` reused; interaction channel remains `lab`; product adapter identity `lkw.windows_powershell`
+- Shared Python interaction client (`scripts/invoke-lkw-interaction.py`) with thin OS wrappers
+- Windows PowerShell wrapper (`scripts/invoke-lkw-interaction.ps1`) — launcher only; frozen identity `lkw.windows_powershell`
+- Existing platform `lab_json` / `LabJsonInteractionAdapter` reused; interaction channel remains `lab`
 - Real hosted LKW live proof (`python -m local_workspace_application.hosting`) with real index and search through interaction intake
 - Graceful hosted shutdown (`CTRL_BREAK` / `signal.sigbreak`) with cleanup verification
-- MongoDB-backed `ProofReceipt` (`proof_kind=platform_windows_interaction`) via one-command reviewer runner
-- Reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 12–13
+- MongoDB-backed `ProofReceipt` (`proof_kind=platform_windows_interaction`) via shared OS interaction proof runner
+- Reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional Windows interaction section
 
 **LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher is **LKW.7 — Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed). Tray remains **LKW.8 — Deferred**.
 
@@ -993,7 +994,7 @@ OS-specific interaction adapter
 |----|-------|--------|
 | PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
 | PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
-| PROOF-PORTABILITY-1C | Add optional Linux and macOS interaction clients and receipts | **Planned** |
+| PROOF-PORTABILITY-1C | Add shared cross-platform OS interaction client/proof runner with thin OS wrappers | **Done** |
 | PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Planned** |
 
 Current proof certification:
@@ -1003,20 +1004,30 @@ Windows core reviewer path:
   shared entrypoint implemented and live-recorded
 
 Windows optional interaction proof:
-  available and live-recorded
+  implemented and live-certified
 
 Linux core reviewer path:
   shared entrypoint implemented, not live-certified
 
 Linux optional interaction proof:
-  not implemented
+  implemented, not live-certified
 
 macOS core reviewer path:
   shared entrypoint implemented, not live-certified
 
 macOS optional interaction proof:
-  not implemented
+  implemented, not live-certified
 ```
+
+PROOF-PORTABILITY-1C delivered:
+
+- Shared client `invoke-lkw-interaction.py`
+- Thin wrappers: `invoke-lkw-interaction.ps1`, `invoke-lkw-interaction-linux.sh`, `invoke-lkw-interaction-macos.sh`
+- Shared proof runner `run-lkw-os-interaction-proof.py`
+- Thin proof launchers for Windows/Linux/macOS
+- Windows public BAT and Python shim retained for compatibility
+- Frozen OS identities enforced; runtime OS mismatch fails closed
+- Live certification remains Windows-only until PROOF-PORTABILITY-1D
 
 ---
 

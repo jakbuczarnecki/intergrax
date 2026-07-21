@@ -46,23 +46,48 @@ These proofs validate one concrete operating-system client
 adapter. They are not required to complete the Core Platform Proof.
 
 ```text
-Windows:
+Windows optional interaction:
   implemented and live-certified
 
-Linux:
-  planned, not implemented, not certified
+Linux optional interaction:
+  implemented, not live-certified
 
-macOS:
-  planned, not implemented, not certified
+macOS optional interaction:
+  implemented, not live-certified
 ```
 
 Windows claim (optional):
 
 ```text
-A real Windows PowerShell client sends work through
+A real Windows PowerShell wrapper launches the shared Python
+interaction client, which sends work through
 /v1/interactions/intake into the shared LKW executor and Nexus
 path, performing real index and search work.
 ```
+
+Shared interaction architecture:
+
+```text
+Windows PowerShell wrapper ─┐
+Linux shell wrapper ────────┼→ invoke-lkw-interaction.py
+macOS shell wrapper ────────┘
+
+Windows BAT ─┐
+Linux SH ────┼→ run-lkw-os-interaction-proof.py
+macOS SH ────┘
+```
+
+Frozen OS identities:
+
+```text
+windows / lkw.windows_powershell / windows_powershell / windows_powershell
+linux   / lkw.linux_shell        / linux_shell        / posix_sh
+macos   / lkw.macos_shell        / macos_shell        / posix_sh
+```
+
+Implementation is shared. Live certification remains OS-specific.
+Linux and macOS paths are implemented but not live-certified until
+PROOF-PORTABILITY-1D.
 
 Local proof endpoints:
 
@@ -99,8 +124,9 @@ The Linux launcher invokes the same Python core-proof runner.
 Linux core execution is not live-certified until
 PROOF-PORTABILITY-1D.
 
-The optional Linux interaction proof is planned under
-PROOF-PORTABILITY-1C.
+The optional Linux interaction client and proof runner are
+implemented under PROOF-PORTABILITY-1C and are not live-certified
+until PROOF-PORTABILITY-1D.
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
 
@@ -113,8 +139,9 @@ The macOS launcher invokes the same Python core-proof runner.
 macOS core execution is not live-certified until
 PROOF-PORTABILITY-1D.
 
-The optional macOS interaction proof is planned under
-PROOF-PORTABILITY-1C.
+The optional macOS interaction client and proof runner are
+implemented under PROOF-PORTABILITY-1C and are not live-certified
+until PROOF-PORTABILITY-1D.
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
 
@@ -122,11 +149,11 @@ Do not run Windows .bat or Windows PowerShell interaction steps.
 
 ## Operating-system proof status
 
-| Operating system | Core reviewer path                       | Optional OS interaction proof      | Certification status       |
-| ---------------- | ---------------------------------------- | ---------------------------------- | -------------------------- |
-| Windows          | Shared Python runner through Windows BAT | Windows PowerShell proof available | Core live-certified        |
-| Linux            | Shared Python runner through Linux SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
-| macOS            | Shared Python runner through macOS SH    | Planned in PROOF-PORTABILITY-1C    | Implemented, not certified |
+| Operating system | Core reviewer path                       | Optional OS interaction proof                         | Certification status       |
+| ---------------- | ---------------------------------------- | ----------------------------------------------------- | -------------------------- |
+| Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Core live-certified        |
+| Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Implemented, not certified |
+| macOS            | Shared Python runner through macOS SH    | Shared Python interaction proof through macOS SH      | Implemented, not certified |
 
 ```text
 Implemented:
@@ -207,8 +234,9 @@ A reviewer using the one-command entrypoint does not run the
 optional OS interaction proof as part of core completion.
 
 The shared core entrypoint was delivered by PROOF-PORTABILITY-1B.
+Shared OS interaction client/proof plumbing was delivered by
+PROOF-PORTABILITY-1C.
 Linux/macOS live certification remains PROOF-PORTABILITY-1D.
-Optional Linux/macOS interaction remains PROOF-PORTABILITY-1C.
 ```
 
 ---
@@ -949,16 +977,19 @@ completion.
 
 # Optional operating-system interaction proofs
 
-Run this section only on Windows.
-
 This section is optional.
 
-Its PASS result extends the evidence set with a Windows client
-adapter proof.
+A PASS result extends the evidence set with one OS-specific client
+adapter proof recorded through the shared Python interaction proof
+runner.
 
 Its omission does not invalidate the Core Platform Proof.
 
+Run the matching OS launcher only on that operating system.
+
 ## Windows users — Optional W1: Run the Windows PowerShell interaction proof
+
+Windows optional interaction remains implemented and live-certified.
 
 Run:
 
@@ -972,15 +1003,18 @@ Optional deterministic reviewer command:
 applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat --run-id lkw-windows-interaction-live-001 --correlation-id lkw-windows-interaction-live-001
 ```
 
-The command starts only MongoDB and Mongo Express.
+The public BAT delegates to `run-lkw-os-interaction-proof.py --os-family windows`.
+
+The shared runner starts only MongoDB and Mongo Express.
 
 The live test starts hosted LKW itself.
 
-The live test invokes the real PowerShell adapter.
+The live test invokes the thin PowerShell wrapper, which launches
+the shared Python interaction client.
 
-The PowerShell adapter calls only `/v1/interactions/intake`.
+The shared client calls only `/v1/interactions/intake`.
 
-A green static/unit test alone does not close LKW.6C.
+A green static/unit test alone does not close live certification.
 
 Expected result:
 
@@ -991,6 +1025,8 @@ proof_tests_passed=1
 os_family=windows
 adapter_invoked=true
 adapter_id=lkw.windows_powershell
+client_runtime=python
+wrapper_runtime=windows_powershell
 powershell_runtime=Windows PowerShell
 transport=http
 intake_endpoint=/v1/interactions/intake
@@ -1078,7 +1114,8 @@ proof_kind = platform_windows_interaction
 result = PASS
 provider_evidence.os_family = windows
 provider_evidence.os_adapter = lkw.windows_powershell
-provider_evidence.client_runtime = Windows PowerShell
+provider_evidence.client_runtime = python
+provider_evidence.wrapper_runtime = windows_powershell
 provider_evidence.intake_endpoint = /v1/interactions/intake
 provider_evidence.intake_service = InteractionIntakeService
 provider_evidence.execution_boundary = LocalWorkspaceTaskExecutor
@@ -1086,6 +1123,7 @@ provider_evidence.orchestrator = NexusLoop
 domain_evidence.adapter_invoked = true
 domain_evidence.interaction_surface = lab_json
 domain_evidence.interaction_channel = lab
+domain_evidence.powershell_runtime = Windows PowerShell
 domain_evidence.index_executed = true
 domain_evidence.index_state = completed
 domain_evidence.index_task_id is non-empty
@@ -1123,31 +1161,67 @@ Markdown is the execution and inspection guide.
 
 ## Linux users — Optional interaction proof
 
-Status: planned
+Status: implemented, not live-certified
 
-The Linux interaction client and its live ProofReceipt path are
-not implemented in the current repository state.
+Linux has a thin shell wrapper and shares the Python interaction
+client and OS interaction proof runner.
+
+Run only on Linux:
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-linux-interaction-proof.sh
+```
+
+Frozen identity:
+
+```text
+os_family=linux
+proof_kind=platform_linux_interaction
+adapter_id=lkw.linux_shell
+source=linux_shell
+wrapper_runtime=posix_sh
+```
 
 Do not substitute the Windows PowerShell proof.
 
-This path is planned under PROOF-PORTABILITY-1C.
+A Linux ProofReceipt can only be produced by a real successful run
+on Linux. Source-code existence is not live evidence.
 
-Linux is not certified.
+Linux optional interaction is not live-certified until
+PROOF-PORTABILITY-1D.
 
 ---
 
 ## macOS users — Optional interaction proof
 
-Status: planned
+Status: implemented, not live-certified
 
-The macOS interaction client and its live ProofReceipt path are
-not implemented in the current repository state.
+macOS has a thin shell wrapper and shares the Python interaction
+client and OS interaction proof runner.
+
+Run only on macOS:
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-macos-interaction-proof.sh
+```
+
+Frozen identity:
+
+```text
+os_family=macos
+proof_kind=platform_macos_interaction
+adapter_id=lkw.macos_shell
+source=macos_shell
+wrapper_runtime=posix_sh
+```
 
 Do not substitute the Windows PowerShell proof.
 
-This path is planned under PROOF-PORTABILITY-1C.
+A macOS ProofReceipt can only be produced by a real successful run
+on macOS. Source-code existence is not live evidence.
 
-macOS is not certified.
+macOS optional interaction is not live-certified until
+PROOF-PORTABILITY-1D.
 
 ---
 

@@ -1,10 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""LKW — real Windows PowerShell interaction adapter live proof."""
+"""LKW — real macOS shell interaction adapter live proof."""
 
 from __future__ import annotations
 
-import os
+import platform
 from collections.abc import Callable
 from pathlib import Path
 
@@ -17,18 +17,18 @@ from local_workspace_application.tests.interactions.os_interaction_live_helpers 
 pytestmark = [
     pytest.mark.unit,
     pytest.mark.skipif(
-        os.name != "nt",
-        reason="Windows PowerShell interaction proof requires Windows",
+        platform.system() != "Darwin",
+        reason="macOS shell interaction proof requires macOS",
     ),
 ]
 
 
-def test_windows_powershell_adapter_executes_real_lkw_interactions(
+def test_macos_shell_adapter_executes_real_lkw_interactions(
     tmp_path: Path,
     record_property: Callable[[str, object], None],
 ) -> None:
     run_os_interaction_live_proof(
-        os_family="windows",
+        os_family="macos",
         tmp_path=tmp_path,
         record_property=record_property,
     )

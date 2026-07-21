@@ -285,16 +285,13 @@ def test_lkw_platform_proof_linux_honesty() -> None:
     start = text.index("## Linux users — Optional interaction proof")
     end = text.index("## macOS users — Optional interaction proof")
     linux_section = text[start:end]
-    assert "Status: planned" in linux_section
-    assert "not implemented" in linux_section
-    assert "not certified" in linux_section
-    for forbidden in (
-        "proof_result=PASS",
-        "proof_kind=platform_linux_interaction",
-        "run-lkw-linux-interaction-proof",
-        "lkw.linux_shell",
-    ):
-        assert forbidden not in linux_section
+    assert "Status: implemented, not live-certified" in linux_section
+    assert "not live-certified" in linux_section
+    assert "run-lkw-linux-interaction-proof.sh" in linux_section
+    assert "proof_kind=platform_linux_interaction" in linux_section
+    assert "lkw.linux_shell" in linux_section
+    assert "proof_result=PASS" not in linux_section
+    assert "live-certified" not in linux_section.replace("not live-certified", "")
 
 
 def test_lkw_platform_proof_macos_honesty() -> None:
@@ -302,16 +299,13 @@ def test_lkw_platform_proof_macos_honesty() -> None:
     start = text.index("## macOS users — Optional interaction proof")
     end = text.index("## Core reviewer shortcuts")
     macos_section = text[start:end]
-    assert "Status: planned" in macos_section
-    assert "not implemented" in macos_section
-    assert "not certified" in macos_section
-    for forbidden in (
-        "proof_result=PASS",
-        "proof_kind=platform_macos_interaction",
-        "run-lkw-macos-interaction-proof",
-        "lkw.macos_shell",
-    ):
-        assert forbidden not in macos_section
+    assert "Status: implemented, not live-certified" in macos_section
+    assert "not live-certified" in macos_section
+    assert "run-lkw-macos-interaction-proof.sh" in macos_section
+    assert "proof_kind=platform_macos_interaction" in macos_section
+    assert "lkw.macos_shell" in macos_section
+    assert "proof_result=PASS" not in macos_section
+    assert "live-certified" not in macos_section.replace("not live-certified", "")
 
 
 def test_lkw_platform_proof_core_numbering() -> None:
@@ -417,10 +411,35 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     d_idx = text.index("PROOF-PORTABILITY-1D")
     assert "**Done**" in text[a_idx : a_idx + 160]
     assert "**Done**" in text[b_idx : b_idx + 160]
-    assert "**Planned**" in text[c_idx : c_idx + 160]
+    assert "**Done**" in text[c_idx : c_idx + 200]
     assert "**Planned**" in text[d_idx : d_idx + 160]
     assert "shared entrypoint implemented and live-recorded" in text
     assert "shared entrypoint implemented, not live-certified" in text
+    assert "implemented and live-certified" in text
+    assert "implemented, not live-certified" in text
+
+
+def test_lkw_platform_proof_shared_os_interaction_architecture() -> None:
+    text = _proof_text()
+    assert "invoke-lkw-interaction.py" in text
+    assert "run-lkw-os-interaction-proof.py" in text
+    assert "Windows PowerShell wrapper" in text
+    assert "Linux shell wrapper" in text
+    assert "macOS shell wrapper" in text
+    assert "lkw.windows_powershell" in text
+    assert "lkw.linux_shell" in text
+    assert "lkw.macos_shell" in text
+    assert "platform_windows_interaction" in text
+    assert "platform_linux_interaction" in text
+    assert "platform_macos_interaction" in text
+    assert "Windows optional interaction:\n  implemented and live-certified" in text
+    assert "Linux optional interaction:\n  implemented, not live-certified" in text
+    assert "macOS optional interaction:\n  implemented, not live-certified" in text
+    assert "planned, not implemented, not certified" not in text
+    assert (_SCRIPTS / "invoke-lkw-interaction.py").is_file()
+    assert (_SCRIPTS / "run-lkw-os-interaction-proof.py").is_file()
+    assert (_SCRIPTS / "run-lkw-linux-interaction-proof.sh").is_file()
+    assert (_SCRIPTS / "run-lkw-macos-interaction-proof.sh").is_file()
 
 
 def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None:
