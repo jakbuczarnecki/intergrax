@@ -140,6 +140,8 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
             "source_path": "/data/report.txt",
             "chunk_id": "chunk-1",
             "score": 0.91,
+            "file_name": "report.txt",
+            "metadata": {"source_path": "/data/report.txt"},
         }
     ]
 

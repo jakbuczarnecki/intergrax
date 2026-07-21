@@ -289,12 +289,15 @@ This track is executed one task at a time.
 | LKW.6 | OS daemon + interaction intake router | LKW.1 | **Closed** (LKW.6A/6B/6C) | High |
 | LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned / optional | Medium |
 | LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) | Medium |
+| LKW-PRODUCT-1 | Managed workspaces + folder sources (create/attach/sync/search) | LKW.1, LKW.3 | **Done** | Critical |
 | LKW.8 | Tray thin client | LKW.6 | Deferred | Low |
 | LKW-H2 | Evidence/maturity wording cleanup | LKW.1 | Planned | Medium |
 | LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
 | LKW-W | Deferred architecture watchlist | LKW proof pain only | Deferred | Watch |
 
 **LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
+
+**LKW-PRODUCT-1 — Done:** managed workspace HTTP API, local folder sources, sync operations, workspace-scoped search, DocumentStore-backed durable state, live proof `managed_workspace_folder_sync`. See [`ARCHITECTURE.md`](ARCHITECTURE.md) § LKW-PRODUCT-1.
 
 **Next planned task:** **LKW.8** (Deferred) or **LKW.6b** (optional Slack Socket Mode). **LKW.7** — **Closed** (LKW.7A Done; LKW.7B Closed; LKW.7B1 Done; LKW.7B2 Closed; LKW.7B2A Done; LKW.7B2B Done; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed). **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
 

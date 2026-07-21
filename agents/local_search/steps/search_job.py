@@ -56,6 +56,11 @@ def _format_evidence_item(
     source_path: str | None = None,
     chunk_id: str | None = None,
     score: float | None = None,
+    document_id: str | None = None,
+    source_id: str | None = None,
+    workspace_id: str | None = None,
+    file_name: str | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> dict[str, object]:
     item: dict[str, object] = {}
     body = (text or content or "").strip()
@@ -67,6 +72,16 @@ def _format_evidence_item(
         item["chunk_id"] = chunk_id
     if score is not None:
         item["score"] = score
+    if document_id:
+        item["document_id"] = document_id
+    if source_id:
+        item["source_id"] = source_id
+    if workspace_id:
+        item["workspace_id"] = workspace_id
+    if file_name:
+        item["file_name"] = file_name
+    if metadata:
+        item["metadata"] = metadata
     return item
 
 
@@ -80,6 +95,9 @@ def _format_evidence(
         metadata = chunk.get("metadata")
         meta: dict[str, Any] = metadata if isinstance(metadata, dict) else {}
         source_path = meta.get("source_path") or meta.get("source") or meta.get("file")
+        file_name = meta.get("file_name")
+        if not file_name and source_path:
+            file_name = str(source_path).replace("\\", "/").rsplit("/", 1)[-1]
         item = _format_evidence_item(
             text=str(chunk.get("text") or ""),
             source_path=str(source_path) if source_path else None,
@@ -87,6 +105,11 @@ def _format_evidence(
             score=chunk.get("score")
             if isinstance(chunk.get("score"), (int, float))
             else None,
+            document_id=str(meta["document_id"]) if meta.get("document_id") else None,
+            source_id=str(meta["source_id"]) if meta.get("source_id") else None,
+            workspace_id=str(meta["workspace_id"]) if meta.get("workspace_id") else None,
+            file_name=str(file_name) if file_name else None,
+            metadata=meta,
         )
         if item:
             evidence.append(item)
@@ -174,6 +197,12 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         if collection_id_raw is not None and str(collection_id_raw).strip()
         else None
     )
+    workspace_id_raw = metadata.get("workspace_id")
+    workspace_id = (
+        str(workspace_id_raw).strip()
+        if workspace_id_raw is not None and str(workspace_id_raw).strip()
+        else collection_id
+    )
     top_k = _optional_int(metadata, "top_k")
 
     if not query:
@@ -199,8 +228,8 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
         tool_input["tenant_id"] = tenant_id
     if scope["user_id"]:
         tool_input["user_id"] = scope["user_id"]
-    if collection_id:
-        tool_input["workspace_id"] = collection_id
+    if workspace_id:
+        tool_input["workspace_id"] = workspace_id
 
     entry = await invoke_catalog_tool(
         exec_ctx,

@@ -168,6 +168,7 @@ LKW is a **personal Agent OS instance** on the user's computer:
 | Client | Technology | Talks to | Wave |
 |--------|------------|----------|------|
 | **HTTP API** | any HTTP client | `POST /v1/local_workspace/run` | LKW.0 Done |
+| **Managed workspaces API** | any HTTP client | `/v1/local_workspace/workspaces`, sources, sync, operations, search | **LKW-PRODUCT-1 Done** |
 | **MCP** | Cursor, Claude Desktop | `http://127.0.0.1:8020/mcp` | LKW.0 Done |
 | **LKW Tray** | Tauri/Electron or native | localhost HTTP + folder picker | LKW.8 |
 | **Slack** | Slack App (Socket Mode) | intake via platform interaction stack on LKW host | LKW.6b |
@@ -1058,6 +1059,25 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned / optional |
 | **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
+| **LKW-PRODUCT-1** | P1 | Managed workspaces + folder sources | Tier-3 product API + DocumentStore state | LKW.1, LKW.3 | **Done** |
+
+#### LKW-PRODUCT-1 — Managed workspaces and folder sources (Done)
+
+First complete product scenario:
+
+```text
+create workspace → attach local folder → validate filesystem policy → sync
+  → ingest/index real files → persist source/document state → search in workspace
+```
+
+| Owns (LKW) | Reuses (platform) |
+|------------|-------------------|
+| `Workspace` / `WorkspaceSource` / `WorkspaceOperation` / `WorkspaceDocumentReference` | `DocumentStore` persistence boundary |
+| Public HTTP routes under `/v1/local_workspace/workspaces*` and `/operations/{id}` | Filesystem allowlist (`INTERGRAX_ALLOWED_READ_ROOTS`) |
+| Sync operation lifecycle + idempotency (content hash) | `local.workspace.index` / `local.workspace.search` via task executor |
+| Tenant + workspace isolation (fail-closed 404) | RAG ingest/retrieve metadata filters |
+
+Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `managed_workspace_folder_sync`.
 
 ### 15.2 Wave detail (tasks + acceptance)
 

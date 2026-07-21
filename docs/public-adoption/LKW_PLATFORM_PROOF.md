@@ -1089,6 +1089,100 @@ This markdown page is the execution and inspection guide.
 
 ---
 
+## Managed Workspace and Folder Source
+
+This section verifies the first complete LKW product scenario on a
+real host through public HTTP endpoints only:
+
+```text
+create workspace
+→ attach local folder
+→ start synchronization
+→ inspect operation status
+→ search inside the workspace
+→ confirm source references and isolation
+```
+
+It is not a separate infrastructure proof. It exercises the product
+API and records proof kind `managed_workspace_folder_sync`.
+
+### Windows (current certified product path)
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-managed-workspace-live-proof.bat
+```
+
+The launcher starts MongoDB (durable workspace state), runs a real
+LKW host, creates a temporary folder with two marker files, and
+drives the public API end-to-end.
+
+### Linux / macOS
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-managed-workspace-live-proof.sh
+```
+
+Do not treat Linux/macOS as certified for this product flow until
+the launcher has been run on that OS.
+
+### Public endpoints used by the proof
+
+| Step | Method | Path |
+|------|--------|------|
+| Create workspace | `POST` | `/v1/local_workspace/workspaces` |
+| Register folder source | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources` |
+| Start sync | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources/{source_id}/sync` |
+| Poll operation | `GET` | `/v1/local_workspace/operations/{operation_id}` |
+| Search workspace | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/search` |
+
+Tenant scope is taken from request context or the `X-Tenant-Id`
+header. Do not pass another tenant's id in the body to cross
+tenant boundaries.
+
+### Manual reviewer checks (optional)
+
+1. Create a workspace with a clear name (for example `Buildlogic Legal Case`).
+2. Register an allowlisted local folder as `source_type=local_folder`.
+3. Confirm a path outside the allowlist returns `400`.
+4. Start sync and poll until `status=completed`.
+5. Search for each marker and confirm `source_path` / `file_name`.
+6. Create a second workspace and confirm the first marker is absent.
+7. Restart the host and `GET` the original workspace — it must still exist.
+8. Inspect the ProofReceipt in Mongo Express for
+   `proof_kind=managed_workspace_folder_sync`.
+
+### Expected PASS signals
+
+```text
+proof_result=PASS
+proof_kind=managed_workspace_folder_sync
+receipt_recorded=true
+receipt_verified=true
+```
+
+Domain evidence must include:
+
+```text
+workspace_created=true
+source_registered=true
+source_policy_verified=true
+sync_operation_completed=true
+documents_indexed>=2
+search_results_verified=true
+source_references_verified=true
+workspace_isolation_verified=true
+second_sync_idempotent=true
+direct_provider_write=false
+original_files_modified=false
+```
+
+### Authority
+
+The live launcher and the recorded ProofReceipt are authoritative.
+This markdown page is the external execution guide.
+
+---
+
 ## Core Platform Proof completion
 
 The Core Platform Proof is complete when the required core steps
