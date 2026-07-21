@@ -995,7 +995,7 @@ OS-specific interaction adapter
 | PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
 | PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
 | PROOF-PORTABILITY-1C | Add shared cross-platform OS interaction client/proof runner with thin OS wrappers | **Done** |
-| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Windows Application Hosting + Windows interaction live-certified on native Windows (`windows_native_runtime`); Linux Application Hosting + Linux interaction live-certified in Linux Docker runtime; full multi-phase Core, native Linux host and macOS not live-certified by these profiles |
+| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Windows Application Hosting + Windows interaction live-certified on native Windows (`windows_native_runtime`); Linux Application Hosting + Linux interaction live-certified in Linux Docker runtime; full multi-phase Core, native Linux host and macOS not live-certified by these profiles. **PROOF-PORTABILITY-1D-MATRIX** consolidates current certification state into `docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md` (+ JSON evidence) without claiming macOS or native Linux complete. |
 
 Current proof certification:
 
@@ -1047,6 +1047,14 @@ PROOF-PORTABILITY-1D (Windows native shared-runner refresh) delivered:
 - Profile `windows_native_runtime` certifies `platform_application_hosting` + `platform_windows_interaction` only
 - Evidence: `docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
 - Historical full Windows Core reviewer claims are preserved; this run does not re-execute every Core phase
+
+PROOF-PORTABILITY-1D-MATRIX delivered:
+
+- Deterministic generator `generate-lkw-platform-certification-matrix.py` (+ BAT/SH)
+- Aggregates Windows native + Linux Docker certification artifacts only
+- Publishes `docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md` and JSON evidence
+- Explicitly records `linux_native_runtime` and `macos_native_runtime` as not live-certified
+- Does not execute live proofs or create ProofReceipts
 
 ---
 

@@ -111,6 +111,18 @@ macos   / lkw.macos_shell        / macos_shell        / posix_sh
 
 Implementation is shared. Live certification is OS-specific.
 
+Authoritative cross-platform certification status and evidence summary:
+
+```text
+docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md
+docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json
+```
+
+This proof guide remains the execution path. The matrix consolidates
+receipt-backed certification artifacts for `windows_native_runtime` and
+`linux_docker_runtime`, and records that native Linux host and macOS
+remain not live-certified (PROOF-PORTABILITY-1D-MATRIX).
+
 ```text
 Windows Application Hosting Proof:
   live-certified on native Windows through current shared runner

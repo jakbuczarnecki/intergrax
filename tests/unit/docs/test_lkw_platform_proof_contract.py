@@ -317,6 +317,10 @@ def test_lkw_platform_proof_certification_matrix() -> None:
     assert "live-certified on native Windows" in text
     assert "live-certified in Linux Docker runtime" in text
     assert "Implemented, not certified" in text
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in text
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.json" in text
+    assert "PROOF-PORTABILITY-1D-MATRIX" in text
+    assert "remain not live-certified" in text
     windows_row_idx = text.index("| Windows")
     linux_row_idx = text.index("| Linux")
     macos_row_idx = text.index("| macOS")
@@ -344,6 +348,19 @@ def test_lkw_platform_proof_certification_matrix() -> None:
     assert (
         _SCRIPTS / "run-lkw-windows-native-certification.bat"
     ).is_file()
+    assert (
+        _SCRIPTS / "generate-lkw-platform-certification-matrix.py"
+    ).is_file()
+    matrix_md = (
+        _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+    )
+    assert matrix_md.is_file()
+    matrix_text = matrix_md.read_text(encoding="utf-8")
+    assert "live-certified" in matrix_text
+    assert "not live-certified" in matrix_text
+    assert "Application Hosting certification is not the same as complete" in (
+        matrix_text
+    )
 
 
 def test_lkw_platform_proof_plan_portability_contract() -> None:
@@ -352,6 +369,7 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     assert "PROOF-PORTABILITY-1B" in text
     assert "PROOF-PORTABILITY-1C" in text
     assert "PROOF-PORTABILITY-1D" in text
+    assert "PROOF-PORTABILITY-1D-MATRIX" in text
     a_idx = text.index("PROOF-PORTABILITY-1A")
     b_idx = text.index("PROOF-PORTABILITY-1B")
     c_idx = text.index("PROOF-PORTABILITY-1C")
@@ -359,7 +377,8 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     assert "**Done**" in text[a_idx : a_idx + 160]
     assert "**Done**" in text[b_idx : b_idx + 160]
     assert "**Done**" in text[c_idx : c_idx + 200]
-    assert "**Partial**" in text[d_idx : d_idx + 360]
+    assert "**Partial**" in text[d_idx : d_idx + 500]
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in text
     assert "live-certified on native Windows through current shared runner" in text
     assert "live-certified in Linux Docker runtime" in text
     assert "implemented, not live-certified" in text or (
@@ -372,6 +391,8 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     assert "linux_docker_runtime" in text
     assert "windows_native_runtime" in text
     assert "LKW_WINDOWS_NATIVE_CERTIFICATION.json" in text
+    assert "macos_native_runtime" in text or "macOS" in text
+    assert "not live-certified" in text
 
 
 def test_lkw_platform_proof_shared_os_interaction_architecture() -> None:

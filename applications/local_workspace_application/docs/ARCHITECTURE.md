@@ -752,6 +752,13 @@ PROOF-PORTABILITY-1D records:
 - `docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
 - `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
 
+PROOF-PORTABILITY-1D-MATRIX consolidates the current certification state
+into the authoritative cross-platform matrix (no new live proofs; macOS
+and native Linux remain not live-certified):
+
+- `docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md`
+- `docs/public-adoption/evidence/LKW_PLATFORM_CERTIFICATION_MATRIX.json`
+
 LKW owns thin OS wrappers that launch one shared Python interaction
 client. The shared client serializes the supported `lab_json` payload
 and posts it to the existing platform interaction intake. No new
