@@ -39,7 +39,7 @@ def run_command(args: argparse.Namespace) -> int:
     import uvicorn
 
     print(f"Starting {args.target} at http://{args.host}:{args.port}/")
-    print("  Tip: intergrax doctor — verify tier imports and scaffold alignment")
+    print("  Tip: intergrax doctor - verify tier imports and scaffold alignment")
     uvicorn.run(
         args.target,
         host=args.host,

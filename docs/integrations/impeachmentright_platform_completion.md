@@ -65,9 +65,33 @@ uv run pytest applications/governed_contractor_application/tests/host/test_partn
 uv run pytest applications/governed_contractor_application/tests/host/test_platform_completion.py \
   tests/unit/runtime/policy/test_runtime_policy_bundle_evaluator.py \
   tests/unit/contracts/test_governed_execution_result.py -q
-uv run intergrax demo governed-contractor --offline --store build/external_work_demo
-uv run intergrax receipt verify build/external_work_demo/export/accept_receipt.json
+uv run pytest applications/governed_contractor_application/tests/host/test_cli_verification_hardening.py -q
+
+uv run intergrax demo governed-contractor \
+  --offline \
+  --store build/external_work_demo
+
+uv run intergrax receipt verify \
+  build/external_work_demo/export/accept_receipt.json \
+  --store build/external_work_demo
+
+uv run intergrax demo governed-contractor \
+  --offline \
+  --simulate-signing-failure \
+  --store build/external_work_recovery_demo
+
+uv run intergrax external-work retry-attestation \
+  exec-offline-accept \
+  --store build/external_work_recovery_demo
+
+uv run intergrax receipt verify \
+  build/external_work_recovery_demo/export/accept_receipt.json \
+  --store build/external_work_recovery_demo
 ```
+
+See also [`impeachmentright_cli_verification_hardening.md`](impeachmentright_cli_verification_hardening.md)
+for the CLI/packaging hardening audit (explicit key sources, subprocess portability,
+signer-failure recovery).
 
 ---
 

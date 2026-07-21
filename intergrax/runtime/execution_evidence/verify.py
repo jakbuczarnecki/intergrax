@@ -25,6 +25,12 @@ from intergrax.runtime.execution_evidence.attestor import (
     ALGORITHM_ED25519,
     stable_payload_hash_from_bytes,
 )
+from intergrax.runtime.execution_evidence.key_store import (  # noqa: F401 — public re-export
+    DEMO_OFFLINE_KEY_ID,
+    FilesystemHostKeyResolver,
+    write_demo_mode_marker,
+    write_verification_key_artifact,
+)
 
 _SUPPORTED_SCHEMAS = frozenset(
     {
