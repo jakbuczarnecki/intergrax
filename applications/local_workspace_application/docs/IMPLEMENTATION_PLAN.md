@@ -995,33 +995,30 @@ OS-specific interaction adapter
 | PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
 | PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
 | PROOF-PORTABILITY-1C | Add shared cross-platform OS interaction client/proof runner with thin OS wrappers | **Done** |
-| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Linux Application Hosting + Linux interaction live-certified in Linux Docker runtime; full multi-phase Core Platform Proof, native Linux host and macOS not live-certified |
+| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Windows Application Hosting + Windows interaction live-certified on native Windows (`windows_native_runtime`); Linux Application Hosting + Linux interaction live-certified in Linux Docker runtime; full multi-phase Core, native Linux host and macOS not live-certified by these profiles |
 
 Current proof certification:
 
 ```text
-Windows Application Hosting / Core reviewer path:
-  existing Windows certification unchanged
+Windows Application Hosting Proof:
+  live-certified on native Windows through current shared runner
 
-Windows optional interaction proof:
-  implemented and live-certified on native Windows
+Windows Optional OS Interaction Proof:
+  live-certified on native Windows through shared Python client/proof runner
 
 Linux Application Hosting Proof:
-  implemented and live-certified in Linux Docker runtime
+  live-certified in Linux Docker runtime
 
-Linux optional interaction proof:
-  implemented and live-certified in Linux Docker runtime
+Linux Optional OS Interaction Proof:
+  live-certified in Linux Docker runtime
 
 Linux full multi-phase Core Platform Proof:
-  not separately certified in Linux Docker runtime
+  not separately certified by Linux Docker profile
 
 Linux native-host deployment:
   not separately certified
 
-macOS core reviewer path:
-  shared entrypoint implemented, not live-certified
-
-macOS optional interaction proof:
+macOS:
   implemented, not live-certified
 ```
 
@@ -1041,6 +1038,15 @@ PROOF-PORTABILITY-1D (Linux Docker runtime slice) delivered:
 - External MongoDB mode on shared proof runners
 - Profile `linux_docker_runtime` certifies `platform_application_hosting` + `platform_linux_interaction` only
 - Evidence: `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
+
+PROOF-PORTABILITY-1D (Windows native shared-runner refresh) delivered:
+
+- Host orchestrator `run-lkw-windows-native-certification.py` (+ BAT)
+- Public Windows BAT → shared core runner (`application-hosting` phase)
+- Public Windows interaction BAT → shared OS interaction proof runner
+- Profile `windows_native_runtime` certifies `platform_application_hosting` + `platform_windows_interaction` only
+- Evidence: `docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
+- Historical full Windows Core reviewer claims are preserved; this run does not re-execute every Core phase
 
 ---
 

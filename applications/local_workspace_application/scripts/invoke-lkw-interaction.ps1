@@ -65,6 +65,8 @@ if (-not $python) {
     exit 1
 }
 
+# Build argv explicitly. Never pass optional flag names without values —
+# PowerShell splatting drops empty strings, which breaks Python argparse.
 $argumentList = @(
     $ClientScript,
     "--os-family", "windows",
@@ -72,15 +74,119 @@ $argumentList = @(
     "--source", "windows_powershell",
     "--wrapper-runtime", "windows_powershell",
     "--message", $Message,
-    "--base-url", $BaseUrl,
-    "--capability", $Capability,
-    "--tenant-id", $TenantId,
-    "--user-id", $UserId,
-    "--session-id", $SessionId,
-    "--interaction-id", $InteractionId,
-    "--metadata-json", $MetadataJson,
     "--timeout-seconds", "$TimeoutSeconds"
 )
 
-& $python @argumentList
-exit $LASTEXITCODE
+if (-not [string]::IsNullOrWhiteSpace($BaseUrl)) {
+    $argumentList += @("--base-url", $BaseUrl)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($Capability)) {
+    $argumentList += @("--capability", $Capability)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($TenantId)) {
+    $argumentList += @("--tenant-id", $TenantId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($UserId)) {
+    $argumentList += @("--user-id", $UserId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($SessionId)) {
+    $argumentList += @("--session-id", $SessionId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($InteractionId)) {
+    $argumentList += @("--interaction-id", $InteractionId)
+}
+
+if (-not [string]::IsNullOrWhiteSpace($MetadataJson)) {
+    $argumentList += @("--metadata-json", $MetadataJson)
+}
+
+# Test-only argv dump (unit tests); never used by live proof paths.
+if (-not [string]::IsNullOrWhiteSpace($env:LKW_PS1_ARGV_DUMP)) {
+    $jsonItems = foreach ($arg in $argumentList) {
+        $escaped = ([string]$arg).Replace('\', '\\').Replace('"', '\"')
+        '"' + $escaped + '"'
+    }
+    ("[" + ($jsonItems -join ",") + "]") |
+        Out-File -FilePath $env:LKW_PS1_ARGV_DUMP -Encoding utf8
+}
+
+function ConvertTo-WindowsArgumentString {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    # Escape for CreateProcess / CommandLineToArgvW so JSON quotes survive.
+    # Do not use `& native @args` — Windows PowerShell re-encodes and strips quotes.
+    $parts = foreach ($arg in $Arguments) {
+        $value = [string]$arg
+        if ($value.Length -eq 0) {
+            '""'
+            continue
+        }
+        $needsQuotes = ($value.IndexOfAny([char[]]@(' ', "`t", '"')) -ge 0)
+        if (-not $needsQuotes) {
+            $value
+            continue
+        }
+        $sb = New-Object System.Text.StringBuilder
+        [void]$sb.Append('"')
+        $backslashes = 0
+        foreach ($ch in $value.ToCharArray()) {
+            if ($ch -eq [char]'\' ) {
+                $backslashes++
+                continue
+            }
+            if ($ch -eq [char]'"') {
+                if ($backslashes -gt 0) {
+                    [void]$sb.Append('\', $backslashes * 2)
+                    $backslashes = 0
+                }
+                [void]$sb.Append('\"')
+                continue
+            }
+            if ($backslashes -gt 0) {
+                [void]$sb.Append('\', $backslashes)
+                $backslashes = 0
+            }
+            [void]$sb.Append($ch)
+        }
+        if ($backslashes -gt 0) {
+            [void]$sb.Append('\', $backslashes * 2)
+        }
+        [void]$sb.Append('"')
+        $sb.ToString()
+    }
+    return ($parts -join ' ')
+}
+
+$psi = New-Object System.Diagnostics.ProcessStartInfo
+$psi.FileName = $python
+$psi.Arguments = ConvertTo-WindowsArgumentString -Arguments $argumentList
+$psi.UseShellExecute = $false
+$psi.RedirectStandardOutput = $true
+$psi.RedirectStandardError = $true
+$psi.RedirectStandardInput = $true
+$psi.CreateNoWindow = $true
+$psi.WorkingDirectory = (Get-Location).Path
+
+$process = New-Object System.Diagnostics.Process
+$process.StartInfo = $psi
+[void]$process.Start()
+$stdout = $process.StandardOutput.ReadToEnd()
+$stderr = $process.StandardError.ReadToEnd()
+$process.WaitForExit()
+
+if (-not [string]::IsNullOrEmpty($stdout)) {
+    [Console]::Out.Write($stdout)
+}
+if (-not [string]::IsNullOrEmpty($stderr)) {
+    [Console]::Error.Write($stderr)
+}
+
+exit $process.ExitCode

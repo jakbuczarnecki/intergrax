@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -77,6 +81,8 @@ def test_powershell_adapter_is_thin_wrapper() -> None:
     assert "windows" in text
     assert "lkw.windows_powershell" in text
     assert "windows_powershell" in text
+    assert "IsNullOrWhiteSpace($SessionId)" in text
+    assert "IsNullOrWhiteSpace($InteractionId)" in text
     for forbidden in (
         "Invoke-RestMethod",
         "Invoke-WebRequest",
@@ -90,6 +96,148 @@ def test_powershell_adapter_is_thin_wrapper() -> None:
     ):
         assert forbidden not in text
     assert _SHARED_CLIENT.is_file()
+
+
+def _capture_ps1_argv(tmp_path: Path, *ps_args: str) -> list[str]:
+    """Capture argv built by the public PS1 before native process launch."""
+    powershell = shutil.which("powershell.exe")
+    if powershell is None:
+        pytest.skip("powershell.exe is required")
+
+    dump_path = tmp_path / "argv.json"
+    env = os.environ.copy()
+    env["LKW_PS1_ARGV_DUMP"] = str(dump_path)
+
+    completed = subprocess.run(
+        [
+            powershell,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(_ADAPTER_SCRIPT),
+            *ps_args,
+        ],
+        cwd=str(_PROJECT_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        shell=False,
+    )
+    assert dump_path.is_file(), (
+        f"ps1 did not dump argv\n"
+        f"exit={completed.returncode}\n"
+        f"stdout:\n{completed.stdout}\n"
+        f"stderr:\n{completed.stderr}"
+    )
+    payload = json.loads(dump_path.read_text(encoding="utf-8-sig"))
+    assert isinstance(payload, list)
+    return [str(item) for item in payload]
+
+
+def test_powershell_omits_empty_session_and_interaction_ids(tmp_path: Path) -> None:
+    argv = _capture_ps1_argv(
+        tmp_path,
+        "-Message",
+        "hello",
+        "-BaseUrl",
+        "http://127.0.0.1:65530",
+        "-Capability",
+        "local.workspace.index",
+        "-SessionId",
+        "",
+        "-InteractionId",
+        "",
+        "-TimeoutSeconds",
+        "1",
+    )
+    assert any(part.endswith("invoke-lkw-interaction.py") for part in argv)
+    assert "--os-family" in argv
+    assert "windows" in argv
+    assert "--session-id" not in argv
+    assert "--interaction-id" not in argv
+    assert "--message" in argv
+    assert "hello" in argv
+
+
+def test_powershell_forwards_nonempty_session_and_interaction_ids(
+    tmp_path: Path,
+) -> None:
+    argv = _capture_ps1_argv(
+        tmp_path,
+        "-Message",
+        "hello",
+        "-BaseUrl",
+        "http://127.0.0.1:65530",
+        "-SessionId",
+        "sess-1",
+        "-InteractionId",
+        "ix-1",
+        "-TimeoutSeconds",
+        "1",
+    )
+    assert "--session-id" in argv
+    assert argv[argv.index("--session-id") + 1] == "sess-1"
+    assert "--interaction-id" in argv
+    assert argv[argv.index("--interaction-id") + 1] == "ix-1"
+
+
+def test_powershell_wrapper_does_not_perform_http() -> None:
+    text = _read(_ADAPTER_SCRIPT)
+    for forbidden in (
+        "Invoke-RestMethod",
+        "Invoke-WebRequest",
+        "System.Net.HttpWebRequest",
+        "HttpClient",
+        "/v1/interactions/intake",
+    ):
+        assert forbidden not in text
+    assert "invoke-lkw-interaction.py" in text
+    assert "ProcessStartInfo" in text
+    assert "& $python @argumentList" not in text
+
+
+def test_powershell_preserves_metadata_json_quotes() -> None:
+    """Windows PowerShell must not strip JSON quotes before the Python client."""
+    powershell = shutil.which("powershell.exe")
+    if powershell is None:
+        pytest.skip("powershell.exe is required")
+    meta = json.dumps(
+        {"source_paths": ["C:/tmp/x.txt"], "collection_id": "c1"},
+        ensure_ascii=False,
+    )
+    completed = subprocess.run(
+        [
+            powershell,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(_ADAPTER_SCRIPT),
+            "-Message",
+            "hello",
+            "-BaseUrl",
+            "http://127.0.0.1:65530",
+            "-Capability",
+            "local.workspace.index",
+            "-MetadataJson",
+            meta,
+        ],
+        cwd=str(_PROJECT_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        shell=False,
+    )
+    combined = (completed.stdout or "") + (completed.stderr or "")
+    assert "invalid_adapter_input" not in combined
+    assert "interaction_request_failed" in combined
+    assert completed.returncode == 3
 
 
 def test_windows_proof_identity_and_receipt_compatibility() -> None:

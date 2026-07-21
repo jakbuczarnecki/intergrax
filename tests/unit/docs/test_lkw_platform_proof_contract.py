@@ -314,13 +314,17 @@ def test_lkw_platform_proof_macos_honesty() -> None:
 
 def test_lkw_platform_proof_certification_matrix() -> None:
     text = _proof_text()
-    assert "Core live-certified" in text
+    assert "live-certified on native Windows" in text
     assert "live-certified in Linux Docker runtime" in text
     assert "Implemented, not certified" in text
     windows_row_idx = text.index("| Windows")
     linux_row_idx = text.index("| Linux")
     macos_row_idx = text.index("| macOS")
-    assert "Core live-certified" in text[windows_row_idx : windows_row_idx + 220]
+    windows_row = text[windows_row_idx : windows_row_idx + 320]
+    assert "Application hosting + interaction live-certified on native Windows" in (
+        windows_row
+    )
+    assert "windows_native_runtime" in windows_row
     linux_row = text[linux_row_idx : linux_row_idx + 420]
     assert "Application hosting + interaction live-certified in Linux Docker runtime" in (
         linux_row
@@ -333,6 +337,13 @@ def test_lkw_platform_proof_certification_matrix() -> None:
     assert "PROOF-PORTABILITY-1B" in text
     assert "PROOF-PORTABILITY-1C" in text
     assert "native Linux host" in text.lower() or "Native Linux host" in text
+    assert "LKW_WINDOWS_NATIVE_CERTIFICATION.json" in text
+    assert (
+        _SCRIPTS / "run-lkw-windows-native-certification.py"
+    ).is_file()
+    assert (
+        _SCRIPTS / "run-lkw-windows-native-certification.bat"
+    ).is_file()
 
 
 def test_lkw_platform_proof_plan_portability_contract() -> None:
@@ -348,15 +359,19 @@ def test_lkw_platform_proof_plan_portability_contract() -> None:
     assert "**Done**" in text[a_idx : a_idx + 160]
     assert "**Done**" in text[b_idx : b_idx + 160]
     assert "**Done**" in text[c_idx : c_idx + 200]
-    assert "**Partial**" in text[d_idx : d_idx + 280]
-    assert "existing Windows certification unchanged" in text
+    assert "**Partial**" in text[d_idx : d_idx + 360]
+    assert "live-certified on native Windows through current shared runner" in text
     assert "live-certified in Linux Docker runtime" in text
-    assert "implemented and live-certified on native Windows" in text
-    assert "implemented, not live-certified" in text
+    assert "implemented, not live-certified" in text or (
+        "implemented, not live-certified" in text.lower()
+    )
     assert "not separately certified" in text
     assert "Linux Application Hosting Proof" in text
+    assert "Windows Application Hosting Proof" in text
     assert "full multi-phase Core Platform Proof" in text
     assert "linux_docker_runtime" in text
+    assert "windows_native_runtime" in text
+    assert "LKW_WINDOWS_NATIVE_CERTIFICATION.json" in text
 
 
 def test_lkw_platform_proof_shared_os_interaction_architecture() -> None:
@@ -373,28 +388,38 @@ def test_lkw_platform_proof_shared_os_interaction_architecture() -> None:
     assert "platform_linux_interaction" in text
     assert "platform_macos_interaction" in text
     assert (
-        "Windows optional interaction:\n  implemented and live-certified on native Windows"
+        "Windows Application Hosting Proof:\n"
+        "  live-certified on native Windows through current shared runner"
         in text
     )
     assert (
-        "Linux Application Hosting Proof:\n  implemented and live-certified in Linux Docker runtime"
+        "Windows Optional OS Interaction Proof:\n"
+        "  live-certified on native Windows through shared Python client/proof runner"
         in text
     )
     assert (
-        "Linux optional interaction:\n  implemented and live-certified in Linux Docker runtime"
+        "Linux Application Hosting Proof:\n  live-certified in Linux Docker runtime"
         in text
     )
     assert (
-        "Linux full multi-phase Core Platform Proof:\n  not separately certified in Linux Docker runtime"
+        "Linux Optional OS Interaction Proof:\n"
+        "  live-certified in Linux Docker runtime"
         in text
     )
-    assert "macOS optional interaction:\n  implemented, not live-certified" in text
+    assert (
+        "Linux full multi-phase Core Platform Proof:\n"
+        "  not separately certified by Linux Docker profile"
+        in text
+    )
+    assert "macOS:\n  implemented, not live-certified" in text
     assert "Linux native-host deployment:\n  not separately certified" in text
     assert "planned, not implemented, not certified" not in text
     assert (_SCRIPTS / "invoke-lkw-interaction.py").is_file()
     assert (_SCRIPTS / "run-lkw-os-interaction-proof.py").is_file()
     assert (_SCRIPTS / "run-lkw-linux-container-certification.py").is_file()
     assert (_SCRIPTS / "run-lkw-linux-container-certification.bat").is_file()
+    assert (_SCRIPTS / "run-lkw-windows-native-certification.py").is_file()
+    assert (_SCRIPTS / "run-lkw-windows-native-certification.bat").is_file()
     assert (
         _DOCKER / "Dockerfile.linux-certification"
     ).is_file()

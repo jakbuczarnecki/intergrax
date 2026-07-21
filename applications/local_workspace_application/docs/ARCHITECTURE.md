@@ -732,18 +732,25 @@ POST /v1/interactions/intake
 
 ### 9.3b LKW.6C — OS interaction adapters (Windows + Linux Docker)
 
-**Status: Closed** for the Windows live MongoDB-backed reviewer proof
-and for Linux Docker runtime certification profile `linux_docker_runtime`
-(PROOF-PORTABILITY-1D): Linux Application Hosting Proof and Linux
-Optional OS Interaction Proof are live-certified in Linux Docker
-runtime. The full multi-phase Linux Core Platform Proof is not
-separately certified by that profile.
+**Status: Closed** for native Windows shared-runner certification
+profile `windows_native_runtime` and for Linux Docker runtime
+certification profile `linux_docker_runtime` (PROOF-PORTABILITY-1D):
+
+- Windows Application Hosting Proof and Windows Optional OS Interaction
+  Proof are live-certified on native Windows through the current shared
+  Python client / OS proof runner.
+- Linux Application Hosting Proof and Linux Optional OS Interaction
+  Proof are live-certified in Linux Docker runtime.
+- Full multi-phase Core Platform Proof is not re-certified by either
+  profile in this refresh.
 
 Native Linux host deployment and macOS remain not live-certified.
 
 PROOF-PORTABILITY-1C adds shared cross-platform client/proof plumbing;
-PROOF-PORTABILITY-1D records Linux Docker runtime evidence at
-`docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`.
+PROOF-PORTABILITY-1D records:
+
+- `docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
+- `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
 
 LKW owns thin OS wrappers that launch one shared Python interaction
 client. The shared client serializes the supported `lab_json` payload

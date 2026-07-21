@@ -48,22 +48,25 @@ These proofs validate one concrete operating-system client
 adapter. They are not required to complete the Core Platform Proof.
 
 ```text
-Windows optional interaction:
-  implemented and live-certified on native Windows
+Windows Application Hosting Proof:
+  live-certified on native Windows through current shared runner
+
+Windows Optional OS Interaction Proof:
+  live-certified on native Windows through shared Python client/proof runner
 
 Linux Application Hosting Proof:
-  implemented and live-certified in Linux Docker runtime
+  live-certified in Linux Docker runtime
 
-Linux optional interaction:
-  implemented and live-certified in Linux Docker runtime
+Linux Optional OS Interaction Proof:
+  live-certified in Linux Docker runtime
 
 Linux full multi-phase Core Platform Proof:
-  not separately certified in Linux Docker runtime
+  not separately certified by Linux Docker profile
 
 Linux native-host deployment:
   not separately certified
 
-macOS optional interaction:
+macOS:
   implemented, not live-certified
 ```
 
@@ -109,11 +112,11 @@ macos   / lkw.macos_shell        / macos_shell        / posix_sh
 Implementation is shared. Live certification is OS-specific.
 
 ```text
-Windows Application Hosting / Core reviewer path:
-  existing Windows certification unchanged
+Windows Application Hosting Proof:
+  live-certified on native Windows through current shared runner
 
-Windows optional interaction:
-  live-certified on native Windows
+Windows Optional OS Interaction Proof:
+  live-certified on native Windows through shared Python client/proof runner
 
 Linux Application Hosting Proof:
   live-certified in Linux Docker runtime
@@ -122,14 +125,41 @@ Linux Optional OS Interaction Proof:
   live-certified in Linux Docker runtime
 
 Linux full multi-phase Core Platform Proof:
-  not separately certified in Linux Docker runtime
+  not separately certified by Linux Docker profile
 
 Linux native-host deployment:
   not separately certified
 
-macOS optional interaction:
+macOS:
   implemented, not live-certified
 ```
+
+Certification profile `windows_native_runtime` certifies:
+
+```text
+platform_application_hosting
+platform_windows_interaction
+```
+
+Evidence:
+
+```text
+docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+```
+
+Not certified by this Windows native profile:
+
+```text
+full multi-phase Core Platform Proof (not re-executed by this run)
+Windows Service installation
+Windows desktop or tray integration
+Linux native-host
+macOS
+```
+
+Historical Windows full Core Platform Proof reviewer evidence remains
+valid and is not silently downgraded by this refresh. This profile
+adds a receipt-backed validation of the current shared architecture.
 
 Certification profile `linux_docker_runtime` certifies:
 
@@ -138,7 +168,7 @@ platform_application_hosting
 platform_linux_interaction
 ```
 
-Not certified by this profile:
+Not certified by this Linux Docker profile:
 
 ```text
 full multi-phase Core Platform Proof
@@ -152,6 +182,9 @@ macOS
 Do not read Linux Docker runtime certification as universal Linux
 distribution certification, native-host deployment certification, or
 full multi-phase Core Platform Proof certification.
+
+Do not read Windows Application Hosting certification as the complete
+multi-phase Core Platform Proof.
 
 Local proof endpoints:
 
@@ -229,7 +262,7 @@ Do not run Windows .bat or Windows PowerShell interaction steps.
 
 | Operating system | Core reviewer path                       | Optional OS interaction proof                         | Certification status                          |
 | ---------------- | ---------------------------------------- | ----------------------------------------------------- | --------------------------------------------- |
-| Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Core live-certified                           |
+| Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Application hosting + interaction live-certified on native Windows (`windows_native_runtime`); historical full Core reviewer path preserved |
 | Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Application hosting + interaction live-certified in Linux Docker runtime; full multi-phase Core Platform Proof not separately certified |
 | macOS            | Shared Python runner through macOS SH    | Shared Python interaction proof through macOS SH      | Implemented, not certified                    |
 
@@ -314,8 +347,9 @@ optional OS interaction proof as part of core completion.
 The shared core entrypoint was delivered by PROOF-PORTABILITY-1B.
 Shared OS interaction client/proof plumbing was delivered by
 PROOF-PORTABILITY-1C.
-macOS live certification remains open; Linux Docker runtime
-certification is recorded under PROOF-PORTABILITY-1D.
+macOS live certification remains open; Linux Docker runtime and
+native Windows shared-runner refresh certifications are recorded
+under PROOF-PORTABILITY-1D.
 ```
 
 ---
@@ -1068,9 +1102,24 @@ Run the matching OS launcher only on that operating system.
 
 ## Windows users — Optional W1: Run the Windows PowerShell interaction proof
 
-Windows optional interaction remains implemented and live-certified.
+Windows optional interaction remains implemented and live-certified
+on native Windows through the shared Python client and shared OS
+interaction proof runner.
 
-Run:
+Native Windows certification profile `windows_native_runtime`
+live-certifies Application Hosting plus this interaction proof:
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-windows-native-certification.bat
+```
+
+Evidence:
+
+```text
+docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json
+```
+
+Run the interaction proof alone:
 
 ```bat
 applications\local_workspace_application\scripts\run-lkw-windows-interaction-proof.bat
