@@ -128,7 +128,51 @@ algorithm allowlist, deprecated verification keys).
 `ProofReceipt` binds the full event + host attestation (+ optional pack artifact).  
 Verifier recalculates event bytes/digest, checks signature, and when an artifact
 is present recomputes the pack digest / rule / action binding offline.  
-No provider network. No authorization side effects.
+No provider network. No authorization side effects. Verifier **never signs**.
+
+### Public CLI verification (explicit key source)
+
+Receipt JSON + `key_id` alone is **not** sufficient. CLI requires exactly one of:
+
+```bash
+# A — store-backed public key resolver
+uv run intergrax receipt verify receipt.json --store build/external_work_demo
+
+# B — explicit public key
+uv run intergrax receipt verify receipt.json \
+  --public-key-file public_key.hex --key-id <KEY_ID>
+# or: --public-key-hex <HEX> --key-id <KEY_ID>
+
+# C — explicit local/test demo key (known demo key_id only)
+uv run intergrax receipt verify receipt.json --demo-key
+```
+
+Missing key source -> exit != 0, `verification_key_source_required`.
+Multiple sources -> `exactly_one_verification_key_source_required`.
+
+Offline demo writes public material only:
+
+```text
+build/external_work_demo/keys/<key_id>.json
+```
+
+Fields: `key_id`, `algorithm`, `public_key_hex` / `public_key_base64`, `created_at`,
+`status` (+ optional `deprecated` / `purpose` / `issuer`). Never private key or seed.
+
+### Signer failure recovery (CLI)
+
+```bash
+uv run intergrax demo governed-contractor \
+  --offline --simulate-signing-failure \
+  --store build/external_work_recovery_demo
+
+uv run intergrax external-work retry-attestation \
+  exec-offline-accept \
+  --store build/external_work_recovery_demo
+```
+
+Retry uses persisted GER/EBE + demo recovery signer (store `demo_mode.json` or
+`--demo-key`). Provider is not re-invoked.
 
 Host lifecycle / recovery / CLI: [`governed_external_work_host_lifecycle.md`](governed_external_work_host_lifecycle.md).
 

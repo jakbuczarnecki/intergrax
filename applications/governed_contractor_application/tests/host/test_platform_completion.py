@@ -450,9 +450,10 @@ def test_offline_demo_and_json_roundtrip(tmp_path: Path) -> None:
     report = run_offline_governed_contractor_demo(store_root=tmp_path / "demo")
     assert report.verification_valid is True
     assert report.create_invocation_id != report.accept_invocation_id
-    assert Path(report.receipt_path).is_file()
+    receipt_file = Path(report.receipt_absolute_path or report.receipt_path)
+    assert receipt_file.is_file()
     receipt = ProofReceipt.model_validate_json(
-        Path(report.receipt_path).read_text(encoding="utf-8")
+        receipt_file.read_text(encoding="utf-8")
     )
     attestor = build_deterministic_test_attestor(
         key_id=report.key_id,
