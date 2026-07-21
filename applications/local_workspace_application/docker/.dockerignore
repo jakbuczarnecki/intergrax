@@ -11,9 +11,12 @@ build/
 .pytest_cache
 notebooks/
 docs/
+# Root tests stay excluded; LKW application live proofs must be in the image.
 tests/
+!applications/local_workspace_application/tests/
 infra/
 applications/*
+!applications/__init__.py
 !applications/local_workspace_application/
 agents/*
 !agents/local_indexer/

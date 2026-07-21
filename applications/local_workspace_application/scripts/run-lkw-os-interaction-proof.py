@@ -50,6 +50,9 @@ _INTERACTION_SURFACE = "lab_json"
 _INTERACTION_CHANNEL = "lab"
 _CLIENT_RUNTIME = "python"
 _PROP_PREFIX = "os_interaction"
+_MONGODB_STACK_MANAGED = "managed"
+_MONGODB_STACK_EXTERNAL = "external"
+_MONGODB_STACK_CHOICES = (_MONGODB_STACK_MANAGED, _MONGODB_STACK_EXTERNAL)
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _APP_DIR = _SCRIPT_DIR.parent
@@ -261,6 +264,31 @@ def build_os_interaction_proof_receipt(
     if contract.os_family == "windows":
         domain_evidence["powershell_runtime"] = "Windows PowerShell"
 
+    execution_profile = _execution_profile_from_env()
+    domain_evidence.update(execution_profile)
+
+    provider_evidence: dict[str, Any] = {
+        "os_family": evidence.os_family,
+        "os_version": evidence.os_version,
+        "architecture": evidence.architecture,
+        "os_adapter": evidence.adapter_id,
+        "client_runtime": evidence.client_runtime,
+        "wrapper_runtime": evidence.wrapper_runtime,
+        "source": evidence.source,
+        "transport": evidence.transport,
+        "interaction_surface": evidence.interaction_surface,
+        "interaction_channel": evidence.interaction_channel,
+        "intake_endpoint": evidence.intake_endpoint,
+        "intake_service": "InteractionIntakeService",
+        "execution_boundary": "LocalWorkspaceTaskExecutor",
+        "orchestrator": "NexusLoop",
+        "hosted_entrypoint": "python_-m_local_workspace_application.hosting",
+        "evidence_source": "pytest_junit_properties",
+        "selected_live_tests": 1,
+        "receipt_document_store_provider": "mongodb",
+    }
+    provider_evidence.update(execution_profile)
+
     return ProofReceipt(
         proof_id=build_os_interaction_proof_id(
             proof_kind=contract.proof_kind, run_id=run_id
@@ -271,26 +299,7 @@ def build_os_interaction_proof_receipt(
         run_id=run_id,
         correlation_id=correlation_id,
         task_id=None,
-        provider_evidence={
-            "os_family": evidence.os_family,
-            "os_version": evidence.os_version,
-            "architecture": evidence.architecture,
-            "os_adapter": evidence.adapter_id,
-            "client_runtime": evidence.client_runtime,
-            "wrapper_runtime": evidence.wrapper_runtime,
-            "source": evidence.source,
-            "transport": evidence.transport,
-            "interaction_surface": evidence.interaction_surface,
-            "interaction_channel": evidence.interaction_channel,
-            "intake_endpoint": evidence.intake_endpoint,
-            "intake_service": "InteractionIntakeService",
-            "execution_boundary": "LocalWorkspaceTaskExecutor",
-            "orchestrator": "NexusLoop",
-            "hosted_entrypoint": "python_-m_local_workspace_application.hosting",
-            "evidence_source": "pytest_junit_properties",
-            "selected_live_tests": 1,
-            "receipt_document_store_provider": "mongodb",
-        },
+        provider_evidence=provider_evidence,
         domain_evidence=domain_evidence,
         guardrails={
             "direct_run_endpoint": False,
@@ -367,6 +376,20 @@ def ensure_mongodb_env() -> None:
         )
 
 
+def _execution_profile_from_env() -> dict[str, str]:
+    """Optional execution-profile fields for container certification receipts."""
+    profile: dict[str, str] = {}
+    for key, env_name in (
+        ("execution_environment", "LKW_EXECUTION_ENVIRONMENT"),
+        ("container_runtime", "LKW_CONTAINER_RUNTIME"),
+        ("certification_profile", "LKW_CERTIFICATION_PROFILE"),
+    ):
+        value = os.environ.get(env_name, "").strip()
+        if value:
+            profile[key] = value
+    return profile
+
+
 def resolve_mongodb_document_store():
     """Resolve MongoDB DocumentStore through the platform provider factory."""
     ensure_mongodb_env()
@@ -378,6 +401,33 @@ def resolve_mongodb_document_store():
     if store is None:
         raise RuntimeError("document_store_adapter_unresolved")
     return integration, store
+
+
+def verify_mongodb_reachable_via_platform() -> None:
+    """Fail closed when the configured MongoDB provider cannot be reached."""
+    ensure_mongodb_env()
+    uri = os.environ.get("INTERGRAX_MONGODB_URI", "").strip()
+    if not uri:
+        raise RuntimeError("external_mongodb_uri_required")
+    integration, store = resolve_mongodb_document_store()
+    try:
+        store.get("__lkw_certification_probe__", "reachability")
+    except Exception as exc:  # noqa: BLE001 - fail closed with typed reason
+        raise RuntimeError("external_mongodb_unreachable") from exc
+    finally:
+        close = getattr(store, "close", None)
+        if callable(close):
+            close()
+        _ = integration
+
+
+def prepare_external_mongodb(*, mongo_express_url: str) -> None:
+    """Use outer-compose MongoDB; never invoke Docker."""
+    _ = mongo_express_url
+    if not os.environ.get("INTERGRAX_MONGODB_URI", "").strip():
+        raise RuntimeError("external_mongodb_uri_required")
+    ensure_mongodb_env()
+    verify_mongodb_reachable_via_platform()
 
 
 def record_os_interaction_proof_receipt(
@@ -670,6 +720,17 @@ def prepare_mongodb_stack(*, mongo_express_url: str) -> None:
     ensure_mongodb_env()
 
 
+def prepare_mongodb(*, stack: str, mongo_express_url: str) -> None:
+    """Prepare MongoDB according to managed/external stack ownership."""
+    normalized = stack.strip().lower()
+    if normalized == _MONGODB_STACK_EXTERNAL:
+        prepare_external_mongodb(mongo_express_url=mongo_express_url)
+        return
+    if normalized != _MONGODB_STACK_MANAGED:
+        raise RuntimeError("invalid_mongodb_stack")
+    prepare_mongodb_stack(mongo_express_url=mongo_express_url)
+
+
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -697,6 +758,15 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--mongo-express",
         default=os.environ.get("LKW_MONGO_EXPRESS_URL", _DEFAULT_MONGO_EXPRESS_URL),
         help="Mongo Express URL for reviewer hints (default: http://127.0.0.1:8086).",
+    )
+    parser.add_argument(
+        "--mongodb-stack",
+        default=_MONGODB_STACK_MANAGED,
+        choices=list(_MONGODB_STACK_CHOICES),
+        help=(
+            "managed: start MongoDB Compose overlay (default). "
+            "external: require INTERGRAX_MONGODB_URI; never invoke Docker."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -831,11 +901,16 @@ def main(argv: list[str] | None = None) -> int:
     mongo_express_url = args.mongo_express.strip() or _DEFAULT_MONGO_EXPRESS_URL
 
     try:
-        prepare_mongodb_stack(mongo_express_url=mongo_express_url)
+        prepare_mongodb(
+            stack=str(args.mongodb_stack),
+            mongo_express_url=mongo_express_url,
+        )
     except (RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
         return _fail(
             "mongodb_stack_prepare_failed",
             stack_error=type(exc).__name__,
+            mongodb_stack=str(args.mongodb_stack),
+            stack_detail=str(exc),
         )
 
     with tempfile.TemporaryDirectory(prefix="lkw-os-interaction-proof-") as temp_dir:

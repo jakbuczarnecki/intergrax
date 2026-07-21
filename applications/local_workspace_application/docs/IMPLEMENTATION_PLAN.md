@@ -995,7 +995,7 @@ OS-specific interaction adapter
 | PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
 | PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
 | PROOF-PORTABILITY-1C | Add shared cross-platform OS interaction client/proof runner with thin OS wrappers | **Done** |
-| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Planned** |
+| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Linux Docker runtime live-certified; native Linux host and macOS not live-certified |
 
 Current proof certification:
 
@@ -1004,13 +1004,18 @@ Windows core reviewer path:
   shared entrypoint implemented and live-recorded
 
 Windows optional interaction proof:
-  implemented and live-certified
+  implemented and live-certified on native Windows
 
 Linux core reviewer path:
-  shared entrypoint implemented, not live-certified
+  shared entrypoint implemented;
+  live-certified in Linux Docker runtime
+  (platform_application_hosting; native host not separately certified)
 
 Linux optional interaction proof:
-  implemented, not live-certified
+  implemented and live-certified in Linux Docker runtime
+
+Linux native-host deployment:
+  not separately certified
 
 macOS core reviewer path:
   shared entrypoint implemented, not live-certified
@@ -1027,7 +1032,13 @@ PROOF-PORTABILITY-1C delivered:
 - Thin proof launchers for Windows/Linux/macOS
 - Windows public BAT and Python shim retained for compatibility
 - Frozen OS identities enforced; runtime OS mismatch fails closed
-- Live certification remains Windows-only until PROOF-PORTABILITY-1D
+
+PROOF-PORTABILITY-1D (Linux Docker runtime slice) delivered:
+
+- Dedicated certification image + Compose project (no Docker socket / no DinD)
+- Host orchestrator `run-lkw-linux-container-certification.py` (+ BAT/SH)
+- External MongoDB mode on shared proof runners
+- Evidence: `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
 
 ---
 

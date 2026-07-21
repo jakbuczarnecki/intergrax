@@ -730,11 +730,16 @@ POST /v1/interactions/intake
 
 **LKW.6A does not include:** platform Application Hosting adoption (**LKW.6B**), Socket Mode (**LKW.6b**), file watcher (**LKW.7**), or OS interaction adapters (**LKW.6C**).
 
-### 9.3b LKW.6C — OS interaction adapters (Windows live-certified)
+### 9.3b LKW.6C — OS interaction adapters (Windows + Linux Docker)
 
-**Status: Closed** for the Windows live MongoDB-backed reviewer proof.
+**Status: Closed** for the Windows live MongoDB-backed reviewer proof
+and for Linux Docker runtime certification (PROOF-PORTABILITY-1D).
+
+Native Linux host deployment and macOS remain not live-certified.
+
 PROOF-PORTABILITY-1C adds shared cross-platform client/proof plumbing;
-Linux/macOS remain implemented but not live-certified.
+PROOF-PORTABILITY-1D records Linux Docker runtime evidence at
+`docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`.
 
 LKW owns thin OS wrappers that launch one shared Python interaction
 client. The shared client serializes the supported `lab_json` payload

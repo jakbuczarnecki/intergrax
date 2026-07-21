@@ -20,6 +20,8 @@ Skipping an OS-specific interaction proof does not invalidate
 the Core Platform Proof.
 
 MongoDB-backed ProofReceipt documents are authoritative.
+Structured ProofReceipt documents persisted through the platform DocumentStore
+are the live source of truth for recorded proof outcomes.
 Terminal output is reviewer convenience.
 Markdown is execution and inspection guidance.
 
@@ -47,10 +49,13 @@ adapter. They are not required to complete the Core Platform Proof.
 
 ```text
 Windows optional interaction:
-  implemented and live-certified
+  implemented and live-certified on native Windows
 
 Linux optional interaction:
-  implemented, not live-certified
+  implemented and live-certified in Linux Docker runtime
+
+Linux native-host deployment:
+  not separately certified
 
 macOS optional interaction:
   implemented, not live-certified
@@ -63,6 +68,16 @@ A real Windows PowerShell wrapper launches the shared Python
 interaction client, which sends work through
 /v1/interactions/intake into the shared LKW executor and Nexus
 path, performing real index and search work.
+```
+
+Linux claim (optional, Docker runtime):
+
+```text
+A real Linux POSIX shell wrapper launches the shared Python
+interaction client inside a Linux Docker certification container,
+performing real index and search work with MongoDB-backed
+ProofReceipt verification. Native Linux host deployment is not
+separately certified.
 ```
 
 Shared interaction architecture:
@@ -85,9 +100,25 @@ linux   / lkw.linux_shell        / linux_shell        / posix_sh
 macos   / lkw.macos_shell        / macos_shell        / posix_sh
 ```
 
-Implementation is shared. Live certification remains OS-specific.
-Linux and macOS paths are implemented but not live-certified until
-PROOF-PORTABILITY-1D.
+Implementation is shared. Live certification is OS-specific.
+
+```text
+Windows optional interaction:
+  live-certified on native Windows
+
+Linux optional interaction:
+  live-certified in Linux Docker runtime
+
+Linux core proof:
+  live-certified in Linux Docker runtime
+  (platform_application_hosting path; native host not separately certified)
+
+macOS optional interaction:
+  implemented, not live-certified
+```
+
+Do not read Linux Docker runtime certification as universal Linux
+distribution certification or native-host deployment certification.
 
 Local proof endpoints:
 
@@ -121,12 +152,25 @@ Shared core entrypoint implemented.
 
 The Linux launcher invokes the same Python core-proof runner.
 
-Linux core execution is not live-certified until
-PROOF-PORTABILITY-1D.
+```text
+Linux core proof:
+  live-certified in Linux Docker runtime
+```
 
-The optional Linux interaction client and proof runner are
-implemented under PROOF-PORTABILITY-1C and are not live-certified
-until PROOF-PORTABILITY-1D.
+Native Linux host installation was not separately certified.
+
+Optional Linux interaction is live-certified in Linux Docker runtime
+via:
+
+```text
+applications/local_workspace_application/scripts/run-lkw-linux-container-certification.bat
+```
+
+Evidence artifact:
+
+```text
+docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+```
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
 
@@ -136,12 +180,10 @@ Shared core entrypoint implemented.
 
 The macOS launcher invokes the same Python core-proof runner.
 
-macOS core execution is not live-certified until
-PROOF-PORTABILITY-1D.
+macOS core execution is not live-certified.
 
 The optional macOS interaction client and proof runner are
-implemented under PROOF-PORTABILITY-1C and are not live-certified
-until PROOF-PORTABILITY-1D.
+implemented under PROOF-PORTABILITY-1C and are not live-certified.
 
 Do not run Windows .bat or Windows PowerShell interaction steps.
 
@@ -149,11 +191,11 @@ Do not run Windows .bat or Windows PowerShell interaction steps.
 
 ## Operating-system proof status
 
-| Operating system | Core reviewer path                       | Optional OS interaction proof                         | Certification status       |
-| ---------------- | ---------------------------------------- | ----------------------------------------------------- | -------------------------- |
-| Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Core live-certified        |
-| Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Implemented, not certified |
-| macOS            | Shared Python runner through macOS SH    | Shared Python interaction proof through macOS SH      | Implemented, not certified |
+| Operating system | Core reviewer path                       | Optional OS interaction proof                         | Certification status                          |
+| ---------------- | ---------------------------------------- | ----------------------------------------------------- | --------------------------------------------- |
+| Windows          | Shared Python runner through Windows BAT | Shared Python interaction proof through Windows BAT   | Core live-certified                           |
+| Linux            | Shared Python runner through Linux SH    | Shared Python interaction proof through Linux SH      | Linux Docker runtime live-certified           |
+| macOS            | Shared Python runner through macOS SH    | Shared Python interaction proof through macOS SH      | Implemented, not certified                    |
 
 ```text
 Implemented:
@@ -236,7 +278,8 @@ optional OS interaction proof as part of core completion.
 The shared core entrypoint was delivered by PROOF-PORTABILITY-1B.
 Shared OS interaction client/proof plumbing was delivered by
 PROOF-PORTABILITY-1C.
-Linux/macOS live certification remains PROOF-PORTABILITY-1D.
+macOS live certification remains open; Linux Docker runtime
+certification is recorded under PROOF-PORTABILITY-1D.
 ```
 
 ---
@@ -1161,12 +1204,27 @@ Markdown is the execution and inspection guide.
 
 ## Linux users — Optional interaction proof
 
-Status: implemented, not live-certified
+Status: implemented and live-certified in Linux Docker runtime
 
 Linux has a thin shell wrapper and shares the Python interaction
 client and OS interaction proof runner.
 
-Run only on Linux:
+Native Linux host deployment is not separately certified.
+
+Automated Linux Docker runtime certification (core hosting path +
+optional interaction):
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-linux-container-certification.bat
+```
+
+Evidence:
+
+```text
+docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json
+```
+
+Direct Linux host launcher (when already on Linux):
 
 ```sh
 ./applications/local_workspace_application/scripts/run-lkw-linux-interaction-proof.sh
@@ -1184,11 +1242,12 @@ wrapper_runtime=posix_sh
 
 Do not substitute the Windows PowerShell proof.
 
-A Linux ProofReceipt can only be produced by a real successful run
-on Linux. Source-code existence is not live evidence.
+Do not describe Linux Docker runtime certification as native Linux
+host certification or as certification of every Linux distribution.
 
-Linux optional interaction is not live-certified until
-PROOF-PORTABILITY-1D.
+A Linux ProofReceipt can only be produced by a real successful run
+on Linux (native or Linux container). Source-code existence is not
+live evidence.
 
 ---
 
