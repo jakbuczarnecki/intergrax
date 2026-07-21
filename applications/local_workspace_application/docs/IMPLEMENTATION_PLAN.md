@@ -1,1105 +1,643 @@
-# Local Knowledge Workspace (LKW) — Implementation Plan
+# Local Workspace Application — Implementation Plan
 
-**Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15, [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md), and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)  
-**Do not diverge:** architecture decisions live in architecture documents; this file schedules implementation waves only.
-
-Status: **LKW.0 Done** · **LKW.3 Done** · **LKW.1 Closed in scope** · **LKW-H1.2 Passed with platform follow-ups · LKW-H1.3 Passed with platform follow-ups** · **LKW-PF2A Closed** · **LKW.2 Closed — pipeline proof passed (LKW.2.4C + closeout smoke)** · **LKW.5 Closed — persistence proof passed** · **LKW-PF0 Closed — platform proof maturity bar defined** · **LKW-PF6-0 Closed — Token Optimization proof design defined**
-
-Latest live proof snapshot: **2026-06-27 — LKW.1.15 PASSED / LKW.1 PRODUCT PROOF CLOSED IN SCOPE**. Tenant-scoped `rag.retrieve` works live for `tenant_id=lkw-smoke` with workspace filtering; `local.workspace.search` returns marker evidence; `local.workspace.synthesize` writes a shadow artifact when evidence/draft is supplied. Product closeout path verified live:
+**Status:** Working product roadmap (2026-07-21)
+**Task:** LKW-PLAN-RESET
+**Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
+**External verification:** [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 ```text
-index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
-```
-
-Latest observability snapshot: **2026-06-30 — LKW-OBS OTLP proof path closed** · **LKW-OBS-VIEW-1A Done** (inspector + duplicate check = 0). LKW OTLP export: env-driven config (1A), Compose collector + JSONL sink (1B), manual Swagger proof (1C), duplicate export fix (DUP-1), lightweight inspector (`scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`; focused tests 5 passed). **Next platform phase:** **OBS-VENDOR** — production vendor integration rollout ([`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR); LKW remains proof workload, not integration owner.
-
-Latest persistence snapshot: **2026-07-07 — LKW.5 PERSISTENCE PROOF PASSED**. `LKW_DATA_HOME` settings contract, repo-dev persistence env alignment, Qdrant persistent vector-store guardrails, public platform proof step, and live non-destructive restart proof are closed. Live proof verified `before_restart_results=1`, `after_restart_results=1`, `volumes_removed=false`, and `reindexed_after_restart=false`. See [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md).
-
-Current LKW.2 execution status: §5 below. LKW.5 persistence proof: [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md). LKW.1/H1 historical live proof: [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md).  
-Application-local history: [`journal/`](journal/).  
-Platform proof loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
-
-Principle: **local backend daemon** · **thin frontends** · **Slack optional** · **shadow writes only** · **LKW proves the platform**.
-
----
-
-## 0. Product boundary reminder
-
-| | Backend (`lkw-host`) | Frontend (clients) |
-|---|---------------------|-------------------|
-| **Runs on** | localhost daemon | Tray / Cursor / Slack / curl |
-| **Contains** | Nexus, agents, RAG, index, policy, trace | UI + HTTP calls only |
-| **Must not** | — | RAG, LLM, direct file index, agent loops |
-
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) §4.
-
----
-
-## 0a. LKW platform proof rule
-
-LKW is not only a product proof. LKW is the first proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
-
-Every non-trivial LKW wave has two acceptance layers:
-
-1. **Product acceptance** — the LKW capability works.
-2. **Platform acceptance** — reusable lessons are propagated to platform code, scaffold templates, env/settings, packaging, Docker, CI/CD, or documentation when applicable.
-
-Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
-
-### Required propagation checklist
-
-Before closing any LKW wave, answer:
-
-- [ ] Did every discovered bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, and CI/runbook gap receive a classification?
-- [ ] Does this change belong only to LKW, or should it move to shared platform code?
-- [ ] Should application scaffold generate this pattern for the next product host?
-- [ ] Should agent scaffold generate this contract, test, or documentation pattern?
-- [ ] Does `.env.example` match `host/settings.py` and production validation?
-- [ ] Does `pyproject.toml` need a dependency split or optional dependency group?
-- [ ] Does Docker still build and run with the correct files, env profile, port, and healthcheck?
-- [ ] Does CI need a new application smoke test or Docker build check?
-- [ ] Does the deploy/runbook still describe the real execution path?
-- [ ] Does the implementation plan identify both the LKW work and the platform propagation work?
-
-`NexusLoop` constructor width and `StepKernelContext` width remain deferred watchlist items unless LKW exposes concrete implementation or testing pain.
-
-### LKW-PF — LKW-driven Platform Proof Roadmap
-
-LKW is the **primary product workload** used to discover missing platform capabilities. Each platform proof item must produce both:
-
-1. **LKW proof acceptance** — the capability works on the LKW proof path.
-2. **Reusable platform acceptance** — scaffold, config, deploy, CI, or operator runbook lessons propagate when applicable.
-
-**ID note:** `LKW-PF0`–`LKW-PF7` below are the **strategic platform-proof roadmap**. Closed H1 follow-up rows **`LKW-PF1`**/**`LKW-PF2`** (RuntimeEvent `TOOL_*`, `RunArtifactBundle` / `shadow_workspace_id`) in §5 Platform follow-ups are a separate historical track — same prefix family, different scope.
-
-**LKW-PF-ERR-1 (Done):** Completed as a platform proof workload — `intergrax/runtime/observability/problem_reporter.py` plus `tests/test_lkw_problem_signal_failure_proof.py`. Does **not** change LKW product runtime behavior or implement endpoint failure handling. Proves LKW-shaped `lkw.retrieve_failed` problem signals through the platform helper (`report_problem` / `ProblemReporter`), not manual `PlatformProblemSignal` / `ObservabilityExportEnvelope` / policy construction.
-
-| ID | Status | Meaning |
-|----|--------|---------|
-| **LKW-PF0** | **Done / Closed** | **Platform proof maturity bar** — defines platform proof, operational proof, production-grade readiness, and production hardening backlog. Canonical definitions: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. |
-| **LKW-PF1** | Planned / Platform-reusable | **Observability production readiness** — Elasticsearch/Kibana proof is **closed for platform proof**, but production readiness still needs health/status, auth/TLS, retention/rotation, batching/bulk decision, dashboard-as-code, CI/live proof automation, path policy, and operator runbook. See [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR. |
-| **LKW-PF2** | Planned / Platform-reusable | **Model serving provider switch proof** — prove LKW can switch model serving backends such as **Ollama** and **vLLM** through typed config/env profile without product code changes. Platform owns provider contracts/adapters; LKW owns proof workload and deployment wiring later. |
-| **LKW-PF3** | Planned / Platform-reusable | **Relational persistence proof** — introduce a **PostgreSQL**-backed persistence proof for platform/application state (tenants, users, workspaces, memberships/permissions, runs, run steps, artifact metadata, proof metadata references). Do not store raw documents, chunks, prompts, secrets, or large artifacts by default. |
-| **LKW-PF4** | Planned / Platform-reusable | **Vector store portability proof** — prove vector store backend portability. **Qdrant** remains the local-first baseline. Future provider candidates may include **Pinecone**, **Weaviate**, **Milvus**, and **pgvector**. Platform owns vector store contract/provider selection; LKW owns proof workload and deployment wiring later. |
-| **LKW-PF5** | Planned / Platform-reusable | **Metrics/tracing platform proof** — define the relationship between observability projections: **Elasticsearch/Kibana** for structured event/log timeline and readback; **Prometheus/Grafana** for metrics, counters, rates, SLO dashboards; **Tempo** (or equivalent) for traces/spans; **Sentry** for error issue triage. Use vendor-neutral platform contracts first; tools are replaceable. |
-| **LKW-PF6** | Planned / Strategic | **Token Optimization platform proof** — LKW must prove measurable token savings without correctness/safety regression. Proof uses the existing Token Optimization plan ([`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md)): baseline token usage, optimized token usage, saved tokens, compression receipts, protected-region validation, regression gates, and observability attribution by run/step/source/model/provider/strategy/output profile. |
-| **LKW-PF7** | Planned / Platform-reusable | **Scaffold/deployment propagation** — platform lessons from LKW proofs propagate into app scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks when applicable. |
-
-#### Recommended execution order
-
-The strategic roadmap IDs (`LKW-PF0`–`LKW-PF7`) are **not** a strict implementation sequence. The implementation sequence should prioritize the highest market-value platform proof: **Token Optimization**.
-
-1. ~~**LKW-PF0** — Define maturity bar~~ **Done / Closed** — see §LKW-PF0 closeout below and [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
-
-2. ~~**LKW-PF6-0** — Token Optimization proof design for LKW~~ **Done / Closed** — see §LKW-PF6-0 closeout below and [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0.
-
-3. **TOKEN-1A** — Shared Token Optimization contracts  
-   Add shared contracts/package skeleton only; no hot-path optimization yet.
-
-4. **TOKEN-1B** — Protected region validator  
-   Preserve code, paths, URLs, env vars, enum values, hashes, dates, exact error strings, and other exact regions before optimization is allowed.
-
-5. **TOKEN-1C** — Compression receipts  
-   Add receipts for original/optimized hashes, token counts, saved tokens, saved ratio, validation status, and fallback.
-
-6. **TOKEN-6A-lite** — Token savings telemetry shape  
-   Define typed savings attribution through the Harness Observability Spine; no private telemetry bus.
-
-7. **TOKEN-2** — OutputPolicy runtime resolver  
-   Replace prompt-only verbosity control with runtime output profiles and budget policy.
-
-8. **TOKEN-3** — ToolSchemaOptimizer  
-   Reduce recurring LLM-facing tool catalog token cost without changing tool schema semantics.
-
-9. **LKW-PF6-A** — LKW baseline token measurement  
-   Measure baseline token usage for representative LKW workflows before optimization.
-
-10. **LKW-PF6-B** — First measurable token-saving proof  
-    Show baseline vs optimized token usage, saved tokens, receipts, and quality/regression safety.
-
-11. **OBS-HEALTH-lite** — Minimal exporter/token telemetry status  
-    Add operator-visible health/status shape for exporter and token telemetry before deeper production hardening.
-
-12. **TOKEN-4** — ContextPackOptimizer light mode  
-    Apply light/structural context optimization only; semantic compression remains gated.
-
-13. **TOKEN-6B** — Token regression gates  
-    Add token-vs-quality regression benchmarks and checks.
-
-14. **LKW-PF6-C** — Public-grade Token Optimization proof  
-    Produce a clear LKW proof showing measured savings, safety, receipts, and observability attribution.
-
-15. **LKW-PF2** — Model serving provider switch proof  
-    Prove Ollama/vLLM or equivalent provider switch through typed config/profile, with token/cost/performance telemetry preserved.
-
-16. **LKW-PF3** — Persistent application state proof  
-    Prove PostgreSQL-backed persistence for tenants, users, workspaces, permissions, runs, run steps, artifact metadata, and proof references.
-
-17. **LKW-PF4** — Vector backend portability proof  
-    Prove vector store portability and retrieval consistency. Qdrant remains baseline; other providers are future candidates.
-
-18. **LKW-PF5** — Observability projections proof  
-    Prove metrics/tracing/error-monitoring projections after the core token/cost proof: Elasticsearch/Kibana, Prometheus/Grafana, Tempo, Sentry as complementary projections.
-
-19. **LKW-PF7** — Scaffold/deploy propagation closeout  
-    Propagate reusable lessons into application scaffold, env templates, Docker/deploy docs, optional dependency groups, and CI smoke checks.
-
-**Market-value priority:** Token Optimization is the primary near-term market-value proof because it demonstrates that Intergrax can reduce model/agent operating cost while preserving correctness, safety, receipts, and observability. Infrastructure proofs such as PostgreSQL, vector-store portability, vLLM/Ollama switching, Prometheus/Grafana/Tempo, and Sentry remain important production-maturity proofs, but they should not precede the first measurable token-cost proof unless they become blockers.
-
-#### LKW-PF0 closeout — platform proof maturity bar
-
-**Status:** **Done / Closed** (docs-only).
-
-Canonical maturity definitions live in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9. Summary:
-
-| Level | Meaning | Closure implies production-grade? |
-|-------|---------|-----------------------------------|
-| **Platform proof** | Reusable platform capability works through the intended abstraction/contract/integration boundary | **No** |
-| **Operational proof** | Operator can run, inspect, debug, or repeat the proof in a controlled proof environment | **No** |
-| **Production-grade readiness** | Production-oriented concerns (health, auth/TLS, retention, batching, dashboards-as-code, CI proof, runbooks, path policy, recovery, ownership) are implemented and verified | **Yes** — only when §9.3 criteria are met |
-| **Production hardening backlog** | Known production gaps tracked after platform proof closure; `closed proof != production complete` | N/A — tracks follow-up work without reopening proof scope |
-
-**LKW-PF0 acceptance (met):**
-
-- [x] Maturity bar documented in [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §9.
-- [x] Difference between platform proof, operational proof, and production-grade readiness is explicit.
-- [x] Proof closure rules documented (§9.5).
-- [x] Production hardening backlog rules documented (§9.4).
-- [x] Elasticsearch/Kibana remains **closed for platform proof** but **not production-grade** (§9.6; OBS-VENDOR production hardening **Planned** in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md)).
-- [x] Token Optimization implementation remains **Planned** — `LKW-PF6` and `TOKEN-1A` not started; `LKW-PF6-0` proof design **Done / Closed** (see §LKW-PF6-0 closeout).
-- [x] No code/runtime/test/CI/dependency files changed.
-
-**Next proofs must use this bar:** `TOKEN-1A` and all future LKW-PF items must state which maturity level they close and record production gaps in the appropriate platform plan backlog.
-
-#### LKW-PF6-0 closeout — Token Optimization proof design
-
-**Status:** **Done / Closed** (docs-only).
-
-**Maturity level closed:** proof design only — not platform proof, operational proof, or production-grade readiness.
-
-Canonical proof design: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW-PF6-0 · loop reference: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §10.
-
-**Narrative preserved:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos. Token Optimization is a **cross-layer platform capability**, not a private LKW feature.
-
-**LKW-PF6-0 acceptance (met):**
-
-- [x] Representative LKW workflows defined (small/medium workspace, repeated synthesis, failure/safety-preserving run).
-- [x] Baseline measurement shape defined (input/context, tool catalog, RAG/evidence/context pack, output, total tokens; model, provider, runtime profile, workflow id, run id, step id).
-- [x] Optimized measurement shape defined (baseline vs optimized usage, saved tokens/ratio, strategy, affected source/category, fallback status, validation status).
-- [x] Canonical token categories defined with attribution dimensions (run, step, source, model, provider, strategy, output profile).
-- [x] Quality/regression criteria defined — behavioral equivalence required; savings alone do not pass.
-- [x] Protected-region requirements defined — TOKEN-1B implements later; proof requirement only here.
-- [x] Compression receipt expectations defined — TOKEN-1C implements later; proof requirement only here.
-- [x] Observability visibility defined through Harness Observability Spine or approved domain-signal path — no private telemetry bus.
-- [x] Public proof format defined with redaction rules (no raw prompts, documents, chunks, synthesized content, tool args, secrets, tokens/secrets, absolute paths, large raw artifacts).
-- [x] `TOKEN-1A` remains **not started**; no code/runtime/test/CI/dependency files changed.
-
-**Next step:** `TOKEN-1A` — shared Token Optimization contracts + package skeleton (see recommended execution order §3).
-
-Canonical loop: [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md).
-
----
-
-## 0b. Cursor token guardrails
-
-Every LKW iteration must bound read scope, search scope, and test scope so Cursor does not burn tokens on repo-wide exploration.
-
-### Rules
-
-- Every implementation prompt must include: **Goal**, **Read scope**, **Code search scope**, **Stop condition**, **Do not touch**, **Test scope**, **Report format**.
-- Cursor must **not** audit the whole repository unless the prompt explicitly requires it.
-- Cursor must **not** run repo-wide glob/search across all Python or Markdown files.
-- Cursor must **stop** after the first hit grep/search once the implementation point is located — then implement immediately.
-- Cursor must read **only cited document sections**, not full architecture/plan hubs or domain packs.
-- Cursor may expand scope only when a cited file imports a dependency that must change, a targeted test fails because of a cross-module contract, the implementation point does not exist in the given scope, or [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) reveals a real need to change scaffold, env, Docker, or CI.
-- Expansion budget: at most **3 files** outside read scope per task. After 3 reads or 3 failed greps: stop and report.
-- Pattern anchor for Tier-2 catalog-tool work: [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../../intergrax/agents/authoring/runtime_tool_helpers.py).
-- Default tests: new/changed test + one narrow smoke, not the full suite.
-- Default report: terse — changed files, tests run, pass/fail, commit SHA, platform propagation yes/no.
-
-### Prompt template
-
-```text
-Repo: `jakbuczarnecki/intergrax`, branch `development`.
-
-Goal:
-<one sentence — task ID + outcome>
-
-Read scope:
-- `<path>` — section `<id>` only
-- `<path>` — `<function or line range if known>`
-- `intergrax/agents/authoring/runtime_tool_helpers.py` — when task invokes catalog tools
-- existing tests: `<path or glob under one module>`
-
-Implementation point:
-- `<agents/<agent>/steps/<job>.py>` — edit here; do not search runtime for invoke_tool pattern
-
-Code search scope:
-Search only:
-- `<pattern>`
-- `<pattern>`
-Paths: `<tier/module glob>` — not repo-wide glob search
-
-Stop condition:
-Stop reading/searching once implementation point is located; implement immediately.
-
-Do not touch:
-- <explicit out-of-scope items>
-
-Test scope:
-- new/changed test: `<path>`
-- narrow smoke: `<path>`
-
-Report format:
-Terse: changed files, tests run, pass/fail, commit SHA, platform propagation yes/no + brief reason.
-
-Acceptance:
-- <task-specific acceptance bullets>
+Current product level: Backend Product Alpha
+Current roadmap stage: Stage 1 — Trusted Ask Workspace
+Current implementation focus: Architectural discovery for Ask Workspace
+
+Primary goal:
+Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
 ```
 
 ---
 
-## 0c. Operator workflow for this track
+## 1. Document role and source of truth
 
-This track is executed one task at a time.
+| Document | Role |
+|----------|------|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built — ownership, boundaries, runtime shape |
+| **This file (`IMPLEMENTATION_PLAN.md`)** | Where the product is going and what we execute now |
+| [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | How an external person verifies working capabilities |
+| [`journal/`](journal/) | Chronological implementation notes (historical detail) |
 
-1. Select exactly one task from this plan.
-2. Describe the goal, known status, implementation/diagnostic scope, acceptance criteria, and explicit out-of-scope items.
-3. For complex tasks, prepare a scoped Cursor instruction first.
-4. For simple tasks, implement only after explicit operator confirmation.
-5. Do not change repository files, create commits, or update docs unless the operator explicitly asks for it.
-6. If a diagnostic task finds a defect, classify it first; implementation is a separate follow-up unless the operator approves immediate repair.
-7. Before closing a task, classify each discovered bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, or CI/runbook gap as `LKW-specific`, `Platform-reusable`, or `Platform-reusable deferred` according to [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §3.
+This document is the **only** source of truth for:
+
+- LKW development order
+- current stage
+- next vertical slice
+- production gates
+- deferred scope
+
+Do **not** create a separate `PRODUCT_ROADMAP.md`.
+
+### Governing rule
+
+```text
+product roadmap controls execution order
+platform work is pulled by product needs
+proof is part of product acceptance
+```
+
+Platform mechanisms, provider ports, observability vendors, and historical proof tracks are **not** an independent LKW execution queue. They enter the active plan only when a production stage requires them.
 
 ---
 
-## 1. Wave queue
+## 2. Product objective
 
-| ID | Title | Depends | Status | Priority |
-|----|-------|---------|--------|----------|
-| LKW.0 | Scaffold + architecture v2 | — | **Done** | — |
-| LKW.3 | `filesystem.*` + allowlist | LKW.0 | **Done** | — |
-| LKW-H0 | Minimal runtime hardening for product proof | LKW.0 | **Closed for LKW.1 entry / monitor** | Critical |
-| LKW.1 | Domain UAEP: ingest + search + synthesize stub | LKW-H0 | **Closed in scope — product proof passed after LKW.1.15** | Critical |
-| LKW-H1 | LKW live trace/evidence inspection and tool-call accounting | LKW.1 | **Completed for LKW.2 entry; deferred platform topics tracked separately** | High |
-| LKW.2 | Graph pipeline + `local.workspace.*` skills | LKW.1, LKW-H1 | **Closed — pipeline proof passed** | High |
-| LKW.4 | Platform message-bus / background-jobs proof (LKW background ingest workload) | LKW.1 | **Closed — LKW.4E live Kafka proof passed** | Medium |
-| LKW.5 | `LKW_DATA_HOME` + persistent vector storage | LKW.1 | **Closed — persistence proof passed** | High |
-| LKW-PR | MongoDB-backed structured proof receipt store (platform DocumentStore) | LKW.4 | **Closed — PROOF-RECEIPTS-1A through PROOF-RECEIPTS-1E complete** | Medium |
-| LKW.6 | OS daemon + interaction intake router | LKW.1 | **Closed** (LKW.6A/6B/6C) | High |
-| LKW.6b | Slack Socket Mode (optional) | LKW.6 | Planned / optional | Medium |
-| LKW.7 | File watcher + incremental index | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) | Medium |
-| LKW-PRODUCT-1 | Managed workspaces + folder sources (create/attach/sync/search) | LKW.1, LKW.3 | **Done** | Critical |
-| LKW-PRODUCT-1-HARDENING | Durable sync (MessageBus) + structured search evidence handoff | LKW-PRODUCT-1 | **Done** | Critical |
-| LKW.8 | Tray thin client | LKW.6 | Deferred | Low |
-| LKW-H2 | Evidence/maturity wording cleanup | LKW.1 | Planned | Medium |
-| LKW-H3 | Packaging/adoption simplification | LKW.1 or LKW.2 | Planned | Medium |
-| LKW-W | Deferred architecture watchlist | LKW proof pain only | Deferred | Watch |
+LKW (Local Knowledge Workspace) is a **local system for working with a user's private documents**.
 
-**LKW.4 scope — platform message-bus / background-jobs proof track:** LKW.4 is **not** an LKW-only queue feature and must **not** implement an LKW-specific queue or a new queue system. It is a **platform message-bus / background-jobs proof track**; **LKW is the proof workload, not the owner of queue infrastructure.** Platform owns `TaskQueue` / `MessageBus` contract, `MessageBusIntegrationContract`, provider integrations, and the provider-neutral `message_bus.*` tool surface (lifecycle, status, result abstraction). LKW owns only the domain job payload (`LkwBackgroundIngestJob`), `task_name`, payload schema, idempotency key convention, handler mapping, and proof workload. File watcher + incremental index remain **LKW.7**. OS daemon + interaction intake remain **LKW.6**. Slack notify (**LKW.6b**) remains optional later, not LKW.4 core.
+A target user must be able to:
 
-**LKW-PRODUCT-1 — Done:** managed workspace HTTP API, local folder sources, sync operations, workspace-scoped search, DocumentStore-backed durable state, live proof `managed_workspace_folder_sync`. See [`ARCHITECTURE.md`](ARCHITECTURE.md) § LKW-PRODUCT-1.
+1. Install LKW
+2. Create a workspace
+3. Point at folders
+4. Synchronize documents
+5. Ask questions
+6. Receive answers with sources
+7. Generate artifacts
+8. Browse history
+9. Diagnose problems
+10. Update the system without data loss
 
-**LKW-PRODUCT-1-HARDENING — Done:** sync no longer uses `asyncio.create_task`; durable MessageBus path (`DocumentStoreTaskQueue` + co-located worker); concurrent sync returns `409`; search maps complete `search_summary` evidence without router filesystem reconstruction. See [`ARCHITECTURE.md`](ARCHITECTURE.md) § LKW-PRODUCT-1-HARDENING.
+LKW has three roles:
 
-**Next planned task:** **LKW.8** (Deferred) or **LKW.6b** (optional Slack Socket Mode). **LKW.7** — **Closed** (LKW.7A Done; LKW.7B Closed; LKW.7B1 Done; LKW.7B2 Closed; LKW.7B2A Done; LKW.7B2B Done; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed). **LKW.6** — **Closed** (LKW.6A/6B/6C). **LKW.6b** remains Planned / optional (Slack Socket Mode). Closed waves: LKW-PR (**PROOF-RECEIPTS-1A** through **PROOF-RECEIPTS-1E**); LKW-PR boundaries: §6b below. Platform proof receipt architecture: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+| Role | Meaning |
+|------|---------|
+| **Real product** | Primary — ship a usable local workspace product |
+| **Platform proof** | Secondary — working product flows prove Intergrax capabilities |
+| **Platform problems detector** | Secondary — product pressure surfaces reusable platform gaps |
 
-**Platform proof pattern (same as observability):**
+The last two roles exist **because** we build real product functions. They do not define the product roadmap order.
+
+---
+
+## 3. Current product state
 
 ```text
-platform contract
--> provider-neutral tool surface
--> provider integration
--> LKW proof workload
--> reviewer proof
+Current product level: Backend Product Alpha
+Current roadmap stage: Stage 1 — Trusted Ask Workspace
+Current implementation focus: architectural discovery for Ask Workspace
 ```
 
-For message bus / background jobs:
+### Working today (implemented / live-verified)
+
+| Capability | State |
+|------------|-------|
+| Local application host | implemented / live-verified |
+| HTTP API | implemented / live-verified |
+| Managed workspaces | implemented / live-verified |
+| Folder sources | implemented / live-verified |
+| Durable synchronization | implemented / live-verified |
+| `DocumentStoreTaskQueue` | implemented / live-verified |
+| Restart recovery for queued operations | implemented / live-verified |
+| Idempotent ingest | implemented / live-verified |
+| Workspace isolation | implemented / live-verified |
+| Tenant isolation | implemented / live-verified |
+| Structured search evidence | implemented / live-verified |
+| Source provenance | implemented / live-verified |
+| Persistent state | implemented / live-verified |
+| Live proof + ProofReceipt | implemented / live-verified |
+
+### Not yet a finished product
+
+Honest gaps relative to LKW 1.0:
+
+| Capability | State |
+|------------|-------|
+| Ask Workspace (public Q&A with stable citations) | planned (Stage 1) |
+| Citations in a final user-facing answer | planned |
+| Full document reconciliation (delete/rename/stale) | planned (Stage 2) |
+| Desktop UI / tray client | planned (Stage 4) |
+| Installer | planned (Stage 4) |
+| Backup / restore | planned (Stage 5) |
+| Production security hardening | planned (Stage 5) |
+| Token optimization runtime | deferred until Ask Workspace baseline exists |
+| LKW 1.0 release | planned (Stage 6 gate) |
+
+Backend Product Alpha means: a real host, real workspaces, real sync, and real search evidence exist — not that the product is complete.
+
+---
+
+## 4. Definition of LKW 1.0
+
+LKW 1.0 is the first production version:
 
 ```text
-Application/domain job
--> platform TaskQueue / MessageBus contract
--> provider-neutral message_bus tools
--> provider integration
--> LKW background ingest proof workload
+local
+single-user
+installable
+restart-safe
+source-file-safe
+auditable
+daily-usable
 ```
 
-**Ownership boundaries:**
+### Not required for 1.0
 
-| Layer | Owns |
+- SaaS
+- Kubernetes
+- Enterprise RBAC
+- Multiple organizations
+- Slack
+- Mobile application
+- Every model / vector / storage provider
+- Full matrix of every operating system
+
+### Minimal 1.0 promises
+
+1. Source files are never modified
+2. Answers are limited to the workspace
+3. Answers cite sources
+4. Data survives restart
+5. Operation errors are visible
+6. Artifacts land in the shadow workspace
+7. Filesystem access is controlled
+8. History of major actions is available
+9. Installation does not require a repository checkout
+10. Updates do not destroy data
+
+---
+
+## 5. Execution principles
+
+### Vertical slices first
+
+Every active task delivers a real user-facing capability (or a frozen architecture needed for that capability). Avoid platform-only waves that do not unlock a product outcome.
+
+### Platform work is product-pulled
+
+A platform mechanism is built only when it blocks a real product flow in the current stage.
+
+### One major platform gap per task
+
+If a second major platform gap appears during a slice:
+
+```text
+BLOCKED_BY_PLATFORM_GAP
+```
+
+Stop. Record the gap. Do not open a parallel platform refactor inside the same task.
+
+### Proof as acceptance
+
+Proof is not a separate work program.
+
+Every working vertical slice updates:
+
+```text
+docs/public-adoption/LKW_PLATFORM_PROOF.md
+```
+
+### Test order
+
+```text
+contract
+→ unit
+→ boundary integration
+→ API
+→ one live run
+```
+
+### Token budget
+
+Ordinary task:
+
+```text
+soft limit: 2M
+stop and review: 4M
+```
+
+Large vertical slice:
+
+```text
+soft limit: 4M
+stop and review: 8M
+```
+
+After exceedance:
+
+```text
+TOKEN_BUDGET_EXCEEDED
+```
+
+Cursor must not run an open-ended fix loop past budget. Stop, report, and wait for operator review.
+
+---
+
+## 6. Production roadmap
+
+Six production stages define LKW development order. Complete earlier stages before expanding later ones, unless a later stage item is explicitly documented as a blocker of the current stage.
+
+---
+
+### Stage 1 — Trusted Ask Workspace
+
+**Status:** `CURRENT`
+
+#### User outcome
+
+The user asks a workspace question and receives a checkable answer grounded in documents.
+
+#### Required capabilities
+
+- Public Ask Workspace API
+- Workspace-scoped retrieval
+- Context assembly
+- Synthesis
+- Stable citations
+- Insufficient-evidence behavior
+- Persisted run
+- Persisted question, evidence, and answer
+- Read of a completed run
+- Timeout and failure states
+
+#### Completion gate
+
+- Real question
+- Real documents
+- Answer
+- Citations
+- No hallucination when evidence is missing
+- Tenant / workspace isolation
+- Persistence across restart
+- Public live proof
+
+#### Next action
+
+```text
+Focused architectural discovery:
+local.workspace.search
+→ typed evidence
+→ local.workspace.synthesize
+→ citations
+→ persisted run result
+```
+
+---
+
+### Stage 2 — Reliable Document Lifecycle
+
+**Status:** planned
+
+#### User outcome
+
+The workspace automatically stays aligned with folder contents.
+
+#### Required capabilities
+
+- New files
+- Modified files
+- Deleted files
+- Rename / move
+- Stale chunk removal
+- Retry
+- Document status
+- Partial sync result
+- Operation recovery
+- Continuous synchronization
+
+#### Completion gate
+
+- File change changes search results
+- Deleted file disappears from retrieval
+- Rename does not create uncontrolled duplicates
+- One bad file does not hide the rest
+- Retry is explicit
+- Restart does not lose lifecycle state
+- Sources remain read-only
+
+---
+
+### Stage 3 — Workspace Outputs and History
+
+**Status:** planned
+
+#### User outcome
+
+The user generates durable work products from workspace knowledge.
+
+#### Required capabilities
+
+- Reports
+- Summaries
+- E-mails
+- Timelines
+- Fact tables
+- Risk lists
+- Shadow artifacts
+- Artifact provenance
+- Versioning
+- Run history
+- Explicit export approval
+
+#### Completion gate
+
+- At least three artifact types
+- Durable artifact
+- Citations / provenance
+- Restart persistence
+- Shadow-only default
+- Explicit export consent
+- Readable failure status
+
+---
+
+### Stage 4 — Installable Local Application
+
+**Status:** planned
+
+#### User outcome
+
+A non-technical user installs LKW and uses it without a repository checkout.
+
+#### Required capabilities
+
+- Windows installer as first target
+- Daemon lifecycle
+- Thin desktop / tray client
+- Workspace management
+- Folder picker
+- Sync status
+- Ask Workspace
+- Citations
+- History
+- Settings
+- Diagnostics
+- Update
+- Uninstall
+
+#### Completion gate
+
+- Clean Windows install
+- Launch from system menu
+- Automatic host start
+- Complete flow from UI
+- Data preserved on update
+- Diagnostics bundle
+- Safe uninstall
+
+---
+
+### Stage 5 — Operational and Security Readiness
+
+**Status:** planned
+
+#### User outcome
+
+The system is predictable, diagnosable, and safe for long-lived use.
+
+#### Required capabilities
+
+- Component health
+- Worker health
+- Queue health
+- Failed operation visibility
+- Retry / recovery
+- Backup / restore
+- Migrations
+- Log retention
+- Secure localhost client access
+- Secret storage
+- File limits
+- Parser safety
+- Symlink policy
+- Resource limits
+- Audit
+- Diagnostics bundle
+
+#### Completion gate
+
+- Health visible
+- Recovery passes
+- Backup / restore passes
+- Update migration passes
+- Secrets do not appear in logs
+- Foreign process does not get free API access
+- Soak test passes
+
+---
+
+### Stage 6 — Cost, Quality and Release Gate
+
+**Status:** planned
+
+#### User outcome
+
+LKW is correct, fast, and economical enough to be marked 1.0.
+
+#### Required capabilities
+
+- Versioned quality corpus
+- Retrieval quality metrics
+- Citation correctness
+- Unsupported-answer measurement
+- Leakage measurement
+- Latency
+- Token usage
+- Model cost
+- Storage usage
+- Provider configuration
+- One alternative model provider
+- Release checklist
+
+#### Token Optimization placement
+
+```text
+Token Optimization is not the current standalone roadmap.
+It is applied after a stable Ask Workspace baseline exists.
+```
+
+Order:
+
+```text
+real Ask Workspace
+→ baseline measurement
+→ optimization
+→ quality and cost comparison
+```
+
+#### Release gate
+
+- Install works
+- Document lifecycle works
+- Ask Workspace works
+- Citations work
+- Artifacts work
+- History works
+- Backup / restore works
+- Security gate works
+- Quality thresholds pass
+- Cost baseline is known
+- Soak test passes
+- Public proof is complete
+
+---
+
+## 7. Current stage
+
+```text
+Current stage: Stage 1 — Trusted Ask Workspace
+Current status: Discovery required before implementation
+Next deliverable: frozen architecture and task definition for LKW-PRODUCT-2
+```
+
+### Discovery must establish
+
+- Existing synthesize flow
+- Existing citation model
+- Current run persistence
+- Structured output path
+- Product / platform boundary
+- One predicted platform blocker
+- Focused boundary test
+
+Do **not** start a full Ask Workspace implementation task until discovery freezes architecture and the LKW-PRODUCT-2 task definition.
+
+---
+
+## 8. Production gates
+
+Every stage must pass four gates before it is closed.
+
+### Product gate
+
+Did the user receive a genuinely useful capability?
+
+### Architecture gate
+
+Does LKW use the platform without bypasses and without direct vendor calls from product code?
+
+### Operational gate
+
+Does the flow survive restart, failure, and retry?
+
+### Audit gate
+
+Can an external person verify the flow through:
+
+```text
+docs/public-adoption/LKW_PLATFORM_PROOF.md
+```
+
+---
+
+## 9. Platform problem classification
+
+Classify every detected gap as one of:
+
+```text
+product-blocking
+platform-reusable-nonblocking
+production-hardening
+```
+
+| Class | Rule |
 |-------|------|
-| **Platform** | `TaskQueue` / `MessageBus` contract; `MessageBusIntegrationContract`; provider integrations; `message_bus.*` tool surface; lifecycle / status / result abstraction |
-| **LKW** | `LkwBackgroundIngestJob`; `task_name`; payload schema; idempotency key convention; handler mapping; proof workload |
-| **Agents** | Tool/skill invocation only — no provider SDK imports |
-| **Providers** | Backend implementation behind the common contract (examples only — LKW.4 does not require all): `kafka`, `rabbitmq`, `celery`, `redpanda`, `sqs`, `service_bus`, `pubsub`, `nats`, `pulsar`, `confluent`, `temporal` |
+| **product-blocking** | Resolve before closing the current stage |
+| **platform-reusable-nonblocking** | Record it; do not auto-create the next task |
+| **production-hardening** | Return in Stage 5 unless it already blocks the product |
 
-LKW proof should start with **one real local message bus provider** in the proof stack. Provider portability can be proven later. Mocks and in-memory-only queue bypasses do **not** satisfy LKW.4E platform proof.
+```text
+Not every detected pattern becomes an implementation task.
+```
 
-Sub-plan: §6 below.
+Historical platform backlog items (proof maturity waves, vendor observability rollouts, provider matrices, PostgreSQL/vector portability without a product need) remain reference material only. They are not the active product order.
 
 ---
 
-## 2. Closed support wave — LKW-H0: minimal runtime hardening for product proof
+## 10. Deferred scope
 
-This is not a broad harness refactor wave. These tasks are allowed because they directly improve safety, bounded execution, and diagnosability for LKW.1.
+Explicitly deferred until a current production stage documents them as blockers:
 
-| ID | Task | Module | Status | Platform propagation |
-|----|------|--------|--------|----------------------|
-| LKW-H0.1 | Strict/product runtime must not silently default-allow when policy wiring is missing | runtime policy / kernel wiring | Closed / monitor | Update shared config/scaffold guidance if unsafe defaults are generic |
-| LKW-H0.2 | Add `max_steps` boundary regression test | runtime kernel or ACP session tests | Closed / monitor | Update generated guidance only if step-limit semantics are exposed to app/agent authors |
-| LKW-H0.3 | Emit diagnostic/runtime event for post-finalization hook failure | Nexus lifecycle / runtime events | Closed / monitor | Propagate generic diagnostic/event pattern to runtime docs/templates if applicable |
-
-Out of scope: `NexusLoop` constructor refactor, `StepKernelContext` decomposition, hosted observability product, full packaging split, and product features outside LKW safety/diagnosability.
-
----
-
-## 3. Closed wave — LKW.1: Domain UAEP proof
-
-### Goal
-
-Deliver the first real LKW product and platform proof:
-
-```text
-POST /v1/local_workspace/run
-  -> local.workspace.index using metadata.source_paths
-  -> rag.ingest_document
-  -> local.workspace.search
-  -> rag.retrieve with tenant-scoped evidence
-  -> local.workspace.synthesize with evidence/draft
-  -> workspace.write_file under shadow root
-```
-
-### Result
-
-Status: **Closed in scope after LKW.1.15**.
-
-Product proof verified live:
+- Slack Socket Mode
+- macOS installer
+- Mobile client
+- SaaS
+- Multi-organization support
+- Enterprise RBAC
+- Kubernetes
+- PostgreSQL migration without a product need
+- Vector-store portability without a product need
+- Broad observability vendor rollout
+- Prometheus / Grafana / Tempo / Sentry as standalone proofs
+- Scaffold propagation as a standalone program
+- All-provider matrices
+- Autonomous agent actions
+- Web search
+- Cross-device sync
 
 ```text
-index -> search with tenant-scoped evidence -> synthesize with evidence -> shadow artifact only
-```
-
-Important boundary:
-
-```text
-Standalone synthesize with message-only input can still return content_missing.
-That is not an LKW.1 closeout blocker; it belongs to LKW.2 pipeline/orchestration,
-where search evidence should be passed into synthesize automatically.
-```
-
-### LKW.1 task map
-
-| ID | Task | Module | Status | Platform propagation |
-|----|------|--------|--------|----------------------|
-| LKW.1.1 | Indexer steps: path validation + `rag.ingest_document` loop | `agents/local_indexer/` | **Closed** | Update agent scaffold/docs if canonical |
-| LKW.1.2 | Search steps: `rag.retrieve` + evidence formatting | `agents/local_search/` | **Closed** | Update evidence/result patterns if reusable |
-| LKW.1.3 | Synthesizer stub: shadow `workspace.write_file` | `agents/local_synthesizer/` | **Closed** | Update scaffold guidance for shadow-write outputs if generic |
-| LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | application tests | **Closed** | Add scaffold/test template if canonical |
-| LKW.1.5 | Env/settings parity check | `.env.example`, `host/settings.py`, docs | **Closed / configured** | Inform scaffolded app settings pattern |
-| LKW.1.6 | Docker/run parity | Dockerfile, compose, build/run docs | **Closed** | Docker build/run lessons propagated or recorded |
-| LKW.1.7 | Live HTTP smoke baseline | Docker compose + `/health` + `/agents` + `/run` | **Partial / superseded** | Showed host/routing worked but RAG-backed flow was not yet proven |
-| LKW.1.8 | Diagnose live RAG ingest failure | Docker logs/runtime output + RAG path | **Diagnosed** | Queued Qdrant id, tenant scope, gateway registry, and diagnostics follow-ups |
-| LKW.1.9 | Fix Qdrant-compatible RAG ingest point ids | Qdrant provider | **Completed** | Platform-reusable point-id normalization |
-| LKW.1.10 | Fix tenant scope consistency for live RAG ingest/retrieve | RAG scope + LKW shared helpers | **Completed** | Platform-reusable tenant/workspace/user source-of-truth handling |
-| LKW.1.11 | Fix runtime tool gateway registry parity for catalog tools | runtime/app tool wiring | **Completed** | Platform-reusable catalog registry parity path |
-| LKW.1.12 | Fix `decision_emitted` runtime event phase mismatch | runtime events/planning | **Completed** | Platform-reusable event catalog/schema correctness |
-| LKW.1.13 | Restore local_indexer live RAG ingest execution | UAEP/ACP bridge + local indexer | **Completed** | Platform-reusable host catalog tool invocation bridge |
-| LKW.1.14 | Final live product smoke attempt | Docker HTTP live smoke | **Partial** | Search failed due tenant-scoped retrieve/local_search allowlist blockers |
-| LKW.1.15 | Fix tenant-scoped `rag.retrieve` + `local_search` tool allowlist; rerun product smoke | RAG scope/service + `agents/local_search/contract.py` | **Completed / closeout passed** | Platform-reusable wired-retriever rebinding; LKW search live proof |
-
-### LKW.1.7–LKW.1.15 blocker history
-
-Detailed history lives in:
-
-- [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md)
-- [`journal/2026-06-26-lkw-1-11-live-verification.md`](journal/2026-06-26-lkw-1-11-live-verification.md)
-- [`journal/2026-06-26-lkw-1-12-1-13-live-ingest-unblocked.md`](journal/2026-06-26-lkw-1-12-1-13-live-ingest-unblocked.md)
-
-Summary:
-
-| ID | Result |
-|----|--------|
-| LKW.1.9 | Qdrant point-id compatibility fixed. |
-| LKW.1.10 | Tenant scope consistency fixed. |
-| LKW.1.11 | Runtime tool registry parity fixed. |
-| LKW.1.12 | `decision_emitted` phase mismatch fixed. |
-| LKW.1.13 | UAEP/ACP catalog invocation bridge fixed; live index ingests into Qdrant. |
-| LKW.1.14 | Full smoke exposed tenant-scoped retrieve and local_search allowlist blockers. |
-| LKW.1.15 | Tenant-scoped retrieve fixed; local_search allowlist fixed; live product path passed. |
-
-Current live proof after LKW.1.15:
-
-```text
-health=ok
-agents=local_indexer, local_search, local_synthesizer
-index=accepted=1, rejected=0, ingested=1, chunks=1
-search=results=1, tenant-scoped marker evidence returned
-synthesize=shadow artifact written when evidence is supplied
-source immutability=original fixture unchanged
-logs=no RuntimeEventSchemaError, unknown_capability_tool, tool_gateway_not_available, ingest_failed, retriever_failed
-qdrant=local_workspace__tenant__lkw-smoke, tenant_id=lkw-smoke, workspace_id=lkw-final-20260627103000
-```
-
-### Product acceptance criteria
-
-- [x] Docker stack can run the LKW application host.
-- [x] `/health` responds successfully.
-- [x] `/v1/local_workspace/agents` lists `local.workspace.index`, `local.workspace.search`, and `local.workspace.synthesize`.
-- [x] `POST /v1/local_workspace/run` reaches the index agent.
-- [x] `local.workspace.index` invokes `rag.ingest_document` and ingests at least one chunk in the live path.
-- [x] Follow-up search returns tenant-scoped answer/evidence referencing ingested content.
-- [x] Synthesize writes a shadow artifact based on retrieved/supplied evidence in the live path.
-- [x] Original user files are not modified.
-- [x] No Slack, tray, watcher, or OS service required.
-
-### Platform acceptance criteria
-
-- [x] Qdrant point-id compatibility fixed in LKW.1.9.
-- [x] Tenant/workspace/user source-of-truth fixed in LKW.1.10.
-- [x] Runtime gateway / application tool registry parity fixed in LKW.1.11.
-- [x] Runtime event phase contract fixed in LKW.1.12.
-- [x] UAEP/ACP host catalog tool invocation bridge fixed in LKW.1.13.
-- [x] Tenant-scoped retrieve and local_search allowed-tool declaration fixed in LKW.1.15.
-- [x] Live index tool-call accounting fixed in LKW-H1.1.
-- [x] Broader trace/evidence inspection lessons are reflected in LKW-H1.2 (curated `lkw_evidence.v1` slice); H1.3 smoke assertions passed (see §4).
-- [ ] Any remaining env/settings/scaffold/Docker/CI implications from LKW.1 are recorded in H1/H3 if they prove reusable.
-
-### Known follow-ups after LKW.1 *(historical — superseded by LKW-H1 / PF closeout; see §4)*
-
-| Follow-up | Classification | Target *(at time of LKW.1 closeout)* |
-|----------|----------------|--------|
-| Search/synthesize per-tool accounting (`rag.retrieve`, `workspace.write_file`) in trace/summary | Observability/accounting | **Closed** — LKW-H1.3 |
-| RuntimeEvent `TOOL_*` at event layer | Observability/platform | **Closed** — LKW-PF1 / **LKW-PF1A** (`runtime_event_summary.v1`) |
-| `RunArtifactBundle` / `WorkspaceArtifactRef` platform wiring | Observability/platform | **Closed** — LKW-PF2 / **LKW-PF2A** (`shadow_workspace_id` propagation) |
-| Policy decisions, raw tool reason/error at RuntimeEvent layer | Observability/platform | Platform deferred |
-| RAG ingest-specific observability contract | Observability/platform | Platform deferred (optional) |
-| Async runtime plugin coroutine warnings | Observability/platform | **Closed** — LKW-DF1 (platform `RuntimeEventBus.record` async handler dispatch before LKW.2.4C) |
-| Standalone synthesize with message-only input returns `content_missing` | Pipeline/orchestration input contract | LKW.2 |
-| Developer first-run/adoption simplification | Packaging/adoption | LKW-H3 |
-
-### Out of scope for LKW.1
-
-- Tray UI.
-- Slack.
-- File watcher.
-- OS service installer.
-- Full `local.workspace.*` skill bundle, except minimal stubs explicitly needed for LKW.1 tests.
-- Hosted observability dashboard.
-- Grafana/Tempo/OpenTelemetry Collector as a blocker for live proof.
-- Broad harness refactor unrelated to LKW acceptance or platform propagation.
-
----
-
-## 4. LKW-H1: live trace/evidence inspection for LKW runs
-
-### Goal
-
-Make one real LKW run inspectable without reading internal runtime code, and ensure the trace/evidence/accounting pattern is reusable by future applications.
-
-LKW-H1 is **not** the hosted observability stack. It is the minimum local inspection surface needed for a developer/operator to understand a run. Grafana, Tempo, and an OpenTelemetry Collector remain optional future operational infrastructure unless a later task explicitly scopes them.
-
-### Known diagnosed input
-
-LKW.1.15 passed product behavior. H1.1 fixed the first accounting gap for live index runs:
-
-```text
-local.workspace.index -> rag.ingest_document -> application_run_summary.v1 total_tool_calls=1
-```
-
-H1.1–H1.3 are closed for LKW.2 entry. Platform event-layer topics originally tracked here were closed in **LKW-PF1** / **LKW-PF1A** (RuntimeEvent `TOOL_*`), **LKW-PF2** / **LKW-PF2A** (`RunArtifactBundle` / `WorkspaceArtifactRef`, `shadow_workspace_id`). Remaining deferred platform topics: optional RAG ingest observability contract; policy/raw tool reason decisions at RuntimeEvent layer. Async runtime plugin coroutine warnings closed in **LKW-DF1**.
-
-H1 must improve visibility. It must not replace or reopen product execution blockers that are already fixed in LKW.1.9–LKW.1.15.
-
-### Required inspection fields
-
-For every LKW proof run, the operator should be able to inspect:
-
-- submitted task and capability;
-- task id and run id;
-- selected agent;
-- step sequence;
-- invoked tools and outcomes;
-- raw tool status and reason/error;
-- policy decisions;
-- RAG ingest/retrieve evidence;
-- shadow workspace artifact path;
-- terminal outcome;
-- diagnostics from non-fatal lifecycle/finalization failures.
-
-### H1.1 result
-
-Status:
-
-```text
-PASSED for live index tool-call accounting
-```
-
-Summary:
-
-```text
-62621bc1 fixed catalog tool-call recording and kernel harvest for RuntimeExecutionContext.invoke_tool().
-a22222e0 fixed the live UAEP bridge path by forwarding uaep_exec_ctx from build_uaep_step_context().
-Focused tests passed: 11 passed, 4 warnings.
-Live index smoke passed: accepted=1, ingested=1, chunks=1, total_tool_calls=1.
-```
-
-Known non-blocking warnings *(historical — closed LKW-DF1)*:
-
-```text
-Application tests emitted async runtime plugin warnings about coroutines not awaited in event_bus/task_trace handlers.
-Closed in LKW-DF1: RuntimeEventBus.record now runs or schedules async handler results on the sync dispatch path.
-```
-
-### Tasks
-
-| ID | Task | Module | Status | Platform propagation |
-|----|------|--------|--------|----------------------|
-| LKW-H1.1 | Fix live run observability and tool-call accounting, including `total_tool_calls=0` | runtime/tool accounting + LKW host evidence | **Completed / index live accounting passed** | Reusable UAEP/ACP RuntimeExecutionContext tool-call accounting covered by platform tests |
-| LKW-H1.2 | Ensure LKW run emits/records tool, policy, RAG, and shadow artifact evidence | runtime events + LKW host | **Completed / PASSED WITH PLATFORM FOLLOW-UPS** | Curated `lkw_evidence.v1` read model reusable by app hosts; platform event wiring deferred |
-| LKW-H1.3 | Add smoke/assertion for inspectable LKW run output | application tests | **Passed with platform follow-ups** | Update generated app test pattern if reusable |
-
-Acceptance:
-
-- [x] A reviewer can see what happened in an LKW run from task submission to terminal result (`application_run_summary.v1` + `lkw_evidence.v1`).
-- [x] RAG evidence counts/source refs and shadow artifact path/ref are visible via typed `lkw.*_summary.v1` diagnostics (redacted).
-- [x] `total_tool_calls=0` is fixed for the live index path (`rag.ingest_document`).
-- [x] Search/synthesize per-tool accounting is verified for `rag.retrieve` and `workspace.write_file` in trace/summary.
-- [ ] Raw tool status/reason/error and policy decisions at RuntimeEvent layer — platform deferred.
-- [x] No hosted dashboard or external observability backend is required.
-- [x] Platform proof checklist in §0a is completed for H1.2 closeout scope.
-
-### H1.2 result
-
-Status:
-
-```text
-PASSED WITH PLATFORM FOLLOW-UPS
-```
-
-Delivered in LKW host:
-
-```text
-- serving/evidence_slice.py — curated lkw_evidence.v1 from AgentRunTrace step diagnostics
-- serving/run_metadata.py — attach_lkw_evidence_metadata() on TaskResult
-- serving/fastapi_router.py — lkw_evidence.v1 on POST /v1/local_workspace/run response metadata
-- typed diagnostics: lkw.index_summary.v1, lkw.search_summary.v1, lkw.synthesize_summary.v1
-- unsafe field redaction (query_text, content, raw_chunks, …)
-- full_trace / agent_run_trace not exposed on HTTP response (by design)
-```
-
-Focused tests:
-
-```text
-uv run pytest applications/local_workspace_application/tests/test_evidence_slice.py -q
-uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_metadata.py -q
-uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
-
-Result: 9 passed, 12 warnings
-```
-
-Verified smoke assertions:
-
-```text
-index — lkw.index_summary.v1 fields + total_tool_calls>0 + no raw fixture text in evidence
-search — lkw.search_summary.v1 num_results/evidence_count/source_refs + redaction
-synthesize — lkw.synthesize_summary.v1 shadow_write/artifact_path|artifact_ref + redaction
-```
-
-Platform follow-ups deferred at H1.2 closeout *(historical — superseded)*:
-
-```text
-RunArtifactBundle / WorkspaceArtifactRef platform wiring -> closed LKW-PF2 / LKW-PF2A
-RuntimeEvent TOOL_* HTTP visibility -> closed LKW-PF1 / LKW-PF1A
-search/synthesize per-tool accounting + LKW-H1.3 smoke/assertion hardening -> closed LKW-H1.3
-ACP shadow_workspace_id propagation -> closed LKW-PF2A
-Still deferred: optional RAG ingest observability contract; policy/raw tool reason at RuntimeEvent layer
-Async runtime plugin coroutine warnings -> closed LKW-DF1
-```
-
-**LKW-PF1 (2026-06-27):** PASSED WITH FOLLOW-UP — immediate `TOOL_*` RuntimeEvents wired in `RuntimeExecutionContext.invoke_tool`; unit coverage in `tests/unit/contracts/test_invoke_tool_runtime_events.py`. Follow-up closed in **LKW-PF1A** (`runtime_event_summary.v1` on HTTP run metadata).
-
-**LKW-PF1A (2026-06-28):** CLOSED — `serving/runtime_event_metadata.py` aggregates platform `TOOL_*` events into `runtime_event_summary.v1` on POST `/v1/local_workspace/run` (counts by tool_id/type only; no raw args). Live smoke asserts index/search/synthesize tool visibility.
-
-**LKW-CI1 (2026-06-28):** CLOSED — live smoke test avoids circular `intergrax.runtime.task` package import; `AgentEngine` exposes `shadow_manager`/`sandbox_manager` for graph executor isolation wiring.
-
-**LKW-PF2 (2026-06-27):** PASSED WITH FOLLOW-UP — platform contract reused (`intergrax/contracts/task_artifacts.py`: `RunArtifactBundle`, `WorkspaceArtifactRef`; key `run_artifact_bundle.v1`). LKW wires synthesize shadow artifacts through existing nexus task-finisher bundle rollup and promotes bundle on HTTP metadata via `serving/run_artifact_metadata.py`. Domain diagnostic `lkw.synthesize_summary.v1` preserved; bundle exposes refs/paths only (no raw synthesized content). Follow-up closed in **LKW-PF2A**.
-
-**LKW-PF2A (2026-06-28):** CLOSED — `shadow_workspace_id` propagates through ACP session (`acp_run.py` + `exec_ctx_isolation.py`) and UAEP path (`route.extra` → `runtime_answer_to_agent_result`) into `AgentExecutionResult.structured_data`; `run_artifact_bundle_builder.py` resolves workspace refs deterministically. Unit coverage: `tests/unit/agents/test_acp_shadow_workspace_propagation.py`.
-
-
-
-
-### Platform follow-ups before LKW.2
-
-| ID | Title | Narrow scope |
-|----|-------|--------------|
-| **LKW-PF1** | Immediate tool RuntimeEvent emission | **PASSED WITH FOLLOW-UP** — `invoke_tool` emits `TOOL_REQUESTED/COMPLETED/FAILED/DENIED` with generic platform payload (`tool_id`, `status`, `latency_ms`, `args_digest`, `error_code`, spine ids). HTTP visibility closed in **LKW-PF1A**. |
-| **LKW-PF1A** | Safe runtime event HTTP read surface | **CLOSED** — `runtime_event_summary.v1` on POST `/v1/local_workspace/run` metadata; redacted TOOL_* counts by tool_id. |
-| **LKW-CI1** | Live smoke standalone import cleanup | **CLOSED** — test avoids circular task package import; graph isolation wiring unblocked for standalone smoke. |
-| **LKW-PF2** | RunArtifactBundle / WorkspaceArtifactRef for synthesize artifacts | **PASSED WITH FOLLOW-UP** — reuses platform `run_artifact_bundle.v1` / `WorkspaceArtifactRef`; LKW HTTP responses expose bundle via `run_artifact_metadata.py`; synthesize diagnostic correlated by `artifact_path` / `artifact_ref`. Follow-up closed in **LKW-PF2A**. |
-| **LKW-PF2A** | ACP shadow_workspace_id propagation | **CLOSED** — `isolation_structured_data_from_exec_ctx` exports typed `shadow_workspace_id` into ACP/UAEP execution structured_data; bundle builder correlates synthesize workspace refs without LKW-only workaround. |
-### H1.3 result
-
-Status:
-
-```text
-PASSED WITH PLATFORM FOLLOW-UPS
-```
-
-Focused tests:
-
-```text
-uv run pytest applications/local_workspace_application/tests/test_evidence_slice.py applications/local_workspace_application/tests/test_lkw_evidence_metadata.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py tests/unit/agents/authoring/test_runtime_rag_call_recording.py tests/unit/runtime/kernel/test_step_kernel.py tests/unit/agents/authoring/test_uaep_step_bridge.py -q
-
-Result: 38 passed, 12 warnings
-```
-
-Verified:
-
-```text
-index -> rag.ingest_document as ToolCallRecord, application_run_summary.v1 total_tool_calls>0
-search -> rag.retrieve as ToolCallRecord + RagCallRecord, total_rag_calls propagated, hit_count/collection_id populated safely
-synthesize -> workspace.write_file visible in safe metadata, raw content not exposed
-runtime remains application-agnostic
-typed diagnostics/evidence slice pattern is reusable across Tier-3 apps
-developer ergonomics acceptable; helper/template/docs follow-up recommended
-```
-
-Platform follow-ups remain outside H1.3 *(current deferred queue)*:
-
-```text
-optional RAG ingest observability contract
-policy/raw tool reason decisions at RuntimeEvent layer
-developer ergonomics helper/template/docs
-```
-
-Async runtime plugin coroutine warnings in event_bus/task_trace handlers -> closed LKW-DF1.
-
-Closed since H1.3 closeout: RuntimeEvent TOOL_* (LKW-PF1 / LKW-PF1A); RunArtifactBundle / WorkspaceArtifactRef + ACP shadow_workspace_id (LKW-PF2 / LKW-PF2A).
-
-**LKW-PF1:** PASSED WITH FOLLOW-UP — see IMPLEMENTATION_PLAN §Platform follow-ups before LKW.2.
----
-
-## 5. LKW.2: graph pipeline + local workspace skills
-
-**Progress:** LKW.2.1–LKW.2.4C **done**; **LKW.2 closeout passed (2026-06-28)**. Live pipeline proof for `local.workspace.pipeline` **passed** (LKW.2.4C). Direct-capability regression smoke passed. **Next platform phase:** OBS-EXPORT-1.
-
-| ID | Task | Module | Owner | Status | Platform propagation |
-|----|------|--------|-------|--------|----------------------|
-| LKW.2.1 | Add `intergrax/skills/providers/local/` bundle | Tier-0 skills | Tier-0 | **Done** | Update skill scaffold/catalog docs if pattern is reusable |
-| LKW.2.2 | Add `skill_ids` to local agent contracts | `agents/local_*` contracts | Tier-2 | **Done** | Update agent scaffold to generate correct `skill_ids` pattern if needed |
-| LKW.2.3 | Enable `skill_bundles=["harness", "local"]` | `host/environment_profile.py` | Tier-3 | **Done** | Update app scaffold/environment templates if bundle pattern is generic |
-| LKW.2.4A | Register graph/pipeline capability `local.workspace.pipeline` | manifest / graph spec | Tier-1/3 | **Done** — graph spec registered | Update app scaffold or graph docs if this becomes canonical multi-agent pipeline pattern |
-| LKW.2.4A1 | Allow graph trigger capabilities in package closure | applications packaging | Tier-3 | **Done** — graph trigger package closure | — |
-| LKW.2.4A2 | Align pipeline graph nodes with agent roster | graph spec | Tier-1/3 | **Done** — graph node roster identity | — |
-| LKW.2.4B | Pass search evidence into pipeline synthesize | pipeline graph | Tier-1/3 | **Done** — search evidence handoff into synthesize | — |
-| LKW.2.4C | Live pipeline proof and metadata preservation | live verification | Tier-3 | **Done** — live pipeline proof passed | — |
-
-Acceptance:
-
-- [x] Single `POST /v1/local_workspace/run` with `capability=local.workspace.pipeline` can run index → search → synthesize without manual capability selection *(LKW.2.4C)*.
-- [x] Tool access is resolved through `skill_ids`, not ad-hoc allowlists in agent code *(LKW.2.1–LKW.2.2)*.
-- [x] Existing LKW.1 index/search/synthesize direct capabilities still pass *(LKW.2 closeout smoke — `test_lkw_evidence_live_smoke_index/search/synthesize`)*.
-- [x] Pipeline passes search evidence/draft into synthesize so message-only `content_missing` is not exposed in the normal product pipeline *(LKW.2.4B)*.
-- [x] Metadata preservation on pipeline run: `application_run_summary.v1`, redacted `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1` *(LKW.2.4C)*.
-- [x] Platform proof checklist in §0a is completed *(LKW.2 closeout — see below)*.
-
-**Observability boundary (OBS-EXPORT):**
-
-- LKW.2.4 pipeline proof is a prerequisite workload for future platform **OBS-EXPORT** work (see [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-EXPORT); LKW is the proof workload, not the integration owner.
-- **INTEGRATIONS-1D / LKW observability platform wiring — Done (2026-06-28):** `build_local_workspace_observability_plugins` composes platform **`ObservabilityExportOperatorConfig`** → **`build_otlp_observability_export_runtime_plugin`**; disabled by default; registered only via explicit LKW factory/bootstrap opt-in; no LKW-specific exporter.
-- LKW.2 pipeline remains unchanged — no graph/pipeline rework in INTEGRATIONS-1D.
-- Vendor observability integrations (Langfuse, Arize/Phoenix, Elasticsearch) remain **out of scope** for LKW; OTLP uses platform integration path only.
-- LKW must continue to use platform observability contracts only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`, RuntimeEvent `TOOL_*`, ToolCallRecord/RagCallRecord, WorkspaceArtifactRef.
-- Do not add LKW-specific exporters, telemetry buses, vendor SDK calls, trace stores, or observability workarounds.
-- **OBS-VENDOR** (production vendor integration rollout) is the next platform phase — see [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR; LKW is not the integration owner.
-
-### LKW.2 closeout result
-
-Status:
-
-```text
-CLOSED — PIPELINE PROOF PASSED
-```
-
-Focused closeout smoke:
-
-```text
-uv run pytest applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py \
-  applications/local_workspace_application/tests/host/test_local_workspace_environment_profile.py -q -W default
-
-Result: 13 passed (2026-06-28); no coroutine-never-awaited warnings on focused path
-```
-
-Verified:
-
-```text
-direct — local.workspace.index / search / synthesize still pass after pipeline graph work
-pipeline — local.workspace.pipeline runs local_indexer -> local_search -> local_synthesizer -> shadow artifact
-metadata — application_run_summary.v1, lkw_evidence.v1, runtime_event_summary.v1, run_artifact_bundle.v1 preserved on pipeline run
-```
-
-### LKW.2 closeout — §0a platform proof checklist
-
-- [x] Did every discovered bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, and CI/runbook gap receive a classification? — Yes; see deferred queue below.
-- [x] Does this change belong only to LKW, or should it move to shared platform code? — Product pipeline/graph spec is LKW; local skill bundle + graph trigger closure patterns flagged for future scaffold propagation (§5 task table).
-- [ ] Should application scaffold generate this pattern for the next product host? — Deferred to LKW-H3 (not an LKW.2 closeout blocker).
-- [ ] Should agent scaffold generate this contract, test, or documentation pattern? — LKW.2.2 `skill_ids` pattern recorded; scaffold propagation deferred to LKW-H3.
-- [x] Does `.env.example` match `host/settings.py` and production validation? — Unchanged by LKW.2; LKW.1 parity still holds.
-- [x] Does `pyproject.toml` need a dependency split or optional dependency group? — No LKW.2 closeout change required.
-- [x] Does Docker still build and run with the correct files, env profile, port, and healthcheck? — Unchanged by LKW.2; LKW.1 Docker path still valid.
-- [x] Does CI need a new application smoke test or Docker build check? — Live smoke in `test_lkw_evidence_live_smoke.py` covers direct capabilities + pipeline; environment profile tests cover graph spec closure.
-- [x] Does the deploy/runbook still describe the real execution path? — README and USER_JOURNEY unchanged; pipeline capability documented.
-- [x] Does the implementation plan identify both the LKW work and the platform propagation work? — Yes (§5 task table + deferred queue).
-
-Platform-reusable deferred at LKW.2 closeout *(not blockers)*:
-
-| Follow-up | Classification | Notes |
-|----------|----------------|-------|
-| RuntimeEvent `TOOL_*` on ACP graph path | Platform-reusable deferred | Tool visibility via `application_run_summary.total_tool_calls` works; event-bus `TOOL_*` on graph path incomplete |
-| RAG ingest-specific observability contract | Platform deferred (optional) | — |
-| Policy/raw tool reason at RuntimeEvent layer | Platform deferred | — |
-| Developer first-run/adoption simplification | LKW-H3 | Helper/template/docs ergonomics |
-
-### LKW-3C — pipeline proof summary metadata (post-LKW.2)
-
-**Status:** **Done** — `lkw_proof_summary.v1` added as LKW proof usability / inspectability increment.
-
-- Built from existing metadata only: `application_run_summary.v1`, `lkw_evidence.v1`, `runtime_event_summary.v1`, `run_artifact_bundle.v1`.
-- Redacted reviewer-facing proof verdict on `POST /v1/local_workspace/run` when `capability=local.workspace.pipeline`.
-- No vendor integration, no Sentry, no token optimizer, no new exporter or telemetry bus.
-- **Platform propagation classification:** current implementation is **LKW-specific proof projection** (`serving/proof_summary.py`); possible future platform follow-up: generic application proof summary if reused by another Tier-3 app.
-
-#### LKW-3D — proof summary verification closeout
-
-**Status:** **Passed** — verification-only proof refresh after LKW-3C.
-
-Focused verification:
-
-```text
-uv run pytest applications/local_workspace_application/tests/test_lkw_proof_summary.py applications/local_workspace_application/tests/test_lkw_evidence_live_smoke.py -q
-Result: 9 passed in 31.84s
-```
-
-Verified:
-
-```text
-local.workspace.pipeline still runs local_indexer -> local_search -> local_synthesizer.
-Required metadata keys are present:
-application_run_summary.v1
-lkw_evidence.v1
-runtime_event_summary.v1
-run_artifact_bundle.v1
-lkw_proof_summary.v1
-lkw_proof_summary.v1.status == "passed".
-Evidence, synthesis, artifact, and safety blocks are present in the proof summary.
-content_missing is not exposed as a successful pipeline failure.
-Shadow artifact is present.
-Original source file remains unchanged.
-Raw fixture text, raw query, full trace, and unsafe diagnostic keys are not exposed.
-```
-
-**Classification:**
-
-```text
-Verification-only closeout.
-lkw_proof_summary.v1 remains an LKW-specific proof UX / inspectability projection.
-No new platform mechanism was introduced.
-Not a Sentry, vendor observability, token optimization, or exporter step.
+Deferred items may enter the active plan only when they become a documented blocker of a current production stage.
 ```
 
 ---
 
-## 6. LKW.4 — Platform message-bus background ingest proof
+## 11. Completed milestones
 
-LKW.4 proves that a Tier-3 application can enqueue a domain background job through the platform message-bus contract and execute it asynchronously without owning queue infrastructure. LKW remains the proof workload; platform owns contracts, tools, and provider integrations.
+Short register of closed product baselines. Detail lives in verification docs, journal, and git history — not in this roadmap.
 
-| ID | Task | Scope | Status |
-|----|------|-------|--------|
-| LKW.4A | Background ingest job payload contract | LKW domain payload + deterministic idempotency | **Closed** |
-| LKW.4-ARCH-1 | Background jobs platform architecture scope | Document platform/app/agent/provider boundaries | **Closed** |
-| LKW.4B | Message bus tool wiring guardrails | Optional `message_bus` tool exposure only when provider configured | **Closed** |
-| LKW.4B-PROP-1 | Promote message_bus tool guardrail to shared wiring | Move resolved message_bus tool exposure guardrail from LKW host into shared application helper | **Closed** |
-| LKW.4C | Background ingest enqueue helper | Application service/helper that builds payload and calls provider-neutral enqueue | **Closed** |
-| LKW.4D | Worker handler contract | Decode payload and execute `local.workspace.index` through platform execution path | **Closed** |
-| LKW.4E-ARCH-1 | Platform background task execution model | Document TaskDefinition/TaskRegistry, WorkerRuntime, TaskEvent lifecycle, pull/event observation, logging, metrics, tracing, and LKW.4E proof boundaries | **Closed** |
-| LKW.4E-PROOF-DOC-1 | Public platform proof reviewer path | Document real queue/background-task verification in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Step 8; align architecture/plan wording — no mock/in-memory-only proof | **Closed** |
-| LKW.4E | Live proof | Real local MessageBus provider in proof stack → enqueue job → async worker executes index → `get_status`/`get_result` → search verifies result | **Closed — Kafka live proof passed** |
-| LKW.4F | Record proof and closeout | Save proof result and align plan/status | **Superseded by LKW-PR** — structured receipts via platform `ProofReceiptStore`, not markdown source-of-truth |
-
-**Execution gate:** LKW.4D, LKW.4E-ARCH-1, and LKW.4E-PROOF-DOC-1 are closed. LKW.4E may begin. LKW.4E must follow the platform background task architecture ([`docs/architecture/BACKGROUND_TASKS.md`](../../../docs/architecture/BACKGROUND_TASKS.md)). LKW.4E must not invent an LKW-only queue/worker architecture. LKW.4E is live proof only. LKW.4E must wire a **real local MessageBus provider** in the proof stack (for example RabbitMQ in Docker) and demonstrate asynchronous enqueue → worker → result lifecycle through provider-neutral `message_bus.*` tools. Mocks, fake queues, in-memory-only bypasses, and unit-test-only execution are **not** sufficient. LKW.4E must not add file watcher, scheduler, or Slack notify. LKW.4E–LKW.4F depend on documented platform boundaries ([`ARCHITECTURE.md`](ARCHITECTURE.md) §8.7) and must not introduce LKW-specific queue code. Public reviewer path: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Step 8.
-
-**Out of scope for LKW.4:** file watcher and incremental index (**LKW.7**); OS daemon and interaction intake (**LKW.6**); Slack notify (**LKW.6b**, optional later); implementing every listed provider — one **real local** message bus provider in the proof stack is sufficient for first closeout; cloud-managed vendor backends in LKW.4E first pass.
+| Milestone | Result (one line) | Status | Evidence |
+|-----------|-------------------|--------|----------|
+| **LKW.0** | Application host baseline and architecture scaffold | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| **LKW.1** | Index / search / synthesize baseline with live product proof | Closed in scope | [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md) |
+| **LKW.2** | Multi-step pipeline baseline (`local.workspace.*`) | Closed | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW.3** | Serving and application composition (`filesystem.*` + allowlist) | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| **LKW.5** | Persistence and restart proof (`LKW_DATA_HOME`, durable vectors) | Closed | [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md) |
+| **LKW.6** | Interaction intake baseline (OS daemon / intake router) | Closed | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`journal/`](journal/) |
+| **LKW.7** | File watcher and incremental indexing baseline | Closed | [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) |
+| **LKW-PRODUCT-1** | Managed workspaces and folder sources (create / attach / sync / search) | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence handoff | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 
 ---
 
-## 6b. LKW-PR — MongoDB-backed Proof Receipt Store
+## 12. Historical references
 
-**ID note:** **LKW-PR** is the proof-receipt platform wave. It is **not** a redefinition of closed **LKW.5** (persistence / `LKW_DATA_HOME` + Qdrant). **LKW.4E** remains closed as the Kafka-backed background-task live proof.
+Detailed historical narratives, micro-wave status tables, and former proof-first queues are **not** the active product roadmap. Consult:
 
-LKW-PR proves that structured proof evidence is persisted through the platform **`DocumentStore`** contract with **MongoDB** as the default/natural live vendor. Markdown reviewer guides remain operational documentation only — **not** the source of truth for proof results.
+| Location | Contents |
+|----------|----------|
+| [`journal/`](journal/) | Dated implementation notes |
+| Application `*VERIFICATION*.md` docs | Live verification write-ups (e.g. [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md), [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md), [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md)) |
+| [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | Public proof steps and receipts |
+| Git history | Exact code and doc evolution |
 
-| ID | Task | Scope | Status |
-|----|------|-------|--------|
-| PROOF-RECEIPTS-1A | ProofReceipt contract + DocumentStore mapping + `ProofReceiptStore` | Platform contracts, architecture/plan docs, unit tests | **Closed** |
-| PROOF-RECEIPTS-1B | DocumentStore vendor integration base contract | `DocumentStoreVendorIntegrationContract`, tests, architecture docs | **Closed** |
-| PROOF-RECEIPTS-1C | Complete `document_store` vendor category cutover | MongoDB, Cassandra, DynamoDB on `DocumentStoreVendorIntegrationContract` | **Closed** |
-| PROOF-RECEIPTS-1D | LKW Docker proof stack with MongoDB / Mongo Express | Compose overlay + platform DocumentStore smoke (`docker-compose.mongodb.yml`, `run-lkw-mongodb-proof-stack.bat`) | **Closed** |
-| PROOF-RECEIPTS-1E | LKW proof receipt recording through platform | LKW proof workloads call platform `ProofReceiptStore` after live Kafka proof | **Closed** |
-
-**Platform proof pattern:**
+Former items such as `LKW-PF0–LKW-PF7`, Token Optimization sequences (`TOKEN-1A` …), observability vendor proof packs, PostgreSQL / vector portability as standalone obligations, and scaffold propagation programs are classified as:
 
 ```text
-LKW proof workload
-  → build ProofReceipt (domain + provider + guardrail evidence)
-  → ProofReceiptStore.put()
-  → DocumentStore contract
-  → integration profile selects mongodb
-  → MongoDB provider
-  → reviewer inspects receipt in Mongo Express / Mongo UI
+historical platform backlog
 ```
 
-**PROOF-RECEIPTS-1D runner (repository root):** `applications\local_workspace_application\scripts\run-lkw-mongodb-proof-stack.bat` — Mongo Express default `http://localhost:8086`; smoke via `verify_lkw_mongodb_stack.py` (not a `ProofReceipt`). **Closed** — live PASS includes MongoDB restart persistence read-back.
-
-**Strict boundaries:** LKW must **not** import pymongo; LKW must **not** write directly to MongoDB; no LKW-only MongoDB helper; no bypass of `DocumentStore` or `IntegrationProfile` vendor selection; no in-memory/fake store as live proof acceptance.
-
-Canonical docs: [`docs/architecture/PROOF_RECEIPTS.md`](../../../docs/architecture/PROOF_RECEIPTS.md) · [`docs/plan/PROOF_RECEIPTS.md`](../../../docs/plan/PROOF_RECEIPTS.md).
+They must not reappear as the active product execution order. Reintroduce only under §9 / §10 when a current production stage documents a blocker.
 
 ---
 
-## 6c. LKW.6 — OS daemon + interaction intake router
-
-**Ownership:** **LKW.6** — daemon + interaction intake · **LKW.6b** — optional Slack Socket Mode · **LKW.7** — file watcher + incremental index · **LKW.8** — tray thin client.
-
-| ID | Task | Scope | Status |
-|----|------|-------|--------|
-| LKW.6A | Define interaction intake contract and daemon lifecycle boundary | Unified `LocalWorkspaceTaskExecutor`; platform interaction intake reused; lifecycle/readiness contract; `/run` + `/interactions/intake` share one execution boundary | **Closed** |
-| LKW.6B | Adopt Application Hosting + always-on proof | Adopt platform `APPLICATION_HOSTING`; product-specific hooks/components only; foreground hosted proof — **not** generic engine/supervisor/OS adapters; no service-manager/reboot unless APP-HOST-7 | **Closed** (APP-HOST-8A/8B/8C/8D/8E Done) |
-| LKW.6C | Implement first OS interaction adapter and live proof | First **product-specific** interaction source or OS-facing input channel wired through intake → executor → Nexus — **not** generic OS hosting adapter, service installation framework, process signal adapter, instance locking, or supervisor integration | **Closed** |
-
-**Expected architecture (LKW.6A):**
+## Appendix A — Document map (quick)
 
 ```text
-OS-specific interaction adapter
-  → InteractionIntakeRequest
-  → InteractionIntakeRouter
-  → existing LKW application/runtime execution boundary
+ARCHITECTURE.md
+→ how LKW is built
+
+IMPLEMENTATION_PLAN.md
+→ where the product is going and what we execute now
+
+LKW_PLATFORM_PROOF.md
+→ how an external person verifies working capabilities
 ```
 
-**LKW.6A delivered (closed):**
+## Appendix B — Status vocabulary
 
-- Platform interaction stack reused (`InboundInteraction`, `Task`, `InteractionIntakeService`, `create_interaction_intake_router`) — no LKW-specific interaction models.
-- `LocalWorkspaceTaskExecutor` (`host/task_executor.py`) is the single application execution boundary for `/v1/local_workspace/run` and `/v1/interactions/intake`.
-- Enrichment order: transport normalization (platform adapter) → LKW application defaults/capability policy → shared reliability enrichment → orchestration ACP enrichment (when applicable) → `NexusLoop`.
-- `LocalWorkspaceHostLifecycle` (`host/lifecycle.py`) defines temporary LKW.6A application-level readiness — `STARTING` / `READY` / `STOPPING` / `STOPPED` / `FAILED`, component health, and `GET /v1/local_workspace/readiness` (liveness remains `GET /health` → `{"status":"ok"}`). **Not** the canonical platform hosting implementation; preserved until LKW.6B migrates to platform `HostedApplicationEngine`.
-- `include_interaction_routes=false` by default; `lab_json` surface enabled in test/proof configuration without Slack.
-- **LKW.6A does not include:** OS service packaging, Socket Mode, file watcher, tray, or a second interaction framework.
+Use these labels consistently in future updates:
 
-**LKW.6B delivered (closed — APP-HOST-8A/8B/8C/8D/8E Done):**
+| Label | Meaning |
+|-------|---------|
+| `implemented` | Code and tests exist in-repo |
+| `live-verified` | Demonstrated in a live run / proof |
+| `planned` | On the active six-stage roadmap |
+| `deferred` | Explicitly out of active order until a documented blocker |
 
-- **APP-HOST-8A Done:** hosted profile — `build_local_workspace_hosted_profile()` + private FastAPI/Uvicorn `HostedApplicationRuntime` adapter under `applications/local_workspace_application/hosting/`
-- **APP-HOST-8B Done:** hosted readiness bridge — work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`; direct Uvicorn lifecycle remains compatible
-- **APP-HOST-8C Done:** foreground and single-instance proof — real READY + `local.workspace.index`; second process `INSTANCE_CONFLICT`; first process remained READY
-- **APP-HOST-8D Done:** graceful stop and restart proof — CLEAN_STOP + lock release; supervisor restart with new instance_id; digests preserved; real index after restart; final CLEAN_STOP + lock reacquisition
-- **APP-HOST-8E Done:** structured hosting `ProofReceipt` (`platform_application_hosting`) via one-command reviewer runner; JUnit evidence from accepted 8C/8D tests; platform DocumentStore → MongoDB write/read/query verification; reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) Steps 10–11
-- LKW may add **only**: LKW-specific `HostedApplicationProfile`, LKW-specific hooks, LKW-specific components, integration with the existing LKW application runtime, and live product proof
-- always-on live product proof — the following remain **platform-owned**: `HostedApplicationEngine`, `HostedApplicationSupervisor`, `InstanceGuard`, signal handling, restart mechanics, generic OS adapters, generic lifecycle/readiness contracts
-- graceful shutdown and readiness through the adopted hosting boundary (LKW.6A semantics preserved in direct mode; hosted mode bridges platform readiness — not reimplemented as generic hosting in LKW)
-- LKW hosts existing interaction/runtime surfaces through the application runtime adapter — `InteractionProfile` adoption follows APP-HOST-6A, not LKW.6B initial proof
-- **not required for LKW.6B:** Windows Service, `systemd`, `launchd`, service-manager installation, reboot survival — these are APP-HOST-7 operator/packaging targets (see ARCHITECTURE §7.4)
-
-**LKW.6C delivered (closed):**
-
-- Shared Python interaction client (`scripts/invoke-lkw-interaction.py`) with thin OS wrappers
-- Windows PowerShell wrapper (`scripts/invoke-lkw-interaction.ps1`) — launcher only; frozen identity `lkw.windows_powershell`
-- Existing platform `lab_json` / `LabJsonInteractionAdapter` reused; interaction channel remains `lab`
-- Real hosted LKW live proof (`python -m local_workspace_application.hosting`) with real index and search through interaction intake
-- Graceful hosted shutdown (`CTRL_BREAK` / `signal.sigbreak`) with cleanup verification
-- MongoDB-backed `ProofReceipt` (`proof_kind=platform_windows_interaction`) via shared OS interaction proof runner
-- Reviewer path in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) optional Windows interaction section
-
-**LKW.6 parent status:** **Closed** (LKW.6A + LKW.6B + LKW.6C). Slack Socket Mode remains **LKW.6b — Planned / optional**. File watcher is **LKW.7 — Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed). Tray remains **LKW.8 — Deferred**.
-
-**Out of scope for LKW.6C (later tasks):** tray (**LKW.8**), Slack Socket Mode (**LKW.6b**), file watcher (**LKW.7**), OS service packaging (**APP-HOST-7**).
-
----
-
-### LKW.7 — File watcher + incremental index
-
-| ID | Task | Scope | Status |
-|----|------|-------|--------|
-| LKW.7A | Incremental file-change contracts and batches | snapshots, diff, coalescing, change token, job builder | **Done** |
-| LKW.7B1 | Runtime state machine, debounce and enqueue | poll cycle, pending map, debounce/max wait, enqueue helper | **Done** |
-| LKW.7B2A | Durable checkpoint and restart recovery | versioned checkpoint, atomic JSON store, export/restore | **Done** |
-| LKW.7B2B | Sidecar settings, process loop, signals and automatic checkpoint lifecycle | OS process, settings, signals, automatic save | **Done** |
-| LKW.7B | Watcher runtime and sidecar process | LKW.7B1 + LKW.7B2 | **Closed** |
-| LKW.7C | Persistent-index live proof and ProofReceipt | real broker, worker, persistent index, ProofReceipt | **Closed** |
-| LKW.7C1 | Watcher-triggered persistent search E2E workload | Compose overlay, one-command runner, Kafka + search + restart proof | **Done** |
-| LKW.7C2 | ProofReceipt, reviewer runner and final closeout | receipt recording, reviewer guide, LKW.7 closeout | **Done** |
-
-**LKW.7 parent status:** **Closed**. **LKW.7B status:** **Closed**. **LKW.7C status:** **Closed**. **LKW.7C1 status:** **Done**. **LKW.7C2 status:** **Done**. No remaining LKW.7 subtask.
-
-**LKW.7A delivered:**
-
-- Allowlisted metadata snapshots (`FileSnapshot`) via platform `require_read_allowlist_roots` / `resolve_allowed_path`
-- Snapshot diff → `FileChange` (created / modified / deleted)
-- Coalesced `IncrementalFileChangeBatch` with deterministic `change_token`
-- Optional `LkwBackgroundIngestJob.change_token` with legacy idempotency preserved when omitted
-- Job builder `build_file_watcher_ingest_job` — no enqueue, no watcher process
-
-**LKW.7B1 delivered:**
-
-- `FileWatcherRuntime` state machine with injected monotonic clock
-- Initial snapshot as baseline only (no enqueue of existing files)
-- Pending final state per canonical path; quiet debounce + maximum batch wait
-- Deletion-only batches clear pending without enqueue
-- Production binding via `build_file_watcher_runtime` → `enqueue_background_ingest_job`
-- Enqueue failure retains pending state; retry keeps deterministic identity
-
-**LKW.7B2A delivered:**
-
-- Versioned `FileWatcherCheckpoint` (baseline + final pending `FileChange` values)
-- Deterministic JSON encode/decode and atomic `JsonFileWatcherCheckpointStore`
-- `FileWatcherRuntime.export_checkpoint()` / `restore_checkpoint()` with identity fail-closed checks
-- Restart recovery: restore → first poll detects downtime changes → existing debounce/enqueue
-- Missing checkpoint is a valid fresh-start signal; invalid checkpoint never falls back silently
-
-**LKW.7B2B delivered:**
-
-- Watcher settings on `LocalWorkspaceBackendSettings` (`LOCAL_WORKSPACE_FILE_WATCHER_*`); roots reuse `INTERGRAX_ALLOWED_READ_ROOTS`
-- Absolute data-home resolution before checkpoint path construction
-- Foreground `FileWatcherSidecar` process loop with injectable monotonic clock and sleeper
-- Platform `PortableForegroundSignalAdapter` + `HostedApplicationControlCoordinator` (SIGINT/SIGTERM/SIGBREAK)
-- Checkpoint restore or fresh baseline before first poll; immediate first poll; save after every completed cycle
-- Graceful shutdown final checkpoint; safe structured `FileWatcherSidecarResult`
-- Entrypoint `python -m local_workspace_application.file_watcher`
-
-**LKW.7C1 delivered:**
-
-- Dedicated Compose overlay `file-watcher-e2e.compose.yml` with `lkw-file-watcher` sidecar service
-- Isolated checkpoint state under `.file_watcher_e2e_state` (outside watched `/data/user_docs`)
-- One-command Windows runner + Python live workload proving filesystem create → Kafka → worker → persistent search
-- Non-destructive restart of watcher/worker/backend/Qdrant with duplicate-enqueue negative control
-
-**LKW.7C2 delivered:**
-
-- Cold-start-safe embedding/search warm-up through `local.workspace.search` before proof-file creation
-- ProofReceipt mapping from live workload evidence (`proof_kind=file_watcher_persistent_search`)
-- Platform `ProofReceiptStore` → `DocumentStore` → `MongoDBDocumentStoreIntegration` write/read/query verification
-- One-command reviewer BAT with Kafka + MongoDB overlays; Mongo Express inspection path
-- Verification document [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md)
-- Public reviewer Steps 12–13 in [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
-
-**Final boundaries (not delivered by LKW.7):** index deletion on filesystem delete, content hashing for change identity, native filesystem events (polling remains), OS-service packaging (APP-HOST-7), multi-collection sidecar fan-out.
-
----
-
-### Proof portability
-
-| ID | Scope | Status |
-|----|-------|--------|
-| PROOF-PORTABILITY-1A | Separate core claims from optional OS interaction proofs | **Done** |
-| PROOF-PORTABILITY-1B | Add one cross-platform Python core orchestrator with Windows and POSIX wrappers | **Done** |
-| PROOF-PORTABILITY-1C | Add shared cross-platform OS interaction client/proof runner with thin OS wrappers | **Done** |
-| PROOF-PORTABILITY-1D | Execute and record Windows, Linux and macOS certification matrix | **Partial** — Windows Application Hosting + Windows interaction live-certified on native Windows (`windows_native_runtime`); Linux Application Hosting + Linux interaction live-certified in Linux Docker runtime; full multi-phase Core, native Linux host and macOS not live-certified by these profiles. **PROOF-PORTABILITY-1D-MATRIX** consolidates current certification state into `docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md` (+ JSON evidence) without claiming macOS or native Linux complete. |
-
-Current proof certification:
-
-```text
-Windows Application Hosting Proof:
-  live-certified on native Windows through current shared runner
-
-Windows Optional OS Interaction Proof:
-  live-certified on native Windows through shared Python client/proof runner
-
-Linux Application Hosting Proof:
-  live-certified in Linux Docker runtime
-
-Linux Optional OS Interaction Proof:
-  live-certified in Linux Docker runtime
-
-Linux full multi-phase Core Platform Proof:
-  not separately certified by Linux Docker profile
-
-Linux native-host deployment:
-  not separately certified
-
-macOS:
-  implemented, not live-certified
-```
-
-PROOF-PORTABILITY-1C delivered:
-
-- Shared client `invoke-lkw-interaction.py`
-- Thin wrappers: `invoke-lkw-interaction.ps1`, `invoke-lkw-interaction-linux.sh`, `invoke-lkw-interaction-macos.sh`
-- Shared proof runner `run-lkw-os-interaction-proof.py`
-- Thin proof launchers for Windows/Linux/macOS
-- Windows public BAT and Python shim retained for compatibility
-- Frozen OS identities enforced; runtime OS mismatch fails closed
-
-PROOF-PORTABILITY-1D (Linux Docker runtime slice) delivered:
-
-- Dedicated certification image + Compose project (no Docker socket / no DinD)
-- Host orchestrator `run-lkw-linux-container-certification.py` (+ BAT/SH)
-- External MongoDB mode on shared proof runners
-- Profile `linux_docker_runtime` certifies `platform_application_hosting` + `platform_linux_interaction` only
-- Evidence: `docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json`
-
-PROOF-PORTABILITY-1D (Windows native shared-runner refresh) delivered:
-
-- Host orchestrator `run-lkw-windows-native-certification.py` (+ BAT)
-- Public Windows BAT → shared core runner (`application-hosting` phase)
-- Public Windows interaction BAT → shared OS interaction proof runner
-- Profile `windows_native_runtime` certifies `platform_application_hosting` + `platform_windows_interaction` only
-- Evidence: `docs/public-adoption/evidence/LKW_WINDOWS_NATIVE_CERTIFICATION.json`
-- Historical full Windows Core reviewer claims are preserved; this run does not re-execute every Core phase
-
-PROOF-PORTABILITY-1D-MATRIX delivered:
-
-- Deterministic generator `generate-lkw-platform-certification-matrix.py` (+ BAT/SH)
-- Aggregates Windows native + Linux Docker certification artifacts only
-- Publishes `docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md` and JSON evidence
-- Explicitly records `linux_native_runtime` and `macos_native_runtime` as not live-certified
-- Does not execute live proofs or create ProofReceipts
-
----
-
-## 7. Post-LKW.1 hardening and adoption waves
-
-### LKW-H2 — evidence/maturity wording cleanup
-
-| ID | Task | Module | Acceptance |
-|----|------|--------|------------|
-| LKW-H2.1 | Clarify architecture maturity vs live product proof vs production claim | README / product-validation docs / LKW docs | Documentation does not imply deterministic evidence is full production certification |
-| LKW-H2.2 | Add LKW proof status wording | LKW docs | LKW is described as product proof passed for LKW.1, with H1/H2/H3 still tracking maturity/adoption follow-ups |
-
-### LKW-H3 — packaging/adoption simplification
-
-| ID | Task | Module | Acceptance |
-|----|------|--------|------------|
-| LKW-H3.1 | Define minimal developer first-run path for LKW and scaffolded apps | README / BUILD_AND_DEPLOY / LKW docs / scaffold docs | **Done** — first-run section added to README.md, linked from docs/README.md |
-| LKW-H3.2 | Decide optional dependency split | `pyproject.toml` / docs | Minimal install story is clear; heavy optional stacks are documented or split |
-| LKW-H3.3 | Propagate adoption lessons to application scaffold | `intergrax/scaffold/` | Next generated product application inherits the improved env/build/deploy documentation pattern |
-
----
-
-### LKW-OBS — OTLP Observability export
-
-| ID | Task | Module | Acceptance |
-|----|------|--------|------------|
-| LKW-OBS-OTLP-1A | Add env-driven OTLP observability export configuration for LKW | `host/settings.py`, `host/factory.py`, `tests/host/` | **Done** — env-driven config; disabled by default; endpoint required; unsupported backend fails fast; `export_content` forced false; explicit factory parameter still works |
-| LKW-OBS-OTLP-1B | Add self-hosted OpenTelemetry Collector to LKW Docker Compose and persist exported logs | `docker-compose.yml`, `otel-collector-config.yaml`, docs | **Done** — local Compose starts `otel-collector`; LKW exports OTLP logs to `http://otel-collector:4318/v1/logs`; collector persists records under `.observability/otel/` |
-| LKW-OBS-OTLP-1C | Run end-to-end Swagger proof and inspect persisted OTLP log records | docs, manual proof | **Done** — manual Docker Compose proof verified that LKW runtime events are exported as OTLP logs to the local OpenTelemetry Collector and persisted to `.observability/otel/lkw-otlp-logs.jsonl`. Persisted records include run_id, task_id, capability, agent_id, tool_id and latency_ms. Raw request/query content was not exported. |
-| LKW-OBS-OTLP-DUP-1 | Diagnose and fix duplicate OTLP log records for identical runtime events | `intergrax/runtime/events/event_bus.py`, `tests/unit/runtime/observability/`, `tests/unit/runtime/events/` | **Done** — `RuntimeEventBus.publish()` no longer double-dispatches subscribers (previously invoked handlers via `record()` and again in `publish()`); OTLP export plugin receives each runtime event once per `event_id`. |
-| LKW-OBS-VIEW-1A | Add lightweight OTLP log inspector for persisted JSONL sink | `scripts/inspect_otlp_logs.py`, `scripts/inspect-otlp-logs.bat`, `tests/scripts/test_inspect_otlp_logs.py` | **Done** — inspector BAT at `applications/local_workspace_application/scripts/inspect-otlp-logs.bat`; Python entrypoint `applications/local_workspace_application/scripts/inspect_otlp_logs.py`; latest-run timeline works; manual duplicate check = 0; focused tests: `uv run pytest applications/local_workspace_application/tests/scripts/test_inspect_otlp_logs.py -q` → **5 passed** |
-| LKW-OBS-SENTRY-0 | Wire LKW problem reporting to Sentry provider proof | `host/settings.py`, `docker/docker-compose.sentry.yml`, `scripts/run-sentry-observability-proof.*`, `docs/SENTRY_OBSERVABILITY.md` | **Done** — LKW remains proof workload; platform owns Sentry provider; DSN-based Compose overlay + controlled problem proof helper; closes operational proof path, not production-grade readiness |
-| LKW-OBS-SENTRY-1 | Local Sentry Docker proof stack | `docker/docker-compose.sentry*.yml`, `docker/sentry/`, `serving/sentry_proof_routes.py`, `scripts/run-sentry-observability-proof.*`, `docs/SENTRY_OBSERVABILITY.md`, `docs/public-adoption/LKW_PLATFORM_PROOF.md` | **Done** — repo-owned local Sentry stack (UI `http://127.0.0.1:9000`), bootstrap local DSN, LKW app-level proof endpoint, docs updated; closes local operational proof, not production-grade readiness |
-| LKW-OBS-SENTRY-1F | Fix all-in-one Docker proof startup for local Sentry | `docker/sentry.services.yml`, `docker/docker-compose.sentry.yml`, `scripts/run-local-docker-all.sh`, `docker/sentry/bootstrap/bootstrap.sh`, `tests/test_lkw_docker_compose_discovery.py`, docs | **Done** — internal Sentry fragment renamed (no double-discovery); `sentry-upgrade` before `sentry-web`; local proof secret key; `run-local-docker-all.sh`; atomic `generated.env`; one-script startup canonical in docs |
-| LKW-OBS-SENTRY | Sentry error-monitoring platform proof (umbrella) | — | **Done (LKW-OBS-SENTRY-1)** | LKW is the proof workload only; platform owns Sentry provider per [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) **OBS-SENTRY-1**. Production gaps remain: auth/DSN management, alert routing, dashboards/runbooks, retention, ownership, CI live proof if applicable |
-
-**OBS-VENDOR-0 (platform plan):** LKW-OBS-VIEW-1A closeout recorded here; next steps tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-VENDOR (`OBS-VENDOR-1` … `OBS-VENDOR-8`).
-
-**Platform proof candidate — OBS-PROBLEM:** before `LKW-OBS-SENTRY`, the platform must define a plugin-extensible problem/error signal contract in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase `OBS-PROBLEM`. LKW is only the controlled failure proof workload; LKW must not own a custom issue model or call Sentry/vendor SDKs directly.
-
-**Platform proof candidate — OBS-SENTRY:** Sentry error-monitoring proof tracked in [`docs/plan/OBSERVABILITY.md`](../../../docs/plan/OBSERVABILITY.md) Phase OBS-SENTRY; platform owns provider implementation (**OBS-SENTRY-1 Done**); LKW-OBS-SENTRY-0 wires controlled problem proof through shared observability export.
-
+Do not mark Ask Workspace, final-answer citations, full document reconciliation, UI, installer, backup/restore, production security, token optimization runtime, or LKW 1.0 as done until the matching stage gates pass.
