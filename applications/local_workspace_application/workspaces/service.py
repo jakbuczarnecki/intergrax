@@ -135,6 +135,7 @@ class ManagedWorkspaceService:
         tenant_id: str,
         workspace_id: str,
         source_id: str,
+        allow_concurrent: bool = False,
     ) -> WorkspaceOperation:
         workspace = self.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
         if workspace is None:
@@ -146,6 +147,15 @@ class ManagedWorkspaceService:
         )
         if source is None:
             raise LookupError("source_not_found")
+
+        if not allow_concurrent:
+            active = self._repository.find_active_sync_operation(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+            )
+            if active is not None:
+                raise ConcurrentSyncError(active)
 
         operation = WorkspaceOperation(
             operation_id=str(uuid.uuid4()),
@@ -159,3 +169,22 @@ class ManagedWorkspaceService:
 
     def get_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation | None:
         return self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
+
+    def recover_running_operations_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        error: str = "interrupted_by_host_restart",
+    ) -> int:
+        return self._repository.mark_running_operations_failed_for_tenant(
+            tenant_id=tenant_id,
+            error=error,
+        )
+
+
+class ConcurrentSyncError(Exception):
+    """Raised when a sync is already queued or running for the same source."""
+
+    def __init__(self, active: WorkspaceOperation) -> None:
+        self.active = active
+        super().__init__("sync_already_in_progress")

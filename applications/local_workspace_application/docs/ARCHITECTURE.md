@@ -1060,6 +1060,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | **LKW.7** | 7 | File watcher + incremental index | Tier-3 sidecar + enqueue path | LKW.4, LKW.5 | **Closed** (LKW.7A/7B1/7B2A/7B2B Done; LKW.7B Closed; LKW.7C1 Done; LKW.7C2 Done; LKW.7C Closed) |
 | **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
 | **LKW-PRODUCT-1** | P1 | Managed workspaces + folder sources | Tier-3 product API + DocumentStore state | LKW.1, LKW.3 | **Done** |
+| **LKW-PRODUCT-1-HARDENING** | P1 | Durable sync + structured search evidence | MessageBus DocumentStoreTaskQueue + TaskResult search_summary | LKW-PRODUCT-1 | **Done** |
 
 #### LKW-PRODUCT-1 — Managed workspaces and folder sources (Done)
 
@@ -1076,6 +1077,23 @@ create workspace → attach local folder → validate filesystem policy → sync
 | Public HTTP routes under `/v1/local_workspace/workspaces*` and `/operations/{id}` | Filesystem allowlist (`INTERGRAX_ALLOWED_READ_ROOTS`) |
 | Sync operation lifecycle + idempotency (content hash) | `local.workspace.index` / `local.workspace.search` via task executor |
 | Tenant + workspace isolation (fail-closed 404) | RAG ingest/retrieve metadata filters |
+
+#### LKW-PRODUCT-1-HARDENING — Durable sync and structured search evidence (Done)
+
+Removes temporary PRODUCT-1 workarounds:
+
+```text
+HTTP sync → persist WorkspaceOperation(queued) → MessageBus enqueue
+  → DocumentStoreTaskQueue / co-located worker → ManagedWorkspaceSyncService
+  → local.workspace.index → operation completed|failed
+```
+
+| Concern | Contract |
+|---------|----------|
+| Sync execution | Platform `message_bus.enqueue` + durable `DocumentStoreTaskQueue` (not `asyncio.create_task`) |
+| Concurrent sync | `409 Conflict` when another sync for the same tenant/workspace/source is `queued` or `running` |
+| Restart | Queued messages survive DocumentStore; interrupted `running` messages/operations fail closed |
+| Search evidence | Complete typed `TaskResult.execution_result.structured_data["search_summary"]`; router verifies provenance only — no filesystem snippet reconstruction |
 
 Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `managed_workspace_folder_sync`.
 

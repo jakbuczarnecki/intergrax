@@ -13,6 +13,7 @@ from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceDocumentReference,
     WorkspaceOperation,
+    WorkspaceOperationStatus,
     WorkspaceSource,
 )
 
@@ -33,6 +34,10 @@ class ManagedWorkspaceRepository:
 
     def __init__(self, document_store: DocumentStore) -> None:
         self._store = document_store
+
+    @property
+    def document_store(self) -> DocumentStore:
+        return self._store
 
     def _put(self, partition_key: str, row_key: str, model: BaseModel) -> None:
         self._store.put(
@@ -184,3 +189,67 @@ class ManagedWorkspaceRepository:
                 if "document_id" in doc.data and "source_path" in doc.data:
                     refs.append(WorkspaceDocumentReference.model_validate(dict(doc.data)))
         return refs
+
+    def get_document_ref(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        document_id: str,
+    ) -> WorkspaceDocumentReference | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_DOCUMENT),
+            f"{workspace_id}:{document_id}",
+            WorkspaceDocumentReference,
+        )
+
+    def list_operations(self, *, tenant_id: str) -> list[WorkspaceOperation]:
+        return self._list(_partition(tenant_id, _ENTITY_OPERATION), WorkspaceOperation)
+
+    def find_active_sync_operation(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+    ) -> WorkspaceOperation | None:
+        active = {
+            WorkspaceOperationStatus.QUEUED,
+            WorkspaceOperationStatus.RUNNING,
+        }
+        candidates = [
+            op
+            for op in self.list_operations(tenant_id=tenant_id)
+            if op.workspace_id == workspace_id
+            and op.source_id == source_id
+            and op.status in active
+        ]
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: item.started_at or item.completed_at or item.operation_id)
+        return candidates[0]
+
+    def mark_running_operations_failed_for_tenant(
+        self,
+        *,
+        tenant_id: str,
+        error: str = "interrupted_by_host_restart",
+    ) -> int:
+        from datetime import UTC, datetime
+
+        now = datetime.now(UTC)
+        recovered = 0
+        for operation in self.list_operations(tenant_id=tenant_id):
+            if operation.status is not WorkspaceOperationStatus.RUNNING:
+                continue
+            self.put_operation(
+                operation.model_copy(
+                    update={
+                        "status": WorkspaceOperationStatus.FAILED,
+                        "error": error,
+                        "completed_at": now,
+                    }
+                )
+            )
+            recovered += 1
+        return recovered

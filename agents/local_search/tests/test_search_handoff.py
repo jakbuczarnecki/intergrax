@@ -46,7 +46,7 @@ async def test_local_search_exports_search_summary_for_graph_handoff() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_local_search_skips_empty_search_summary_handoff() -> None:
+async def test_local_search_exports_unused_search_summary_for_product_handoff() -> None:
     agent = LocalSearchAgent()
     result = AgentRunResult(
         status=AgentRunStatus.SUCCEEDED,
@@ -57,4 +57,6 @@ async def test_local_search_skips_empty_search_summary_handoff() -> None:
 
     await agent.on_run_end(result)
 
-    assert "search_summary" not in result.structured_data
+    exported = result.structured_data.get("search_summary")
+    assert isinstance(exported, dict)
+    assert exported.get("used") is False

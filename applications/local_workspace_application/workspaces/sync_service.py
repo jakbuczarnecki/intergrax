@@ -63,6 +63,24 @@ class ManagedWorkspaceSyncService:
         if operation is None:
             raise LookupError("operation_not_found")
 
+        # Duplicate delivery after terminal state: safe no-op.
+        if operation.status in {
+            WorkspaceOperationStatus.COMPLETED,
+            WorkspaceOperationStatus.FAILED,
+        }:
+            return operation
+
+        # Duplicate delivery while already running: fail-closed, do not re-ingest.
+        if operation.status is WorkspaceOperationStatus.RUNNING:
+            logger.warning(
+                "managed_workspace_sync_duplicate_while_running operation_id=%s",
+                operation.operation_id,
+            )
+            return operation
+
+        if operation.status is not WorkspaceOperationStatus.QUEUED:
+            return self._fail(operation, f"unexpected_operation_status:{operation.status.value}")
+
         source = self._repository.get_source(
             tenant_id=tenant_id,
             workspace_id=operation.workspace_id,

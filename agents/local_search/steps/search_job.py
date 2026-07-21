@@ -66,12 +66,13 @@ def _format_evidence_item(
     body = (text or content or "").strip()
     if body:
         item["text"] = body
+        item["snippet"] = body
     if source_path:
         item["source_path"] = source_path
     if chunk_id:
         item["chunk_id"] = chunk_id
     if score is not None:
-        item["score"] = score
+        item["score"] = float(score)
     if document_id:
         item["document_id"] = document_id
     if source_id:
@@ -86,7 +87,10 @@ def _format_evidence_item(
 
 
 def _format_evidence(
-    chunks: list[Any], citations: list[Any]
+    chunks: list[Any],
+    citations: list[Any],
+    *,
+    workspace_id: str | None = None,
 ) -> list[dict[str, object]]:
     evidence: list[dict[str, object]] = []
     for chunk in chunks:
@@ -98,16 +102,22 @@ def _format_evidence(
         file_name = meta.get("file_name")
         if not file_name and source_path:
             file_name = str(source_path).replace("\\", "/").rsplit("/", 1)[-1]
+        raw_score = chunk.get("score")
+        if not isinstance(raw_score, (int, float)):
+            raw_score = meta.get("score")
+        item_workspace = (
+            str(meta["workspace_id"])
+            if meta.get("workspace_id")
+            else workspace_id
+        )
         item = _format_evidence_item(
             text=str(chunk.get("text") or ""),
             source_path=str(source_path) if source_path else None,
             chunk_id=str(chunk.get("id")) if chunk.get("id") is not None else None,
-            score=chunk.get("score")
-            if isinstance(chunk.get("score"), (int, float))
-            else None,
+            score=float(raw_score) if isinstance(raw_score, (int, float)) else None,
             document_id=str(meta["document_id"]) if meta.get("document_id") else None,
             source_id=str(meta["source_id"]) if meta.get("source_id") else None,
-            workspace_id=str(meta["workspace_id"]) if meta.get("workspace_id") else None,
+            workspace_id=item_workspace,
             file_name=str(file_name) if file_name else None,
             metadata=meta,
         )
@@ -123,15 +133,19 @@ def _format_evidence(
         metadata = citation.get("metadata")
         meta = metadata if isinstance(metadata, dict) else {}
         source_path = meta.get("source_path") or citation.get("source_label")
+        raw_score = citation.get("score")
         item = _format_evidence_item(
             text=str(citation.get("excerpt") or ""),
             source_path=str(source_path) if source_path else None,
             chunk_id=str(citation.get("chunk_id"))
             if citation.get("chunk_id") is not None
             else None,
-            score=citation.get("score")
-            if isinstance(citation.get("score"), (int, float))
-            else None,
+            score=float(raw_score) if isinstance(raw_score, (int, float)) else None,
+            document_id=str(meta["document_id"]) if meta.get("document_id") else None,
+            source_id=str(meta["source_id"]) if meta.get("source_id") else None,
+            workspace_id=str(meta["workspace_id"]) if meta.get("workspace_id") else workspace_id,
+            file_name=str(meta["file_name"]) if meta.get("file_name") else None,
+            metadata=meta,
         )
         if item:
             evidence.append(item)
@@ -145,6 +159,7 @@ def _output(
     reason: SearchSummaryReason,
     query: str = "",
     collection_id: str | None = None,
+    workspace_id: str | None = None,
     evidence: list[dict[str, object]] | None = None,
     num_results: int = 0,
 ) -> dict[str, object]:
@@ -154,6 +169,7 @@ def _output(
         answer = f"local_search: search job — query={query!r}, results={num_results}"
     else:
         answer = f"local_search: search failed — {reason.value}"
+    resolved_workspace = workspace_id or collection_id
     return {
         "summary": answer,
         "answer": answer,
@@ -162,9 +178,11 @@ def _output(
             "used": used,
             "reason": reason.value,
             "query": query,
+            "workspace_id": resolved_workspace,
             "collection_id": collection_id,
             "evidence": evidence,
             "num_results": num_results,
+            "result_count": num_results,
         },
     }
 
@@ -257,13 +275,14 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
 
     chunks = list(entry.get("chunks") or [])
     citations = list(entry.get("citations") or [])
-    evidence = _format_evidence(chunks, citations)
+    evidence = _format_evidence(chunks, citations, workspace_id=workspace_id)
     return _output(
         run_id=step_ctx.run_id,
         used=True,
         reason=SearchSummaryReason.RETRIEVE_COMPLETE,
         query=query,
         collection_id=collection_id,
+        workspace_id=workspace_id,
         evidence=evidence,
         num_results=len(evidence),
     )

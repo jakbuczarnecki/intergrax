@@ -1097,14 +1097,21 @@ real host through public HTTP endpoints only:
 ```text
 create workspace
 → attach local folder
-→ start synchronization
-→ inspect operation status
-→ search inside the workspace
+→ request sync (202 + persisted queued operation)
+→ interrupt / restart host while durable work is pending
+→ observe durable execution resume or fail-closed retry
+→ completed operation
+→ search inside the workspace with complete structured evidence
 → confirm source references and isolation
+→ verify receipt (no router filesystem fallback)
 ```
 
 It is not a separate infrastructure proof. It exercises the product
 API and records proof kind `managed_workspace_folder_sync`.
+
+Hardening (`LKW-PRODUCT-1-HARDENING`) requires durable MessageBus
+execution for sync and typed `search_summary` evidence on `TaskResult`
+— the HTTP router must not read source files or invent scores/snippets.
 
 ### Windows (current certified product path)
 
@@ -1174,6 +1181,26 @@ workspace_isolation_verified=true
 second_sync_idempotent=true
 direct_provider_write=false
 original_files_modified=false
+sync_requested=true
+operation_persisted=true
+operation_queued=true
+host_or_worker_interrupted=true
+operation_not_lost=true
+operation_completed_after_restart=true
+duplicate_delivery_safe=true
+concurrent_sync_blocked_or_reused=true
+search_structured_evidence_present=true
+document_id_present=true
+source_id_present=true
+workspace_id_present=true
+source_path_present=true
+file_name_present=true
+real_score_present=true
+real_snippet_present=true
+metadata_present=true
+router_file_read_used=false
+diagnostic_reconstruction_used=false
+synthetic_score_used=false
 ```
 
 ### Authority

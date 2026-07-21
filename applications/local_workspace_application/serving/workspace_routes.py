@@ -1,16 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Public managed workspace HTTP routes (LKW-PRODUCT-1)."""
+"""Public managed workspace HTTP routes (LKW-PRODUCT-1 / LKW-PRODUCT-1-HARDENING)."""
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
 
-from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.fastapi_core.context import get_request_context
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
@@ -38,10 +35,20 @@ from local_workspace_application.workspaces.idempotency import normalize_source_
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceOperation,
+    WorkspaceOperationStatus,
     WorkspaceSource,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from local_workspace_application.workspaces.service import (
+    ConcurrentSyncError,
+    ManagedWorkspaceService,
+)
+from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
+from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
+from local_workspace_application.workspaces.sync_runtime import (
+    ManagedWorkspaceSyncRuntime,
+    build_managed_workspace_sync_runtime,
+)
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 
 
@@ -116,7 +123,10 @@ def mount_managed_workspace_routes(
     settings: LocalWorkspaceBackendSettings,
     prefix: str = "/v1/local_workspace",
     repository: ManagedWorkspaceRepository | None = None,
+    sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
 ) -> ManagedWorkspaceService:
+    from pathlib import Path
+
     allowlist = settings.allowed_read_roots or read_allowlist_roots_from_env()
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
     if repository is None:
@@ -131,8 +141,28 @@ def mount_managed_workspace_routes(
         task_executor,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
     )
+    if sync_runtime is None:
+        sync_runtime = build_managed_workspace_sync_runtime(
+            document_store=repository.document_store,
+            sync_service=sync_service,
+            repository=repository,
+        )
+        app.state.lkw_managed_workspace_sync_runtime = sync_runtime
+
+        @app.on_event("startup")
+        async def _start_managed_workspace_sync_runtime() -> None:
+            import asyncio
+
+            sync_runtime.bind_main_loop(asyncio.get_running_loop())
+            sync_runtime.start()
+
+        @app.on_event("shutdown")
+        async def _stop_managed_workspace_sync_runtime() -> None:
+            sync_runtime.stop()
+
     app.state.lkw_managed_workspace_service = service
     app.state.lkw_managed_workspace_repository = repository
+    app.state.lkw_managed_workspace_sync_runtime = sync_runtime
 
     router = APIRouter(prefix=prefix, tags=["local_workspace_managed"])
 
@@ -245,23 +275,39 @@ def mount_managed_workspace_routes(
             )
         except LookupError:
             raise _not_found() from None
+        except ConcurrentSyncError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "sync_already_in_progress",
+                    "operation_id": exc.active.operation_id,
+                    "status": exc.active.status.value,
+                },
+            ) from exc
 
-        task = asyncio.create_task(
-            sync_service.run_operation(
-                tenant_id=tenant_id,
-                operation_id=operation.operation_id,
-            ),
-            name=f"lkw-managed-workspace-sync-{operation.operation_id}",
+        job = ManagedWorkspaceSyncJob(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            operation_id=operation.operation_id,
+            operation_type="source_sync",
         )
+        try:
+            enqueue_managed_workspace_sync(sync_runtime.wiring_context, job)
+        except Exception as exc:
+            service.repository.put_operation(
+                operation.model_copy(
+                    update={
+                        "status": WorkspaceOperationStatus.FAILED,
+                        "error": f"enqueue_failed:{exc.__class__.__name__}",
+                    }
+                )
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="sync_enqueue_failed",
+            ) from exc
 
-        def _log_sync_task_result(done: asyncio.Task[Any]) -> None:
-            try:
-                done.result()
-            except Exception:
-                # Failure is persisted on the operation record; avoid silent task warnings.
-                pass
-
-        task.add_done_callback(_log_sync_task_result)
         return SyncOperationAcceptedV1(
             operation_id=operation.operation_id,
             workspace_id=operation.workspace_id,
@@ -320,7 +366,6 @@ def mount_managed_workspace_routes(
                 detail=f"search_error: {exc.__class__.__name__}",
             ) from exc
 
-        # Populate curated diagnostics on result metadata (same read model as /run).
         result_metadata = dict(getattr(result, "metadata", None) or {})
         attach_lkw_evidence_metadata(
             result_metadata,
@@ -329,13 +374,20 @@ def mount_managed_workspace_routes(
         )
         result = result.model_copy(update={"metadata": result_metadata})
 
-        hits = _map_search_hits(
-            repository=repository,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            task_result=result,
-            limit=body.limit,
-        )
+        try:
+            hits = _map_search_hits(
+                repository=repository,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                task_result=result,
+                limit=body.limit,
+            )
+        except SearchEvidenceIncompleteError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="search_evidence_incomplete",
+            ) from exc
+
         return WorkspaceSearchResponseV1(
             workspace_id=workspace_id,
             query=body.query,
@@ -346,6 +398,10 @@ def mount_managed_workspace_routes(
     return service
 
 
+class SearchEvidenceIncompleteError(RuntimeError):
+    """Platform result lacked required typed search evidence fields."""
+
+
 def _map_search_hits(
     *,
     repository: ManagedWorkspaceRepository,
@@ -354,48 +410,60 @@ def _map_search_hits(
     task_result: Any,
     limit: int,
 ) -> list[WorkspaceSearchHitV1]:
-    evidence = _extract_search_evidence(task_result)
-    refs_by_path = {
-        normalize_source_path(ref.source_path): ref
-        for ref in repository.list_document_refs(tenant_id=tenant_id, workspace_id=workspace_id)
-    }
-    # Also index by basename for Windows path-shape mismatches in tool payloads.
-    refs_by_name: dict[str, Any] = {}
-    for ref in refs_by_path.values():
-        refs_by_name.setdefault(ref.file_name, ref)
+    summary = _extract_search_summary(task_result)
+    if summary is None:
+        raise SearchEvidenceIncompleteError("search_summary_missing")
+    evidence = summary.get("evidence")
+    if not isinstance(evidence, list):
+        raise SearchEvidenceIncompleteError("search_evidence_missing")
 
     hits: list[WorkspaceSearchHitV1] = []
+    incomplete = False
     for item in evidence:
         if not isinstance(item, dict):
             continue
-        raw_path = item.get("source_path")
-        source_path = normalize_source_path(str(raw_path)) if raw_path else ""
-        ref = refs_by_path.get(source_path) if source_path else None
-        if ref is None and source_path:
-            basename = source_path.replace("\\", "/").rsplit("/", 1)[-1]
-            ref = refs_by_name.get(basename)
-        document_id = str(item.get("document_id") or (ref.document_id if ref else "")).strip()
-        source_id = str(item.get("source_id") or (ref.source_id if ref else "")).strip()
-        file_name = str(
-            item.get("file_name")
-            or (ref.file_name if ref else "")
-            or (source_path.replace("\\", "/").rsplit("/", 1)[-1] if source_path else "")
-        ).strip()
-        resolved_path = (ref.source_path if ref is not None else source_path).strip()
-        if not document_id or not source_id or not resolved_path or not file_name:
-            continue
+        document_id = str(item.get("document_id") or "").strip()
+        source_id = str(item.get("source_id") or "").strip()
+        item_workspace_id = str(item.get("workspace_id") or workspace_id).strip()
+        source_path = str(item.get("source_path") or "").strip()
+        file_name = str(item.get("file_name") or "").strip()
         score_raw = item.get("score")
-        score = float(score_raw) if isinstance(score_raw, (int, float)) else 0.0
-        snippet = str(item.get("text") or item.get("snippet") or "").strip()
+        snippet = str(item.get("snippet") or item.get("text") or "").strip()
         metadata = item.get("metadata")
+
+        if not document_id or not source_id or not source_path or not file_name:
+            incomplete = True
+            continue
+        if not isinstance(score_raw, (int, float)):
+            incomplete = True
+            continue
+        if not snippet:
+            incomplete = True
+            continue
+        if item_workspace_id != workspace_id:
+            continue
+
+        ref = repository.get_document_ref(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            document_id=document_id,
+        )
+        if ref is None:
+            continue
+        if ref.source_id != source_id or ref.tenant_id != tenant_id:
+            continue
+        if normalize_source_path(ref.source_path) != normalize_source_path(source_path):
+            # Provenance mismatch — drop rather than fabricate.
+            continue
+
         hits.append(
             WorkspaceSearchHitV1(
                 document_id=document_id,
                 source_id=source_id,
                 workspace_id=workspace_id,
-                source_path=resolved_path,
+                source_path=ref.source_path,
                 file_name=file_name,
-                score=score,
+                score=float(score_raw),
                 snippet=snippet,
                 metadata=dict(metadata) if isinstance(metadata, dict) else {},
             )
@@ -403,116 +471,19 @@ def _map_search_hits(
         if len(hits) >= limit:
             break
 
-    if hits:
-        return hits
-
-    # Fallback when structured evidence text was redacted but source refs are present.
-    for raw_path in _extract_source_refs(task_result):
-        source_path = normalize_source_path(str(raw_path))
-        ref = refs_by_path.get(source_path)
-        if ref is None:
-            basename = source_path.replace("\\", "/").rsplit("/", 1)[-1]
-            ref = refs_by_name.get(basename)
-        if ref is None:
-            continue
-        snippet = _read_snippet(ref.source_path)
-        hits.append(
-            WorkspaceSearchHitV1(
-                document_id=ref.document_id,
-                source_id=ref.source_id,
-                workspace_id=workspace_id,
-                source_path=ref.source_path,
-                file_name=ref.file_name,
-                score=1.0,
-                snippet=snippet,
-                metadata={},
-            )
-        )
-        if len(hits) >= limit:
-            break
+    if not hits and incomplete:
+        raise SearchEvidenceIncompleteError("search_evidence_incomplete")
+    if not hits and evidence:
+        raise SearchEvidenceIncompleteError("search_evidence_unverified")
     return hits
 
 
-def _read_snippet(source_path: str, *, limit: int = 280) -> str:
-    try:
-        path = Path(source_path)
-        if not path.is_file():
-            return ""
-        text = path.read_text(encoding="utf-8", errors="replace").strip()
-        if len(text) <= limit:
-            return text
-        return text[:limit].rstrip() + "…"
-    except OSError:
-        return ""
-
-
-def _extract_search_evidence(task_result: Any) -> list[Any]:
+def _extract_search_summary(task_result: Any) -> dict[str, Any] | None:
     execution = getattr(task_result, "execution_result", None)
     if execution is not None:
         structured = getattr(execution, "structured_data", None)
         if isinstance(structured, dict):
             summary = structured.get("search_summary")
-            if isinstance(summary, dict) and isinstance(summary.get("evidence"), list):
-                return list(summary["evidence"])
-            for value in structured.values():
-                if isinstance(value, dict) and isinstance(value.get("evidence"), list):
-                    return list(value["evidence"])
-                if isinstance(value, dict):
-                    nested = value.get("search_summary")
-                    if isinstance(nested, dict) and isinstance(nested.get("evidence"), list):
-                        return list(nested["evidence"])
-
-    metadata = getattr(task_result, "metadata", None)
-    if isinstance(metadata, dict):
-        for key in ("search_summary", "lkw_search_summary"):
-            summary = metadata.get(key)
-            if isinstance(summary, dict) and isinstance(summary.get("evidence"), list):
-                return list(summary["evidence"])
-        evidence = metadata.get("evidence")
-        if isinstance(evidence, list):
-            return list(evidence)
-    return []
-
-
-def _extract_source_refs(task_result: Any) -> list[str]:
-    metadata = getattr(task_result, "metadata", None)
-    if isinstance(metadata, dict):
-        evidence = metadata.get("lkw_evidence.v1")
-        if isinstance(evidence, dict):
-            diagnostics = evidence.get("diagnostics")
-            if isinstance(diagnostics, dict):
-                search_diag = diagnostics.get("lkw.search_summary.v1")
-                if isinstance(search_diag, dict):
-                    refs = search_diag.get("source_refs")
-                    if isinstance(refs, list):
-                        return [str(item) for item in refs if str(item).strip()]
-
-    execution = getattr(task_result, "execution_result", None)
-    if execution is None:
-        return []
-    structured = getattr(execution, "structured_data", None)
-    if not isinstance(structured, dict):
-        return []
-    summary = structured.get("search_summary")
-    if isinstance(summary, dict):
-        evidence = summary.get("evidence")
-        if isinstance(evidence, list):
-            refs = [
-                str(item.get("source_path"))
-                for item in evidence
-                if isinstance(item, dict) and item.get("source_path")
-            ]
-            if refs:
-                return refs
-    trace = structured.get(AcpStructuredDataKey.TRACE_SUMMARY)
-    step_diagnostics: dict[str, Any] = {}
-    if isinstance(trace, dict):
-        raw = trace.get("step_diagnostics")
-        if isinstance(raw, dict):
-            step_diagnostics = raw
-    search_diag = step_diagnostics.get("lkw.search_summary.v1")
-    if isinstance(search_diag, dict):
-        refs = search_diag.get("source_refs")
-        if isinstance(refs, list):
-            return [str(item) for item in refs if str(item).strip()]
-    return []
+            if isinstance(summary, dict):
+                return summary
+    return None
