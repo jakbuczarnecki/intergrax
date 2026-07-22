@@ -1255,6 +1255,10 @@ applications/local_workspace_application/docker/docker-compose.yml
 applications/local_workspace_application/docker/docker-compose.mongodb.yml
 ```
 
+The authoritative Qdrant-backed Ask proof uses a prebuilt LKW image containing
+`integrations-mongodb` (deterministic `uv sync` at image build). Compose does
+not install Python dependencies at runtime.
+
 Requires the Compose LLM boundary (`INTERGRAX_LLM_PROVIDER` / Ollama in stack).
 
 `--skip-docker` may be used only when the canonical stack is already running
