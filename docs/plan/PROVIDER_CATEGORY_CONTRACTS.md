@@ -138,7 +138,7 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 5. **message_bus** — Kafka, RabbitMQ
 6. **relational_store** / **document_store** — Postgres, MongoDB
 7. **notification_channel** — Slack webhook/email notify
-8. **conversation_channel** — Slack/Teams/Discord/Telegram/Mattermost/Rocket.Chat/Google Chat (contract-defined; vendor runtime unbound)
+8. **conversation_channel** — Slack (Socket Mode + Web API runtime), Teams/Discord/Telegram/Mattermost/Rocket.Chat/Google Chat (contract-defined; vendor runtime unbound)
 9. **secrets_store** — Vault, cloud secret managers
 10. Remaining categories per product priority (issue_tracker, ci_cd, llm_guardrail, …)
 

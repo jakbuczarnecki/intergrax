@@ -5,6 +5,7 @@ from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
     "SLACK_CONVERSATION_CHANNEL_PROVIDER_ID",
+    "SlackConversationChannelBackend",
     "SlackConversationChannelIntegration",
     "SlackConversationChannelIntegrationConfig",
     "create_slack_conversation_channel_integration",
@@ -19,6 +20,7 @@ _INTEGRATION_EXPORTS = frozenset(
         "SlackConversationChannelIntegrationConfig",
     }
 )
+_BACKEND_EXPORTS = frozenset({"SlackConversationChannelBackend"})
 
 
 def __getattr__(name: str):
@@ -32,7 +34,17 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.conversation_channel.slack import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name in _BACKEND_EXPORTS:
+        from intergrax.integrations.providers.conversation_channel.slack import backend as _backend
+
+        return export_from_bundle(_backend, name, _BACKEND_EXPORTS)
     if name in _INTEGRATION_EXPORTS:
+        if name == "SlackConversationChannelIntegrationConfig":
+            from intergrax.integrations.providers.conversation_channel.slack.config import (
+                SlackConversationChannelIntegrationConfig,
+            )
+
+            return SlackConversationChannelIntegrationConfig
         from intergrax.integrations.providers.conversation_channel.slack import (
             integration as _integration,
         )

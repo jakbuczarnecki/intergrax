@@ -182,10 +182,11 @@ def test_conversation_provider_registration_metadata(
     assert registration.contract_class is ConversationChannelIntegrationContract
     assert registration.integration_class is integration_cls
     assert registration.default_enabled is False
-    assert registration.supports_runtime_binding is False
-    assert registration.supports_health_check is False
+    runtime_expected = slug == "slack"
+    assert registration.supports_runtime_binding is runtime_expected
+    assert registration.supports_health_check is runtime_expected
     assert registration.metadata["conversation_features"] == ("text", "single_choice")
-    assert registration.metadata["runtime_implemented"] is False
+    assert registration.metadata["runtime_implemented"] is runtime_expected
     assert registration.factory.__name__ == factory_name
     assert issubclass(registration.integration_class, ConversationChannelIntegrationContract)
 

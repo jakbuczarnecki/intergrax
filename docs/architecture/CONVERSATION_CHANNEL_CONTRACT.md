@@ -57,7 +57,7 @@ Do not merge the categories. Do not add READ to notification contracts.
 
 | provider_id | Integration class | Runtime binding |
 |-------------|-------------------|-----------------|
-| `slack` | `SlackConversationChannelIntegration` | unsupported |
+| `slack` | `SlackConversationChannelIntegration` | Socket Mode + Web API |
 | `teams` | `TeamsConversationChannelIntegration` | unsupported |
 | `discord` | `DiscordConversationChannelIntegration` | unsupported |
 | `telegram` | `TelegramConversationChannelIntegration` | unsupported |
@@ -148,22 +148,27 @@ Providers do not encode product deduplication.
 
 ## 12. Runtime support status
 
-All seven providers are:
-
 ```text
-default_enabled = false
-runtime_binding_supported = false
+slack conversation_channel:
+  default_enabled = false
+  runtime_binding_supported = true
+  transport = Socket Mode inbound + Web API outbound
+
+teams / discord / telegram / mattermost / rocket_chat / google_chat:
+  default_enabled = false
+  runtime_binding_supported = false
 ```
 
-No vendor SDKs, sockets, webhooks, or credentials in this contract task.
+Slack notification_channel registration remains a separate identity.
 
 ---
 
 ## 13. Explicit exclusions
 
-Socket Mode / Teams Bot Framework / Discord Gateway / Telegram poll-webhook /
+Teams Bot Framework / Discord Gateway / Telegram poll-webhook /
 Mattermost WS / Rocket.Chat realtime / Google Chat events, LKW Slack workflow,
-Ask invocation, product auth/dedupe, and universal rich UI are out of scope here.
+Ask invocation, product auth/dedupe, and universal rich UI remain out of scope
+for this shared contract document.
 
 `interaction_surface` remains removed.
 
@@ -172,6 +177,6 @@ Ask invocation, product auth/dedupe, and universal rich UI are out of scope here
 ## 14. Next task
 
 ```text
-Slack conversation-channel runtime binding
-(Socket Mode + Web API) for SlackConversationChannelIntegration
+LKW-SLACK-WORKFLOW-1 — product-local Slack conversational workflow
+(authorization, tenant mapping, workspace selection, Ask HTTP, rendering)
 ```

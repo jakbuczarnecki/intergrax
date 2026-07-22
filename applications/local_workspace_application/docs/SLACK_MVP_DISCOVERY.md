@@ -1,26 +1,43 @@
 # Slack conversational MVP discovery
 
 ```text
-Status: FROZEN_FOR_IMPLEMENTATION — PLATFORM_BLOCKED
-Next slice: MVP-4 — Slack conversational MVP (blocked on CONVERSATION-CHANNEL-1)
+Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 IMPLEMENTED / LIVE_PROOF_PENDING
+Next slice: MVP-4 — Slack conversational MVP (READY_FOR_PRODUCT_IMPLEMENTATION after live proof)
 ```
 
-**Platform blocker (after CONVERSATION-CHANNEL-1):**
+**Platform runtime status:**
 
 ```text
-MVP-4 — CURRENT / PLATFORM_BLOCKED
+SLACK-CONVERSATION-RUNTIME-1 — IMPLEMENTED / LIVE_PROOF_PENDING
 
-conversation_channel category and provider definitions exist;
-Slack conversation-channel runtime remains missing.
+SlackConversationChannelIntegration now has Socket Mode/Web API runtime code and focused tests.
+Real Slack live proof credentials were not available in the implementation session.
 
-Remaining blocker:
-SlackConversationChannelIntegration has no Socket Mode/Web API runtime binding.
+Until live proof passes:
+platform blocker remains open for MVP-4 product work.
 
 Ownership:
-Slack vendor transport → SlackConversationChannelIntegration
-LKW product workflow → LKW Slack conversation handler
+SlackConversationChannelIntegration
+→ Socket Mode
+→ ack
+→ Slack event mapping
+→ Slack Web API send
+→ Block Kit mapping
+→ lifecycle/reconnect/health
 
-Next platform task: Slack conversation-channel runtime binding
+LKW Slack conversation handler
+→ authorization
+→ tenant mapping
+→ workspace selection
+→ pending question
+→ product dedupe
+→ Ask HTTP
+→ answer/citation rendering
+
+Next exact task after live proof: LKW-SLACK-WORKFLOW-1
+Live proof command:
+uv sync --extra integrations-slack
+uv run python scripts/proof/slack_conversation_channel_live_proof.py
 ```
 
 **Task:** MVP-3  

@@ -117,7 +117,7 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 | Module | Categories covered |
 |--------|-------------------|
 | `categories/data.py` | `relational_store`, `document_store`, `key_value_cache`, `graph_store` |
-| `categories/messaging.py` | `message_bus`, `notification_channel`, `conversation_channel` — background task execution model: [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md); conversation semantics: [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md) |
+| `categories/messaging.py` | `message_bus`, `notification_channel`, `conversation_channel` — background task execution model: [`BACKGROUND_TASKS.md`](BACKGROUND_TASKS.md); conversation semantics: [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md) (`slack` has Socket Mode/Web API runtime; other conversation providers remain unbound) |
 | `categories/search.py` | `search_provider`, `rerank_provider` |
 | `categories/storage.py` | `object_storage`, `vector_store` |
 | `categories/devops.py` | `ci_cd`, `security_scanner`, `sandbox_host`, `workflow_orchestrator`, `cloud_platform` |

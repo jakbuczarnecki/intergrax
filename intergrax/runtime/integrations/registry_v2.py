@@ -286,11 +286,13 @@ def build_integration_registration(
         contract_class=contract_class,
     )
     capabilities = _capability_values(sample.capabilities)
-    runtime_bound = (
-        supports_runtime_binding
-        if supports_runtime_binding is not None
-        else resolved_category != "conversation_channel"
-    )
+    if supports_runtime_binding is not None:
+        runtime_bound = supports_runtime_binding
+    elif resolved_category == "conversation_channel":
+        # Slack is the first conversation-channel provider with a concrete runtime binding.
+        runtime_bound = normalized_slug == "slack"
+    else:
+        runtime_bound = True
     health_supported = (
         supports_health_check
         if supports_health_check is not None
@@ -311,7 +313,7 @@ def build_integration_registration(
     if resolved_category == "conversation_channel":
         safe_metadata["conversation_features"] = ("text", "single_choice")
         safe_metadata["feature_declaration"] = "contract_intent"
-        safe_metadata["runtime_implemented"] = False
+        safe_metadata["runtime_implemented"] = runtime_bound
     if metadata:
         safe_metadata.update(metadata)
 

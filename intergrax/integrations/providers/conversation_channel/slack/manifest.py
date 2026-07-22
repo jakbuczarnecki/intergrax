@@ -13,5 +13,7 @@ MANIFEST = IntegrationManifest(
     categories=(IntegrationCategory.CONVERSATION_CHANNEL,),
     status=IntegrationStatus.BETA,
     env_prefix="INTERGRAX_SLACK",
-    description="Slack conversation channel (contract-defined, runtime-unbound)",
+    description=(
+        "Slack conversation channel with Socket Mode inbound and Web API outbound runtime"
+    ),
 )

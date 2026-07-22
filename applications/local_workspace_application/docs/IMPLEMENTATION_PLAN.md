@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (PLATFORM_BLOCKED on Slack conversation-channel runtime)
+Current implementation focus: MVP-4 — Slack conversational MVP (SLACK-CONVERSATION-RUNTIME-1 IMPLEMENTED / LIVE_PROOF_PENDING)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -641,23 +641,39 @@ Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
 
-**Status:** `CURRENT` but **`PLATFORM_BLOCKED`**
+**Status:** `CURRENT` — platform runtime **`IMPLEMENTED / LIVE_PROOF_PENDING`**
 
 ```text
-conversation_channel category and provider definitions exist;
-Slack conversation-channel runtime remains missing.
+SLACK-CONVERSATION-RUNTIME-1 — IMPLEMENTED / LIVE_PROOF_PENDING
+
+Slack conversation-channel runtime code and focused tests exist.
+Real Slack live proof is still required before marking the platform blocker closed.
 ```
 
-Remaining blocker: `SlackConversationChannelIntegration` has no Socket Mode/Web API runtime binding.
+Remaining gate: controlled Slack live proof of Socket Mode DM + action + threaded send.
 
 Ownership:
 
 ```text
-Slack vendor transport → SlackConversationChannelIntegration
-LKW product workflow → LKW Slack conversation handler
+SlackConversationChannelIntegration
+→ Socket Mode
+→ ack
+→ Slack event mapping
+→ Slack Web API send
+→ Block Kit mapping
+→ lifecycle/reconnect/health
+
+LKW Slack conversation handler
+→ authorization
+→ tenant mapping
+→ workspace selection
+→ pending question
+→ product dedupe
+→ Ask HTTP
+→ answer/citation rendering
 ```
 
-Next platform task: Slack conversation-channel runtime binding.
+Next exact task after live proof: `LKW-SLACK-WORKFLOW-1`.
 
 User-visible result:
 
@@ -1057,13 +1073,13 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT, PLATFORM_BLOCKED)
-Platform blocker: conversation_channel category and provider definitions exist; Slack conversation-channel runtime remains missing
-Next platform task: Slack conversation-channel runtime binding (Socket Mode + Web API)
-Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1
+Current task: MVP-4 — Slack conversational MVP (CURRENT; SLACK-CONVERSATION-RUNTIME-1 IMPLEMENTED / LIVE_PROOF_PENDING)
+Platform gate: Slack conversation runtime code exists; live proof credentials pending
+Next platform/proof task: scripts/proof/slack_conversation_channel_live_proof.py
+Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation (tests green)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md
-Next user-surface task: MVP-4 after Slack conversation-channel runtime
+Next product task after live proof: LKW-SLACK-WORKFLOW-1
 MVP gate follows minimal packaging and real-user validation.
 ```
 

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Slack conversation channel integration (contract-defined, runtime-unbound)."""
+"""Slack conversation channel integration (Socket Mode + Web API runtime)."""
 
 from __future__ import annotations
 
@@ -15,24 +15,23 @@ from intergrax.integrations.contracts.conversation_channel import (
     ConversationEventHandler,
     OutboundConversationMessage,
 )
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.integrations.providers.conversation_channel.slack.backend import (
+    SlackConversationChannelBackend,
+)
+from intergrax.integrations.providers.conversation_channel.slack.config import (
+    SlackConversationChannelIntegrationConfig,
+)
 from intergrax.runtime.integrations.categories.messaging import ConversationChannelIntegrationContract
 
 SLACK_CONVERSATION_CHANNEL_PROVIDER_ID = "slack"
-
-
-class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
-    """Typed config for Slack conversation channel integration."""
-
-    pass
 
 
 class SlackConversationChannelIntegration(ConversationChannelIntegrationContract):
     """
     Public Slack conversation channel entrypoint.
 
-    Status: contract-defined, runtime-unbound. Vendor connectivity is not implemented.
-    Inject a ``ConversationChannelBackend`` for contract tests or future runtime binding.
+    Status: BETA — Socket Mode inbound + Web API outbound runtime binding supported.
+    Inject a ``ConversationChannelBackend`` for tests, or construct via ``from_config``.
     """
 
     config: SlackConversationChannelIntegrationConfig = SlackConversationChannelIntegrationConfig()
@@ -67,14 +66,31 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
         backend: ConversationChannelBackend,
         *,
         enabled: bool = False,
-    ) -> "SlackConversationChannelIntegration":
+        config: SlackConversationChannelIntegrationConfig | None = None,
+    ) -> SlackConversationChannelIntegration:
+        resolved = config or SlackConversationChannelIntegrationConfig(enabled=enabled)
         integration = cls.for_provider(
             provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
             display_name="Slack",
-            config=SlackConversationChannelIntegrationConfig(enabled=enabled),
+            config=resolved,
         )
         integration._backend = backend
         return integration
+
+    @classmethod
+    def from_config(
+        cls,
+        config: SlackConversationChannelIntegrationConfig,
+    ) -> SlackConversationChannelIntegration:
+        """Construct production runtime when enabled; otherwise a disabled contract instance."""
+        if not config.enabled:
+            return cls.for_provider(
+                provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+                display_name="Slack",
+                config=config,
+            )
+        backend = SlackConversationChannelBackend.from_config(config)
+        return cls.from_backend(backend, enabled=True, config=config)
 
     @property
     def backend(self) -> ConversationChannelBackend | None:
@@ -82,3 +98,9 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
 
 
 ConversationChannelBackend.register(SlackConversationChannelIntegration)
+
+__all__ = [
+    "SLACK_CONVERSATION_CHANNEL_PROVIDER_ID",
+    "SlackConversationChannelIntegration",
+    "SlackConversationChannelIntegrationConfig",
+]
