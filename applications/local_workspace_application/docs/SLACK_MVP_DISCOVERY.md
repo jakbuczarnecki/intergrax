@@ -27,7 +27,9 @@ Discovery does not implement Slack connectivity, handlers, persistence, UI or te
 | Ask invocation boundary | `REUSE` | `POST /v1/local_workspace/workspaces/{workspace_id}/ask` | Existing Trusted Ask Workspace is canonical | Slack is HTTP client only; no second Ask stack |
 | Workspace selection model | `FROZEN` / `PRODUCT-LOCAL` | One active workspace per approved user; Block Kit select when >1 | Smallest complete Slack interaction | Persist selection in DocumentStore; auto-select when exactly one |
 | Acknowledgement behavior | `FROZEN` | Ack Socket Mode envelope immediately; visible “Checking…” after auth + workspace resolve | Prevent Slack retries; separate transport from product | Envelope ack never waits on Ask/LLM/Mongo/Qdrant |
-| Duplicate-event key | `FROZEN` | `slack_team_id + slack_event_id` | Stable logical event identity across Socket Mode redelivery | Claim before Ask; duplicates skip Ask and final reply |
+| Duplicate-event key | `FROZEN` | `slack_team_id + ":" + slack_event_id` | Stable logical event identity across Socket Mode redelivery | Claim before Ask; duplicates skip Ask and final reply |
+| Slack event identity | `FROZEN` | `payload.event_id`; dedupe key `payload.team_id + ":" + payload.event_id` | Canonical Events API logical identity | Missing `event_id` fails closed; `client_msg_id` never used as fallback |
+| Slack app permissions | `FROZEN` | `connections:write`; `chat:write`; `im:history`; `message.im`; Socket Mode + Interactivity + App Home Messages | Minimum DM-only Socket Mode workflow | No app mentions, slash commands, channel access or HTTP webhook configuration |
 | Duplicate-event persistence | `REUSE` / `PRODUCT-LOCAL` | MongoDB `DocumentStore`, TTL 7 days | Same persistence style as Ask runs | Dedupe repository in Slack companion |
 | Response location | `FROZEN` | Original DM thread (`thread_ts` = message `ts` when top-level) | Keeps answer next to question | `chat.postMessage` with channel + thread_ts |
 | Outbound-data boundary | `FROZEN` | Slack is external cloud; export only question, ack, answer, safe citation labels | Privacy honesty for local product | No raw chunks, paths, prompts, vectors, tokens |
@@ -227,24 +229,61 @@ stopped
 
 Primary product event: Socket Mode envelope carrying Events API `message` for a DM.
 
+Frozen Socket Mode envelope structure for Events API messages:
+
+```text
+Socket Mode envelope
+├── envelope_id
+└── payload
+    ├── team_id
+    ├── event_id
+    └── event
+        ├── type
+        ├── channel_type
+        ├── channel
+        ├── user
+        ├── text
+        ├── ts
+        ├── thread_ts optional
+        ├── bot_id optional
+        ├── subtype optional
+        └── client_msg_id optional
+```
+
+Identity distinction (`FROZEN`):
+
+```text
+envelope_id
+= transport acknowledgement identity
+
+payload.event_id
+= logical Events API event identity
+
+payload.event.client_msg_id
+= optional client message metadata only
+```
+
+Do not use `payload.event.event_id`. Do not describe `event_id` as nested inside the inner `event` object.
+
 Minimum fields required for MVP-4:
 
 | Field | Required | Role |
 |-------|----------|------|
-| Socket Mode `envelope_id` | yes | Transport ack identity |
-| `payload.team_id` (or equivalent team scope on envelope/payload) | yes | Workspace authorization |
-| `payload.event.event_id` / top-level event id when present; else Events API `event_id` | yes | Dedupe key |
-| `event.type` | yes | Must be `message` (or interactive `block_actions` for selection) |
-| `event.channel_type` | yes for messages | Must be `im` |
-| `event.channel` | yes | Reply target |
-| `event.user` | yes | User authorization |
-| `event.text` | yes for ask candidates | Question text |
-| `event.ts` | yes | Thread anchor / reply target |
-| `event.thread_ts` | optional | If present, reply in that thread; else use `ts` |
-| `event.bot_id` | detect if present | Reject bot-authored |
-| `event.subtype` | detect if present | Reject unsupported subtypes (e.g. `message_changed`, `bot_message`) |
+| Socket Mode `envelope_id` | yes | Transport ack identity only |
+| `payload.team_id` | yes | Workspace authorization; source of `slack_team_id` |
+| `payload.event_id` | yes for Events API messages | Logical event identity; source of `slack_event_id`; product dedupe |
+| `payload.event.type` | yes | Must be `message` |
+| `payload.event.channel_type` | yes for messages | Must be `im` |
+| `payload.event.channel` | yes | Reply target |
+| `payload.event.user` | yes | User authorization |
+| `payload.event.text` | yes for ask candidates | Question text |
+| `payload.event.ts` | yes | Thread anchor / reply target |
+| `payload.event.thread_ts` | optional | If present, reply in that thread; else use `ts` |
+| `payload.event.bot_id` | detect if present | Reject bot-authored |
+| `payload.event.subtype` | detect if present | Reject unsupported subtypes (e.g. `message_changed`, `bot_message`) |
+| `payload.event.client_msg_id` | optional | Diagnostic metadata only; never product identity or dedupe |
 
-Do not require unused fields. Interactive workspace-selection payloads must supply: team, user, channel, action selected `workspace_id`, and correlation to the pending selection thread.
+Do not require unused fields. Interactive workspace-selection payloads (`block_actions`) must supply: team, user, channel, action selected `workspace_id`, and correlation to the pending selection thread. They do **not** require an Events API `payload.event_id` (see §11.5).
 
 ### 6.2 Normalized product input (`FROZEN` contract — not implemented here)
 
@@ -321,10 +360,11 @@ Slack adapter must send `X-Tenant-Id` from the frozen mapping only when calling 
 ### 7.4 Unauthorized behavior (`FROZEN`)
 
 ```text
-acknowledge transport event
-→ do not call LKW Ask
-→ send one bounded generic denial message in the DM thread
-→ do not expose workspace names, document names or tenant details
+Unauthorized team or unauthorized user:
+acknowledge the Socket Mode envelope
+→ do not invoke Ask
+→ send the same generic denial message when a reply channel is safely available
+→ expose no team, tenant, workspace or document details
 ```
 
 Denial text:
@@ -334,6 +374,8 @@ You are not authorized to use this LKW Slack app.
 ```
 
 Unknown team and unknown user use the same generic text (no enumeration).
+
+If a malformed or untrusted event does not contain a safe reply channel, silently stop after envelope ack and bounded, redacted diagnostic logging.
 
 ---
 
@@ -371,6 +413,7 @@ Not option B (numbered text commands) for selection UI. Text command `workspaces
 | Pending question | At most one per approved user |
 | Pending retention TTL | 15 minutes |
 | Resume after selection | yes, automatically once |
+| Resume protection | atomic one-time `pending` → `resumed` transition; only the successful transition may invoke Ask |
 
 Do not design a generic conversation-memory framework.
 
@@ -501,13 +544,70 @@ No durable outbound delivery queue in MVP-4.
 
 ### 11.1 Dedupe identity (`FROZEN`)
 
+The only canonical product dedupe key for Events API message envelopes:
+
 ```text
+dedupe_key =
+payload.team_id + ":" + payload.event_id
+```
+
+Normalized field names used elsewhere in this contract:
+
+```text
+slack_team_id
+comes from payload.team_id
+
+slack_event_id
+comes from payload.event_id
+
 dedupe_key = slack_team_id + ":" + slack_event_id
 ```
 
-Do not use only message text, bare timestamp, channel ID, or envelope ID as the sole product dedupe key (envelope IDs are transport-scoped and may not equal logical event identity across retries).
+Do not leave alternative extraction paths. Do not use only message text, bare timestamp, channel ID, or envelope ID as the product dedupe key.
 
-### 11.2 Atomic processing boundary (`FROZEN`)
+```text
+client_msg_id is optional diagnostic metadata only.
+It is not the canonical event identity.
+It is not a dedupe fallback.
+```
+
+Reason:
+
+```text
+event_id identifies the Slack Events API delivery;
+client_msg_id identifies a client-originated message when present
+and is not guaranteed for every supported event or interaction.
+```
+
+Do not create a secondary dedupe key.
+
+### 11.2 Missing `payload.event_id` (`FROZEN`)
+
+```text
+events_api envelope with missing or blank payload.event_id
+→ acknowledge envelope_id
+→ classify product event as malformed
+→ do not claim dedupe record
+→ do not invoke Ask
+→ do not call search
+→ do not call the model
+→ do not post a product answer
+→ record only a bounded, redacted diagnostic
+```
+
+Do not fall back to:
+
+```text
+client_msg_id
+message timestamp
+channel ID
+envelope ID
+hash of message text
+```
+
+`envelope_id` may be used only to acknowledge the Socket Mode envelope.
+
+### 11.3 Atomic processing boundary (`FROZEN`)
 
 ```text
 authorized event
@@ -524,7 +624,7 @@ duplicate event
 → no second Slack final reply
 ```
 
-### 11.3 Persisted record (`FROZEN`)
+### 11.4 Persisted record (`FROZEN`)
 
 ```text
 dedupe_key
@@ -540,7 +640,34 @@ Storage: existing MongoDB `DocumentStore` (`PRODUCT-LOCAL` repository in Slack c
 
 TTL: **7 days**.
 
-### 11.4 Failed-state retry (`FROZEN`)
+### 11.5 Interactive Block Kit payloads (`FROZEN`)
+
+Do not require an Events API `event_id` for Block Kit interactions.
+
+```text
+events_api message envelope:
+product identity = payload.team_id + payload.event_id
+
+interactive block_actions envelope:
+transport identity = envelope_id
+selection action correlation =
+team.id + user.id + channel.id + action_ts/message_ts + selected workspace_id
+```
+
+Workspace-selection interactions must not invoke Ask more than once for the same pending question.
+
+```text
+pending-question record owns a one-time resume transition
+
+pending
+→ resumed
+
+only the successful atomic transition may invoke Ask
+```
+
+Do not introduce a second generic dedupe framework for Block Kit. The existing pending-question repository contract is sufficient.
+
+### 11.6 Failed-state retry (`FROZEN`)
 
 ```text
 automatic Slack redelivery does not retry failed product work;
@@ -672,7 +799,122 @@ No approval workflows in MVP-4.
 
 ## 14. Secrets and configuration contract
 
-### 14.1 Required secret/config classes (`FROZEN`)
+### 14.1 Slack app manifest and permission contract (`FROZEN`)
+
+Minimum required Slack app configuration for MVP-4.
+
+#### App-level token
+
+```text
+Token type:
+Slack app-level token
+
+Required app-level scope:
+connections:write
+
+Purpose:
+open and maintain the Socket Mode connection
+
+Configuration variable:
+LOCAL_WORKSPACE_SLACK_APP_TOKEN
+
+Expected token prefix:
+xapp-
+```
+
+Do not include a real token in documentation or source control.
+
+#### Bot token
+
+```text
+Token type:
+Slack bot token
+
+Required variable:
+LOCAL_WORKSPACE_SLACK_BOT_TOKEN
+
+Expected token prefix:
+xoxb-
+
+Purpose:
+Slack Web API calls, including chat.postMessage
+```
+
+Do not include a real token.
+
+#### Bot token scopes (minimum)
+
+```text
+chat:write
+→ publish processing, selection and final reply messages
+
+im:history
+→ receive/read direct-message events for the bot/app DM surface
+```
+
+Do not add:
+
+```text
+app_mentions:read
+commands
+channels:history
+groups:history
+mpim:history
+chat:write.public
+files:read
+files:write
+users:read
+```
+
+The frozen MVP-4 DM-only workflow does not require them.
+
+#### Event subscription
+
+```text
+Bot event subscription:
+message.im
+```
+
+This is the only message event required for the DM-only MVP.
+
+Do not add:
+
+```text
+app_mention
+message.channels
+message.groups
+message.mpim
+file_shared
+reaction_added
+```
+
+#### Slack app features/settings
+
+```text
+Socket Mode:
+enabled
+
+Interactivity:
+enabled
+
+App Home:
+Messages tab enabled
+
+Event Subscriptions:
+enabled
+
+Bot event:
+message.im
+```
+
+```text
+Interactivity does not require a public HTTP Request URL in the Socket Mode MVP.
+Interactive payloads are delivered through Socket Mode.
+```
+
+Do not introduce an HTTP Events API endpoint.
+
+### 14.2 Required secret/config classes (`FROZEN`)
 
 ```text
 Slack app-level token (Socket Mode)
@@ -682,9 +924,10 @@ approved Slack user ID
 mapped LKW tenant ID
 optional default/active workspace configuration
 enable flag
+LKW HTTP base URL for Ask/list calls
 ```
 
-### 14.2 Conventional variable names
+### 14.3 Conventional variable names
 
 Existing platform Slack naming uses `INTERGRAX_SLACK_*` for webhook/signing only. MVP-4 product companion uses LKW-local names (no values committed):
 
@@ -695,19 +938,29 @@ LOCAL_WORKSPACE_SLACK_BOT_TOKEN      # xoxb-… (never commit)
 LOCAL_WORKSPACE_SLACK_APPROVED_TEAM_ID
 LOCAL_WORKSPACE_SLACK_APPROVED_USER_ID
 LOCAL_WORKSPACE_SLACK_TENANT_ID
+LOCAL_WORKSPACE_SLACK_LKW_BASE_URL           # default http://127.0.0.1:<LKW port>
 LOCAL_WORKSPACE_SLACK_DEFAULT_WORKSPACE_ID   # optional
-LOCAL_WORKSPACE_SLACK_ASK_BASE_URL           # default http://127.0.0.1:<LKW port>
 ```
 
-### 14.3 Signing secret (`FROZEN`)
+Do not add OAuth client ID/secret, signing secret, redirect URL, installation database, enterprise ID, or multiple-team mappings.
+
+### 14.4 Signing secret (`FROZEN`)
 
 ```text
-Not required for Socket Mode-only MVP-4.
+Slack signing secret is not required by the Socket Mode-only MVP-4 transport.
 ```
+
+```text
+A signing secret is relevant only if a future HTTP-based Events API,
+slash-command or interactivity endpoint is introduced.
+Those paths are out of scope for MVP-4.
+```
+
+Do not add `LOCAL_WORKSPACE_SLACK_SIGNING_SECRET`.
 
 `INTERGRAX_SLACK_SIGNING_SECRET` remains relevant only for HTTP Events/slash intake, which MVP-4 does not use.
 
-### 14.4 Handling rules (`FROZEN`)
+### 14.5 Handling rules (`FROZEN`)
 
 ```text
 secrets loaded from environment or local secret configuration
@@ -929,6 +1182,15 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
 20. No Teams implementation.
 21. No universal messaging framework.
 22. Real controlled Slack proof.
+23. Socket Mode envelope uses `envelope_id` for transport ack.
+24. Events API message dedupe uses `payload.event_id`.
+25. Missing `payload.event_id` produces no Ask invocation.
+26. `client_msg_id` is never used as the canonical dedupe identity.
+27. Slack app uses an app-level token with `connections:write`.
+28. Slack bot token has `chat:write` and `im:history`.
+29. Slack app subscribes only to `message.im` for message intake.
+30. Interactivity payloads arrive through Socket Mode.
+31. No HTTP Slack webhook or signing-secret boundary is introduced.
 
 ### Controlled proof sequence
 
@@ -946,6 +1208,34 @@ start LKW + Qdrant + MongoDB
 → no Ask invocation
 → disconnect Slack
 → HTTP Ask still succeeds
+```
+
+Additional event-identity and app-configuration proof checks (MVP-4; not architecture alternatives):
+
+```text
+inspect one real events_api Socket Mode envelope
+→ confirm envelope_id exists
+→ confirm payload.team_id exists
+→ confirm payload.event_id exists
+→ confirm inner payload.event contains the DM message fields
+
+replay same logical event with the same payload.event_id
+→ no second Ask
+→ no second final reply
+
+submit malformed test fixture without payload.event_id
+→ envelope acknowledged
+→ no Ask
+→ no dedupe fallback to client_msg_id
+
+verify Slack app configuration
+→ Socket Mode enabled
+→ Interactivity enabled
+→ App Home Messages enabled
+→ connections:write present
+→ chat:write present
+→ im:history present
+→ message.im subscribed
 ```
 
 **Requires real Slack workspace and credentials:** Socket Mode connect, DM send/receive, Block Kit selection, threaded replies, unauthorized-user check, disconnect check.
@@ -989,25 +1279,19 @@ HTTP Events API webhook mode
 
 ## 22. Open questions
 
-Maximum three. Architecture decisions above are frozen; these need live Slack validation only.
+```text
+Open implementation-blocking questions: none
+```
 
-### Q1 — Exact Events API event_id placement in Socket Mode envelopes
+### Live validation items
 
-- **Why unresolved from repo:** No Socket Mode client/fixtures in repository; payload nesting must be confirmed against a live envelope.
-- **Default if unanswered:** Prefer `payload.event_id` when present; else `payload.event.client_msg_id` only as fallback if `event_id` absent; still scope with `team_id`.
-- **Blocks implementation:** No — default is sufficient to start; adjust mapping in live proof if needed.
+These are proof checks for MVP-4, not unresolved architecture decisions:
 
-### Q2 — Bot token scopes required for DM + Block Kit + threaded reply
-
-- **Why unresolved from repo:** No Slack app manifest for Socket Mode MVP in repo; scopes are Slack-app configuration.
-- **Default if unanswered:** `app_mentions:read` not required; require DM history/read + `chat:write` + interactive components as needed for `im` + Block Kit actions; document exact scopes during MVP-4 setup notes.
-- **Blocks implementation:** No for coding; yes for live proof until app configured.
-
-### Q3 — Whether unauthorized denial should be omitted for unknown team (to reduce probe signal)
-
-- **Why unresolved from repo:** Product-owner preference about probe resistance vs UX; frozen above as generic denial for both.
-- **Default if unanswered:** Keep generic denial for unauthorized team and user (already frozen).
-- **Blocks implementation:** No.
+```text
+confirm configured Slack app receives message.im events
+confirm Block Kit actions arrive through Socket Mode
+confirm threaded chat.postMessage behavior in the real test workspace
+```
 
 ---
 

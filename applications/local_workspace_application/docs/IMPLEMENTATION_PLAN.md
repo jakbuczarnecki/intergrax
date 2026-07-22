@@ -633,6 +633,10 @@ Rules preserved: model never creates citation objects; raw question never used a
 
 Result: frozen Slack Socket Mode conversational adapter contract and exact MVP-4 implementation scope.
 
+Slack event identity and minimum Slack app permission contract are frozen:
+`payload.event_id` for product dedupe; `connections:write`, `chat:write`,
+`im:history` and `message.im` for the Socket Mode DM workflow.
+
 Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
