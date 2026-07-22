@@ -135,6 +135,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | **INTEGRATIONS-2D-WAVE1** | Code | P1 | **Done** | Retrieval/data access | `vector_store`, `search_provider`, `document_parser`, `rerank_provider`, `wiki_knowledge` |
 | **INTEGRATIONS-2D-WAVE2** | Code | P1 | **Done** | Storage/databases | `relational_store`, `document_store`, `key_value_cache`, `graph_store`, `object_storage` |
 | **INTEGRATIONS-2D-WAVE3** | Code | P1 | **Done** | Communication/workflow | `message_bus`, `notification_channel`, `collaboration_suite`, `issue_tracker`, `browser_automation` |
+| **CONVERSATION-CHANNEL-1** | Code | P1 | **Done** | Conversational category | `conversation_channel` contract + seven contract-defined providers (runtime unbound); multi-category with notification for slack/teams/discord/telegram |
 | **INTEGRATIONS-2D-WAVE4** | Code | P1 | **Done** | Platform/security/ops | `cloud_platform`, `secrets_store`, `feature_flag`, `ci_cd`, `security_scanner`, `sandbox_host`, `identity_provider`, `workflow_orchestrator` |
 | **INTEGRATIONS-2D-WAVE5** | Code | P1 | **Done** | AI/service/business | `speech_provider`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm` |
 | **INTEGRATIONS-2D-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_provider_category_contract_migration.py` — completeness derived from `SLUG_CATEGORY` |

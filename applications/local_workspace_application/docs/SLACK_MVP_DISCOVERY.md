@@ -5,17 +5,22 @@ Status: FROZEN_FOR_IMPLEMENTATION — PLATFORM_BLOCKED
 Next slice: MVP-4 — Slack conversational MVP (blocked on CONVERSATION-CHANNEL-1)
 ```
 
-**Platform blocker (INTERACTIONS-TAXONOMY-1):**
+**Platform blocker (after CONVERSATION-CHANNEL-1):**
 
 ```text
-MVP-4 remains CURRENT but is PLATFORM_BLOCKED.
+MVP-4 — CURRENT / PLATFORM_BLOCKED
 
-The prior product-local Socket Mode ownership decision is superseded.
+conversation_channel category and provider definitions exist;
+Slack conversation-channel runtime remains missing.
 
-A dedicated conversational-communication provider category and Slack provider
-must be defined before LKW Slack adoption.
+Remaining blocker:
+SlackConversationChannelIntegration has no Socket Mode/Web API runtime binding.
 
-Next platform task: CONVERSATION-CHANNEL-1
+Ownership:
+Slack vendor transport → SlackConversationChannelIntegration
+LKW product workflow → LKW Slack conversation handler
+
+Next platform task: Slack conversation-channel runtime binding
 ```
 
 **Task:** MVP-3  
@@ -33,7 +38,7 @@ Discovery does not implement Slack connectivity, handlers, persistence, UI or te
 
 | Decision | Classification | Frozen choice | Reason | MVP-4 consequence |
 |----------|----------------|---------------|--------|-------------------|
-| Slack transport | `FROZEN` | Socket Mode only (outbound WebSocket) | No public inbound HTTP; matches local daemon | Companion owns Socket Mode client; no Events HTTP webhook |
+| Slack transport | `FROZEN` | Socket Mode only (outbound WebSocket) | No public inbound HTTP; matches local daemon | `SlackConversationChannelIntegration` owns Socket Mode/Web API transport; no Events HTTP webhook |
 | Supported conversation surface | `FROZEN` | Direct messages only; human text; threaded bot replies | Smallest usable private workflow | Ignore channels, mentions, slash, files, reactions |
 | Approved Slack workspace count | `FROZEN` | Exactly one approved `team_id` | Fail-closed MVP boundary | Config allowlist; other teams denied |
 | Approved user count | `FROZEN` | Exactly one approved Slack `user_id` | Fail-closed MVP boundary | Other users get generic denial; no Ask |
@@ -49,7 +54,7 @@ Discovery does not implement Slack connectivity, handlers, persistence, UI or te
 | Offline behavior | `FROZEN` | Slack unavailable ≠ LKW unavailable | Product core is local HTTP/MCP | Missing/invalid Slack tokens disable only companion |
 | Existing Slack provider reuse | `DEFERRED` / reject for MVP-4 send path | Outbound webhook `notify(message)` + slash HTTP intake | Webhook loses channel/thread; no Socket Mode lifecycle | Companion uses bot-token Web API for threaded replies |
 | Existing interaction runtime reuse | `DEFERRED` | Do not route Ask through intake → Task → Nexus | Distorts Ask HTTP product boundary; slash-oriented | Companion calls Ask HTTP; intake remains for other surfaces |
-| Expected blocker classification | `PLATFORM_BLOCKED` (supersedes prior `NO_PLATFORM_BLOCKER`) | Conversational provider category required before LKW Slack | Do not implement MVP-4 Socket Mode until `CONVERSATION-CHANNEL-1` |
+| Expected blocker classification | `PLATFORM_BLOCKED` | `conversation_channel` exists; Slack runtime binding missing | Do not implement MVP-4 until SlackConversationChannelIntegration has Socket Mode/Web API runtime |
 
 ---
 
@@ -211,7 +216,7 @@ Not:
 shared platform interaction host
 ```
 
-**Evidence-based reason:** Existing platform Slack pieces provide outbound webhook notifications and slash-command HTTP intake (`POST /v1/interactions/intake` → Task → Nexus). There is no Socket Mode connection/lifecycle owner in code. Routing Ask through interaction intake would bypass the frozen Ask HTTP product boundary and reintroduce slash-command/`tenant` defaults unsuitable for fail-closed Slack MVP. Architecture already anticipated a product-local `host/slack_socket.py`-style companion; MVP-4 freezes that as an LKW Slack companion package (see §19).
+**Evidence-based reason:** Existing platform Slack pieces provide outbound webhook notifications and slash-command HTTP intake (`POST /v1/interactions/intake` → Task → Nexus). `conversation_channel` + `SlackConversationChannelIntegration` now define the category boundary, but Socket Mode/Web API runtime binding is still missing. Routing Ask through interaction intake would bypass the frozen Ask HTTP product boundary. Transport ownership is platform (`SlackConversationChannelIntegration`); LKW owns only the product conversation handler/workflow.
 
 ### 5.3 Lifecycle states (`FROZEN`)
 
@@ -1037,7 +1042,8 @@ Honest reuse summary:
 ```text
 REUSE: Ask HTTP + workspace list HTTP + DocumentStore.
 Do not reuse webhook notify or interaction intake for the Slack Ask DM path.
-Socket Mode lifecycle is new PRODUCT-LOCAL work.
+Socket Mode lifecycle belongs to `SlackConversationChannelIntegration` (platform runtime binding — still missing).
+LKW owns the product Slack conversation handler/workflow only.
 ```
 
 ---
@@ -1069,17 +1075,25 @@ Platform owns only existing reusable contracts actually consumed (HTTP Ask/list 
 ## 18. Major blocker classification
 
 ```text
-NO_PLATFORM_BLOCKER
+PLATFORM_BLOCKED
 ```
 
-Socket Mode inbound lifecycle is **missing**, but the required owner is an **LKW product-local companion**, not a reusable platform interaction host. Existing shared intake would distort the Ask HTTP boundary.
+```text
+conversation_channel category and provider definitions exist;
+Slack conversation-channel runtime remains missing.
+```
+
+Socket Mode inbound lifecycle remains **missing**, but the required transport owner is
+**`SlackConversationChannelIntegration`**, not an LKW-owned Socket Mode companion.
+LKW owns the product conversation handler that consumes typed inbound events and drives Ask.
 
 | Field | Value |
 |-------|-------|
-| classification | `NO_PLATFORM_BLOCKER` |
-| missing Socket Mode host | classified `PRODUCT-LOCAL` |
-| shared-platform work in MVP-4 | none required |
-| excluded platform work | universal messaging framework; Socket Mode platform rewrite; Teams; identity platform |
+| classification | `PLATFORM_BLOCKED` |
+| remaining platform blocker | `SlackConversationChannelIntegration` has no Socket Mode/Web API runtime binding |
+| Slack transport owner | `SlackConversationChannelIntegration` |
+| LKW workflow owner | LKW Slack conversation handler |
+| excluded from this blocker | Teams runtime; universal rich UI; Ask rewrite |
 
 ---
 

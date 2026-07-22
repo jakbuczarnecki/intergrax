@@ -57,6 +57,7 @@ class PlatformIntegrationKind(StrEnum):
     OBJECT_STORAGE = "object_storage"
     SEARCH_PROVIDER = "search_provider"
     NOTIFICATION_CHANNEL = "notification_channel"
+    CONVERSATION_CHANNEL = "conversation_channel"
     COLLABORATION_SUITE = "collaboration_suite"
     ISSUE_TRACKER = "issue_tracker"
     WIKI_KNOWLEDGE = "wiki_knowledge"

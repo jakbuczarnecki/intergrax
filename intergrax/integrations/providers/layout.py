@@ -1,7 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Provider filesystem layout — slug → primary category folder (Phase M.6)."""
+"""Provider filesystem layout — slug → primary category folder (Phase M.6).
+
+Primary lookup remains ``SLUG_CATEGORY`` (one primary folder per slug).
+Secondary category packages use ``SECONDARY_PROVIDER_CATEGORIES`` so the same
+``provider_id`` can register under multiple categories without overwriting the
+primary mapping (e.g. slack notification_channel + conversation_channel).
+"""
 
 from __future__ import annotations
 
@@ -178,6 +184,9 @@ SLUG_CATEGORY: dict[str, str] = {
     "llamaparse": "document_parser",
     "lancedb": "vector_store",
     "telegram": "notification_channel",
+    "mattermost": "conversation_channel",
+    "rocket_chat": "conversation_channel",
+    "google_chat": "conversation_channel",
     "browserbase": "browser_automation",
     "google_drive": "object_storage",
     "n8n": "workflow_orchestrator",
@@ -201,17 +210,49 @@ SLUG_CATEGORY: dict[str, str] = {
     "bedrock_guardrails": "llm_guardrail",
 }
 
+# Extra (provider_id, category) memberships beyond the primary SLUG_CATEGORY entry.
+# Do not store lists in SLUG_CATEGORY — many consumers expect a single string.
+SECONDARY_PROVIDER_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "slack": ("conversation_channel",),
+    "teams": ("conversation_channel",),
+    "discord": ("conversation_channel",),
+    "telegram": ("conversation_channel",),
+}
 
-def provider_import_path(slug: str) -> str:
+
+def categories_for_provider(slug: str) -> tuple[str, ...]:
+    """Return primary category first, then secondary memberships."""
+    primary = SLUG_CATEGORY[slug]
+    secondary = SECONDARY_PROVIDER_CATEGORIES.get(slug, ())
+    return (primary, *secondary)
+
+
+def provider_category_keys() -> tuple[tuple[str, str], ...]:
+    """All valid ``(provider_id, category)`` identities from taxonomy."""
+    keys: list[tuple[str, str]] = []
+    for slug in sorted(SLUG_CATEGORY):
+        for category in categories_for_provider(slug):
+            keys.append((slug, category))
+    return tuple(keys)
+
+
+def provider_import_path(slug: str, category: str | None = None) -> str:
     """Dotted import path for a provider package, e.g. ``...providers.object_storage.s3``."""
-    category = SLUG_CATEGORY[slug]
-    return f"intergrax.integrations.providers.{category}.{slug}"
+    resolved = category or SLUG_CATEGORY[slug]
+    return f"intergrax.integrations.providers.{resolved}.{slug}"
 
 
-def provider_package_path(slug: str) -> str:
+def provider_package_path(slug: str, category: str | None = None) -> str:
     """Repo-relative path to provider directory."""
-    category = SLUG_CATEGORY[slug]
-    return f"intergrax/integrations/providers/{category}/{slug}"
+    resolved = category or SLUG_CATEGORY[slug]
+    return f"intergrax/integrations/providers/{resolved}/{slug}"
 
 
-__all__ = ["SLUG_CATEGORY", "provider_import_path", "provider_package_path"]
+__all__ = [
+    "SECONDARY_PROVIDER_CATEGORIES",
+    "SLUG_CATEGORY",
+    "categories_for_provider",
+    "provider_category_keys",
+    "provider_import_path",
+    "provider_package_path",
+]

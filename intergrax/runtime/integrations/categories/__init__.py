@@ -56,8 +56,10 @@ from intergrax.runtime.integrations.categories.devops import (
     WorkflowOrchestratorIntegrationContract,
 )
 from intergrax.runtime.integrations.categories.messaging import (
+    CONVERSATION_CHANNEL_INTEGRATION_CONTRACT_SCHEMA,
     MESSAGE_BUS_INTEGRATION_CONTRACT_SCHEMA,
     NOTIFICATION_CHANNEL_INTEGRATION_CONTRACT_SCHEMA,
+    ConversationChannelIntegrationContract,
     MessageBusIntegrationContract,
     NotificationChannelIntegrationContract,
 )
@@ -103,6 +105,7 @@ PROVIDER_CATEGORY_CONTRACT_REGISTRY: dict[str, type[PlatformIntegrationContract]
     "vector_store": VectorStoreIntegrationContract,
     "search_provider": SearchProviderIntegrationContract,
     "notification_channel": NotificationChannelIntegrationContract,
+    "conversation_channel": ConversationChannelIntegrationContract,
     "collaboration_suite": CollaborationSuiteIntegrationContract,
     "issue_tracker": IssueTrackerIntegrationContract,
     "wiki_knowledge": WikiKnowledgeIntegrationContract,
@@ -134,6 +137,7 @@ __all__ = [
     "CI_CD_INTEGRATION_CONTRACT_SCHEMA",
     "CLOUD_PLATFORM_INTEGRATION_CONTRACT_SCHEMA",
     "COLLABORATION_SUITE_INTEGRATION_CONTRACT_SCHEMA",
+    "CONVERSATION_CHANNEL_INTEGRATION_CONTRACT_SCHEMA",
     "CRM_INTEGRATION_CONTRACT_SCHEMA",
     "DOCUMENT_PARSER_INTEGRATION_CONTRACT_SCHEMA",
     "FEATURE_FLAG_INTEGRATION_CONTRACT_SCHEMA",
@@ -166,6 +170,7 @@ __all__ = [
     "CiCdIntegrationContract",
     "CloudPlatformIntegrationContract",
     "CollaborationSuiteIntegrationContract",
+    "ConversationChannelIntegrationContract",
     "CrmIntegrationContract",
     "DocumentParserIntegrationContract",
     "FeatureFlagIntegrationContract",

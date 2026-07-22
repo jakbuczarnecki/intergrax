@@ -25,6 +25,7 @@ class IntegrationCategory(str, Enum):
     VECTOR_STORE = "vector_store"
     SEARCH_PROVIDER = "search_provider"
     NOTIFICATION_CHANNEL = "notification_channel"
+    CONVERSATION_CHANNEL = "conversation_channel"
     COLLABORATION_SUITE = "collaboration_suite"
     ISSUE_TRACKER = "issue_tracker"
     WIKI_KNOWLEDGE = "wiki_knowledge"
@@ -142,6 +143,7 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.VECTOR_STORE.value: "vector_store",
     IntegrationCategory.SEARCH_PROVIDER.value: "search_provider",
     IntegrationCategory.NOTIFICATION_CHANNEL.value: "notification_channel",
+    IntegrationCategory.CONVERSATION_CHANNEL.value: "conversation_channel",
     IntegrationCategory.COLLABORATION_SUITE.value: "collaboration_suite",
     IntegrationCategory.ISSUE_TRACKER.value: "issue_tracker",
     IntegrationCategory.WIKI_KNOWLEDGE.value: "wiki_knowledge",

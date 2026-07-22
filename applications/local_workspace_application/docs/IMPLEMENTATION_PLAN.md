@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (PLATFORM_BLOCKED on CONVERSATION-CHANNEL-1)
+Current implementation focus: MVP-4 — Slack conversational MVP (PLATFORM_BLOCKED on Slack conversation-channel runtime)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -643,11 +643,21 @@ Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 **Status:** `CURRENT` but **`PLATFORM_BLOCKED`**
 
-The prior product-local Socket Mode ownership decision is superseded.
-A dedicated conversational-communication provider category and Slack provider
-must be defined before LKW Slack adoption.
+```text
+conversation_channel category and provider definitions exist;
+Slack conversation-channel runtime remains missing.
+```
 
-Next platform task: **`CONVERSATION-CHANNEL-1`**.
+Remaining blocker: `SlackConversationChannelIntegration` has no Socket Mode/Web API runtime binding.
+
+Ownership:
+
+```text
+Slack vendor transport → SlackConversationChannelIntegration
+LKW product workflow → LKW Slack conversation handler
+```
+
+Next platform task: Slack conversation-channel runtime binding.
 
 User-visible result:
 
@@ -1048,12 +1058,12 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 ```text
 Current milestone: LKW MVP
 Current task: MVP-4 — Slack conversational MVP (CURRENT, PLATFORM_BLOCKED)
-Platform blocker: conversational provider category + Slack provider missing
-Next platform task: CONVERSATION-CHANNEL-1
-Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery
+Platform blocker: conversation_channel category and provider definitions exist; Slack conversation-channel runtime remains missing
+Next platform task: Slack conversation-channel runtime binding (Socket Mode + Web API)
+Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
-Frozen Slack contract: SLACK_MVP_DISCOVERY.md (ownership model superseded — see blocker note)
-Next user-surface task: MVP-4 after CONVERSATION-CHANNEL-1
+Frozen Slack contract: SLACK_MVP_DISCOVERY.md
+Next user-surface task: MVP-4 after Slack conversation-channel runtime
 MVP gate follows minimal packaging and real-user validation.
 ```
 

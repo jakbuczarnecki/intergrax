@@ -15,6 +15,20 @@ Layout::
 See ``layout.py`` for slug → category mapping.
 """
 
-from intergrax.integrations.providers.layout import SLUG_CATEGORY, provider_import_path, provider_package_path
+from intergrax.integrations.providers.layout import (
+    SECONDARY_PROVIDER_CATEGORIES,
+    SLUG_CATEGORY,
+    categories_for_provider,
+    provider_category_keys,
+    provider_import_path,
+    provider_package_path,
+)
 
-__all__ = ["SLUG_CATEGORY", "provider_import_path", "provider_package_path"]
+__all__ = [
+    "SECONDARY_PROVIDER_CATEGORIES",
+    "SLUG_CATEGORY",
+    "categories_for_provider",
+    "provider_category_keys",
+    "provider_import_path",
+    "provider_package_path",
+]

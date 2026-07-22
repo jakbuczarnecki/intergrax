@@ -75,6 +75,7 @@ class IntegrationProfile(BaseModel):
     vector_store: IntegrationBinding | None = None
     search_provider: IntegrationBinding | None = None
     notification_channel: IntegrationBinding | None = None
+    conversation_channel: IntegrationBinding | None = None
     collaboration_suite: IntegrationBinding | None = None
     issue_tracker: IntegrationBinding | None = None
     wiki_knowledge: IntegrationBinding | None = None
@@ -348,6 +349,7 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "vector_store": lambda profile: profile.vector_store,
     "search_provider": lambda profile: profile.search_provider,
     "notification_channel": lambda profile: profile.notification_channel,
+    "conversation_channel": lambda profile: profile.conversation_channel,
     "collaboration_suite": lambda profile: profile.collaboration_suite,
     "issue_tracker": lambda profile: profile.issue_tracker,
     "wiki_knowledge": lambda profile: profile.wiki_knowledge,
