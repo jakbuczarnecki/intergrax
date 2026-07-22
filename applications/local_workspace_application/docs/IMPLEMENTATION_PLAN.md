@@ -1,16 +1,21 @@
 # Local Workspace Application — Implementation Plan
 
-**Status:** Working product roadmap (2026-07-21)
-**Task:** LKW-PLAN-SURFACES
-**Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
-**External verification:** [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
+**Status:** Product-first MVP roadmap (2026-07-22)  
+**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
+**Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
+**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 ```text
 Current product level: Backend Product Alpha
+Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
 Current implementation focus: Architectural discovery for Ask Workspace
 
-Primary goal:
+Immediate goal:
+Deliver the smallest complete LKW experience that a real user can try and value:
+local documents → Slack question → grounded answer with sources.
+
+Longer-term goal:
 Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
 ```
 
@@ -20,198 +25,250 @@ Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
 
 | Document | Role |
 |----------|------|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built — ownership, boundaries, runtime shape |
-| **This file (`IMPLEMENTATION_PLAN.md`)** | Where the product is going and what we execute now |
-| [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | How an external person verifies working capabilities |
-| [`journal/`](journal/) | Chronological implementation notes (historical detail) |
+| [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md) | Governing product-development rule for every Intergrax application and agent |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built — ownership, boundaries and runtime shape |
+| **This file (`IMPLEMENTATION_PLAN.md`)** | LKW product brief, MVP execution order, post-MVP direction and current task |
+| [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | How working capabilities are externally verified |
+| [`journal/`](journal/) | Historical implementation notes |
 
-This document is the **only** source of truth for:
+This file is the only source of truth for:
 
-- LKW development order
-- current stage
-- next vertical slice
-- production gates
-- deferred scope
-
-Do **not** create a separate `PRODUCT_ROADMAP.md`.
+- the LKW product brief,
+- the MVP definition,
+- the active execution order,
+- the current vertical slice,
+- the MVP validation gate,
+- post-MVP product direction,
+- the LKW 1.0 release direction,
+- deferred scope.
 
 ### Governing rule
 
 ```text
-product roadmap controls execution order
-platform work is pulled by product needs
-proof is part of product acceptance
+Deliver the smallest real product experience that demonstrates user value.
+Use implementation of that product to discover and improve Intergrax.
+Do not build the platform first and hope a useful product appears later.
 ```
 
-Platform mechanisms, provider ports, observability vendors, and historical proof tracks are **not** an independent LKW execution queue. They enter the active plan only when a production stage requires them.
+For LKW this means:
+
+```text
+real user problem
+→ smallest valuable local-document workflow
+→ working LKW MVP
+→ real-user validation
+→ feedback-driven next priority
+→ only then broader product and platform hardening
+```
+
+Platform mechanisms, provider ports, observability vendors, portability matrices and historical proof tracks are not an independent LKW execution queue.
 
 ---
 
-## 2. Product objective
+## 2. LKW product brief
 
-LKW (Local Knowledge Workspace) is a **local system for working with a user's private documents**.
+### 2.1 What we are building
 
-A target user must be able to:
+LKW (Local Knowledge Workspace) is a local product that lets a user work with private documents through natural-language questions and verifiable answers.
 
-1. Install LKW
-2. Create a workspace
-3. Point at folders
-4. Synchronize documents
-5. Ask questions
-6. Receive answers with sources
-7. Generate artifacts
-8. Browse history
-9. Diagnose problems
-10. Update the system without data loss
+The user designates local folders. LKW indexes those files, keeps the source files read-only, retrieves relevant evidence and returns an answer with sources.
+
+### 2.2 Why it should exist
+
+People working with document-heavy matters lose time searching folders, opening many files, locating specific facts and verifying where information came from.
+
+General-purpose assistants often require manual uploads or do not provide durable provenance, local filesystem boundaries or inspectable execution.
+
+LKW should make this workflow faster while keeping the source material under the user's control.
+
+### 2.3 First target user
+
+The first MVP user is:
+
+```text
+one knowledge worker
+using one local Windows machine
+working with one or more document-heavy matters
+using Slack in daily work
+```
+
+Representative users include:
+
+- a lawyer or legal-support user reviewing case files,
+- a consultant analysing project documents,
+- a business owner reviewing contracts and correspondence,
+- a project manager working across specifications, notes and reports.
+
+The first validation does not target everyone. It targets one concrete design partner with a real folder and real questions.
+
+### 2.4 Current pain
+
+Today the user typically:
+
+1. opens a folder,
+2. searches filenames or text manually,
+3. opens multiple documents,
+4. compares fragments,
+5. writes a summary,
+6. checks again where every statement came from.
+
+Time is lost in retrieval, comparison and source verification.
+
+### 2.5 Value proposition
+
+```text
+For a document-heavy knowledge worker
+who needs to find and verify information across local files,
+LKW provides a grounded answer with inspectable sources
+through a familiar conversational tool,
+without requiring repeated manual document search or a separate chat application.
+```
+
+### 2.6 Primary user workflow
+
+```text
+user designates a local folder
+→ LKW creates or uses a managed workspace
+→ documents are synchronized
+→ user opens Slack
+→ user selects the workspace
+→ user asks a question
+→ LKW retrieves local evidence
+→ LKW produces a grounded answer
+→ Slack displays the answer and sources
+→ user verifies and uses the result
+```
+
+### 2.7 Product roles
 
 LKW has three roles:
 
-| Role | Meaning |
-|------|---------|
-| **Real product** | Primary — ship a usable local workspace product |
-| **Platform proof** | Secondary — working product flows prove Intergrax capabilities |
-| **Platform problems detector** | Secondary — product pressure surfaces reusable platform gaps |
+| Role | Priority | Meaning |
+|------|----------|---------|
+| **Real product** | Primary | Solve a real local-document problem for a user |
+| **Platform proof** | Secondary | Working LKW flows demonstrate Intergrax capabilities |
+| **Platform problem detector** | Secondary | Product pressure exposes concrete reusable platform gaps |
 
-The last two roles exist **because** we build real product functions. They do not define the product roadmap order.
-
-### Ownership boundary
-
-```text
-LKW owns product capabilities and local execution.
-
-Intergrax owns normalized interaction intake,
-identity/context propagation, task execution and result delivery contracts.
-
-Slack, Microsoft Teams, MCP, HTTP and a minimal local companion
-are replaceable surfaces over the same LKW capabilities.
-```
-
-LKW is not a Slack bot. LKW is a local product built on Intergrax. Slack is the first familiar conversational surface — a replaceable frontend adapter over Intergrax interaction intake and LKW capabilities. Removing or disconnecting Slack does not disable LKW.
+The secondary roles exist because a real product is being built. They do not define implementation order independently of user value.
 
 ---
 
-## 3. Replaceable interaction surfaces
+## 3. LKW MVP definition
 
-### Product principle
-
-**Replaceable interaction surfaces** means every familiar tool reaches LKW through the same normalized path:
+### 3.1 MVP value statement
 
 ```text
-Known user tool
-    ↓
-surface adapter
-    ↓
-normalized Intergrax interaction envelope
-    ↓
-identity + tenant + workspace context
-    ↓
-LKW capability Task
-    ↓
-Nexus / agents / tools
-    ↓
-typed TaskResult
-    ↓
-surface-neutral response model
-    ↓
-surface renderer
+A real user can ask a question in Slack about their local documents
+and receive a useful, grounded answer with verifiable sources.
 ```
+
+### 3.2 MVP scope
+
+The MVP supports:
+
+- one local LKW installation,
+- one user,
+- one approved Slack workspace,
+- one approved Slack user,
+- one or more managed LKW workspaces,
+- local folder sources,
+- repeatable synchronization,
+- Ask Workspace,
+- grounded answers,
+- citations or source references,
+- persisted run result,
+- basic error states,
+- minimal repeatable setup for a design partner.
+
+### 3.3 MVP may remain intentionally limited
+
+The MVP may use:
+
+- Windows as the only supported operating system,
+- manual or scripted installation,
+- configuration files or a simple setup command,
+- one model provider,
+- one vector-store provider,
+- a controlled design-partner environment,
+- a limited file-type set,
+- a simple Slack DM interaction,
+- basic operational diagnostics.
+
+### 3.4 Explicitly outside the MVP
+
+The following must not delay first user validation unless a concrete MVP blocker is documented:
+
+- Microsoft Teams,
+- a second production conversational adapter,
+- a complete local companion UI,
+- automatic application updates,
+- complete delete/rename/move reconciliation,
+- broad artifact generation,
+- enterprise RBAC,
+- multiple organizations,
+- SaaS,
+- mobile clients,
+- every model or storage provider,
+- full observability vendor stack,
+- broad portability matrices,
+- PostgreSQL migration without product need,
+- token optimization before a measured baseline,
+- full LKW 1.0 security and operations hardening.
+
+### 3.5 MVP gate
+
+LKW MVP is reached only when:
+
+1. one user can start the local LKW environment through a repeatable setup;
+2. the user can create or use a workspace and attach a real local folder;
+3. documents synchronize successfully;
+4. Ask Workspace works through the canonical HTTP contract;
+5. the same Ask Workspace capability is invoked from Slack;
+6. one approved Slack user can select the workspace;
+7. the user can ask a real question;
+8. the answer is grounded in real local documents;
+9. the answer includes verifiable sources;
+10. insufficient evidence does not produce an invented answer;
+11. the flow is repeatable across several questions;
+12. the local source files remain unchanged;
+13. the user can understand basic failure or offline states;
+14. a real user can try the workflow and judge whether it saves time or improves confidence.
+
+### 3.6 MVP value measurement
+
+Technical proof is not enough. MVP validation must collect observable product evidence:
+
+- whether the user completes the flow without developer intervention,
+- whether the answer is useful,
+- whether the cited sources are correct,
+- whether the user finds information faster than manually,
+- whether the user trusts the answer more because sources are visible,
+- whether the user asks additional real questions,
+- whether the user wants to continue using or testing LKW,
+- which missing capability blocks repeated use.
+
+A ProofReceipt confirms execution. It does not replace user-value validation.
+
+### 3.7 MVP demonstration
 
 ```text
-The surface translates interaction.
+Starting state:
+a real local folder is configured and synchronized.
 
-The surface does not implement the product capability.
+User action:
+the user sends a Slack DM, selects the LKW workspace and asks a real question.
+
+Product behavior:
+Slack invokes the surface-neutral Ask Workspace capability;
+LKW searches local evidence, synthesizes a bounded answer and persists the run.
+
+Visible result:
+the user receives an answer with sources in Slack.
+
+Value evidence:
+the user verifies the sources and confirms whether the result was useful,
+faster or easier than the previous manual workflow.
 ```
-
-Slack must not become:
-
-- the LKW runtime
-- the source of product business logic
-- the owner of workspace state
-- the owner of agent orchestration
-- a required dependency of the LKW domain
-- the only supported way to use LKW
-
-### Surface-neutral product logic
-
-The following must **not** be implemented independently inside Slack, Teams, or another surface adapter:
-
-- workspace selection rules
-- document search
-- Ask Workspace orchestration
-- synthesis
-- citation creation
-- artifact generation
-- operation lifecycle
-- authorization policy
-- tenant isolation
-- workspace isolation
-- run persistence
-- retry semantics
-
-### Surface adapter responsibilities
-
-A surface adapter may own only:
-
-- receiving platform events
-- validating platform authenticity
-- mapping external identity
-- acknowledging the incoming event
-- mapping channel/thread identity to an Intergrax interaction session
-- rendering typed results
-- handling platform message limits
-- buttons, menus and platform-specific presentation
-- sending status and final responses
-
-### Surface portfolio
-
-#### Canonical product surfaces
-
-| Surface | Status | Purpose |
-|---------|--------|---------|
-| **HTTP API** | implemented / technical canonical surface | Stable public product contract; application integration; testing; fallback independent of external communication vendors |
-| **MCP** | implemented / technical user and developer surface | Access from MCP-compatible tools; developer workflows; demonstration that LKW is not tied to a chat vendor |
-
-#### Planned familiar-tool surfaces
-
-| Surface | Status | Purpose |
-|---------|--------|---------|
-| **Slack** | planned / first conversational reference surface | Direct messages with the LKW bot; workspace selection; Ask Workspace; answers with citations; operation status; artifact notifications; approval interactions; thread-based task continuity |
-| **Microsoft Teams** | planned candidate / second business conversational surface | Prove the same LKW capabilities from a second widely known business tool; verify normalized interaction and response contracts; demonstrate that Slack concepts have not leaked into the product domain |
-| **Local companion** | planned / configuration and operations surface | Installation; daemon status; filesystem folder picker; allowlist configuration; linking an external interaction surface; model and secret settings; diagnostics; updates; backup and restore |
-
-**Slack preferred transport:** Slack Socket Mode — preferred for local LKW because the local daemon initiates an outbound connection and does not need a publicly exposed webhook endpoint.
-
-**Teams transport:** Do not prescribe the final Teams transport or implementation framework in this roadmap. Resolve by focused discovery when the Teams adapter becomes active.
-
-```text
-The local companion is not required to duplicate the full conversational UI.
-```
-
-#### Possible later surfaces (non-committed candidates)
-
-- e-mail intake and delivery
-- other enterprise messaging tools
-- a richer native chat UI
-- mobile notifications
-
-Do **not** promise WhatsApp, Discord, or other consumer platforms for LKW 1.0.
-
-### 1.0 surface requirement
-
-```text
-At least one first-class conversational surface is required for LKW 1.0.
-
-Slack Socket Mode is the reference conversational surface.
-
-LKW capabilities remain usable through canonical HTTP and MCP surfaces.
-
-A second recognized tool surface must demonstrate that the product
-and Intergrax interaction layer do not depend on Slack.
-```
-
-Implementation of Teams remains later than Slack, but the production roadmap requires a **surface portability demonstration** before LKW 1.0.
-
-This roadmap does **not** claim that Slack or Teams already works.
 
 ---
 
@@ -219,11 +276,12 @@ This roadmap does **not** claim that Slack or Teams already works.
 
 ```text
 Current product level: Backend Product Alpha
-Current roadmap stage: Stage 1 — Trusted Ask Workspace
+Current milestone: LKW MVP
+Current active slice: Trusted Ask Workspace
 Current implementation focus: architectural discovery for Ask Workspace
 ```
 
-### Working today (implemented / live-verified)
+### Working today
 
 | Capability | State |
 |------------|-------|
@@ -233,7 +291,7 @@ Current implementation focus: architectural discovery for Ask Workspace
 | Folder sources | implemented / live-verified |
 | Durable synchronization | implemented / live-verified |
 | `DocumentStoreTaskQueue` | implemented / live-verified |
-| Restart recovery for queued operations | implemented / live-verified |
+| Queued-operation restart recovery | implemented / live-verified |
 | Idempotent ingest | implemented / live-verified |
 | Workspace isolation | implemented / live-verified |
 | Tenant isolation | implemented / live-verified |
@@ -242,797 +300,766 @@ Current implementation focus: architectural discovery for Ask Workspace
 | Persistent state | implemented / live-verified |
 | Live proof + ProofReceipt | implemented / live-verified |
 | MCP surface | implemented |
-| Interaction intake baseline (platform/application) | implemented |
+| Interaction intake baseline | implemented |
 
-### Not yet a finished product
-
-Honest gaps relative to LKW 1.0:
+### Missing before MVP validation
 
 | Capability | State |
 |------------|-------|
-| Ask Workspace (public Q&A with stable citations) | planned (Stage 1) |
-| Slack conversational surface | planned (Stage 2) |
-| Normalized surface adapter contract | planned (Stage 2) |
-| Second-surface portability demonstration | planned (Stage 2) |
-| Minimal local companion | planned (Stage 5) |
-| External identity mapping | planned (Stage 2) |
-| Outbound data policy | planned (Stage 2) |
-| Full document lifecycle | planned (Stage 3) |
-| Outputs and history | planned (Stage 4) |
-| Operations / security / release hardening | planned (Stage 6) |
-| Token optimization runtime | deferred until Ask Workspace baseline exists |
-| LKW 1.0 release | planned (Stage 6 gate) |
+| Surface-neutral Ask Workspace result | planned — active slice |
+| Final grounded answer with stable sources | planned — active slice |
+| Persisted question/evidence/answer run | planned — active slice |
+| Minimal Slack identity and workspace mapping | planned — MVP |
+| Slack Socket Mode DM flow | planned — MVP |
+| Basic outbound-data warning/policy | planned — MVP |
+| Minimal repeatable design-partner setup | planned — MVP |
+| Real-user MVP validation | planned — MVP gate |
 
-Backend Product Alpha means: a real host, real workspaces, real sync, and real search evidence exist — not that the product is complete.
+### Post-MVP gaps
+
+| Capability | State |
+|------------|-------|
+| Full document reconciliation | post-MVP candidate |
+| Workspace outputs and history | post-MVP candidate |
+| Full local companion | post-MVP / 1.0 |
+| Second conversational adapter | post-MVP candidate |
+| Broad operations and security hardening | post-MVP / 1.0 |
+| Token optimization runtime | after Ask Workspace baseline and measured need |
+| LKW 1.0 release | future release gate |
+
+Backend Product Alpha means the product has a real host, real workspaces, real synchronization and real search evidence. It does not yet mean that a user can experience the complete MVP value.
 
 ---
 
-## 5. Definition of LKW 1.0
+## 5. Ownership and replaceable interaction surfaces
 
-LKW 1.0 is the first production version:
-
-```text
-local
-single-user
-installable
-restart-safe
-source-file-safe
-auditable
-daily-usable
-```
-
-### Required for LKW 1.0
-
-- Canonical HTTP product API
-- MCP compatibility
-- One first-class familiar conversational surface
-- Slack as the reference conversational surface
-- A second-surface portability demonstration
-- Minimal local companion for installation and configuration
-
-### Not required for LKW 1.0
-
-- SaaS
-- Kubernetes
-- Enterprise RBAC
-- Multiple organizations
-- Mobile application
-- Every model / vector / storage provider
-- Full matrix of every operating system
-- Production support for every communication platform
-- Feature parity of presentation across all surfaces
-- A large proprietary desktop chat application
+### 5.1 Ownership boundary
 
 ```text
-Semantic capability parity is required.
+LKW owns product capabilities and local execution.
 
-Pixel-level or platform-widget parity is not.
+Intergrax owns normalized interaction intake,
+identity/context propagation, task execution and result-delivery contracts.
+
+Slack, MCP, HTTP and future tools
+are replaceable surfaces over the same LKW capabilities.
 ```
 
-### Minimal 1.0 promises
+LKW is not a Slack bot. Slack is the first familiar conversational surface for the MVP.
 
-1. Source files are never modified
-2. Answers are limited to the workspace
-3. Answers cite sources
-4. Data survives restart
-5. Operation errors are visible
-6. Artifacts land in the shadow workspace
-7. Filesystem access is controlled
-8. History of major actions is available
-9. Installation does not require a repository checkout
-10. Updates do not destroy data
-11. Conversational surfaces invoke the same surface-neutral capabilities as HTTP/MCP
-12. Disconnecting Slack does not disable the local product
+Disconnecting Slack must not disable the core local product.
+
+### 5.2 Normalized path
+
+```text
+known user tool
+→ surface adapter
+→ normalized Intergrax interaction
+→ identity + tenant + workspace context
+→ LKW capability Task
+→ Nexus / agents / tools
+→ typed TaskResult
+→ surface-neutral response
+→ surface renderer
+```
+
+```text
+The surface translates interaction.
+The surface does not implement the product capability.
+```
+
+### 5.3 Surface-neutral product logic
+
+The following must not be reimplemented inside Slack or another adapter:
+
+- document search,
+- Ask Workspace orchestration,
+- synthesis,
+- citation creation,
+- artifact generation,
+- operation lifecycle,
+- authorization policy,
+- tenant isolation,
+- workspace isolation,
+- run persistence,
+- retry semantics.
+
+Workspace selection may have a surface-specific interaction, but the resolved workspace identity and access rules belong to LKW/Intergrax contracts, not Slack-only business logic.
+
+### 5.4 Adapter responsibilities
+
+A surface adapter may own:
+
+- receiving platform events,
+- validating platform authenticity,
+- mapping external identity,
+- acknowledging events,
+- mapping channel/thread identity to an interaction session,
+- rendering typed results,
+- handling platform message limits,
+- platform-specific buttons and menus,
+- sending status and final responses.
+
+### 5.5 Surface portfolio
+
+| Surface | MVP role | Longer-term role |
+|---------|----------|------------------|
+| **HTTP API** | Canonical Ask Workspace contract and test surface | Stable product integration surface |
+| **MCP** | Existing independent technical surface | Developer/tool integration surface |
+| **Slack** | First user-facing conversational MVP surface | First-class optional conversational surface |
+| **Microsoft Teams** | Not required for MVP | Candidate selected by user demand or commercial value |
+| **Local companion** | Minimal setup may remain scripted/manual | Installation, configuration and diagnostics for 1.0 |
+
+Slack Socket Mode remains the preferred MVP transport because the local daemon initiates an outbound connection and does not require a public webhook endpoint.
+
+Before MVP, surface portability is protected by:
+
+- a surface-neutral Ask Workspace contract,
+- no Slack-specific fields in domain or agent models,
+- canonical HTTP behavior,
+- MCP remaining available,
+- adapter boundary tests,
+- no duplicated orchestration or persistence.
+
+A second large adapter is not required merely to prove the abstraction before user value is validated.
 
 ---
 
 ## 6. Execution principles
 
-### Vertical slices first
+### 6.1 Fastest-value rule
 
-Every active task delivers a real user-facing capability (or a frozen architecture needed for that capability). Avoid platform-only waves that do not unlock a product outcome.
-
-### Platform work is product-pulled
-
-A platform mechanism is built only when it blocks a real product flow in the current stage.
-
-### Surface neutrality
+When several tasks are possible, choose the one that most directly reduces the distance to:
 
 ```text
-Every user-facing LKW capability is implemented once.
-
-Surfaces invoke the capability and render its typed result.
-
-No surface owns a private version of the product workflow.
+local documents → Slack question → grounded answer with sources → real-user validation
 ```
 
-Before accepting a surface integration, verify:
+Decision order:
 
-- no Slack-specific field in LKW domain models
-- no Teams-specific field in LKW agent contracts
-- no duplicate prompt or orchestration logic
-- no separate persistence model for the same run
-- identical tenant/workspace isolation
-- identical policy behavior
-- identical ProofReceipt semantics where applicable
+1. Does the task complete a missing step in the MVP workflow?
+2. Does it make the result useful, trustworthy or repeatable?
+3. Does it remove a blocker preventing a user from trying the MVP?
+4. Does it enable real design-partner validation?
+5. Is it a reusable platform improvement required by one of the above?
 
-### One major platform gap per task
+If all answers are no, the task is not an active LKW MVP priority.
 
-If a second major platform gap appears during a slice:
+### 6.2 Vertical slices first
+
+Every active implementation task must answer:
+
+```text
+What new valuable thing can the user do after this task?
+```
+
+A frozen discovery task is allowed only when it is necessary to avoid uncertain implementation of the immediately following vertical slice.
+
+### 6.3 Platform work is product-pulled
+
+A platform mechanism is implemented only when the active LKW workflow cannot be completed safely or correctly without it.
+
+The required relationship is:
+
+```text
+real LKW capability
+→ concrete platform gap
+→ gap classification
+→ reusable fix when justified
+→ LKW consumes the fix
+→ complete product flow is revalidated
+```
+
+### 6.4 One major platform gap per task
+
+If a second major platform gap appears:
 
 ```text
 BLOCKED_BY_PLATFORM_GAP
 ```
 
-Stop. Record the gap. Do not open a parallel platform refactor inside the same task.
+Stop and restore the task boundary.
 
-### Proof as acceptance
+### 6.5 Stop conditions
 
-Proof is not a separate work program.
+Stop and reassess when:
 
-Every working vertical slice updates:
+- the task no longer produces or protects an MVP capability,
+- abstractions or providers are added without an MVP need,
+- repeated fixes target symptoms rather than a frozen contract,
+- live proof becomes the main debugging mechanism,
+- no user can try the product after several completed tasks,
+- implementation cost grows without reducing distance to MVP.
+
+Use:
+
+```text
+BLOCKED_BY_PLATFORM_GAP
+SCOPE_DRIFT_DETECTED
+TOKEN_BUDGET_EXCEEDED
+MVP_VALUE_UNCLEAR
+```
+
+### 6.6 Proof and validation
+
+Proof is part of technical acceptance, not the product goal.
+
+Working slices update:
 
 ```text
 docs/public-adoption/LKW_PLATFORM_PROOF.md
 ```
 
-### Test order
+Validation order:
 
 ```text
-contract
-→ unit
-→ boundary integration
-→ API
-→ one live run
+contract test
+→ focused unit test
+→ boundary integration test
+→ application API test
+→ one end-to-end live run
+→ real-user or design-partner validation
 ```
 
-### Token budget
+### 6.7 Token discipline
 
 Ordinary task:
 
 ```text
-soft limit: 2M
-stop and review: 4M
+soft limit: 2M tokens
+stop and review: 4M tokens
 ```
 
 Large vertical slice:
 
 ```text
-soft limit: 4M
-stop and review: 8M
+soft limit: 4M tokens
+stop and review: 8M tokens
 ```
 
-After exceedance:
-
-```text
-TOKEN_BUDGET_EXCEEDED
-```
-
-Cursor must not run an open-ended fix loop past budget. Stop, report, and wait for operator review.
+Do not continue an open-ended fix loop beyond the review threshold.
 
 ---
 
-## 7. Production roadmap
+## 7. Active MVP execution path
 
-Six production stages define LKW development order. Complete earlier stages before expanding later ones, unless a later stage item is explicitly documented as a blocker of the current stage.
+This is the active task order. The later 1.0 roadmap does not override it.
 
-```text
-Stage 2 depends on the completed, typed and persisted Ask Workspace contract from Stage 1.
-```
+### MVP-0 — Product brief alignment
 
-Slack work must not begin before the surface-neutral Ask Workspace capability exists.
+**Status:** done
 
----
+Result:
 
-### Stage 1 — Trusted Ask Workspace
+- product purpose defined,
+- first user defined,
+- primary workflow defined,
+- MVP scope and exclusions defined,
+- value measurement defined,
+- MVP gate defined.
+
+Canonical references:
+
+- this document,
+- [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md).
+
+### MVP-1 — Trusted Ask Workspace discovery
 
 **Status:** `CURRENT`
 
-#### User outcome
+Purpose: freeze the shortest safe implementation path for Ask Workspace.
 
-The user asks a workspace question and receives a checkable answer grounded in documents.
+Discovery must establish:
 
-#### Product flow
+- existing `local.workspace.search` flow,
+- typed evidence shape,
+- existing synthesis flow,
+- existing citation model,
+- current run persistence,
+- structured result path,
+- product/platform boundary,
+- one expected major platform blocker,
+- focused boundary test.
+
+Discovery output:
 
 ```text
-question
+frozen Ask Workspace contract
++ exact implementation task
++ no unrelated implementation
+```
+
+### MVP-2 — Trusted Ask Workspace
+
+**Status:** planned
+
+User-visible result:
+
+```text
+HTTP question
 → workspace-scoped retrieval
 → evidence
 → synthesis
-→ answer
-→ stable citations
+→ grounded answer
+→ stable sources
 → persisted run
 ```
 
-#### Required capabilities
+Minimum acceptance:
 
-- Public Ask Workspace API
-- Workspace-scoped retrieval
-- Context assembly
-- Synthesis
-- Stable citations
-- Insufficient-evidence behavior
-- Persisted run
-- Persisted question, evidence, and answer
-- Read of a completed run
-- Timeout and failure states
-- **Surface-neutral** Ask Workspace capability and typed response — usable without Slack-specific fields
+- public Ask Workspace endpoint,
+- surface-neutral typed result,
+- real question and documents,
+- answer with sources,
+- insufficient-evidence behavior,
+- persisted question/evidence/answer,
+- completed-run read,
+- tenant/workspace isolation,
+- restart persistence,
+- one public live proof.
 
-#### Completion gate
+No Slack-specific fields or logic are permitted in this slice.
 
-- Real question
-- Real documents
-- Answer
-- Citations
-- No hallucination when evidence is missing
-- Tenant / workspace isolation
-- Persistence across restart
-- Public live proof
-- Completion uses the **canonical HTTP path first**
-- Public result contract has no Slack-specific fields
-
-Do **not** make Slack part of the Stage 1 implementation. Stage 1 creates the surface-neutral capability that later surfaces expose.
-
-#### Next action
-
-```text
-Focused architectural discovery:
-local.workspace.search
-→ typed evidence
-→ local.workspace.synthesize
-→ citations
-→ persisted run result
-```
-
----
-
-### Stage 2 — Replaceable Conversational Surfaces
+### MVP-3 — Slack MVP discovery
 
 **Status:** planned
 
-```text
-Depends on: completed, typed and persisted Ask Workspace contract from Stage 1.
-```
+Purpose: freeze only the architecture needed for the first familiar-tool workflow.
 
-#### User outcome
+Discovery must establish:
 
-The user can interact with LKW from a familiar communication tool without learning a new conversational application.
+- Socket Mode connection path,
+- minimal event-to-interaction mapping,
+- approved Slack workspace/user mapping,
+- workspace selection interaction,
+- asynchronous acknowledgement,
+- duplicate-event boundary,
+- basic outbound-data rule,
+- offline/local-host behavior,
+- typed response rendering,
+- one expected major platform blocker.
 
-The same Ask Workspace capability works through multiple interchangeable surfaces.
+Do not design Teams, a universal messaging framework or a full companion in this task.
 
-#### Required capabilities
-
-- Normalized interaction envelope
-- Normalized external identity mapping
-- Tenant and workspace context resolution
-- Conversation/thread session mapping
-- Typed surface-neutral response contract
-- Asynchronous acknowledgement
-- Durable long-operation delivery
-- Duplicate-event protection
-- External-user allowlist
-- Fail-closed authorization
-- Outbound data policy
-- Message-size-aware rendering
-- Offline/local-host status behavior
-- Slack Socket Mode adapter
-- Slack DM flow
-- Slack thread continuity
-- Workspace selection
-- Ask Workspace answer with citations
-- Operation status messages
-- Approval interaction baseline
-- Second-surface adapter demonstration using Microsoft Teams
-- Canonical HTTP/MCP paths remain operational
-
-#### Slack reference flow
-
-```text
-Slack user
-→ DM or mention
-→ Slack Socket Mode adapter
-→ normalized interaction intake
-→ identity and workspace resolution
-→ local.workspace.ask
-→ typed answer and citations
-→ Slack renderer
-→ thread reply
-```
-
-#### Surface portability flow
-
-```text
-same workspace
-same question
-same LKW capability
-same policy
-same run semantics
-same citation model
-
-→ invoked through Slack
-→ invoked through Microsoft Teams or the selected second business surface
-```
-
-Surface formatting may differ. Product semantics must not.
-
-#### Privacy requirement
-
-Distinguish:
-
-```text
-local processing
-```
-
-from:
-
-```text
-data never leaves the device
-```
-
-When an answer, citation, snippet or artifact is sent to Slack or Teams, that content enters an external cloud service.
-
-Required product controls:
-
-- Explicit external-surface connection
-- Approved external workspace/tenant
-- Approved external user IDs
-- Configurable outbound content policy
-- Clear warning that delivered content leaves the local device
-- No automatic artifact upload without policy or approval
-
-#### Offline behavior
-
-The local daemon may be unavailable because the computer is offline, asleep, shut down, or not running LKW.
-
-Require a clear offline state rather than implying cloud-agent availability.
-
-#### Completion gate
-
-Stage 2 is complete only when:
-
-1. Slack Socket Mode works with a real Slack workspace
-2. A user can select a workspace
-3. A user can ask a real workspace question
-4. The answer contains citations
-5. Long operations acknowledge quickly and complete asynchronously
-6. Duplicate Slack events do not duplicate product operations
-7. Unauthorized Slack users fail closed
-8. Thread/session context does not leak across workspaces
-9. Slack-specific data is absent from LKW domain and agent contracts
-10. HTTP and MCP remain functional
-11. The same product capability is exercised through a second recognized surface
-12. The second adapter does not require duplication of Ask Workspace logic
-13. A public proof demonstrates surface interchangeability
-14. Cloud-channel data exposure is clearly documented and policy-controlled
-
----
-
-### Stage 3 — Reliable Document Lifecycle
+### MVP-4 — Slack conversational MVP
 
 **Status:** planned
 
-#### User outcome
+User-visible result:
 
-The workspace automatically stays aligned with folder contents.
+```text
+approved Slack user
+→ DM to LKW
+→ select workspace
+→ ask real question
+→ same Ask Workspace capability
+→ answer with sources
+→ Slack thread reply
+```
 
-#### Required capabilities
+Minimum acceptance:
 
-- New files
-- Modified files
-- Deleted files
-- Rename / move
-- Stale chunk removal
-- Retry
-- Document status
-- Partial sync result
-- Operation recovery
-- Continuous synchronization
+- real Slack workspace,
+- Socket Mode,
+- one approved user,
+- one approved Slack workspace,
+- workspace selection,
+- Ask Workspace invocation,
+- grounded answer with sources,
+- quick acknowledgement for long work,
+- duplicate-event protection,
+- fail-closed unauthorized user behavior,
+- no Slack-specific product logic,
+- HTTP and MCP still work,
+- clear warning that Slack delivery sends content to an external cloud service.
 
-#### Surface requirement
+Not required in this slice:
 
-Relevant synchronization status and failures must be available through:
+- Microsoft Teams,
+- broad approval workflows,
+- artifact uploads,
+- feature-complete Slack UI,
+- multiple users,
+- enterprise administration.
 
-- the canonical API
-- the connected conversational surface
-- the local companion
-
-Do **not** put document reconciliation logic inside Slack or Teams.
-
-#### Completion gate
-
-- File change changes search results
-- Deleted file disappears from retrieval
-- Rename does not create uncontrolled duplicates
-- One bad file does not hide the rest
-- Retry is explicit
-- Restart does not lose lifecycle state
-- Sources remain read-only
-- Sync status / failures visible on API, conversational surface, and companion
-
----
-
-### Stage 4 — Workspace Outputs and History
+### MVP-5 — Minimal design-partner package
 
 **Status:** planned
 
-#### User outcome
+User-visible result: a design partner can start and configure the MVP through a documented repeatable path.
 
-The user generates durable work products from workspace knowledge.
+Minimum scope:
 
-#### Required capabilities
+- Windows-first setup,
+- one installation or bootstrap script,
+- one configuration path,
+- folder/workspace setup,
+- Slack credentials setup,
+- start/stop command,
+- health check,
+- short operator runbook,
+- data location documented,
+- uninstall/reset instructions.
 
-- Reports
-- Summaries
-- E-mails
-- Timelines
-- Fact tables
-- Risk lists
-- Shadow artifacts
-- Artifact provenance
-- Versioning
-- Run history
-- Explicit export approval
+This is not the full Stage 5 local companion.
 
-#### Multi-surface delivery
-
-- Short status and summary may be delivered through Slack or Teams
-- Complete artifact remains in the shadow workspace by default
-- External artifact upload requires explicit policy or approval
-- Artifact provenance remains surface-neutral
-- Run history is shared across surfaces
-- Asking through Slack and viewing through the local companion must reference the same run and artifact
-
-#### Completion gate
-
-- At least three artifact types
-- Durable artifact
-- Citations / provenance
-- Restart persistence
-- Shadow-only default
-- Explicit export consent
-- Readable failure status
-- Multi-surface delivery rules above satisfied
-
----
-
-### Stage 5 — Installable Local Companion
+### MVP-6 — Real-user validation
 
 **Status:** planned
 
-#### User outcome
+A real user performs the primary workflow with real documents and real questions.
 
-A non-technical user installs the local LKW runtime, connects familiar interaction tools and manages local-only configuration without using the repository.
+Validation records:
 
-#### Required capabilities
+- setup completion,
+- successful task completion,
+- answer usefulness,
+- citation correctness,
+- approximate time saved,
+- trust/confidence feedback,
+- reuse or follow-up questions,
+- blockers to repeated use,
+- most valuable next capability.
 
-- Windows installer first
-- Local daemon lifecycle
-- System startup
-- Folder picker
-- Workspace and source setup
-- Filesystem allowlist
-- Slack connection setup
-- External surface connection status
-- Approved user/workspace mapping
-- Model configuration
-- Secret storage
-- Health
-- Diagnostics
-- Update
-- Uninstall
-- Backup/restore entry points
+### MVP decision gate
 
-#### Scope boundary
+After validation, do not automatically start the next technical stage.
+
+Choose the next priority from:
 
 ```text
-The companion does not need to duplicate Slack or Teams as a full chat client.
+observed user need
+→ measurable value
+→ concrete blocker
+→ cheapest next valuable workflow
 ```
 
-It may include a minimal local fallback interaction view, but this is not required to reproduce the complete conversational experience before 1.0.
+Possible next priorities include:
 
-#### Completion gate
-
-- Clean Windows install
-- No repository checkout
-- Daemon starts
-- User selects a folder
-- User links Slack
-- User sees connection health
-- User can revoke the connection
-- Ask Workspace works through the connected surface
-- Canonical local API remains available
-- Update preserves data and connection configuration
-- Safe uninstall
-- Diagnostics bundle
+- document lifecycle,
+- outputs and artifacts,
+- history,
+- better setup/companion,
+- retrieval quality,
+- another familiar tool such as Microsoft Teams,
+- security or operations work required by the real user environment.
 
 ---
 
-### Stage 6 — Operational, Security, Quality and Release Gate
+## 8. Post-MVP roadmap to LKW 1.0
 
-**Status:** planned
+The following six stages describe product maturity toward LKW 1.0. They are not an automatic task queue before MVP validation.
 
-#### User outcome
+### Stage 1 — Trusted Ask Workspace
 
-The system is predictable, diagnosable, safe for long-lived use, and correct / economical enough to be marked 1.0.
+**MVP-critical**
 
-#### Required capabilities
+User outcome: the user asks a workspace question and receives a checkable answer grounded in documents.
 
-- Component health
-- Worker health
-- Queue health
-- Failed operation visibility
-- Retry / recovery
-- Backup / restore
-- Migrations
-- Log retention
-- Secure localhost client access
-- Secret storage
-- File limits
-- Parser safety
-- Symlink policy
-- Resource limits
-- Audit
-- Diagnostics bundle
-- Versioned quality corpus
-- Retrieval quality metrics
-- Citation correctness
-- Unsupported-answer measurement
-- Leakage measurement
-- Latency
-- Token usage
-- Model cost
-- Storage usage
-- Provider configuration
-- One alternative model provider
-- Soak testing
-- Release checklist
+Capabilities:
 
-#### Surface-specific readiness
+- workspace-scoped retrieval,
+- evidence assembly,
+- synthesis,
+- stable citations,
+- insufficient-evidence behavior,
+- persisted run,
+- timeout/failure states,
+- surface-neutral result contract.
 
-- Slack token and app secrets stored securely
-- External provider credentials excluded from logs and receipts
-- External event replay protection
-- Duplicate delivery idempotency
-- Rate-limit handling
-- Message length and file upload limits
-- External identity audit
-- Outbound data policy audit
-- Connection revoke behavior
-- External surface outage handling
-- Slack unavailable does not block HTTP/MCP/local administration
-- Second-surface outage does not corrupt LKW state
+### Stage 2 — Familiar conversational access
 
-#### Token Optimization placement
+**Slack MVP-critical; broader portability post-MVP**
 
-```text
-Token Optimization is not the current standalone roadmap.
-It is applied after a stable Ask Workspace baseline exists.
-```
+User outcome: the user accesses the same LKW capability from a familiar communication tool.
 
-Order:
+MVP requirement:
 
-```text
-real Ask Workspace
-→ baseline measurement
-→ optimization
-→ quality and cost comparison
-```
+- Slack DM,
+- approved identity,
+- workspace selection,
+- answer with sources,
+- basic async and duplicate handling,
+- outbound-data warning.
 
-#### LKW 1.0 release gate
+Post-MVP expansion may include:
 
-1. Core local runtime works independently of Slack and Teams
-2. Canonical HTTP API works
-3. MCP remains available
-4. Slack works as the first conversational surface
-5. At least one second recognized surface demonstrates adapter interchangeability
-6. Product logic is not duplicated between surfaces
-7. Local companion handles setup and diagnostics
-8. Disabling or disconnecting Slack does not disable LKW
-9. External data delivery policy is enforced
-10. Remaining product, security, quality and operational gates pass
+- richer Slack interactions,
+- shared session/history UX,
+- approvals,
+- artifact notifications,
+- Microsoft Teams or another surface selected by real demand,
+- broader surface-portability proof.
 
-Also retain:
+### Stage 3 — Reliable document lifecycle
 
-- Install works
-- Document lifecycle works
-- Ask Workspace works
-- Citations work
-- Artifacts work
-- History works
-- Backup / restore works
-- Security gate works
-- Quality thresholds pass
-- Cost baseline is known
-- Soak test passes
-- Public proof is complete
+**Post-MVP candidate**
+
+Capabilities may include:
+
+- new and modified files,
+- deleted files,
+- rename/move,
+- stale chunk removal,
+- document status,
+- partial sync result,
+- retry and recovery,
+- continuous synchronization.
+
+Pull this work forward only when stale or changing documents block the intended MVP user.
+
+### Stage 4 — Workspace outputs and history
+
+**Post-MVP candidate**
+
+Capabilities may include:
+
+- reports,
+- summaries,
+- e-mails,
+- timelines,
+- fact tables,
+- risk lists,
+- shadow artifacts,
+- artifact provenance,
+- versioning,
+- run history,
+- explicit export approval.
+
+The first output type should be selected from observed user value, not from a completeness checklist.
+
+### Stage 5 — Installable local companion
+
+**1.0 direction; minimal packaging occurs before MVP validation**
+
+Capabilities may include:
+
+- Windows installer,
+- daemon lifecycle,
+- system startup,
+- folder picker,
+- workspace/source setup,
+- filesystem allowlist,
+- Slack connection setup,
+- identity mapping,
+- model and secret settings,
+- health and diagnostics,
+- update,
+- uninstall,
+- backup/restore entry points.
+
+The companion does not need to duplicate Slack as a full chat client.
+
+### Stage 6 — Operational, security, quality and release readiness
+
+**Post-MVP / 1.0 gate**
+
+Capabilities may include:
+
+- component, worker and queue health,
+- recovery and failed-operation visibility,
+- backup/restore,
+- migrations,
+- retention,
+- secure localhost access,
+- secret storage,
+- parser/file/symlink/resource limits,
+- audit and diagnostics,
+- versioned quality corpus,
+- citation and unsupported-answer metrics,
+- leakage measurement,
+- latency, token, cost and storage baselines,
+- soak tests,
+- release checklist.
+
+Token optimization begins only after a stable measured Ask Workspace baseline and a demonstrated product or cost need.
 
 ---
 
-## 8. Current stage
+## 9. LKW 1.0 definition
+
+LKW 1.0 is intended to be:
 
 ```text
-Current stage: Stage 1 — Trusted Ask Workspace
-Current status: Discovery required before implementation
-Next deliverable: frozen architecture and task definition for LKW-PRODUCT-2
+local
+single-user first
+installable
+restart-safe
+source-file-safe
+auditable
+daily-usable
+supportable for its declared scope
 ```
 
-### Discovery must establish
+### Expected 1.0 outcomes
 
-- Existing synthesize flow
-- Existing citation model
-- Current run persistence
-- Structured output path
-- Product / platform boundary
-- One predicted platform blocker
-- Focused boundary test
+- canonical HTTP API works,
+- MCP remains available,
+- Ask Workspace works with sources,
+- one first-class familiar conversational surface works,
+- the local core remains independent of external surfaces,
+- local setup and diagnostics are usable,
+- document lifecycle is reliable enough for the declared use,
+- history/artifacts support validated user needs,
+- backup/recovery and security gates match the declared use,
+- quality and cost baselines are known,
+- public proof reflects actual capabilities.
 
-Do **not** start a full Ask Workspace implementation task until discovery freezes architecture and the LKW-PRODUCT-2 task definition.
+### Not automatically required for 1.0
 
-Do **not** start Stage 2 Slack work before the surface-neutral Ask Workspace capability from Stage 1 exists.
+- SaaS,
+- Kubernetes,
+- enterprise RBAC,
+- multiple organizations,
+- mobile application,
+- every provider,
+- every operating system,
+- every messaging platform,
+- identical presentation across surfaces,
+- a large proprietary desktop chat UI.
 
-```text
-Stage 2 depends on the completed, typed and persisted Ask Workspace contract from Stage 1.
-```
+A second conversational adapter is valuable when it demonstrates commercial or user value. It is not a mandatory pre-MVP deliverable.
 
 ---
 
-## 9. Production gates
+## 10. Product and platform gates
 
-Every stage must pass the applicable gates before it is closed.
+### MVP value gate
+
+Can a real user complete the primary workflow and judge its value?
 
 ### Product gate
 
-Did the user receive a genuinely useful capability?
+Does the slice give the user a genuinely useful capability?
 
 ### Architecture gate
 
-Does LKW use the platform without bypasses and without direct vendor calls from product code?
+Does LKW use Intergrax without bypasses or duplicated surface-specific product logic?
 
 ### Operational gate
 
-Does the flow survive restart, failure, and retry?
+Is the capability reliable enough for the intended MVP or release user?
 
 ### Audit gate
 
-Can an external person verify the flow through:
+Can the technical flow be verified through tests, live proof and `LKW_PLATFORM_PROOF.md`?
 
-```text
-docs/public-adoption/LKW_PLATFORM_PROOF.md
-```
+### Surface-neutrality gate
 
-### Surface portability gate
+Can the capability remain independent of Slack-specific domain, orchestration and persistence semantics?
 
-Applies to Stage 2 and every later stage exposing new user-facing capabilities:
-
-```text
-Can the capability be invoked through a different surface
-without changing its domain logic, agent orchestration or persistence?
-```
+Before MVP, this is demonstrated through the HTTP/MCP/Slack boundaries and contract tests. A second production adapter is not required.
 
 ---
 
-## 10. Platform problem classification
+## 11. Platform-gap classification
 
-Classify every detected gap as one of:
-
-```text
-product-blocking
-platform-reusable-nonblocking
-production-hardening
-```
+Every detected gap is classified as:
 
 | Class | Rule |
 |-------|------|
-| **product-blocking** | Resolve before closing the current stage |
-| **platform-reusable-nonblocking** | Record it; do not auto-create the next task |
-| **production-hardening** | Return in Stage 6 unless it already blocks the product |
+| **product-blocking** | Solve before completing the active MVP workflow |
+| **platform-reusable-nonblocking** | Record; do not create an automatic implementation task |
+| **production-hardening** | Place after the MVP gate unless risk is unacceptable for the MVP user |
+| **product-specific** | Keep in LKW; do not generalize prematurely |
 
 ```text
-Not every detected pattern becomes an implementation task.
+Not every detected pattern becomes a platform task.
 ```
 
-Historical platform backlog items (proof maturity waves, vendor observability rollouts, provider matrices, PostgreSQL/vector portability without a product need) remain reference material only. They are not the active product order.
+Historical platform backlogs, provider matrices, vendor observability rollouts and portability programs remain reference material only until a real LKW need pulls them into scope.
 
 ---
 
-## 11. Deferred scope
+## 12. Deferred scope
 
-Explicitly deferred until a current production stage documents them as blockers:
+Deferred until MVP validation or a documented blocker:
 
-- Support for every messaging provider
-- macOS installer
-- Mobile client
-- SaaS
-- Multi-organization support
-- Enterprise RBAC
-- Kubernetes
-- PostgreSQL migration without a product need
-- Vector-store portability without a product need
-- Broad observability vendor rollout
-- Prometheus / Grafana / Tempo / Sentry as standalone proofs
-- Scaffold propagation as a standalone program
-- All-provider matrices
-- Autonomous agent actions
-- Web search
-- Cross-device sync
-
-**Microsoft Teams** is a **planned second-surface candidate for Stage 2 portability acceptance** — not indefinite deferred scope.
-
-```text
-Additional communication surfaces beyond the Stage 2 portability pair
-remain product-demand-driven.
-```
+- Microsoft Teams,
+- support for every messaging provider,
+- complete local companion,
+- macOS installer,
+- mobile client,
+- SaaS,
+- multi-organization support,
+- enterprise RBAC,
+- Kubernetes,
+- PostgreSQL migration without a product need,
+- vector-store portability without a product need,
+- broad observability vendor rollout,
+- Prometheus/Grafana/Tempo/Sentry as standalone proofs,
+- scaffold propagation as a standalone program,
+- all-provider matrices,
+- autonomous external actions,
+- web search,
+- cross-device synchronization,
+- optimization before a measured baseline.
 
 ```text
-Deferred items may enter the active plan only when they become a documented blocker of a current production stage.
+Deferred work enters the active plan only when it blocks the MVP,
+protects the intended user, or is selected from real validation feedback.
 ```
 
 ---
 
-## 12. Completed milestones
+## 13. Completed milestones
 
-Short register of closed product baselines. Detail lives in verification docs, journal, and git history — not in this roadmap.
-
-| Milestone | Result (one line) | Status | Evidence |
-|-----------|-------------------|--------|----------|
+| Milestone | Result | Status | Evidence |
+|-----------|--------|--------|----------|
 | **LKW.0** | Application host baseline and architecture scaffold | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
-| **LKW.1** | Index / search / synthesize baseline with live product proof | Closed in scope | [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md) |
-| **LKW.2** | Multi-step pipeline baseline (`local.workspace.*`) | Closed | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
-| **LKW.3** | Serving and application composition (`filesystem.*` + allowlist) | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
-| **LKW.5** | Persistence and restart proof (`LKW_DATA_HOME`, durable vectors) | Closed | [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md) |
-| **LKW.6** | Interaction intake baseline (OS daemon / intake router); future Slack and Teams adapters will consume this platform/application baseline | Closed | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`journal/`](journal/) |
+| **LKW.1** | Index/search/synthesize baseline with live proof | Closed in scope | [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md) |
+| **LKW.2** | Multi-step `local.workspace.*` pipeline baseline | Closed | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW.3** | Serving and filesystem-policy application composition | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| **LKW.5** | Persistent vectors and restart proof | Closed | [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md) |
+| **LKW.6** | Interaction intake baseline for future surface adapters | Closed | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`journal/`](journal/) |
 | **LKW.7** | File watcher and incremental indexing baseline | Closed | [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) |
-| **LKW-PRODUCT-1** | Managed workspaces and folder sources (create / attach / sync / search) | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
-| **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence handoff | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW-PRODUCT-1** | Managed workspaces and folder sources | Done | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence | Done | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW-MVP-BRIEF** | Product purpose, first user, MVP workflow, value and gate defined | Done | This document · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md) |
 
-Slack and Teams are **not** historically completed.
+Ask Workspace, Slack MVP, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
 
 ---
 
-## 13. Historical references
+## 14. Historical references
 
-Detailed historical narratives, micro-wave status tables, and former proof-first queues are **not** the active product roadmap. Consult:
+Detailed history is available in:
 
 | Location | Contents |
 |----------|----------|
 | [`journal/`](journal/) | Dated implementation notes |
-| Application `*VERIFICATION*.md` docs | Live verification write-ups (e.g. [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md), [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md), [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md)) |
-| [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | Public proof steps and receipts |
-| Git history | Exact code and doc evolution |
+| Application `*VERIFICATION*.md` files | Live verification write-ups |
+| [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | Public technical proof paths and receipts |
+| Git history | Exact code and documentation evolution |
 
-Former items such as `LKW-PF0–LKW-PF7`, Token Optimization sequences (`TOKEN-1A` …), observability vendor proof packs, PostgreSQL / vector portability as standalone obligations, and scaffold propagation programs are classified as:
-
-```text
-historical platform backlog
-```
-
-They must not reappear as the active product execution order. Reintroduce only under §10 / §11 when a current production stage documents a blocker.
+Former proof-first queues, standalone Token Optimization sequences, vendor observability packs, PostgreSQL/vector portability obligations and scaffold propagation programs are historical platform backlog, not the active LKW product order.
 
 ---
 
-## Appendix A — Document map (quick)
+## Appendix A — Current task summary
 
 ```text
-ARCHITECTURE.md
-→ how LKW is built
-
-IMPLEMENTATION_PLAN.md
-→ where the product is going and what we execute now
-
-LKW_PLATFORM_PROOF.md
-→ how an external person verifies working capabilities
+Current milestone: LKW MVP
+Current task: MVP-1 — Trusted Ask Workspace discovery
+Next implementation task: MVP-2 — Trusted Ask Workspace
+Next user-surface task: MVP-3/MVP-4 — Slack discovery and Slack MVP
+MVP gate follows minimal packaging and real-user validation.
 ```
 
 ## Appendix B — Status vocabulary
 
-Use these labels consistently in future updates:
-
 | Label | Meaning |
 |-------|---------|
-| `implemented` | Code and tests exist in-repo |
-| `live-verified` | Demonstrated in a live run / proof |
-| `planned` | On the active six-stage roadmap |
-| `candidate` | Recognized option pending discovery / portability acceptance |
-| `deferred` | Explicitly out of active order until a documented blocker |
+| `implemented` | Code and tests exist |
+| `live-verified` | Demonstrated in a live run |
+| `MVP-critical` | Required before first user-value validation |
+| `post-MVP candidate` | Selected by validation feedback or a concrete blocker |
+| `planned` | Intentionally on the active execution path |
+| `deferred` | Outside active scope until justified by product need |
 
-Do not mark Ask Workspace, Slack, Teams, surface portability, local companion, full document reconciliation, outputs/history, operations/security/release hardening, token optimization runtime, or LKW 1.0 as done until the matching stage gates pass.
+The active measure of progress is:
+
+```text
+How much closer is a real user to asking about local documents in Slack
+and receiving a useful, grounded answer with sources?
+```
