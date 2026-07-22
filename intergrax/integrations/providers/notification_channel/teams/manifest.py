@@ -10,7 +10,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 
 MANIFEST = IntegrationManifest(
     slug="teams",
-    categories=(IntegrationCategory.NOTIFICATION_CHANNEL, IntegrationCategory.INTERACTION_SURFACE,),
+    categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
     status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_TEAMS',
     description='Microsoft Teams — outbound webhook notifications + inbound activities (via create_teams_integration)',

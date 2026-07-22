@@ -18,7 +18,6 @@ HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
         "slack",
         "sentry",
         "otel",
-        "lab_json",
         "log",
     }
 )

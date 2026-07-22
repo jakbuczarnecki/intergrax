@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Catalog manifest for ``slash_command`` integration."""
+"""Catalog manifest for ``mailgun`` integration."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ from intergrax.integrations.contracts.base import IntegrationCategory, Integrati
 from intergrax.integrations.core.manifest import IntegrationManifest
 
 MANIFEST = IntegrationManifest(
-    slug="slash_command",
-    categories=(IntegrationCategory.INTERACTION_SURFACE,),
-    status=IntegrationStatus.BETA,
-    env_prefix='INTERGRAX_SLASH_COMMAND',
-    description='Generic slash-command intake (Slack/Teams/CLI payloads)',
+    slug="mailgun",
+    categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_MAILGUN",
+    description="Mailgun outbound email notification channel",
 )

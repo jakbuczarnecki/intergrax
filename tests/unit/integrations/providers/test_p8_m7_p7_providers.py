@@ -247,7 +247,7 @@ def test_lancedb_vector_store_conformance() -> None:
 
 def test_telegram_dual_category_factory() -> None:
     notify = create_telegram_catalog_factory(integration_category=IntegrationCategory.NOTIFICATION_CHANNEL)
-    interaction = create_telegram_catalog_factory(integration_category=IntegrationCategory.INTERACTION_SURFACE)
+    interaction = create_telegram_catalog_factory(integration_category=IntegrationCategory.NOTIFICATION_CHANNEL)
     assert notify is not None
     assert interaction is not None
 
@@ -325,4 +325,4 @@ def test_m7_p7_presets_bind_categories() -> None:
     ingest = presets.document_ingest_stack()
     assert ingest.slug_for_category(IntegrationCategory.DOCUMENT_PARSER) == "llamaparse"
     bot = presets.chat_bot_stack()
-    assert bot.slug_for_category(IntegrationCategory.INTERACTION_SURFACE) == "telegram"
+    assert bot.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL) == "telegram"

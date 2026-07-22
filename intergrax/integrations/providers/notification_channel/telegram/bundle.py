@@ -1,18 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from intergrax.integrations._shared.p8.factories import create_telegram_catalog_factory as _legacy_create_telegram_catalog_factory
-
+from intergrax.integrations._shared.p8.factories import (
+    create_telegram_catalog_factory as _legacy_create_telegram_catalog_factory,
+    create_telegram_notification_channel as _legacy_create_telegram_notification_channel,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.notification_channel.telegram.integration import (
     TELEGRAM_NOTIFICATION_CHANNEL_PROVIDER_ID,
+    TelegramNotificationChannelClient,
     TelegramNotificationChannelIntegration,
     TelegramNotificationChannelIntegrationConfig,
-    TelegramNotificationChannelClient,
 )
 
 __all__ = [
     "create_telegram_catalog_factory",
+    "create_telegram_notification_channel",
     "create_telegram_notification_channel_integration",
 ]
 
@@ -39,6 +42,14 @@ def create_telegram_notification_channel_integration(
         display_name="Telegram",
         config=TelegramNotificationChannelIntegrationConfig(enabled=enabled),
     )
+
+
+def create_telegram_notification_channel(**kwargs: object) -> TelegramNotificationChannelIntegration:
+    """Catalog factory for Telegram as notification_channel."""
+    runtime = _legacy_create_telegram_notification_channel(**kwargs)
+    if isinstance(runtime, TelegramNotificationChannelIntegration):
+        return runtime
+    return TelegramNotificationChannelIntegration.from_client(runtime)
 
 
 def create_telegram_catalog_factory(**kwargs: object) -> TelegramNotificationChannelIntegration:

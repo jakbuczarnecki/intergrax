@@ -14,7 +14,6 @@ from intergrax.integrations.registry.catalog_manifests import (
     GRAFANA,
     INMEMORY,
     KAFKA,
-    LAB_JSON,
     LANGFUSE,
     LOG,
     LOKI,
@@ -83,7 +82,6 @@ def observability_stack(
     return IntegrationProfile(
         relational_store=SQLITE,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         observability_backend=observability_backend,
         options=options,
@@ -144,7 +142,6 @@ def harness_eval_stack(
         observability_backend=LANGFUSE,
         object_storage=object_storage,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -172,7 +169,6 @@ def harness_async_stack(
         message_bus=bus_manifest,
         key_value_cache=key_value_cache,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -204,7 +200,6 @@ def harness_ci_stack(
         ci_cd=ci_cd,
         issue_tracker=GITHUB,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -231,7 +226,6 @@ def harness_security_stack(
         security_scanner=normalized,
         secrets_store="infisical",
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -267,7 +261,6 @@ def harness_sandbox_stack(
         relational_store=SQLITE,
         sandbox_host=normalized,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -289,7 +282,6 @@ def harness_codecraft_stack(
         security_scanner=security.security_scanner,
         secrets_store=security.secrets_store,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -312,7 +304,6 @@ def harness_identity_stack(
         relational_store=SQLITE,
         identity_provider=normalized,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -337,7 +328,6 @@ def research_web_stack(
         vector_store=INMEMORY,
         wiki_knowledge="wikipedia",
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -371,7 +361,6 @@ def document_ingest_stack(
         vector_store=vector,
         object_storage=storage,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         options=options,
     )
 
@@ -382,7 +371,7 @@ def chat_bot_stack(
     enable_langfuse: bool = True,
 ) -> IntegrationProfile:
     """Chat bot stack — messenger intake + redis session cache + trace export."""
-    allowed = {"telegram", "slack", "teams", "lab_json"}
+    allowed = {"telegram", "slack", "teams"}
     normalized = interaction_slug.strip().lower()
     if normalized not in allowed:
         raise ValueError(f"Unsupported interaction surface: {interaction_slug!r}")
@@ -393,8 +382,7 @@ def chat_bot_stack(
     profile_kwargs: dict[str, object] = {
         "relational_store": SQLITE,
         "key_value_cache": REDIS,
-        "notification_channel": normalized if normalized != "lab_json" else LOG,
-        "interaction_surface": normalized,
+        "notification_channel": normalized,
         "observability_backend": observability_backend,
         "document_parser": DOCLING,
         "options": options,
@@ -422,7 +410,6 @@ def harness_gitops_stack(
         ci_cd=normalized,
         issue_tracker=GITHUB,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         document_parser=DOCLING,
         options=options,
     )
@@ -440,7 +427,6 @@ def harness_guardrail_stack(
     return IntegrationProfile(
         relational_store=SQLITE,
         notification_channel=LOG,
-        interaction_surface=LAB_JSON,
         llm_guardrail=primary,
         options=options,
     )

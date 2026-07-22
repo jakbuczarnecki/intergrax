@@ -57,7 +57,6 @@ class PlatformIntegrationKind(StrEnum):
     OBJECT_STORAGE = "object_storage"
     SEARCH_PROVIDER = "search_provider"
     NOTIFICATION_CHANNEL = "notification_channel"
-    INTERACTION_SURFACE = "interaction_surface"
     COLLABORATION_SUITE = "collaboration_suite"
     ISSUE_TRACKER = "issue_tracker"
     WIKI_KNOWLEDGE = "wiki_knowledge"
@@ -79,6 +78,7 @@ class PlatformIntegrationKind(StrEnum):
     CRM = "crm"
     VISION_SERVING = "vision_serving"
     ML_INFERENCE_HOST = "ml_inference_host"
+    MODEL_SERVING_RUNTIME = "model_serving_runtime"
     LLM_GUARDRAIL = "llm_guardrail"
     EXTERNAL_WORK = "external_work"
 

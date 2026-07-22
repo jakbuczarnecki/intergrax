@@ -28,7 +28,7 @@ from intergrax.integrations.registry.factory import (
     resolve,
     resolve_slug,
 )
-from intergrax.integrations.registry.catalog_manifests import LAB_JSON, SQLITE
+from intergrax.integrations.registry.catalog_manifests import LOG, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile, default_lab_profile
 
 pytestmark = pytest.mark.unit
@@ -120,8 +120,8 @@ def test_build_profile_from_env_overrides_defaults(monkeypatch: pytest.MonkeyPat
 
     assert profile.relational_store is not None
     assert profile.relational_store.resolved_slug() == "postgresql"
-    assert profile.interaction_surface is not None
-    assert profile.interaction_surface.resolved_slug() == LAB_JSON.slug
+    assert profile.notification_channel is not None
+    assert profile.notification_channel.resolved_slug() is not None
 
 
 def test_cloud_platform_defaults_when_category_unset() -> None:
@@ -184,7 +184,7 @@ def test_get_entry_metadata() -> None:
     register_integration(
         IntegrationEntry(
             slug="lab_json",
-            categories=(IntegrationCategory.INTERACTION_SURFACE,),
+            categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
             factory=lambda: object(),
             env_prefix="INTERGRAX_LAB",
         )

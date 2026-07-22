@@ -1,5 +1,0 @@
-# Lab JSON integration — copy to Tier-3 settings or export as env vars.
-# Env: INTERGRAX_LAB_JSON_DEFAULT_SOURCE (optional metadata default)
-
-default_source: lab_json
-enabled: true

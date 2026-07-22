@@ -97,7 +97,6 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
     register_teams_integration()
     profile = IntegrationProfile(
         notification_channel="teams",
-        interaction_surface="teams",
     )
 
     channel = resolve(
@@ -112,17 +111,11 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
 
 
 def test_register_and_resolve_interaction_surface(mock_interaction: _TeamsInteractionAdapter) -> None:
-    register_teams_integration()
-    profile = IntegrationProfile(
-        notification_channel="teams",
-        interaction_surface="teams",
+    from intergrax.integrations.providers.notification_channel.teams.bundle import (
+        create_teams_interaction_surface,
     )
 
-    surface = resolve(
-        IntegrationCategory.INTERACTION_SURFACE,
-        profile=profile,
-        config={"interaction_adapter": mock_interaction},
-    )
+    surface = create_teams_interaction_surface(interaction_adapter=mock_interaction)
 
     assert_interaction_surface(surface)
     assert isinstance(surface, _TeamsInteractionAdapter)

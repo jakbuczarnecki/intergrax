@@ -83,7 +83,7 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 | `vector_store` | `VectorStoreIntegrationContract` | `vector_store_integration_contract.v1` | `vector_store` | |
 | `search_provider` | `SearchProviderIntegrationContract` | `search_provider_integration_contract.v1` | `search_provider` | Legacy shorthand: `PlatformIntegrationKind.SEARCH` |
 | `notification_channel` | `NotificationChannelIntegrationContract` | `notification_channel_integration_contract.v1` | `notification_channel` | Legacy shorthand: `PlatformIntegrationKind.NOTIFICATION` |
-| `interaction_surface` | `InteractionSurfaceIntegrationContract` | `interaction_surface_integration_contract.v1` | `interaction_surface` | |
+| `model_serving_runtime` | `ModelServingRuntimeIntegrationContract` | `model_serving_runtime_integration_contract.v1` | `model_serving_runtime` | Replaces removed `interaction_surface`; self-hosted model hosts (Ollama, …) |
 | `collaboration_suite` | `CollaborationSuiteIntegrationContract` | `collaboration_suite_integration_contract.v1` | `collaboration_suite` | |
 | `issue_tracker` | `IssueTrackerIntegrationContract` | `issue_tracker_integration_contract.v1` | `issue_tracker` | |
 | `wiki_knowledge` | `WikiKnowledgeIntegrationContract` | `wiki_knowledge_integration_contract.v1` | `wiki_knowledge` | |

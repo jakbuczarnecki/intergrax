@@ -10,7 +10,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 
 MANIFEST = IntegrationManifest(
     slug="slack",
-    categories=(IntegrationCategory.NOTIFICATION_CHANNEL, IntegrationCategory.INTERACTION_SURFACE,),
+    categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
     status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_SLACK',
     description='Slack — outbound webhook notifications + inbound slash commands (via create_slack_integration)',

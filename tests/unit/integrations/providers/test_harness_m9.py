@@ -10,7 +10,7 @@ from typing import Any, Optional
 import pytest
 
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.interaction_surface.slash_command.bundle import create_slash_command_interaction_surface
+from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
 from intergrax.integrations.providers.issue_tracker.gitlab.bundle import create_gitlab_issue_tracker
 from intergrax.integrations.providers.notification_channel.pagerduty.bundle import create_pagerduty_notification_channel
 from intergrax.integrations.providers.observability_backend.braintrust.bundle import create_braintrust_observability_backend
@@ -159,13 +159,13 @@ def test_braintrust_log_eval_tool() -> None:
     assert out.log_id == "log-1"
 
 
-def test_slash_command_registered() -> None:
+def test_slash_command_not_registered_as_provider() -> None:
     register_default_integrations()
-    assert "slash_command" in list_slugs()
+    assert "slash_command" not in list_slugs()
 
 
 def test_slash_command_adapter_handles_payload() -> None:
-    adapter = create_slash_command_interaction_surface()
+    adapter = SlashCommandInteractionAdapter()
     assert adapter.can_handle({"command": "/research", "text": "hello"})
     inbound = adapter.to_inbound({"text": "/echo.basic ping"}, tenant_id="t1", user_id="u1")
     assert inbound.capability == "echo.basic"

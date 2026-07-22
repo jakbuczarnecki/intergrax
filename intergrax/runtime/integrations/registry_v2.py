@@ -356,14 +356,14 @@ def _find_integration_class(
     slug: str,
 ) -> type[PlatformIntegrationContract]:
     candidates = sorted(
-        (
+        {
             value
             for value in vars(module).values()
             if isinstance(value, type)
             and value.__module__ == module.__name__
             and value.__name__.endswith("Integration")
             and issubclass(value, contract_class)
-        ),
+        },
         key=lambda cls: cls.__name__,
     )
     if len(candidates) != 1:

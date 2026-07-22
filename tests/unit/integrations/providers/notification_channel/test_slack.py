@@ -90,7 +90,6 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
     register_slack_integration()
     profile = IntegrationProfile(
         notification_channel="slack",
-        interaction_surface="slack",
     )
 
     channel = resolve(
@@ -105,17 +104,11 @@ def test_register_and_resolve_notification_channel(mock_notification: MagicMock)
 
 
 def test_register_and_resolve_interaction_surface(mock_interaction: SlackInteractionAdapter) -> None:
-    register_slack_integration()
-    profile = IntegrationProfile(
-        notification_channel="slack",
-        interaction_surface="slack",
+    from intergrax.integrations.providers.notification_channel.slack.bundle import (
+        create_slack_interaction_surface,
     )
 
-    surface = resolve(
-        IntegrationCategory.INTERACTION_SURFACE,
-        profile=profile,
-        config={"interaction_adapter": mock_interaction},
-    )
+    surface = create_slack_interaction_surface(interaction_adapter=mock_interaction)
 
     assert_interaction_surface(surface)
     assert isinstance(surface, SlackInteractionAdapter)

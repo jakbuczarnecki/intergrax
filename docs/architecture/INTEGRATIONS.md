@@ -121,8 +121,8 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 | `categories/search.py` | `search_provider`, `rerank_provider` |
 | `categories/storage.py` | `object_storage`, `vector_store` |
 | `categories/devops.py` | `ci_cd`, `security_scanner`, `sandbox_host`, `workflow_orchestrator`, `cloud_platform` |
-| `categories/collaboration.py` | `collaboration_suite`, `issue_tracker`, `wiki_knowledge`, `interaction_surface` |
-| `categories/ai.py` | `document_parser`, `vision_serving`, `ml_inference_host`, `llm_guardrail`, `speech_provider` |
+| `categories/collaboration.py` | `collaboration_suite`, `issue_tracker`, `wiki_knowledge` |
+| `categories/ai.py` | `document_parser`, `vision_serving`, `ml_inference_host`, `model_serving_runtime`, `llm_guardrail`, `speech_provider` |
 | `categories/security.py` | `secrets_store`, `identity_provider`, `feature_flag` |
 | `categories/automation.py` | `browser_automation`, `billing_meter`, `crm` |
 
@@ -136,6 +136,8 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 **Observability backend alias:** provider folder `observability_backend` aligns with existing **`ObservabilityVendorIntegrationContract`** (INTEGRATIONS-1B). No duplicate observability backend contract. Registry maps `observability_backend` → **`ObservabilityVendorIntegrationContract`**; **`integration_kind`** remains `observability_vendor`. **`PlatformIntegrationKind.OBSERVABILITY_BACKEND`** documents the folder taxonomy; **`OBSERVABILITY_VENDOR`** remains the runtime integration kind.
 
 **`PlatformIntegrationKind`:** extended with all `SLUG_CATEGORY` folder names. Legacy shorthand values (`search`, `storage`, `notification`) remain for backward compatibility.
+
+**Removed category:** `interaction_surface` (INTERACTIONS-TAXONOMY-1). Non-vendor adapters (`lab_json`, `slash_command`) live under `intergrax/runtime/interactions/`. Mailgun is `notification_channel`. Ollama is `model_serving_runtime` — see [`OLLAMA_PROVIDER_CLASSIFICATION.md`](OLLAMA_PROVIDER_CLASSIFICATION.md).
 
 **Scope boundary (INTEGRATIONS-2A):** category contracts only — no concrete provider migration, no vendor SDK imports, no registry/bootstrap wiring.
 

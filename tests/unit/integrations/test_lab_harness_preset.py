@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations.registry.catalog_manifests import LAB_JSON, LOG, OTEL, QDRANT, REDIS, SQLITE
+from intergrax.integrations.registry.catalog_manifests import LOG, OTEL, QDRANT, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
 from lab_application.host.integration_wiring import build_lab_integration_profile
 
@@ -18,8 +18,6 @@ def test_lab_harness_preset_defaults_include_otel() -> None:
     assert profile.relational_store.resolved_slug() == SQLITE.slug
     assert profile.notification_channel is not None
     assert profile.notification_channel.resolved_slug() == LOG.slug
-    assert profile.interaction_surface is not None
-    assert profile.interaction_surface.resolved_slug() == LAB_JSON.slug
     assert profile.observability_backend is not None
     assert profile.observability_backend.resolved_slug() == OTEL.slug
     assert OTEL.slug in profile.options

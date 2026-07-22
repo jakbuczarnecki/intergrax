@@ -134,7 +134,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |----|------|----------|--------|-------------|------------|
 | **INTEGRATIONS-2D-WAVE1** | Code | P1 | **Done** | Retrieval/data access | `vector_store`, `search_provider`, `document_parser`, `rerank_provider`, `wiki_knowledge` |
 | **INTEGRATIONS-2D-WAVE2** | Code | P1 | **Done** | Storage/databases | `relational_store`, `document_store`, `key_value_cache`, `graph_store`, `object_storage` |
-| **INTEGRATIONS-2D-WAVE3** | Code | P1 | **Done** | Communication/workflow | `message_bus`, `notification_channel`, `interaction_surface`, `collaboration_suite`, `issue_tracker`, `browser_automation` |
+| **INTEGRATIONS-2D-WAVE3** | Code | P1 | **Done** | Communication/workflow | `message_bus`, `notification_channel`, `collaboration_suite`, `issue_tracker`, `browser_automation` |
 | **INTEGRATIONS-2D-WAVE4** | Code | P1 | **Done** | Platform/security/ops | `cloud_platform`, `secrets_store`, `feature_flag`, `ci_cd`, `security_scanner`, `sandbox_host`, `identity_provider`, `workflow_orchestrator` |
 | **INTEGRATIONS-2D-WAVE5** | Code | P1 | **Done** | AI/service/business | `speech_provider`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm` |
 | **INTEGRATIONS-2D-TESTS** | Test | P1 | **Done** | Parametrized conformance suite | `test_provider_category_contract_migration.py` — completeness derived from `SLUG_CATEGORY` |
@@ -448,7 +448,7 @@ Wave MAP:   INT-P8.10 (product mapping validation) · INT-P8.11 (non-goals gate 
 | `local_workspace_stack()` | `local_workspace`, `local_git`, local `document_parser`, `inmemory`/`lancedb`, `log`/`lab_json`, optional `otel` |
 | `coding_agent_stack()` | `local_git`, `local_workspace`, `sourcegraph` or `github_code`, `semgrep` (existing), optional `sandbox_host`, optional `ci_cd` |
 | `enterprise_api_stack()` | `openapi_http`, `identity_provider`, `secrets_store`, `observability_backend`, `notification_channel`, ToolRuntime approval policy |
-| `mcp_gateway_stack()` | `mcp`, `secrets_store`, ToolRuntime policy, `interaction_surface`, `observability_backend` |
+| `mcp_gateway_stack()` | `mcp`, `secrets_store`, ToolRuntime policy, `observability_backend` |
 
 ---
 

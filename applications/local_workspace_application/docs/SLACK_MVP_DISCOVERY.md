@@ -1,8 +1,21 @@
 # Slack conversational MVP discovery
 
 ```text
-Status: FROZEN_FOR_IMPLEMENTATION
-Next slice: MVP-4 — Slack conversational MVP
+Status: FROZEN_FOR_IMPLEMENTATION — PLATFORM_BLOCKED
+Next slice: MVP-4 — Slack conversational MVP (blocked on CONVERSATION-CHANNEL-1)
+```
+
+**Platform blocker (INTERACTIONS-TAXONOMY-1):**
+
+```text
+MVP-4 remains CURRENT but is PLATFORM_BLOCKED.
+
+The prior product-local Socket Mode ownership decision is superseded.
+
+A dedicated conversational-communication provider category and Slack provider
+must be defined before LKW Slack adoption.
+
+Next platform task: CONVERSATION-CHANNEL-1
 ```
 
 **Task:** MVP-3  
@@ -36,7 +49,7 @@ Discovery does not implement Slack connectivity, handlers, persistence, UI or te
 | Offline behavior | `FROZEN` | Slack unavailable ≠ LKW unavailable | Product core is local HTTP/MCP | Missing/invalid Slack tokens disable only companion |
 | Existing Slack provider reuse | `DEFERRED` / reject for MVP-4 send path | Outbound webhook `notify(message)` + slash HTTP intake | Webhook loses channel/thread; no Socket Mode lifecycle | Companion uses bot-token Web API for threaded replies |
 | Existing interaction runtime reuse | `DEFERRED` | Do not route Ask through intake → Task → Nexus | Distorts Ask HTTP product boundary; slash-oriented | Companion calls Ask HTTP; intake remains for other surfaces |
-| Expected blocker classification | `NO_PLATFORM_BLOCKER` | Socket Mode companion is product-local | Missing LKW companion ≠ platform gap | No new shared messaging framework in MVP-4 |
+| Expected blocker classification | `PLATFORM_BLOCKED` (supersedes prior `NO_PLATFORM_BLOCKER`) | Conversational provider category required before LKW Slack | Do not implement MVP-4 Socket Mode until `CONVERSATION-CHANNEL-1` |
 
 ---
 

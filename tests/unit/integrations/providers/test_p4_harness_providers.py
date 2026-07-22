@@ -147,6 +147,5 @@ def test_register_default_integrations_includes_p4_slugs() -> None:
         "gitlab",
         "vespa",
         "opensearch",
-        "slash_command",
     ):
         assert slug in slugs

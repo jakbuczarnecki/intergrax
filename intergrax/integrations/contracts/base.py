@@ -25,7 +25,6 @@ class IntegrationCategory(str, Enum):
     VECTOR_STORE = "vector_store"
     SEARCH_PROVIDER = "search_provider"
     NOTIFICATION_CHANNEL = "notification_channel"
-    INTERACTION_SURFACE = "interaction_surface"
     COLLABORATION_SUITE = "collaboration_suite"
     ISSUE_TRACKER = "issue_tracker"
     WIKI_KNOWLEDGE = "wiki_knowledge"
@@ -45,6 +44,7 @@ class IntegrationCategory(str, Enum):
     WORKFLOW_ORCHESTRATOR = "workflow_orchestrator"
     VISION_SERVING = "vision_serving"
     ML_INFERENCE_HOST = "ml_inference_host"
+    MODEL_SERVING_RUNTIME = "model_serving_runtime"
     BILLING_METER = "billing_meter"
     CRM = "crm"
     LLM_GUARDRAIL = "llm_guardrail"
@@ -142,7 +142,6 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.VECTOR_STORE.value: "vector_store",
     IntegrationCategory.SEARCH_PROVIDER.value: "search_provider",
     IntegrationCategory.NOTIFICATION_CHANNEL.value: "notification_channel",
-    IntegrationCategory.INTERACTION_SURFACE.value: "interaction_surface",
     IntegrationCategory.COLLABORATION_SUITE.value: "collaboration_suite",
     IntegrationCategory.ISSUE_TRACKER.value: "issue_tracker",
     IntegrationCategory.WIKI_KNOWLEDGE.value: "wiki_knowledge",
@@ -162,6 +161,7 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.WORKFLOW_ORCHESTRATOR.value: "workflow_orchestrator",
     IntegrationCategory.VISION_SERVING.value: "vision_serving",
     IntegrationCategory.ML_INFERENCE_HOST.value: "ml_inference_host",
+    IntegrationCategory.MODEL_SERVING_RUNTIME.value: "model_serving_runtime",
     IntegrationCategory.BILLING_METER.value: "billing_meter",
     IntegrationCategory.CRM.value: "crm",
     IntegrationCategory.LLM_GUARDRAIL.value: "llm_guardrail",

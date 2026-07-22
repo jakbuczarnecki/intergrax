@@ -31,10 +31,10 @@ def register_m6_p4_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.issue_tracker.bitbucket.register import register_bitbucket_integration
     from intergrax.integrations.providers.issue_tracker.asana.register import register_asana_integration
     from intergrax.integrations.providers.notification_channel.sendgrid.register import register_sendgrid_integration
-    from intergrax.integrations.providers.interaction_surface.mailgun.register import register_mailgun_integration
+    from intergrax.integrations.providers.notification_channel.mailgun.register import register_mailgun_integration
     from intergrax.integrations.providers.observability_backend.mlflow.register import register_mlflow_integration
     from intergrax.integrations.providers.object_storage.huggingface_hub.register import register_huggingface_hub_integration
-    from intergrax.integrations.providers.interaction_surface.ollama.register import register_ollama_integration
+    from intergrax.integrations.providers.model_serving_runtime.ollama.register import register_ollama_integration
 
     register_pgvector_integration(override=override)
     register_duckdb_integration(override=override)

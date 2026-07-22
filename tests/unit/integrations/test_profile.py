@@ -12,7 +12,7 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.providers.relational_store.sqlite.register import register_sqlite_integration
 from intergrax.integrations.registry.catalog import clear_catalog
-from intergrax.integrations.registry.catalog_manifests import LAB_JSON, LOG, REDIS, SQLITE
+from intergrax.integrations.registry.catalog_manifests import LOG, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile, default_lab_profile
 
 pytestmark = pytest.mark.unit
@@ -24,8 +24,6 @@ def test_default_lab_profile() -> None:
     assert profile.relational_store.resolved_slug() == SQLITE.slug
     assert profile.notification_channel is not None
     assert profile.notification_channel.resolved_slug() == LOG.slug
-    assert profile.interaction_surface is not None
-    assert profile.interaction_surface.resolved_slug() == LAB_JSON.slug
 
 
 def test_lab_classmethod() -> None:
