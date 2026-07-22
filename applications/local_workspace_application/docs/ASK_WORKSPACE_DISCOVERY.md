@@ -44,6 +44,19 @@ POST .../workspaces/{workspace_id}/ask
 
 Discovery does not implement this path.
 
+**MVP-2 implementation note (behavioral contract unchanged):**
+
+| Logical name | Actual location |
+|--------------|-----------------|
+| Ask orchestration | `workspaces/ask_service.py` — `WorkspaceAskService` |
+| AskAnswerAssembler | `workspaces/ask_answer_assembler.py` |
+| Citation projection | `project_ask_citations` in `ask_answer_assembler.py` |
+| Ask-run persistence | `workspaces/ask_repository.py` — DocumentStore |
+| Verified hit mapping (shared with Search) | `workspaces/search_evidence.py` — `map_search_hits` |
+| Public schemas | `WorkspaceAskRequestV1` / `WorkspaceAskResponseV1` / `WorkspaceAskCitationV1` in `serving/workspace_schemas.py` |
+| HTTP routes | `POST .../workspaces/{workspace_id}/ask`, `GET .../asks/{run_id}` in `serving/workspace_routes.py` |
+| Controlled live proof | `scripts/run-lkw-ask-workspace-live-proof.py` |
+
 ---
 
 ## 2. Frozen user-visible workflow

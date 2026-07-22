@@ -10,7 +10,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-2 — Trusted Ask Workspace implementation
+Current implementation focus: MVP-3 — Slack MVP discovery
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -280,8 +280,9 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Trusted Ask Workspace
-Current implementation focus: MVP-2 — Trusted Ask Workspace implementation
+Current implementation focus: MVP-3 — Slack MVP discovery
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete)
+Ask Workspace HTTP: MVP-2 complete (live-verified)
 ```
 
 ### Working today
@@ -302,6 +303,9 @@ Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete)
 | Source provenance | implemented / live-verified |
 | Persistent state | implemented / live-verified |
 | Live proof + ProofReceipt | implemented / live-verified |
+| Surface-neutral Ask Workspace (HTTP) | implemented / live-verified |
+| Grounded answer + projected citations | implemented / live-verified |
+| Persisted Ask run + restart read | implemented / live-verified |
 | MCP surface | implemented |
 | Interaction intake baseline | implemented |
 
@@ -309,10 +313,6 @@ Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete)
 
 | Capability | State |
 |------------|-------|
-| Surface-neutral Ask Workspace result | planned — MVP-2 (contract frozen) |
-| Final grounded answer with stable sources | planned — MVP-2 (contract frozen) |
-| Persisted question/evidence/answer run | planned — MVP-2 (contract frozen) |
-| Completed Ask-run read after restart | planned — MVP-2 (contract frozen) |
 | Minimal Slack identity and workspace mapping | planned — MVP |
 | Slack Socket Mode DM flow | planned — MVP |
 | Basic outbound-data warning/policy | planned — MVP |
@@ -584,56 +584,47 @@ Key findings:
 
 ### MVP-2 — Trusted Ask Workspace
 
-**Status:** `CURRENT`
+**Status:** done
 
-**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via LKW `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart — validated by focused tests plus one controlled live proof.
+**One-sentence summary:** Surface-neutral HTTP Ask Workspace reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via LKW `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart.
 
 Frozen contract: [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) §4.
 
-Frozen answer component: **LKW `AskAnswerAssembler`**.
-
-User-visible result:
+#### Implementation path (actual)
 
 ```text
-HTTP question
-→ workspace-scoped retrieval
-→ verified evidence
-→ sufficiency gate
-→ verified evidence
-→ deterministic indexed context
-→ one bounded model invocation through the existing runtime boundary
-→ typed answer with used evidence IDs
-→ citations projected by LKW from verified hits
-→ persisted Ask run
-→ completed-run read
+POST /v1/local_workspace/workspaces/{workspace_id}/ask
+→ WorkspaceAskService (tenant/workspace auth)
+→ local.workspace.search via LocalWorkspaceTaskExecutor
+→ map_search_hits (workspaces/search_evidence.py; shared with Search)
+→ empty evidence → insufficient_evidence (model skipped)
+→ AskAnswerAssembler (indexed E1..En context → one LLMAdapter call → typed result)
+→ project_ask_citations(used_evidence_ids → verified hits)
+→ WorkspaceAskRepository (DocumentStore partition lkw.ask_run:{tenant}:ask_run)
+→ WorkspaceAskResponseV1
+→ GET /v1/local_workspace/asks/{run_id} (tenant-scoped; restart-durable)
 ```
 
-Rules:
+Key modules:
 
-- The model never creates final citation objects.
-- The raw user question is never used as fallback answer content.
-- `local.workspace.synthesize` remains outside Ask answer execution.
+- `workspaces/ask_service.py` — `WorkspaceAskService`
+- `workspaces/ask_answer_assembler.py` — `AskAnswerAssembler` + citation projection
+- `workspaces/ask_repository.py` — DocumentStore Ask-run persistence
+- `workspaces/ask_models.py` — domain run/citation/assembly types
+- `serving/workspace_schemas.py` — public Ask request/response schemas
+- `serving/workspace_routes.py` — Ask POST/GET routes
 
-Minimum acceptance (see discovery §10):
+Controlled live proof:
 
-- `POST /v1/local_workspace/workspaces/{workspace_id}/ask`,
-- surface-neutral typed result (`run_id`, status, question, answer or insufficient-evidence, citations),
-- reuse `local.workspace.search` + verified hit mapping,
-- LKW `AskAnswerAssembler` grounded-answer path above,
-- insufficient evidence does not invent a grounded answer,
-- persist question/evidence/answer/citations/status,
-- `GET /v1/local_workspace/asks/{run_id}` with tenant isolation,
-- restart persistence,
-- no Slack-specific fields; no provider-payload leakage in the Ask result,
-- one controlled end-to-end live proof.
+```text
+uv run --extra integrations-mongodb python applications/local_workspace_application/scripts/run-lkw-ask-workspace-live-proof.py
+```
 
-Exact scope, forbidden work and required tests: discovery §9–§12.
-
-No Slack-specific fields or logic are permitted in this slice. Slack and Teams remain outside MVP-2.
+Rules preserved: model never creates citation objects; raw question never used as answer fallback; `local.workspace.synthesize` unused by Ask; no Slack fields.
 
 ### MVP-3 — Slack MVP discovery
 
-**Status:** planned
+**Status:** `CURRENT`
 
 Purpose: freeze only the architecture needed for the first familiar-tool workflow.
 
@@ -1028,8 +1019,9 @@ protects the intended user, or is selected from real validation feedback.
 | **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence | Done | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | **LKW-MVP-BRIEF** | Product purpose, first user, MVP workflow, value and gate defined | Done | This document · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md) |
 | **MVP-1** | Trusted Ask Workspace discovery — frozen contract | Done | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) |
+| **MVP-2** | Trusted Ask Workspace HTTP implementation | Done | This document · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 
-Ask Workspace implementation (MVP-2), Slack MVP, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
+Slack MVP, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
 
 ---
 
@@ -1052,9 +1044,9 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-2 — Trusted Ask Workspace
-Frozen contract: ASK_WORKSPACE_DISCOVERY.md
-Completed discovery: MVP-1
+Current task: MVP-3 — Slack MVP discovery
+Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP)
+Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Next user-surface task: MVP-3/MVP-4 — Slack discovery and Slack MVP
 MVP gate follows minimal packaging and real-user validation.
 ```

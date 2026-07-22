@@ -22,16 +22,26 @@ from local_workspace_application.serving.workspace_schemas import (
     SourceListResponseV1,
     SourceResponseV1,
     SyncOperationAcceptedV1,
+    WorkspaceAskCitationLocationV1,
+    WorkspaceAskCitationV1,
+    WorkspaceAskErrorV1,
+    WorkspaceAskRequestV1,
+    WorkspaceAskResponseV1,
     WorkspaceListResponseV1,
     WorkspaceResponseV1,
-    WorkspaceSearchHitV1,
     WorkspaceSearchRequestV1,
     WorkspaceSearchResponseV1,
+)
+from local_workspace_application.workspaces.ask_models import WorkspaceAskRun
+from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.ask_service import (
+    WorkspaceAskNotFoundError,
+    WorkspaceAskPersistenceError,
+    WorkspaceAskService,
 )
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
 )
-from local_workspace_application.workspaces.idempotency import normalize_source_path
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceOperation,
@@ -39,6 +49,10 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSource,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.search_evidence import (
+    SearchEvidenceIncompleteError,
+    map_search_hits,
+)
 from local_workspace_application.workspaces.service import (
     ConcurrentSyncError,
     ManagedWorkspaceService,
@@ -124,8 +138,12 @@ def mount_managed_workspace_routes(
     prefix: str = "/v1/local_workspace",
     repository: ManagedWorkspaceRepository | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
+    ask_service: WorkspaceAskService | None = None,
+    llm_adapter: Any | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
+
+    from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
 
     allowlist = settings.allowed_read_roots or read_allowlist_roots_from_env()
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
@@ -160,9 +178,20 @@ def mount_managed_workspace_routes(
         async def _stop_managed_workspace_sync_runtime() -> None:
             sync_runtime.stop()
 
+    if ask_service is None:
+        ask_service = WorkspaceAskService(
+            workspace_service=service,
+            workspace_repository=repository,
+            ask_repository=WorkspaceAskRepository(repository.document_store),
+            task_executor=task_executor,
+            llm_adapter=llm_adapter,
+            llm_adapter_factory=(None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))),
+        )
+
     app.state.lkw_managed_workspace_service = service
     app.state.lkw_managed_workspace_repository = repository
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
+    app.state.lkw_ask_service = ask_service
 
     router = APIRouter(prefix=prefix, tags=["local_workspace_managed"])
 
@@ -375,7 +404,7 @@ def mount_managed_workspace_routes(
         result = result.model_copy(update={"metadata": result_metadata})
 
         try:
-            hits = _map_search_hits(
+            hits = map_search_hits(
                 repository=repository,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -394,96 +423,101 @@ def mount_managed_workspace_routes(
             results=hits,
         )
 
+    @router.post(
+        "/workspaces/{workspace_id}/ask",
+        response_model=WorkspaceAskResponseV1,
+    )
+    async def ask_workspace(
+        request: Request,
+        workspace_id: str,
+        body: WorkspaceAskRequestV1,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current_ask: WorkspaceAskService = getattr(request.app.state, "lkw_ask_service", ask_service)
+        try:
+            run = await current_ask.ask(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                question=body.question,
+                limit=body.limit,
+            )
+        except LookupError as exc:
+            raise _not_found() from exc
+        except SearchEvidenceIncompleteError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="search_evidence_incomplete",
+            ) from exc
+        except WorkspaceAskPersistenceError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="ask_persistence_failed",
+            ) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"ask_error: {exc.__class__.__name__}",
+            ) from exc
+        return _ask_response(run)
+
+    @router.get(
+        "/asks/{run_id}",
+        response_model=WorkspaceAskResponseV1,
+    )
+    async def get_ask_run(
+        request: Request,
+        run_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current_ask: WorkspaceAskService = getattr(request.app.state, "lkw_ask_service", ask_service)
+        try:
+            run = current_ask.get_run(tenant_id=tenant_id, run_id=run_id)
+        except WorkspaceAskNotFoundError as exc:
+            raise _not_found() from exc
+        return _ask_response(run)
+
     app.include_router(router)
     return service
 
 
-class SearchEvidenceIncompleteError(RuntimeError):
-    """Platform result lacked required typed search evidence fields."""
-
-
-def _map_search_hits(
-    *,
-    repository: ManagedWorkspaceRepository,
-    tenant_id: str,
-    workspace_id: str,
-    task_result: Any,
-    limit: int,
-) -> list[WorkspaceSearchHitV1]:
-    summary = _extract_search_summary(task_result)
-    if summary is None:
-        raise SearchEvidenceIncompleteError("search_summary_missing")
-    evidence = summary.get("evidence")
-    if not isinstance(evidence, list):
-        raise SearchEvidenceIncompleteError("search_evidence_missing")
-
-    hits: list[WorkspaceSearchHitV1] = []
-    incomplete = False
-    for item in evidence:
-        if not isinstance(item, dict):
-            continue
-        document_id = str(item.get("document_id") or "").strip()
-        source_id = str(item.get("source_id") or "").strip()
-        item_workspace_id = str(item.get("workspace_id") or workspace_id).strip()
-        source_path = str(item.get("source_path") or "").strip()
-        file_name = str(item.get("file_name") or "").strip()
-        score_raw = item.get("score")
-        snippet = str(item.get("snippet") or item.get("text") or "").strip()
-        metadata = item.get("metadata")
-
-        if not document_id or not source_id or not source_path or not file_name:
-            incomplete = True
-            continue
-        if not isinstance(score_raw, (int, float)):
-            incomplete = True
-            continue
-        if not snippet:
-            incomplete = True
-            continue
-        if item_workspace_id != workspace_id:
-            continue
-
-        ref = repository.get_document_ref(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            document_id=document_id,
-        )
-        if ref is None:
-            continue
-        if ref.source_id != source_id or ref.tenant_id != tenant_id:
-            continue
-        if normalize_source_path(ref.source_path) != normalize_source_path(source_path):
-            # Provenance mismatch — drop rather than fabricate.
-            continue
-
-        hits.append(
-            WorkspaceSearchHitV1(
-                document_id=document_id,
-                source_id=source_id,
-                workspace_id=workspace_id,
-                source_path=ref.source_path,
-                file_name=file_name,
-                score=float(score_raw),
-                snippet=snippet,
-                metadata=dict(metadata) if isinstance(metadata, dict) else {},
+def _ask_response(run: WorkspaceAskRun) -> WorkspaceAskResponseV1:
+    return WorkspaceAskResponseV1(
+        run_id=run.run_id,
+        workspace_id=run.workspace_id,
+        status=run.status.value,  # type: ignore[arg-type]
+        question=run.question,
+        answer=run.answer,
+        citations=[
+            WorkspaceAskCitationV1(
+                evidence_id=item.evidence_id,
+                document_id=item.document_id,
+                source_id=item.source_id,
+                workspace_id=item.workspace_id,
+                source_path=item.source_path,
+                file_name=item.file_name,
+                excerpt=item.excerpt,
+                score=item.score,
+                chunk_id=item.chunk_id,
+                location=(
+                    WorkspaceAskCitationLocationV1(page=item.location.page)
+                    if item.location is not None
+                    else None
+                ),
             )
-        )
-        if len(hits) >= limit:
-            break
+            for item in run.citations
+        ],
+        created_at=run.created_at,
+        completed_at=run.completed_at,
+        error=(
+            WorkspaceAskErrorV1(code=run.error.code, message=run.error.message)
+            if run.error is not None
+            else None
+        ),
+    )
 
-    if not hits and incomplete:
-        raise SearchEvidenceIncompleteError("search_evidence_incomplete")
-    if not hits and evidence:
-        raise SearchEvidenceIncompleteError("search_evidence_unverified")
-    return hits
 
-
-def _extract_search_summary(task_result: Any) -> dict[str, Any] | None:
-    execution = getattr(task_result, "execution_result", None)
-    if execution is not None:
-        structured = getattr(execution, "structured_data", None)
-        if isinstance(structured, dict):
-            summary = structured.get("search_summary")
-            if isinstance(summary, dict):
-                return summary
-    return None
+# Backward-compatible aliases for existing hardening tests.
+_map_search_hits = map_search_hits
+__all__ = ("SearchEvidenceIncompleteError", "mount_managed_workspace_routes", "resolve_tenant_id")

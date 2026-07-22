@@ -1210,6 +1210,61 @@ This markdown page is the external execution guide.
 
 ---
 
+## Trusted Ask Workspace (MVP-2)
+
+This section verifies the surface-neutral HTTP Ask Workspace vertical slice:
+
+```text
+real managed workspace
+→ synchronized local documents
+→ POST /ask
+→ verified retrieval evidence
+→ AskAnswerAssembler grounded answer
+→ citations projected from verified hits
+→ persisted completed run
+→ host restart
+→ GET /asks/{run_id} returns the same completed result
+```
+
+Slack and Teams are out of scope for this proof.
+
+### Command
+
+```sh
+uv run --extra integrations-mongodb python applications/local_workspace_application/scripts/run-lkw-ask-workspace-live-proof.py
+```
+
+Requires a reachable MongoDB DocumentStore (same stack as managed-workspace proofs)
+and a configured LLM boundary (`INTERGRAX_LLM_PROVIDER`, default `ollama`).
+
+Use `--skip-docker` when MongoDB is already running.
+
+### Public endpoints
+
+| Step | Method | Path |
+|------|--------|------|
+| Create workspace | `POST` | `/v1/local_workspace/workspaces` |
+| Register folder source | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources` |
+| Start sync | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources/{source_id}/sync` |
+| Search (preflight) | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/search` |
+| Ask | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/ask` |
+| Read completed Ask run | `GET` | `/v1/local_workspace/asks/{run_id}` |
+
+### Expected PASS signals
+
+```text
+proof_result=PASS
+ask_status=completed
+evidence_count>=1
+citation_count>=1
+restart_read_result=ok
+```
+
+The proof prints `workspace_id` and `run_id` for reviewer inspection.
+Temporary fixture directories and local databases must not be committed.
+
+---
+
 ## Core Platform Proof completion
 
 The Core Platform Proof is complete when the required core steps
