@@ -1032,17 +1032,41 @@ def create_sendgrid_notification_channel(
     return HttpNotificationChannel(resolved_sender, provider="sendgrid")
 
 
-def create_mailgun_interaction_surface(
+def create_mailgun_notification_channel(
     *,
-    interaction_surface: Optional[InteractionSurface] = None,
-    client: Optional[Any] = None,
+    notification_channel: Optional[NotificationChannel] = None,
+    sender: Optional[Callable[..., None]] = None,
+    sender_factory: Optional[Callable[[], Callable[..., None]]] = None,
     **config_overrides: object,
-) -> InteractionSurface:
-    if interaction_surface is not None:
-        return interaction_surface
+) -> NotificationChannel:
+    if notification_channel is not None:
+        return notification_channel
     config = HttpIntegrationConfig.from_env("INTERGRAX_MAILGUN", **config_overrides)
-    del client
-    return MailgunInteractionAdapter(signing_key=config.api_key)
+
+    def _default_sender(*, message: Any) -> None:
+        http = _open_httpx_client(config, default_url=config.base_url or "https://api.mailgun.net")
+        domain = (config.org or config.user or "mg.example.com").strip()
+        http.post(
+            f"/v3/{domain}/messages",
+            data={
+                "from": config.user or "noreply@intergrax.local",
+                "to": attribute_access.optional(message, "to", "ops@example.com"),
+                "subject": attribute_access.optional(message, "subject", "Notification"),
+                "text": attribute_access.optional(message, "body", ""),
+            },
+            auth=("api", config.api_key or ""),
+        )
+
+    resolved_sender = sender if sender is not None else (sender_factory() if sender_factory else _default_sender)
+    return HttpNotificationChannel(resolved_sender, provider="mailgun")
+
+
+def create_mailgun_inbound_adapter(*, signing_key: str = "", **config_overrides: object) -> InteractionAdapter:
+    """Private inbound webhook adapter — not a provider-category identity."""
+    if not signing_key and config_overrides:
+        config = HttpIntegrationConfig.from_env("INTERGRAX_MAILGUN", **config_overrides)
+        signing_key = config.api_key
+    return MailgunInteractionAdapter(signing_key=signing_key)
 
 
 def create_mlflow_observability_backend(
@@ -1114,15 +1138,15 @@ def create_huggingface_hub_object_storage(
     return CatalogObjectStorage(_Config(), resolved, factory_name="create_huggingface_hub_object_storage")
 
 
-def create_ollama_interaction_surface(
+def create_ollama_model_serving_runtime(
     *,
-    interaction_surface: Optional[InteractionSurface] = None,
+    model_serving_runtime: Optional[Any] = None,
     client: Optional[Any] = None,
     client_factory: Optional[Callable[[], Any]] = None,
     **config_overrides: object,
-) -> InteractionSurface:
-    if interaction_surface is not None:
-        return interaction_surface
+) -> Any:
+    if model_serving_runtime is not None:
+        return model_serving_runtime
     config = HttpIntegrationConfig.from_env("INTERGRAX_OLLAMA", **config_overrides)
 
     def _open() -> Any:
@@ -1145,8 +1169,7 @@ def create_ollama_interaction_surface(
 
         return _Client()
 
-    resolved = client if client is not None else (client_factory() if client_factory else _open())
-    return OllamaInteractionAdapter(resolved)
+    return client if client is not None else (client_factory() if client_factory else _open())
 
 
 __all__ = [
@@ -1167,10 +1190,11 @@ __all__ = [
     "create_kubernetes_cloud_platform",
     "create_launchdarkly_feature_flag",
     "create_loki_observability_backend",
-    "create_mailgun_interaction_surface",
+    "create_mailgun_inbound_adapter",
+    "create_mailgun_notification_channel",
     "create_memgraph_graph_store",
     "create_mlflow_observability_backend",
-    "create_ollama_interaction_surface",
+    "create_ollama_model_serving_runtime",
     "create_pgvector_vector_store",
     "create_redpanda_message_bus",
     "create_sendgrid_notification_channel",

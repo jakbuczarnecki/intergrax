@@ -246,7 +246,10 @@ def test_all_non_deferred_cutover_providers_are_registry_v2_compatible() -> None
         assert registration.contract_class is expected_contract
         assert issubclass(registration.integration_class, expected_contract)
         assert registration.default_enabled is False
-        assert registration.supports_runtime_binding is True
+        if registration.category == "conversation_channel":
+            assert registration.supports_runtime_binding is (registration.slug == "slack")
+        else:
+            assert registration.supports_runtime_binding is True
 
         integration = registration.factory(enabled=False)
         assert isinstance(integration, registration.integration_class)

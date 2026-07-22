@@ -24,6 +24,7 @@ from intergrax.runtime.integrations.contracts import (
 DOCUMENT_PARSER_INTEGRATION_CONTRACT_SCHEMA = "document_parser_integration_contract.v1"
 VISION_SERVING_INTEGRATION_CONTRACT_SCHEMA = "vision_serving_integration_contract.v1"
 ML_INFERENCE_HOST_INTEGRATION_CONTRACT_SCHEMA = "ml_inference_host_integration_contract.v1"
+MODEL_SERVING_RUNTIME_INTEGRATION_CONTRACT_SCHEMA = "model_serving_runtime_integration_contract.v1"
 LLM_GUARDRAIL_INTEGRATION_CONTRACT_SCHEMA = "llm_guardrail_integration_contract.v1"
 SPEECH_PROVIDER_INTEGRATION_CONTRACT_SCHEMA = "speech_provider_integration_contract.v1"
 
@@ -120,6 +121,40 @@ class MlInferenceHostIntegrationContract(PlatformIntegrationContract):
             cls,
             provider_id=provider_id,
             integration_kind=PlatformIntegrationKind.ML_INFERENCE_HOST.value,
+            default_capabilities=_CONNECT_READ_HEALTH,
+            capabilities=capabilities,
+            display_name=display_name,
+            version=version,
+            config=config,
+        )
+
+
+class ModelServingRuntimeIntegrationContract(PlatformIntegrationContract):
+    """Category contract for model_serving_runtime providers (ollama, …)."""
+
+    schema_id: Literal["model_serving_runtime_integration_contract.v1"] = (
+        MODEL_SERVING_RUNTIME_INTEGRATION_CONTRACT_SCHEMA
+    )
+    integration_kind: str = PlatformIntegrationKind.MODEL_SERVING_RUNTIME.value
+    capabilities: tuple[PlatformIntegrationCapability, ...] = Field(
+        default_factory=lambda: _CONNECT_READ_HEALTH
+    )
+    config: CategoryIntegrationConfig = Field(default_factory=CategoryIntegrationConfig)
+
+    @classmethod
+    def for_provider(
+        cls,
+        *,
+        provider_id: str,
+        capabilities: tuple[PlatformIntegrationCapability, ...] | None = None,
+        display_name: str | None = None,
+        version: str | None = None,
+        config: CategoryIntegrationConfig | None = None,
+    ) -> ModelServingRuntimeIntegrationContract:
+        return category_for_provider(
+            cls,
+            provider_id=provider_id,
+            integration_kind=PlatformIntegrationKind.MODEL_SERVING_RUNTIME.value,
             default_capabilities=_CONNECT_READ_HEALTH,
             capabilities=capabilities,
             display_name=display_name,

@@ -382,16 +382,22 @@ def create_telegram_integration(
 
 def create_telegram_catalog_factory(
     *,
-    integration_category: IntegrationCategory,
+    integration_category: IntegrationCategory | None = None,
     **config_overrides: object,
 ) -> Any:
     bundle = create_telegram_integration(**config_overrides)
-    if integration_category == IntegrationCategory.NOTIFICATION_CHANNEL:
+    category = integration_category or IntegrationCategory.NOTIFICATION_CHANNEL
+    if category == IntegrationCategory.NOTIFICATION_CHANNEL:
         return bundle.notification_channel
-    if integration_category == IntegrationCategory.INTERACTION_SURFACE:
-        return bundle.interaction_surface
     raise IntegrationConfigurationError(
-        f"Telegram integration does not support category '{integration_category.value}'."
+        f"Telegram integration does not support category '{category.value}'."
+    )
+
+
+def create_telegram_notification_channel(**config_overrides: object) -> Any:
+    return create_telegram_catalog_factory(
+        integration_category=IntegrationCategory.NOTIFICATION_CHANNEL,
+        **config_overrides,
     )
 
 

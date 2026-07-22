@@ -42,7 +42,7 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 | `postgresql` | relational_store (Tier-2 product apps) |
 | `redis` | key_value_cache |
 | `qdrant` | vector_store |
-| `slack` | notification_channel + interaction_surface |
+| `slack` | notification_channel + conversation_channel |
 | `sentry` | observability_backend |
 | `otel` | observability_backend |
 | `lab_json` | interaction_surface |
@@ -1117,3 +1117,18 @@ uv run pytest tests/unit/integrations/test_vendor_import_governance.py -q
 Allowed vendor import modules: `opens.py`, `rag_store.py`, `client.py`, `web_client.py`, `_shared/p3/factories.py`, `_shared/p3/clients.py` (integrations); `parser_trace_exporter.py` (rag). **No** vendor imports under `agents/`.
 
 Conformance helpers: `intergrax/integrations/_shared/conformance.py`.
+
+## conversation_channel
+
+Near-real-time bidirectional chat providers (CONVERSATION-CHANNEL-1).
+Contract-defined; runtime unbound. See `docs/architecture/CONVERSATION_CHANNEL_CONTRACT.md`.
+
+| slug | notes |
+|------|-------|
+| `slack` | secondary to notification_channel |
+| `teams` | secondary to notification_channel |
+| `discord` | secondary to notification_channel |
+| `telegram` | secondary to notification_channel |
+| `mattermost` | primary conversation_channel |
+| `rocket_chat` | primary conversation_channel |
+| `google_chat` | primary conversation_channel |

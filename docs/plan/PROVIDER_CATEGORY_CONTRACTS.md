@@ -83,7 +83,8 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 | `vector_store` | `VectorStoreIntegrationContract` | `vector_store_integration_contract.v1` | `vector_store` | |
 | `search_provider` | `SearchProviderIntegrationContract` | `search_provider_integration_contract.v1` | `search_provider` | Legacy shorthand: `PlatformIntegrationKind.SEARCH` |
 | `notification_channel` | `NotificationChannelIntegrationContract` | `notification_channel_integration_contract.v1` | `notification_channel` | Legacy shorthand: `PlatformIntegrationKind.NOTIFICATION` |
-| `interaction_surface` | `InteractionSurfaceIntegrationContract` | `interaction_surface_integration_contract.v1` | `interaction_surface` | |
+| `conversation_channel` | `ConversationChannelIntegrationContract` | `conversation_channel_integration_contract.v1` | `conversation_channel` | Near-real-time bidirectional human↔app chat; distinct from notify-only `notification_channel` — [`CONVERSATION_CHANNEL_CONTRACT.md`](../architecture/CONVERSATION_CHANNEL_CONTRACT.md) |
+| `model_serving_runtime` | `ModelServingRuntimeIntegrationContract` | `model_serving_runtime_integration_contract.v1` | `model_serving_runtime` | Replaces removed `interaction_surface`; self-hosted model hosts (Ollama, …) |
 | `collaboration_suite` | `CollaborationSuiteIntegrationContract` | `collaboration_suite_integration_contract.v1` | `collaboration_suite` | |
 | `issue_tracker` | `IssueTrackerIntegrationContract` | `issue_tracker_integration_contract.v1` | `issue_tracker` | |
 | `wiki_knowledge` | `WikiKnowledgeIntegrationContract` | `wiki_knowledge_integration_contract.v1` | `wiki_knowledge` | |
@@ -124,7 +125,7 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 | Legacy shorthand | `storage` | Prefer `object_storage` for new code |
 | Legacy shorthand | `notification` | Prefer `notification_channel` for new code |
 
-**Multi-category providers:** same `provider_id` (for example `elasticsearch`) must use **separate integration classes** per category — never one multi-category class.
+**Multi-category providers:** same `provider_id` (for example `elasticsearch`, `slack`) must use **separate integration classes** per category — never one multi-category class. Primary package folder remains in `SLUG_CATEGORY`; secondary memberships use `SECONDARY_PROVIDER_CATEGORIES` (for example `slack` → `notification_channel` primary + `conversation_channel` secondary). Registry identity remains `(provider_id, category)`.
 
 ---
 
@@ -136,9 +137,10 @@ Full list from `layout.py` `SLUG_CATEGORY` unique folder values (31 categories).
 4. **search_provider** — Tavily, Algolia
 5. **message_bus** — Kafka, RabbitMQ
 6. **relational_store** / **document_store** — Postgres, MongoDB
-7. **notification_channel** — Slack, email
-8. **secrets_store** — Vault, cloud secret managers
-9. Remaining categories per product priority (issue_tracker, ci_cd, llm_guardrail, …)
+7. **notification_channel** — Slack webhook/email notify
+8. **conversation_channel** — Slack (Socket Mode + Web API runtime), Teams/Discord/Telegram/Mattermost/Rocket.Chat/Google Chat (contract-defined; vendor runtime unbound)
+9. **secrets_store** — Vault, cloud secret managers
+10. Remaining categories per product priority (issue_tracker, ci_cd, llm_guardrail, …)
 
 **Per-slug rule:** one PR per slug (or small harden wave ≤4 slugs); subclass the category contract; no vendor SDK in runtime hot paths; config disabled by default.
 

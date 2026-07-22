@@ -325,18 +325,18 @@ notifier.notify("HITL: approval required for task t-1")
     },
     {
         "slug": "lab_json",
-        "category": "interaction_surface",
-        "category_enum": "INTERACTION_SURFACE",
-        "slug_enum": "LAB_JSON",
-        "factory": "create_lab_json_interaction_surface",
-        "env": "Optional `INTERGRAX_LAB_JSON_DEFAULT_SOURCE`",
+        "category": "runtime_interactions",
+        "category_enum": "N/A",
+        "slug_enum": "N/A",
+        "factory": "LabJsonInteractionAdapter / create_interaction_adapter(surface='lab_json')",
+        "env": "Optional `INTERGRAX_INTERACTION_SURFACE=lab_json`",
         "example": """\
-surface = create_lab_json_interaction_surface()
-if surface.can_handle(inbound_payload):
-    message = surface.to_inbound(inbound_payload)
-    print(message.text, message.channel)
+from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
+adapter = LabJsonInteractionAdapter()
+if adapter.can_handle(inbound_payload):
+    inbound = adapter.to_inbound(inbound_payload, tenant_id="t1", user_id="u1")
 """,
-        "notes": "JSON intake for the lab; channel ``lab``.",
+        "notes": "Internal runtime intake adapter — not a provider taxonomy entry (INTERACTIONS-TAXONOMY-1).",
     },
     {
         "slug": "jira",

@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CreateWorkspaceRequestV1(BaseModel):
@@ -100,3 +100,59 @@ class WorkspaceSearchResponseV1(BaseModel):
     workspace_id: str
     query: str
     results: list[WorkspaceSearchHitV1]
+
+
+class WorkspaceAskRequestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(..., min_length=1)
+    limit: int = Field(default=10, ge=1, le=100)
+
+    @field_validator("question")
+    @classmethod
+    def question_must_not_be_whitespace(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("question must not be blank")
+        return value
+
+
+class WorkspaceAskCitationLocationV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    page: int | None = None
+
+
+class WorkspaceAskCitationV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    evidence_id: str
+    document_id: str
+    source_id: str
+    workspace_id: str
+    source_path: str
+    file_name: str
+    excerpt: str = ""
+    score: float | None = None
+    chunk_id: str | None = None
+    location: WorkspaceAskCitationLocationV1 | None = None
+
+
+class WorkspaceAskErrorV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    message: str
+
+
+class WorkspaceAskResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    workspace_id: str
+    status: Literal["completed", "insufficient_evidence", "failed"]
+    question: str
+    answer: str | None = None
+    citations: list[WorkspaceAskCitationV1] = Field(default_factory=list)
+    created_at: datetime
+    completed_at: datetime | None = None
+    error: WorkspaceAskErrorV1 | None = None

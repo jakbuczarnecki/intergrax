@@ -10,7 +10,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 
 MANIFEST = IntegrationManifest(
     slug="telegram",
-    categories=(IntegrationCategory.NOTIFICATION_CHANNEL, IntegrationCategory.INTERACTION_SURFACE,),
+    categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
     status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_TELEGRAM',
     description='telegram integration (Phase M.7 P7 — dual notification + interaction)',

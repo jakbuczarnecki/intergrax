@@ -70,6 +70,19 @@ from intergrax.integrations.contracts.notification_channel import (
     NotificationAdapter,
     NotificationChannel,
 )
+from intergrax.integrations.contracts.conversation_channel import (
+    ConversationActionSelection,
+    ConversationActor,
+    ConversationAddress,
+    ConversationChannelBackend,
+    ConversationChoiceOption,
+    ConversationDeliveryReceipt,
+    ConversationEventHandler,
+    ConversationEventKind,
+    ConversationSingleChoice,
+    InboundConversationEvent,
+    OutboundConversationMessage,
+)
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.vector_store import (
@@ -136,6 +149,17 @@ __all__ = [
     "StoredObject",
     "NotificationAdapter",
     "NotificationChannel",
+    "ConversationActionSelection",
+    "ConversationActor",
+    "ConversationAddress",
+    "ConversationChannelBackend",
+    "ConversationChoiceOption",
+    "ConversationDeliveryReceipt",
+    "ConversationEventHandler",
+    "ConversationEventKind",
+    "ConversationSingleChoice",
+    "InboundConversationEvent",
+    "OutboundConversationMessage",
     "RelationalStore",
     "SearchProvider",
     "MetadataFilter",

@@ -3,8 +3,8 @@
 import pytest
 
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
-from intergrax.integrations.providers.interaction_surface.lab_json.adapter import _LabJsonIntegrationAdapter
-from intergrax.integrations.providers.interaction_surface.lab_json.integration import LabJsonInteractionSurfaceIntegration
+from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
+from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
 from intergrax.integrations.providers.notification_channel.slack.adapter import SlackInteractionAdapter
 from intergrax.integrations.providers.notification_channel.teams.adapter import _TeamsInteractionAdapter
 from intergrax.runtime.interactions.factory import (
@@ -36,7 +36,7 @@ def test_parse_slash_command_text():
 @pytest.mark.unit
 @pytest.mark.gate
 def test_lab_json_adapter_to_task():
-    adapter = _LabJsonIntegrationAdapter()
+    adapter = LabJsonInteractionAdapter()
     payload = {
         "tenant_id": "t1",
         "user_id": "u1",
@@ -80,7 +80,7 @@ def test_slash_command_adapter_slack_payload_to_task():
 @pytest.mark.gate
 def test_chained_adapter_prefers_slack():
     adapter = ChainedInteractionAdapter(
-        [SlackInteractionAdapter(), _LabJsonIntegrationAdapter()]
+        [SlackInteractionAdapter(), LabJsonInteractionAdapter()]
     )
     task = adapter.to_task(
         {"command": "/x", "text": "cap.a do thing", "user_id": "u1", "team_id": "t1"},
@@ -95,11 +95,11 @@ def test_chained_adapter_prefers_slack():
 def test_create_interaction_adapter_surfaces():
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="lab")),
-        LabJsonInteractionSurfaceIntegration,
+        LabJsonInteractionAdapter,
     )
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="slash_command")),
-        SlackInteractionAdapter,
+        SlashCommandInteractionAdapter,
     )
     assert isinstance(
         create_interaction_adapter(resolve_interaction_settings(surface="slack")),

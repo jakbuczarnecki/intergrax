@@ -1210,6 +1210,97 @@ This markdown page is the external execution guide.
 
 ---
 
+## Trusted Ask Workspace (MVP-2)
+
+This section is the **authoritative** MVP-2 live proof. It verifies the
+surface-neutral HTTP Ask Workspace vertical slice against the canonical
+Docker Compose LKW stack with **persistent Qdrant** and **MongoDB**:
+
+```text
+canonical Compose (local_workspace + qdrant + lkw-mongodb + ollama)
+→ real managed workspace
+→ synchronized local documents (once)
+→ POST /ask (first grounded answer + projected citations)
+→ non-destructive restart of local_workspace and qdrant
+→ no resync / no reindex
+→ POST /ask with a different question (new Qdrant-backed retrieval)
+→ GET first Ask run (MongoDB-backed run durability; answer/citations unchanged)
+```
+
+Authoritative durability claims:
+
+```text
+Qdrant-backed retrieval
+non-destructive Qdrant restart
+new Ask without resync
+MongoDB-backed old-run read
+```
+
+Unit and API tests may use in-memory fakes for speed. Those tests are **not**
+the authoritative persistence evidence. The authoritative live proof uses
+Qdrant (`LOCAL_WORKSPACE_VECTOR_STORE=qdrant`) and must not force `inmemory`.
+
+Slack and Teams are out of scope for this proof.
+
+### Command
+
+```sh
+uv run --extra integrations-mongodb python applications/local_workspace_application/scripts/run-lkw-ask-workspace-live-proof.py
+```
+
+The script starts or refreshes the canonical Compose files:
+
+```text
+applications/local_workspace_application/docker/docker-compose.yml
+applications/local_workspace_application/docker/docker-compose.mongodb.yml
+```
+
+The authoritative Qdrant-backed Ask proof uses a prebuilt LKW image containing
+`integrations-mongodb` (deterministic `uv sync` at image build). Compose does
+not install Python dependencies at runtime.
+
+Requires the Compose LLM boundary (`INTERGRAX_LLM_PROVIDER` / Ollama in stack).
+
+`--skip-docker` may be used only when the canonical stack is already running
+and is demonstrably configured with Qdrant. It must not bypass Qdrant
+verification and still print `PASS`.
+
+### Public endpoints
+
+| Step | Method | Path |
+|------|--------|------|
+| Create workspace | `POST` | `/v1/local_workspace/workspaces` |
+| Register folder source | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources` |
+| Start sync | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/sources/{source_id}/sync` |
+| Search (preflight) | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/search` |
+| Ask | `POST` | `/v1/local_workspace/workspaces/{workspace_id}/ask` |
+| Read completed Ask run | `GET` | `/v1/local_workspace/asks/{run_id}` |
+
+### Expected PASS signals
+
+```text
+proof_result=PASS
+proof_kind=trusted_ask_qdrant_durability
+vector_store_provider=qdrant
+inmemory_vector_store=false
+qdrant_restart_performed=true
+volumes_removed=false
+resync_after_restart=false
+reindex_after_restart=false
+first_ask_status=completed
+second_ask_status=completed
+second_ask_after_restart=true
+old_run_read_after_restart=true
+old_run_answer_unchanged=true
+old_run_citations_unchanged=true
+```
+
+The proof prints tenant/workspace/source/run identifiers for reviewer inspection.
+Generated marker documents under `sample_docs/` are removed after the run and
+must not be committed.
+
+---
+
 ## Core Platform Proof completion
 
 The Core Platform Proof is complete when the required core steps

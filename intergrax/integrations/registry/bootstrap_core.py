@@ -8,9 +8,6 @@ from __future__ import annotations
 
 def register_core_integrations(*, override: bool = False) -> None:
     """Register harness/lab-essential integration providers (~12 slugs)."""
-    from intergrax.integrations.providers.interaction_surface.lab_json.register import (
-        register_lab_json_integration,
-    )
     from intergrax.integrations.providers.key_value_cache.redis.register import register_redis_integration
     from intergrax.integrations.providers.notification_channel.log.register import register_log_integration
     from intergrax.integrations.providers.notification_channel.slack.register import register_slack_integration
@@ -34,7 +31,6 @@ def register_core_integrations(*, override: bool = False) -> None:
         register_sqlite_integration,
         register_google_cse_integration,
         register_bing_integration,
-        register_lab_json_integration,
         register_log_integration,
         register_inmemory_integration,
         register_qdrant_integration,

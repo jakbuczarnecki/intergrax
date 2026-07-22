@@ -12,6 +12,8 @@ from typing import Callable, Dict, Optional
 
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.adapters.chained_adapter import ChainedInteractionAdapter
+from intergrax.runtime.interactions.adapters.lab_json_adapter import LabJsonInteractionAdapter
+from intergrax.runtime.interactions.adapters.slash_command_adapter import SlashCommandInteractionAdapter
 from intergrax.runtime.task.task import Task
 
 ENV_INTERACTION_SURFACE = "INTERGRAX_INTERACTION_SURFACE"
@@ -32,15 +34,18 @@ def _teams_interaction_adapter() -> InteractionAdapter:
 
 
 def _lab_json_interaction_adapter() -> InteractionAdapter:
-    from intergrax.integrations.providers.interaction_surface.lab_json.bundle import create_lab_json_interaction_surface
+    return LabJsonInteractionAdapter()
 
-    return create_lab_json_interaction_surface()
+
+def _slash_command_interaction_adapter() -> InteractionAdapter:
+    return SlashCommandInteractionAdapter()
 
 
 def _default_interaction_chain() -> tuple[InteractionAdapter, ...]:
     return (
         _slack_interaction_adapter(),
         _teams_interaction_adapter(),
+        _slash_command_interaction_adapter(),
         _lab_json_interaction_adapter(),
     )
 
@@ -86,15 +91,19 @@ def create_interaction_adapter(
 
     resolved = settings or resolve_interaction_settings()
     if resolved.surface in (InteractionSurface.LAB, InteractionSurface.LAB_JSON):
-        from intergrax.integrations.providers.interaction_surface.lab_json.bundle import create_lab_json_interaction_surface
-
-        return create_lab_json_interaction_surface()
-    if resolved.surface in (InteractionSurface.SLACK, InteractionSurface.SLASH_COMMAND):
-        from intergrax.integrations.providers.notification_channel.slack.bundle import create_slack_interaction_surface
+        return LabJsonInteractionAdapter()
+    if resolved.surface == InteractionSurface.SLASH_COMMAND:
+        return SlashCommandInteractionAdapter()
+    if resolved.surface == InteractionSurface.SLACK:
+        from intergrax.integrations.providers.notification_channel.slack.bundle import (
+            create_slack_interaction_surface,
+        )
 
         return create_slack_interaction_surface()
     if resolved.surface == InteractionSurface.TEAMS:
-        from intergrax.integrations.providers.notification_channel.teams.bundle import create_teams_interaction_surface
+        from intergrax.integrations.providers.notification_channel.teams.bundle import (
+            create_teams_interaction_surface,
+        )
 
         return create_teams_interaction_surface()
     return ChainedInteractionAdapter(_default_interaction_chain())

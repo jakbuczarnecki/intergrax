@@ -34,12 +34,6 @@ LOG = IntegrationManifest(
     status=IntegrationStatus.STABLE,
 )
 
-LAB_JSON = IntegrationManifest(
-    slug="lab_json",
-    categories=(IntegrationCategory.INTERACTION_SURFACE,),
-    status=IntegrationStatus.STABLE,
-)
-
 DOCLING = IntegrationManifest(
     slug="docling",
     categories=(IntegrationCategory.DOCUMENT_PARSER,),
@@ -259,7 +253,6 @@ __all__ = [
     "INMEMORY",
     "JINA_RERANK",
     "KAFKA",
-    "LAB_JSON",
     "LANGFUSE",
     "LANGSMITH",
     "LOG",

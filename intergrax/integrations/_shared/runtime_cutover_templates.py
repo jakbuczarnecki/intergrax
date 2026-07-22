@@ -254,7 +254,7 @@ GENERIC_RUNTIME_CATEGORIES: frozenset[str] = frozenset(
     {
         "document_store",
         "key_value_cache",
-        "interaction_surface",
+        "model_serving_runtime",
         "collaboration_suite",
         "wiki_knowledge",
         "cloud_platform",

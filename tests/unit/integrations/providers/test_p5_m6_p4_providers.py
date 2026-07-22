@@ -366,20 +366,27 @@ def test_issue_trackers() -> None:
         assert tracker.get_issue("PRJ-1").summary == "Task"
 
 
-def test_mailgun_and_ollama_interaction_surfaces() -> None:
-    from intergrax.integrations.providers.interaction_surface.mailgun.bundle import create_mailgun_interaction_surface
-    from intergrax.integrations.providers.interaction_surface.ollama.bundle import create_ollama_interaction_surface
+def test_mailgun_and_ollama_providers() -> None:
+    from intergrax.integrations._shared.p5.factories import create_mailgun_inbound_adapter
+    from intergrax.integrations.providers.model_serving_runtime.ollama.bundle import (
+        create_ollama_model_serving_runtime,
+    )
+    from intergrax.integrations.providers.notification_channel.mailgun.bundle import (
+        create_mailgun_notification_channel,
+    )
 
-    mailgun = create_mailgun_interaction_surface()
-    assert_interaction_surface(mailgun)
+    mailgun = create_mailgun_notification_channel()
+    assert hasattr(mailgun, "notify")
+
+    inbound = create_mailgun_inbound_adapter()
     payload = {"sender": "user@example.com", "body-plain": "hello"}
-    assert mailgun.can_handle(payload)
-    inbound = mailgun.to_inbound(payload, tenant_id="t1", user_id="user@example.com")
-    assert inbound.message == "hello"
+    assert inbound.can_handle(payload)
+    parsed = inbound.to_inbound(payload, tenant_id="t1", user_id="user@example.com")
+    assert parsed.message == "hello"
 
-    ollama = create_ollama_interaction_surface(client=_FakeOllamaClient())
-    assert_interaction_surface(ollama)
-    assert ollama.to_inbound({"model": "llama3", "prompt": "hi"}, tenant_id="t1", user_id="u1").channel == "ollama"
+    ollama = create_ollama_model_serving_runtime(client=_FakeOllamaClient())
+    assert ollama.list_models() == ["llama3"]
+    assert ollama.health().healthy is True
 
 
 def test_huggingface_hub_object_storage() -> None:
@@ -411,8 +418,8 @@ def _p4_shell_probe_targets() -> dict[str, object]:
     from intergrax.integrations.providers.feature_flag.unleash.bundle import create_unleash_feature_flag
     from intergrax.integrations.providers.graph_store.falkordb.bundle import create_falkordb_graph_store
     from intergrax.integrations.providers.graph_store.memgraph.bundle import create_memgraph_graph_store
-    from intergrax.integrations.providers.interaction_surface.mailgun.bundle import create_mailgun_interaction_surface
-    from intergrax.integrations.providers.interaction_surface.ollama.bundle import create_ollama_interaction_surface
+    from intergrax.integrations.providers.notification_channel.mailgun.bundle import create_mailgun_notification_channel
+    from intergrax.integrations.providers.model_serving_runtime.ollama.bundle import create_ollama_model_serving_runtime
     from intergrax.integrations.providers.issue_tracker.asana.bundle import create_asana_issue_tracker
     from intergrax.integrations.providers.issue_tracker.bitbucket.bundle import create_bitbucket_issue_tracker
     from intergrax.integrations.providers.issue_tracker.servicenow.bundle import create_servicenow_issue_tracker
@@ -471,10 +478,10 @@ def _p4_shell_probe_targets() -> dict[str, object]:
         "bitbucket": create_bitbucket_issue_tracker(client=_FakeIssueClient()),
         "asana": create_asana_issue_tracker(client=_FakeIssueClient()),
         "sendgrid": create_sendgrid_notification_channel(sender=_sender),
-        "mailgun": create_mailgun_interaction_surface(),
+        "mailgun": create_mailgun_notification_channel(sender=_sender),
         "mlflow": create_mlflow_observability_backend(observability_backend=client),
         "huggingface_hub": create_huggingface_hub_object_storage(client=_FakeObjectClient()),
-        "ollama": create_ollama_interaction_surface(client=_FakeOllamaClient()),
+        "ollama": create_ollama_model_serving_runtime(client=_FakeOllamaClient()),
     }
 
 

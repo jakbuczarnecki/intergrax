@@ -114,8 +114,6 @@ def create_teams_catalog_factory(
     bundle = create_teams_integration(**config_overrides)
     if integration_category == IntegrationCategory.NOTIFICATION_CHANNEL:
         return bundle.notification_channel
-    if integration_category == IntegrationCategory.INTERACTION_SURFACE:
-        return bundle.interaction_surface
     raise IntegrationConfigurationError(
         f"Teams integration does not support category '{integration_category.value}'."
     )

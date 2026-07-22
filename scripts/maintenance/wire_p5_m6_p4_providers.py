@@ -46,10 +46,10 @@ SPECS = [
     ("bitbucket", "ISSUE_TRACKER", "create_bitbucket_issue_tracker", "INTERGRAX_BITBUCKET"),
     ("asana", "ISSUE_TRACKER", "create_asana_issue_tracker", "INTERGRAX_ASANA"),
     ("sendgrid", "NOTIFICATION_CHANNEL", "create_sendgrid_notification_channel", "INTERGRAX_SENDGRID"),
-    ("mailgun", "INTERACTION_SURFACE", "create_mailgun_interaction_surface", "INTERGRAX_MAILGUN"),
+    ("mailgun", "NOTIFICATION_CHANNEL", "create_mailgun_notification_channel", "INTERGRAX_MAILGUN"),
     ("mlflow", "OBSERVABILITY_BACKEND", "create_mlflow_observability_backend", "INTERGRAX_MLFLOW"),
     ("huggingface_hub", "OBJECT_STORAGE", "create_huggingface_hub_object_storage", "INTERGRAX_HUGGINGFACE_HUB"),
-    ("ollama", "INTERACTION_SURFACE", "create_ollama_interaction_surface", "INTERGRAX_OLLAMA"),
+    ("ollama", "MODEL_SERVING_RUNTIME", "create_ollama_model_serving_runtime", "INTERGRAX_OLLAMA"),
 ]
 
 

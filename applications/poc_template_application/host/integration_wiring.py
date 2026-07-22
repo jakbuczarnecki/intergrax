@@ -73,9 +73,6 @@ def create_poc_template_interaction_adapter(
     settings: PocTemplateApplicationSettings,
 ) -> InteractionAdapter:
     surface = settings.interaction_surface.strip().lower()
-    if surface in {InteractionSurface.LAB.value, InteractionSurface.LAB_JSON.value}:
-        profile = IntegrationProfile.lab()
-        return profile.resolve(IntegrationCategory.INTERACTION_SURFACE)
     return create_interaction_adapter(
         resolve_interaction_settings(surface=surface or InteractionSurface.AUTO.value)
     )

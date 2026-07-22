@@ -25,7 +25,6 @@ from intergrax.integrations.registry.catalog_manifests import (
     GOOGLE_CSE,
     INMEMORY,
     JINA_RERANK,
-    LAB_JSON,
     LANGSMITH,
     LOG,
     OTEL,
@@ -76,7 +75,7 @@ class IntegrationProfile(BaseModel):
     vector_store: IntegrationBinding | None = None
     search_provider: IntegrationBinding | None = None
     notification_channel: IntegrationBinding | None = None
-    interaction_surface: IntegrationBinding | None = None
+    conversation_channel: IntegrationBinding | None = None
     collaboration_suite: IntegrationBinding | None = None
     issue_tracker: IntegrationBinding | None = None
     wiki_knowledge: IntegrationBinding | None = None
@@ -95,6 +94,7 @@ class IntegrationProfile(BaseModel):
     workflow_orchestrator: IntegrationBinding | None = None
     vision_serving: IntegrationBinding | None = None
     ml_inference_host: IntegrationBinding | None = None
+    model_serving_runtime: IntegrationBinding | None = None
     billing_meter: IntegrationBinding | None = None
     crm: IntegrationBinding | None = None
     llm_guardrail: IntegrationBinding | None = None
@@ -215,7 +215,6 @@ class IntegrationProfile(BaseModel):
             relational_store=SQLITE,
             notification_channel=PAGERDUTY,
             observability_backend=SENTRY,
-            interaction_surface=LAB_JSON,
             options={
                 LANGSMITH.slug: {},
                 SENTRY.slug: {},
@@ -227,7 +226,6 @@ class IntegrationProfile(BaseModel):
         return cls(
             relational_store=SQLITE,
             notification_channel=LOG,
-            interaction_surface=LAB_JSON,
             document_parser=DOCLING,
         )
 
@@ -250,7 +248,6 @@ class IntegrationProfile(BaseModel):
         return cls(
             relational_store=SQLITE,
             notification_channel=LOG,
-            interaction_surface=LAB_JSON,
             document_parser=DOCLING,
             observability_backend=OTEL if enable_otel else None,
             key_value_cache=REDIS if enable_redis else None,
@@ -352,7 +349,7 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "vector_store": lambda profile: profile.vector_store,
     "search_provider": lambda profile: profile.search_provider,
     "notification_channel": lambda profile: profile.notification_channel,
-    "interaction_surface": lambda profile: profile.interaction_surface,
+    "conversation_channel": lambda profile: profile.conversation_channel,
     "collaboration_suite": lambda profile: profile.collaboration_suite,
     "issue_tracker": lambda profile: profile.issue_tracker,
     "wiki_knowledge": lambda profile: profile.wiki_knowledge,
@@ -371,6 +368,7 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "workflow_orchestrator": lambda profile: profile.workflow_orchestrator,
     "vision_serving": lambda profile: profile.vision_serving,
     "ml_inference_host": lambda profile: profile.ml_inference_host,
+    "model_serving_runtime": lambda profile: profile.model_serving_runtime,
     "billing_meter": lambda profile: profile.billing_meter,
     "crm": lambda profile: profile.crm,
     "llm_guardrail": lambda profile: profile.llm_guardrail,

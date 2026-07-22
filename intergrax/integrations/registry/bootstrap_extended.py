@@ -18,8 +18,6 @@ def register_extended_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.providers.notification_channel.slack.register import register_slack_integration
     from intergrax.integrations.providers.notification_channel.teams.register import register_teams_integration
     from intergrax.integrations.providers.notification_channel.webhook.register import register_webhook_integration
-    from intergrax.integrations.providers.interaction_surface.lab_json.register import register_lab_json_integration
-    from intergrax.integrations.providers.interaction_surface.slash_command.register import register_slash_command_integration
     from intergrax.integrations.providers.notification_channel.log.register import register_log_integration
     from intergrax.integrations.providers.relational_store.postgresql.register import register_postgresql_integration
     from intergrax.integrations.providers.relational_store.mysql.register import register_mysql_integration
@@ -112,7 +110,6 @@ def register_extended_integrations(*, override: bool = False) -> None:
     register_celery_integration(override=override)
     register_rabbitmq_integration(override=override)
     register_teams_integration(override=override)
-    register_slash_command_integration(override=override)
     register_postgresql_integration(override=override)
     register_mysql_integration(override=override)
     register_jira_integration(override=override)
