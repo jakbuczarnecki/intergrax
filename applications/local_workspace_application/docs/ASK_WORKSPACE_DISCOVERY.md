@@ -13,7 +13,18 @@
 ```text
 Reuse managed-workspace search evidence (local.workspace.search → search_summary.evidence).
 Do not use local.workspace.synthesize as the Ask answer engine.
-LKW owns Ask orchestration, citation projection, product run persistence and completed-run read.
+LKW owns Ask orchestration via AskAnswerAssembler, citation projection,
+product run persistence and completed-run read.
+```
+
+Frozen grounded-answer mechanism:
+
+```text
+verified WorkspaceSearchHitV1 evidence
+→ deterministic context projection
+→ one bounded model invocation owned by LKW (AskAnswerAssembler)
+→ typed grounded answer
+→ citation projection from the same verified evidence
 ```
 
 Shortest safe MVP-2 path:
@@ -23,9 +34,9 @@ POST .../workspaces/{workspace_id}/ask
 → tenant/workspace authorization (same as search)
 → Task(local.workspace.search) via LocalWorkspaceTaskExecutor
 → verified WorkspaceSearchHitV1 evidence
-→ sufficiency gate (empty/unverified → insufficient_evidence, no invented answer)
-→ LKW-owned grounded answer from verified evidence
-→ surface-neutral citations projected from evidence
+→ sufficiency gate (empty → insufficient_evidence; model skipped; no invented answer)
+→ LKW AskAnswerAssembler (indexed context → one bounded model call → typed answer)
+→ surface-neutral citations projected from used_evidence_ids → verified hits
 → persist Ask run (question, evidence, answer, citations, status)
 → return typed result including run_id
 → GET .../asks/{run_id} (tenant-scoped) survives restart
@@ -237,12 +248,22 @@ workspace-scoped question
 → authorization and scope validation (get_workspace)
 → structured retrieval (local.workspace.search via LocalWorkspaceTaskExecutor)
 → map/verify evidence (reuse _map_search_hits semantics)
-→ evidence sufficiency decision
-→ grounded answer assembly (LKW-owned; not shadow synthesize)
-→ citation projection from verified evidence
+→ evidence sufficiency decision (empty verified evidence → skip model)
+→ LKW AskAnswerAssembler
+   (question + verified WorkspaceSearchHitV1
+    → deterministic indexed context
+    → one bounded model invocation
+    → AskAnswerAssemblyResult)
+→ citation projection from used_evidence_ids → verified hits
 → typed final result
 → persist Ask run
 ```
+
+Frozen component: **`AskAnswerAssembler`** in the LKW application layer.
+
+It must not be introduced as a new Tier-2 agent, platform-wide Ask framework,
+Nexus replacement, rewrite of `local.workspace.synthesize`, generic synthesis
+abstraction, or Slack-specific component.
 
 ### 4.3 Evidence
 
@@ -250,13 +271,142 @@ Persist and return verified evidence compatible with `WorkspaceSearchHitV1` fiel
 
 ### 4.4 Answer
 
-Result statuses (proposed):
+Answer engine for MVP-2 is **`AskAnswerAssembler`** (LKW application layer).
+
+#### Input contract
+
+`AskAnswerAssembler` receives only:
+
+```text
+question: str
+evidence: list[WorkspaceSearchHitV1]
+```
+
+It may also receive the minimum existing model runtime dependency already available
+to the LKW host.
+
+It must not receive: raw `rag.retrieve` provider responses; unverified evidence;
+Slack fields; arbitrary task metadata; filesystem access; write-artifact
+instructions; prior free-form agent messages as evidence.
+
+#### Deterministic context projection
+
+Before invoking the model, the assembler creates a bounded context only from
+verified fields:
+
+```text
+document_id
+source_id
+workspace_id
+file_name
+source_path
+snippet
+score
+approved location metadata, when present
+```
+
+Provider-specific keys inside raw metadata must not be included unless explicitly
+promoted into the frozen product schema.
+
+The context preserves a stable evidence index:
+
+```text
+E1
+E2
+E3
+...
+```
+
+Each evidence item used by the model must have one stable evidence index.
+
+#### Model invocation
+
+```text
+one bounded model invocation through the existing LKW/runtime model boundary
+```
+
+Do not require a new provider or new agent. Exact prompt text is not frozen in
+MVP-1; the behavioral contract is frozen. The model prompt must instruct the
+model to:
+
+1. answer only from supplied evidence;
+2. not use external knowledge;
+3. not invent missing facts;
+4. return insufficient evidence when the evidence does not support an answer;
+5. reference evidence indexes used for each material claim.
+
+#### Typed assembler output
+
+Logical contract for MVP-2 (not implemented in MVP-1):
+
+```text
+AskAnswerAssemblyResult
+  status: completed | insufficient_evidence
+  answer: str | null
+  used_evidence_ids: list[str]
+```
+
+Where `used_evidence_ids` contains stable evidence indexes such as `E1`, `E3`.
+
+#### Citation projection
+
+```text
+citations are produced only by mapping used_evidence_ids
+back to the original verified WorkspaceSearchHitV1 objects
+```
+
+The model must not generate final citation objects. The model may only identify
+evidence indexes. LKW code creates the final typed citations.
+
+This guarantees that citations refer to verified evidence; model-generated paths
+or source identifiers are impossible; provider metadata does not leak;
+Slack-specific data does not appear.
+
+#### Insufficient-evidence boundary
+
+**Before model invocation** — if verified evidence is empty:
+
+```text
+status = insufficient_evidence
+answer = null
+citations = []
+model invocation = skipped
+```
+
+**After model invocation** — if the model reports insufficient support or returns
+no valid used evidence indexes:
+
+```text
+status = insufficient_evidence
+answer = null
+citations = []
+```
+
+**Completed answer** — a result may have `status = completed` only when:
+
+* answer is non-empty;
+* at least one valid evidence index is returned;
+* every evidence index maps to verified evidence;
+* citations are projected successfully.
+
+If any returned evidence index is unknown: **assembly failure**. Do not silently
+ignore invalid evidence references.
+
+#### Explicitly forbidden fallback
+
+```text
+The raw user question must never be used as answer content or as a substitute for evidence.
+```
+
+`local.workspace.synthesize` message-only fallback must not be used by Ask Workspace.
+
+#### Product result statuses
 
 | Status | Meaning |
 |--------|---------|
-| `completed` | Grounded answer present with citations |
-| `insufficient_evidence` | No invented answer; empty/explicit message |
-| `failed` | Search/synthesis/persistence failure |
+| `completed` | Grounded answer present with at least one projected citation |
+| `insufficient_evidence` | No invented answer; `answer = null`; empty citations |
+| `failed` | Search/assembly/persistence failure |
 
 Answer text must be produced only from verified evidence when status is `completed`.
 
@@ -398,22 +548,24 @@ PRODUCT_BLOCKING
 
 **Smallest acceptable resolution (MVP-2):**
 
-- LKW Ask service + HTTP ask/read routes  
-- Reuse managed search execution and `_map_search_hits` semantics  
-- LKW-owned grounded answer assembly from verified evidence  
-- Citation projection from verified evidence  
-- DocumentStore Ask-run repository (mirror managed-workspace persistence style)  
-- Sufficiency gate before any `completed` answer  
+- LKW Ask service + HTTP ask/read routes
+- Reuse managed search execution and `_map_search_hits` semantics
+- LKW `AskAnswerAssembler`: verified hits → deterministic indexed context → one bounded model invocation → typed `AskAnswerAssemblyResult`
+- Citation projection by LKW from `used_evidence_ids` → verified hits (model never creates citation objects)
+- DocumentStore Ask-run repository (mirror managed-workspace persistence style)
+- Sufficiency gate before any `completed` answer (empty evidence skips the model)
+- Explicit forbid: raw user question must never be used as answer content
 
 **Owner:** LKW application (`serving/`, `workspaces/` or sibling Ask module).
 
 **Explicitly not generalized yet:**
 
-- platform-wide Ask framework  
-- Nexus/RunService redesign as mandatory dependency  
-- Slack adapter work  
-- rewriting `local.workspace.synthesize` into a universal answer engine  
-- new vector/model providers  
+- platform-wide Ask framework
+- Nexus/RunService redesign as mandatory dependency
+- Slack adapter work
+- rewriting `local.workspace.synthesize` into a universal answer engine
+- new Tier-2 agent or generic synthesis abstraction
+- new vector/model providers
 
 ```text
 NO second major platform gap opened during discovery.
@@ -423,50 +575,86 @@ NO second major platform gap opened during discovery.
 
 ## 9. Exact MVP-2 implementation scope
 
-**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer with projected citations, persists the run, and supports completed-run read after restart.
+**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart — validated by focused tests plus one controlled live proof.
 
 **Allowed:**
 
-- Ask request/response/citation schemas in LKW serving  
-- Ask orchestration service in LKW  
-- DocumentStore-backed Ask run persistence + GET read  
-- Reuse `LocalWorkspaceTaskExecutor` + `local.workspace.search`  
-- Reuse search hit mapping / provenance checks  
-- Focused unit/API/contract tests listed in §11  
-- Update `IMPLEMENTATION_PLAN.md` / proof only if a live proof is in MVP-2 acceptance  
+- Ask request/response/citation schemas in LKW serving
+- Ask orchestration service in LKW
+- LKW `AskAnswerAssembler` (question + verified `WorkspaceSearchHitV1` → indexed context → one bounded model call → typed assembly result)
+- DocumentStore-backed Ask run persistence + GET read
+- Reuse `LocalWorkspaceTaskExecutor` + `local.workspace.search`
+- Reuse search hit mapping / provenance checks
+- Citation projection from `used_evidence_ids` → verified hits
+- Focused unit/API/contract tests listed in §11
+- One controlled end-to-end live proof (mandatory acceptance; not the main debugging loop)
+- Update `IMPLEMENTATION_PLAN.md` / proof docs as required by that live proof
 
 **Forbidden:**
 
-- Slack / Teams  
-- Changing folder sync / ingest / queues unless a concrete Ask blocker  
-- Broad synthesizer redesign or artifact generation as Ask dependency  
-- New providers / observability / token optimization  
-- Platform RunService migration unless strictly necessary and product-pulled  
+- Slack / Teams
+- Changing folder sync / ingest / queues unless a concrete Ask blocker
+- Broad synthesizer redesign or artifact generation as Ask dependency
+- Using `local.workspace.synthesize` or its message-only fallback as the Ask answer engine
+- New Tier-2 agent / platform-wide Ask framework / generic synthesis abstraction
+- New providers / observability / token optimization
+- Platform RunService migration unless strictly necessary and product-pulled
+- Using the raw user question as answer content or as a substitute for evidence
 
 ---
 
 ## 10. MVP-2 acceptance criteria
 
-1. `POST /v1/local_workspace/workspaces/{workspace_id}/ask` accepts surface-neutral question.  
-2. Unknown/foreign workspace → 404.  
-3. Empty question → 422.  
-4. Retrieval uses workspace-scoped `local.workspace.search` with tenant context.  
-5. Verified evidence only; wrong-workspace/unverified evidence never grounds an answer.  
-6. With real documents and a real question → `completed` answer + citations.  
-7. With no/insufficient evidence → `insufficient_evidence` and **no** invented grounded answer.  
-8. Response includes `run_id`, `workspace_id`, `status`, `question`, answer or insufficient result, citations, completion/failure info.  
-9. No Slack-specific fields; no provider payload leakage in the public Ask result.  
-10. Run persisted with question, evidence, answer, citations, status, timestamps.  
-11. `GET .../asks/{run_id}` returns completed run for owning tenant; foreign tenant → 404.  
-12. After process restart, completed run still readable.  
-13. HTTP/MCP search surfaces remain functional; Ask does not break them.  
-14. Focused tests in §11 pass; one live proof optional only if already required by plan for the slice.
+1. `POST /v1/local_workspace/workspaces/{workspace_id}/ask` accepts surface-neutral question.
+2. Unknown/foreign workspace → 404.
+3. Empty question → 422.
+4. Retrieval uses workspace-scoped `local.workspace.search` with tenant context.
+5. Verified evidence only; wrong-workspace/unverified evidence never grounds an answer.
+6. Grounded answers are produced only by `AskAnswerAssembler`: verified hits → deterministic indexed context → one bounded model invocation → typed answer with `used_evidence_ids`.
+7. Citations are projected by LKW from `used_evidence_ids` → verified hits; the model never creates final citation objects.
+8. With real documents and a real question → `completed` answer + at least one projected citation.
+9. With no/insufficient evidence → `insufficient_evidence` and **no** invented grounded answer; empty evidence skips the model.
+10. Unknown evidence indexes cause assembly failure; no fabricated citations.
+11. The raw user question is never used as answer content or as a substitute for evidence.
+12. Response includes `run_id`, `workspace_id`, `status`, `question`, answer or insufficient result, citations, completion/failure info.
+13. No Slack-specific fields; no provider payload leakage in the public Ask result.
+14. Run persisted with question, evidence, answer, citations, status, timestamps.
+15. `GET .../asks/{run_id}` returns completed run for owning tenant; foreign tenant → 404.
+16. After process restart, completed run still readable.
+17. HTTP/MCP search surfaces remain functional; Ask does not break them.
+18. Focused tests in §11 pass in this order: contract → unit → boundary integration → application API.
+19. A single controlled live proof must pass after all focused tests.
+
+Mandatory live proof validates (no Slack; no design partner required):
+
+```text
+real workspace
+→ real synchronized documents
+→ POST Ask request
+→ verified retrieval evidence
+→ bounded grounded answer assembly
+→ projected citations
+→ persisted completed run
+→ GET completed run after host restart
+```
+
+The live proof must not be used as the main debugging loop.
 
 ---
 
 ## 11. MVP-2 required tests
 
-### Focused boundary test (mandatory design)
+Required validation order:
+
+```text
+contract test
+→ focused unit tests
+→ boundary integration tests
+→ application API tests
+→ one controlled live proof
+```
+
+### Citation projection boundary test (mandatory design)
 
 | Field | Value |
 |-------|-------|
@@ -474,21 +662,29 @@ NO second major platform gap opened during discovery.
 | Name | `test_ask_workspace_search_evidence_to_citations_without_provider_or_slack_leakage` |
 | Setup | In-memory DocumentStore; workspace + document ref; stub `LocalWorkspaceTaskExecutor` returning typed `search_summary.evidence` including extra provider `metadata` keys and no Slack fields |
 | Inputs | Ask question + workspace/tenant headers |
-| Expected | `completed` (or mapped) result with citations derived from evidence (`document_id`, `source_path`/`file_name`, excerpt); answer grounded in snippet text |
-| Forbidden fields | any `slack_*` keys; raw provider-only keys (e.g. internal vector ids) on top-level Ask result/citations |
-| Failure cases | empty evidence → `insufficient_evidence` and empty/null answer; cross-workspace evidence → not cited |
+| Expected | Path `verified search hits → indexed model context → used_evidence_ids → typed citations projected by LKW`; answer grounded in snippet text; citations carry `document_id`, `source_path`/`file_name`, excerpt |
+| Forbidden | Citations created directly from model text; any `slack_*` keys; raw provider-only keys on top-level Ask result/citations |
+| Failure cases | empty evidence → `insufficient_evidence` and null answer; cross-workspace evidence → not cited |
+
+### Assembler and grounding tests (exact names)
+
+1. `test_ask_answer_assembler_uses_only_verified_evidence` — assembler input is verified `WorkspaceSearchHitV1`; deterministic context contains only approved fields; raw provider metadata absent; one model call; model receives indexed evidence; typed result contains answer and valid `used_evidence_ids`.
+2. `test_ask_answer_assembler_skips_model_when_evidence_is_empty` — no model call; `insufficient_evidence`; answer null; citations empty.
+3. `test_ask_answer_assembler_rejects_unknown_evidence_reference` — model returns unknown evidence ID; result is not `completed`; no fabricated citation; failure persisted or propagated per MVP-2 contract.
+4. `test_completed_answer_requires_at_least_one_verified_citation` — `completed` cannot be returned without at least one valid projected citation.
 
 ### Minimum additional tests
 
-1. Happy-path contract — real question → answer + citations + `run_id`.  
-2. Insufficient evidence — no invented answer.  
-3. Tenant isolation — foreign tenant cannot read Ask run / workspace.  
-4. Workspace isolation — evidence from other workspace never grounds answer.  
-5. Persisted completed-run read — GET returns stored payload.  
-6. Restart persistence — reload repository/store; GET still succeeds.  
-7. Answer assembly failure — `failed` persisted; GET shows error.  
-8. Provider-specific payload does not leak into Ask response.  
+1. Happy-path contract — real question → answer + citations + `run_id`.
+2. Insufficient evidence — no invented answer.
+3. Tenant isolation — foreign tenant cannot read Ask run / workspace.
+4. Workspace isolation — evidence from other workspace never grounds answer.
+5. Persisted completed-run read — GET returns stored payload.
+6. Restart persistence — reload repository/store; GET still succeeds.
+7. Answer assembly failure — `failed` persisted; GET shows error.
+8. Provider-specific payload does not leak into Ask response.
 9. No Slack-specific fields in schemas (`extra="forbid"` / explicit asserts).
+10. One controlled end-to-end live proof (mandatory; after focused tests; not the main debugging loop).
 
 Do not implement these tests in MVP-1.
 

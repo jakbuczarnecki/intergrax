@@ -586,9 +586,11 @@ Key findings:
 
 **Status:** `CURRENT`
 
-**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer with projected citations, persists the run, and supports completed-run read after restart.
+**One-sentence summary:** Implement surface-neutral HTTP Ask Workspace that reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via LKW `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart — validated by focused tests plus one controlled live proof.
 
 Frozen contract: [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) §4.
+
+Frozen answer component: **LKW `AskAnswerAssembler`**.
 
 User-visible result:
 
@@ -597,26 +599,37 @@ HTTP question
 → workspace-scoped retrieval
 → verified evidence
 → sufficiency gate
-→ grounded answer (LKW-owned assembly)
-→ stable citations
+→ verified evidence
+→ deterministic indexed context
+→ one bounded model invocation through the existing runtime boundary
+→ typed answer with used evidence IDs
+→ citations projected by LKW from verified hits
 → persisted Ask run
 → completed-run read
 ```
+
+Rules:
+
+- The model never creates final citation objects.
+- The raw user question is never used as fallback answer content.
+- `local.workspace.synthesize` remains outside Ask answer execution.
 
 Minimum acceptance (see discovery §10):
 
 - `POST /v1/local_workspace/workspaces/{workspace_id}/ask`,
 - surface-neutral typed result (`run_id`, status, question, answer or insufficient-evidence, citations),
 - reuse `local.workspace.search` + verified hit mapping,
+- LKW `AskAnswerAssembler` grounded-answer path above,
 - insufficient evidence does not invent a grounded answer,
 - persist question/evidence/answer/citations/status,
 - `GET /v1/local_workspace/asks/{run_id}` with tenant isolation,
 - restart persistence,
-- no Slack-specific fields; no provider-payload leakage in the Ask result.
+- no Slack-specific fields; no provider-payload leakage in the Ask result,
+- one controlled end-to-end live proof.
 
 Exact scope, forbidden work and required tests: discovery §9–§12.
 
-No Slack-specific fields or logic are permitted in this slice.
+No Slack-specific fields or logic are permitted in this slice. Slack and Teams remain outside MVP-2.
 
 ### MVP-3 — Slack MVP discovery
 
