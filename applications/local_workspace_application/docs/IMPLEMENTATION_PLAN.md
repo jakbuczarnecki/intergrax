@@ -4,13 +4,14 @@
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)
+**Slack MVP discovery:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 **External verification:** [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 ```text
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-3 — Slack MVP discovery
+Current implementation focus: MVP-4 — Slack conversational MVP
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -30,6 +31,7 @@ Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built — ownership, boundaries and runtime shape |
 | **This file (`IMPLEMENTATION_PLAN.md`)** | LKW product brief, MVP execution order, post-MVP direction and current task |
 | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) | Frozen Ask Workspace contract and exact MVP-2 implementation scope |
+| [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) | Frozen Slack Socket Mode conversational adapter contract and exact MVP-4 implementation scope |
 | [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | How working capabilities are externally verified |
 | [`journal/`](journal/) | Historical implementation notes |
 
@@ -279,10 +281,11 @@ faster or easier than the previous manual workflow.
 ```text
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
-Current active slice: Trusted Ask Workspace
-Current implementation focus: MVP-3 — Slack MVP discovery
-Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete)
+Current active slice: Slack conversational MVP
+Current implementation focus: MVP-4 — Slack conversational MVP
+Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
+Slack conversational adapter: MVP-4 current (not implemented)
 ```
 
 ### Working today
@@ -626,28 +629,15 @@ Rules preserved: model never creates citation objects; raw question never used a
 
 ### MVP-3 — Slack MVP discovery
 
-**Status:** `CURRENT`
+**Status:** done
 
-Purpose: freeze only the architecture needed for the first familiar-tool workflow.
+Result: frozen Slack Socket Mode conversational adapter contract and exact MVP-4 implementation scope.
 
-Discovery must establish:
-
-- Socket Mode connection path,
-- minimal event-to-interaction mapping,
-- approved Slack workspace/user mapping,
-- workspace selection interaction,
-- asynchronous acknowledgement,
-- duplicate-event boundary,
-- basic outbound-data rule,
-- offline/local-host behavior,
-- typed response rendering,
-- one expected major platform blocker.
-
-Do not design Teams, a universal messaging framework or a full companion in this task.
+Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
 
-**Status:** planned
+**Status:** `CURRENT`
 
 User-visible result:
 
@@ -1022,8 +1012,9 @@ protects the intended user, or is selected from real validation feedback.
 | **LKW-MVP-BRIEF** | Product purpose, first user, MVP workflow, value and gate defined | Done | This document · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md) |
 | **MVP-1** | Trusted Ask Workspace discovery — frozen contract | Done | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) |
 | **MVP-2** | Trusted Ask Workspace HTTP implementation | Done | This document · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **MVP-3** | Slack conversational MVP discovery — frozen contract | Done | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) |
 
-Slack MVP, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
+Slack conversational MVP implementation, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
 
 ---
 
@@ -1046,10 +1037,11 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-3 — Slack MVP discovery
-Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP)
+Current task: MVP-4 — Slack conversational MVP
+Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
-Next user-surface task: MVP-3/MVP-4 — Slack discovery and Slack MVP
+Frozen Slack contract: SLACK_MVP_DISCOVERY.md
+Next user-surface task: MVP-4 — Slack conversational MVP (not implemented)
 MVP gate follows minimal packaging and real-user validation.
 ```
 
