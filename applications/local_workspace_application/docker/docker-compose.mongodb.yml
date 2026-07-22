@@ -15,6 +15,18 @@ services:
     depends_on:
       lkw-mongodb:
         condition: service_healthy
+    # Base Dockerfile uv sync omits --extra integrations-mongodb. When this
+    # overlay activates MongoDB DocumentStore, ensure pymongo is present in the
+    # application venv before uvicorn imports managed-workspace / Ask paths.
+    command:
+      - /bin/sh
+      - -lc
+      - >-
+        /app/.venv/bin/python -c "import pymongo" 2>/dev/null
+        || (/app/.venv/bin/python -m ensurepip --upgrade
+        && /app/.venv/bin/python -m pip install --no-cache-dir "pymongo>=4.6,<5");
+        exec /app/.venv/bin/uvicorn local_workspace_application.host.main:app
+        --host 0.0.0.0 --port 8020
 
   lkw-mongodb:
     image: mongo:7.0.14

@@ -1212,19 +1212,33 @@ This markdown page is the external execution guide.
 
 ## Trusted Ask Workspace (MVP-2)
 
-This section verifies the surface-neutral HTTP Ask Workspace vertical slice:
+This section is the **authoritative** MVP-2 live proof. It verifies the
+surface-neutral HTTP Ask Workspace vertical slice against the canonical
+Docker Compose LKW stack with **persistent Qdrant** and **MongoDB**:
 
 ```text
-real managed workspace
-→ synchronized local documents
-→ POST /ask
-→ verified retrieval evidence
-→ AskAnswerAssembler grounded answer
-→ citations projected from verified hits
-→ persisted completed run
-→ host restart
-→ GET /asks/{run_id} returns the same completed result
+canonical Compose (local_workspace + qdrant + lkw-mongodb + ollama)
+→ real managed workspace
+→ synchronized local documents (once)
+→ POST /ask (first grounded answer + projected citations)
+→ non-destructive restart of local_workspace and qdrant
+→ no resync / no reindex
+→ POST /ask with a different question (new Qdrant-backed retrieval)
+→ GET first Ask run (MongoDB-backed run durability; answer/citations unchanged)
 ```
+
+Authoritative durability claims:
+
+```text
+Qdrant-backed retrieval
+non-destructive Qdrant restart
+new Ask without resync
+MongoDB-backed old-run read
+```
+
+Unit and API tests may use in-memory fakes for speed. Those tests are **not**
+the authoritative persistence evidence. The authoritative live proof uses
+Qdrant (`LOCAL_WORKSPACE_VECTOR_STORE=qdrant`) and must not force `inmemory`.
 
 Slack and Teams are out of scope for this proof.
 
@@ -1234,10 +1248,18 @@ Slack and Teams are out of scope for this proof.
 uv run --extra integrations-mongodb python applications/local_workspace_application/scripts/run-lkw-ask-workspace-live-proof.py
 ```
 
-Requires a reachable MongoDB DocumentStore (same stack as managed-workspace proofs)
-and a configured LLM boundary (`INTERGRAX_LLM_PROVIDER`, default `ollama`).
+The script starts or refreshes the canonical Compose files:
 
-Use `--skip-docker` when MongoDB is already running.
+```text
+applications/local_workspace_application/docker/docker-compose.yml
+applications/local_workspace_application/docker/docker-compose.mongodb.yml
+```
+
+Requires the Compose LLM boundary (`INTERGRAX_LLM_PROVIDER` / Ollama in stack).
+
+`--skip-docker` may be used only when the canonical stack is already running
+and is demonstrably configured with Qdrant. It must not bypass Qdrant
+verification and still print `PASS`.
 
 ### Public endpoints
 
@@ -1254,14 +1276,24 @@ Use `--skip-docker` when MongoDB is already running.
 
 ```text
 proof_result=PASS
-ask_status=completed
-evidence_count>=1
-citation_count>=1
-restart_read_result=ok
+proof_kind=trusted_ask_qdrant_durability
+vector_store_provider=qdrant
+inmemory_vector_store=false
+qdrant_restart_performed=true
+volumes_removed=false
+resync_after_restart=false
+reindex_after_restart=false
+first_ask_status=completed
+second_ask_status=completed
+second_ask_after_restart=true
+old_run_read_after_restart=true
+old_run_answer_unchanged=true
+old_run_citations_unchanged=true
 ```
 
-The proof prints `workspace_id` and `run_id` for reviewer inspection.
-Temporary fixture directories and local databases must not be committed.
+The proof prints tenant/workspace/source/run identifiers for reviewer inspection.
+Generated marker documents under `sample_docs/` are removed after the run and
+must not be committed.
 
 ---
 

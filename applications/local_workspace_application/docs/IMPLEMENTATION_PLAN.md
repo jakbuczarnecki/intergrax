@@ -282,7 +282,7 @@ Current milestone: LKW MVP
 Current active slice: Trusted Ask Workspace
 Current implementation focus: MVP-3 — Slack MVP discovery
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete)
-Ask Workspace HTTP: MVP-2 complete (live-verified)
+Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 ```
 
 ### Working today
@@ -303,9 +303,9 @@ Ask Workspace HTTP: MVP-2 complete (live-verified)
 | Source provenance | implemented / live-verified |
 | Persistent state | implemented / live-verified |
 | Live proof + ProofReceipt | implemented / live-verified |
-| Surface-neutral Ask Workspace (HTTP) | implemented / live-verified |
-| Grounded answer + projected citations | implemented / live-verified |
-| Persisted Ask run + restart read | implemented / live-verified |
+| Surface-neutral Ask Workspace (HTTP) | implemented / Qdrant-backed live-verified |
+| Grounded answer + projected citations | implemented / Qdrant-backed live-verified |
+| Persisted Ask run + restart read | implemented / Qdrant-backed live-verified |
 | MCP surface | implemented |
 | Interaction intake baseline | implemented |
 
@@ -584,7 +584,7 @@ Key findings:
 
 ### MVP-2 — Trusted Ask Workspace
 
-**Status:** done
+**Status:** done (Qdrant-backed live-verified)
 
 **One-sentence summary:** Surface-neutral HTTP Ask Workspace reuses managed search evidence, applies an insufficient-evidence gate, produces a grounded answer via LKW `AskAnswerAssembler` with projected citations, persists the run, and supports completed-run read after restart.
 
@@ -614,11 +614,13 @@ Key modules:
 - `serving/workspace_schemas.py` — public Ask request/response schemas
 - `serving/workspace_routes.py` — Ask POST/GET routes
 
-Controlled live proof:
+Controlled live proof (authoritative; Qdrant + MongoDB Compose stack):
 
 ```text
 uv run --extra integrations-mongodb python applications/local_workspace_application/scripts/run-lkw-ask-workspace-live-proof.py
 ```
+
+Proof kind: `trusted_ask_qdrant_durability` — first Ask → non-destructive restart of `local_workspace` + `qdrant` → second Ask without resync → GET first run unchanged.
 
 Rules preserved: model never creates citation objects; raw question never used as answer fallback; `local.workspace.synthesize` unused by Ask; no Slack fields.
 
