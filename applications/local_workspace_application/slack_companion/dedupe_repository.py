@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -16,6 +17,10 @@ from local_workspace_application.slack_companion.models import (
 DEDUPE_TTL_SECONDS = 7 * 24 * 60 * 60
 _PARTITION = "lkw.slack_companion:dedupe"
 
+# Single-process MVP: shared by all repository instances in this process.
+# Not a distributed lock — multi-process / HA deployments are out of scope.
+_PROCESS_CLAIM_LOCK = threading.Lock()
+
 
 def build_slack_dedupe_key(*, team_id: str, event_id: str) -> str:
     return f"{team_id.strip()}:{event_id.strip()}"
@@ -26,7 +31,13 @@ def _utcnow() -> datetime:
 
 
 class SlackEventDedupeRepository:
-    """LKW-owned dedupe repository over the shared DocumentStore contract."""
+    """LKW-owned dedupe repository over the shared DocumentStore contract.
+
+    Claim exclusivity for the current frozen MVP model (single local process) is
+    enforced by a process-wide lock around the full read → evaluate → write
+    sequence. The shared ``DocumentStore`` contract has no create-if-absent /
+    compare-and-set operation.
+    """
 
     def __init__(self, document_store: DocumentStore) -> None:
         self._store = document_store
@@ -39,13 +50,41 @@ class SlackEventDedupeRepository:
         """Claim ownership of a product event.
 
         Returns the claim record when this caller owns processing; ``None`` for
-        an active duplicate. Uses get → put → re-get with ``claim_token`` so a
-        concurrent overwrite cannot produce two Ask owners.
+        an active duplicate. Exactly one successful claim per active key is
+        guaranteed within a single local process.
         """
-        dedupe_key = build_slack_dedupe_key(team_id=team_id, event_id=event_id)
         if not team_id.strip() or not event_id.strip():
             return None
 
+        dedupe_key = build_slack_dedupe_key(team_id=team_id, event_id=event_id)
+        with _PROCESS_CLAIM_LOCK:
+            return self._claim_locked(dedupe_key=dedupe_key)
+
+    def mark_completed(
+        self,
+        *,
+        dedupe_key: str,
+        claim_token: str,
+        ask_run_id: str | None = None,
+    ) -> None:
+        with _PROCESS_CLAIM_LOCK:
+            self._update_status_locked(
+                dedupe_key=dedupe_key,
+                claim_token=claim_token,
+                status=SlackDedupeStatus.COMPLETED,
+                ask_run_id=ask_run_id,
+            )
+
+    def mark_failed(self, *, dedupe_key: str, claim_token: str) -> None:
+        with _PROCESS_CLAIM_LOCK:
+            self._update_status_locked(
+                dedupe_key=dedupe_key,
+                claim_token=claim_token,
+                status=SlackDedupeStatus.FAILED,
+                ask_run_id=None,
+            )
+
+    def _claim_locked(self, *, dedupe_key: str) -> SlackDedupeRecord | None:
         existing = self._get(dedupe_key)
         now = _utcnow()
         if existing is not None and existing.expires_at > now:
@@ -61,36 +100,9 @@ class SlackEventDedupeRepository:
             expires_at=now + timedelta(seconds=DEDUPE_TTL_SECONDS),
         )
         self._put(record)
-        verified = self._get(dedupe_key)
-        if verified is None or verified.claim_token != claim_token:
-            return None
-        if verified.expires_at <= now:
-            return None
-        return verified
+        return record
 
-    def mark_completed(
-        self,
-        *,
-        dedupe_key: str,
-        claim_token: str,
-        ask_run_id: str | None = None,
-    ) -> None:
-        self._update_status(
-            dedupe_key=dedupe_key,
-            claim_token=claim_token,
-            status=SlackDedupeStatus.COMPLETED,
-            ask_run_id=ask_run_id,
-        )
-
-    def mark_failed(self, *, dedupe_key: str, claim_token: str) -> None:
-        self._update_status(
-            dedupe_key=dedupe_key,
-            claim_token=claim_token,
-            status=SlackDedupeStatus.FAILED,
-            ask_run_id=None,
-        )
-
-    def _update_status(
+    def _update_status_locked(
         self,
         *,
         dedupe_key: str,

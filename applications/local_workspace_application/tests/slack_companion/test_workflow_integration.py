@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
@@ -34,6 +36,7 @@ from local_workspace_application.slack_companion.companion import (
 from local_workspace_application.slack_companion.dedupe_repository import (
     SlackEventDedupeRepository,
 )
+from local_workspace_application.slack_companion.models import SlackAskHttpResponse
 from local_workspace_application.slack_companion.rendering import ACK_TEXT
 from local_workspace_application.slack_companion.workflow import SlackAskWorkflow
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
@@ -255,3 +258,95 @@ async def test_companion_start_stop_with_fake_integration() -> None:
     assert len(backend.sent) == 2
     await companion.stop()
     assert backend.stopped is True
+
+
+class _GatedAskClient:
+    """Deterministic Ask gate for concurrent workflow.handle races."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self._calls_lock = threading.Lock()
+        self._entered = threading.Event()
+        self._release = threading.Event()
+
+    async def ask(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        question: str,
+    ) -> SlackAskHttpResponse:
+        del tenant_id, workspace_id, question
+        with self._calls_lock:
+            self.calls += 1
+        self._entered.set()
+        assert self._release.wait(timeout=5.0)
+        return SlackAskHttpResponse(
+            run_id="ask-concurrent",
+            workspace_id="ws-active",
+            status="completed",
+            question="Q",
+            answer="Concurrent answer",
+            citations=[],
+        )
+
+
+class _ClaimBarrierDedupe(SlackEventDedupeRepository):
+    """Synchronize callers immediately before the shared process claim lock."""
+
+    def __init__(self, document_store: InMemoryDocumentStore, barrier: threading.Barrier) -> None:
+        super().__init__(document_store)
+        self._barrier = barrier
+
+    def claim(self, *, team_id: str, event_id: str) -> Any:
+        self._barrier.wait(timeout=2.0)
+        return super().claim(team_id=team_id, event_id=event_id)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_handle_asks_and_replies_once() -> None:
+    backend = FakeConversationChannelBackend()
+    ask_client = _GatedAskClient()
+    claim_barrier = threading.Barrier(2)
+    workflow = SlackAskWorkflow(
+        auth_config=SlackCompanionAuthConfig(
+            approved_team_id="T_OK",
+            approved_user_id="U_OK",
+            tenant_id="tenant-a",
+            active_workspace_id="ws-active",
+        ),
+        dedupe=_ClaimBarrierDedupe(InMemoryDocumentStore(), claim_barrier),
+        ask_client=ask_client,  # type: ignore[arg-type]
+        send=backend.send,
+    )
+    event = _event(event_id="EvConcurrent")
+
+    errors: list[BaseException] = []
+
+    def _run_handle() -> None:
+        try:
+            asyncio.run(workflow.handle(event))
+        except BaseException as exc:  # noqa: BLE001 — surface in parent thread
+            errors.append(exc)
+
+    threads = [
+        threading.Thread(target=_run_handle),
+        threading.Thread(target=_run_handle),
+    ]
+    for thread in threads:
+        thread.start()
+
+    entered = await asyncio.to_thread(ask_client._entered.wait, 2.0)
+    assert entered is True
+    assert ask_client.calls == 1
+    ask_client._release.set()
+
+    for thread in threads:
+        thread.join(timeout=5.0)
+        assert not thread.is_alive()
+    assert errors == []
+
+    assert ask_client.calls == 1
+    assert len(backend.sent) == 2
+    assert backend.sent[0].text == ACK_TEXT
+    assert "Concurrent answer" in backend.sent[1].text
