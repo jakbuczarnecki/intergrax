@@ -70,7 +70,7 @@ def test_slack_live_proof_owned_by_lkw_application() -> None:
     assert "is not application-owned" in text
     assert _SECRET_RE.search(text) is None
 
-    for source in (LKW_PLAN, LKW_DISCOVERY, SLACK_USAGE):
+    for source in (LKW_PLAN, LKW_DISCOVERY):
         targets = _resolve_md_targets(source, "SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md")
         assert targets, f"missing proof link: {source}"
         for target in targets:
@@ -78,10 +78,22 @@ def test_slack_live_proof_owned_by_lkw_application() -> None:
             assert target == NEW_PROOF.resolve()
 
     usage = SLACK_USAGE.read_text(encoding="utf-8")
-    assert (
-        "Live verification was executed through the Local Knowledge Workspace "
-        "reference application."
-    ) in usage
+    for forbidden in (
+        "applications/",
+        "agents/",
+        "Local Knowledge Workspace",
+        "SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md",
+    ):
+        assert forbidden not in usage, f"platform USAGE must not reference {forbidden!r}"
+    for required in (
+        "Socket Mode",
+        "Web API",
+        "MESSAGE",
+        "ACTION",
+        "runtime_binding_supported",
+    ):
+        assert required in usage
+    assert _SECRET_RE.search(usage) is None
 
     index = PROOF_INDEX.read_text(encoding="utf-8")
     index_targets = _resolve_md_targets(PROOF_INDEX, "SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md")

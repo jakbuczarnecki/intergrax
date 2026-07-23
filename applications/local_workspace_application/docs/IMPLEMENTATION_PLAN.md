@@ -1055,7 +1055,84 @@ Slack conversational MVP implementation, design-partner packaging, user validati
 
 ---
 
-## 14. Historical references
+## 14. Proof portability
+
+Platform proof launchers and certification status for LKW as reference host.
+
+### PROOF-PORTABILITY-1A — Shared core proof runner
+
+**Status:** **Done**
+
+The Core Platform Proof uses one shared Python implementation with thin
+operating-system launchers.
+
+Delivered:
+- shared Python runner (`run-lkw-core-platform-proof.py`);
+- Windows BAT launcher;
+- Linux shell launcher;
+- macOS shell launcher;
+- launchers contain no proof workload or acceptance logic.
+
+### PROOF-PORTABILITY-1B — Shared optional OS interaction runner
+
+**Status:** **Done**
+
+The optional operating-system interaction proof uses one shared Python
+implementation with thin Windows, Linux and macOS wrappers.
+
+Delivered:
+- shared interaction client (`invoke-lkw-interaction.py`);
+- shared proof runner (`run-lkw-os-interaction-proof.py`);
+- Windows wrapper;
+- Linux wrapper;
+- macOS wrapper.
+
+### PROOF-PORTABILITY-1C — Runtime-specific certification
+
+**Status:** **Done**
+
+Application Hosting and interaction certification are available for the
+currently verified runtimes.
+
+Certification status:
+- Windows Application Hosting Proof: live-certified on native Windows through current shared runner;
+- Linux Application Hosting Proof: live-certified in Linux Docker runtime;
+- Linux full multi-phase Core Platform Proof: not separately certified by Linux Docker profile;
+- native Linux host: not separately certified;
+- macOS native runtime: implemented, not live-certified.
+
+Receipts:
+- `LKW_WINDOWS_NATIVE_CERTIFICATION.json`
+- `LKW_LINUX_DOCKER_CERTIFICATION.json`
+
+Runtime identifiers:
+- `windows_native_runtime`
+- `linux_docker_runtime`
+- `macos_native_runtime`
+
+### PROOF-PORTABILITY-1D — Cross-runtime certification completion
+
+**Status:** **Partial**
+
+The shared proof architecture is implemented, but certification coverage is
+not complete for every runtime.
+
+Current status:
+- Windows native runtime: live-certified;
+- Linux Docker runtime: live-certified for Application Hosting and optional interaction;
+- Linux native host: not separately certified;
+- Linux full multi-phase Core Platform Proof: not separately certified;
+- macOS: implemented, not live-certified.
+
+### PROOF-PORTABILITY-1D-MATRIX — Certification matrix
+
+Canonical matrix:
+- [`LKW_PLATFORM_CERTIFICATION_MATRIX.md`](../../../docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md)
+- `LKW_PLATFORM_CERTIFICATION_MATRIX.json` (`docs/public-adoption/evidence/`)
+
+---
+
+## 15. Historical references
 
 Detailed history is available in:
 
