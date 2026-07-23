@@ -28,6 +28,7 @@ _OLD_SENTRY_SERVICES_FRAGMENT = _DOCKER_DIR / "docker-compose.sentry.services.ym
 _RUN_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "run-local-docker-all.bat"
 _RUN_LOCAL_DOCKER_ALL_SH = _SCRIPTS_DIR / "run-local-docker-all.sh"
 _HARD_RESET_LOCAL_DOCKER_ALL_BAT = _SCRIPTS_DIR / "hard-reset-local-docker-all.bat"
+_HARD_RESET_LOCAL_DOCKER_ALL_PS1 = _SCRIPTS_DIR / "hard-reset-local-docker-all.ps1"
 _RUN_LKW_ES_PROOF_BAT = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.bat"
 _RUN_LKW_ES_PROOF_SH = _SCRIPTS_DIR / "run-lkw-elasticsearch-proof.sh"
 _BOOTSTRAP_SH = _DOCKER_DIR / "sentry" / "bootstrap" / "bootstrap.sh"
@@ -78,19 +79,28 @@ def test_run_local_docker_all_bat_exists() -> None:
 
 
 def test_hard_reset_local_docker_all_bat_resets_runtime_state_and_starts_stack() -> None:
+    """Windows hard-reset: .bat delegates; .ps1 owns reset + canonical startup."""
     assert _HARD_RESET_LOCAL_DOCKER_ALL_BAT.exists()
-    script = _HARD_RESET_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
-    assert "run-local-docker-all.bat" in script
-    assert "down -v --remove-orphans" in script
-    assert "generated.env" in script
-    assert "generated.env.tmp" in script
-    assert ".bootstrapped" in script
-    assert "up -d --build" in script
-    assert "up --build" not in script
-    assert "run-local-docker-all.bat ps -a" in script
-    assert "del /f /q" in script
-    assert "APP_DIR%\\.env" not in script
-    assert "credentials.json" not in script
+    assert _HARD_RESET_LOCAL_DOCKER_ALL_PS1.exists()
+    assert _RUN_LOCAL_DOCKER_ALL_BAT.exists()
+
+    bat = _HARD_RESET_LOCAL_DOCKER_ALL_BAT.read_text(encoding="utf-8")
+    assert "hard-reset-local-docker-all.ps1" in bat
+    assert "powershell" in bat.lower()
+    assert "exit /b %ERRORLEVEL%" in bat
+
+    ps1 = _HARD_RESET_LOCAL_DOCKER_ALL_PS1.read_text(encoding="utf-8")
+    assert "run-local-docker-all.bat" in ps1
+    assert "down -v --remove-orphans" in ps1
+    assert "generated.env" in ps1
+    assert "generated.env.tmp" in ps1
+    assert ".bootstrapped" in ps1
+    assert "up -d --build" in ps1
+    assert re.search(r"(?m)^\s*up --build\b", ps1) is None
+    assert "Remove-Item" in ps1
+    assert "APP_DIR%\\.env" not in ps1
+    assert "credentials.json" not in ps1
+    assert "$LASTEXITCODE" in ps1
 
 
 def test_lkw_elasticsearch_proof_helpers_create_run_and_validate_observability() -> None:
@@ -264,10 +274,17 @@ def test_docs_mention_canonical_all_in_one_startup() -> None:
     platform_proof = (
         _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
     ).read_text(encoding="utf-8")
+    win_cmd = "applications\\local_workspace_application\\scripts\\run-local-docker-all.bat"
+    posix_cmd = "applications/local_workspace_application/scripts/run-local-docker-all.sh"
 
     for doc in (sentry_doc, platform_proof):
         assert "run-local-docker-all.bat" in doc
         assert "run-local-docker-all.sh" in doc
+        assert win_cmd in doc or win_cmd.replace("\\", "/") in doc
+        assert posix_cmd in doc
+
+    assert _RUN_LOCAL_DOCKER_ALL_BAT.exists()
+    assert _RUN_LOCAL_DOCKER_ALL_SH.exists()
 
 
 def test_kafka_overlay_configures_real_background_task_stack() -> None:
