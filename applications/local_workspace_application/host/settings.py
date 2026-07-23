@@ -125,6 +125,16 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     file_watcher_debounce_seconds: float = 1.0
     file_watcher_max_batch_wait_seconds: float = 10.0
     file_watcher_priority: str = "normal"
+    # Optional Slack Ask companion (LKW-SLACK-WORKFLOW-1A). Incomplete values when
+    # enabled degrade only the companion — never core HTTP/MCP readiness.
+    slack_companion_enabled: bool = False
+    slack_approved_team_id: str = ""
+    slack_approved_user_id: str = ""
+    slack_tenant_id: str = ""
+    slack_active_workspace_id: str = ""
+    slack_ask_base_url: str = ""
+    slack_ask_api_key: str = ""
+    slack_ask_timeout_seconds: float = 60.0
 
     @property
     def config_dir(self) -> str:
@@ -478,6 +488,38 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "FILE_WATCHER_PRIORITY",
             default=cls._field_default("file_watcher_priority"),  # type: ignore[arg-type]
         )
+        slack_companion_enabled = env.bool(
+            "SLACK_COMPANION_ENABLED",
+            default=cls._field_default("slack_companion_enabled"),  # type: ignore[arg-type]
+        )
+        slack_approved_team_id = env.str(
+            "SLACK_APPROVED_TEAM_ID",
+            default=cls._field_default("slack_approved_team_id"),  # type: ignore[arg-type]
+        )
+        slack_approved_user_id = env.str(
+            "SLACK_APPROVED_USER_ID",
+            default=cls._field_default("slack_approved_user_id"),  # type: ignore[arg-type]
+        )
+        slack_tenant_id = env.str(
+            "SLACK_TENANT_ID",
+            default=cls._field_default("slack_tenant_id"),  # type: ignore[arg-type]
+        )
+        slack_active_workspace_id = env.str(
+            "SLACK_ACTIVE_WORKSPACE_ID",
+            default=cls._field_default("slack_active_workspace_id"),  # type: ignore[arg-type]
+        )
+        slack_ask_base_url = env.str(
+            "SLACK_ASK_BASE_URL",
+            default=cls._field_default("slack_ask_base_url"),  # type: ignore[arg-type]
+        )
+        slack_ask_api_key = env.str(
+            "SLACK_ASK_API_KEY",
+            default=cls._field_default("slack_ask_api_key"),  # type: ignore[arg-type]
+        )
+        slack_ask_timeout_seconds = env.float(
+            "SLACK_ASK_TIMEOUT_SECONDS",
+            default=cls._field_default("slack_ask_timeout_seconds"),  # type: ignore[arg-type]
+        )
 
         return {
             "data_home": data_home,
@@ -525,4 +567,12 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "file_watcher_debounce_seconds": file_watcher_debounce_seconds,
             "file_watcher_max_batch_wait_seconds": file_watcher_max_batch_wait_seconds,
             "file_watcher_priority": file_watcher_priority,
+            "slack_companion_enabled": slack_companion_enabled,
+            "slack_approved_team_id": slack_approved_team_id,
+            "slack_approved_user_id": slack_approved_user_id,
+            "slack_tenant_id": slack_tenant_id,
+            "slack_active_workspace_id": slack_active_workspace_id,
+            "slack_ask_base_url": slack_ask_base_url,
+            "slack_ask_api_key": slack_ask_api_key,
+            "slack_ask_timeout_seconds": slack_ask_timeout_seconds,
         }

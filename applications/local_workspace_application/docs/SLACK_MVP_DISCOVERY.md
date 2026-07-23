@@ -2,7 +2,11 @@
 
 ```text
 Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_VERIFIED
-Next slice: MVP-4 — Slack conversational MVP (READY_FOR_PRODUCT_IMPLEMENTATION; next task LKW-SLACK-WORKFLOW-1)
+Next slice: MVP-4 — Slack conversational MVP
+  LKW-SLACK-WORKFLOW-1A — IMPLEMENTED / READY_FOR_LIVE_PROOF
+    approved DM → configured active workspace → Ask HTTP → answer
+  Next task: LKW-SLACK-WORKFLOW-1B
+    workspace listing + selection + pending question + ACTION resume
 ```
 
 **Platform runtime status:**
@@ -21,7 +25,12 @@ verified ACTION mapping
 verified confirmation
 
 Platform transport blocker for MVP-4 product work is closed.
-Product workflow (Ask / identity / tenant) remains unimplemented.
+
+LKW-SLACK-WORKFLOW-1A — IMPLEMENTED / READY_FOR_LIVE_PROOF
+(approved DM → configured tenant/active workspace → product dedupe → Ask HTTP → threaded safe answer)
+Live Slack+Ask evidence not recorded in this commit (not LIVE_VERIFIED).
+Proof checklist:
+uv run python applications/local_workspace_application/scripts/run-lkw-slack-ask-workflow-proof.py
 
 Ownership:
 SlackConversationChannelIntegration
@@ -32,17 +41,16 @@ SlackConversationChannelIntegration
 → Block Kit mapping
 → lifecycle/reconnect/health
 
-LKW Slack conversation handler
-→ authorization
-→ tenant mapping
-→ workspace selection
-→ pending question
-→ product dedupe
-→ Ask HTTP
-→ answer/citation rendering
+LKW Slack companion (applications/local_workspace_application/slack_companion/)
+→ authorization (1A)
+→ tenant + configured active workspace mapping (1A)
+→ product dedupe (1A)
+→ Ask HTTP (1A)
+→ answer/citation rendering (1A)
+→ workspace selection / pending question / ACTION resume (1B — not in this slice)
 
-Next exact task after live proof: LKW-SLACK-WORKFLOW-1
-Live proof command:
+Next exact task: LKW-SLACK-WORKFLOW-1B
+Live transport proof command:
 uv sync --extra integrations-slack
 uv run python scripts/proof/slack_conversation_channel_live_proof.py
 ```

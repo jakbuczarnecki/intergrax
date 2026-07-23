@@ -260,6 +260,13 @@ def create_local_workspace_backend_app(
     if host_lifecycle is not None:
         apply_lkw_daemon_lifespan(app, host_lifecycle)
         app.state.lkw_host_lifecycle = host_lifecycle
+        from local_workspace_application.slack_companion.companion import wire_slack_companion
+
+        wire_slack_companion(
+            app,
+            settings=resolved_settings,
+            host_lifecycle=host_lifecycle,
+        )
     app.state.lkw_host_readiness = resolved_readiness
     app.state.lkw_task_executor = lkw_task_executor
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
