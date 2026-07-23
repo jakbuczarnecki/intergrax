@@ -51,7 +51,14 @@ INTERGRAX_SLACK_APP_TOKEN   # xapp-…  (connections:write)
 INTERGRAX_SLACK_BOT_TOKEN   # xoxb-…  (chat:write, im:history)
 INTERGRAX_SLACK_API_TIMEOUT_SECONDS   # optional
 INTERGRAX_SLACK_CONVERSATION_ENABLED  # optional; or pass enabled=True
+INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS # optional; live-proof wait budget
 ```
+
+For the controlled live proof, copy
+`applications/local_workspace_application/.env.example` → `.env` in that
+directory and set the tokens there. `scripts/proof/slack_conversation_channel_live_proof.py`
+loads that file explicitly (process environment still overrides `.env`).
+Never commit real tokens.
 
 Optional dependency:
 
