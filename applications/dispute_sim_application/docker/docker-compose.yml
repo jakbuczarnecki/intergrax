@@ -1,19 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/dispute_sim_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application dispute_sim_application \
+#     --context-dir applications/dispute_sim_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application dispute_sim_application \
+#     --tag dispute_sim-application:latest --context-dir applications/dispute_sim_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/dispute_sim_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
 name: intergrax_dispute_sim
 
 services:
   dispute_sim:
     build:
-      context: ../../..
-      dockerfile: applications/dispute_sim_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: dispute_sim-application:latest
     ports:
       - "8020:8020"
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      DISPUTE_SIM_BACKEND_ENV: dev
       DISPUTE_SIM_BACKEND_HOST: "0.0.0.0"
       DISPUTE_SIM_BACKEND_PORT: "8020"
-      INTERGRAX_ENV: prod
+      DISPUTE_SIM_INCLUDE_MCP: "false"

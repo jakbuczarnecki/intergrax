@@ -10,9 +10,13 @@
 **Migration (2026):** full fleet program — plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
 
 ```text
-agents/<slug>/     →  capability modules (no applications/ imports)
-applications/      →  deployable environments that compose agents
+agents/<slug>/     →  reusable Tier-2 packages (no applications/ imports)
+applications/      →  deployable environments that compose declared agents
 ```
+
+Each agent owns `agents/<slug>/pyproject.toml` (`intergrax-<slug>-agent` workspace member).
+Applications select agents by package dependency — see
+[`docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ### ACP fleet migration (Wave 8)
 

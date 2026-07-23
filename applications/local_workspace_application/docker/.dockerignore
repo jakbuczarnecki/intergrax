@@ -1,25 +1,23 @@
-# Per-application ignore file — monorepo root as context.
-# BuildKit: docker buildx build -f applications/local_workspace_application/docker/Dockerfile \
-#   --ignorefile applications/local_workspace_application/docker/.dockerignore -t local_workspace-application .
-# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+# Defensive ignore only. Canonical builds use materialized runtime-context/.
+# Application: local_workspace_application (local_workspace)
+# Source of truth: applications/local_workspace_application/pyproject.toml
 
 .git
 .venv
+**/.venv
+.env
+**/.env
 build/
 **/__pycache__/
 *.pyc
 .pytest_cache
+.mypy_cache
+.ruff_cache
 notebooks/
 docs/
-# Root tests stay excluded; LKW application live proofs must be in the image.
 tests/
-!applications/local_workspace_application/tests/
 infra/
-applications/*
-!applications/__init__.py
-!applications/*/pyproject.toml
-!applications/local_workspace_application/
-agents/*
-!agents/local_indexer/
-!agents/local_search/
-!agents/local_synthesizer/
+**/proof
+**/proof_artifacts
+coverage/
+htmlcov/

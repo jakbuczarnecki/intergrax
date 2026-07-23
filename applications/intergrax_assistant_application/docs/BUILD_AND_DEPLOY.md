@@ -189,3 +189,14 @@ uv run --project applications/intergrax_assistant_application python -m intergra
 ```
 
 The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/intergrax_assistant_application`); do not pass root `--extra` flags in the Dockerfile.
+
+## Application runtime graph (isolated images)
+
+Canonical packaging and image isolation: [docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+
+```bash
+uv sync --project applications/intergrax_assistant_application
+uv run python scripts/build/build_application_image.py --application intergrax_assistant_application --tag intergrax-assistant-application:local
+```
+
+Compose uses docker/runtime-context/ produced by the same builder (--context-dir ... --keep-context). Do not build with repository-root context.

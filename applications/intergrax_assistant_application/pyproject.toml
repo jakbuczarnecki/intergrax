@@ -10,6 +10,10 @@ description = "Intergrax assistant Tier-3 application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "Intergrax-ai",
+  "intergrax-echo-agent",
+  "intergrax-assistant-agent",
+  "intergrax-legal-agent",
+  "intergrax-research-agent",
 ]
 
 [tool.uv]
@@ -17,3 +21,7 @@ package = false
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+intergrax-echo-agent = { workspace = true }
+intergrax-assistant-agent = { workspace = true }
+intergrax-legal-agent = { workspace = true }
+intergrax-research-agent = { workspace = true }

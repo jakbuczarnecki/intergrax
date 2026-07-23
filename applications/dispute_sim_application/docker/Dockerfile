@@ -1,51 +1,64 @@
-        # © Artur Czarnecki. All rights reserved.
-        # syntax=docker/dockerfile:1
-        #
-        # Build from monorepo root (first install may take several minutes).
-        # BuildKit: docker buildx build -f applications/dispute_sim_application/docker/Dockerfile \
-        #   --ignorefile applications/dispute_sim_application/docker/.dockerignore -t dispute_sim-application .
-        # Classic: cp applications/dispute_sim_application/docker/.dockerignore .dockerignore \
-        #   && docker build -f applications/dispute_sim_application/docker/Dockerfile -t dispute_sim-application .
-        # Dependency source of truth: applications/dispute_sim_application/pyproject.toml
-# (selects Intergrax workspace package + platform extras).
+# © Artur Czarnecki. All rights reserved.
+# syntax=docker/dockerfile:1
 #
-# Run: docker run --env-file applications/dispute_sim_application/.env -p 8020:8020 dispute_sim-application
+# Build ONLY from a materialized runtime-graph context produced by:
+#   uv run python scripts/build/build_application_image.py --application dispute_sim_application
+# Do not use the monorepo root as Docker context.
+# Compose / local builds must use applications/dispute_sim_application/docker/runtime-context/
+# prepared by scripts/build/build_application_image.py (or --keep-context).
+# Source of truth: applications/dispute_sim_application/pyproject.toml
 
-        FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
-        WORKDIR /app
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+WORKDIR /app
 
-        COPY pyproject.toml uv.lock README.md ./
-        COPY intergrax/ ./intergrax/
+COPY pyproject.toml uv.lock README.md ./
+COPY .intergrax-runtime-graph.json ./
+COPY intergrax/ ./intergrax/
 COPY applications/ ./applications/
-        COPY agents/dispute_analyst/ ./agents/dispute_analyst/
-COPY agents/dispute_intake/ ./agents/dispute_intake/
-COPY agents/dispute_scenario/ ./agents/dispute_scenario/
-COPY agents/dispute_strategist/ ./agents/dispute_strategist/
-# Application project selects Intergrax extras; do not pass --extra here.
-# Root pyproject already declares disjoint Linux/Windows uv environments.
-RUN uv sync --frozen --no-dev --project applications/dispute_sim_application
+COPY agents/ ./agents/
 
-        FROM python:3.12-slim-bookworm AS runtime
-        WORKDIR /app
+# Install the selected application graph only (agents via workspace deps).
+RUN uv sync --frozen --no-dev --project applications/dispute_sim_application \
+    && rm -rf /root/.cache/uv
 
-        ENV PYTHONUNBUFFERED=1 \
-            PYTHONDONTWRITEBYTECODE=1 \
-            PYTHONPATH=/app:/app/agents:/app/applications \
-            INTERGRAX_ENV=prod \
-            DISPUTE_SIM_BACKEND_HOST=0.0.0.0 \
-            DISPUTE_SIM_BACKEND_PORT=8020
+RUN PYTHONPATH=/app:/app/agents:/app/applications \
+    INTERGRAX_ENV=dev \
+    DISPUTE_SIM_BACKEND_ENV=dev \
+    DISPUTE_SIM_INCLUDE_MCP=false \
+    DISPUTE_SIM_INCLUDE_SCHEDULER=false \
+    DISPUTE_SIM_INCLUDE_INTERACTIONS=false \
+    DISPUTE_SIM_INCLUDE_TASK_CONTROL=false \
+    INTERGRAX_SHADOW_ROOT=/tmp/intergrax_app_shadow \
+    INTERGRAX_SQLITE_DATA_DIR=/tmp/intergrax_app_sqlite \
+    .venv/bin/python -c "import dispute_sim_application; assert True"
 
-        RUN apt-get update && apt-get install -y --no-install-recommends \
-            libsqlite3-0 \
-            && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim-bookworm AS runtime
+WORKDIR /app
 
-        COPY --from=builder /app /app
-        ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app:/app/agents:/app/applications \
+    INTERGRAX_ENV=prod \
+    DISPUTE_SIM_BACKEND_HOST=0.0.0.0 \
+    DISPUTE_SIM_BACKEND_PORT=8020
 
-        EXPOSE 8020
-        WORKDIR /app/applications/dispute_sim_application
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-        HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-          CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8020/health')" || exit 1
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/intergrax /app/intergrax
+COPY --from=builder /app/applications /app/applications
+COPY --from=builder /app/agents /app/agents
+COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md /app/
+COPY --from=builder /app/.intergrax-runtime-graph.json /app/.intergrax-runtime-graph.json
 
-        CMD ["uvicorn", "dispute_sim_application.host.main:app", "--host", "0.0.0.0", "--port", "8020"]
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8020
+WORKDIR /app/applications/dispute_sim_application
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8020/health')" || exit 1
+
+CMD ["uvicorn", "dispute_sim_application.host.main:app", "--host", "0.0.0.0", "--port", "8020"]

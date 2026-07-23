@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+from intergrax.applications._shared.application_runtime_graph import (
+    agent_distribution_name,
+)
+
 
 def distribution_name_for_pkg(pkg: str) -> str:
     """Stable PyPI-style distribution name for an application folder."""
@@ -26,23 +30,31 @@ def render_application_pyproject(
     display: str,
     platform_extras: list[str] | None = None,
     application_dependencies: list[str] | None = None,
+    agent_dirs: list[str] | None = None,
 ) -> str:
     """Render application workspace member ``pyproject.toml`` content."""
     extras = list(platform_extras or [])
     app_deps = list(application_dependencies or [])
+    agents = list(agent_dirs or [])
     dist = distribution_name_for_pkg(pkg)
     if extras:
         intergrax_dep = f'  "Intergrax-ai[{",".join(extras)}]",'
     else:
         intergrax_dep = '  "Intergrax-ai",'
-    dep_lines = [intergrax_dep, *[f'  "{dep}",' for dep in app_deps]]
+    agent_dep_lines = [f'  "{agent_distribution_name(a)}",' for a in agents]
+    dep_lines = [intergrax_dep, *agent_dep_lines, *[f'  "{dep}",' for dep in app_deps]]
     deps_block = "\n".join(dep_lines)
+    source_lines = ["Intergrax-ai = { workspace = true }"]
+    source_lines.extend(
+        f"{agent_distribution_name(a)} = {{ workspace = true }}" for a in agents
+    )
+    sources_block = "\n".join(source_lines)
     return dedent(
         f"""\
         # © Artur Czarnecki. All rights reserved.
         # Tier-3 application dependency project (workspace member).
         # Application source remains importable via PYTHONPATH=applications/.
-        # Canonical platform doc: docs/architecture/APPLICATION_DEPENDENCY_MODEL.md
+        # Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
 
         [project]
         name = "{dist}"
@@ -57,7 +69,7 @@ def render_application_pyproject(
         package = false
 
         [tool.uv.sources]
-        Intergrax-ai = {{ workspace = true }}
+        {sources_block}
         """
     )
 

@@ -965,9 +965,13 @@ def _create_lab_application(
             pkg=names.pkg,
             display=names.display,
             platform_extras=platform_extras_for_profile(profile, minimal=minimal),
+            agent_dirs=agent_dirs,
         ),
         force=force,
     )
+    from intergrax.scaffold.workspace_members import ensure_workspace_member
+
+    ensure_workspace_member(target.parent.parent, f"applications/{names.pkg}")
     docs_dir = target / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
@@ -1102,9 +1106,13 @@ def _create_product_application(
             pkg=names.pkg,
             display=names.display,
             platform_extras=platform_extras_for_profile(profile),
+            agent_dirs=agent_dirs,
         ),
         force=force,
     )
+    from intergrax.scaffold.workspace_members import ensure_workspace_member
+
+    ensure_workspace_member(target.parent.parent, f"applications/{names.pkg}")
     docs_dir = target / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
@@ -1258,6 +1266,10 @@ def create_application(
             force=force,
         )
 
+    # When scaffolding into a real monorepo, register the application project.
+    from intergrax.scaffold.workspace_members import ensure_workspace_member
+
+    ensure_workspace_member(root, f"applications/{names.pkg}")
     return target
 
 

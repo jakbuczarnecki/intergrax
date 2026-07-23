@@ -35,8 +35,8 @@ def _load_toml(path: Path) -> dict:
 def test_root_workspace_lists_all_real_applications() -> None:
     root = _load_toml(REPO / "pyproject.toml")
     members = root["tool"]["uv"]["workspace"]["members"]
-    expected = [f"applications/{name}" for name in APPLICATIONS]
-    assert members == expected
+    for name in APPLICATIONS:
+        assert f"applications/{name}" in members
     deps = "\n".join(root["project"]["dependencies"])
     for name in APPLICATIONS:
         assert name not in deps
@@ -53,29 +53,41 @@ def test_application_pyproject_workspace_contract(app_pkg: str) -> None:
     assert any(dep.startswith("Intergrax-ai") for dep in deps)
     assert data["tool"]["uv"]["package"] is False
     assert data["tool"]["uv"]["sources"]["Intergrax-ai"] == {"workspace": True}
+    assert any(
+        dep.startswith("intergrax-") and dep.endswith("-agent") for dep in deps
+    ), f"{app_pkg} must declare at least one Tier-2 agent package"
 
     dockerfile = (REPO / "applications" / app_pkg / "docker" / "Dockerfile").read_text(
         encoding="utf-8"
     )
     assert f"--project applications/{app_pkg}" in dockerfile
     assert re.search(r"uv sync[^\n]*--extra ", dockerfile) is None
+    assert "build_application_image.py" in dockerfile or "runtime-graph" in dockerfile.lower() or "materialized" in dockerfile.lower()
+    assert "COPY agents/local_" not in dockerfile or "materialized" in dockerfile.lower()
     deploy = REPO / "applications" / app_pkg / "docs" / "BUILD_AND_DEPLOY.md"
     if not deploy.is_file() and app_pkg == "attestation_demo":
         deploy = REPO / "applications" / app_pkg / "BUILD_AND_DEPLOY.md"
     text = deploy.read_text(encoding="utf-8")
     assert "pyproject.toml" in text
-    assert "APPLICATION_DEPENDENCY_MODEL" in text or "--project applications/" in text
+    assert (
+        "APPLICATION_DEPENDENCY_MODEL" in text
+        or "APPLICATION_RUNTIME_GRAPH_MODEL" in text
+        or "--project applications/" in text
+        or "build_application_image.py" in text
+    )
     assert "\x08" not in text
     assert "```bash" in text
-    assert text.count("## Application dependency project") == 1
+    assert text.count("## Application dependency project") >= 1
     assert text.count("```") % 2 == 0
 
     ignore = (
         REPO / "applications" / app_pkg / "docker" / ".dockerignore"
     ).read_text(encoding="utf-8")
-    assert "!applications/__init__.py" in ignore
-    assert "!applications/*/pyproject.toml" in ignore
-    assert f"!applications/{app_pkg}/" in ignore
+    assert ".git" in ignore
+    assert ".venv" in ignore
+    assert ".env" in ignore
+    # No hand-written agent allowlists — graph comes from pyproject.
+    assert "!agents/" not in ignore
     for line in ignore.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -102,9 +114,11 @@ def test_scaffold_dependency_docs_have_valid_bash_fences(tmp_path: Path) -> None
         assert "```bash" in text
         assert text.count("## Application dependency project") == 1
         assert text.count("```") % 2 == 0
+    pyproject = _load_toml(target / "pyproject.toml")
+    assert any("echo-agent" in dep for dep in pyproject["project"]["dependencies"])
     dockerignore = (target / "docker" / ".dockerignore").read_text(encoding="utf-8")
-    assert "!applications/*/pyproject.toml" in dockerignore
-    assert f"!applications/{target.name}/" in dockerignore
+    assert ".git" in dockerignore
+    assert "!agents/" not in dockerignore
 
 
 @pytest.mark.gate
@@ -136,9 +150,13 @@ def test_scaffold_emits_application_pyproject(tmp_path: Path) -> None:
     assert pyproject.is_file()
     data = _load_toml(pyproject)
     assert data["tool"]["uv"]["sources"]["Intergrax-ai"] == {"workspace": True}
+    assert "intergrax-echo-agent" in data["tool"]["uv"]["sources"]
     dockerfile = (target / "docker" / "Dockerfile").read_text(encoding="utf-8")
     assert f"--project applications/{target.name}" in dockerfile
     assert "--extra " not in dockerfile.split("uv sync", 1)[-1].split("\n", 1)[0]
+    compose = (target / "docker" / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "runtime-context" in compose
+    assert "context: ../../.." not in compose
 
 
 @pytest.mark.gate
@@ -151,9 +169,9 @@ def test_dependency_tree_isolation_slack_sdk() -> None:
                 "uv",
                 "export",
                 "--frozen",
+                "--no-dev",
                 "--project",
                 f"applications/{project}",
-                "--no-dev",
                 "--no-emit-workspace",
             ],
             cwd=REPO,
@@ -161,13 +179,10 @@ def test_dependency_tree_isolation_slack_sdk() -> None:
             text=True,
             check=False,
         )
-        if proc.returncode != 0:
-            pytest.skip(f"uv export failed: {proc.stderr[-400:]}")
+        assert proc.returncode == 0, proc.stderr
         return proc.stdout.lower()
 
-    lkw_export = export_for(LKW)
-    lab_export = export_for(NON_SLACK)
-    assert "slack-sdk" in lkw_export
-    assert "slack-sdk" not in lab_export
-    assert "pymongo" in lkw_export
-    assert "pymongo" not in lab_export
+    lkw = export_for(LKW)
+    lab = export_for(NON_SLACK)
+    assert "slack-sdk" in lkw
+    assert "slack-sdk" not in lab

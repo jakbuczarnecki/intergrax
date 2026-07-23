@@ -40,15 +40,20 @@ RUN apt-get update \
 
 COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
-COPY applications/ ./applications/
+COPY applications/__init__.py ./applications/__init__.py
+COPY applications/local_workspace_application/ ./applications/local_workspace_application/
 COPY agents/local_indexer/ ./agents/local_indexer/
 COPY agents/local_search/ ./agents/local_search/
 COPY agents/local_synthesizer/ ./agents/local_synthesizer/
+# Selected agents must match applications/local_workspace_application/pyproject.toml
+# Prefer canonical materializer for production images; this certification image
+# keeps an explicit subset and rewrites workspace members before sync.
 
 # Application project selects Intergrax extras (incl. MongoDB).
 # Certification group adds pytest for in-image proof runners.
 # Normalize POSIX shell scripts to LF (Windows checkouts may use CRLF).
-RUN uv sync --frozen --no-dev --project applications/local_workspace_application --group certification \
+RUN python -c "from pathlib import Path; import re; p=Path('pyproject.toml'); t=p.read_text(encoding='utf-8'); m='members = [\\n  \"applications/local_workspace_application\",\\n  \"agents/local_indexer\",\\n  \"agents/local_search\",\\n  \"agents/local_synthesizer\",\\n]'; p.write_text(re.sub(r'members\\s*=\\s*\\[[^\\]]*\\]', m, t, count=1, flags=re.S), encoding='utf-8')" \
+    && uv sync --frozen --no-dev --project applications/local_workspace_application --group certification \
     && find applications/local_workspace_application/scripts -name '*.sh' -print0 \
         | xargs -0 sed -i 's/\r$//' \
     && chown -R lkwcert:lkwcert /app

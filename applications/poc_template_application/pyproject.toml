@@ -6,10 +6,11 @@
 [project]
 name = "intergrax-poc-template-application"
 version = "0.1.0"
-description = "POC template Tier-3 application"
+description = "PoC template Tier-3 application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "Intergrax-ai",
+  "intergrax-echo-agent",
 ]
 
 [tool.uv]
@@ -17,3 +18,4 @@ package = false
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+intergrax-echo-agent = { workspace = true }

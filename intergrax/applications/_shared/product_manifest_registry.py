@@ -4,24 +4,30 @@
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Iterator
 
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 
+_PRODUCT_MANIFEST_MODULES: tuple[tuple[str, str, str], ...] = (
+    ("legal", "legal_application.manifest", "LEGAL_APPLICATION_MANIFEST"),
+    ("research", "research_application.manifest", "RESEARCH_APPLICATION_MANIFEST"),
+    ("dispute_sim", "dispute_sim_application.manifest", "DISPUTE_SIM_APPLICATION_MANIFEST"),
+    (
+        "local_workspace",
+        "local_workspace_application.manifest",
+        "LOCAL_WORKSPACE_APPLICATION_MANIFEST",
+    ),
+)
+
 
 def iter_product_manifests() -> Iterator[tuple[str, ApplicationManifest]]:
-    """Yield ``(product_id, manifest)`` for shipped Tier-3 product hosts."""
-    from dispute_sim_application.manifest import DISPUTE_SIM_APPLICATION_MANIFEST
-    from legal_application.manifest import LEGAL_APPLICATION_MANIFEST
-    from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
-    from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
-
-    yield "legal", LEGAL_APPLICATION_MANIFEST
-    yield "research", RESEARCH_APPLICATION_MANIFEST
-    yield "dispute_sim", DISPUTE_SIM_APPLICATION_MANIFEST
-    yield "local_workspace", LOCAL_WORKSPACE_APPLICATION_MANIFEST
+    """Yield `(product_id, manifest)` for shipped Tier-3 product hosts."""
+    for product_id, module_name, attr in _PRODUCT_MANIFEST_MODULES:
+        module = importlib.import_module(module_name)
+        yield product_id, getattr(module, attr)
 
 
 def iter_strict_product_manifests() -> Iterator[tuple[str, ApplicationManifest]]:

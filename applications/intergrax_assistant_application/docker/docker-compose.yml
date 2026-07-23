@@ -1,19 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/intergrax_assistant_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application intergrax_assistant_application \
+#     --context-dir applications/intergrax_assistant_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application intergrax_assistant_application \
+#     --tag intergrax_assistant-application:latest --context-dir applications/intergrax_assistant_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/intergrax_assistant_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
-name: intergrax_assistant
+name: intergrax_intergrax_assistant
 
 services:
   intergrax_assistant:
     build:
-      context: ../../..
-      dockerfile: applications/intergrax_assistant_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: intergrax_assistant-application:latest
     ports:
       - "8096:8096"
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      INTERGRAX_ASSISTANT_BACKEND_ENV: dev
       INTERGRAX_ASSISTANT_BACKEND_HOST: "0.0.0.0"
       INTERGRAX_ASSISTANT_BACKEND_PORT: "8096"
-      INTERGRAX_ENV: prod
+      INTERGRAX_ASSISTANT_INCLUDE_MCP: "false"

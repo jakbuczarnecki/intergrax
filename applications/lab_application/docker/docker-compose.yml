@@ -1,19 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/lab_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application lab_application \
+#     --context-dir applications/lab_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application lab_application \
+#     --tag lab-application:latest --context-dir applications/lab_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/lab_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
 name: intergrax_lab
 
 services:
   lab:
     build:
-      context: ../../..
-      dockerfile: applications/lab_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: lab-application:latest
     ports:
       - "8090:8090"
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      LAB_BACKEND_ENV: dev
       LAB_BACKEND_HOST: "0.0.0.0"
       LAB_BACKEND_PORT: "8090"
-      INTERGRAX_ENV: prod
+      LAB_INCLUDE_MCP: "false"

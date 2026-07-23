@@ -33,7 +33,9 @@ uv workspace (monorepo phase)
 | Platform base | root `[project.dependencies]` | Mandatory `intergrax/` execution path imports it |
 | Platform capability | root `[project.optional-dependencies]` | Optional provider / capability under `intergrax/` |
 | Application-only | `applications/<app>/pyproject.toml` | Only application code needs it |
-| Agent (Tier-2) | remain source packages on `PYTHONPATH=agents/` | Not application distributions; not workspace members in this migration |
+| Agent (Tier-2) | `agents/<agent>/pyproject.toml` | Reusable workspace package (`intergrax-*-agent`); never depends on Tier-3 |
+
+Runtime graph / image isolation canon: [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ## 3. Workspace resolution
 
@@ -45,6 +47,9 @@ members = [
   "applications/attestation_demo",
   "applications/dispute_sim_application",
   # ... every real Tier-3 application
+  "agents/echo",
+  "agents/local_search",
+  # ... every reusable Tier-2 agent project
 ]
 ```
 
@@ -53,6 +58,7 @@ Each application declares:
 ```toml
 dependencies = [
   "Intergrax-ai[<selected-extras>]",
+  "intergrax-local-search-agent",
 ]
 
 [tool.uv]
@@ -60,6 +66,7 @@ package = false
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+intergrax-local-search-agent = { workspace = true }
 ```
 
 `package = false` means the application is a dependency project: source stays importable via
@@ -116,16 +123,26 @@ Application `.env` files remain application-owned. Root `.env.example` is platfo
 
 ## 7. Docker builds
 
-Dockerfiles synchronize the **application project**:
+Canonical builds use a **materialized runtime-graph context** (not the monorepo root):
+
+```bash
+uv run python scripts/build/build_application_image.py \
+  --application <app> \
+  --tag intergrax/<app>:local
+```
+
+Inside that minimal context the Dockerfile installs only the selected project:
 
 ```dockerfile
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
-COPY applications/ ./applications/   # dockerignore keeps sibling trees out; keeps */pyproject.toml
+COPY applications/ ./applications/   # context contains only the selected app tree
+COPY agents/ ./agents/               # context contains only declared agents
 RUN uv sync --frozen --no-dev --project applications/<app>
 ```
 
 Capability selection is **not** expressed as Dockerfile `--extra` flags.
+See [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 ## 8. CI
 

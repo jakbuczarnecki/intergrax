@@ -10,6 +10,9 @@ description = "Local Knowledge Workspace (LKW) Tier-3 application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "Intergrax-ai[integrations-slack,integrations-mongodb,integrations-sentry,integrations-kafka]",
+  "intergrax-local-indexer-agent",
+  "intergrax-local-search-agent",
+  "intergrax-local-synthesizer-agent",
 ]
 
 [dependency-groups]
@@ -24,3 +27,6 @@ package = false
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+intergrax-local-indexer-agent = { workspace = true }
+intergrax-local-search-agent = { workspace = true }
+intergrax-local-synthesizer-agent = { workspace = true }

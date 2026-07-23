@@ -2,6 +2,9 @@
 __pycache__/
 *.py[oc]
 build/
+# Keep the canonical application image builder path (not a Python build/ tree).
+!scripts/build/
+!scripts/build/**
 dist/
 wheels/
 *.egg-info

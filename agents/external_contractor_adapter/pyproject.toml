@@ -1,0 +1,32 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: external_contractor_adapter
+# Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+
+[project]
+name = "intergrax-external-contractor-adapter-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: external_contractor_adapter"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "external_contractor_adapter",
+  "external_contractor_adapter.schemas",
+  "external_contractor_adapter.signals",
+  "external_contractor_adapter.steps",
+  "external_contractor_adapter.tracing",
+]
+
+[tool.setuptools.package-dir]
+"external_contractor_adapter" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

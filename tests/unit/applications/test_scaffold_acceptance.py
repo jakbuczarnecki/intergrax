@@ -65,7 +65,8 @@ def test_scaffold_lab_profile_generated_artifacts(tmp_path) -> None:
 
     sh = (target / "docker" / "build-docker.sh").read_text(encoding="utf-8")
     assert f'PKG="{pkg}"' in sh
-    assert "applications/${PKG}/docker/Dockerfile" in sh
+    assert "scripts/build/build_application_image.py" in sh
+    assert "runtime-context" in sh
     readme = (target / "README.md").read_text(encoding="utf-8")
     assert "build-docker.sh" in readme
     _assert_tool_wiring_in_host(target, pkg, short)

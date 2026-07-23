@@ -1,44 +1,36 @@
 # © Artur Czarnecki. All rights reserved.
 # syntax=docker/dockerfile:1
 #
-# Build from monorepo root (first install may take several minutes).
-# BuildKit: docker buildx build -f applications/local_workspace_application/docker/Dockerfile \
-#   --ignorefile applications/local_workspace_application/docker/.dockerignore -t local_workspace-application .
-# Classic: cp applications/local_workspace_application/docker/.dockerignore .dockerignore \
-#   && docker build -f applications/local_workspace_application/docker/Dockerfile -t local_workspace-application .
-# Dependency source of truth: applications/local_workspace_application/pyproject.toml
-# (selects Intergrax workspace package + platform extras).
-#
-# Run: docker run --env-file applications/local_workspace_application/.env -p 8020:8020 local_workspace-application
+# Build ONLY from a materialized runtime-graph context produced by:
+#   uv run python scripts/build/build_application_image.py --application local_workspace_application
+# Do not use the monorepo root as Docker context.
+# Compose / local builds must use applications/local_workspace_application/docker/runtime-context/
+# prepared by scripts/build/build_application_image.py (or --keep-context).
+# Source of truth: applications/local_workspace_application/pyproject.toml
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
+COPY .intergrax-runtime-graph.json ./
 COPY intergrax/ ./intergrax/
 COPY applications/ ./applications/
-COPY agents/local_indexer/ ./agents/local_indexer/
-COPY agents/local_search/ ./agents/local_search/
-COPY agents/local_synthesizer/ ./agents/local_synthesizer/
+COPY agents/ ./agents/
 
-# pyproject.toml already declares disjoint Linux and Windows uv environments.
-# Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.
-# Capability SDKs (Sentry/Kafka/MongoDB/Slack) come from the application pyproject extras.
-RUN uv sync --frozen --no-dev --project applications/local_workspace_application
+# Install the selected application graph only (agents via workspace deps).
+RUN uv sync --frozen --no-dev --project applications/local_workspace_application \
+    && rm -rf /root/.cache/uv
 
-# Build-time start-path smoke catches missing copied packages and eager optional
-# integrations before docker compose starts the runtime container.
 RUN PYTHONPATH=/app:/app/agents:/app/applications \
     INTERGRAX_ENV=dev \
     LOCAL_WORKSPACE_BACKEND_ENV=dev \
     LOCAL_WORKSPACE_INCLUDE_MCP=false \
-    LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL=false \
     LOCAL_WORKSPACE_INCLUDE_SCHEDULER=false \
     LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=false \
-    LOCAL_WORKSPACE_VECTOR_STORE=inmemory \
-    INTERGRAX_SHADOW_ROOT=/tmp/intergrax_lkw_shadow \
-    INTERGRAX_SQLITE_DATA_DIR=/tmp/intergrax_lkw_sqlite \
-    .venv/bin/python -c "from local_workspace_application.host.factory import create_local_workspace_backend_app; app = create_local_workspace_backend_app(); assert app.title"
+    LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL=false \
+    INTERGRAX_SHADOW_ROOT=/tmp/intergrax_app_shadow \
+    INTERGRAX_SQLITE_DATA_DIR=/tmp/intergrax_app_sqlite \
+    .venv/bin/python -c "import local_workspace_application; assert True"
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
@@ -46,8 +38,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app:/app/agents:/app/applications \
-    INTERGRAX_ENV=dev \
-    LOCAL_WORKSPACE_BACKEND_ENV=dev \
+    INTERGRAX_ENV=prod \
     LOCAL_WORKSPACE_BACKEND_HOST=0.0.0.0 \
     LOCAL_WORKSPACE_BACKEND_PORT=8020
 
@@ -55,7 +46,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app /app
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/intergrax /app/intergrax
+COPY --from=builder /app/applications /app/applications
+COPY --from=builder /app/agents /app/agents
+COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md /app/
+COPY --from=builder /app/.intergrax-runtime-graph.json /app/.intergrax-runtime-graph.json
+
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8020

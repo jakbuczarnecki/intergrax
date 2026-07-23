@@ -1,0 +1,30 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: signoff_probe
+# Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+
+[project]
+name = "intergrax-signoff-probe-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: signoff_probe"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "signoff_probe",
+  "signoff_probe.schemas",
+  "signoff_probe.steps",
+]
+
+[tool.setuptools.package-dir]
+"signoff_probe" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

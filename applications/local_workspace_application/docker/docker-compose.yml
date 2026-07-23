@@ -1,13 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application local_workspace_application \
+#     --context-dir applications/local_workspace_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application local_workspace_application \
+#     --tag local_workspace-application:latest --context-dir applications/local_workspace_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
-name: intergrax_lkw
+name: intergrax_local_workspace
 
 services:
   local_workspace:
     build:
-      context: ../../..
-      dockerfile: applications/local_workspace_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: local_workspace-application:latest
     ports:
       - "8020:8020"
@@ -18,59 +24,4 @@ services:
       LOCAL_WORKSPACE_BACKEND_ENV: dev
       LOCAL_WORKSPACE_BACKEND_HOST: "0.0.0.0"
       LOCAL_WORKSPACE_BACKEND_PORT: "8020"
-      LOCAL_WORKSPACE_VECTOR_STORE: qdrant
-      INTERGRAX_QDRANT_URL: http://qdrant:6333
-      INTERGRAX_QDRANT_COLLECTION: local_workspace
-      INTERGRAX_SQLITE_DATA_DIR: /data/sqlite
-      INTERGRAX_SHADOW_ROOT: /data/shadow_workspaces
-      INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
-      INTERGRAX_LLM_PROVIDER: ollama
-      INTERGRAX_LLM_MODEL: llama3.1:latest
-      INTERGRAX_DEFAULT_OLLAMA_MODEL: llama3.1:latest
       LOCAL_WORKSPACE_INCLUDE_MCP: "false"
-      OLLAMA_HOST: http://ollama:11434
-      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED: "true"
-      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND: otlp
-      LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
-      LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME: intergrax-lkw
-      LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION: dev
-      LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT: dev
-      LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_CONTENT: "false"
-      LOCAL_WORKSPACE_OBSERVABILITY_OTLP_TIMEOUT_SECONDS: "30"
-    volumes:
-      - lkw_sqlite:/data/sqlite
-      - lkw_shadow:/data/shadow_workspaces
-      - ../sample_docs:/data/user_docs:ro
-    depends_on:
-      - qdrant
-      - ollama
-      - otel-collector
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    expose:
-      - "6333"
-    volumes:
-      - qdrant_data:/qdrant/storage
-
-  ollama:
-    image: ollama/ollama:latest
-    expose:
-      - "11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    command: ["--config=/etc/otelcol/config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
-      - ../.observability/otel:/var/lib/otelcol
-    ports:
-      - "4318:4318"
-
-volumes:
-  lkw_sqlite:
-  lkw_shadow:
-  qdrant_data:
-  ollama_data:

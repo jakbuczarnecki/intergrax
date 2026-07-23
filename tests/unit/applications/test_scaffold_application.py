@@ -58,13 +58,25 @@ def test_scaffold_creates_application_tree(tmp_path):
     assert "CONCEPT_LAB_" in deploy_doc
 
     dockerfile = (target / "docker" / "Dockerfile").read_text(encoding="utf-8")
-    assert f"applications/{pkg}/" in dockerfile
-    assert "COPY agents/echo/" in dockerfile
+    assert "materialized runtime-graph context" in dockerfile
+    assert "COPY applications/ ./applications/" in dockerfile
+    assert "COPY agents/ ./agents/" in dockerfile
+    assert "COPY agents/echo/" not in dockerfile
     assert f"{pkg}.host.main:app" in dockerfile
+    assert not dockerfile.startswith("    #"), "Dockerfile must not have leading indent"
 
     dockerignore = (target / "docker" / ".dockerignore").read_text(encoding="utf-8")
-    assert f"!applications/{pkg}/" in dockerignore
-    assert "!agents/echo/" in dockerignore
+    assert "Canonical builds use materialized runtime-context" in dockerignore
+    assert f"!applications/{pkg}/" not in dockerignore
+    assert "!agents/echo/" not in dockerignore
+
+    compose = (target / "docker" / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "context: ./runtime-context" in compose
+    assert "context: ../../.." not in compose
+
+    pyproject = (target / "pyproject.toml").read_text(encoding="utf-8")
+    assert "intergrax-echo-agent" in pyproject
+    assert 'Intergrax-ai = { workspace = true }' in pyproject
 
     manifest = (target / "manifest.py").read_text(encoding="utf-8")
     assert "AgentBinding.mount(EchoAgent" in manifest

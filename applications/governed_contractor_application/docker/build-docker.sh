@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Tier-3 application image from monorepo root (Phase N).
+# Build Tier-3 application image via materialized runtime graph.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,21 +9,11 @@ IMAGE_TAG="${IMAGE_TAG:-governed_contractor-application}"
 PORT="8000"
 
 cd "${REPO_ROOT}"
-
-if docker buildx version >/dev/null 2>&1; then
-  echo "Building ${IMAGE_TAG} (BuildKit)..."
-  docker buildx build \
-    -f "applications/${PKG}/docker/Dockerfile" \
-    --ignorefile "applications/${PKG}/docker/.dockerignore" \
-    -t "${IMAGE_TAG}" \
-    .
-else
-  echo "BuildKit not found — using docker build (consider: docker buildx install)"
-  docker build \
-    -f "applications/${PKG}/docker/Dockerfile" \
-    -t "${IMAGE_TAG}" \
-    .
-fi
+uv run python scripts/build/build_application_image.py \
+  --application "${PKG}" \
+  --tag "${IMAGE_TAG}" \
+  --context-dir "applications/${PKG}/docker/runtime-context" \
+  --keep-context
 
 echo ""
 echo "Built: ${IMAGE_TAG}"
