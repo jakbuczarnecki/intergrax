@@ -15,6 +15,12 @@ Tier-2 agent logic lives in `agents/` — not here.
 
 Isolation (current monorepo): **declaration** and **dependency-graph** isolation per application project are supported; the default physical environment remains the workspace root `.venv` (not one `.venv` per app unless `UV_PROJECT_ENVIRONMENT` is set).
 
+**Proof evidence:** Application-scoped live evidence belongs under
+`applications/<app>/docs/proof/` when the execution uses that application as the
+reference host and closes an application roadmap gate.
+Reusable proof harnesses and platform provider tests remain in platform-owned
+locations.
+
 ---
 
 ## Phase V compliance hooks (harness hardening)

@@ -11,7 +11,7 @@ Next slice: MVP-4 — Slack conversational MVP (READY_FOR_PRODUCT_IMPLEMENTATION
 SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
 
 SlackConversationChannelIntegration Socket Mode/Web API runtime verified against a real Slack workspace.
-Evidence: docs/proof/slack_conversation_runtime_live_proof.md
+Evidence: [proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md](proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md)
 
 verified against real Slack Socket Mode
 verified DM MESSAGE mapping

@@ -648,7 +648,7 @@ SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
 
 Slack conversation-channel runtime verified against real Slack Socket Mode
 (DM MESSAGE → reply → single-choice → ACTION → confirmation → clean stop).
-Evidence: docs/proof/slack_conversation_runtime_live_proof.md
+Evidence: [proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md](proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md)
 ```
 
 Remaining gate: `LKW-SLACK-WORKFLOW-1` (product authorization, tenant/workspace selection, Ask).

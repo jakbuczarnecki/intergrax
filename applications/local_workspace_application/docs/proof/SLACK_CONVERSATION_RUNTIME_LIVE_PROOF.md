@@ -8,11 +8,20 @@ verified runtime commit: f6daddf7bdb32beb848266775011940c7c471f86
 certification commit: 30e0341c80a32c9e0d1c5d7adde046ad99d8b6c4
 proof command: uv run --project applications/local_workspace_application python scripts/proof/slack_conversation_channel_live_proof.py
 configuration source: LKW .env
+evidence owner: Local Knowledge Workspace
+verified platform capability: Slack conversation-channel runtime
+reference host: applications/local_workspace_application
+proof harness: scripts/proof/slack_conversation_channel_live_proof.py
 ```
 
 The live Slack interaction was executed against the verified runtime commit.
 The certification commit records the sanitized evidence, strengthens the
 required-evidence gate, and updates canonical status documents.
+
+This evidence is stored with the LKW reference application because the live
+execution used the LKW application project, LKW configuration, LKW Slack app,
+and closed an LKW roadmap gate. The verified Slack provider remains a platform
+capability and is not application-owned.
 
 ## Secrets and private data
 
