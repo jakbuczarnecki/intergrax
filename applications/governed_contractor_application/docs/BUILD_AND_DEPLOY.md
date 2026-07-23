@@ -190,14 +190,13 @@ applications/governed_contractor_application/scripts/build-local-docker.sh
 
 *Tier-3 product scaffold runbook — GEC vertical.*
 
-
 ## Application dependency project
 
 Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-`ash
+```bash
 uv sync --project applications/governed_contractor_application
 uv run --project applications/governed_contractor_application python -m governed_contractor_application.host.main
-`
+```
 
-The application pyproject.toml selects Intergrax platform extras. Docker uses the same project (uv sync --frozen --no-dev --project applications/governed_contractor_application); do not pass root --extra flags in the Dockerfile.
+The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/governed_contractor_application`); do not pass root `--extra` flags in the Dockerfile.

@@ -1,6 +1,6 @@
 # Extension Author Guide (Tier-0 Plugin Catalogs)
 
-> **Application dependencies:** each Tier-3 host owns pplications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../architecture/APPLICATION_DEPENDENCY_MODEL.md).
+> **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 **Last updated:** 2026-06-17 · Phase P-Ext · **H-APP** · §10 policy rules · §11 runtime signals (OBS-EVOL-9)
 

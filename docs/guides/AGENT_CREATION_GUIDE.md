@@ -1,6 +1,6 @@
 # Intergrax — Agent Creation Guide
 
-> **Application dependencies:** each Tier-3 host owns pplications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../architecture/APPLICATION_DEPENDENCY_MODEL.md).
+> **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 **The single canonical guide for creating, registering, running, and evaluating agents.**
 

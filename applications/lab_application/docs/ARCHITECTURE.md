@@ -33,9 +33,9 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 
 ## Application dependency project
 
-See [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-`ash
+```bash
 uv sync --project applications/lab_application
 uv run --project applications/lab_application python -m lab_application.host.main
-`
+```

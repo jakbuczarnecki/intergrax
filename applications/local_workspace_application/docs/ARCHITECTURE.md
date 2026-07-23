@@ -1384,9 +1384,9 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 
 ## Application dependency project
 
-See [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-`ash
+```bash
 uv sync --project applications/local_workspace_application
 uv run --project applications/local_workspace_application python -m local_workspace_application.host.main
-`
+```

@@ -288,11 +288,20 @@ def render_application_architecture_doc(
 
         ## Dependencies (pyproject.toml)
 
-        - Application project: ``applications/<pkg>/pyproject.toml`` depends on workspace ``Intergrax-ai``
-          (+ profile-selected platform extras). Sync with ``uv sync --project applications/<pkg>``.
+        - Application project: ``applications/{names.pkg}/pyproject.toml`` depends on workspace ``Intergrax-ai``
+          (+ profile-selected platform extras).
         - Shared workspace lock: repository-root ``uv.lock``.
         - Canon: ``docs/architecture/APPLICATION_DEPENDENCY_MODEL.md``
         - LLM provider env vars per `.env.example` / `BUILD_AND_DEPLOY.md`
+
+        ## Application dependency project
+
+        Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+        ```bash
+        uv sync --project applications/{names.pkg}
+        uv run --project applications/{names.pkg} python -m {names.pkg}.host.main
+        ```
 
         ## Docs
 

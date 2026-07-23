@@ -1,24 +1,24 @@
-        # Per-application ignore file — monorepo root as context.
-        # BuildKit: docker buildx build -f applications/lab_application/docker/Dockerfile \
-        #   --ignorefile applications/lab_application/docker/.dockerignore -t lab-application .
-        # Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+# Per-application ignore file — monorepo root as context.
+# BuildKit: docker buildx build -f applications/lab_application/docker/Dockerfile \
+#   --ignorefile applications/lab_application/docker/.dockerignore -t lab-application .
+# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
 
-        .git
-        .venv
-        build/
-        **/__pycache__/
-        *.pyc
-        .pytest_cache
-        notebooks/
-        docs/
-        tests/
-        infra/
-        applications/*
-        !applications/__init__.py
-        !applications/*/pyproject.toml
-        !applications/lab_application/
-        agents/*
-        !agents/echo/
+.git
+.venv
+build/
+**/__pycache__/
+*.pyc
+.pytest_cache
+notebooks/
+docs/
+tests/
+infra/
+applications/*
+!applications/__init__.py
+!applications/*/pyproject.toml
+!applications/lab_application/
+agents/*
+!agents/echo/
 !agents/lab/
 !agents/signoff_probe/
 !agents/research/

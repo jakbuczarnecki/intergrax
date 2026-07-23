@@ -871,7 +871,7 @@ accepted live hosting tests
 
 Markdown is not the source of truth. JUnit is not the source of truth. MongoDB ProofReceipt is the source of truth.
 
-One-command reviewer runner: pplications/local_workspace_application/scripts/run-lkw-hosting-proof.bat.
+One-command reviewer runner: applications/local_workspace_application/scripts/run-lkw-hosting-proof.bat.
 
 ---
 

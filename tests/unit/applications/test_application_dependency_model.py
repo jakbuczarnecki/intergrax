@@ -65,6 +65,46 @@ def test_application_pyproject_workspace_contract(app_pkg: str) -> None:
     text = deploy.read_text(encoding="utf-8")
     assert "pyproject.toml" in text
     assert "APPLICATION_DEPENDENCY_MODEL" in text or "--project applications/" in text
+    assert "\x08" not in text
+    assert "```bash" in text
+    assert text.count("## Application dependency project") == 1
+    assert text.count("```") % 2 == 0
+
+    ignore = (
+        REPO / "applications" / app_pkg / "docker" / ".dockerignore"
+    ).read_text(encoding="utf-8")
+    assert "!applications/__init__.py" in ignore
+    assert "!applications/*/pyproject.toml" in ignore
+    assert f"!applications/{app_pkg}/" in ignore
+    for line in ignore.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        assert not line.startswith(" ") and not line.startswith("\t"), (
+            f"{app_pkg} .dockerignore has indented rule: {line!r}"
+        )
+
+
+@pytest.mark.gate
+def test_scaffold_dependency_docs_have_valid_bash_fences(tmp_path: Path) -> None:
+    from intergrax.scaffold.new_application import create_application
+
+    target = create_application(
+        name="dep_fence_scaffold",
+        agents=["echo"],
+        profile="lab",
+        root=tmp_path,
+        port=8192,
+        force=True,
+    )
+    for rel in ("docs/BUILD_AND_DEPLOY.md", "docs/ARCHITECTURE.md"):
+        text = (target / rel).read_text(encoding="utf-8")
+        assert "\x08" not in text
+        assert "```bash" in text
+        assert text.count("## Application dependency project") == 1
+        assert text.count("```") % 2 == 0
+    dockerignore = (target / "docker" / ".dockerignore").read_text(encoding="utf-8")
+    assert "!applications/*/pyproject.toml" in dockerignore
+    assert f"!applications/{target.name}/" in dockerignore
 
 
 @pytest.mark.gate

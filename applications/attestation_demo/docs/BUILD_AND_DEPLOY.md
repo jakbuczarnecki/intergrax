@@ -168,14 +168,13 @@ Base install from repo root (`uv sync`). No application-specific extras beyond t
 Application ADRs: [`adr/README.md`](adr/README.md)  
 Platform EBE canon: [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
-
 ## Application dependency project
 
 Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-`ash
+```bash
 uv sync --project applications/attestation_demo
 uv run --project applications/attestation_demo python -m attestation_demo.host.main
-`
+```
 
-The application pyproject.toml selects Intergrax platform extras. Docker uses the same project (uv sync --frozen --no-dev --project applications/attestation_demo); do not pass root --extra flags in the Dockerfile.
+The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/attestation_demo`); do not pass root `--extra` flags in the Dockerfile.

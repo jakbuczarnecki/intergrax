@@ -13,6 +13,8 @@ Tier-2 agent logic lives in `agents/` — not here.
 
 **Dependencies:** each real application owns `applications/<app>/pyproject.toml` (Intergrax workspace package + selected extras). Sync with `uv sync --project applications/<app>`. Canon: [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
+Isolation (current monorepo): **declaration** and **dependency-graph** isolation per application project are supported; the default physical environment remains the workspace root `.venv` (not one `.venv` per app unless `UV_PROJECT_ENVIRONMENT` is set).
+
 ---
 
 ## Phase V compliance hooks (harness hardening)

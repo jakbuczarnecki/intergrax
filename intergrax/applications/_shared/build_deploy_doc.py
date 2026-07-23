@@ -7,8 +7,43 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+# Build fences without backspace escape hazards.
+_MD_FENCE = "`" * 3
+
+
 def _display_name(short: str) -> str:
     return " ".join(part.capitalize() for part in short.split("_"))
+
+
+def render_application_dependency_section(
+    *,
+    pkg: str,
+    module: str | None = None,
+    include_docker_note: bool = True,
+) -> str:
+    """Render the single Application dependency project section (valid bash fences)."""
+    mod = module or f"{pkg}.host.main"
+    docker_note = ""
+    if include_docker_note:
+        docker_note = (
+            f"\nThe application `pyproject.toml` selects Intergrax platform extras. "
+            f"Docker uses the same application project "
+            f"(`uv sync --frozen --no-dev --project applications/{pkg}`); "
+            f"do not pass root `--extra` flags in the Dockerfile.\n"
+        )
+    return (
+        "## Application dependency project\n"
+        "\n"
+        "Canonical packaging: "
+        "[docs/architecture/APPLICATION_DEPENDENCY_MODEL.md]"
+        "(../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).\n"
+        "\n"
+        f"{_MD_FENCE}bash\n"
+        f"uv sync --project applications/{pkg}\n"
+        f"uv run --project applications/{pkg} python -m {mod}\n"
+        f"{_MD_FENCE}\n"
+        f"{docker_note}"
+    )
 
 
 def render_build_deploy_doc(
@@ -266,6 +301,9 @@ def render_build_deploy_doc(
         | Slow rebuild | Use BuildKit cache; avoid copying whole repo without per-app ``.dockerignore`` |
         | Wrong agents in registry | Check ``manifest.py`` flags / ``host/wiring.py`` and ``LAB_INCLUDE_*`` (lab) |
 
+        ---
+
+        {render_application_dependency_section(pkg=pkg)}
         ---
 
         *Generated for Intergrax Tier-3 scaffold (profile: {profile}).*

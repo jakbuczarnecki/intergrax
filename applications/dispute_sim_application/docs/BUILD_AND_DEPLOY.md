@@ -167,14 +167,13 @@ Routes are mounted under ``/v1/dispute_sim``. See ``serving/`` and application R
 
         *Generated for Intergrax Tier-3 scaffold (profile: product).*
 
-
 ## Application dependency project
 
 Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-`ash
+```bash
 uv sync --project applications/dispute_sim_application
 uv run --project applications/dispute_sim_application python -m dispute_sim_application.host.main
-`
+```
 
-The application pyproject.toml selects Intergrax platform extras. Docker uses the same project (uv sync --frozen --no-dev --project applications/dispute_sim_application); do not pass root --extra flags in the Dockerfile.
+The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/dispute_sim_application`); do not pass root `--extra` flags in the Dockerfile.

@@ -74,6 +74,14 @@ uv sync --project applications/<app>
 uv run --project applications/<app> python -m <app>.host.main
 ```
 
+Three isolation levels (do not conflate):
+
+| Level | What is isolated | Current monorepo behavior |
+|-------|------------------|---------------------------|
+| **Declaration** | Each app owns `applications/<app>/pyproject.toml` extras / app-only deps | Yes |
+| **Dependency graph** | Resolver installs only the selected project's tree | Yes (`uv export --project …`, Docker `--project`) |
+| **Physical environment directory** | Separate `.venv` per application | **Not default** — one workspace root `.venv` unless `UV_PROJECT_ENVIRONMENT` points elsewhere |
+
 Verified behavior (`uv` 0.8.x):
 
 * `uv sync --project applications/<app>` installs **only** that application's dependency tree
@@ -81,6 +89,8 @@ Verified behavior (`uv` 0.8.x):
 * Default environment location remains the workspace root `.venv` unless
   `UV_PROJECT_ENVIRONMENT` points elsewhere.
 * Switching projects removes packages not required by the newly selected project (exact sync).
+* `uv pip show` against the shared root `.venv` is **not** durable isolation evidence;
+  prefer `uv export --frozen --project … --no-emit-workspace` and per-image Docker import checks.
 
 Platform / CI gate (root only):
 

@@ -29,12 +29,20 @@ Remove manual Dockerfile / script `--extra` assembly as the dependency contract.
 | Per-application lockfiles | deferred (monorepo phase) |
 | Aggressive platform-base slimming | deferred (correctness first) |
 
+## Isolation semantics (verified)
+
+* **Declaration isolation** — per-app `pyproject.toml` (done).
+* **Dependency graph isolation** — `uv export` / Docker `--project` (done; CI gate).
+* **Physical `.venv` isolation** — not the default monorepo mode; shared root `.venv`
+  unless `UV_PROJECT_ENVIRONMENT` is set. Do not claim one `.venv` per app without that.
+
 ## Non-goals
 
 * Renaming application import packages
 * Splitting applications into separate repositories
 * Changing product / Slack / Ask runtime behavior
 * Publishing Intergrax to PyPI in this task
+* Mandatory per-application physical virtualenvs in the monorepo phase
 
 ## Follow-ups
 
