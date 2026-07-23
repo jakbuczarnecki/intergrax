@@ -42,6 +42,17 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _LKW_ENV_FILE = _REPO_ROOT / "applications" / "local_workspace_application" / ".env"
 _ACTION_ID = "intergrax_runtime_proof"
+_REQUIRED_EVIDENCE = frozenset(
+    {
+        "connection established",
+        "MESSAGE delivered to handler",
+        "thread reply created",
+        "single-choice message created",
+        "ACTION delivered to handler",
+        "action confirmation sent",
+        "clean stop completed",
+    }
+)
 
 
 def _load_lkw_environment(env_file: Path = _LKW_ENV_FILE) -> bool:
@@ -159,15 +170,7 @@ async def _run() -> int:
         await integration.stop()
         state.mark("clean stop completed")
 
-    required = {
-        "connection established",
-        "MESSAGE delivered to handler",
-        "thread reply created",
-        "single-choice message created",
-        "ACTION delivered to handler",
-        "clean stop completed",
-    }
-    missing = sorted(required - set(state.events))
+    missing = sorted(_missing_required_evidence(state.events))
     if missing:
         print(f"LIVE_PROOF_BLOCKED: missing evidence: {missing}")
         return 5
@@ -176,6 +179,11 @@ async def _run() -> int:
     for item in state.events:
         print(f"[proof] evidence: {item}")
     return 0
+
+
+def _missing_required_evidence(events: list[str]) -> set[str]:
+    """Return required evidence labels not present in ``events``."""
+    return set(_REQUIRED_EVIDENCE) - set(events)
 
 
 def main(argv: list[str] | None = None) -> int:

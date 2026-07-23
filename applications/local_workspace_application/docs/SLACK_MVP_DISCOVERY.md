@@ -1,20 +1,27 @@
 # Slack conversational MVP discovery
 
 ```text
-Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 IMPLEMENTED / LIVE_PROOF_PENDING
-Next slice: MVP-4 — Slack conversational MVP (READY_FOR_PRODUCT_IMPLEMENTATION after live proof)
+Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_VERIFIED
+Next slice: MVP-4 — Slack conversational MVP (READY_FOR_PRODUCT_IMPLEMENTATION; next task LKW-SLACK-WORKFLOW-1)
 ```
 
 **Platform runtime status:**
 
 ```text
-SLACK-CONVERSATION-RUNTIME-1 — IMPLEMENTED / LIVE_PROOF_PENDING
+SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
 
-SlackConversationChannelIntegration now has Socket Mode/Web API runtime code and focused tests.
-Real Slack live proof credentials were not available in the implementation session.
+SlackConversationChannelIntegration Socket Mode/Web API runtime verified against a real Slack workspace.
+Evidence: docs/proof/slack_conversation_runtime_live_proof.md
 
-Until live proof passes:
-platform blocker remains open for MVP-4 product work.
+verified against real Slack Socket Mode
+verified DM MESSAGE mapping
+verified outbound reply
+verified interactive single choice
+verified ACTION mapping
+verified confirmation
+
+Platform transport blocker for MVP-4 product work is closed.
+Product workflow (Ask / identity / tenant) remains unimplemented.
 
 Ownership:
 SlackConversationChannelIntegration

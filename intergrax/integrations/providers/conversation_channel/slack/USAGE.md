@@ -9,10 +9,21 @@ Backend class: `SlackConversationChannelBackend`
 
 ```text
 BETA
+DONE / LIVE_VERIFIED
 Socket Mode inbound + Web API outbound runtime supported
+verified against real Slack Socket Mode
+verified DM MESSAGE mapping
+verified outbound reply
+verified interactive single choice
+verified ACTION mapping
+verified confirmation
 default_enabled = false
 runtime_binding_supported = true
 ```
+
+Evidence: [`docs/proof/slack_conversation_runtime_live_proof.md`](../../../../../docs/proof/slack_conversation_runtime_live_proof.md)
+
+Product workflow (Ask Workspace over Slack, identity/tenant mapping) remains unimplemented.
 
 Disabled registry/factory construction performs no SDK init and no network I/O.
 
