@@ -17,6 +17,7 @@ tests/
 infra/
 applications/*
 !applications/__init__.py
+!applications/*/pyproject.toml
 !applications/local_workspace_application/
 agents/*
 !agents/local_indexer/
