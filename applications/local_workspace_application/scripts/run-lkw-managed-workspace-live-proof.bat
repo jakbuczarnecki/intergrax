@@ -30,7 +30,7 @@ if "%LKW_MONGODB_DATABASE%"=="" set "LKW_MONGODB_DATABASE=intergrax_proofs"
 if "%LKW_MONGODB_COLLECTION%"=="" set "LKW_MONGODB_COLLECTION=proof_receipts"
 if "%LKW_MANAGED_WORKSPACE_COLLECTION%"=="" set "LKW_MANAGED_WORKSPACE_COLLECTION=lkw_managed_workspaces"
 
-uv run --extra integrations-mongodb python "%PROOF%" %*
+uv run --project applications/local_workspace_application python "%PROOF%" %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 popd >nul

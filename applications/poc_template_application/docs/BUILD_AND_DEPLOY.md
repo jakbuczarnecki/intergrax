@@ -178,3 +178,14 @@ MCP endpoint: ``http://127.0.0.1:8095/mcp`` (streamable HTTP transport).
         ---
 
         *Generated for Intergrax Tier-3 scaffold (profile: lab).*
+
+## Application dependency project
+
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+```bash
+uv sync --project applications/poc_template_application
+uv run --project applications/poc_template_application python -m poc_template_application.host.main
+```
+
+The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/poc_template_application`); do not pass root `--extra` flags in the Dockerfile.

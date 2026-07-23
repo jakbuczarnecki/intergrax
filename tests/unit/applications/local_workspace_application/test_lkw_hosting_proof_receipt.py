@@ -457,7 +457,7 @@ def test_hosting_proof_bat_runner_starts_only_mongodb_services() -> None:
     assert "lkw-mongo-express" in text
     assert "mongodb_container_healthy=true" in text
     assert "mongo_express_available=true" in text
-    assert "--extra integrations-mongodb" in text
+    assert "--project applications/local_workspace_application" in text
     assert "INTERGRAX_MONGODB_URI" in text
     assert "INTERGRAX_MONGODB_DATABASE" in text
     assert "INTERGRAX_MONGODB_COLLECTION" in text

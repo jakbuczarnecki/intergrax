@@ -8,7 +8,9 @@ Requires:
   INTERGRAX_SLACK_APP_TOKEN
   INTERGRAX_SLACK_BOT_TOKEN
 
-Does not print tokens, message text, or full Slack payloads.
+Loads optional credentials from applications/local_workspace_application/.env
+(process environment still wins). Does not print tokens, message text, or full
+Slack payloads.
 """
 
 from __future__ import annotations
@@ -17,6 +19,9 @@ import asyncio
 import os
 import sys
 import time
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from intergrax.integrations.contracts.conversation_channel import (
     ConversationChoiceOption,
@@ -34,8 +39,27 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
     SlackConversationChannelIntegration,
 )
 
-_PROOF_TIMEOUT_SECONDS = float(os.environ.get("INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS", "180"))
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_LKW_ENV_FILE = _REPO_ROOT / "applications" / "local_workspace_application" / ".env"
 _ACTION_ID = "intergrax_runtime_proof"
+
+
+def _load_lkw_environment(env_file: Path = _LKW_ENV_FILE) -> bool:
+    """Load LKW application ``.env`` when present. Returns whether the file exists."""
+    if not env_file.is_file():
+        return False
+    load_dotenv(env_file, override=False)
+    return True
+
+
+_LKW_ENV_AVAILABLE = _load_lkw_environment()
+_PROOF_TIMEOUT_SECONDS = float(os.environ.get("INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS", "180"))
+
+
+def _configuration_source_message(*, env_available: bool = _LKW_ENV_AVAILABLE) -> str:
+    if env_available:
+        return "[proof] configuration source: LKW .env available"
+    return "[proof] configuration source: process environment / no LKW .env"
 
 
 class _ProofState:
@@ -96,6 +120,7 @@ async def _handler(state: _ProofState, event: InboundConversationEvent) -> None:
 
 
 async def _run() -> int:
+    print(_configuration_source_message(), flush=True)
     if not os.environ.get(ENV_APP_TOKEN) or not os.environ.get(ENV_BOT_TOKEN):
         print("LIVE_PROOF_BLOCKED: missing INTERGRAX_SLACK_APP_TOKEN and/or INTERGRAX_SLACK_BOT_TOKEN")
         return 2

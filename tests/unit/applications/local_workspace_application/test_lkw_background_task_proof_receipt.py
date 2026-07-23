@@ -139,7 +139,7 @@ def test_background_task_bat_runner_composes_kafka_and_mongodb_overlays() -> Non
     assert "lkw-kafka-ui" in text
     assert "mongodb_container_healthy=true" in text
     assert "mongo_express_available=true" in text
-    assert "--extra integrations-mongodb" in text
+    assert "--project applications/local_workspace_application" in text
     assert "INTERGRAX_MONGODB_URI=" in text
     assert "INTERGRAX_MONGODB_DATABASE=" in text
     assert "INTERGRAX_MONGODB_COLLECTION=" in text

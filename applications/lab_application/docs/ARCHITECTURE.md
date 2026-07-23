@@ -30,3 +30,12 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 - Full monorepo `uv sync` (torch, integrations catalog)
 - `INTERGRAX_HARNESS_API_KEY` when strict/stage/prod
 - Optional `[dev-ci]` for gate tests under `tests/`
+
+## Application dependency project
+
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+```bash
+uv sync --project applications/lab_application
+uv run --project applications/lab_application python -m lab_application.host.main
+```

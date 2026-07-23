@@ -19,7 +19,7 @@ fi
 cd "$REPO_ROOT"
 PYTHONUNBUFFERED=1
 export PYTHONUNBUFFERED
-exec uv run --extra integrations-mongodb python "$PROOF" \
+exec uv run --project applications/local_workspace_application python "$PROOF" \
   --os-family macos \
   --wrapper-id macos_sh \
   "$@"

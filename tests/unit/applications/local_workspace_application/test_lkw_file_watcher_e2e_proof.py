@@ -637,7 +637,7 @@ def test_bat_runner_ordering_and_services() -> None:
     ):
         assert service in text
     assert "docker-compose.mongodb.yml" in text
-    assert "--extra integrations-mongodb" in text
+    assert "--project applications/local_workspace_application" in text
     assert "INTERGRAX_MONGODB_URI=" in text
     assert "INTERGRAX_MONGODB_DATABASE=" in text
     assert "INTERGRAX_MONGODB_COLLECTION=" in text

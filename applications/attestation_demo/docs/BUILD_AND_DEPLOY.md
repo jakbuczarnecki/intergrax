@@ -10,7 +10,7 @@ Tier-3 application package: `applications/attestation_demo/`. Operational runboo
 
 | Tool | Purpose |
 |------|---------|
-| [uv](https://docs.astral.sh/uv/) | Python deps from repo root `pyproject.toml` / `uv.lock` |
+| [uv](https://docs.astral.sh/uv/) | Workspace lock + application project `applications/attestation_demo/pyproject.toml` |
 | Repo clone | Monorepo; **build context is always repository root** |
 | Docker (optional) | Image build via `docker/` |
 | Docker Buildx (recommended) | Per-app `.dockerignore` via `--ignorefile` |
@@ -167,3 +167,14 @@ Base install from repo root (`uv sync`). No application-specific extras beyond t
 
 Application ADRs: [`adr/README.md`](adr/README.md)  
 Platform EBE canon: [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
+## Application dependency project
+
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+```bash
+uv sync --project applications/attestation_demo
+uv run --project applications/attestation_demo python -m attestation_demo.host.main
+```
+
+The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/attestation_demo`); do not pass root `--extra` flags in the Dockerfile.

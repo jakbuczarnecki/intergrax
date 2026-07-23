@@ -421,8 +421,7 @@ def main() -> int:
         host_command = [
             "uv",
             "run",
-            "--extra",
-            "integrations-mongodb",
+            "--project", "applications/local_workspace_application",
             "python",
             "-m",
             "local_workspace_application.hosting",

@@ -6,23 +6,24 @@
         #   --ignorefile applications/lab_application/docker/.dockerignore -t lab-application .
         # Classic: cp applications/lab_application/docker/.dockerignore .dockerignore \
         #   && docker build -f applications/lab_application/docker/Dockerfile -t lab-application .
-        # Run: docker run --env-file applications/lab_application/.env -p 8090:8090 lab-application
+        # Dependency source of truth: applications/lab_application/pyproject.toml
+# (selects Intergrax workspace package + platform extras).
+#
+# Run: docker run --env-file applications/lab_application/.env -p 8090:8090 lab-application
 
         FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
         WORKDIR /app
 
-        COPY pyproject.toml uv.lock ./
+        COPY pyproject.toml uv.lock README.md ./
         COPY intergrax/ ./intergrax/
-        COPY applications/__init__.py ./applications/__init__.py
-        COPY applications/lab_application/ ./applications/lab_application/
+COPY applications/ ./applications/
         COPY agents/echo/ ./agents/echo/
 COPY agents/lab/ ./agents/lab/
 COPY agents/signoff_probe/ ./agents/signoff_probe/
 COPY agents/research/ ./agents/research/
-
-        # Dev lock targets win32; resolve dependencies for Linux inside the image.
-        RUN sed -i "s/sys_platform == 'win32'/sys_platform == 'linux'/" pyproject.toml \
-            && uv sync --no-dev
+# Application project selects Intergrax extras; do not pass --extra here.
+# Root pyproject already declares disjoint Linux/Windows uv environments.
+RUN uv sync --frozen --no-dev --project applications/lab_application
 
         FROM python:3.12-slim-bookworm AS runtime
         WORKDIR /app

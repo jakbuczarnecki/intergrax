@@ -6,7 +6,10 @@
         #   --ignorefile applications/governed_contractor_application/docker/.dockerignore -t governed_contractor-application .
         # Classic: cp applications/governed_contractor_application/docker/.dockerignore .dockerignore \
         #   && docker build -f applications/governed_contractor_application/docker/Dockerfile -t governed_contractor-application .
-        # Run: docker run --env-file applications/governed_contractor_application/.env -p 8000:8000 governed_contractor-application
+        # Dependency source of truth: applications/governed_contractor_application/pyproject.toml
+# (selects Intergrax workspace package + platform extras).
+#
+# Run: docker run --env-file applications/governed_contractor_application/.env -p 8000:8000 governed_contractor-application
 
         FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
         WORKDIR /app
@@ -14,13 +17,12 @@
         COPY pyproject.toml uv.lock ./
         COPY README.md ./
 COPY intergrax/ ./intergrax/
-        COPY applications/__init__.py ./applications/__init__.py
-        COPY applications/governed_contractor_application/ ./applications/governed_contractor_application/
+COPY applications/ ./applications/
         COPY agents/external_contractor_adapter/ ./agents/external_contractor_adapter/
 
         # pyproject.toml already declares disjoint Linux and Windows uv environments.
         # Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.
-        RUN uv sync --no-dev
+        RUN uv sync --frozen --no-dev --project applications/governed_contractor_application
 
         # Build-time start-path smoke catches missing copied packages and eager optional
         # integrations before docker compose starts the runtime container.

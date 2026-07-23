@@ -65,6 +65,20 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Workspace lock consistency
+        run: uv lock --check
+
+      - name: Application dependency projects resolve
+        run: |
+          # Dependency-graph isolation (deterministic). Do not use shared-root
+          # `uv pip show` as isolation proof — uv reuses workspace `.venv`.
+          uv export --frozen --no-dev --project applications/lab_application --no-emit-workspace | tee /tmp/lab-export.txt
+          uv export --frozen --no-dev --project applications/local_workspace_application --no-emit-workspace | tee /tmp/lkw-export.txt
+          grep -qi 'Intergrax-ai\|intergrax-ai' /tmp/lab-export.txt
+          grep -qi 'Intergrax-ai\|intergrax-ai' /tmp/lkw-export.txt
+          grep -qi 'slack-sdk' /tmp/lkw-export.txt
+          ! grep -qi 'slack-sdk' /tmp/lab-export.txt
+
       - name: CI smoke unit tests
         run: uv run python scripts/ci/run_ci_smoke_pytest.py
 

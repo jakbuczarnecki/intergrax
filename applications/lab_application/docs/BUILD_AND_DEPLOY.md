@@ -194,3 +194,14 @@ Mounted on the same process (Phase L.3 + infra paydown):
         ---
 
         *Generated for Intergrax Tier-3 scaffold (profile: lab).*
+
+## Application dependency project
+
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+```bash
+uv sync --project applications/lab_application
+uv run --project applications/lab_application python -m lab_application.host.main
+```
+
+The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/lab_application`); do not pass root `--extra` flags in the Dockerfile.

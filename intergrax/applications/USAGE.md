@@ -2,6 +2,7 @@
 
 **Package:** `intergrax/applications/`  
 **Canon:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10  
+**Dependencies:** [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md)  
 **Host examples:** `applications/lab_application/`, `applications/legal_application/`
 
 > Tier-3 **applications** compose Tier-2 **agents** + Tier-0 **integrations** into a runnable HTTP/Docker environment.  

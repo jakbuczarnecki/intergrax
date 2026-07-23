@@ -34,6 +34,7 @@ CI_SMOKE_FILES: frozenset[str] = frozenset(
         "tests/unit/applications/test_registry_wiring.py",
         "tests/unit/applications/test_package_wiring.py",
         "tests/unit/applications/test_scaffold_acceptance.py",
+        "tests/unit/applications/test_application_dependency_model.py",
         "tests/unit/core/plugins/test_catalog_bootstrap.py",
     }
 )

@@ -48,7 +48,7 @@ echo Step 1/6: validating Docker Compose overlay...
 docker compose -f "%BASE_COMPOSE%" -f "%MONGODB_COMPOSE%" config > "%COMPOSE_CONFIG%"
 if errorlevel 1 goto proof_fail
 
-uv run --extra integrations-mongodb python "%VERIFY%" --verify-volume-configured --volume-only --compose-config "%COMPOSE_CONFIG%"
+uv run --project applications/local_workspace_application python "%VERIFY%" --verify-volume-configured --volume-only --compose-config "%COMPOSE_CONFIG%"
 if errorlevel 1 goto proof_fail
 echo compose_overlay_valid=true
 
@@ -81,7 +81,7 @@ if "%LKW_MONGODB_DATABASE%"=="" set "LKW_MONGODB_DATABASE=intergrax_proofs"
 if "%LKW_MONGODB_COLLECTION%"=="" set "INTERGRAX_MONGODB_COLLECTION=proof_receipts"
 set "INTERGRAX_MONGODB_URI=mongodb://%LKW_MONGODB_ROOT_USERNAME%:%LKW_MONGODB_ROOT_PASSWORD%@127.0.0.1:%LKW_MONGODB_HOST_PORT%/%LKW_MONGODB_DATABASE%?authSource=admin"
 
-uv run --extra integrations-mongodb python "%VERIFY%" --mode smoke
+uv run --project applications/local_workspace_application python "%VERIFY%" --mode smoke
 if errorlevel 1 goto proof_fail
 
 echo.
@@ -95,7 +95,7 @@ if errorlevel 1 goto proof_fail
 
 echo.
 echo Step 5/6: persistence read-back through platform provider...
-uv run --extra integrations-mongodb python "%VERIFY%" --mode read-only
+uv run --project applications/local_workspace_application python "%VERIFY%" --mode read-only
 if errorlevel 1 goto proof_fail
 echo persistent_volume=true
 

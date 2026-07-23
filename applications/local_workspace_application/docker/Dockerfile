@@ -6,6 +6,9 @@
 #   --ignorefile applications/local_workspace_application/docker/.dockerignore -t local_workspace-application .
 # Classic: cp applications/local_workspace_application/docker/.dockerignore .dockerignore \
 #   && docker build -f applications/local_workspace_application/docker/Dockerfile -t local_workspace-application .
+# Dependency source of truth: applications/local_workspace_application/pyproject.toml
+# (selects Intergrax workspace package + platform extras).
+#
 # Run: docker run --env-file applications/local_workspace_application/.env -p 8020:8020 local_workspace-application
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
@@ -13,17 +16,15 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
-COPY applications/__init__.py ./applications/__init__.py
-COPY applications/local_workspace_application/ ./applications/local_workspace_application/
+COPY applications/ ./applications/
 COPY agents/local_indexer/ ./agents/local_indexer/
 COPY agents/local_search/ ./agents/local_search/
 COPY agents/local_synthesizer/ ./agents/local_synthesizer/
 
 # pyproject.toml already declares disjoint Linux and Windows uv environments.
 # Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.
-# The local Sentry proof runs LKW with backend=sentry, so the image must include
-# the provider-owned Sentry SDK optional dependency.
-RUN uv sync --no-dev --extra integrations-sentry --extra integrations-kafka --extra integrations-mongodb
+# Capability SDKs (Sentry/Kafka/MongoDB/Slack) come from the application pyproject extras.
+RUN uv sync --frozen --no-dev --project applications/local_workspace_application
 
 # Build-time start-path smoke catches missing copied packages and eager optional
 # integrations before docker compose starts the runtime container.

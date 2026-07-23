@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -102,7 +103,14 @@ def test_sentry_compose_overlay_is_local_docker_proof() -> None:
     assert "sentry-bootstrap" in services
     assert "sentry-upgrade" in services
     assert "SENTRY_SECRET_KEY" in services
-    assert "sentry-proof/generated.env" in overlay
+    # Host proof directory is mounted read-only; container reads /proof/generated.env.
+    assert re.search(r"\./sentry-proof:/proof:ro", overlay)
+    start_script = (
+        Path(__file__).resolve().parents[1]
+        / "docker"
+        / "start-local-workspace-sentry-proof.sh"
+    ).read_text(encoding="utf-8")
+    assert "/proof/generated.env" in start_script
 
 
 def test_sentry_compose_overlay_does_not_require_external_dsn() -> None:

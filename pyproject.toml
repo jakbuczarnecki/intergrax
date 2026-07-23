@@ -126,6 +126,20 @@ environments = [
   "sys_platform == 'win32'",
 ]
 
+[tool.uv.workspace]
+# Explicit member list — excludes applications/build and non-project folders.
+members = [
+  "applications/attestation_demo",
+  "applications/dispute_sim_application",
+  "applications/governed_contractor_application",
+  "applications/intergrax_assistant_application",
+  "applications/lab_application",
+  "applications/legal_application",
+  "applications/local_workspace_application",
+  "applications/poc_template_application",
+  "applications/research_application",
+]
+
 [[tool.uv.index]]
 name = "pypi"
 url = "https://pypi.org/simple"

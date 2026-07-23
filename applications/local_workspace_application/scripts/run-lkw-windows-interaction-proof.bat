@@ -23,7 +23,7 @@ if errorlevel 1 (
 )
 
 set "PYTHONUNBUFFERED=1"
-uv run --extra integrations-mongodb python "%PROOF%" --os-family windows %*
+uv run --project applications/local_workspace_application python "%PROOF%" --os-family windows %*
 set "EXIT_CODE=%ERRORLEVEL%"
 
 popd >nul

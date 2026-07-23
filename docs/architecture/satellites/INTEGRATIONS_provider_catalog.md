@@ -994,7 +994,7 @@ All INT-P8 providers will declare extended selection metadata (in addition to ex
 | operations | Named operations with read/write/side-effect class |
 | 
 ead_write | Aggregate read/write posture |
-| uth_type | none, api_key, oauth, mTLS, etc. |
+| auth_type | none, api_key, oauth, mTLS, etc. |
 | 
 equired_scopes | OAuth/API scopes when applicable |
 | data_sensitivity | public, internal, confidential, regulated |
@@ -1023,8 +1023,8 @@ Existing **194** manifests remain valid; metadata backfill is optional per provi
 | Category | Planned slug(s) | Status | Distinction from existing |
 |----------|-----------------|--------|---------------------------|
 | 	ool_protocol_gateway | mcp | **Planned** | Tool protocol bridge — not a vendor SaaS slug |
-| pi_connector | openapi_http | **Planned** | Generic OpenAPI REST — not per-vendor REST adapters |
-| workspace_store | local_workspace | **Planned** | Agent policy-scoped working dir — **≠** ilesystem object storage |
+| api_connector | openapi_http | **Planned** | Generic OpenAPI REST — not per-vendor REST adapters |
+| workspace_store | local_workspace | **Planned** | Agent policy-scoped working dir — **≠** filesystem object storage |
 | code_repository | local_git | **Planned** | Local Git CLI/worktree — **≠** github/gitlab issue/remote hosts |
 | code_intelligence | sourcegraph | **Planned** | Cross-repo code search — **≠** github issue tracker |
 | code_intelligence | github_code | **Planned (optional, post–first wave)** | GitHub code search API — only if product requires |
@@ -1040,7 +1040,7 @@ Existing **194** manifests remain valid; metadata backfill is optional per provi
 - Pre-exec classification of write/side-effect tools; block without approval
 - Fake MCP server for tests; side-effect block tests
 
-#### pi_connector / openapi_http (INT-P8.3)
+#### api_connector / openapi_http (INT-P8.3)
 
 - Load OpenAPI 3.x from file or URL
 - List/describe operations by operation_id

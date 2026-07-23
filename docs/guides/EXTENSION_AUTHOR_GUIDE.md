@@ -1,5 +1,7 @@
 # Extension Author Guide (Tier-0 Plugin Catalogs)
 
+> **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
 **Last updated:** 2026-06-17 · Phase P-Ext · **H-APP** · §10 policy rules · §11 runtime signals (OBS-EVOL-9)
 
 Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering Tier-1 contracts with Tier-0 shared types). Shipped providers and third-party pip packages register through the same protocols.

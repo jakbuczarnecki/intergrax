@@ -368,6 +368,28 @@ under PROOF-PORTABILITY-1D.
 
 ## Step 1 — Start a clean local proof stack
 
+Canonical **all-in-one** startup (base stack + every top-level
+`docker-compose.*.yml` overlay, including Sentry/Kafka/Elasticsearch when present):
+
+Windows:
+
+```bat
+applications\local_workspace_application\scripts\run-local-docker-all.bat
+```
+
+Linux/macOS:
+
+```bash
+chmod +x applications/local_workspace_application/scripts/run-local-docker-all.sh
+applications/local_workspace_application/scripts/run-local-docker-all.sh
+```
+
+These helpers are the reviewer path for a full local proof environment.
+They are **not** required for every minimal LKW launch (base compose only).
+
+For a **hard reset** (remove containers/volumes and local Sentry proof
+runtime state, then start the same all-in-one path):
+
 Windows:
 
 ```bat

@@ -7,8 +7,43 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+# Build fences without backspace escape hazards.
+_MD_FENCE = "`" * 3
+
+
 def _display_name(short: str) -> str:
     return " ".join(part.capitalize() for part in short.split("_"))
+
+
+def render_application_dependency_section(
+    *,
+    pkg: str,
+    module: str | None = None,
+    include_docker_note: bool = True,
+) -> str:
+    """Render the single Application dependency project section (valid bash fences)."""
+    mod = module or f"{pkg}.host.main"
+    docker_note = ""
+    if include_docker_note:
+        docker_note = (
+            f"\nThe application `pyproject.toml` selects Intergrax platform extras. "
+            f"Docker uses the same application project "
+            f"(`uv sync --frozen --no-dev --project applications/{pkg}`); "
+            f"do not pass root `--extra` flags in the Dockerfile.\n"
+        )
+    return (
+        "## Application dependency project\n"
+        "\n"
+        "Canonical packaging: "
+        "[docs/architecture/APPLICATION_DEPENDENCY_MODEL.md]"
+        "(../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).\n"
+        "\n"
+        f"{_MD_FENCE}bash\n"
+        f"uv sync --project applications/{pkg}\n"
+        f"uv run --project applications/{pkg} python -m {mod}\n"
+        f"{_MD_FENCE}\n"
+        f"{docker_note}"
+    )
 
 
 def render_build_deploy_doc(
@@ -80,12 +115,23 @@ def render_build_deploy_doc(
 
         | Tool | Purpose |
         |------|---------|
-        | [uv](https://docs.astral.sh/uv/) | Python deps from repo root ``pyproject.toml`` / ``uv.lock`` |
+        | [uv](https://docs.astral.sh/uv/) | Workspace lock + application project ``applications/{pkg}/pyproject.toml`` |
         | Repo clone | Monorepo; **build context is always repository root** |
         | Docker (optional) | Image build via ``docker/`` |
         | Docker Buildx (recommended) | Per-app ``.dockerignore`` via ``--ignorefile`` |
 
         Tier-2 agents used by this host: **{agents_csv}** (under ``agents/`` on ``PYTHONPATH``).
+
+        **Dependency contract:** this application's ``pyproject.toml`` depends on the Intergrax
+        workspace package and selects required platform extras. See
+        [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+        Sync / run from repository root:
+
+        ```bash
+        uv sync --project applications/{pkg}
+        uv run --project applications/{pkg} python -m {pkg}.host.main
+        ```
 
         ---
 
@@ -112,13 +158,14 @@ def render_build_deploy_doc(
         From **repository root**:
 
         ```bash
-        uv run uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
+        uv sync --project applications/{pkg}
+        uv run --project applications/{pkg} uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
         ```
 
         Or use the module CLI (reads ``{env_prefix}BACKEND_*`` from ``.env``):
 
         ```bash
-        uv run python -m {pkg}.host.main
+        uv run --project applications/{pkg} python -m {pkg}.host.main
         ```
 
         ### Smoke check
@@ -133,8 +180,7 @@ def render_build_deploy_doc(
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/{pkg}/{tests_dir} -q
-        uv run pytest tests/unit/applications/ -q -k "{short}" --ignore-glob="*" 2>/dev/null || true
+        uv run --project applications/{pkg} pytest applications/{pkg}/{tests_dir} -q
         ```
 
         Gate (repo CI):
@@ -180,8 +226,9 @@ def render_build_deploy_doc(
 
         **Notes:**
 
-        - First build can take several minutes (full ``uv sync`` inside the image).
-        - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
+        - First build can take several minutes (``uv sync --project applications/{pkg}`` inside the image).
+        - Application ``pyproject.toml`` is the dependency source of truth (Intergrax extras selected there).
+        - Root ``pyproject.toml`` already declares disjoint Linux/Windows uv environments; Dockerfile must not rewrite platform markers.
         - Image ``HEALTHCHECK`` probes ``{health}``.
         - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
         - Dockerfile runs a **build-time factory smoke** (MCP/scheduler/interactions disabled) before the runtime stage.
@@ -254,6 +301,9 @@ def render_build_deploy_doc(
         | Slow rebuild | Use BuildKit cache; avoid copying whole repo without per-app ``.dockerignore`` |
         | Wrong agents in registry | Check ``manifest.py`` flags / ``host/wiring.py`` and ``LAB_INCLUDE_*`` (lab) |
 
+        ---
+
+        {render_application_dependency_section(pkg=pkg)}
         ---
 
         *Generated for Intergrax Tier-3 scaffold (profile: {profile}).*
