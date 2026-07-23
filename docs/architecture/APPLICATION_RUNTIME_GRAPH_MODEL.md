@@ -11,12 +11,13 @@
 ```text
 Tier-3 application
 ├── may depend on Tier-1 platform capabilities (Intergrax-ai + extras)
-├── may depend on any reusable Tier-2 agents (declared packages)
+├── may depend on reusable Tier-2 agents (direct declarations only)
 ├── owns application-specific configuration and dependencies
 └── must not depend on another Tier-3 application
 
 Tier-2 agent
 ├── may depend on Tier-1 platform contracts and capabilities
+├── may depend on other Tier-2 agents (explicit agents/<agent>/pyproject.toml)
 ├── must remain independent of every Tier-3 application
 └── may be reused by any number of Tier-3 applications
 
@@ -28,12 +29,25 @@ Tier-1 platform
 Canonical dependency direction:
 
 ```text
-Tier-3 → Tier-2 → Tier-1
+Tier-3 → Tier-2 → Tier-2 → … → Tier-1
 Tier-3 → Tier-1
 ```
 
-Each application image contains the **minimal transitive runtime graph** declared by
-`applications/<app>/pyproject.toml` — and nothing outside that graph.
+Tier-2 agents may depend on other Tier-2 agents. The application runtime graph
+resolves the full acyclic transitive closure. Tier-3 applications declare only
+direct Tier-2 dependencies; transitive Tier-2 dependencies are declared by the
+importing agent. Agent cycles and agent-to-application dependencies fail closed
+(`AGENT_DEPENDENCY_CYCLE`, `AGENT_TIER_VIOLATION`).
+
+Each application image contains the **minimal transitive runtime graph** —
+
+```text
+application + direct agents + transitive agents + platform
++ direct/transitive third-party runtime deps (via uv.lock)
+```
+
+— and nothing outside that graph. Unresolved local workspace packages fail closed
+(`RUNTIME_GRAPH_UNRESOLVED`).
 
 ---
 
@@ -42,10 +56,17 @@ Each application image contains the **minimal transitive runtime graph** declare
 | Layer | Metadata | Declares |
 |-------|----------|----------|
 | Platform | root `pyproject.toml` | Intergrax-ai + capability extras |
-| Agent | `agents/<agent>/pyproject.toml` | `intergrax-*-agent` + Intergrax-ai (+ agent-only third-party) |
-| Application | `applications/<app>/pyproject.toml` | Intergrax extras + selected agent packages + app-only deps |
+| Agent | `agents/<agent>/pyproject.toml` | `intergrax-*-agent` + Intergrax-ai (+ optional Tier-2 peers + agent-only third-party) |
+| Application | `applications/<app>/pyproject.toml` | Intergrax extras + **direct** agent packages + app-only deps |
 
 One shared `uv.lock` remains canonical for the monorepo phase.
+
+**Third-party semantics:** the runtime-graph manifest field
+`direct_third_party_distributions` lists only third-party dependencies declared
+by the Tier-3 application. Third-party packages contributed by selected agents
+are resolved through those agent projects and `uv.lock`. The graph resolver does
+**not** manually compute the full external transitive closure — `uv.lock` remains
+the source of truth for that closure.
 
 Agents are **not** owned by applications. Do not invent names such as “LKW agents”.
 
@@ -63,9 +84,9 @@ uv run python scripts/build/build_application_image.py \
 
 The builder:
 
-1. resolves the application runtime graph from project metadata;
-2. materializes a minimal context (no other Tier-3 trees, no undeclared agents);
-3. writes `.intergrax-runtime-graph.json`;
+1. resolves the application runtime graph from project metadata (direct + transitive Tier-2 closure);
+2. materializes a minimal context (no other Tier-3 trees, no unreachable agents);
+3. writes `.intergrax-runtime-graph.json` (schema version 2: direct / transitive / all agent fields);
 4. runs Docker BuildKit against that context;
 5. removes the temporary context unless `--keep-context` / `--context-dir` is set.
 
@@ -100,14 +121,18 @@ All reusable packages under `agents/*` own `pyproject.toml` workspace members.
 Import paths (`from local_search...`) are preserved; distribution names use
 `intergrax-<slug>-agent` (special case: `intergrax_assistant` → `intergrax-assistant-agent`).
 
-### Forbidden static edges (enforced by AST tests)
+### Forbidden edges (package graph + AST)
 
 ```text
 platform → agent
 platform → application
-agent → application
+agent → application          # package graph: AGENT_TIER_VIOLATION
 application A → application B
+Tier-2 dependency cycle      # package graph: AGENT_DEPENDENCY_CYCLE
 ```
+
+Agent → agent edges are allowed when declared in the importing agent's
+`agents/<agent>/pyproject.toml`. The complete graph must remain acyclic.
 
 Dynamic `importlib` loading in CLI/demo glue is allowed only where static imports
 would violate the tier boundary; agents and applications remain optional at import time.

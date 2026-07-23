@@ -21,7 +21,7 @@ from intergrax.applications._shared.application_runtime_graph import (
 )
 from intergrax.applications._shared.docker_templates import render_runtime_graph_dockerfile
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SKIP_DIR_NAMES = frozenset(
     {
@@ -223,6 +223,13 @@ def render_runtime_graph_manifest(
     excluded_applications: list[str],
     included_source_roots: list[str],
 ) -> dict[str, object]:
+    """Serialize the runtime graph for ``.intergrax-runtime-graph.json``.
+
+    ``direct_third_party_distributions`` lists only third-party dependencies
+    declared by the Tier-3 application. Agent-declared third-party packages are
+    resolved by uv through selected agent projects / ``uv.lock`` — not flattened
+    into this field.
+    """
     lock_path = repo_root / "uv.lock"
     return {
         "schema_version": SCHEMA_VERSION,
@@ -230,9 +237,15 @@ def render_runtime_graph_manifest(
         "application_distribution": graph.application_dist,
         "platform_packages": ["Intergrax-ai"],
         "platform_extras": list(graph.platform_extras),
-        "agent_packages": list(graph.agent_distributions),
-        "agent_dirs": list(graph.agent_dirs),
-        "third_party_distributions": list(graph.third_party_distributions),
+        "direct_agent_packages": list(graph.direct_agent_distributions),
+        "transitive_agent_packages": list(graph.transitive_agent_distributions),
+        "all_agent_packages": list(graph.all_agent_distributions),
+        "direct_agent_dirs": list(graph.direct_agent_dirs),
+        "transitive_agent_dirs": list(graph.transitive_agent_dirs),
+        "all_agent_dirs": list(graph.all_agent_dirs),
+        "direct_third_party_distributions": list(
+            graph.direct_third_party_distributions
+        ),
         "included_source_roots": included_source_roots,
         "excluded_tier3_applications": excluded_applications,
         "lock_digest": _lock_digest(lock_path) if lock_path.is_file() else "",
@@ -315,11 +328,11 @@ def materialize_application_build_context(
     )
     included_roots.append(f"applications/{graph.application}/")
 
-    # Selected agents only (always create agents/ so Dockerfile COPY is stable)
+    # All reachable agents (direct + transitive); agents/ always present for COPY
     agents_out = output / "agents"
     agents_out.mkdir(parents=True, exist_ok=True)
     (agents_out / ".keep").write_text("", encoding="utf-8", newline="\n")
-    for agent in graph.agent_dirs:
+    for agent in graph.all_agent_dirs:
         _copy_filtered_tree(
             repo_root / "agents" / agent,
             agents_out / agent,
@@ -381,6 +394,18 @@ def materialize_application_build_context(
             f"DOCKER_ISOLATION_FAILED: unexpected path in context: {child}"
         )
 
+    # Fail closed: actual agent directories == expected all_agent_dirs
+    # (ignore intentional sentinel files such as .keep)
+    actual_agent_dirs = sorted(
+        p.name for p in agents_out.iterdir() if p.is_dir()
+    )
+    expected_agent_dirs = sorted(graph.all_agent_dirs)
+    if actual_agent_dirs != expected_agent_dirs:
+        raise ValueError(
+            "DOCKER_ISOLATION_FAILED: agent directory mismatch in context: "
+            f"actual={actual_agent_dirs} expected={expected_agent_dirs}"
+        )
+
     return manifest
 
 
@@ -434,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
                 "README.md",
                 "intergrax/",
                 f"applications/{application}/",
-                *[f"agents/{a}/" for a in graph.agent_dirs],
+                *[f"agents/{a}/" for a in graph.all_agent_dirs],
             ],
         )
         print(json.dumps(manifest, indent=2, sort_keys=True))
