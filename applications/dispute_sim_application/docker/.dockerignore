@@ -14,6 +14,8 @@
         tests/
         infra/
         applications/*
+        !applications/__init__.py
+        !applications/*/pyproject.toml
         !applications/dispute_sim_application/
         agents/*
         !agents/dispute_analyst/
