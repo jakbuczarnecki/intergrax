@@ -9,6 +9,9 @@ COMPOSE_FILE="$APP_DIR/docker/docker-compose.yml"
 
 cd "$REPO_ROOT"
 
+echo "Materializing minimal runtime context for governed_contractor_application..."
+uv run python scripts/build/build_application_image.py           --application "governed_contractor_application"           --context-dir "applications/governed_contractor_application/docker/runtime-context"           --materialize-only
+
 echo "Building and starting governed contractor via Docker Compose..."
 docker compose -f "$COMPOSE_FILE" up --build -d
 

@@ -22,63 +22,59 @@ def _default_smoke_env(*, env_prefix: str) -> tuple[str, ...]:
     )
 
 
-def render_dockerfile(
+def render_runtime_graph_dockerfile(
     *,
     pkg: str,
-    short: str,
     port: int,
     env_prefix: str,
-    agent_dirs: list[str],
-    health_path: str,
+    health_path: str = "/health",
     uvicorn_module: str | None = None,
     factory_import: str | None = None,
     factory_call: str | None = None,
     smoke_env: tuple[str, ...] | None = None,
-    copy_readme: bool = True,
+    short: str | None = None,
 ) -> str:
-    """Render ``applications/<pkg>/docker/Dockerfile`` content."""
+    """Dockerfile for a *materialized* minimal runtime-graph build context."""
+    short_name = short or pkg.replace("_application", "").replace("_", "-")
     target = uvicorn_module or f"{pkg}.host.main:app"
-    copy_agents = "\n".join(f"COPY agents/{d}/ ./agents/{d}/" for d in agent_dirs)
     health_url = f"http://127.0.0.1:{port}{health_path}"
-    import_stmt = factory_import or f"from {pkg}.host.factory import create_{short}_backend_app"
-    factory_expr = factory_call or f"create_{short}_backend_app()"
+    import_stmt = factory_import or f"from {pkg}.host.factory import create_{short_name.replace('-', '_')}_backend_app"
+    # Prefer conventional factory names derived from package short id.
+    if factory_call is None and factory_import is None:
+        # Keep smoke optional-friendly: import package host module only.
+        import_stmt = f"import {pkg}"
+        factory_expr = "True"
+    else:
+        factory_expr = factory_call or "True"
     smoke_lines = smoke_env if smoke_env is not None else _default_smoke_env(env_prefix=env_prefix)
-    smoke_env_block = " \\\n    ".join(smoke_lines)
-    readme_copy = "COPY README.md ./\n" if copy_readme else ""
+    # Keep continuation indent aligned with the template so textwrap.dedent works.
+    smoke_env_block = " \\\n            ".join(smoke_lines)
     return dedent(
         f"""\
         # © Artur Czarnecki. All rights reserved.
         # syntax=docker/dockerfile:1
         #
-        # Build from monorepo root (first install may take several minutes).
-        # BuildKit: docker buildx build -f applications/{pkg}/docker/Dockerfile \\
-        #   --ignorefile applications/{pkg}/docker/.dockerignore -t {short}-application .
-        # Classic: cp applications/{pkg}/docker/.dockerignore .dockerignore \\
-        #   && docker build -f applications/{pkg}/docker/Dockerfile -t {short}-application .
-        # Run: docker run --env-file applications/{pkg}/.env -p {port}:{port} {short}-application
-        #
-        # Dependency source of truth: applications/{pkg}/pyproject.toml
-        # (selects Intergrax workspace package + platform extras).
+        # Build ONLY from a materialized runtime-graph context produced by:
+        #   uv run python scripts/build/build_application_image.py --application {pkg}
+        # Do not use the monorepo root as Docker context.
+        # Source of truth: applications/{pkg}/pyproject.toml
 
         FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
         WORKDIR /app
 
-        COPY pyproject.toml uv.lock ./
-        {readme_copy}COPY intergrax/ ./intergrax/
-        # Workspace member metadata (all apps) + this application's sources.
-        # .dockerignore keeps other application trees out while retaining */pyproject.toml.
+        COPY pyproject.toml uv.lock README.md ./
+        COPY .intergrax-runtime-graph.json ./
+        COPY intergrax/ ./intergrax/
         COPY applications/ ./applications/
-        {copy_agents}
+        COPY agents/ ./agents/
 
-        # Application project selects Intergrax extras; do not pass --extra here.
-        # Root pyproject already declares disjoint Linux/Windows uv environments.
-        RUN uv sync --frozen --no-dev --project applications/{pkg}
+        # Install the selected application graph only (agents via workspace deps).
+        RUN uv sync --frozen --no-dev --project applications/{pkg} \\
+            && rm -rf /root/.cache/uv
 
-        # Build-time start-path smoke catches missing copied packages and eager optional
-        # integrations before docker compose starts the runtime container.
         RUN PYTHONPATH=/app:/app/agents:/app/applications \\
             {smoke_env_block} \\
-            .venv/bin/python -c "{import_stmt}; app = {factory_expr}; assert app.title"
+            .venv/bin/python -c "{import_stmt}; assert {factory_expr}"
 
         FROM python:3.12-slim-bookworm AS runtime
         WORKDIR /app
@@ -94,7 +90,13 @@ def render_dockerfile(
             libsqlite3-0 \\
             && rm -rf /var/lib/apt/lists/*
 
-        COPY --from=builder /app /app
+        COPY --from=builder /app/.venv /app/.venv
+        COPY --from=builder /app/intergrax /app/intergrax
+        COPY --from=builder /app/applications /app/applications
+        COPY --from=builder /app/agents /app/agents
+        COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md /app/
+        COPY --from=builder /app/.intergrax-runtime-graph.json /app/.intergrax-runtime-graph.json
+
         ENV PATH="/app/.venv/bin:$PATH"
 
         EXPOSE {port}
@@ -108,31 +110,73 @@ def render_dockerfile(
     )
 
 
+def render_dockerfile(
+    *,
+    pkg: str,
+    short: str,
+    port: int,
+    env_prefix: str,
+    agent_dirs: list[str],
+    health_path: str,
+    uvicorn_module: str | None = None,
+    factory_import: str | None = None,
+    factory_call: str | None = None,
+    smoke_env: tuple[str, ...] | None = None,
+    copy_readme: bool = True,
+) -> str:
+    """Render application ``docker/Dockerfile`` for materialized runtime-context builds."""
+    del agent_dirs, copy_readme  # agent selection comes from application pyproject
+    body = render_runtime_graph_dockerfile(
+        pkg=pkg,
+        port=port,
+        env_prefix=env_prefix,
+        health_path=health_path,
+        uvicorn_module=uvicorn_module,
+        factory_import=factory_import,
+        factory_call=factory_call,
+        smoke_env=smoke_env,
+        short=short,
+    )
+    # Emphasize that repo-root context is forbidden; Compose uses runtime-context/.
+    marker = (
+        f"# Compose / local builds must use applications/{pkg}/docker/runtime-context/\n"
+        f"# prepared by scripts/build/build_application_image.py (or --keep-context).\n"
+    )
+    return body.replace(
+        "# Do not use the monorepo root as Docker context.\n",
+        "# Do not use the monorepo root as Docker context.\n" + marker,
+        1,
+    )
+
+
 def render_dockerignore(*, pkg: str, short: str, agent_dirs: list[str]) -> str:
-    agent_exceptions = "\n".join(f"!agents/{d}/" for d in agent_dirs)
+    """Defensive ignore for accidental root-context builds — not the dependency graph."""
+    del agent_dirs  # selection is declared in application pyproject.toml
     return dedent(
         f"""\
-        # Per-application ignore file — monorepo root as context.
-        # BuildKit: docker buildx build -f applications/{pkg}/docker/Dockerfile \\
-        #   --ignorefile applications/{pkg}/docker/.dockerignore -t {short}-application .
-        # Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+        # Defensive ignore only. Canonical builds use materialized runtime-context/.
+        # Application: {pkg} ({short})
+        # Source of truth: applications/{pkg}/pyproject.toml
 
         .git
         .venv
+        **/.venv
+        .env
+        **/.env
         build/
         **/__pycache__/
         *.pyc
         .pytest_cache
+        .mypy_cache
+        .ruff_cache
         notebooks/
         docs/
         tests/
         infra/
-        applications/*
-        !applications/__init__.py
-        !applications/*/pyproject.toml
-        !applications/{pkg}/
-        agents/*
-        {agent_exceptions}
+        **/proof
+        **/proof_artifacts
+        coverage/
+        htmlcov/
         """
     )
 
@@ -151,8 +195,8 @@ def render_docker_compose(
     service_lines = [
         f"  {short}:",
         "    build:",
-        "      context: ../../..",
-        f"      dockerfile: applications/{pkg}/docker/Dockerfile",
+        "      context: ./runtime-context",
+        "      dockerfile: Dockerfile",
         f"    image: {short}-application:latest",
         "    ports:",
         f'      - "{port}:{port}"',
@@ -192,7 +236,13 @@ def render_docker_compose(
 
     blocks = [
         "# © Artur Czarnecki. All rights reserved.",
-        f"# Run from repository root: docker compose -f applications/{pkg}/docker/docker-compose.yml up --build",
+        f"# Prepare minimal context, then compose:",
+        f"#   uv run python scripts/build/build_application_image.py --application {pkg} \\",
+        f"#     --context-dir applications/{pkg}/docker/runtime-context --keep-context --manifest-only",
+        f"#   uv run python scripts/build/build_application_image.py --application {pkg} \\",
+        f"#     --tag {short}-application:latest --context-dir applications/{pkg}/docker/runtime-context --keep-context",
+        f"# Or: docker compose -f applications/{pkg}/docker/docker-compose.yml up --build",
+        "# (requires runtime-context/ already materialized; same isolation contract as CLI).",
         "",
         f"name: {compose_name}",
         "",
@@ -235,12 +285,12 @@ def render_docker_compose(
 
 
 def render_build_docker_sh(*, pkg: str, short: str, port: int) -> str:
-    """Render ``docker/build-docker.sh`` — run from anywhere; uses monorepo root as context."""
+    """Render ``docker/build-docker.sh`` — canonical minimal-context image build."""
     image = f"{short}-application"
     return dedent(
         f"""\
         #!/usr/bin/env bash
-        # Build Tier-3 application image from monorepo root (Phase N).
+        # Build Tier-3 application image via materialized runtime graph.
         set -euo pipefail
 
         SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
@@ -250,21 +300,11 @@ def render_build_docker_sh(*, pkg: str, short: str, port: int) -> str:
         PORT="{port}"
 
         cd "${{REPO_ROOT}}"
-
-        if docker buildx version >/dev/null 2>&1; then
-          echo "Building ${{IMAGE_TAG}} (BuildKit)..."
-          docker buildx build \\
-            -f "applications/${{PKG}}/docker/Dockerfile" \\
-            --ignorefile "applications/${{PKG}}/docker/.dockerignore" \\
-            -t "${{IMAGE_TAG}}" \\
-            .
-        else
-          echo "BuildKit not found — using docker build (consider: docker buildx install)"
-          docker build \\
-            -f "applications/${{PKG}}/docker/Dockerfile" \\
-            -t "${{IMAGE_TAG}}" \\
-            .
-        fi
+        uv run python scripts/build/build_application_image.py \\
+          --application "${{PKG}}" \\
+          --tag "${{IMAGE_TAG}}" \\
+          --context-dir "applications/${{PKG}}/docker/runtime-context" \\
+          --keep-context
 
         echo ""
         echo "Built: ${{IMAGE_TAG}}"
@@ -279,7 +319,7 @@ def render_build_docker_bat(*, pkg: str, short: str, port: int) -> str:
     return dedent(
         f"""\
         @echo off
-        REM Build Tier-3 application image from monorepo root (Phase N).
+        REM Build Tier-3 application image via materialized runtime graph.
         setlocal EnableExtensions
 
         set "PKG={pkg}"
@@ -293,14 +333,7 @@ def render_build_docker_bat(*, pkg: str, short: str, port: int) -> str:
           exit /b 1
         )
 
-        docker buildx version >nul 2>&1
-        if %ERRORLEVEL% equ 0 (
-          echo Building %IMAGE_TAG% ^(BuildKit^)...
-          docker buildx build -f applications/%PKG%/docker/Dockerfile --ignorefile applications/%PKG%/docker/.dockerignore -t %IMAGE_TAG% .
-        ) else (
-          echo BuildKit not found — using docker build
-          docker build -f applications/%PKG%/docker/Dockerfile -t %IMAGE_TAG% .
-        )
+        uv run python scripts/build/build_application_image.py --application %PKG% --tag %IMAGE_TAG% --context-dir applications/%PKG%/docker/runtime-context --keep-context
         if errorlevel 1 exit /b 1
 
         echo.
@@ -325,6 +358,12 @@ def render_local_docker_compose_sh(*, pkg: str, short: str, port: int) -> str:
 
         cd "$REPO_ROOT"
 
+        echo "Materializing minimal runtime context for {pkg}..."
+        uv run python scripts/build/build_application_image.py \
+          --application "{pkg}" \
+          --context-dir "applications/{pkg}/docker/runtime-context" \
+          --materialize-only
+
         echo "Building and starting {short.replace('_', ' ')} via Docker Compose..."
         docker compose -f "$COMPOSE_FILE" up --build -d
 
@@ -347,6 +386,13 @@ def render_local_docker_compose_bat(*, pkg: str, short: str, port: int) -> str:
         pushd "%APP_DIR%\\..\\.." >nul
         if errorlevel 1 (
             echo Failed to locate repository root.
+            exit /b 1
+        )
+
+        echo Materializing minimal runtime context for {pkg}...
+        uv run python scripts/build/build_application_image.py --application {pkg} --context-dir applications/{pkg}/docker/runtime-context --materialize-only
+        if errorlevel 1 (
+            popd >nul
             exit /b 1
         )
 

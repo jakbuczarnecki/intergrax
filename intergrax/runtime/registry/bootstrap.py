@@ -3,7 +3,16 @@
 
 from __future__ import annotations
 
+import importlib
+from typing import Any
+
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+
+def _load_agent_class(module_name: str, class_name: str) -> Any:
+    """Load a Tier-2 agent class without a static platform→agent import edge."""
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
 
 
 def build_harness_registry(*, include_echo: bool = True) -> AgentRegistry:
@@ -11,33 +20,32 @@ def build_harness_registry(*, include_echo: bool = True) -> AgentRegistry:
     Build a minimal registry for experimentation (§41).
 
     Registers EchoAgent by default for harness smoke tests.
+    Requires the echo agent package to be installed / on PYTHONPATH.
     """
     registry = AgentRegistry()
     if include_echo:
-        from echo.echo_agent import EchoAgent
-
+        EchoAgent = _load_agent_class("echo.echo_agent", "EchoAgent")
         registry.register(EchoAgent())
     return registry
 
 
 def build_research_registry(*, include_echo: bool = False) -> AgentRegistry:
     """Registry with Research + Summary agents for multi-agent pipeline experiments."""
-    from research.research_agent import ResearchAgent
-    from research.summary_agent import SummaryAgent
+    ResearchAgent = _load_agent_class("research.research_agent", "ResearchAgent")
+    SummaryAgent = _load_agent_class("research.summary_agent", "SummaryAgent")
 
     registry = AgentRegistry()
     registry.register(ResearchAgent())
     registry.register(SummaryAgent())
     if include_echo:
-        from echo.echo_agent import EchoAgent
-
+        EchoAgent = _load_agent_class("echo.echo_agent", "EchoAgent")
         registry.register(EchoAgent())
     return registry
 
 
 def build_legal_registry() -> AgentRegistry:
     """Registry with Legal agent for capability-graph reference hosts."""
-    from legal.legal_agent import LegalAgent
+    LegalAgent = _load_agent_class("legal.legal_agent", "LegalAgent")
 
     registry = AgentRegistry()
     registry.register(LegalAgent())
@@ -46,12 +54,14 @@ def build_legal_registry() -> AgentRegistry:
 
 def build_organization_worker_registry(*, include_echo: bool = False) -> AgentRegistry:
     """Registry for §38 Organization Worker lab demos."""
-    from organization_worker.organization_worker_agent import OrganizationWorkerAgent
+    OrganizationWorkerAgent = _load_agent_class(
+        "organization_worker.organization_worker_agent",
+        "OrganizationWorkerAgent",
+    )
 
     registry = AgentRegistry()
     registry.register(OrganizationWorkerAgent())
     if include_echo:
-        from echo.echo_agent import EchoAgent
-
+        EchoAgent = _load_agent_class("echo.echo_agent", "EchoAgent")
         registry.register(EchoAgent())
     return registry

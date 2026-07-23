@@ -10,6 +10,11 @@ description = "Lab / reference Tier-3 application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "Intergrax-ai",
+  "intergrax-echo-agent",
+  "intergrax-lab-agent",
+  "intergrax-problem-radar-agent",
+  "intergrax-research-agent",
+  "intergrax-signoff-probe-agent",
 ]
 
 [tool.uv]
@@ -17,3 +22,8 @@ package = false
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+intergrax-echo-agent = { workspace = true }
+intergrax-lab-agent = { workspace = true }
+intergrax-problem-radar-agent = { workspace = true }
+intergrax-research-agent = { workspace = true }
+intergrax-signoff-probe-agent = { workspace = true }

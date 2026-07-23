@@ -103,10 +103,19 @@ def test_shared_wiring_modules_do_not_import_fastapi_mcp(module_name: str) -> No
 def test_lkw_dockerfile_uses_minimal_agent_closure() -> None:
     dockerfile = REPO / "applications" / "local_workspace_application" / "docker" / "Dockerfile"
     text = dockerfile.read_text(encoding="utf-8")
-    assert "COPY agents/ ./agents/" not in text
-    for package in ("local_indexer", "local_search", "local_synthesizer"):
-        assert f"agents/{package}" in text
-    assert "create_local_workspace_backend_app()" in text
+    assert "materialized runtime-graph context" in text
+    assert "COPY agents/ ./agents/" in text
+    assert "COPY agents/local_indexer/" not in text
+    assert "uv sync --frozen --no-dev --project applications/local_workspace_application" in text
+    pyproject = (
+        REPO / "applications" / "local_workspace_application" / "pyproject.toml"
+    ).read_text(encoding="utf-8")
+    for dist in (
+        "intergrax-local-indexer-agent",
+        "intergrax-local-search-agent",
+        "intergrax-local-synthesizer-agent",
+    ):
+        assert dist in pyproject
 
 
 @pytest.mark.no_ci
@@ -138,7 +147,11 @@ def test_scaffold_dockerfile_has_build_smoke_and_compose_project_name(tmp_path: 
     dockerfile = (target / "docker" / "Dockerfile").read_text(encoding="utf-8")
     compose = (target / "docker" / "docker-compose.yml").read_text(encoding="utf-8")
 
-    assert "COPY agents/echo/" in dockerfile
-    assert "COPY agents/ ./agents/" not in dockerfile
+    assert "COPY agents/ ./agents/" in dockerfile
+    assert "COPY agents/echo/" not in dockerfile
+    assert "materialized runtime-graph context" in dockerfile
     assert "create_docker_guard_test_backend_app()" in dockerfile
     assert "name: intergrax_docker_guard_test" in compose
+    assert "context: ./runtime-context" in compose
+    pyproject = (target / "pyproject.toml").read_text(encoding="utf-8")
+    assert "intergrax-echo-agent" in pyproject

@@ -1,21 +1,23 @@
-# Per-application ignore file — monorepo root as context.
-# BuildKit: docker buildx build -f applications/governed_contractor_application/docker/Dockerfile \
-#   --ignorefile applications/governed_contractor_application/docker/.dockerignore -t governed_contractor-application .
-# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+# Defensive ignore only. Canonical builds use materialized runtime-context/.
+# Application: governed_contractor_application (governed_contractor)
+# Source of truth: applications/governed_contractor_application/pyproject.toml
 
 .git
 .venv
+**/.venv
+.env
+**/.env
 build/
 **/__pycache__/
 *.pyc
 .pytest_cache
+.mypy_cache
+.ruff_cache
 notebooks/
 docs/
 tests/
 infra/
-applications/*
-!applications/__init__.py
-!applications/*/pyproject.toml
-!applications/governed_contractor_application/
-agents/*
-!agents/external_contractor_adapter/
+**/proof
+**/proof_artifacts
+coverage/
+htmlcov/

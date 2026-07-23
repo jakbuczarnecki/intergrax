@@ -14,15 +14,33 @@ supported-markers = [
 [manifest]
 members = [
     "intergrax-ai",
+    "intergrax-assistant-agent",
     "intergrax-assistant-application",
     "intergrax-attestation-demo",
+    "intergrax-boundary-demo-agent",
+    "intergrax-dispute-analyst-agent",
+    "intergrax-dispute-intake-agent",
+    "intergrax-dispute-scenario-agent",
     "intergrax-dispute-sim-application",
+    "intergrax-dispute-strategist-agent",
+    "intergrax-echo-agent",
+    "intergrax-external-contractor-adapter-agent",
     "intergrax-governed-contractor-application",
+    "intergrax-lab-agent",
     "intergrax-lab-application",
+    "intergrax-legal-agent",
     "intergrax-legal-application",
+    "intergrax-local-indexer-agent",
+    "intergrax-local-search-agent",
+    "intergrax-local-synthesizer-agent",
     "intergrax-local-workspace-application",
+    "intergrax-organization-worker-agent",
     "intergrax-poc-template-application",
+    "intergrax-problem-radar-agent",
+    "intergrax-research-agent",
     "intergrax-research-application",
+    "intergrax-signoff-probe-agent",
+    "intergrax-vendor-discovery-agent",
 ]
 
 [[package]]
@@ -1922,9 +1940,9 @@ requires-dist = [
 provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [[package]]
-name = "intergrax-assistant-application"
+name = "intergrax-assistant-agent"
 version = "0.1.0"
-source = { virtual = "applications/intergrax_assistant_application" }
+source = { editable = "agents/intergrax_assistant" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1933,9 +1951,78 @@ dependencies = [
 requires-dist = [{ name = "intergrax-ai", editable = "." }]
 
 [[package]]
+name = "intergrax-assistant-application"
+version = "0.1.0"
+source = { virtual = "applications/intergrax_assistant_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-assistant-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-echo-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-legal-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-research-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-assistant-agent", editable = "agents/intergrax_assistant" },
+    { name = "intergrax-echo-agent", editable = "agents/echo" },
+    { name = "intergrax-legal-agent", editable = "agents/legal" },
+    { name = "intergrax-research-agent", editable = "agents/research" },
+]
+
+[[package]]
 name = "intergrax-attestation-demo"
 version = "0.1.0"
 source = { virtual = "applications/attestation_demo" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-boundary-demo-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-boundary-demo-agent", editable = "agents/boundary_demo" },
+]
+
+[[package]]
+name = "intergrax-boundary-demo-agent"
+version = "0.1.0"
+source = { editable = "agents/boundary_demo" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-dispute-analyst-agent"
+version = "0.1.0"
+source = { editable = "agents/dispute_analyst" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-dispute-intake-agent"
+version = "0.1.0"
+source = { editable = "agents/dispute_intake" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-dispute-scenario-agent"
+version = "0.1.0"
+source = { editable = "agents/dispute_scenario" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1949,6 +2036,49 @@ version = "0.1.0"
 source = { virtual = "applications/dispute_sim_application" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-dispute-analyst-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-dispute-intake-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-dispute-scenario-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-dispute-strategist-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-dispute-analyst-agent", editable = "agents/dispute_analyst" },
+    { name = "intergrax-dispute-intake-agent", editable = "agents/dispute_intake" },
+    { name = "intergrax-dispute-scenario-agent", editable = "agents/dispute_scenario" },
+    { name = "intergrax-dispute-strategist-agent", editable = "agents/dispute_strategist" },
+]
+
+[[package]]
+name = "intergrax-dispute-strategist-agent"
+version = "0.1.0"
+source = { editable = "agents/dispute_strategist" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-echo-agent"
+version = "0.1.0"
+source = { editable = "agents/echo" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-external-contractor-adapter-agent"
+version = "0.1.0"
+source = { editable = "agents/external_contractor_adapter" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.metadata]
@@ -1958,6 +2088,21 @@ requires-dist = [{ name = "intergrax-ai", editable = "." }]
 name = "intergrax-governed-contractor-application"
 version = "0.1.0"
 source = { virtual = "applications/governed_contractor_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-external-contractor-adapter-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-external-contractor-adapter-agent", editable = "agents/external_contractor_adapter" },
+]
+
+[[package]]
+name = "intergrax-lab-agent"
+version = "0.1.0"
+source = { editable = "agents/lab" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1971,6 +2116,29 @@ version = "0.1.0"
 source = { virtual = "applications/lab_application" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-echo-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-lab-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-problem-radar-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-research-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-signoff-probe-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-echo-agent", editable = "agents/echo" },
+    { name = "intergrax-lab-agent", editable = "agents/lab" },
+    { name = "intergrax-problem-radar-agent", editable = "agents/problem_radar" },
+    { name = "intergrax-research-agent", editable = "agents/research" },
+    { name = "intergrax-signoff-probe-agent", editable = "agents/signoff_probe" },
+]
+
+[[package]]
+name = "intergrax-legal-agent"
+version = "0.1.0"
+source = { editable = "agents/legal" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.metadata]
@@ -1980,6 +2148,43 @@ requires-dist = [{ name = "intergrax-ai", editable = "." }]
 name = "intergrax-legal-application"
 version = "0.1.0"
 source = { virtual = "applications/legal_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-legal-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-legal-agent", editable = "agents/legal" },
+]
+
+[[package]]
+name = "intergrax-local-indexer-agent"
+version = "0.1.0"
+source = { editable = "agents/local_indexer" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-local-search-agent"
+version = "0.1.0"
+source = { editable = "agents/local_search" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-local-synthesizer-agent"
+version = "0.1.0"
+source = { editable = "agents/local_synthesizer" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1993,6 +2198,9 @@ version = "0.1.0"
 source = { virtual = "applications/local_workspace_application" }
 dependencies = [
     { name = "intergrax-ai", extra = ["integrations-kafka", "integrations-mongodb", "integrations-sentry", "integrations-slack"], marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-local-indexer-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-local-search-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-local-synthesizer-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.dev-dependencies]
@@ -2002,7 +2210,12 @@ certification = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "intergrax-ai", extras = ["integrations-slack", "integrations-mongodb", "integrations-sentry", "integrations-kafka"], editable = "." }]
+requires-dist = [
+    { name = "intergrax-ai", extras = ["integrations-slack", "integrations-mongodb", "integrations-sentry", "integrations-kafka"], editable = "." },
+    { name = "intergrax-local-indexer-agent", editable = "agents/local_indexer" },
+    { name = "intergrax-local-search-agent", editable = "agents/local_search" },
+    { name = "intergrax-local-synthesizer-agent", editable = "agents/local_synthesizer" },
+]
 
 [package.metadata.requires-dev]
 certification = [
@@ -2011,9 +2224,46 @@ certification = [
 ]
 
 [[package]]
+name = "intergrax-organization-worker-agent"
+version = "0.1.0"
+source = { editable = "agents/organization_worker" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
 name = "intergrax-poc-template-application"
 version = "0.1.0"
 source = { virtual = "applications/poc_template_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-echo-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-echo-agent", editable = "agents/echo" },
+]
+
+[[package]]
+name = "intergrax-problem-radar-agent"
+version = "0.1.0"
+source = { editable = "agents/problem_radar" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-research-agent"
+version = "0.1.0"
+source = { editable = "agents/research" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -2025,6 +2275,32 @@ requires-dist = [{ name = "intergrax-ai", editable = "." }]
 name = "intergrax-research-application"
 version = "0.1.0"
 source = { virtual = "applications/research_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "intergrax-research-agent", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "intergrax-ai", editable = "." },
+    { name = "intergrax-research-agent", editable = "agents/research" },
+]
+
+[[package]]
+name = "intergrax-signoff-probe-agent"
+version = "0.1.0"
+source = { editable = "agents/signoff_probe" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-vendor-discovery-agent"
+version = "0.1.0"
+source = { editable = "agents/vendor_discovery" }
 dependencies = [
     { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]

@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
-from echo.echo_agent import EchoAgent
+import importlib
+
 from intergrax.harness import AgentGraph, HarnessApplication
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 
 def create_app():
+    EchoAgent = importlib.import_module("echo.echo_agent").EchoAgent
     return (
         HarnessApplication("demo", route_prefix="/v1/demo")
         .agents(EchoAgent)

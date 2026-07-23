@@ -189,3 +189,14 @@ uv run --project applications/poc_template_application python -m poc_template_ap
 ```
 
 The application `pyproject.toml` selects Intergrax platform extras. Docker uses the same application project (`uv sync --frozen --no-dev --project applications/poc_template_application`); do not pass root `--extra` flags in the Dockerfile.
+
+## Application runtime graph (isolated images)
+
+Canonical packaging and image isolation: [docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md](../../../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+
+```bash
+uv sync --project applications/poc_template_application
+uv run python scripts/build/build_application_image.py --application poc_template_application --tag poc-template-application:local
+```
+
+Compose uses docker/runtime-context/ produced by the same builder (--context-dir ... --keep-context). Do not build with repository-root context.

@@ -1,21 +1,23 @@
-# Per-application ignore file — monorepo root as context.
-# BuildKit: docker buildx build -f applications/poc_template_application/docker/Dockerfile \
-#   --ignorefile applications/poc_template_application/docker/.dockerignore -t poc_template-application .
-# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+# Defensive ignore only. Canonical builds use materialized runtime-context/.
+# Application: poc_template_application (poc_template)
+# Source of truth: applications/poc_template_application/pyproject.toml
 
 .git
 .venv
+**/.venv
+.env
+**/.env
 build/
 **/__pycache__/
 *.pyc
 .pytest_cache
+.mypy_cache
+.ruff_cache
 notebooks/
 docs/
 tests/
 infra/
-applications/*
-!applications/__init__.py
-!applications/*/pyproject.toml
-!applications/poc_template_application/
-agents/*
-!agents/echo/
+**/proof
+**/proof_artifacts
+coverage/
+htmlcov/

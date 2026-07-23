@@ -11,6 +11,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Materializing minimal runtime context for poc_template_application...
+uv run python scripts/build/build_application_image.py --application poc_template_application --context-dir applications/poc_template_application/docker/runtime-context --materialize-only
+if errorlevel 1 (
+    popd >nul
+    exit /b 1
+)
+
 echo Building and starting poc template via Docker Compose...
 docker compose -f "%COMPOSE_FILE%" up --build -d
 if errorlevel 1 (
@@ -19,7 +26,7 @@ if errorlevel 1 (
 )
 
 echo Stack is starting. Verify with:
-echo   curl http://127.0.0.1:8013/health
+echo   curl http://127.0.0.1:8095/health
 
 popd >nul
 endlocal

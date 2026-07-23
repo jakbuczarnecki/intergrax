@@ -15,6 +15,17 @@ Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_a
 
 ---
 
+
+## Package metadata (Tier-2)
+
+Every reusable agent owns `agents/<agent>/pyproject.toml` as a uv workspace member
+(`intergrax-<slug>-agent`). Declare only the Intergrax platform dependency (and
+agent-specific third-party runtime deps). Never depend on a Tier-3 application.
+
+Applications select agents by distribution name in `applications/<app>/pyproject.toml`.
+Canon: [APPLICATION_RUNTIME_GRAPH_MODEL.md](../architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+
+
 ## Table of contents
 
 1. [Mental model](#1-mental-model)

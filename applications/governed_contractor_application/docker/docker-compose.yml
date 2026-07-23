@@ -1,13 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/governed_contractor_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application governed_contractor_application \
+#     --context-dir applications/governed_contractor_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application governed_contractor_application \
+#     --tag governed_contractor-application:latest --context-dir applications/governed_contractor_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/governed_contractor_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
 name: intergrax_governed_contractor
 
 services:
   governed_contractor:
     build:
-      context: ../../..
-      dockerfile: applications/governed_contractor_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: governed_contractor-application:latest
     ports:
       - "8000:8000"

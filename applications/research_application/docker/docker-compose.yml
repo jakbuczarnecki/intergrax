@@ -1,19 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/research_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application research_application \
+#     --context-dir applications/research_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application research_application \
+#     --tag research-application:latest --context-dir applications/research_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/research_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
 name: intergrax_research
 
 services:
   research:
     build:
-      context: ../../..
-      dockerfile: applications/research_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: research-application:latest
     ports:
       - "8010:8010"
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      RESEARCH_BACKEND_ENV: dev
       RESEARCH_BACKEND_HOST: "0.0.0.0"
       RESEARCH_BACKEND_PORT: "8010"
-      INTERGRAX_ENV: prod
+      RESEARCH_INCLUDE_MCP: "false"

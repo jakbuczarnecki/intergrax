@@ -1,24 +1,23 @@
-# Per-application ignore file — monorepo root as context.
-# BuildKit: docker buildx build -f applications/lab_application/docker/Dockerfile \
-#   --ignorefile applications/lab_application/docker/.dockerignore -t lab-application .
-# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+# Defensive ignore only. Canonical builds use materialized runtime-context/.
+# Application: lab_application (lab)
+# Source of truth: applications/lab_application/pyproject.toml
 
 .git
 .venv
+**/.venv
+.env
+**/.env
 build/
 **/__pycache__/
 *.pyc
 .pytest_cache
+.mypy_cache
+.ruff_cache
 notebooks/
 docs/
 tests/
 infra/
-applications/*
-!applications/__init__.py
-!applications/*/pyproject.toml
-!applications/lab_application/
-agents/*
-!agents/echo/
-!agents/lab/
-!agents/signoff_probe/
-!agents/research/
+**/proof
+**/proof_artifacts
+coverage/
+htmlcov/

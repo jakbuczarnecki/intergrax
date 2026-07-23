@@ -1,26 +1,36 @@
 # © Artur Czarnecki. All rights reserved.
 # syntax=docker/dockerfile:1
 #
-# Build from monorepo root (first install may take several minutes).
-# BuildKit: docker buildx build -f applications/intergrax_assistant_application/docker/Dockerfile \
-#   --ignorefile applications/intergrax_assistant_application/docker/.dockerignore -t intergrax_assistant-application .
-# Classic: cp applications/intergrax_assistant_application/docker/.dockerignore .dockerignore \
-#   && docker build -f applications/intergrax_assistant_application/docker/Dockerfile -t intergrax_assistant-application .
-# Dependency source of truth: applications/intergrax_assistant_application/pyproject.toml
-# (selects Intergrax workspace package + platform extras).
-#
-# Run: docker run --env-file applications/intergrax_assistant_application/.env -p 8096:8096 intergrax_assistant-application
+# Build ONLY from a materialized runtime-graph context produced by:
+#   uv run python scripts/build/build_application_image.py --application intergrax_assistant_application
+# Do not use the monorepo root as Docker context.
+# Compose / local builds must use applications/intergrax_assistant_application/docker/runtime-context/
+# prepared by scripts/build/build_application_image.py (or --keep-context).
+# Source of truth: applications/intergrax_assistant_application/pyproject.toml
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
+COPY .intergrax-runtime-graph.json ./
 COPY intergrax/ ./intergrax/
 COPY applications/ ./applications/
-COPY agents/intergrax_assistant/ ./agents/intergrax_assistant/
-# Application project selects Intergrax extras; do not pass --extra here.
-# Root pyproject already declares disjoint Linux/Windows uv environments.
-RUN uv sync --frozen --no-dev --project applications/intergrax_assistant_application
+COPY agents/ ./agents/
+
+# Install the selected application graph only (agents via workspace deps).
+RUN uv sync --frozen --no-dev --project applications/intergrax_assistant_application \
+    && rm -rf /root/.cache/uv
+
+RUN PYTHONPATH=/app:/app/agents:/app/applications \
+    INTERGRAX_ENV=dev \
+    INTERGRAX_ASSISTANT_BACKEND_ENV=dev \
+    INTERGRAX_ASSISTANT_INCLUDE_MCP=false \
+    INTERGRAX_ASSISTANT_INCLUDE_SCHEDULER=false \
+    INTERGRAX_ASSISTANT_INCLUDE_INTERACTIONS=false \
+    INTERGRAX_ASSISTANT_INCLUDE_TASK_CONTROL=false \
+    INTERGRAX_SHADOW_ROOT=/tmp/intergrax_app_shadow \
+    INTERGRAX_SQLITE_DATA_DIR=/tmp/intergrax_app_sqlite \
+    .venv/bin/python -c "import intergrax_assistant_application; assert True"
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app
@@ -36,13 +46,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app /app
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/intergrax /app/intergrax
+COPY --from=builder /app/applications /app/applications
+COPY --from=builder /app/agents /app/agents
+COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md /app/
+COPY --from=builder /app/.intergrax-runtime-graph.json /app/.intergrax-runtime-graph.json
+
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8096
 WORKDIR /app/applications/intergrax_assistant_application
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/v1/intergrax_assistant/agents')" || exit 1
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/health')" || exit 1
 
 CMD ["uvicorn", "intergrax_assistant_application.host.main:app", "--host", "0.0.0.0", "--port", "8096"]

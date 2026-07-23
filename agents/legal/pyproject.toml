@@ -1,0 +1,30 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: legal
+# Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+
+[project]
+name = "intergrax-legal-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: legal"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "legal",
+  "legal.schemas",
+  "legal.steps",
+]
+
+[tool.setuptools.package-dir]
+"legal" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

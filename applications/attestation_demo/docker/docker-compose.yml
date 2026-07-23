@@ -1,17 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/attestation_demo/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application attestation_demo \
+#     --context-dir applications/attestation_demo/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application attestation_demo \
+#     --tag attestation_demo-application:latest --context-dir applications/attestation_demo/docker/runtime-context --keep-context
+# Or: docker compose -f applications/attestation_demo/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
+
+name: intergrax_attestation_demo
 
 services:
   attestation_demo:
     build:
-      context: ../../..
-      dockerfile: applications/attestation_demo/docker/Dockerfile
-    image: attestation-demo:latest
+      context: ./runtime-context
+      dockerfile: Dockerfile
+    image: attestation_demo-application:latest
     ports:
       - "8097:8097"
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      ATTESTATION_DEMO_BACKEND_ENV: dev
       ATTESTATION_DEMO_BACKEND_HOST: "0.0.0.0"
       ATTESTATION_DEMO_BACKEND_PORT: "8097"
-      INTERGRAX_ENV: prod
+      ATTESTATION_DEMO_INCLUDE_MCP: "false"

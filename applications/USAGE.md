@@ -11,9 +11,15 @@
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, **dependency project** (`pyproject.toml`), and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
 
-**Dependencies:** each real application owns `applications/<app>/pyproject.toml` (Intergrax workspace package + selected extras). Sync with `uv sync --project applications/<app>`. Canon: [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+**Dependencies:** each real application owns `applications/<app>/pyproject.toml` (Intergrax extras + selected Tier-2 agent packages + app-only deps). Sync with `uv sync --project applications/<app>`. Canon: [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md) · runtime graphs / images: [`docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
-Isolation (current monorepo): **declaration** and **dependency-graph** isolation per application project are supported; the default physical environment remains the workspace root `.venv` (not one `.venv` per app unless `UV_PROJECT_ENVIRONMENT` is set).
+Isolation (current monorepo): **declaration** and **dependency-graph** isolation per application project are supported; the default physical environment remains the workspace root `.venv` (not one `.venv` per app unless `UV_PROJECT_ENVIRONMENT` is set). Each Docker image has its own `/app/.venv` and contains only the declared runtime graph (no sibling Tier-3 sources, no undeclared agents).
+
+**Proof evidence:** Application-scoped live evidence belongs under
+`applications/<app>/docs/proof/` when the execution uses that application as the
+reference host and closes an application roadmap gate.
+Reusable proof harnesses and platform provider tests remain in platform-owned
+locations.
 
 ---
 

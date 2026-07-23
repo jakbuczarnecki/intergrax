@@ -10,6 +10,10 @@ description = "Dispute simulation Tier-3 application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "Intergrax-ai",
+  "intergrax-dispute-analyst-agent",
+  "intergrax-dispute-intake-agent",
+  "intergrax-dispute-scenario-agent",
+  "intergrax-dispute-strategist-agent",
 ]
 
 [tool.uv]
@@ -17,3 +21,7 @@ package = false
 
 [tool.uv.sources]
 Intergrax-ai = { workspace = true }
+intergrax-dispute-analyst-agent = { workspace = true }
+intergrax-dispute-intake-agent = { workspace = true }
+intergrax-dispute-scenario-agent = { workspace = true }
+intergrax-dispute-strategist-agent = { workspace = true }

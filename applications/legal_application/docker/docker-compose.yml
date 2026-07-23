@@ -1,19 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
-# Run from repository root: docker compose -f applications/legal_application/docker/docker-compose.yml up --build
+# Prepare minimal context, then compose:
+#   uv run python scripts/build/build_application_image.py --application legal_application \
+#     --context-dir applications/legal_application/docker/runtime-context --keep-context --manifest-only
+#   uv run python scripts/build/build_application_image.py --application legal_application \
+#     --tag legal-application:latest --context-dir applications/legal_application/docker/runtime-context --keep-context
+# Or: docker compose -f applications/legal_application/docker/docker-compose.yml up --build
+# (requires runtime-context/ already materialized; same isolation contract as CLI).
 
 name: intergrax_legal
 
 services:
   legal:
     build:
-      context: ../../..
-      dockerfile: applications/legal_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: legal-application:latest
     ports:
       - "8000:8000"
     env_file:
       - ../.env
     environment:
+      INTERGRAX_ENV: dev
+      LEGAL_BACKEND_ENV: dev
       LEGAL_BACKEND_HOST: "0.0.0.0"
       LEGAL_BACKEND_PORT: "8000"
-      INTERGRAX_ENV: prod
+      LEGAL_INCLUDE_MCP: "false"

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -212,9 +213,9 @@ def run_receipt(args: argparse.Namespace) -> int:
 
 def _run_full_demo(store: Path, *, simulate_signing_failure: bool) -> int:
     _ensure_tier_paths()
-    from governed_contractor_application.host.offline_demo import (
-        run_offline_governed_contractor_demo,
-    )
+    run_offline_governed_contractor_demo = importlib.import_module(
+        "governed_contractor_application.host.offline_demo"
+    ).run_offline_governed_contractor_demo
 
     report = run_offline_governed_contractor_demo(
         store_root=store,
@@ -245,7 +246,9 @@ def _run_full_demo(store: Path, *, simulate_signing_failure: bool) -> int:
 
 def _show_execution(store: Path, execution_id: str) -> int:
     _ensure_tier_paths()
-    from governed_contractor_application.host.stores import FilesystemHostStore
+    FilesystemHostStore = importlib.import_module(
+        "governed_contractor_application.host.stores"
+    ).FilesystemHostStore
 
     fs = FilesystemHostStore(store)
     result = fs.get_result(execution_id)
@@ -261,7 +264,9 @@ def _show_execution(store: Path, execution_id: str) -> int:
 
 def _show_receipt(store: Path, execution_id: str) -> int:
     _ensure_tier_paths()
-    from governed_contractor_application.host.stores import FilesystemHostStore
+    FilesystemHostStore = importlib.import_module(
+        "governed_contractor_application.host.stores"
+    ).FilesystemHostStore
 
     fs = FilesystemHostStore(store)
     receipt = fs.get_receipt(execution_id)
@@ -309,15 +314,18 @@ def _resolve_retry_attestor(*, store: Path, demo_key: bool):
 def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int:
     """Rebuild orchestrator against persisted store and retry attestation only."""
     _ensure_tier_paths()
-    from external_contractor_adapter.external_work_adapter import ExternalWorkAdapter
-    from governed_contractor_application.host.offline_demo import (
-        build_demo_policy_bundle,
-        display_relative_path,
-    )
-    from governed_contractor_application.host.orchestrator import (
-        GovernedExternalWorkOrchestrator,
-    )
-    from governed_contractor_application.host.stores import FilesystemHostStore
+    ExternalWorkAdapter = importlib.import_module(
+        "external_contractor_adapter.external_work_adapter"
+    ).ExternalWorkAdapter
+    _offline = importlib.import_module("governed_contractor_application.host.offline_demo")
+    build_demo_policy_bundle = _offline.build_demo_policy_bundle
+    display_relative_path = _offline.display_relative_path
+    GovernedExternalWorkOrchestrator = importlib.import_module(
+        "governed_contractor_application.host.orchestrator"
+    ).GovernedExternalWorkOrchestrator
+    FilesystemHostStore = importlib.import_module(
+        "governed_contractor_application.host.stores"
+    ).FilesystemHostStore
     from intergrax.contracts.external_work_provider_capabilities import (
         quote_first_partner_capability_fixture,
     )

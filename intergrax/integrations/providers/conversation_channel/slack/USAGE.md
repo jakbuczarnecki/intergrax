@@ -9,10 +9,33 @@ Backend class: `SlackConversationChannelBackend`
 
 ```text
 BETA
+DONE / LIVE_VERIFIED
 Socket Mode inbound + Web API outbound runtime supported
+verified against real Slack Socket Mode
+verified DM MESSAGE mapping
+verified outbound reply
+verified interactive single choice
+verified ACTION mapping
+verified confirmation
 default_enabled = false
 runtime_binding_supported = true
 ```
+
+Socket Mode inbound and Web API outbound runtime are supported.
+
+The provider exposes platform conversation-channel capabilities for:
+- inbound MESSAGE mapping
+- outbound message delivery
+- single-choice rendering
+- inbound ACTION mapping
+- thread-aware addressing
+- controlled lifecycle start, health and stop
+
+Application-specific live evidence and product workflow status are owned by
+the consuming application and are intentionally not referenced here.
+
+Product workflows, application authorization and application identity mapping
+are outside the provider contract.
 
 Disabled registry/factory construction performs no SDK init and no network I/O.
 
@@ -54,11 +77,10 @@ INTERGRAX_SLACK_CONVERSATION_ENABLED  # optional; or pass enabled=True
 INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS # optional; live-proof wait budget
 ```
 
-For the controlled live proof, copy
-`applications/local_workspace_application/.env.example` → `.env` in that
-directory and set the tokens there. `scripts/proof/slack_conversation_channel_live_proof.py`
-loads that file explicitly (process environment still overrides `.env`).
-Never commit real tokens.
+Configure the required tokens in the process environment or the consuming
+application's local `.env` (never commit real tokens). The platform live-proof
+harness `scripts/proof/slack_conversation_channel_live_proof.py` may load a
+local `.env` when provided; process environment still overrides `.env`.
 
 Optional dependency:
 
@@ -100,7 +122,7 @@ optional thread_id → thread_ts
 - files, reactions, edits, deletions
 - arbitrary Block Kit from the application
 - OAuth / multi-install / Enterprise Grid
-- LKW product behavior (auth, tenant, Ask, dedupe, citations)
+- product authorization, identity mapping, or application workflow logic
 
 ## Declared conversation features
 

@@ -168,3 +168,20 @@ def test_configuration_source_messages(monkeypatch: pytest.MonkeyPatch) -> None:
     module = _load_proof_module(monkeypatch)
     assert "LKW .env available" in module._configuration_source_message(env_available=True)
     assert "no LKW .env" in module._configuration_source_message(env_available=False)
+
+
+def test_required_evidence_includes_action_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_proof_module(monkeypatch)
+    assert "action confirmation sent" in module._REQUIRED_EVIDENCE
+
+
+def test_evidence_gate_fails_without_action_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_proof_module(monkeypatch)
+    nearly_complete = sorted(module._REQUIRED_EVIDENCE - {"action confirmation sent"})
+    missing = module._missing_required_evidence(nearly_complete)
+    assert missing == {"action confirmation sent"}
+    assert not module._missing_required_evidence(sorted(module._REQUIRED_EVIDENCE))

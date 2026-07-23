@@ -1,0 +1,30 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-2 agent dependency project (workspace member).
+# Import path preserved: dispute_strategist
+# Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+
+[project]
+name = "intergrax-dispute-strategist-agent"
+version = "0.1.0"
+description = "Reusable Tier-2 agent package: dispute_strategist"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "dispute_strategist",
+  "dispute_strategist.schemas",
+  "dispute_strategist.steps",
+]
+
+[tool.setuptools.package-dir]
+"dispute_strategist" = "."
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

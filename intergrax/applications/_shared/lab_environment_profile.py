@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Protocol
 
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -12,7 +13,23 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.integrations.registry import presets
-from lab_application.host.settings import LabApplicationSettings
+
+
+class LabEnvironmentSettings(Protocol):
+    """Structural settings surface for lab environment composition."""
+
+    environment: ApiEnvironment
+    secrets_backend_slug: str | None
+    harness: bool
+    observability_grafana_stack: bool
+    otel_enabled: bool
+    requires_harness_api_key: bool
+    include_scheduler: bool
+    include_interaction_routes: bool
+    adaptive_observe_enabled: bool
+    adaptive_feature_flag_slug: str | None
+    tool_invocation_mode: object
+    enable_llm_guardrails: bool
 
 _LAB_POLICY_RULES = (
     Path(__file__).resolve().parents[3]
@@ -25,7 +42,7 @@ _LAB_POLICY_RULES = (
 
 
 def build_lab_environment_profile(
-    settings: LabApplicationSettings,
+    settings: LabEnvironmentSettings,
 ) -> ApplicationEnvironmentProfile:
     """Compose lab environment from settings flags (replaces ad-hoc wiring)."""
     if settings.environment == ApiEnvironment.PROD and settings.secrets_backend_slug:

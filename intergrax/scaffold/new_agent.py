@@ -635,6 +635,51 @@ def create_acp_pattern_agent(
     write_agent_adr_scaffold(agent_dir=target, slug=slug, force=force)
     write_agent_tracing_scaffold(target=target, slug=slug, force=force)
     write_agent_signal_scaffold(target=target, slug=slug, force=force)
+    from intergrax.applications._shared.application_runtime_graph import (
+        agent_distribution_name,
+    )
+    from intergrax.scaffold.workspace_members import ensure_workspace_member
+
+    packages = [slug, f"{slug}.steps", f"{slug}.schemas"]
+    pkg_list = ",\n".join(f'  "{p}"' for p in packages)
+    dist = agent_distribution_name(slug)
+    _write(
+        target / "pyproject.toml",
+        dedent(
+            f"""\
+            # © Artur Czarnecki. All rights reserved.
+            # Tier-2 agent dependency project (workspace member).
+            # Import path preserved: {slug}
+            # Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+
+            [project]
+            name = "{dist}"
+            version = "0.1.0"
+            description = "Reusable Tier-2 agent package: {slug}"
+            requires-python = ">=3.12,<3.13"
+            dependencies = [
+              "Intergrax-ai",
+            ]
+
+            [build-system]
+            requires = ["setuptools>=68"]
+            build-backend = "setuptools.build_meta"
+
+            [tool.setuptools]
+            packages = [
+            {pkg_list},
+            ]
+
+            [tool.setuptools.package-dir]
+            "{slug}" = "."
+
+            [tool.uv.sources]
+            Intergrax-ai = {{ workspace = true }}
+            """
+        ),
+        force=force,
+    )
+    ensure_workspace_member(root, f"agents/{slug}")
     return target
 
 
@@ -656,7 +701,7 @@ def create_agent(
         )
     effective_pattern = _normalize_pattern(pattern or "reflex")
     assert effective_pattern is not None
-    return create_acp_pattern_agent(
+    target = create_acp_pattern_agent(
         name=name,
         capabilities=capabilities,
         root=root,
@@ -665,6 +710,10 @@ def create_agent(
         minimal=minimal,
         reference=reference,
     )
+    from intergrax.scaffold.workspace_members import ensure_workspace_member
+
+    ensure_workspace_member(root, f"agents/{target.name}")
+    return target
 
 
 def build_parser() -> argparse.ArgumentParser:

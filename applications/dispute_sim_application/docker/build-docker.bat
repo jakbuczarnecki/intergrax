@@ -1,5 +1,5 @@
 @echo off
-REM Build Tier-3 application image from monorepo root (Phase N).
+REM Build Tier-3 application image via materialized runtime graph.
 setlocal EnableExtensions
 
 set "PKG=dispute_sim_application"
@@ -13,14 +13,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-docker buildx version >nul 2>&1
-if %ERRORLEVEL% equ 0 (
-  echo Building %IMAGE_TAG% ^(BuildKit^)...
-  docker buildx build -f applications/%PKG%/docker/Dockerfile --ignorefile applications/%PKG%/docker/.dockerignore -t %IMAGE_TAG% .
-) else (
-  echo BuildKit not found — using docker build
-  docker build -f applications/%PKG%/docker/Dockerfile -t %IMAGE_TAG% .
-)
+uv run python scripts/build/build_application_image.py --application %PKG% --tag %IMAGE_TAG% --context-dir applications/%PKG%/docker/runtime-context --keep-context
 if errorlevel 1 exit /b 1
 
 echo.

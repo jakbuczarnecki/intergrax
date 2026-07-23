@@ -1,51 +1,64 @@
-        # © Artur Czarnecki. All rights reserved.
-        # syntax=docker/dockerfile:1
-        #
-        # Build from monorepo root (first install may take several minutes).
-        # BuildKit: docker buildx build -f applications/lab_application/docker/Dockerfile \
-        #   --ignorefile applications/lab_application/docker/.dockerignore -t lab-application .
-        # Classic: cp applications/lab_application/docker/.dockerignore .dockerignore \
-        #   && docker build -f applications/lab_application/docker/Dockerfile -t lab-application .
-        # Dependency source of truth: applications/lab_application/pyproject.toml
-# (selects Intergrax workspace package + platform extras).
+# © Artur Czarnecki. All rights reserved.
+# syntax=docker/dockerfile:1
 #
-# Run: docker run --env-file applications/lab_application/.env -p 8090:8090 lab-application
+# Build ONLY from a materialized runtime-graph context produced by:
+#   uv run python scripts/build/build_application_image.py --application lab_application
+# Do not use the monorepo root as Docker context.
+# Compose / local builds must use applications/lab_application/docker/runtime-context/
+# prepared by scripts/build/build_application_image.py (or --keep-context).
+# Source of truth: applications/lab_application/pyproject.toml
 
-        FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
-        WORKDIR /app
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+WORKDIR /app
 
-        COPY pyproject.toml uv.lock README.md ./
-        COPY intergrax/ ./intergrax/
+COPY pyproject.toml uv.lock README.md ./
+COPY .intergrax-runtime-graph.json ./
+COPY intergrax/ ./intergrax/
 COPY applications/ ./applications/
-        COPY agents/echo/ ./agents/echo/
-COPY agents/lab/ ./agents/lab/
-COPY agents/signoff_probe/ ./agents/signoff_probe/
-COPY agents/research/ ./agents/research/
-# Application project selects Intergrax extras; do not pass --extra here.
-# Root pyproject already declares disjoint Linux/Windows uv environments.
-RUN uv sync --frozen --no-dev --project applications/lab_application
+COPY agents/ ./agents/
 
-        FROM python:3.12-slim-bookworm AS runtime
-        WORKDIR /app
+# Install the selected application graph only (agents via workspace deps).
+RUN uv sync --frozen --no-dev --project applications/lab_application \
+    && rm -rf /root/.cache/uv
 
-        ENV PYTHONUNBUFFERED=1 \
-            PYTHONDONTWRITEBYTECODE=1 \
-            PYTHONPATH=/app:/app/agents:/app/applications \
-            INTERGRAX_ENV=prod \
-            LAB_BACKEND_HOST=0.0.0.0 \
-            LAB_BACKEND_PORT=8090
+RUN PYTHONPATH=/app:/app/agents:/app/applications \
+    INTERGRAX_ENV=dev \
+    LAB_BACKEND_ENV=dev \
+    LAB_INCLUDE_MCP=false \
+    LAB_INCLUDE_SCHEDULER=false \
+    LAB_INCLUDE_INTERACTIONS=false \
+    LAB_INCLUDE_TASK_CONTROL=false \
+    INTERGRAX_SHADOW_ROOT=/tmp/intergrax_app_shadow \
+    INTERGRAX_SQLITE_DATA_DIR=/tmp/intergrax_app_sqlite \
+    .venv/bin/python -c "import lab_application; assert True"
 
-        RUN apt-get update && apt-get install -y --no-install-recommends \
-            libsqlite3-0 \
-            && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim-bookworm AS runtime
+WORKDIR /app
 
-        COPY --from=builder /app /app
-        ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app:/app/agents:/app/applications \
+    INTERGRAX_ENV=prod \
+    LAB_BACKEND_HOST=0.0.0.0 \
+    LAB_BACKEND_PORT=8090
 
-        EXPOSE 8090
-        WORKDIR /app/applications/lab_application
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-        HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-          CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/v1/lab/agents')" || exit 1
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/intergrax /app/intergrax
+COPY --from=builder /app/applications /app/applications
+COPY --from=builder /app/agents /app/agents
+COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md /app/
+COPY --from=builder /app/.intergrax-runtime-graph.json /app/.intergrax-runtime-graph.json
 
-        CMD ["uvicorn", "lab_application.host.main:app", "--host", "0.0.0.0", "--port", "8090"]
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8090
+WORKDIR /app/applications/lab_application
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')" || exit 1
+
+CMD ["uvicorn", "lab_application.host.main:app", "--host", "0.0.0.0", "--port", "8090"]

@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (SLACK-CONVERSATION-RUNTIME-1 IMPLEMENTED / LIVE_PROOF_PENDING)
+Current implementation focus: MVP-4 — Slack conversational MVP (SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_VERIFIED; next LKW-SLACK-WORKFLOW-1)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -641,16 +641,17 @@ Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
 
-**Status:** `CURRENT` — platform runtime **`IMPLEMENTED / LIVE_PROOF_PENDING`**
+**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product workflow pending
 
 ```text
-SLACK-CONVERSATION-RUNTIME-1 — IMPLEMENTED / LIVE_PROOF_PENDING
+SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
 
-Slack conversation-channel runtime code and focused tests exist.
-Real Slack live proof is still required before marking the platform blocker closed.
+Slack conversation-channel runtime verified against real Slack Socket Mode
+(DM MESSAGE → reply → single-choice → ACTION → confirmation → clean stop).
+Evidence: [proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md](proof/SLACK_CONVERSATION_RUNTIME_LIVE_PROOF.md)
 ```
 
-Remaining gate: controlled Slack live proof of Socket Mode DM + action + threaded send.
+Remaining gate: `LKW-SLACK-WORKFLOW-1` (product authorization, tenant/workspace selection, Ask).
 
 Ownership:
 
@@ -1054,7 +1055,84 @@ Slack conversational MVP implementation, design-partner packaging, user validati
 
 ---
 
-## 14. Historical references
+## 14. Proof portability
+
+Platform proof launchers and certification status for LKW as reference host.
+
+### PROOF-PORTABILITY-1A — Shared core proof runner
+
+**Status:** **Done**
+
+The Core Platform Proof uses one shared Python implementation with thin
+operating-system launchers.
+
+Delivered:
+- shared Python runner (`run-lkw-core-platform-proof.py`);
+- Windows BAT launcher;
+- Linux shell launcher;
+- macOS shell launcher;
+- launchers contain no proof workload or acceptance logic.
+
+### PROOF-PORTABILITY-1B — Shared optional OS interaction runner
+
+**Status:** **Done**
+
+The optional operating-system interaction proof uses one shared Python
+implementation with thin Windows, Linux and macOS wrappers.
+
+Delivered:
+- shared interaction client (`invoke-lkw-interaction.py`);
+- shared proof runner (`run-lkw-os-interaction-proof.py`);
+- Windows wrapper;
+- Linux wrapper;
+- macOS wrapper.
+
+### PROOF-PORTABILITY-1C — Runtime-specific certification
+
+**Status:** **Done**
+
+Application Hosting and interaction certification are available for the
+currently verified runtimes.
+
+Certification status:
+- Windows Application Hosting Proof: live-certified on native Windows through current shared runner;
+- Linux Application Hosting Proof: live-certified in Linux Docker runtime;
+- Linux full multi-phase Core Platform Proof: not separately certified by Linux Docker profile;
+- native Linux host: not separately certified;
+- macOS native runtime: implemented, not live-certified.
+
+Receipts:
+- `LKW_WINDOWS_NATIVE_CERTIFICATION.json`
+- `LKW_LINUX_DOCKER_CERTIFICATION.json`
+
+Runtime identifiers:
+- `windows_native_runtime`
+- `linux_docker_runtime`
+- `macos_native_runtime`
+
+### PROOF-PORTABILITY-1D — Cross-runtime certification completion
+
+**Status:** **Partial**
+
+The shared proof architecture is implemented, but certification coverage is
+not complete for every runtime.
+
+Current status:
+- Windows native runtime: live-certified;
+- Linux Docker runtime: live-certified for Application Hosting and optional interaction;
+- Linux native host: not separately certified;
+- Linux full multi-phase Core Platform Proof: not separately certified;
+- macOS: implemented, not live-certified.
+
+### PROOF-PORTABILITY-1D-MATRIX — Certification matrix
+
+Canonical matrix:
+- [`LKW_PLATFORM_CERTIFICATION_MATRIX.md`](../../../docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md)
+- `LKW_PLATFORM_CERTIFICATION_MATRIX.json` (`docs/public-adoption/evidence/`)
+
+---
+
+## 15. Historical references
 
 Detailed history is available in:
 
@@ -1073,13 +1151,12 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT; SLACK-CONVERSATION-RUNTIME-1 IMPLEMENTED / LIVE_PROOF_PENDING)
-Platform gate: Slack conversation runtime code exists; live proof credentials pending
-Next platform/proof task: scripts/proof/slack_conversation_channel_live_proof.py
-Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation (tests green)
+Current task: MVP-4 — Slack conversational MVP (CURRENT; SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_VERIFIED)
+Platform gate: Slack conversation runtime LIVE_VERIFIED; product workflow not started
+Next product task: LKW-SLACK-WORKFLOW-1
+Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md
-Next product task after live proof: LKW-SLACK-WORKFLOW-1
 MVP gate follows minimal packaging and real-user validation.
 ```
 
