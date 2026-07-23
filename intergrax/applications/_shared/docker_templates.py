@@ -56,19 +56,23 @@ def render_dockerfile(
         # Classic: cp applications/{pkg}/docker/.dockerignore .dockerignore \\
         #   && docker build -f applications/{pkg}/docker/Dockerfile -t {short}-application .
         # Run: docker run --env-file applications/{pkg}/.env -p {port}:{port} {short}-application
+        #
+        # Dependency source of truth: applications/{pkg}/pyproject.toml
+        # (selects Intergrax workspace package + platform extras).
 
         FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
         WORKDIR /app
 
         COPY pyproject.toml uv.lock ./
         {readme_copy}COPY intergrax/ ./intergrax/
-        COPY applications/__init__.py ./applications/__init__.py
-        COPY applications/{pkg}/ ./applications/{pkg}/
+        # Workspace member metadata (all apps) + this application's sources.
+        # .dockerignore keeps other application trees out while retaining */pyproject.toml.
+        COPY applications/ ./applications/
         {copy_agents}
 
-        # pyproject.toml already declares disjoint Linux and Windows uv environments.
-        # Do not rewrite platform markers inside Docker; resolving on Linux selects the Linux environment.
-        RUN uv sync --no-dev
+        # Application project selects Intergrax extras; do not pass --extra here.
+        # Root pyproject already declares disjoint Linux/Windows uv environments.
+        RUN uv sync --frozen --no-dev --project applications/{pkg}
 
         # Build-time start-path smoke catches missing copied packages and eager optional
         # integrations before docker compose starts the runtime container.
@@ -124,6 +128,8 @@ def render_dockerignore(*, pkg: str, short: str, agent_dirs: list[str]) -> str:
         tests/
         infra/
         applications/*
+        !applications/__init__.py
+        !applications/*/pyproject.toml
         !applications/{pkg}/
         agents/*
         {agent_exceptions}

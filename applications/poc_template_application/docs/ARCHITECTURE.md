@@ -33,3 +33,12 @@ Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 ```bash
 uv run uvicorn poc_template_application.host.main:app --port 8092
 ```
+
+## Application dependency project
+
+See [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+`ash
+uv sync --project applications/poc_template_application
+uv run --project applications/poc_template_application python -m poc_template_application.host.main
+`

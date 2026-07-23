@@ -295,7 +295,7 @@ def test_windows_interaction_proof_bat_delegates_to_shared_runner() -> None:
     text = _read(_PROOF_BAT)
     assert "run-lkw-os-interaction-proof.py" in text
     assert "--os-family windows" in text
-    assert "--extra integrations-mongodb" in text
+    assert "--project applications/local_workspace_application" in text
     assert "Invoke-WebRequest" not in text
     assert "ConvertFrom-Json" not in text
 

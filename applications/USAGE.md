@@ -8,8 +8,10 @@
 
 > **Authoring rule:** Application authors define product behavior and compose platform capabilities. They do not implement generic platform infrastructure. For ownership decisions see [`docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md).
 
-Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, and (when scaffolded) Docker.  
+Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, **dependency project** (`pyproject.toml`), and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
+
+**Dependencies:** each real application owns `applications/<app>/pyproject.toml` (Intergrax workspace package + selected extras). Sync with `uv sync --project applications/<app>`. Canon: [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
 ---
 
@@ -30,6 +32,7 @@ Primary tracker: `docs/intergrax_runtime_architecture.md` Phase V.
 
 ```text
 applications/my_lab/
+    pyproject.toml           # Application dependency project (Intergrax + extras)
     manifest.py              # ApplicationManifest + AgentBinding.mount(...)
     README.md                # Quickstart (uvicorn, curl, docker) — sole top-level doc entry
     docs/
@@ -67,7 +70,7 @@ Every Tier-3 host under `applications/<app>/` must ship:
 |-------|------|--------|
 | **Docker** | `docker/Dockerfile`, `docker-compose.yml`, `build-docker.sh` / `.bat` | Image build from repo root context |
 | **Deploy doc** | `docs/BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
-| **Dependencies** | `docs/ARCHITECTURE.md` § Dependencies | Which `pyproject.toml` extras apply (`harness-author`, `llm-*`, `dev-ci`, …) |
+| **Dependencies** | `applications/<app>/pyproject.toml` + `docs/ARCHITECTURE.md` § Dependencies | Application selects Intergrax extras; see `docs/architecture/APPLICATION_DEPENDENCY_MODEL.md` |
 | **Implementation plan** | `docs/IMPLEMENTATION_PLAN.md` | Local task queue — scaffold emits on create; links to `docs/ARCHITECTURE.md` |
 
 Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `tests/unit/applications/test_agent_app_doc_pair.py`.

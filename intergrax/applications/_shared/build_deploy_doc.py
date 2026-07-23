@@ -80,12 +80,23 @@ def render_build_deploy_doc(
 
         | Tool | Purpose |
         |------|---------|
-        | [uv](https://docs.astral.sh/uv/) | Python deps from repo root ``pyproject.toml`` / ``uv.lock`` |
+        | [uv](https://docs.astral.sh/uv/) | Workspace lock + application project ``applications/{pkg}/pyproject.toml`` |
         | Repo clone | Monorepo; **build context is always repository root** |
         | Docker (optional) | Image build via ``docker/`` |
         | Docker Buildx (recommended) | Per-app ``.dockerignore`` via ``--ignorefile`` |
 
         Tier-2 agents used by this host: **{agents_csv}** (under ``agents/`` on ``PYTHONPATH``).
+
+        **Dependency contract:** this application's ``pyproject.toml`` depends on the Intergrax
+        workspace package and selects required platform extras. See
+        [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+        Sync / run from repository root:
+
+        ```bash
+        uv sync --project applications/{pkg}
+        uv run --project applications/{pkg} python -m {pkg}.host.main
+        ```
 
         ---
 
@@ -112,13 +123,14 @@ def render_build_deploy_doc(
         From **repository root**:
 
         ```bash
-        uv run uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
+        uv sync --project applications/{pkg}
+        uv run --project applications/{pkg} uvicorn {pkg}.host.main:app --host 127.0.0.1 --port {port}
         ```
 
         Or use the module CLI (reads ``{env_prefix}BACKEND_*`` from ``.env``):
 
         ```bash
-        uv run python -m {pkg}.host.main
+        uv run --project applications/{pkg} python -m {pkg}.host.main
         ```
 
         ### Smoke check
@@ -133,8 +145,7 @@ def render_build_deploy_doc(
         ## 3. Verify before deploy
 
         ```bash
-        uv run pytest applications/{pkg}/{tests_dir} -q
-        uv run pytest tests/unit/applications/ -q -k "{short}" --ignore-glob="*" 2>/dev/null || true
+        uv run --project applications/{pkg} pytest applications/{pkg}/{tests_dir} -q
         ```
 
         Gate (repo CI):
@@ -180,8 +191,9 @@ def render_build_deploy_doc(
 
         **Notes:**
 
-        - First build can take several minutes (full ``uv sync`` inside the image).
-        - The image adjusts ``tool.uv.environments`` from ``win32`` to ``linux`` during build (dev lockfile targets Windows).
+        - First build can take several minutes (``uv sync --project applications/{pkg}`` inside the image).
+        - Application ``pyproject.toml`` is the dependency source of truth (Intergrax extras selected there).
+        - Root ``pyproject.toml`` already declares disjoint Linux/Windows uv environments; Dockerfile must not rewrite platform markers.
         - Image ``HEALTHCHECK`` probes ``{health}``.
         - Scripts use BuildKit when ``docker buildx`` is available; otherwise they fall back to ``docker build``.
         - Dockerfile runs a **build-time factory smoke** (MCP/scheduler/interactions disabled) before the runtime stage.

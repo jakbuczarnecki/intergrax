@@ -14,6 +14,8 @@ docs/
 tests/
 infra/
 applications/*
+!applications/__init__.py
+!applications/*/pyproject.toml
 !applications/research_application/
 agents/*
 !agents/research/

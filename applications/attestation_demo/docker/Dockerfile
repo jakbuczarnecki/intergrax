@@ -6,6 +6,9 @@
 #   --ignorefile applications/attestation_demo/docker/.dockerignore -t attestation-demo .
 # Classic: cp applications/attestation_demo/docker/.dockerignore .dockerignore \
 #   && docker build -f applications/attestation_demo/docker/Dockerfile -t attestation-demo .
+# Dependency source of truth: applications/attestation_demo/pyproject.toml
+# (selects Intergrax workspace package + platform extras).
+#
 # Run: docker run --env-file applications/attestation_demo/.env -p 8097:8097 attestation-demo
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
@@ -13,14 +16,13 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
-COPY applications/__init__.py ./applications/__init__.py
-COPY applications/attestation_demo/ ./applications/attestation_demo/
+COPY applications/ ./applications/
 COPY agents/ ./agents/
 COPY prompts/tools_agent_context/ ./prompts/tools_agent_context/
 COPY prompts/tools_agent_planner/ ./prompts/tools_agent_planner/
 COPY prompts/tools_agent_system/ ./prompts/tools_agent_system/
 
-RUN uv sync --no-dev
+RUN uv sync --frozen --no-dev --project applications/attestation_demo
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app

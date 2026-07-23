@@ -301,7 +301,7 @@ def test_wrapper_thinness(
     compact = " ".join(line.strip() for line in text.splitlines())
     assert f"--os-family {os_family}" in compact
     assert f"--wrapper-id {wrapper_id}" in compact
-    assert "uv run --extra integrations-mongodb python" in compact
+    assert "uv run --project applications/local_workspace_application python" in compact
     if path.suffix == ".bat":
         assert "%*" in text
         assert "EXIT_CODE" in text

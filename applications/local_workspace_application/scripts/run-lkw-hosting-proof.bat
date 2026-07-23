@@ -71,7 +71,7 @@ set "INTERGRAX_MONGODB_URI=mongodb://%LKW_MONGODB_ROOT_USERNAME%:%LKW_MONGODB_RO
 set "INTERGRAX_MONGODB_DATABASE=%LKW_MONGODB_DATABASE%"
 set "INTERGRAX_MONGODB_COLLECTION=%LKW_MONGODB_COLLECTION%"
 
-uv run --extra integrations-mongodb python "%PROOF%" %*
+uv run --project applications/local_workspace_application python "%PROOF%" %*
 set "EXIT_CODE=%ERRORLEVEL%"
 if not "%EXIT_CODE%"=="0" goto proof_fail
 

@@ -424,7 +424,7 @@ def test_file_watcher_bat_runner_composes_mongodb_overlay() -> None:
     assert "mongo_express_available=true" in text
     assert "lkw-kafka-ui" in text
     assert "kafka_ui=ok" in text
-    assert "--extra integrations-mongodb" in text
+    assert "--project applications/local_workspace_application" in text
     assert "INTERGRAX_MONGODB_URI=" in text
     assert "INTERGRAX_MONGODB_DATABASE=" in text
     assert "INTERGRAX_MONGODB_COLLECTION=" in text

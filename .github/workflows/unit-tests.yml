@@ -65,6 +65,22 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
+      - name: Workspace lock consistency
+        run: uv lock --check
+
+      - name: Application dependency projects resolve
+        run: |
+          uv export --frozen --no-dev --project applications/lab_application --no-emit-workspace | tee /tmp/lab-export.txt
+          uv export --frozen --no-dev --project applications/local_workspace_application --no-emit-workspace | tee /tmp/lkw-export.txt
+          grep -qi 'slack-sdk' /tmp/lkw-export.txt
+          ! grep -qi 'slack-sdk' /tmp/lab-export.txt
+          uv sync --frozen --project applications/lab_application
+          ! uv pip show slack-sdk
+          uv sync --frozen --project applications/local_workspace_application
+          uv pip show slack-sdk
+          # Restore platform CI environment after application project syncs.
+          uv sync --extra dev-ci --frozen
+
       - name: CI smoke unit tests
         run: uv run python scripts/ci/run_ci_smoke_pytest.py
 

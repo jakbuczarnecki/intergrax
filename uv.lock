@@ -11,6 +11,20 @@ supported-markers = [
     "sys_platform == 'win32'",
 ]
 
+[manifest]
+members = [
+    "intergrax-ai",
+    "intergrax-assistant-application",
+    "intergrax-attestation-demo",
+    "intergrax-dispute-sim-application",
+    "intergrax-governed-contractor-application",
+    "intergrax-lab-application",
+    "intergrax-legal-application",
+    "intergrax-local-workspace-application",
+    "intergrax-poc-template-application",
+    "intergrax-research-application",
+]
+
 [[package]]
 name = "accelerate"
 version = "1.14.0"
@@ -1906,6 +1920,117 @@ requires-dist = [
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
 provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+
+[[package]]
+name = "intergrax-assistant-application"
+version = "0.1.0"
+source = { virtual = "applications/intergrax_assistant_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-attestation-demo"
+version = "0.1.0"
+source = { virtual = "applications/attestation_demo" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-dispute-sim-application"
+version = "0.1.0"
+source = { virtual = "applications/dispute_sim_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-governed-contractor-application"
+version = "0.1.0"
+source = { virtual = "applications/governed_contractor_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-lab-application"
+version = "0.1.0"
+source = { virtual = "applications/lab_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-legal-application"
+version = "0.1.0"
+source = { virtual = "applications/legal_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-local-workspace-application"
+version = "0.1.0"
+source = { virtual = "applications/local_workspace_application" }
+dependencies = [
+    { name = "intergrax-ai", extra = ["integrations-kafka", "integrations-mongodb", "integrations-sentry", "integrations-slack"], marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.dev-dependencies]
+certification = [
+    { name = "pytest", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pytest-asyncio", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", extras = ["integrations-slack", "integrations-mongodb", "integrations-sentry", "integrations-kafka"], editable = "." }]
+
+[package.metadata.requires-dev]
+certification = [
+    { name = "pytest", specifier = ">=8.4,<9" },
+    { name = "pytest-asyncio", specifier = ">=0.23,<0.24" },
+]
+
+[[package]]
+name = "intergrax-poc-template-application"
+version = "0.1.0"
+source = { virtual = "applications/poc_template_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
+
+[[package]]
+name = "intergrax-research-application"
+version = "0.1.0"
+source = { virtual = "applications/research_application" }
+dependencies = [
+    { name = "intergrax-ai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "intergrax-ai", editable = "." }]
 
 [[package]]
 name = "invoke"

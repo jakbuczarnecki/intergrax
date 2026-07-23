@@ -31,6 +31,10 @@ from intergrax.scaffold.application_names import (
     pascal_case,
     short_id,
 )
+from intergrax.scaffold.application_pyproject import (
+    platform_extras_for_profile,
+    render_application_pyproject,
+)
 from intergrax.scaffold.package_emit import write_scaffold_package_json
 
 _PROFILES = ("lab", "product")
@@ -955,6 +959,15 @@ def _create_lab_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", _manifest_py(names, specs), force=force)
     _write(target / "README.md", _readme(names, specs), force=force)
+    _write(
+        target / "pyproject.toml",
+        render_application_pyproject(
+            pkg=names.pkg,
+            display=names.display,
+            platform_extras=platform_extras_for_profile(profile, minimal=minimal),
+        ),
+        force=force,
+    )
     docs_dir = target / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
     _write(
@@ -1083,6 +1096,15 @@ def _create_product_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", product_tpl.manifest_py(names, specs), force=force)
     _write(target / "README.md", product_tpl.readme(names, specs), force=force)
+    _write(
+        target / "pyproject.toml",
+        render_application_pyproject(
+            pkg=names.pkg,
+            display=names.display,
+            platform_extras=platform_extras_for_profile(profile),
+        ),
+        force=force,
+    )
     docs_dir = target / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
     _write(

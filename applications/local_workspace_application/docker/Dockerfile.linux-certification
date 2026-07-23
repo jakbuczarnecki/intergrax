@@ -40,15 +40,15 @@ RUN apt-get update \
 
 COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
-COPY applications/__init__.py ./applications/__init__.py
-COPY applications/local_workspace_application/ ./applications/local_workspace_application/
+COPY applications/ ./applications/
 COPY agents/local_indexer/ ./agents/local_indexer/
 COPY agents/local_search/ ./agents/local_search/
 COPY agents/local_synthesizer/ ./agents/local_synthesizer/
 
-# Project + MongoDB provider + minimal CI pytest extras (no Docker CLI).
+# Application project selects Intergrax extras (incl. MongoDB).
+# Certification group adds pytest for in-image proof runners.
 # Normalize POSIX shell scripts to LF (Windows checkouts may use CRLF).
-RUN uv sync --extra integrations-mongodb --extra dev-ci \
+RUN uv sync --frozen --no-dev --project applications/local_workspace_application --group certification \
     && find applications/local_workspace_application/scripts -name '*.sh' -print0 \
         | xargs -0 sed -i 's/\r$//' \
     && chown -R lkwcert:lkwcert /app

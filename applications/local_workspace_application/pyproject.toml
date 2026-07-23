@@ -1,0 +1,26 @@
+# © Artur Czarnecki. All rights reserved.
+# Tier-3 application dependency project (workspace member).
+# Application source remains importable via PYTHONPATH=applications/.
+# Canonical platform doc: docs/architecture/APPLICATION_DEPENDENCY_MODEL.md
+
+[project]
+name = "intergrax-local-workspace-application"
+version = "0.1.0"
+description = "Local Knowledge Workspace (LKW) Tier-3 application"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "Intergrax-ai[integrations-slack,integrations-mongodb,integrations-sentry,integrations-kafka]",
+]
+
+[dependency-groups]
+# Used by Linux certification image / local application test runs — not production runtime.
+certification = [
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=0.23,<0.24",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+Intergrax-ai = { workspace = true }

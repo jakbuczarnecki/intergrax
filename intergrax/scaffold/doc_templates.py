@@ -288,8 +288,10 @@ def render_application_architecture_doc(
 
         ## Dependencies (pyproject.toml)
 
-        - Core `Intergrax-ai` install from repository root (`uv sync`)
-        - Optional: `[harness-author]` for external repos; `[dev-ci]` for gate tests
+        - Application project: ``applications/<pkg>/pyproject.toml`` depends on workspace ``Intergrax-ai``
+          (+ profile-selected platform extras). Sync with ``uv sync --project applications/<pkg>``.
+        - Shared workspace lock: repository-root ``uv.lock``.
+        - Canon: ``docs/architecture/APPLICATION_DEPENDENCY_MODEL.md``
         - LLM provider env vars per `.env.example` / `BUILD_AND_DEPLOY.md`
 
         ## Docs

@@ -10,7 +10,7 @@ Tier-3 application package: `applications/local_workspace_application/`. This do
 
 | Tool | Purpose |
 |------|---------|
-| `uv` | Python deps from repo root `pyproject.toml` / `uv.lock` |
+| `uv` | Workspace lock + application project `applications/local_workspace_application/pyproject.toml` |
 | Repo clone | Monorepo; build context is always repository root |
 | Docker | Local stack and image build |
 | Docker Compose | LKW backend + Qdrant + Ollama + optional observability backends |
@@ -490,3 +490,15 @@ To verify no duplicate export for the same runtime event, group persisted record
 
 
 *Generated for Intergrax Tier-3 scaffold (profile: product).*
+
+
+## Application dependency project
+
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+`ash
+uv sync --project applications/local_workspace_application
+uv run --project applications/local_workspace_application python -m local_workspace_application.host.main
+`
+
+The application pyproject.toml selects Intergrax platform extras. Docker uses the same project (uv sync --frozen --no-dev --project applications/local_workspace_application); do not pass root --extra flags in the Dockerfile.

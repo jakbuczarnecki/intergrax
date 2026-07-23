@@ -6,20 +6,21 @@
 #   --ignorefile applications/poc_template_application/docker/.dockerignore -t poc_template-application .
 # Classic: cp applications/poc_template_application/docker/.dockerignore .dockerignore \
 #   && docker build -f applications/poc_template_application/docker/Dockerfile -t poc_template-application .
+# Dependency source of truth: applications/poc_template_application/pyproject.toml
+# (selects Intergrax workspace package + platform extras).
+#
 # Run: docker run --env-file applications/poc_template_application/.env -p 8095:8095 poc_template-application
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
-COPY applications/__init__.py ./applications/__init__.py
-COPY applications/poc_template_application/ ./applications/poc_template_application/
+COPY applications/ ./applications/
 COPY agents/echo/ ./agents/echo/
-
-# Dev lock targets win32; resolve dependencies for Linux inside the image.
-RUN sed -i "s/sys_platform == 'win32'/sys_platform == 'linux'/" pyproject.toml \
-    && uv sync --no-dev
+# Application project selects Intergrax extras; do not pass --extra here.
+# Root pyproject already declares disjoint Linux/Windows uv environments.
+RUN uv sync --frozen --no-dev --project applications/poc_template_application
 
 FROM python:3.12-slim-bookworm AS runtime
 WORKDIR /app

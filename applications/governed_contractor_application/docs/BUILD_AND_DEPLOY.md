@@ -13,7 +13,7 @@ Tier-3 application package: `applications/governed_contractor_application/`. Thi
 
 | Tool | Purpose |
 |------|---------|
-| [uv](https://docs.astral.sh/uv/) | Python deps from repo root `pyproject.toml` / `uv.lock` |
+| [uv](https://docs.astral.sh/uv/) | Workspace lock + application project `applications/governed_contractor_application/pyproject.toml` |
 | Repo clone | Monorepo; **build context is always repository root** |
 | Docker (optional) | Image build via `docker/` |
 | Docker Buildx (recommended) | Per-app `.dockerignore` via `--ignorefile` |
@@ -189,3 +189,15 @@ applications/governed_contractor_application/scripts/build-local-docker.sh
 ---
 
 *Tier-3 product scaffold runbook — GEC vertical.*
+
+
+## Application dependency project
+
+Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+
+`ash
+uv sync --project applications/governed_contractor_application
+uv run --project applications/governed_contractor_application python -m governed_contractor_application.host.main
+`
+
+The application pyproject.toml selects Intergrax platform extras. Docker uses the same project (uv sync --frozen --no-dev --project applications/governed_contractor_application); do not pass root --extra flags in the Dockerfile.
