@@ -4,10 +4,15 @@
 task ID: SLACK-CONVERSATION-RUNTIME-1-LIVE-PROOF
 date/time: 2026-07-23 (UTC)
 branch: development
-commit SHA: (recorded at certification commit)
+verified runtime commit: f6daddf7bdb32beb848266775011940c7c471f86
+certification commit: 30e0341c80a32c9e0d1c5d7adde046ad99d8b6c4
 proof command: uv run --project applications/local_workspace_application python scripts/proof/slack_conversation_channel_live_proof.py
 configuration source: LKW .env
 ```
+
+The live Slack interaction was executed against the verified runtime commit.
+The certification commit records the sanitized evidence, strengthens the
+required-evidence gate, and updates canonical status documents.
 
 ## Secrets and private data
 
