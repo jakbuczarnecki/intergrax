@@ -3,10 +3,11 @@
 ```text
 Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_VERIFIED
 Next slice: MVP-4 — Slack conversational MVP
-  LKW-SLACK-WORKFLOW-1A — IMPLEMENTED / READY_FOR_LIVE_PROOF
+  LKW-SLACK-WORKFLOW-1A — IMPLEMENTED / READY_FOR_OPERATOR PREFLIGHT
     approved DM → configured active workspace → Ask HTTP → answer
-  Next task: LKW-SLACK-WORKFLOW-1B
-    workspace listing + selection + pending question + ACTION resume
+  Sequence:
+    1A workflow code → configuration closure → operator preflight → real live proof → 1B
+  Next task: LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT
 ```
 
 **Platform runtime status:**
@@ -26,10 +27,13 @@ verified confirmation
 
 Platform transport blocker for MVP-4 product work is closed.
 
-LKW-SLACK-WORKFLOW-1A — IMPLEMENTED / READY_FOR_LIVE_PROOF
+LKW-SLACK-WORKFLOW-1A — IMPLEMENTED / READY_FOR_OPERATOR PREFLIGHT
 (approved DM → configured tenant/active workspace → product dedupe → Ask HTTP → threaded safe answer)
-Live Slack+Ask evidence not recorded in this commit (not LIVE_VERIFIED).
-Proof checklist:
+Live Slack+Ask evidence not recorded (not LIVE_VERIFIED).
+Configuration + operator preflight required before live proof.
+Preflight:
+uv run python applications/local_workspace_application/scripts/run-lkw-slack-ask-configuration-preflight.py
+Proof checklist (after PASS preflight):
 uv run python applications/local_workspace_application/scripts/run-lkw-slack-ask-workflow-proof.py
 
 Ownership:
@@ -49,7 +53,10 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → answer/citation rendering (1A)
 → workspace selection / pending question / ACTION resume (1B — not in this slice)
 
-Next exact task: LKW-SLACK-WORKFLOW-1B
+Sequence:
+1A workflow code → configuration closure → operator preflight → real live proof → 1B
+
+Next exact task: LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT
 Live transport proof command:
 uv sync --extra integrations-slack
 uv run python scripts/proof/slack_conversation_channel_live_proof.py

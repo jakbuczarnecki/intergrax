@@ -2,7 +2,12 @@
 
 """Proof harness checklist for LKW-SLACK-WORKFLOW-1A (not LIVE_VERIFIED by default).
 
-Usage (after configuring real Slack + LKW Ask):
+Before live proof, run configuration preflight:
+
+  uv run python \\
+    applications/local_workspace_application/scripts/run-lkw-slack-ask-configuration-preflight.py
+
+Usage (after configuring real Slack + LKW Ask and PASS preflight):
 
   uv run python applications/local_workspace_application/scripts/run-lkw-slack-ask-workflow-proof.py
 

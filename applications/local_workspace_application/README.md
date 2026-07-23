@@ -259,6 +259,80 @@ All four platform/application keys plus `lkw_proof_summary.v1` are present in a 
 - **Read allowlist:** set `INTERGRAX_ALLOWED_READ_ROOTS` to limit which paths LKW may read.
 - This is a **local product proof / developer path**, not a production certification.
 
+## Running the LKW Slack Ask companion
+
+Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack DM → configured tenant/workspace → Ask HTTP → threaded answer. Dynamic workspace selection arrives in **1B**.
+
+### Configuration architecture
+
+| Prefix | Role |
+|--------|------|
+| `INTERGRAX_SLACK_*` | Platform Slack **transport** (Socket Mode + Web API tokens) |
+| `LOCAL_WORKSPACE_SLACK_*` | LKW **product** authorization and Ask routing |
+
+Both blocks are documented in `applications/local_workspace_application/.env.example`.
+
+### Where to get values
+
+| Variable | Source / format |
+|----------|-----------------|
+| `LOCAL_WORKSPACE_SLACK_APPROVED_TEAM_ID` | Slack workspace/team ID (`T…`). Not the workspace display name. Read from a real Slack event or Slack workspace metadata. |
+| `LOCAL_WORKSPACE_SLACK_APPROVED_USER_ID` | Slack human user ID (`U…`). Not email, display name, bot user ID, or channel ID. |
+| `LOCAL_WORKSPACE_SLACK_TENANT_ID` | Same tenant ID used as `X-Tenant-Id` on Managed Workspace HTTP. Must already exist — do not invent it. |
+| `LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` | Workspace ID returned by Managed Workspace API for that tenant. Must already have synchronized/indexed sources. |
+| `LOCAL_WORKSPACE_SLACK_ASK_BASE_URL` | Base URL of the running LKW host. Canonical local: `http://127.0.0.1:8020/`. |
+
+### Canonical start
+
+```bash
+cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
+# Fill INTERGRAX_SLACK_* and LOCAL_WORKSPACE_SLACK_* (never commit .env)
+uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
+```
+
+### Operator sequence
+
+1. Copy `.env.example` to `.env`
+2. Fill platform Slack tokens (`INTERGRAX_SLACK_*`)
+3. Create or identify an LKW tenant and workspace
+4. Synchronize at least one source
+5. Fill `LOCAL_WORKSPACE_SLACK_*` values
+6. Run configuration preflight (below)
+7. Start LKW host
+8. Run Ask HTTP preflight (`--question …`)
+9. Send approved Slack DM
+
+Configuration preflight (no secrets printed):
+
+```bash
+uv run python \
+  applications/local_workspace_application/scripts/run-lkw-slack-ask-configuration-preflight.py
+
+uv run python \
+  applications/local_workspace_application/scripts/run-lkw-slack-ask-configuration-preflight.py \
+  --question "What is the LKW live proof verification code?"
+```
+
+Expected outcomes: `PRECHECK=PASS` | `PARTIAL` | `BLOCKED` (exit `0` / `1` / `2`).
+
+Roadmap sequence:
+
+```text
+1A workflow code
+→ configuration closure
+→ operator preflight
+→ real live proof
+→ 1B
+```
+
+Next task after this closure: `LKW-SLACK-WORKFLOW-1A-OPERATOR-PREFLIGHT`.
+
+### Security
+
+- Never commit `.env`.
+- Do not paste tokens, API keys, or Ask answers into logs or proof docs.
+- Do not record `source_path` or excerpts in proof documentation.
+- Slack replies may include safe `file_name` labels only.
 
 ## MCP
 

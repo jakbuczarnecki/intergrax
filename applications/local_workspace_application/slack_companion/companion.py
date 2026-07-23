@@ -40,6 +40,19 @@ logger = logging.getLogger(__name__)
 
 COMPONENT_NAME = "slack_companion"
 
+# Full env names for LKW Slack Ask companion (LOCAL_WORKSPACE_ + settings keys).
+# Shared by operator preflight and .env.example contract tests — not secrets.
+SLACK_COMPANION_PRODUCT_ENV_KEYS: tuple[str, ...] = (
+    "LOCAL_WORKSPACE_SLACK_COMPANION_ENABLED",
+    "LOCAL_WORKSPACE_SLACK_APPROVED_TEAM_ID",
+    "LOCAL_WORKSPACE_SLACK_APPROVED_USER_ID",
+    "LOCAL_WORKSPACE_SLACK_TENANT_ID",
+    "LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID",
+    "LOCAL_WORKSPACE_SLACK_ASK_BASE_URL",
+    "LOCAL_WORKSPACE_SLACK_ASK_API_KEY",
+    "LOCAL_WORKSPACE_SLACK_ASK_TIMEOUT_SECONDS",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class SlackCompanionRuntimeConfig:
