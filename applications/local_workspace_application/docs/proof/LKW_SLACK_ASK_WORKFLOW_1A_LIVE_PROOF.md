@@ -9,15 +9,15 @@ Host/container: intergrax_lkw-local_workspace-1 (image local_workspace-applicati
 Anonymized team ID: team:T0B…HU7#d7c3d6395d
 Anonymized human user ID: user:U0B…MQ9#8f0e4a35b0
 Anonymized event ID: evt:Ev0…T1P#336d0ccb5f
-Anonymized channel/thread ID: NOT_READ (bot token lacks im:read; outbound thread_ts uses inbound message ts per platform contract)
+Anonymized channel/thread ID: OPERATOR_CONFIRMED (bot token lacks im:read; API history not polled)
 Authorization result: PASS (approved team/user; dedupe claim + Ask executed for configured tenant/workspace)
 Dedupe result: first claim created; status=completed; ask_run_id bound
-Acknowledgement count: 1 (workflow sends ack before Ask; no acknowledgement_failed log in window)
+Acknowledgement count: 1 (operator confirmed ack text in thread; no acknowledgement_failed log)
 Ask call count: 1 (exact live question)
 Ask run_id: run_8f6824ee9dcd41a1b07e7ba1222d5b14
 Ask typed status: completed
-Final reply count: 1 (dedupe mark_completed only after successful final send)
-Same-thread result: PASS by platform mapping (root DM thread_id = message ts → chat.postMessage thread_ts); Slack history UI not re-read (missing im:read)
+Final reply count: 1 (operator confirmed final reply + safe Sources label; dedupe mark_completed after send)
+Same-thread result: PASS — operator confirmed ack + final under the same inbound DM thread; platform mapping (thread_id = message ts → chat.postMessage thread_ts)
 Answer correctness: PASS (persisted answer matches expected verification code from safe source)
 Citation count: 1
 Safe file names: lkw_persistence_proof_20260720143245.txt
@@ -33,6 +33,7 @@ SUMMARY=PARTIAL
 ## Notes
 
 - Happy-path Slack Ask workflow executed against a real approved DM after Socket Mode companion start.
+- Operator visual confirmation (2026-07-24): acknowledgement, grounded final answer, and safe source label `lkw_persistence_proof_20260720143245.txt` in the same Slack thread.
 - Image rebuild was required: running container image predated Slack companion settings/code.
 - Local compose `.env` Qdrant/Ollama hosts were pointed at compose DNS for container networking (gitignored; not committed).
 - Roadmap remains without `LIVE_VERIFIED` because live event redelivery was not executed.
