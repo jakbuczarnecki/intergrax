@@ -539,22 +539,33 @@ Accepted media types; file-size limits; batch limits; decompression/archive limi
 
 **Status:** binding process gate from `PLATFORM-CAPABILITY-AUDIT-GATE-1`. Governing rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
 
-Every `1B-*` and `1C` implementation task must begin with an evidence-based platform capability audit.
+Every `1B-*` and `1C` implementation scope must be preceded by an evidence-based platform capability audit performed by the architecture/review workflow.
 
 ```text
-Before coding, produce a capability audit matrix.
+Before issuing implementation scope, the architecture/review workflow
+must audit the capabilities actually required by the selected implementation path.
 ```
 
-Required matrix columns:
+```text
+The complete matrix is not automatically assigned to Cursor
+and is not required to be completed in one audit pass.
+```
+
+```text
+The matrix may be completed progressively across bounded architecture reviews.
+Each review answers one concrete architectural question.
+```
+
+Capability audit matrix (general evidence model):
 
 | Required capability | Existing candidate | Contract | Implementation | Provider | Host wiring | Tests | Maturity | Decision |
 | ------------------- | ------------------ | -------- | -------------- | -------- | ----------- | ----- | -------- | -------- |
 
-Every row requires repository evidence (contract, implementation, provider, wiring, tests, consumers). Documentation and target architecture are not implementation proof.
+Every completed row requires repository evidence (contract, implementation, provider, wiring, tests, consumers). Documentation and target architecture are not implementation proof.
 
 ### Mandatory audit targets for `1B-1`
 
-List these as mandatory audit targets, **not** implementation decisions:
+List these as mandatory audit targets for the architecture/review phase, **not** implementation decisions and **not** a single Cursor instruction:
 
 ```text
 durable LKW Knowledge Input persistence
@@ -573,7 +584,7 @@ tenant/workspace isolation
 host composition and lifecycle
 ```
 
-Future capability families that are **not** part of `1B-1` implementation but must be audited before their slices:
+Future capability families that are **not** part of `1B-1` implementation and must **not** be pre-audited merely because later slices may need them:
 
 ```text
 Blob/Object Store
@@ -584,11 +595,11 @@ source candidate providers
 channel notification delivery
 ```
 
-Do not classify the families above as implemented in this documentation gate.
+Audit those families only when their implementation path is active. Do not classify the families above as implemented in this documentation gate.
 
 ### Mandatory implementation outcomes
 
-The implementation task may continue only when every required `1B-1` row is assigned one of:
+The implementation task may continue only when every required `1B-1` row for the selected path is assigned one of:
 
 ```text
 REUSE_AS_IS
@@ -602,7 +613,7 @@ Any row assigned `ARCHITECTURE_DECISION_REQUIRED` blocks coding.
 
 ### Candidates to audit — not automatically approved
 
-The following names are **CANDIDATES TO AUDIT** / **NOT AUTOMATICALLY APPROVED FOR REUSE**. Their sufficiency must not be claimed without the focused `1B-1` audit:
+The following names are **CANDIDATES TO AUDIT** / **NOT AUTOMATICALLY APPROVED FOR REUSE**. Their sufficiency must not be claimed without the focused `1B-1` architecture-led audit:
 
 ```text
 ManagedWorkspaceRepository
@@ -619,11 +630,25 @@ existing LKW source-sync runtime
 existing LKW background-ingest proof
 ```
 
+```text
+Do not pass the entire candidate list to Cursor as one audit instruction.
+```
+
 ### Process split under `1B-1`
 
 ```text
 LKW-WORKSPACE-CONTENTS-1B-1-A
-→ audit existing platform and LKW capabilities required by durable Knowledge Intake
+→ architecture-led bounded audit phase
+→ not a Cursor implementation task
+→ may contain several small reviews; each review must have:
+  - one question;
+  - a closed file/mechanism set;
+  - one decision;
+  - no implementation
+
+LKW-WORKSPACE-CONTENTS-1B-1-A1
+→ architecture review of the existing LKW source-sync execution path
+→ current narrow architecture/review activity (outside Cursor)
 
 LKW-WORKSPACE-CONTENTS-1B-1-B
 → implement the frozen result of the accepted capability audit
@@ -631,6 +656,37 @@ LKW-WORKSPACE-CONTENTS-1B-1-B
 ```
 
 This is a process split under `1B-1`, not a product-roadmap renumbering. Do not reopen accepted `1B-0` domain decisions.
+
+### Cursor instruction after audit
+
+After architecture/review acceptance, the precise Cursor instruction must follow this shape:
+
+```text
+Accepted mechanisms to reuse:
+- exact names
+
+Approved domain changes:
+- exact models/services
+
+Approved platform improvement:
+- zero or one
+
+Files in scope:
+- exact paths
+
+Tests:
+- exact paths / behaviors
+
+Verified assumptions:
+- explicit list
+
+STOP:
+- only when an explicit assumption is false
+  or scope expansion is required
+```
+
+Cursor checks only the listed assumptions in the named files before editing.
+Cursor must not reopen architecture discovery during implementation.
 
 ### Canonical audit report template
 
@@ -641,6 +697,7 @@ AUDIT_READY_FOR_REVIEW | BLOCKED
 Task:
 - product slice:
 - audit phase:
+- architecture question:
 
 Required product capability:
 - user/product flow:
@@ -687,6 +744,7 @@ Recommended implementation scope:
 - platform files:
 - permitted platform improvement:
 - explicit exclusions:
+- verified assumptions for Cursor:
 
 Final audit verdict:
 - READY_FOR_IMPLEMENTATION_SCOPE
@@ -695,6 +753,7 @@ Final audit verdict:
 ```
 
 The audit report must cite exact repository files and tests.
+The report is produced by the architecture/review workflow, not by an open-ended Cursor implementation task.
 
 ### Explicitly rejected audit/implementation shortcuts
 
@@ -707,10 +766,13 @@ a proof exists, therefore the mechanism is production-ready;
 LKW needs it, therefore it belongs in LKW;
 another application might use it, therefore it belongs in platform;
 Cursor may select platform vs domain ownership during implementation;
+Cursor owns broad platform capability discovery;
 missing platform mechanism may be replaced with temporary LKW infrastructure;
 implementation may continue while the architecture decision is unresolved;
 one task may absorb multiple newly discovered platform gaps;
-queue task status may automatically replace LKW Ingestion Operation state.
+queue task status may automatically replace LKW Ingestion Operation state;
+one audit must inspect every future capability family in advance;
+the complete candidate list is one Cursor audit instruction.
 ```
 
 ---
@@ -723,7 +785,8 @@ queue task status may automatically replace LKW Ingestion Operation state.
 | `LKW-WORKSPACE-CONTENTS-1B-0` | `DOCUMENTED / READY_FOR_REVIEW` | This document — freeze channel-neutral Knowledge Intake and async ingestion contract. |
 | `PLATFORM-CAPABILITY-AUDIT-GATE-1` | `DOCUMENTED / READY_FOR_REVIEW` | Mandatory platform capability audit and architecture stop rule (global + LKW). |
 | `LKW-WORKSPACE-CONTENTS-1B-1` | process-split | Durable Knowledge Intake and Ingestion Operation foundation (product concern unchanged). |
-| `LKW-WORKSPACE-CONTENTS-1B-1-A` | `NEXT AFTER GATE ACCEPTANCE` | Audit existing platform and LKW capabilities required by durable Knowledge Intake. |
+| `LKW-WORKSPACE-CONTENTS-1B-1-A` | architecture-led audit phase | Architecture-led bounded audit; not a Cursor implementation task. |
+| `LKW-WORKSPACE-CONTENTS-1B-1-A1` | `NEXT` | Architecture review of the existing LKW source-sync execution path (outside Cursor). |
 | `LKW-WORKSPACE-CONTENTS-1B-1-B` | `BLOCKED UNTIL AUDIT ACCEPTED` | Implement the frozen result of the accepted capability audit. |
 | `LKW-WORKSPACE-CONTENTS-1B-2` | planned | Managed file upload capability |
 | `LKW-WORKSPACE-CONTENTS-1B-3` | planned | Slack attachment and multi-attachment adapter |

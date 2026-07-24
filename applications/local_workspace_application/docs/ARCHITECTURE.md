@@ -381,6 +381,18 @@ Target platform architecture is not implementation evidence.
 
 A documentation claim, roadmap item, interface name or target architecture is not evidence that a mechanism is implemented and usable.
 
+```text
+The platform capability audit is performed by the architecture/review workflow
+before an implementation instruction is issued.
+
+Cursor receives the accepted result as a narrow implementation contract.
+```
+
+```text
+Cursor may verify only explicitly listed assumptions in the named scope.
+It must not reopen architecture discovery during implementation.
+```
+
 Governing global rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
 
 Deployment-neutral rules in this document remain unchanged: local or hosted LKW; endpoint appropriate to deployment; storage selected through configuration; local, remote, cloud and hybrid providers; no local/cloud branches in domain logic.
@@ -389,7 +401,7 @@ Deployment-neutral rules in this document remain unchanged: local or hosted LKW;
 
 ```text
 LKW needs durable background execution
-→ audit TaskQueue / MessageBus / WorkerRuntime
+→ architecture/review audits TaskQueue / MessageBus / WorkerRuntime
 → reuse existing capability when sufficient
 → improve shared capability only for a verified missing requirement
 → LKW registers product-specific ingestion handler

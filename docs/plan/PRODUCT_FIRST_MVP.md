@@ -389,30 +389,159 @@ No new platform-like or infrastructure-like mechanism may be implemented
 until the current Intergrax capability state has been audited with repository evidence.
 ```
 
-Every substantial implementation task must begin with an evidence-based audit of existing platform capabilities:
+Every implementation scope must be preceded by an evidence-based platform capability audit performed by the architecture/review workflow.
 
 ```text
-Before implementing any mechanism:
+The audit is a scope-preparation activity, not an open-ended implementation-agent task.
+```
 
-1. identify the required capability;
+Canonical workflow:
+
+```text
+product need
+→ architecture-led bounded repository audit
+→ architecture decision
+→ accepted implementation scope
+→ precise Cursor instruction
+→ bounded Cursor preflight
+→ implementation
+→ independent review
+```
+
+Canonical responsibility boundary:
+
+```text
+Architecture/review:
+audit → classify → decide → freeze scope
+
+Implementation agent:
+verify explicit assumptions → implement frozen scope → stop on contradiction
+```
+
+#### Architecture/review workflow owns
+
+```text
+repository exploration
+capability discovery
+contract / implementation / provider / wiring / test inspection
+maturity classification
+platform vs domain classification
+architecture decisions
+selection of reusable mechanisms
+definition of one bounded platform improvement
+exact implementation scope
+```
+
+This workflow may use GitHub inspection tools and architecture discussion.
+It is not delegated as an open-ended task to Cursor.
+
+#### Cursor / implementation agent owns
+
+```text
+implementing the accepted scope
+changing listed files
+adding listed tests
+running listed verification
+reporting deviations
+stopping when an explicit assumption is false
+```
+
+Cursor must not:
+
+```text
+audit the whole platform
+search for alternative architectures
+classify broad platform ownership independently
+inspect unrelated providers
+create a new framework
+expand scope after discovering another gap
+perform Phase A and Phase B automatically
+```
+
+Architecture/review audit steps before scope is issued:
+
+```text
+1. identify the required capability for the active product question;
 2. inspect whether Intergrax already implements it;
 3. verify the implementation through code, provider, wiring and tests;
 4. classify its actual maturity;
 5. decide whether to reuse it, improve it, or keep the behavior in the product domain;
-6. stop before coding when the classification or architecture decision is not already frozen.
+6. freeze exact implementation scope — or STOP when classification is unresolved.
 ```
 
-The audit must happen:
+The architecture/review audit must happen:
 
 - before preparing the final implementation scope;
 - before adding a new abstraction;
 - before adding a new provider;
 - before adding an application-owned queue, worker, event mechanism, persistence layer or integration framework;
-- whenever implementation discovers a capability not covered by the frozen task contract.
+- whenever a listed Cursor assumption proves false or a second material platform gap appears.
 
 ```text
 A documentation claim, roadmap item, interface name or target architecture
 is not evidence that a mechanism is implemented and usable.
+```
+
+### Bounded audit rule
+
+Architecture audits themselves must remain bounded:
+
+```text
+one active product question
+one closed set of candidate files/mechanisms
+at most one material platform capability under examination
+one explicit decision or blocker
+```
+
+The audit may expand only through a separate architecture step.
+
+Do not require one audit to inspect every potentially relevant platform capability in advance.
+
+### Progressive audit rule
+
+```text
+Audit only the mechanisms required by the active implementation path.
+
+Do not pre-audit unrelated future capabilities merely because
+they may be needed by later roadmap slices.
+```
+
+Example:
+
+```text
+current slice needs durable task execution
+→ audit the existing task execution path
+
+do not simultaneously audit:
+Blob Store
+URL fetching
+Slack notifications
+all queue vendors
+all application hosts
+```
+
+### Cursor preflight rule
+
+```text
+A precise implementation instruction may contain explicit verified assumptions.
+
+Cursor checks only those assumptions in the named files before editing.
+```
+
+Example:
+
+```text
+Verified assumption:
+DocumentStoreTaskQueue provides tenant-scoped idempotent enqueue.
+
+Cursor preflight:
+confirm the named contract/method still exists.
+
+If false:
+STOP and report the contradiction.
+
+If true:
+continue without reopening the architecture audit.
 ```
 
 ### What counts as a capability
@@ -616,7 +745,8 @@ Used when the active product workflow works safely without the improvement.
 
 ```text
 When a required mechanism is absent, incomplete beyond the frozen scope,
-or architecturally ambiguous, implementation must stop.
+or architecturally ambiguous, implementation scope must not be issued —
+and an already-issued implementation must stop.
 ```
 
 Required status:
@@ -625,7 +755,56 @@ Required status:
 BLOCKED / ARCHITECTURE_DECISION_REQUIRED
 ```
 
-The implementer must not:
+There are two STOP owners.
+
+#### Architecture audit STOP
+
+Used when the architecture/review workflow finds:
+
+- missing capability;
+- unclear platform/domain ownership;
+- multiple plausible designs;
+- changed durability guarantees;
+- need for a new provider family;
+- more than one material platform gap.
+
+Result:
+
+```text
+architecture discussion required
+implementation scope not issued
+```
+
+Architecture/review must not:
+
+- leave ownership ambiguous and still issue Cursor implementation scope;
+- approve more than one material platform improvement in one scope;
+- treat documentation or target architecture as implementation evidence.
+
+#### Cursor implementation STOP
+
+Used only when:
+
+- an explicit assumption from the instruction is false;
+- the requested file or contract no longer exists;
+- implementation would exceed the listed scope;
+- a second material platform gap appears;
+- the accepted design cannot be implemented without changing architecture.
+
+Cursor returns:
+
+```text
+BLOCKED
+explicit assumption:
+evidence:
+exact contradiction:
+implementation performed:
+none after discovery
+```
+
+Cursor must not perform a broad replacement audit after the contradiction.
+
+Cursor must not:
 
 - choose platform vs domain ownership independently;
 - create a temporary application-owned replacement;
@@ -633,11 +812,12 @@ The implementer must not:
 - select a vendor;
 - introduce a second persistence mechanism;
 - continue by bypassing durability, tenancy or idempotency requirements;
-- reinterpret the product contract to fit available infrastructure.
+- reinterpret the product contract to fit available infrastructure;
+- reopen architecture discovery during implementation.
 
-#### Required STOP report
+#### Required architecture STOP report
 
-The blocker report must contain:
+The architecture/review blocker report must contain:
 
 ```text
 Required capability:
