@@ -62,9 +62,12 @@ class FakeSocketClient:
     async def send_socket_mode_response(self, response: Any) -> None:
         if self.fail_ack:
             raise RuntimeError("ack transport failure")
-        envelope_id = getattr(response, "envelope_id", None)
-        if envelope_id is None and isinstance(response, dict):
+        if isinstance(response, FakeSocketModeResponse):
+            envelope_id = response.envelope_id
+        elif isinstance(response, dict):
             envelope_id = response.get("envelope_id")
+        else:
+            envelope_id = None
         self.acks.append(str(envelope_id))
 
 

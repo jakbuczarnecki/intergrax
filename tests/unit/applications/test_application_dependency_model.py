@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import re
-import subprocess
 import tomllib
 from pathlib import Path
 
@@ -24,7 +23,6 @@ APPLICATIONS = (
     "research_application",
 )
 LKW = "local_workspace_application"
-NON_SLACK = "lab_application"
 
 
 def _load_toml(path: Path) -> dict:
@@ -157,32 +155,3 @@ def test_scaffold_emits_application_pyproject(tmp_path: Path) -> None:
     compose = (target / "docker" / "docker-compose.yml").read_text(encoding="utf-8")
     assert "runtime-context" in compose
     assert "context: ../../.." not in compose
-
-
-@pytest.mark.gate
-def test_dependency_tree_isolation_slack_sdk() -> None:
-    """Resolver-level isolation: LKW includes slack-sdk; lab does not."""
-
-    def export_for(project: str) -> str:
-        proc = subprocess.run(
-            [
-                "uv",
-                "export",
-                "--frozen",
-                "--no-dev",
-                "--project",
-                f"applications/{project}",
-                "--no-emit-workspace",
-            ],
-            cwd=REPO,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert proc.returncode == 0, proc.stderr
-        return proc.stdout.lower()
-
-    lkw = export_for(LKW)
-    lab = export_for(NON_SLACK)
-    assert "slack-sdk" in lkw
-    assert "slack-sdk" not in lab

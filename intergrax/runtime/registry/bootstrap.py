@@ -7,12 +7,13 @@ import importlib
 from typing import Any
 
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.utils import attribute_access
 
 
 def _load_agent_class(module_name: str, class_name: str) -> Any:
     """Load a Tier-2 agent class without a static platform→agent import edge."""
     module = importlib.import_module(module_name)
-    return getattr(module, class_name)
+    return attribute_access.optional(module, class_name)
 
 
 def build_harness_registry(*, include_echo: bool = True) -> AgentRegistry:
