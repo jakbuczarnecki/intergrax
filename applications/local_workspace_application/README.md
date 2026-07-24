@@ -1,6 +1,8 @@
 # Local Knowledge Workspace (LKW)
 
-Tier-3 product host for local document indexing, semantic search, and synthesis.
+Tier-3 product host for private-by-default, tenant-scoped, deployment-neutral knowledge workspace capabilities: source-backed indexing, semantic search, and synthesis.
+
+**“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
 **Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
 **Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)  
@@ -33,18 +35,18 @@ A new user should be able to follow [USER_JOURNEY.md](docs/USER_JOURNEY.md): clo
 
 Current LKW.2 status: [IMPLEMENTATION_PLAN.md §5](docs/IMPLEMENTATION_PLAN.md#5-lkw2-graph-pipeline--local-workspace-skills). [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md) is the historical LKW.1/H1 live proof record, not the current LKW.2 execution status.
 
-## Local stack
+## Reference local stack
 
-The local-first LKW stack is:
+The common self-hosted / developer reference topology (not the product definition) is:
 
-- **LKW backend:** FastAPI + Nexus + local agents;
-- **Vector store:** Qdrant for persistent local RAG;
-- **Relational/runtime data:** SQLite files under `INTERGRAX_SQLITE_DATA_DIR`;
+- **LKW host:** FastAPI + Nexus + local agents;
+- **Vector Store:** Qdrant (provider-selected; often local in Compose);
+- **Document / runtime persistence:** as wired (SQLite paths under `INTERGRAX_SQLITE_DATA_DIR` and/or Document Store providers);
 - **Shadow artifacts:** `INTERGRAX_SHADOW_ROOT`;
 - **LLM:** Ollama by default, vLLM optionally;
 - **Redis:** optional until background ingest / queue workflows require it.
 
-In-memory vector storage is only for tests or temporary development. It is not the real local product default.
+In-memory vector storage is only for tests or temporary development. It is not the reference product default for durable RAG.
 
 ## Docker quickstart
 

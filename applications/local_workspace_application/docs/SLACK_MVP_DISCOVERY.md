@@ -23,7 +23,9 @@ Next slice: MVP-4 — Slack conversational MVP
   LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
     exact DM "help" → dynamic command list from decorated handler metadata
     (registry = parse/dispatch/help; opt-in discovery on workflow; Ask for non-commands)
-  Next task: inspect workspace contents / sources
+  LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
+    Slack is API/capability client only; storage/tenancy canonical in ARCHITECTURE.md
+  Next task: LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources
 ```
 
 **Platform runtime status:**
@@ -74,9 +76,11 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → text workspace selection (1B-2 OPERATOR_VERIFIED; in-memory only)
 → workspace create / delete confirm (LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW)
 → dynamic command catalog + help (LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW)
-→ inspect contents / sources / pending question / ACTION / persistence (later)
+→ storage/tenancy contract (LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW)
+→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A — NEXT)
+→ source lifecycle 1B–1E / pending question / ACTION / persistence (later)
 
-Next exact task: inspect workspace contents / sources
+Next exact task: LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -1288,6 +1292,15 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
     hidden registry entries (`visible_in_help=False`) and never fall through to Ask.
   - Non-matching DM still invokes the regular Ask flow after authorization + dedupe.
   - A future visible decorated command automatically appears in `help`.
+- **Slack is only a client (LKW-STORAGE-TENANCY-CONTRACT-1):** Slack companion
+  does not decide local vs remote deployment, does not select Document Store /
+  Vector Store providers, does not write storage directly, and does not branch
+  on storage topology. Commands call public LKW capabilities/API and must
+  behave the same regardless of where storage is located. Canonical tenancy,
+  storage location, private-by-default, source-connector, and future sharing
+  contract: [`ARCHITECTURE.md` — Deployment, storage and tenancy model](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+  Next product task after contract acceptance:
+  `LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources`.
 
 ---
 

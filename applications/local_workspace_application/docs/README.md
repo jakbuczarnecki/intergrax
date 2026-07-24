@@ -8,7 +8,7 @@ Only [`../README.md`](../README.md) lives at the application root. All other LKW
 
 | Document | Purpose |
 |----------|---------|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Canonical architecture |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Canonical architecture (includes deployment-neutral storage and tenancy) |
 | [`ARCHITECTURE_HARDENING.md`](ARCHITECTURE_HARDENING.md) | Hardening decisions |
 | [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) | Product/platform propagation checklist |
 | [`USER_JOURNEY.md`](USER_JOURNEY.md) | User-facing product journey |

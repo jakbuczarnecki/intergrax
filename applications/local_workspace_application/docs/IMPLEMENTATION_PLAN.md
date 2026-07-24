@@ -11,11 +11,12 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
+Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1A)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
-local documents → Slack question → grounded answer with sources.
+controlled sources → Slack question → grounded answer with sources
+(first vertical slice commonly uses local-folder documents).
 
 Longer-term goal:
 Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
@@ -73,17 +74,19 @@ Platform mechanisms, provider ports, observability vendors, portability matrices
 
 ### 2.1 What we are building
 
-LKW (Local Knowledge Workspace) is a local product that lets a user work with private documents through natural-language questions and verifiable answers.
+LKW (Local Knowledge Workspace) is a **private-by-default, tenant-scoped, deployment-neutral knowledge workspace** that lets a user work with documents through natural-language questions and verifiable answers.
 
-The user designates local folders. LKW indexes those files, keeps the source files read-only, retrieves relevant evidence and returns an answer with sources.
+**“Local” in the name** means user-controlled deployment and configuration, first-class self-hosted / fully local topology, and no forced central SaaS — not “all data always on one device.” Storage location is selected by configuration and provider wiring. Canonical contract: [`ARCHITECTURE.md` — Deployment, storage and tenancy model](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+
+The first supported source provider is **local-folder**. The user designates a folder; LKW indexes through the source connector path, keeps source originals read-only under product policy, retrieves relevant evidence and returns an answer with sources. Source is not synonymous with “local folder.”
 
 ### 2.2 Why it should exist
 
 People working with document-heavy matters lose time searching folders, opening many files, locating specific facts and verifying where information came from.
 
-General-purpose assistants often require manual uploads or do not provide durable provenance, local filesystem boundaries or inspectable execution.
+General-purpose assistants often require manual uploads or do not provide durable provenance, clear ownership boundaries or inspectable execution.
 
-LKW should make this workflow faster while keeping the source material under the user's control.
+LKW should make this workflow faster while keeping source material under the user's control and privacy under a logical tenant/workspace access model — not only under physical “database on this machine” isolation.
 
 ### 2.3 First target user
 
@@ -282,10 +285,10 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
+Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1A)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
-Slack conversational adapter: MVP-4 current (not implemented)
+Slack conversational adapter: MVP-4 current (product slices in progress; see MVP-4 below)
 ```
 
 ### Working today
@@ -354,7 +357,7 @@ are replaceable surfaces over the same LKW capabilities.
 
 LKW is not a Slack bot. Slack is the first familiar conversational surface for the MVP.
 
-Disconnecting Slack must not disable the core local product.
+Disconnecting Slack must not disable the core LKW product (HTTP/MCP and host capabilities).
 
 ### 5.2 Normalized path
 
@@ -641,7 +644,7 @@ Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
 
-**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; next **1B**
+**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; next **LKW-WORKSPACE-CONTENTS-1A**
 
 ```text
 SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
@@ -679,18 +682,45 @@ registry drives match/parse/dispatch and dynamic ``help`` (no manual help list;
 no OpenAPI/endpoint auto-exposure; no global command framework);
 non-command DM still invokes Ask
 
+LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
+deployment-neutral LKW; storage location selected by configuration/provider wiring;
+no local/cloud branching in domain; private-by-default tenant isolation;
+tenant not permanently equivalent to user; future organization workspace and
+controlled sharing remain possible; source is provider-backed;
+local-folder is first source provider; original file storage separated
+conceptually from Document Store and Vector Store.
+Canonical: ARCHITECTURE.md — Deployment, storage and tenancy model
+
 LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
 1B-1 workspace listing — IMPLEMENTED / OPERATOR_VERIFIED
 1B-2 workspace selection — OPERATOR_VERIFIED
 LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
 LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
-→ inspect workspace contents / sources — NEXT
+LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
+→ LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources — NEXT
+→ LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability — planned
+→ LKW-WORKSPACE-CONTENTS-1C — synchronize and inspect ingestion status — planned
+→ LKW-WORKSPACE-CONTENTS-1D — inspect indexed documents — planned
+→ LKW-WORKSPACE-CONTENTS-1E — safely remove source-owned knowledge — planned
 → pending question
 → ACTION resume
 → active workspace persistence
 ```
 
-Next task after acceptance: inspect workspace contents / sources.
+**LKW-WORKSPACE-CONTENTS-1A — NEXT** (after contract acceptance):
+
+```text
+Slack command showing sources of the effective active workspace;
+sources fetched via public tenant-scoped API;
+no full sensitive locator disclosure;
+no assumption that every source type is a local folder;
+status + safe name/label only;
+no create/add/delete/sync in this first subtask.
+```
+
+Command syntax for 1B–1E is **not** frozen yet. Do not assume path vs upload vs picker for source registration. Do not document unimplemented endpoints as existing.
+
+Next exact task after contract acceptance: `LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources`.
 
 Ownership:
 
@@ -716,10 +746,13 @@ LKW slack_companion
    IMPLEMENTED / READY_FOR_REVIEW; local files never deleted; Ask history policy A)
 → dynamic command catalog + ``help`` (LKW-SLACK-COMMAND-CATALOG-1
    IMPLEMENTED / READY_FOR_REVIEW; decorated handlers; registry = dispatch + help)
-→ inspect contents / sources / pending question / ACTION / persistence (later)
+→ storage/tenancy architecture contract (LKW-STORAGE-TENANCY-CONTRACT-1
+   DOCUMENTED / READY_FOR_REVIEW; Slack remains API/capability client only)
+→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A — NEXT)
+→ source lifecycle 1B–1E / pending question / ACTION / persistence (later)
 ```
 
-Next exact task: inspect workspace contents / sources.
+Next exact task: `LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources`.
 
 User-visible result:
 
@@ -1056,9 +1089,9 @@ Deferred until MVP validation or a documented blocker:
 - complete local companion,
 - macOS installer,
 - mobile client,
-- SaaS,
-- multi-organization support,
-- enterprise RBAC,
+- hosted multi-tenant SaaS product packaging,
+- multi-organization support (see Future below — architectural direction only),
+- enterprise RBAC / ACL / membership / invitations / share links,
 - Kubernetes,
 - PostgreSQL migration without a product need,
 - vector-store portability without a product need,
@@ -1069,12 +1102,31 @@ Deferred until MVP validation or a documented blocker:
 - autonomous external actions,
 - web search,
 - cross-device synchronization,
-- optimization before a measured baseline.
+- optimization before a measured baseline,
+- Blob/Object Store provider and upload product behavior,
+- remote source providers beyond the first local-folder vertical slice.
 
 ```text
 Deferred work enters the active plan only when it blocks the MVP,
 protects the intended user, or is selected from real validation feedback.
 ```
+
+### Future — Shared and organizational knowledge spaces
+
+**Status:** `FUTURE / NOT IN CURRENT MVP`
+
+Directional scope (architecture frozen in [`ARCHITECTURE.md`](ARCHITECTURE.md); **not** an implementation plan for ACL):
+
+- personal tenant;
+- organization tenant;
+- membership;
+- workspace-level grants;
+- controlled read / ask / contribute / manage permissions;
+- auditability;
+- revocation;
+- no public-by-default access.
+
+Sharing and organization work must **not** be scheduled ahead of source lifecycle, Ask usability, or persistence unless a separate earlier security gate is explicitly documented. No dates. No role-enum / invitation / share-link design in this plan.
 
 ---
 
@@ -1196,13 +1248,15 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
+Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1A)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
-Next product task: inspect workspace contents / sources
+Architecture contract: LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW
+Next product task: LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources
 Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof, LKW-SLACK-WORKFLOW-1A (+ configuration closure + live proof)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md
+Frozen storage/tenancy contract: ARCHITECTURE.md — Deployment, storage and tenancy model
 MVP gate follows minimal packaging and real-user validation.
 ```
 
@@ -1220,6 +1274,6 @@ MVP gate follows minimal packaging and real-user validation.
 The active measure of progress is:
 
 ```text
-How much closer is a real user to asking about local documents in Slack
+How much closer is a real user to asking about their workspace sources in Slack
 and receiving a useful, grounded answer with sources?
 ```

@@ -16,6 +16,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Need | Read section |
 |------|----------------|
 | Product philosophy, boundaries | §3 · §4 |
+| Deployment, storage, tenancy (canonical) | [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model) |
 | What is frontend vs backend | §4 |
 | Solution + trust zones | §5 |
 | Agent roster | §6 |
@@ -34,8 +35,10 @@ This file is the **single product architecture** for LKW. From it you derive:
 
 **Local Knowledge Workspace (LKW)** is the first **business product environment** on Intergrax after harness platform maturity. Its role is dual:
 
-1. **Product:** Give a user a local, safe assistant over their own files — search, gather context, produce structured outputs (reports, emails, estimates).
+1. **Product:** Give a user a private-by-default, tenant-scoped, deployment-neutral knowledge workspace over sources they control — search, gather context, produce structured outputs (reports, emails, estimates).
 2. **Harness validation:** Exercise the Agent OS on a real, observable workload without external market APIs (unlike deferred K.1 Problem Radar / K.2 Vendor Discovery).
+
+**What “Local” means in the product name:** the user controls deployment and configuration; full self-hosted / fully local topology remains first-class; LKW does not force a central SaaS. It does **not** mean that all data must always reside on a single user device, nor that remote storage, private enterprise hosting, hybrid topologies, or future controlled sharing are out of scope. Canonical detail: [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model).
 
 LKW validates: RAG ingest/retrieve/index lifecycle, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, and Tier-3 composition — while surfacing platform gaps early.
 
@@ -62,30 +65,33 @@ LKW solves this with **read-heavy indexing + semantic retrieval + isolated write
 
 ### 3.1 What LKW is
 
-LKW is a **personal Agent OS instance** on the user's computer:
+LKW is a **deployment-neutral knowledge workspace** whose product interface, domain model, API, Slack companion, Ask workflow, and source lifecycle stay the same across topologies. A common first-class shape is a personal Agent OS instance under user control (often on the user's machine), but that shape is a deployment choice — not the definition of the product:
 
-- **Always-on backend** (local daemon) owns data, index, agents, and policy.
-- **Thin frontends** (tray, Cursor MCP, Slack, scripts) only send **tasks** and show **results**.
+- **Always-on LKW host** owns product capabilities, policy, and orchestration wiring; persistent stores are selected by configuration / provider implementations.
+- **Thin frontends** (tray, Cursor MCP, Slack, scripts) only invoke **capabilities / API** and show **results**.
 - **Intergrax Nexus** is the only orchestrator — no ad-hoc agent loops in UI code.
+- **Private by default** and **tenant-scoped** — privacy comes from the logical access model, not solely from “the database is local.”
 
 ### 3.2 What LKW is not
 
 | Not this | Why |
 |----------|-----|
-| Slack bot that “is” the product | Slack is an **optional remote control**; execution stays on localhost |
-| Cloud SaaS with file upload | Files never leave the machine by default |
+| Slack bot that “is” the product | Slack is an **optional client**; product logic and storage stay behind LKW capabilities/API |
+| Local-only product that forbids remote storage | Storage location is configuration; remote / private-cloud / hosted providers are in scope when wired |
+| Public-by-default multi-tenant dump | New private workspaces are not automatically visible to others; sharing is future and controlled |
 | Single monolithic “chat agent” | Three bounded agents + graph pipeline |
-| Unrestricted filesystem agent | Read allowlist + shadow-only writes |
+| Unrestricted filesystem agent | Read allowlist + shadow-only writes for local-folder originals |
 | Replacement for Nexus / Tier-0 | Composition and wiring only — reuse platform mechanisms |
 
 ### 3.3 Design principles (non-negotiable)
 
-1. **Compute local, control multi-channel** — index and embeddings on user disk; Slack/HTTP/MCP are equal task transports.
-2. **Read user FS, write shadow only** — originals are never modified by agents.
+1. **Deployment-neutral product, multi-channel control** — domain/API/Slack do not branch on local/cloud/self-hosted/SaaS modes; providers are selected by host configuration; Slack/HTTP/MCP are equal task transports.
+2. **Source originals stay read-only under product policy** — agents must not delete or overwrite user source material (local-folder files today; other source providers later under the same rule).
 3. **Integration → Tool → Skill → Agent** — no vendor SDKs in Tier-2; Tier-3 wires profiles.
 4. **Every surface → one Task** — same trace, policy, and agents regardless of UI.
-5. **Slack optional** — product must work with **localhost only** (LKW.1–5); Slack is LKW.6b enhancement.
+5. **Slack optional** — product must work without Slack (HTTP/MCP); Slack is an enhancement client.
 6. **Harness honesty** — gaps discovered during LKW feed back to Tier-0 plan, not Nexus forks.
+7. **Authorization over physical isolation** — physical storage isolation may strengthen privacy, but authorization must not depend on physical isolation alone.
 
 ### 3.4 Primary vs optional user journeys
 
@@ -96,6 +102,268 @@ LKW is a **personal Agent OS instance** on the user's computer:
 | Quick search anytime | HTTP / tray | LKW.1 + LKW.8 |
 | Remote command from phone | Slack slash | LKW.6b |
 | Approve draft report | Slack HITL / HTTP | LKW.2 + notify |
+
+---
+
+## Deployment, storage and tenancy model
+
+**Status:** architectural contract frozen by `LKW-STORAGE-TENANCY-CONTRACT-1` (`DOCUMENTED / READY_FOR_REVIEW`).
+
+This section is the **canonical** definition of deployment neutrality, storage location, tenancy, and source boundaries. Implementation status of individual ports/providers is **not** implied here.
+
+### Deployment-neutral product
+
+LKW does **not** mean “storage always on the user's computer.”
+
+LKW means a knowledge workspace whose:
+
+- product interface,
+- domain model,
+- API,
+- Slack companion,
+- Ask workflow,
+- source lifecycle,
+
+remain the same regardless of deployment topology.
+
+Allowed topologies (none of these is the domain-default architecture):
+
+| Topology | Typical shape |
+|----------|----------------|
+| **Fully local** | LKW host local; Document Store local; Vector Store local; sources local |
+| **Local application with cloud storage** | LKW host or connector local; Document Store remote; Vector Store remote; sources local or remote |
+| **Fully hosted** | host in cloud; persistent stores in cloud; sources uploaded or connected remotely |
+| **Private enterprise** | host and storage in organization infrastructure; same domain/product contract |
+| **Hybrid** | components in different locations; no change to domain logic |
+
+Docker Compose is the current **reference developer / self-hosted proof** deployment. It is **not** the definition of the product.
+
+Domain, API, Slack companion, and user workflow must **not** have separate product paths such as “local mode”, “cloud mode”, “self-hosted mode”, or “SaaS mode.” Deployment difference is resolved by configuration and provider implementations behind stable ports.
+
+### Storage location is configuration
+
+```text
+storage location = deployment configuration
+not domain behavior
+```
+
+The domain must **not** ask:
+
+```text
+if local:
+    ...
+elif cloud:
+    ...
+```
+
+Conceptual dependency:
+
+```text
+domain / application service
+  → stable storage or connector port
+  → provider selected by configuration
+  → local or remote implementation
+```
+
+Conceptual capability boundaries (not all must exist in complete form today; do not treat planned interfaces as implemented):
+
+- **Source Connector**
+- **Document Store**
+- **Vector Store**
+- **Blob/Object Store** (optional; for managed originals / uploads)
+
+Prefer independent capability boundaries. Avoid collapsing Document Store and Vector Store into one giant “StorageProvider” when the architecture already separates them.
+
+### Four (plus optional fifth) locations
+
+Always distinguish:
+
+1. where the **LKW host** runs;
+2. where the **source** data lives;
+3. where **application / document state** (Document Store) is persisted;
+4. where **vectors** (Vector Store) are persisted;
+5. optionally, where **managed original files / blobs** are stored (Blob/Object Store).
+
+Valid example:
+
+```text
+source: folder on user's computer
+LKW connector/host: user's computer
+Document Store: cloud Mongo-compatible provider
+Vector Store: cloud Qdrant-compatible provider
+```
+
+Another valid example:
+
+```text
+source: remote object storage
+LKW host: private server
+Document Store: local/private database
+Vector Store: local/private vector database
+```
+
+**Source location does not determine knowledge-storage location.**
+
+### Diagram 1 — deployment-neutral flow
+
+```text
+Slack / HTTP / MCP
+        |
+        v
+LKW product capabilities
+        |
+        +--> Source Connector
+        +--> Document Store
+        +--> Vector Store
+        +--> optional Blob Store
+                 |
+                 v
+        providers selected by configuration
+        local / remote / private cloud / hosted
+```
+
+### Private by default
+
+Every principal has access only to spaces for which they have an explicit grant/permission.
+
+A newly created private workspace is **not** automatically visible to other principals.
+
+Privacy must **not** rest only on “the database is local” or “each user has a separate deployment.”
+
+```text
+physical storage isolation may strengthen privacy,
+but authorization must not depend on physical isolation
+```
+
+### Tenant-scoped and workspace-scoped invariant
+
+Every durable record belonging to a workspace should carry a clear ownership scope.
+
+**Required scope fields (invariant / implementation gate):**
+
+- `tenant_id`
+- `workspace_id`
+
+Applies at least to workspace-owned state such as:
+
+workspace; sources; document references; extracted document state; chunks; vectors; sync operations; Ask runs; future workspace-owned artifacts.
+
+This is a **binding invariant for future implementation**. It does **not** claim that every existing record already satisfies the invariant without verification.
+
+Operational rules:
+
+- reads must be tenant-scoped;
+- writes must be tenant-scoped;
+- search must be tenant + workspace scoped;
+- deletes must be tenant + workspace scoped;
+- cross-tenant lookup remains fail-closed;
+- missing tenant/workspace filters in a provider must **not** be compensated by post-fetch filtering when the provider can perform an isolated operation.
+
+### Tenant is not permanently equal to user
+
+Do **not** freeze `tenant_id == user_id` as the architecture.
+
+- **Tenant** — ownership / administration space (personal tenant, organization tenant, private hosted tenant, enterprise tenant).
+- **Principal** — actor performing the operation (user, bot, service, application agent).
+
+The current stage may use a simplified tenant context. Target access model (capability direction, **not** implemented entities):
+
+```text
+principal
+  → membership in tenant
+  → workspace permission
+```
+
+Entity/code names are not frozen here.
+
+### Diagram 2 — access and ownership
+
+```text
+Principal
+   |
+   v
+Tenant membership / future grant   ← FUTURE / NOT IMPLEMENTED
+   |
+   v
+Workspace
+   |
+   +--> Sources
+   +--> Documents
+   +--> Vectors
+   +--> Ask runs
+```
+
+Notes:
+
+- membership / grants are **future**;
+- tenant / workspace scoping is already the isolation direction;
+- physical storage location does **not** replace authorization.
+
+### Future organization and sharing — FUTURE / NOT IMPLEMENTED
+
+**Organizational workspace** — a future organization tenant may own a workspace available to multiple principals via membership and roles.
+
+**Workspace sharing** — a future owner/admin may grant another principal, group, or application limited access.
+
+Possible future access scopes (direction only): discover/list; read; ask; contribute sources; synchronize; manage; share/administer.
+
+This is architectural direction, **not** current MVP scope. Do **not** treat ACL, role enums, membership repositories, invitations, share links, public workspaces, or cross-tenant grants as implemented.
+
+### Source architecture contract
+
+```text
+source = configured connector-backed input to a workspace
+```
+
+**local-folder** is the first supported source type / provider. It is **not** the domain definition of source.
+
+Illustrative future source types (examples of the architectural boundary — **not** committed roadmap deliverables):
+
+local folder; uploaded file; object storage; Google Drive; SharePoint; S3-compatible storage; remote repository; business system; application-to-application knowledge feed.
+
+**Source locator is provider-specific.** Do not freeze a universal filesystem `path` as the only source representation. Conceptually, source capability should operate on `source_type` + provider-specific locator + provider-specific options (e.g. local-folder → filesystem path; object-storage → bucket/key or URI; remote-drive → provider resource id; upload → managed blob id).
+
+The existing **LOCAL_FOLDER** model is the first vertical slice. Later source-lifecycle work must not entrench “every source is a local path.” Slack must not perform direct filesystem operations outside the appropriate capability / provider path.
+
+### Original file storage
+
+Separate conceptually:
+
+| Concern | Store |
+|---------|--------|
+| Source system | Source Connector / external system |
+| Document / application state | Document Store |
+| Vector index | Vector Store |
+| Managed original file / blob | Blob/Object Store (optional) |
+
+Document Store and Vector Store must **not** be automatically identified with storage of original uploaded files.
+
+For future uploads a Blob/Object Store provider may be required.
+
+```text
+architectural boundary defined
+provider and product behavior not yet implemented
+```
+
+### Application and adapter boundaries
+
+**Slack is only a client.** The Slack companion:
+
+- does not decide local vs remote deployment;
+- does not know a concrete database provider or Qdrant topology;
+- does not write directly to Document Store or Vector Store;
+- does not perform storage-specific branching;
+- calls public LKW capabilities / API.
+
+A Slack command must behave the same regardless of where storage is located. Binding product detail for Slack: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) (short reference only; this section remains canonical for tenancy/storage).
+
+**Domain / application services:**
+
+- do not recognize “cloud mode” or “local mode”;
+- operate on tenant / workspace context;
+- receive provider implementations through wiring;
+- a provider may be local or remote;
+- one deployment may use different providers simultaneously.
 
 ---
 
@@ -182,7 +450,7 @@ LKW is a **personal Agent OS instance** on the user's computer:
 | **`lkw-indexer-worker`** | File watcher → `message_bus.enqueue` → ingest | LKW.7 optional |
 | **External LLM API** | Inference only | Configurable (Ollama local or cloud) |
 
-**Single-host rule:** one `lkw-host` per user account binds `127.0.0.1:<port>` (default `8020`). Tray and MCP are clients, not second runtimes.
+**Reference single-host rule (common self-hosted topology):** one `lkw-host` binds a configured listen address/port (often `127.0.0.1:8020`). Tray and MCP are clients, not second runtimes. Other host topologies remain valid under the deployment-neutral contract.
 
 ---
 
@@ -623,17 +891,18 @@ Code references: [`background_ingest/contracts.py`](../background_ingest/contrac
 
 ## 9. Local OS runtime and interaction model
 
-LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in the background on the user's machine** (Windows, Linux, macOS). The user can submit work **at any time**; agents are spawned by Nexus on demand. Chat apps (Slack, Teams) are **interaction surfaces** — not the runtime — they deliver commands and receive summaries.
+This section describes the **common self-hosted / workstation reference topology** (Tier-3 host + Nexus), often run in the background on a user-controlled machine (Windows, Linux, macOS). It is **not** a claim that LKW is local-only; storage and host location remain configuration — see [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model). The user can submit work **at any time**; agents are spawned by Nexus on demand. Chat apps (Slack, Teams) are **interaction surfaces / clients** — not the runtime — they deliver commands and receive summaries.
 
-### 9.1 Design principle: compute local, control multi-channel
+### 9.1 Design principle: deployment-neutral product, multi-channel control
 
-| Layer | Where it runs | What it holds |
-|-------|---------------|---------------|
-| **Execution** | User OS (localhost) | Nexus, agents, RAG index, shadow workspace, file access |
+| Layer | Where it runs (reference local topology) | What it holds |
+|-------|------------------------------------------|---------------|
+| **Execution** | User-controlled host (often localhost) | Nexus, agents, product capabilities, source connectors as wired |
+| **Persistent knowledge stores** | Provider-selected (local or remote) | Document Store, Vector Store, optional Blob/Object Store |
 | **Interaction** | Slack / Teams / HTTP / MCP / tray (optional) | Commands, status, HITL prompts, short answers |
-| **Cloud** | Optional (Slack API, LLM API) | Messaging + inference only — **not** user file storage |
+| **External messaging / inference** | Optional (Slack API, LLM API) | Messaging + inference — not a substitute for authorization |
 
-**Privacy default:** document chunks and embeddings stay on disk under user control. Slack receives **commands and condensed answers**, not full file dumps.
+**Privacy default:** private by default and tenant-scoped. Physical co-location of stores with the host may strengthen privacy but does not replace authorization. Slack receives **commands and condensed answers**, not full file dumps.
 
 ### 9.2 Background process topology
 
@@ -892,7 +1161,7 @@ LKW.6A wires interaction intake through the shared executor (see §9.3a). Enable
 | `draft email\|report\|estimate …` | `local.workspace.synthesize` | `local_synthesizer` |
 | free text (default) | `local.workspace.pipeline` | graph (LKW.2) |
 
-`tenant_id` / `user_id` from Slack identity map to Intergrax task scope for memory and index partitions.
+Mapped `tenant_id` (and principal / user identifiers) from Slack identity feed Intergrax task scope for memory and index partitions. **Tenant is not permanently equal to user** — see [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model).
 
 #### What must NOT go through Slack
 

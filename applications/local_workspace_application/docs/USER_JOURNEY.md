@@ -18,24 +18,24 @@ A new user lands on the Intergrax repository and should understand this in the f
 
 **LKW** is the first product-grade proof application built on that platform.
 
-LKW gives the user a local assistant over their own files:
+LKW gives the user a private-by-default knowledge workspace over sources they control:
 
-- it runs on the user's machine;
-- it reads only allowed folders or explicitly provided files;
-- it indexes documents into a local knowledge workspace;
-- it answers questions with evidence from those files;
+- it can run fully locally or under other deployment topologies (storage location is configuration — see [`ARCHITECTURE.md`](ARCHITECTURE.md#deployment-storage-and-tenancy-model));
+- the first source provider is local-folder (allowed folders or explicitly provided files);
+- it indexes documents into a tenant-scoped knowledge workspace;
+- it answers questions with evidence from those sources;
 - it writes generated drafts only into a shadow workspace;
 - it exposes what happened through trace/evidence inspection;
 - it proves that Intergrax can create, configure, run, package, deploy, and observe real agent applications.
 
-The first expected mental model:
+The first expected mental model (common self-hosted / local-folder path):
 
 ```text
-User files
-  -> local LKW backend
+User sources (e.g. local folder)
+  -> LKW host
   -> Intergrax Nexus
   -> local_indexer / local_search / local_synthesizer agents
-  -> RAG + shadow workspace
+  -> Document Store + Vector Store (provider-selected) + shadow workspace
   -> answer, draft, and trace/evidence
 ```
 

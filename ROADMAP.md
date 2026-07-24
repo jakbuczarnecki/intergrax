@@ -27,10 +27,12 @@ Canonical technical architecture and implementation status remain in:
 
 Local Knowledge Workspace is the current primary product-development and platform-validation program for Intergrax.
 
+LKW is a **deployment-neutral** knowledge workspace: private by default, tenant-scoped, with storage location selected by configuration and provider wiring. **“Local”** means user-controlled deployment and first-class self-hosted topology — not “all data always on one device.” Canonical contract: [LKW Architecture — Deployment, storage and tenancy model](applications/local_workspace_application/docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+
 The immediate product goal is:
 
 ```text
-local documents
+controlled sources (first slice: local-folder documents)
 → Slack question
 → grounded answer with verifiable sources
 → real-user validation
@@ -40,7 +42,7 @@ LKW has three connected roles:
 
 | Role | Priority | Meaning |
 |------|----------|---------|
-| Real product | Primary | Solve a real local-document workflow for a knowledge worker |
+| Real product | Primary | Solve a real private knowledge-workspace workflow for a knowledge worker |
 | Platform proof | Secondary | Demonstrate Intergrax capabilities through a complete working application |
 | Platform problem detector | Secondary | Expose concrete reusable platform gaps through real product pressure |
 
@@ -62,7 +64,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 
 | Item | Notes |
 |------|-------|
-| **Build the LKW MVP as the primary active Intergrax program** | Complete the smallest real product experience: local documents → Slack question → grounded answer with sources |
+| **Build the LKW MVP as the primary active Intergrax program** | Complete the smallest real product experience: controlled sources → Slack question → grounded answer with sources (first slice commonly local-folder) |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace, grounded answers, citations and persisted runs are implemented and live-verified; see the [LKW Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
 | Slack conversational MVP in active development | Connect the existing Ask Workspace capability to an approved Slack user and workspace through the governed interaction path |
 | Preserve application-first platform development | Concrete LKW blockers may produce reusable Intergrax improvements; unrelated platform expansion does not override the LKW MVP path |
@@ -113,7 +115,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 
 | Track | Focus | Who it is for | Expected first action |
 |-------|-------|---------------|----------------------|
-| **LKW MVP design-partner validation** | Real local-document workflows, Slack interaction, grounded answers, source verification and product fit | Knowledge workers and teams willing to test a controlled local LKW installation | Review the [LKW Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md), [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) and [LKW architecture](applications/local_workspace_application/docs/ARCHITECTURE.md); discuss a concrete validation workflow |
+| **LKW MVP design-partner validation** | Real private knowledge-workspace workflows (first slice: local-folder), Slack interaction, grounded answers, source verification and product fit | Knowledge workers and teams willing to test a controlled self-hosted LKW installation | Review the [LKW Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md), [alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) and [LKW architecture](applications/local_workspace_application/docs/ARCHITECTURE.md); discuss a concrete validation workflow |
 | Proof path feedback | Run local evaluation paths; report friction, gaps and unclear steps | Engineers evaluating the harness baseline | Follow [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) and the [proof path](README.md#proof-of-platform) in [README.md](README.md); open an issue with concrete findings |
 | Attestation / boundary events integration | Host attestation flows, boundary events and external trust integration | Teams building attestation, security or compliance integrations | Review [Attestation Demo](applications/attestation_demo/README.md); propose scope via issue or maintainer contact |
 | Documentation clarity | Corrections, gaps, readability and navigation improvements | Anyone reading public docs | Open an issue or PR with a specific documentation fix; see [CONTRIBUTING.md](CONTRIBUTING.md) |
