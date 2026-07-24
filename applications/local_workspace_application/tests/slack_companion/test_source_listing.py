@@ -288,6 +288,24 @@ def test_render_source_list_safe_fields() -> None:
     assert "Private" not in text
 
 
+def test_render_non_folder_source_hides_recursive() -> None:
+    text = render_source_list(
+        [
+            SlackSourceListItem(
+                source_id="s1",
+                workspace_id="ws",
+                source_type="object_storage",
+                label="Archive",
+                status="registered",
+                recursive=True,
+            )
+        ]
+    )
+
+    assert "Type: object storage" in text
+    assert "Recursive:" not in text
+
+
 def test_render_defensive_label_normalization() -> None:
     text = render_source_list(
         [

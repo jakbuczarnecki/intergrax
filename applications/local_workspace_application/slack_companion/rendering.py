@@ -248,9 +248,8 @@ def _format_source_status(status: str) -> str:
 
 
 def _show_recursive(source_type: str) -> bool:
-    # Recursive is meaningful for folder-like sources; hide for unknown future types
-    # only when type is blank. Current contract always includes the field.
-    return bool((source_type or "").strip())
+    # Recursive is meaningful only for local_folder; hide for all other types.
+    return (source_type or "").strip().casefold() == "local_folder"
 
 
 def _format_last_sync(value: datetime | None) -> str:
