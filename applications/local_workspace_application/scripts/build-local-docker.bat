@@ -20,15 +20,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Stopping previous local workspace stack...
-docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" down --remove-orphans
-if errorlevel 1 (
-    popd >nul
-    exit /b 1
-)
-
 if /I not "%LEGACY_COMPOSE_PROJECT_NAME%"=="%COMPOSE_PROJECT_NAME%" (
-    echo Cleaning legacy local workspace stack...
+    echo Cleaning legacy local workspace host...
     docker compose -p "%LEGACY_COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" down --remove-orphans
     if errorlevel 1 (
         popd >nul
@@ -36,14 +29,17 @@ if /I not "%LEGACY_COMPOSE_PROJECT_NAME%"=="%COMPOSE_PROJECT_NAME%" (
     )
 )
 
-echo Building and starting local workspace via Docker Compose...
-docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" up --build -d
+echo Rebuilding and replacing only the LKW host...
+echo Existing intergrax_lkw backend services will remain running.
+docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%" up --build -d --no-deps local_workspace
 if errorlevel 1 (
     popd >nul
     exit /b 1
 )
 
-echo Stack is starting under Compose project %COMPOSE_PROJECT_NAME%. Verify with:
+echo LKW host is starting under Compose project %COMPOSE_PROJECT_NAME%.
+echo Existing MongoDB, Qdrant, Ollama and OTel containers were not stopped.
+echo Verify with:
 echo   curl http://127.0.0.1:8020/health
 echo   docker compose -p %COMPOSE_PROJECT_NAME% -f "%COMPOSE_FILE%" logs -f local_workspace
 
