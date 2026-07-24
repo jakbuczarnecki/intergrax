@@ -19,6 +19,13 @@ from local_workspace_application.slack_companion.authorization import (
     SlackCompanionAuthConfig,
     authorize_inbound_ask,
 )
+from local_workspace_application.slack_companion.commands import (
+    SlackCommandContext,
+    SlackCommandMatch,
+    discover_slack_commands,
+    render_command_help,
+    slack_command,
+)
 from local_workspace_application.slack_companion.dedupe_repository import (
     SlackEventDedupeRepository,
 )
@@ -169,6 +176,69 @@ def is_workspace_delete_attempt(text: str) -> bool:
     )
 
 
+def parse_help_command(text: str) -> SlackCommandMatch | None:
+    if (text or "").strip().casefold() == "help":
+        return SlackCommandMatch()
+    return None
+
+
+def parse_workspaces_list_command(text: str) -> SlackCommandMatch | None:
+    if is_workspaces_command(text):
+        return SlackCommandMatch()
+    return None
+
+
+def parse_workspace_delete_confirm_command(text: str) -> SlackCommandMatch | None:
+    if is_workspace_delete_confirm(text):
+        return SlackCommandMatch()
+    return None
+
+
+def parse_workspace_delete_cancel_command(text: str) -> SlackCommandMatch | None:
+    if is_workspace_delete_cancel(text):
+        return SlackCommandMatch()
+    return None
+
+
+def parse_workspace_delete_request_command(text: str) -> SlackCommandMatch | None:
+    index = parse_workspace_delete(text)
+    if index is None:
+        return None
+    return SlackCommandMatch(payload=index)
+
+
+def parse_workspace_delete_invalid_command(text: str) -> SlackCommandMatch | None:
+    if is_workspace_delete_attempt(text) and parse_workspace_delete(text) is None:
+        return SlackCommandMatch()
+    return None
+
+
+def parse_workspace_create_command(text: str) -> SlackCommandMatch | None:
+    name = parse_workspace_create(text)
+    if name is None:
+        return None
+    return SlackCommandMatch(payload=name)
+
+
+def parse_workspace_create_invalid_command(text: str) -> SlackCommandMatch | None:
+    if is_workspace_create_attempt(text) and parse_workspace_create(text) is None:
+        return SlackCommandMatch()
+    return None
+
+
+def parse_workspace_select_command(text: str) -> SlackCommandMatch | None:
+    index = parse_workspace_selection(text)
+    if index is None:
+        return None
+    return SlackCommandMatch(payload=index)
+
+
+def parse_workspace_select_invalid_command(text: str) -> SlackCommandMatch | None:
+    if is_workspace_selection_attempt(text) and parse_workspace_selection(text) is None:
+        return SlackCommandMatch()
+    return None
+
+
 def order_workspaces_for_listing(
     workspaces: list[SlackWorkspaceListItem],
     *,
@@ -237,6 +307,7 @@ class SlackAskWorkflow:
         self._pending_deletions = (
             pending_deletion_store or InMemorySlackPendingDeletionStore()
         )
+        self._commands = discover_slack_commands(self)
 
     def _resolve_effective_workspace(
         self, actor_key: str, configured_workspace_id: str
@@ -284,118 +355,277 @@ class SlackAskWorkflow:
             team_id=authorized.team_id,
             user_id=authorized.user_id,
         )
+        context = SlackCommandContext(
+            event=event,
+            address=address,
+            authorized=authorized,
+            claim=claim,
+            actor_key=actor_key,
+        )
+
+        resolved = self._commands.match(authorized.question)
+        if resolved is not None:
+            await resolved.handler(context, resolved.match)
+            return
+
+        await self._handle_regular_ask(context)
+
+    @slack_command(
+        command_id="help",
+        syntax="help",
+        description="Show available commands.",
+        example="help",
+        priority=10,
+        parser=parse_help_command,
+    )
+    async def _command_help(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        text = render_command_help(self._commands.visible_commands())
+        await self._send(
+            OutboundConversationMessage(address=context.address, text=text)
+        )
+        self._dedupe.mark_completed(
+            dedupe_key=context.claim.dedupe_key,
+            claim_token=context.claim.claim_token,
+            ask_run_id=None,
+        )
+
+    @slack_command(
+        command_id="workspaces.list",
+        syntax="workspaces",
+        description="List available workspaces and show the active one.",
+        example="workspaces",
+        priority=20,
+        parser=parse_workspaces_list_command,
+    )
+    async def _command_workspaces_list(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._handle_workspaces_listing(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            configured_workspace_id=context.authorized.workspace_id,
+        )
+
+    @slack_command(
+        command_id="workspace.delete.confirm",
+        syntax="workspace delete confirm",
+        description="Confirm the pending workspace deletion.",
+        example="workspace delete confirm",
+        priority=30,
+        parser=parse_workspace_delete_confirm_command,
+    )
+    async def _command_workspace_delete_confirm(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._handle_workspace_delete_confirm(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            configured_workspace_id=context.authorized.workspace_id,
+        )
+
+    @slack_command(
+        command_id="workspace.delete.cancel",
+        syntax="workspace delete cancel",
+        description="Cancel the pending workspace deletion.",
+        example="workspace delete cancel",
+        priority=40,
+        parser=parse_workspace_delete_cancel_command,
+    )
+    async def _command_workspace_delete_cancel(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        self._pending_deletions.clear(context.actor_key)
+        await self._send(
+            OutboundConversationMessage(
+                address=context.address,
+                text=render_workspace_delete_cancelled(),
+            )
+        )
+        self._dedupe.mark_completed(
+            dedupe_key=context.claim.dedupe_key,
+            claim_token=context.claim.claim_token,
+            ask_run_id=None,
+        )
+
+    @slack_command(
+        command_id="workspace.delete.request",
+        syntax="workspace delete <number>",
+        description="Prepare a workspace for deletion.",
+        example="workspace delete 2",
+        priority=50,
+        parser=parse_workspace_delete_request_command,
+    )
+    async def _command_workspace_delete_request(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        index = match.payload
+        if not isinstance(index, int):
+            raise TypeError("workspace.delete.request payload must be int")
+        await self._handle_workspace_delete_request(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            configured_workspace_id=context.authorized.workspace_id,
+            index=index,
+        )
+
+    @slack_command(
+        command_id="workspace.delete.invalid",
+        syntax="workspace delete",
+        description="Invalid workspace delete usage.",
+        example="",
+        priority=55,
+        parser=parse_workspace_delete_invalid_command,
+        visible_in_help=False,
+    )
+    async def _command_workspace_delete_invalid(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._send(
+            OutboundConversationMessage(
+                address=context.address,
+                text=render_workspace_delete_usage(),
+            )
+        )
+        self._dedupe.mark_completed(
+            dedupe_key=context.claim.dedupe_key,
+            claim_token=context.claim.claim_token,
+            ask_run_id=None,
+        )
+
+    @slack_command(
+        command_id="workspace.create",
+        syntax="workspace create <name>",
+        description="Create a workspace and select it.",
+        example="workspace create Contracts",
+        priority=60,
+        parser=parse_workspace_create_command,
+    )
+    async def _command_workspace_create(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        name = match.payload
+        if not isinstance(name, str):
+            raise TypeError("workspace.create payload must be str")
+        await self._handle_workspace_create(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            name=name,
+        )
+
+    @slack_command(
+        command_id="workspace.create.invalid",
+        syntax="workspace create",
+        description="Invalid workspace create usage.",
+        example="",
+        priority=65,
+        parser=parse_workspace_create_invalid_command,
+        visible_in_help=False,
+    )
+    async def _command_workspace_create_invalid(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._send(
+            OutboundConversationMessage(
+                address=context.address,
+                text=render_workspace_create_usage(),
+            )
+        )
+        self._dedupe.mark_completed(
+            dedupe_key=context.claim.dedupe_key,
+            claim_token=context.claim.claim_token,
+            ask_run_id=None,
+        )
+
+    @slack_command(
+        command_id="workspace.select",
+        syntax="workspace <number>",
+        description="Select a workspace from the current list.",
+        example="workspace 2",
+        priority=70,
+        parser=parse_workspace_select_command,
+    )
+    async def _command_workspace_select(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        index = match.payload
+        if not isinstance(index, int):
+            raise TypeError("workspace.select payload must be int")
+        await self._handle_workspace_selection(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            configured_workspace_id=context.authorized.workspace_id,
+            index=index,
+        )
+
+    @slack_command(
+        command_id="workspace.selection.invalid",
+        syntax="workspace",
+        description="Invalid workspace selection usage.",
+        example="",
+        priority=75,
+        parser=parse_workspace_select_invalid_command,
+        visible_in_help=False,
+    )
+    async def _command_workspace_selection_invalid(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._send(
+            OutboundConversationMessage(
+                address=context.address,
+                text=render_workspace_selection_usage(),
+            )
+        )
+        self._dedupe.mark_completed(
+            dedupe_key=context.claim.dedupe_key,
+            claim_token=context.claim.claim_token,
+            ask_run_id=None,
+        )
+
+    async def _handle_regular_ask(self, context: SlackCommandContext) -> None:
+        address = context.address
+        claim = context.claim
+        actor_key = context.actor_key
+        authorized = context.authorized
         question = authorized.question
-
-        if is_workspaces_command(question):
-            await self._handle_workspaces_listing(
-                address=address,
-                claim=claim,
-                tenant_id=authorized.tenant_id,
-                actor_key=actor_key,
-                configured_workspace_id=authorized.workspace_id,
-            )
-            return
-
-        if is_workspace_create_attempt(question):
-            created_name = parse_workspace_create(question)
-            if created_name is None:
-                await self._send(
-                    OutboundConversationMessage(
-                        address=address,
-                        text=render_workspace_create_usage(),
-                    )
-                )
-                self._dedupe.mark_completed(
-                    dedupe_key=claim.dedupe_key,
-                    claim_token=claim.claim_token,
-                    ask_run_id=None,
-                )
-                return
-            await self._handle_workspace_create(
-                address=address,
-                claim=claim,
-                tenant_id=authorized.tenant_id,
-                actor_key=actor_key,
-                name=created_name,
-            )
-            return
-
-        if is_workspace_delete_confirm(question):
-            await self._handle_workspace_delete_confirm(
-                address=address,
-                claim=claim,
-                tenant_id=authorized.tenant_id,
-                actor_key=actor_key,
-                configured_workspace_id=authorized.workspace_id,
-            )
-            return
-
-        if is_workspace_delete_cancel(question):
-            self._pending_deletions.clear(actor_key)
-            await self._send(
-                OutboundConversationMessage(
-                    address=address,
-                    text=render_workspace_delete_cancelled(),
-                )
-            )
-            self._dedupe.mark_completed(
-                dedupe_key=claim.dedupe_key,
-                claim_token=claim.claim_token,
-                ask_run_id=None,
-            )
-            return
-
-        delete_index = parse_workspace_delete(question)
-        if delete_index is not None:
-            await self._handle_workspace_delete_request(
-                address=address,
-                claim=claim,
-                tenant_id=authorized.tenant_id,
-                actor_key=actor_key,
-                configured_workspace_id=authorized.workspace_id,
-                index=delete_index,
-            )
-            return
-
-        if is_workspace_delete_attempt(question):
-            await self._send(
-                OutboundConversationMessage(
-                    address=address,
-                    text=render_workspace_delete_usage(),
-                )
-            )
-            self._dedupe.mark_completed(
-                dedupe_key=claim.dedupe_key,
-                claim_token=claim.claim_token,
-                ask_run_id=None,
-            )
-            return
-
-        selection_index = parse_workspace_selection(question)
-        if selection_index is not None:
-            await self._handle_workspace_selection(
-                address=address,
-                claim=claim,
-                tenant_id=authorized.tenant_id,
-                actor_key=actor_key,
-                configured_workspace_id=authorized.workspace_id,
-                index=selection_index,
-            )
-            return
-
-        if is_workspace_selection_attempt(question):
-            await self._send(
-                OutboundConversationMessage(
-                    address=address,
-                    text=render_workspace_selection_usage(),
-                )
-            )
-            self._dedupe.mark_completed(
-                dedupe_key=claim.dedupe_key,
-                claim_token=claim.claim_token,
-                ask_run_id=None,
-            )
-            return
 
         selection = self._selections.get(actor_key)
         workspace_id = self._resolve_effective_workspace(

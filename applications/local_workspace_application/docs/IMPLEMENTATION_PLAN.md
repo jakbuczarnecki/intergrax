@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
+Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -282,7 +282,7 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
+Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 Slack conversational adapter: MVP-4 current (not implemented)
@@ -673,10 +673,17 @@ Slack lifecycle: ``workspace create <name>`` / ``workspace delete <n>`` +
  workspace-owned Ask runs; local source files never deleted; pending deletion TTL 5m;
  created workspace becomes effective active; no source attachment in this task)
 
+LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
+declarative ``@slack_command`` handlers + opt-in discovery on workflow instance;
+registry drives match/parse/dispatch and dynamic ``help`` (no manual help list;
+no OpenAPI/endpoint auto-exposure; no global command framework);
+non-command DM still invokes Ask
+
 LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
 1B-1 workspace listing — IMPLEMENTED / OPERATOR_VERIFIED
 1B-2 workspace selection — OPERATOR_VERIFIED
 LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
+LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
 → inspect workspace contents / sources — NEXT
 → pending question
 → ACTION resume
@@ -707,6 +714,8 @@ LKW slack_companion
    configured = fallback; selected = effective active; listing marks effective)
 → workspace create / delete with confirmation (LKW-WORKSPACE-MANAGEMENT-1
    IMPLEMENTED / READY_FOR_REVIEW; local files never deleted; Ask history policy A)
+→ dynamic command catalog + ``help`` (LKW-SLACK-COMMAND-CATALOG-1
+   IMPLEMENTED / READY_FOR_REVIEW; decorated handlers; registry = dispatch + help)
 → inspect contents / sources / pending question / ACTION / persistence (later)
 ```
 
@@ -1187,7 +1196,7 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
+Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
 Next product task: inspect workspace contents / sources

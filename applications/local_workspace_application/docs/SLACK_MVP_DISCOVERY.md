@@ -20,6 +20,9 @@ Next slice: MVP-4 — Slack conversational MVP
     workspace delete cancel → clear pending only
     cleanup: workspace/sources/docs/ops/vectors + Ask runs (policy A);
     local source files never deleted; no source attachment in this task
+  LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
+    exact DM "help" → dynamic command list from decorated handler metadata
+    (registry = parse/dispatch/help; opt-in discovery on workflow; Ask for non-commands)
   Next task: inspect workspace contents / sources
 ```
 
@@ -70,6 +73,7 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → workspace listing command (1B-1 IMPLEMENTED / OPERATOR_VERIFIED)
 → text workspace selection (1B-2 OPERATOR_VERIFIED; in-memory only)
 → workspace create / delete confirm (LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ dynamic command catalog + help (LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW)
 → inspect contents / sources / pending question / ACTION / persistence (later)
 
 Next exact task: inspect workspace contents / sources
@@ -1270,6 +1274,20 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   - Deleting selected clears selection; deleting configured with no selection suppresses
     configured fallback until create/select; never auto-selects another workspace.
   - No source attachment, rename, Block Kit, or persisted pending in this task.
+- **Command catalog (LKW-SLACK-COMMAND-CATALOG-1):**
+  - Formal Slack commands are `@slack_command`-annotated async methods on
+    `SlackAskWorkflow`; discovery is opt-in on the workflow instance only
+    (`__lkw_slack_command__`); no module/global scan, no OpenAPI/endpoint mapping,
+    no global Intergrax command framework.
+  - Immutable registry orders by `priority` then `command_id`; drives parse,
+    first-match dispatch, and dynamic `help` from the same metadata
+    (`syntax` / `description` / `example` / `visible_in_help`).
+  - Exact DM `help` (trim; case-insensitive; no aliases): zero HTTP / zero Ask;
+    no selection or pending-deletion mutation; marks dedupe completed.
+  - Invalid formal attempts (`workspace`, invalid create/delete) stay on
+    hidden registry entries (`visible_in_help=False`) and never fall through to Ask.
+  - Non-matching DM still invokes the regular Ask flow after authorization + dedupe.
+  - A future visible decorated command automatically appears in `help`.
 
 ---
 
