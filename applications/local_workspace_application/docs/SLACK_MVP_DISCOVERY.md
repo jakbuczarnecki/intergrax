@@ -5,9 +5,10 @@ Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_V
 Next slice: MVP-4 — Slack conversational MVP
   LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
     approved DM → configured active workspace → Ask HTTP → answer
-  Next task: LKW-SLACK-WORKFLOW-1B
-    workspace listing → workspace selection → pending question
-    → ACTION resume → active workspace persistence → workspaces command
+  LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / READY_FOR_REVIEW
+    exact DM "workspaces" → tenant-scoped active listing → same-thread reply
+    (Ask count 0; no selection / buttons / pending)
+  Next task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
 ```
 
 **Platform runtime status:**
@@ -54,15 +55,10 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → product dedupe (1A DONE / LIVE_VERIFIED; DETERMINISTIC_CONCURRENCY_VERIFIED)
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
-→ workspace selection / pending question / ACTION resume (1B)
+→ workspace listing command (1B-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ workspace selection / pending question / ACTION resume (1B-2+)
 
-Next exact task: LKW-SLACK-WORKFLOW-1B
-workspace listing
-→ workspace selection
-→ pending question
-→ ACTION resume
-→ active workspace persistence
-→ workspaces command
+Next exact task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -1228,6 +1224,12 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
 - Optional start when `LOCAL_WORKSPACE_SLACK_ENABLED=true` and tokens present.
 - Register shutdown hook.
 - Do not mount Slack as a required dependency of HTTP/MCP.
+- **Ask workspace lookup (LKW-SLACK-ASK-404-FIX):** listing/`GET`/`POST …/ask` share
+  `app.state.lkw_managed_workspace_service` (+ repository/document store). Ask HTTP maps
+  only `WorkspaceAskLookupError` to public `404 not_found`; bare `LookupError` subclasses
+  such as `KeyError` during search/assembly must not present as workspace-not-found.
+  Internal logs may use safe reason codes (`workspace_lookup_failed`,
+  `tenant_scope_mismatch`, `repository_inconsistency`) without tenant/workspace IDs.
 
 ---
 

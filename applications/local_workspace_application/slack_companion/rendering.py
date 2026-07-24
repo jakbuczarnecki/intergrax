@@ -4,7 +4,10 @@
 
 from __future__ import annotations
 
-from local_workspace_application.slack_companion.models import SlackAskHttpResponse
+from local_workspace_application.slack_companion.models import (
+    SlackAskHttpResponse,
+    SlackWorkspaceListItem,
+)
 
 ACK_TEXT = "Checking the selected workspace…"
 INSUFFICIENT_EVIDENCE_TEXT = (
@@ -12,6 +15,8 @@ INSUFFICIENT_EVIDENCE_TEXT = (
     "to answer reliably."
 )
 GENERIC_ERROR_TEXT = "I could not complete this request. Please try again."
+WORKSPACE_LIST_EMPTY_TEXT = "No available workspaces were found."
+WORKSPACE_LIST_HEADER = "Available workspaces:"
 
 MAX_ANSWER_CHARS = 3000
 MAX_SOURCE_LABELS = 5
@@ -31,6 +36,33 @@ def render_ask_response(response: SlackAskHttpResponse) -> str:
 
 def render_error() -> str:
     return GENERIC_ERROR_TEXT
+
+
+def render_workspace_list(
+    workspaces: list[SlackWorkspaceListItem],
+    *,
+    active_workspace_id: str,
+) -> str:
+    """Render a safe workspace list; never includes workspace/tenant IDs."""
+    if not workspaces:
+        return WORKSPACE_LIST_EMPTY_TEXT
+
+    active_id = (active_workspace_id or "").strip()
+    active_present = any(
+        (item.workspace_id or "").strip() == active_id for item in workspaces
+    )
+    lines = [WORKSPACE_LIST_HEADER, ""]
+    for item in workspaces:
+        name = (item.name or "").strip()
+        if not name:
+            continue
+        if active_present and (item.workspace_id or "").strip() == active_id:
+            lines.append(f"• {name} — active")
+        else:
+            lines.append(f"• {name}")
+    if len(lines) == 2:
+        return WORKSPACE_LIST_EMPTY_TEXT
+    return "\n".join(lines)
 
 
 def safe_source_labels(response: SlackAskHttpResponse) -> list[str]:

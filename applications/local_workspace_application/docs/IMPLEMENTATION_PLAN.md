@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; next LKW-SLACK-WORKFLOW-1B)
+Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; LKW-SLACK-WORKFLOW-1B-1 IMPLEMENTED / READY_FOR_REVIEW; next 1B-2)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -282,7 +282,7 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current implementation focus: MVP-4 — Slack conversational MVP
+Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 IMPLEMENTED / READY_FOR_REVIEW; next 1B-2)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 Slack conversational adapter: MVP-4 current (not implemented)
@@ -656,17 +656,19 @@ Evidence: [proof/LKW_SLACK_ASK_WORKFLOW_1A_LIVE_PROOF.md](proof/LKW_SLACK_ASK_WO
 Dedupe classification: DETERMINISTIC_CONCURRENCY_VERIFIED
 (artificial same-event live redelivery not required for 1A completion)
 
-LKW-SLACK-WORKFLOW-1B — NEXT
-workspace listing
-→ workspace selection
+LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / READY_FOR_REVIEW
+exact DM ``workspaces`` → tenant-scoped active workspace listing → same-thread safe reply
+(Ask call count = 0; selection / buttons / pending not included)
+
+LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
+1B-1 workspace listing — IMPLEMENTED / READY_FOR_REVIEW
+→ 1B-2 workspace selection — NEXT
 → pending question
 → ACTION resume
 → active workspace persistence
-→ workspaces command
 ```
 
-Next task: `LKW-SLACK-WORKFLOW-1B`
-(workspace listing → workspace selection → pending question → ACTION resume → active workspace persistence → workspaces command).
+Next task after acceptance: `LKW-SLACK-WORKFLOW-1B-2` — workspace selection.
 
 Ownership:
 
@@ -685,10 +687,11 @@ LKW slack_companion
 → product dedupe (1A DONE / LIVE_VERIFIED; DETERMINISTIC_CONCURRENCY_VERIFIED)
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
-→ workspace selection / pending / ACTION (1B)
+→ workspace listing command (1B-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ workspace selection / pending / ACTION (1B-2+)
 ```
 
-Next exact task: `LKW-SLACK-WORKFLOW-1B`.
+Next exact task: `LKW-SLACK-WORKFLOW-1B-2`.
 
 User-visible result:
 
@@ -1165,10 +1168,10 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; next 1B)
+Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 IMPLEMENTED / READY_FOR_REVIEW; next 1B-2)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
-Next product task: LKW-SLACK-WORKFLOW-1B
+Next product task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
 Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof, LKW-SLACK-WORKFLOW-1A (+ configuration closure + live proof)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md

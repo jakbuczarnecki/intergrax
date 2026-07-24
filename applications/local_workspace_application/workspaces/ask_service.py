@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
@@ -34,6 +35,8 @@ from local_workspace_application.workspaces.search_evidence import (
 )
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
+logger = logging.getLogger(__name__)
+
 
 class WorkspaceAskPersistenceError(RuntimeError):
     """Ask run could not be durably persisted."""
@@ -41,6 +44,14 @@ class WorkspaceAskPersistenceError(RuntimeError):
 
 class WorkspaceAskNotFoundError(LookupError):
     """Ask run not found for tenant (including cross-tenant)."""
+
+
+class WorkspaceAskLookupError(LookupError):
+    """Workspace authorization failed for Ask (fail-closed HTTP 404)."""
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(reason)
 
 
 class WorkspaceAskService:
@@ -78,6 +89,23 @@ class WorkspaceAskService:
     def llm_adapter(self, adapter: LLMAdapter) -> None:
         self._llm = adapter
 
+    def use_workspace_authority(
+        self,
+        workspace_service: ManagedWorkspaceService,
+        workspace_repository: ManagedWorkspaceRepository | None = None,
+    ) -> None:
+        """Bind Ask to the same managed-workspace authority used by listing/GET."""
+        self._workspaces = workspace_service
+        if workspace_repository is None:
+            workspace_repository = workspace_service.repository
+        if self._workspace_repo is not workspace_repository:
+            logger.warning(
+                "ask_workspace_authority_realigned reason=repository_inconsistency"
+            )
+            self._workspace_repo = workspace_repository
+            if self._ask_repo.document_store is not workspace_repository.document_store:
+                self._ask_repo = WorkspaceAskRepository(workspace_repository.document_store)
+
     async def ask(
         self,
         *,
@@ -91,7 +119,12 @@ class WorkspaceAskService:
             workspace_id=workspace_id,
         )
         if workspace is None:
-            raise LookupError("workspace_not_found")
+            reason = self._classify_workspace_lookup_failure(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            logger.warning("ask_workspace_lookup_failed reason=%s", reason)
+            raise WorkspaceAskLookupError(reason)
 
         run_id = new_run_id()
         created_at = datetime.now(UTC)
@@ -290,3 +323,26 @@ class WorkspaceAskService:
             raise WorkspaceAskPersistenceError(
                 f"ask run persistence failed: {exc.__class__.__name__}"
             ) from exc
+
+    def _classify_workspace_lookup_failure(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> str:
+        """Return a safe diagnostic code without tenant/workspace identifiers."""
+        wanted = (workspace_id or "").strip()
+        if self._workspace_repo is not self._workspaces.repository:
+            return "repository_inconsistency"
+        if (
+            self._ask_repo.document_store
+            is not self._workspace_repo.document_store
+        ):
+            return "repository_inconsistency"
+        try:
+            listed = self._workspaces.list_workspaces(tenant_id=tenant_id)
+        except Exception:  # noqa: BLE001 — classification must not raise
+            return "workspace_lookup_failed"
+        if any((item.workspace_id or "").strip() == wanted for item in listed):
+            return "repository_inconsistency"
+        return "workspace_lookup_failed"

@@ -71,8 +71,26 @@ class SlackAskHttpResponse(BaseModel):
     citations: list[SlackAskCitationLabel] = Field(default_factory=list)
 
 
+class SlackWorkspaceListItem(BaseModel):
+    """Safe subset of Managed Workspace list items for Slack rendering."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    workspace_id: str = ""
+    name: str = ""
+    status: str = ""
+
+
+class SlackWorkspaceListResponse(BaseModel):
+    """Typed GET /workspaces response used by the companion (safe subset)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    workspaces: list[SlackWorkspaceListItem] = Field(default_factory=list)
+
+
 class SlackAskClientError(Exception):
-    """Controlled Ask HTTP failure (no internal diagnostics for Slack rendering)."""
+    """Controlled Ask/list HTTP failure (no internal diagnostics for Slack rendering)."""
 
     def __init__(self, *, kind: str) -> None:
         super().__init__(kind)

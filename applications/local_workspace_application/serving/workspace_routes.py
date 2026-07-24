@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
@@ -35,6 +36,7 @@ from local_workspace_application.serving.workspace_schemas import (
 from local_workspace_application.workspaces.ask_models import WorkspaceAskRun
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
 from local_workspace_application.workspaces.ask_service import (
+    WorkspaceAskLookupError,
     WorkspaceAskNotFoundError,
     WorkspaceAskPersistenceError,
     WorkspaceAskService,
@@ -64,6 +66,8 @@ from local_workspace_application.workspaces.sync_runtime import (
     build_managed_workspace_sync_runtime,
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+
+logger = logging.getLogger(__name__)
 
 
 def _workspace_response(workspace: Workspace) -> WorkspaceResponseV1:
@@ -433,8 +437,22 @@ def mount_managed_workspace_routes(
         body: WorkspaceAskRequestV1,
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> WorkspaceAskResponseV1:
+        header_tenant = (x_tenant_id or "").strip() or None
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current_ask: WorkspaceAskService = getattr(request.app.state, "lkw_ask_service", ask_service)
+        if header_tenant and header_tenant != tenant_id:
+            logger.warning(
+                "ask_tenant_resolution reason=tenant_scope_mismatch"
+            )
+        current_ask: WorkspaceAskService = getattr(
+            request.app.state, "lkw_ask_service", ask_service
+        )
+        managed_service: ManagedWorkspaceService = getattr(
+            request.app.state, "lkw_managed_workspace_service", service
+        )
+        managed_repository: ManagedWorkspaceRepository | None = getattr(
+            request.app.state, "lkw_managed_workspace_repository", None
+        )
+        current_ask.use_workspace_authority(managed_service, managed_repository)
         try:
             run = await current_ask.ask(
                 tenant_id=tenant_id,
@@ -442,7 +460,15 @@ def mount_managed_workspace_routes(
                 question=body.question,
                 limit=body.limit,
             )
-        except LookupError as exc:
+        except WorkspaceAskLookupError as exc:
+            reason = exc.reason
+            if (
+                header_tenant
+                and header_tenant != tenant_id
+                and reason == "workspace_lookup_failed"
+            ):
+                reason = "tenant_scope_mismatch"
+            logger.warning("ask_workspace_http_404 reason=%s", reason)
             raise _not_found() from exc
         except SearchEvidenceIncompleteError as exc:
             raise HTTPException(
@@ -455,6 +481,11 @@ def mount_managed_workspace_routes(
                 detail="ask_persistence_failed",
             ) from exc
         except Exception as exc:
+            # KeyError/IndexError are LookupError subclasses — must not become 404.
+            logger.warning(
+                "ask_workspace_failed kind=%s",
+                type(exc).__name__,
+            )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"ask_error: {exc.__class__.__name__}",
@@ -471,7 +502,16 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> WorkspaceAskResponseV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        current_ask: WorkspaceAskService = getattr(request.app.state, "lkw_ask_service", ask_service)
+        current_ask: WorkspaceAskService = getattr(
+            request.app.state, "lkw_ask_service", ask_service
+        )
+        managed_service: ManagedWorkspaceService = getattr(
+            request.app.state, "lkw_managed_workspace_service", service
+        )
+        managed_repository: ManagedWorkspaceRepository | None = getattr(
+            request.app.state, "lkw_managed_workspace_repository", None
+        )
+        current_ask.use_workspace_authority(managed_service, managed_repository)
         try:
             run = current_ask.get_run(tenant_id=tenant_id, run_id=run_id)
         except WorkspaceAskNotFoundError as exc:

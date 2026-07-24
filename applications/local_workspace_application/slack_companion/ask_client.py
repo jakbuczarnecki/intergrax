@@ -14,6 +14,8 @@ import httpx
 from local_workspace_application.slack_companion.models import (
     SlackAskClientError,
     SlackAskHttpResponse,
+    SlackWorkspaceListItem,
+    SlackWorkspaceListResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,63 @@ class WorkspaceAskHttpClient:
     def build_url(self, workspace_id: str) -> str:
         path = f"v1/local_workspace/workspaces/{workspace_id}/ask"
         return urljoin(self._base_url, path)
+
+    def build_list_url(self) -> str:
+        return urljoin(self._base_url, "v1/local_workspace/workspaces")
+
+    async def list_workspaces(self, *, tenant_id: str) -> list[SlackWorkspaceListItem]:
+        """Return tenant-scoped workspaces allowed for Ask (status=active)."""
+        url = self.build_list_url()
+        headers: dict[str, str] = {
+            "Accept": "application/json",
+            "X-Tenant-Id": tenant_id.strip(),
+        }
+        if self._api_key is not None:
+            headers["X-API-Key"] = self._api_key
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout,
+                transport=self._transport,
+            ) as client:
+                response = await client.get(url, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "slack_companion list_workspaces timeout kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="timeout") from exc
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "slack_companion list_workspaces transport_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="transport_error") from exc
+
+        if response.status_code < 200 or response.status_code >= 300:
+            logger.warning(
+                "slack_companion list_workspaces http_error status=%s",
+                response.status_code,
+            )
+            raise SlackAskClientError(kind=f"http_{response.status_code}")
+
+        try:
+            payload = response.json()
+            parsed = SlackWorkspaceListResponse.model_validate(payload)
+        except Exception as exc:  # noqa: BLE001 — map parse failures to product error
+            logger.warning(
+                "slack_companion list_workspaces parse_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="parse_error") from exc
+
+        return [
+            item
+            for item in parsed.workspaces
+            if (item.status or "").strip().casefold() == "active"
+            and (item.workspace_id or "").strip()
+            and (item.name or "").strip()
+        ]
 
     async def ask(
         self,

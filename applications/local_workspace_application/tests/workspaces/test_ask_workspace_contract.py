@@ -513,3 +513,79 @@ def test_ask_rejects_slack_fields_in_request(ask_api) -> None:
         },
     )
     assert response.status_code == 422
+
+
+def test_listed_workspace_ask_not_404_same_store(ask_api) -> None:
+    """LKW-SLACK-ASK-404-FIX: listed + GET workspace must be Ask-usable (same store)."""
+    client = ask_api["client"]
+    store = ask_api["store"]
+    root: Path = ask_api["workspace_root"]
+    app = ask_api["app"]
+
+    tenant_a = _unique_tenant("tenant-a")
+    tenant_b = _unique_tenant("tenant-b")
+    workspace_id = _create_workspace(client, tenant_a, name="Listed Askable")
+
+    listed = client.get(f"{_PREFIX}/workspaces", headers=_headers(tenant_a))
+    assert listed.status_code == 200
+    ids = [item["workspace_id"] for item in listed.json()["workspaces"]]
+    assert workspace_id in ids
+
+    got = client.get(f"{_PREFIX}/workspaces/{workspace_id}", headers=_headers(tenant_a))
+    assert got.status_code == 200
+
+    path = root / "policy.txt"
+    path.write_text("Payment is due within 14 days.", encoding="utf-8")
+    _seed_document_ref(store, tenant_id=tenant_a, workspace_id=workspace_id, source_path=path)
+    _stub_search(app, workspace_id=workspace_id, source_path=path)
+
+    ask_service = app.state.lkw_ask_service
+    managed = app.state.lkw_managed_workspace_service
+    assert ask_service._workspaces is managed
+    assert ask_service._workspace_repo is managed.repository
+    assert ask_service._workspace_repo.document_store is store
+    assert ask_service._ask_repo.document_store is store
+
+    own = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/ask",
+        headers=_headers(tenant_a),
+        json={"question": "When is payment due?"},
+    )
+    assert own.status_code != 404
+    assert own.status_code == 200, own.text
+    assert own.json()["status"] in {"completed", "insufficient_evidence", "failed"}
+
+    cross = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/ask",
+        headers=_headers(tenant_b),
+        json={"question": "When is payment due?"},
+    )
+    assert cross.status_code == 404
+    assert cross.json()["detail"] == "not_found"
+
+    missing = client.post(
+        f"{_PREFIX}/workspaces/{uuid.uuid4()}/ask",
+        headers=_headers(tenant_a),
+        json={"question": "When is payment due?"},
+    )
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "not_found"
+
+
+def test_ask_keyerror_during_search_is_not_workspace_404(ask_api) -> None:
+    """LookupError subclasses (e.g. KeyError) must not be mapped to workspace 404."""
+    client = ask_api["client"]
+    app = ask_api["app"]
+
+    tenant = _unique_tenant()
+    workspace_id = _create_workspace(client, tenant)
+    executor = app.state.lkw_ask_service._executor
+    executor.execute = AsyncMock(side_effect=KeyError("synthetic_search_key"))
+
+    response = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/ask",
+        headers=_headers(tenant),
+        json={"question": "Trigger non-workspace LookupError subclass"},
+    )
+    assert response.status_code == 502
+    assert response.json()["detail"] == "ask_error: KeyError"

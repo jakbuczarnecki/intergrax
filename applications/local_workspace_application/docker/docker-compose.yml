@@ -1,15 +1,72 @@
 # © Artur Czarnecki. All rights reserved.
-# Prepare minimal context, then compose:
-#   uv run python scripts/build/build_application_image.py --application local_workspace_application \
-#     --context-dir applications/local_workspace_application/docker/runtime-context --keep-context --manifest-only
-#   uv run python scripts/build/build_application_image.py --application local_workspace_application \
-#     --tag local_workspace-application:latest --context-dir applications/local_workspace_application/docker/runtime-context --keep-context
-# Or: docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
-# (requires runtime-context/ already materialized; same isolation contract as CLI).
-
-name: intergrax_local_workspace
+# Canonical local LKW stack. The project name is fixed by build-local-docker scripts
+# to intergrax_lkw so named volumes survive controlled rebuilds.
 
 services:
+  lkw-mongodb:
+    image: mongo:7.0.14
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${LKW_MONGODB_ROOT_USERNAME:-intergrax}
+      MONGO_INITDB_ROOT_PASSWORD: ${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}
+      MONGO_INITDB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
+    ports:
+      - "${LKW_MONGODB_HOST_PORT:-27018}:27017"
+    volumes:
+      - lkw_mongodb_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "${LKW_MONGODB_ROOT_USERNAME:-intergrax}",
+          "--password",
+          "${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping').ok",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 20s
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4318:4318"
+    restart: unless-stopped
+
   local_workspace:
     build:
       context: ./runtime-context
@@ -25,3 +82,27 @@ services:
       LOCAL_WORKSPACE_BACKEND_HOST: "0.0.0.0"
       LOCAL_WORKSPACE_BACKEND_PORT: "8020"
       LOCAL_WORKSPACE_INCLUDE_MCP: "false"
+      INTERGRAX_MONGODB_URI: mongodb://${LKW_MONGODB_ROOT_USERNAME:-intergrax}:${LKW_MONGODB_ROOT_PASSWORD:-intergrax-local-dev-only}@lkw-mongodb:27017/${LKW_MONGODB_DATABASE:-intergrax_proofs}?authSource=admin
+      INTERGRAX_MONGODB_DATABASE: ${LKW_MONGODB_DATABASE:-intergrax_proofs}
+      INTERGRAX_MONGODB_COLLECTION: ${LKW_MONGODB_COLLECTION:-proof_receipts}
+      INTERGRAX_QDRANT_URL: http://qdrant:6333
+      OLLAMA_HOST: http://ollama:11434
+      LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
+    volumes:
+      - lkw_application_data:/app/applications/local_workspace_application/build/local_workspace
+    depends_on:
+      lkw-mongodb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  lkw_mongodb_data:
+  qdrant_data:
+  ollama_data:
+  lkw_application_data:
