@@ -137,6 +137,48 @@ async def test_api_key_not_logged(caplog: pytest.LogCaptureFixture) -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_workspaces_uses_tenant_and_filters_active() -> None:
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "workspaces": [
+                    {
+                        "workspace_id": "ws-1",
+                        "tenant_id": "tenant-1",
+                        "name": "Active One",
+                        "status": "active",
+                        "created_at": "2026-07-23T12:00:00Z",
+                        "updated_at": "2026-07-23T12:00:00Z",
+                    },
+                    {
+                        "workspace_id": "ws-2",
+                        "tenant_id": "tenant-1",
+                        "name": "Archived One",
+                        "status": "archived",
+                        "created_at": "2026-07-23T12:00:00Z",
+                        "updated_at": "2026-07-23T12:00:00Z",
+                    },
+                ]
+            },
+        )
+
+    client = WorkspaceAskHttpClient(
+        SlackAskClientConfig(base_url="http://127.0.0.1:8020", api_key="k"),
+        transport=httpx.MockTransport(handler),
+    )
+    items = await client.list_workspaces(tenant_id="tenant-1")
+    assert len(calls) == 1
+    assert str(calls[0].url) == "http://127.0.0.1:8020/v1/local_workspace/workspaces"
+    assert calls[0].method == "GET"
+    assert calls[0].headers["X-Tenant-Id"] == "tenant-1"
+    assert [item.workspace_id for item in items] == ["ws-1"]
+
+
+@pytest.mark.asyncio
 async def test_no_automatic_retry() -> None:
     calls = {"n": 0}
 

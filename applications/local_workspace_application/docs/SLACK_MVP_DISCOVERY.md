@@ -5,9 +5,10 @@ Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_V
 Next slice: MVP-4 — Slack conversational MVP
   LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
     approved DM → configured active workspace → Ask HTTP → answer
-  Next task: LKW-SLACK-WORKFLOW-1B
-    workspace listing → workspace selection → pending question
-    → ACTION resume → active workspace persistence → workspaces command
+  LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / READY_FOR_REVIEW
+    exact DM "workspaces" → tenant-scoped active listing → same-thread reply
+    (Ask count 0; no selection / buttons / pending)
+  Next task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
 ```
 
 **Platform runtime status:**
@@ -54,15 +55,10 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → product dedupe (1A DONE / LIVE_VERIFIED; DETERMINISTIC_CONCURRENCY_VERIFIED)
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
-→ workspace selection / pending question / ACTION resume (1B)
+→ workspace listing command (1B-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ workspace selection / pending question / ACTION resume (1B-2+)
 
-Next exact task: LKW-SLACK-WORKFLOW-1B
-workspace listing
-→ workspace selection
-→ pending question
-→ ACTION resume
-→ active workspace persistence
-→ workspaces command
+Next exact task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
 
 Live transport proof command:
 uv sync --extra integrations-slack

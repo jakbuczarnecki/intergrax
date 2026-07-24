@@ -24,16 +24,56 @@ from local_workspace_application.slack_companion.dedupe_repository import (
 from local_workspace_application.slack_companion.models import (
     SlackAskClientError,
     SlackDedupeRecord,
+    SlackWorkspaceListItem,
 )
 from local_workspace_application.slack_companion.rendering import (
     render_acknowledgement,
     render_ask_response,
     render_error,
+    render_workspace_list,
 )
 
 logger = logging.getLogger(__name__)
 
 OutboundSender = Callable[[OutboundConversationMessage], Awaitable[object]]
+
+_WORKSPACES_COMMAND = "workspaces"
+
+
+def is_workspaces_command(text: str) -> bool:
+    """Exact ``workspaces`` after trim; case-insensitive. No extra words."""
+    return (text or "").strip().casefold() == _WORKSPACES_COMMAND
+
+
+def order_workspaces_for_listing(
+    workspaces: list[SlackWorkspaceListItem],
+    *,
+    active_workspace_id: str,
+) -> list[SlackWorkspaceListItem]:
+    """Active configured workspace first (if present); then name, then id."""
+    active_id = (active_workspace_id or "").strip()
+    active_items = [
+        item for item in workspaces if (item.workspace_id or "").strip() == active_id
+    ]
+    others = [
+        item for item in workspaces if (item.workspace_id or "").strip() != active_id
+    ]
+    others_sorted = sorted(
+        others,
+        key=lambda item: (
+            (item.name or "").strip().casefold(),
+            (item.workspace_id or "").strip(),
+        ),
+    )
+    if active_items:
+        return active_items + others_sorted
+    return sorted(
+        workspaces,
+        key=lambda item: (
+            (item.name or "").strip().casefold(),
+            (item.workspace_id or "").strip(),
+        ),
+    )
 
 
 class SlackAskWorkflow:
@@ -81,6 +121,15 @@ class SlackAskWorkflow:
             return
 
         address = event.address
+        if is_workspaces_command(authorized.question):
+            await self._handle_workspaces_listing(
+                address=address,
+                claim=claim,
+                tenant_id=authorized.tenant_id,
+                active_workspace_id=authorized.workspace_id,
+            )
+            return
+
         try:
             await self._send(
                 OutboundConversationMessage(
@@ -114,6 +163,41 @@ class SlackAskWorkflow:
         except Exception as exc:  # noqa: BLE001 — product-safe error path
             logger.warning(
                 "slack_companion workflow_failed kind=%s",
+                type(exc).__name__,
+            )
+            await self._send_error(address=address, claim=claim)
+
+    async def _handle_workspaces_listing(
+        self,
+        *,
+        address: ConversationAddress,
+        claim: SlackDedupeRecord,
+        tenant_id: str,
+        active_workspace_id: str,
+    ) -> None:
+        try:
+            items = await self._ask.list_workspaces(tenant_id=tenant_id)
+            ordered = order_workspaces_for_listing(
+                items,
+                active_workspace_id=active_workspace_id,
+            )
+            final_text = render_workspace_list(
+                ordered,
+                active_workspace_id=active_workspace_id,
+            )
+            await self._send(
+                OutboundConversationMessage(address=address, text=final_text)
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+        except SlackAskClientError:
+            await self._send_error(address=address, claim=claim)
+        except Exception as exc:  # noqa: BLE001 — product-safe error path
+            logger.warning(
+                "slack_companion workspaces_listing_failed kind=%s",
                 type(exc).__name__,
             )
             await self._send_error(address=address, claim=claim)
