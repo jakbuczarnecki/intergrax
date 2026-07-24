@@ -46,6 +46,7 @@ from local_workspace_application.slack_companion.workflow import (
     is_workspace_selection_attempt,
     order_workspaces_for_listing,
     parse_workspace_selection,
+    resolve_effective_workspace_id,
 )
 from local_workspace_application.slack_companion.models import SlackWorkspaceListItem
 
@@ -509,6 +510,135 @@ async def test_workspaces_command_still_zero_ask() -> None:
     assert len(list_calls) == 1
     assert "1. Workspace Alpha — active" in sent[0].text
     assert "2. Workspace Beta" in sent[0].text
+
+
+@pytest.mark.asyncio
+async def test_without_selection_configured_is_effective_active() -> None:
+    ask_calls: list[httpx.Request] = []
+    transport = _transport(workspaces=_DEFAULT_WORKSPACES, ask_calls=ask_calls)
+    workflow, sent, store = _workflow(transport=transport)
+    key = slack_selection_actor_key(team_id="T_OK", user_id="U_OK")
+    assert store.get(key) is None
+    assert (
+        resolve_effective_workspace_id(None, configured_workspace_id="ws-active")
+        == "ws-active"
+    )
+    await workflow.handle(_event(text="workspaces", event_id="Ev-eff-cfg-list"))
+    assert "1. Workspace Alpha — active" in sent[0].text
+    assert "2. Workspace Beta" in sent[0].text
+    assert "Workspace Beta — active" not in sent[0].text
+    await workflow.handle(_event(text="What is leave policy?", event_id="Ev-eff-cfg-ask"))
+    assert len(ask_calls) == 1
+    assert "/workspaces/ws-active/ask" in str(ask_calls[0].url)
+
+
+@pytest.mark.asyncio
+async def test_after_selection_workspaces_marks_selected_active() -> None:
+    ask_calls: list[httpx.Request] = []
+    list_calls: list[httpx.Request] = []
+    transport = _transport(
+        workspaces=_DEFAULT_WORKSPACES,
+        ask_calls=ask_calls,
+        list_calls=list_calls,
+    )
+    workflow, sent, store = _workflow(transport=transport)
+    await workflow.handle(_event(text="workspace 2", event_id="Ev-eff-sel"))
+    await workflow.handle(_event(text="What is leave policy?", event_id="Ev-eff-ask"))
+    await workflow.handle(_event(text="workspaces", event_id="Ev-eff-list"))
+
+    key = slack_selection_actor_key(team_id="T_OK", user_id="U_OK")
+    selection = store.get(key)
+    assert selection is not None
+    assert selection.workspace_id == "ws-beta"
+    assert len(ask_calls) == 1
+    assert "/workspaces/ws-beta/ask" in str(ask_calls[0].url)
+    list_text = sent[-1].text
+    assert "1. Workspace Beta — active" in list_text
+    assert "Workspace Alpha — active" not in list_text
+    assert "2. Workspace Alpha" in list_text
+
+
+@pytest.mark.asyncio
+async def test_selected_active_first_ordering_in_workspaces() -> None:
+    transport = _transport(workspaces=_DEFAULT_WORKSPACES)
+    workflow, sent, store = _workflow(transport=transport)
+    key = slack_selection_actor_key(team_id="T_OK", user_id="U_OK")
+    store.set(
+        key,
+        SlackWorkspaceSelection(workspace_id="ws-beta", workspace_name="Workspace Beta"),
+    )
+    await workflow.handle(_event(text="workspaces", event_id="Ev-eff-order"))
+    lines = [line for line in sent[0].text.splitlines() if line and line[0].isdigit()]
+    assert lines[0] == "1. Workspace Beta — active"
+    assert lines[1] == "2. Workspace Alpha"
+
+
+@pytest.mark.asyncio
+async def test_after_404_clear_configured_becomes_active_again() -> None:
+    ask_calls: list[httpx.Request] = []
+    transport = _transport(
+        workspaces=_DEFAULT_WORKSPACES,
+        ask_status=404,
+        ask_calls=ask_calls,
+    )
+    workflow, sent, store = _workflow(transport=transport)
+    key = slack_selection_actor_key(team_id="T_OK", user_id="U_OK")
+    store.set(
+        key,
+        SlackWorkspaceSelection(workspace_id="ws-beta", workspace_name="Workspace Beta"),
+    )
+    await workflow.handle(_event(text="What happened?", event_id="Ev-eff-404"))
+    assert store.get(key) is None
+    assert SELECTED_WORKSPACE_UNAVAILABLE_TEXT in sent[-1].text
+
+    transport_ok = _transport(workspaces=_DEFAULT_WORKSPACES)
+    workflow_ok, sent_ok, store_ok = _workflow(transport=transport_ok, selections=store)
+    await workflow_ok.handle(_event(text="workspaces", event_id="Ev-eff-404-list"))
+    assert "1. Workspace Alpha — active" in sent_ok[0].text
+    assert "Workspace Beta — active" not in sent_ok[0].text
+    assert store_ok.get(key) is None
+
+
+@pytest.mark.asyncio
+async def test_restart_semantics_new_store_uses_configured_active() -> None:
+    transport = _transport(workspaces=_DEFAULT_WORKSPACES)
+    workflow_old, _sent_old, store_old = _workflow(transport=transport)
+    await workflow_old.handle(_event(text="workspace 2", event_id="Ev-restart-sel"))
+    key = slack_selection_actor_key(team_id="T_OK", user_id="U_OK")
+    assert store_old.get(key) is not None
+
+    workflow_new, sent_new, store_new = _workflow(transport=transport)
+    assert store_new.get(key) is None
+    await workflow_new.handle(_event(text="workspaces", event_id="Ev-restart-list"))
+    assert "1. Workspace Alpha — active" in sent_new[0].text
+    assert "Workspace Beta — active" not in sent_new[0].text
+
+
+@pytest.mark.asyncio
+async def test_active_marker_isolated_per_actor_key() -> None:
+    transport = _transport(workspaces=_DEFAULT_WORKSPACES)
+    shared = InMemorySlackWorkspaceSelectionStore()
+    workflow_a, sent_a, _ = _workflow(transport=transport, selections=shared)
+    workflow_b, sent_b, _ = _workflow(
+        transport=transport,
+        selections=shared,
+        approved_team_id="T_OTHER",
+        approved_user_id="U_OTHER",
+    )
+    await workflow_a.handle(_event(text="workspace 2", event_id="Ev-iso-sel-a"))
+    await workflow_a.handle(_event(text="workspaces", event_id="Ev-iso-list-a"))
+    await workflow_b.handle(
+        _event(
+            text="workspaces",
+            event_id="Ev-iso-list-b",
+            team_id="T_OTHER",
+            user_id="U_OTHER",
+        )
+    )
+    assert "1. Workspace Beta — active" in sent_a[-1].text
+    assert "Workspace Alpha — active" not in sent_a[-1].text
+    assert "1. Workspace Alpha — active" in sent_b[-1].text
+    assert "Workspace Beta — active" not in sent_b[-1].text
 
 
 @pytest.mark.asyncio

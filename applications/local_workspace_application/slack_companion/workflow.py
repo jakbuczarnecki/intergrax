@@ -83,7 +83,7 @@ def order_workspaces_for_listing(
     *,
     active_workspace_id: str,
 ) -> list[SlackWorkspaceListItem]:
-    """Active configured workspace first (if present); then name, then id."""
+    """Effective active workspace first (if present); then name, then id."""
     active_id = (active_workspace_id or "").strip()
     active_items = [
         item for item in workspaces if (item.workspace_id or "").strip() == active_id
@@ -109,6 +109,19 @@ def order_workspaces_for_listing(
     )
 
 
+def resolve_effective_workspace_id(
+    selection: SlackWorkspaceSelection | None,
+    *,
+    configured_workspace_id: str,
+) -> str:
+    """Selected workspace ID when present; otherwise configured fallback."""
+    if selection is not None:
+        selected_id = (selection.workspace_id or "").strip()
+        if selected_id:
+            return selected_id
+    return (configured_workspace_id or "").strip()
+
+
 class SlackAskWorkflow:
     """LKW product workflow over the conversation-channel contract."""
 
@@ -126,6 +139,14 @@ class SlackAskWorkflow:
         self._ask = ask_client
         self._send = send
         self._selections = selection_store or InMemorySlackWorkspaceSelectionStore()
+
+    def _resolve_effective_workspace(
+        self, actor_key: str, configured_workspace_id: str
+    ) -> str:
+        return resolve_effective_workspace_id(
+            self._selections.get(actor_key),
+            configured_workspace_id=configured_workspace_id,
+        )
 
     @classmethod
     def from_backend(
@@ -168,7 +189,8 @@ class SlackAskWorkflow:
                 address=address,
                 claim=claim,
                 tenant_id=authorized.tenant_id,
-                active_workspace_id=authorized.workspace_id,
+                actor_key=actor_key,
+                configured_workspace_id=authorized.workspace_id,
             )
             return
 
@@ -178,8 +200,8 @@ class SlackAskWorkflow:
                 address=address,
                 claim=claim,
                 tenant_id=authorized.tenant_id,
-                active_workspace_id=authorized.workspace_id,
                 actor_key=actor_key,
+                configured_workspace_id=authorized.workspace_id,
                 index=selection_index,
             )
             return
@@ -199,10 +221,12 @@ class SlackAskWorkflow:
             return
 
         selection = self._selections.get(actor_key)
-        workspace_id = (
-            selection.workspace_id if selection is not None else authorized.workspace_id
+        workspace_id = self._resolve_effective_workspace(
+            actor_key, authorized.workspace_id
         )
-        used_in_memory_selection = selection is not None
+        used_in_memory_selection = (
+            selection is not None and bool((selection.workspace_id or "").strip())
+        )
 
         try:
             await self._send(
@@ -251,17 +275,21 @@ class SlackAskWorkflow:
         address: ConversationAddress,
         claim: SlackDedupeRecord,
         tenant_id: str,
-        active_workspace_id: str,
+        actor_key: str,
+        configured_workspace_id: str,
     ) -> None:
         try:
+            effective_workspace_id = self._resolve_effective_workspace(
+                actor_key, configured_workspace_id
+            )
             items = await self._ask.list_workspaces(tenant_id=tenant_id)
             ordered = order_workspaces_for_listing(
                 items,
-                active_workspace_id=active_workspace_id,
+                active_workspace_id=effective_workspace_id,
             )
             final_text = render_workspace_list(
                 ordered,
-                active_workspace_id=active_workspace_id,
+                active_workspace_id=effective_workspace_id,
             )
             await self._send(
                 OutboundConversationMessage(address=address, text=final_text)
@@ -286,15 +314,18 @@ class SlackAskWorkflow:
         address: ConversationAddress,
         claim: SlackDedupeRecord,
         tenant_id: str,
-        active_workspace_id: str,
         actor_key: str,
+        configured_workspace_id: str,
         index: int,
     ) -> None:
         try:
+            effective_workspace_id = self._resolve_effective_workspace(
+                actor_key, configured_workspace_id
+            )
             items = await self._ask.list_workspaces(tenant_id=tenant_id)
             ordered = order_workspaces_for_listing(
                 items,
-                active_workspace_id=active_workspace_id,
+                active_workspace_id=effective_workspace_id,
             )
             if not ordered:
                 await self._send(

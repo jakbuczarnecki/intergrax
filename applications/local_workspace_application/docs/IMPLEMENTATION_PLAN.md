@@ -662,7 +662,8 @@ exact DM ``workspaces`` → tenant-scoped numbered active listing → same-threa
 
 LKW-SLACK-WORKFLOW-1B-2 — IMPLEMENTED / READY_FOR_REVIEW
 exact DM ``workspace <positive integer>`` → fresh tenant-scoped list → 1-based in-memory selection
-(configured ``LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID`` remains fallback; restart clears selection;
+(configured workspace = default fallback; selected = effective active workspace;
+ ``workspaces`` always marks effective active; restart clears selection;
  Ask count = 0 on selection; no pending question / ACTION / persistence)
 
 LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
@@ -693,7 +694,8 @@ LKW slack_companion
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
 → workspace listing command (1B-1 IMPLEMENTED / OPERATOR_VERIFIED)
-→ text workspace selection (1B-2 IMPLEMENTED / READY_FOR_REVIEW; in-memory only)
+→ text workspace selection (1B-2 IMPLEMENTED / READY_FOR_REVIEW; in-memory only;
+   configured = fallback; selected = effective active; listing marks effective)
 → pending question / ACTION resume / persistence (1B later)
 ```
 

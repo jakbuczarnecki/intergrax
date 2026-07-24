@@ -10,7 +10,8 @@ Next slice: MVP-4 — Slack conversational MVP
     (Ask count 0; no buttons / pending)
   LKW-SLACK-WORKFLOW-1B-2 — IMPLEMENTED / READY_FOR_REVIEW
     exact DM "workspace <n>" → fresh tenant-scoped list → 1-based in-memory selection
-    (configured active workspace = fallback; restart clears selection;
+    (configured workspace = default fallback; selected = effective active;
+     `workspaces` always marks effective active; restart clears selection;
      Ask count 0 on selection; no pending / ACTION / persistence)
   Next task: pending question
 ```
@@ -1238,11 +1239,14 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
 - **Text workspace selection (LKW-SLACK-WORKFLOW-1B-2):** command `workspace <positive integer>`
   (trim; `workspace` case-insensitive; 1-based index into a fresh tenant-scoped
   `GET /v1/local_workspace/workspaces` list with the same active-first ordering as
-  `workspaces`). Selection is process-local (`team_id` + `user_id`); configured
-  `LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` remains the Ask fallback when no
-  selection exists; restart clears selection. No pending question, no ACTION resume,
-  no DocumentStore persistence. Real Ask `http_404` for an in-memory selection clears
-  that selection without silent configured fallback retry.
+  `workspaces`). Selection is process-local (`team_id` + `user_id`).
+  Effective active workspace = in-memory selected workspace when present, else
+  configured `LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` (default fallback only).
+  Ask routing, `workspaces` ordering, and the `— active` marker all use the same
+  effective workspace; `workspaces` always marks effective active. Restart clears
+  selection. No pending question, no ACTION resume, no DocumentStore persistence.
+  Real Ask `http_404` for an in-memory selection clears that selection without
+  silent configured fallback retry (configured then becomes effective again).
 
 ---
 
