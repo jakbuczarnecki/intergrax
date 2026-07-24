@@ -25,7 +25,11 @@ Next slice: MVP-4 — Slack conversational MVP
     (registry = parse/dispatch/help; opt-in discovery on workflow; Ask for non-commands)
   LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
     Slack is API/capability client only; storage/tenancy canonical in ARCHITECTURE.md
-  Next task: LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources
+  LKW-WORKSPACE-CONTENTS-1A — IMPLEMENTED / READY_FOR_REVIEW
+    exact DM "sources" → effective active workspace → public tenant-scoped HTTP
+    source list → safe provider-neutral summaries → same-thread reply
+    (Ask count 0; no source mutations; no full path disclosure)
+  Next task: LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability
 ```
 
 **Platform runtime status:**
@@ -77,10 +81,10 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → workspace create / delete confirm (LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW)
 → dynamic command catalog + help (LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW)
 → storage/tenancy contract (LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW)
-→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A — NEXT)
+→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A IMPLEMENTED / READY_FOR_REVIEW)
 → source lifecycle 1B–1E / pending question / ACTION / persistence (later)
 
-Next exact task: LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources
+Next exact task: LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -1299,8 +1303,12 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   behave the same regardless of where storage is located. Canonical tenancy,
   storage location, private-by-default, source-connector, and future sharing
   contract: [`ARCHITECTURE.md` — Deployment, storage and tenancy model](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
-  Next product task after contract acceptance:
-  `LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources`.
+  LKW-WORKSPACE-CONTENTS-1A — IMPLEMENTED / READY_FOR_REVIEW:
+  exact DM `sources` → effective active workspace → public tenant-scoped HTTP
+  source list → safe provider-neutral source summaries → same-thread reply
+  (zero Ask; no source mutations; no full path disclosure; dynamic help).
+  Next product task:
+  `LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability`.
 
 ---
 

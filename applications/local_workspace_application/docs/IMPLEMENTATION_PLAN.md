@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1A)
+Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A IMPLEMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -285,7 +285,7 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1A)
+Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A IMPLEMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 Slack conversational adapter: MVP-4 current (product slices in progress; see MVP-4 below)
@@ -644,7 +644,7 @@ Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
 
-**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; next **LKW-WORKSPACE-CONTENTS-1A**
+**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; **LKW-WORKSPACE-CONTENTS-1A IMPLEMENTED / READY_FOR_REVIEW**; next **LKW-WORKSPACE-CONTENTS-1B**
 
 ```text
 SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
@@ -697,8 +697,14 @@ LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
 LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
 LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
 LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
-→ LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources — NEXT
-→ LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability — planned
+LKW-WORKSPACE-CONTENTS-1A — IMPLEMENTED / READY_FOR_REVIEW
+exact DM ``sources`` → effective active workspace → public tenant-scoped HTTP
+source list → safe provider-neutral source summaries → same-thread Slack reply
+(Ask call count = 0; no source mutations; no full source path disclosure;
+ dynamic help registration; empty and unavailable states handled;
+ local-folder remains the first implemented source type;
+ other providers remain architectural direction, not implemented behavior)
+→ LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability — NEXT
 → LKW-WORKSPACE-CONTENTS-1C — synchronize and inspect ingestion status — planned
 → LKW-WORKSPACE-CONTENTS-1D — inspect indexed documents — planned
 → LKW-WORKSPACE-CONTENTS-1E — safely remove source-owned knowledge — planned
@@ -707,20 +713,24 @@ LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
 → active workspace persistence
 ```
 
-**LKW-WORKSPACE-CONTENTS-1A — NEXT** (after contract acceptance):
+**LKW-WORKSPACE-CONTENTS-1A — IMPLEMENTED / READY_FOR_REVIEW**:
 
 ```text
-Slack command showing sources of the effective active workspace;
-sources fetched via public tenant-scoped API;
-no full sensitive locator disclosure;
-no assumption that every source type is a local folder;
-status + safe name/label only;
-no create/add/delete/sync in this first subtask.
+sources
+→ effective active workspace
+→ public tenant-scoped HTTP source list
+→ safe provider-neutral source summaries
+→ same-thread Slack reply
+
+zero Ask calls; no source mutations; no full source path disclosure;
+dynamic help registration; empty and unavailable states;
+local-folder remains the first implemented source type;
+other providers remain architectural direction, not implemented behavior.
 ```
 
 Command syntax for 1B–1E is **not** frozen yet. Do not assume path vs upload vs picker for source registration. Do not document unimplemented endpoints as existing.
 
-Next exact task after contract acceptance: `LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources`.
+Next exact task: `LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability`.
 
 Ownership:
 
@@ -748,11 +758,12 @@ LKW slack_companion
    IMPLEMENTED / READY_FOR_REVIEW; decorated handlers; registry = dispatch + help)
 → storage/tenancy architecture contract (LKW-STORAGE-TENANCY-CONTRACT-1
    DOCUMENTED / READY_FOR_REVIEW; Slack remains API/capability client only)
-→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A — NEXT)
+→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A
+   IMPLEMENTED / READY_FOR_REVIEW; safe summaries; zero Ask; no path disclosure)
 → source lifecycle 1B–1E / pending question / ACTION / persistence (later)
 ```
 
-Next exact task: `LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources`.
+Next exact task: `LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability`.
 
 User-visible result:
 
@@ -1248,11 +1259,11 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1A)
+Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A IMPLEMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
 Architecture contract: LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW
-Next product task: LKW-WORKSPACE-CONTENTS-1A — inspect active workspace sources
+Next product task: LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability
 Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof, LKW-SLACK-WORKFLOW-1A (+ configuration closure + live proof)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md

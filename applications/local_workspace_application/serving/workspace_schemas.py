@@ -41,6 +41,8 @@ class RegisterSourceRequestV1(BaseModel):
 
 
 class SourceResponseV1(BaseModel):
+    """Detailed source registration response (may include provider locator)."""
+
     source_id: str
     workspace_id: str
     source_type: str
@@ -51,8 +53,21 @@ class SourceResponseV1(BaseModel):
     last_sync_at: datetime | None = None
 
 
+class SourceSummaryResponseV1(BaseModel):
+    """Safe list-item projection for source inspection (no full locator/path)."""
+
+    source_id: str
+    workspace_id: str
+    source_type: str
+    label: str
+    status: str
+    recursive: bool = True
+    created_at: datetime | None = None
+    last_sync_at: datetime | None = None
+
+
 class SourceListResponseV1(BaseModel):
-    sources: list[SourceResponseV1]
+    sources: list[SourceSummaryResponseV1]
 
 
 class SyncOperationAcceptedV1(BaseModel):

@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
+import re
+from datetime import UTC, datetime
+
 from local_workspace_application.slack_companion.models import (
     SlackAskHttpResponse,
+    SlackSourceListItem,
     SlackWorkspaceListItem,
 )
 
@@ -57,10 +61,24 @@ NO_WORKSPACE_AVAILABLE_TEXT = (
     "No workspace is available. "
     "Send `workspaces` to select one, or `workspace create <name>` to create one."
 )
+SOURCE_LIST_HEADER = "Sources in the active workspace:"
+SOURCE_LIST_EMPTY_TEXT = "The active workspace does not contain any sources yet."
+SOURCE_LIST_LOAD_FAILED_TEXT = (
+    "The source list could not be loaded. Please try again later."
+)
+SOURCE_WORKSPACE_UNAVAILABLE_TEXT = (
+    "The active workspace is unavailable. "
+    "Use `workspaces` to review available workspaces."
+)
+SOURCE_LIST_TRUNCATED_FOOTER = "Additional sources are not shown."
 
 MAX_ANSWER_CHARS = 3000
 MAX_SOURCE_LABELS = 5
 MAX_WORKSPACE_NAME_CHARS = 100
+MAX_SOURCE_LIST_ITEMS = 25
+MAX_SOURCE_LIST_LABEL_CHARS = 80
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
+_WHITESPACE_RE = re.compile(r"\s+")
 
 
 def render_acknowledgement() -> str:
@@ -166,6 +184,83 @@ def render_workspace_delete_cancelled() -> str:
 
 def render_no_workspace_available() -> str:
     return NO_WORKSPACE_AVAILABLE_TEXT
+
+
+def render_source_list_empty() -> str:
+    return SOURCE_LIST_EMPTY_TEXT
+
+
+def render_source_list_load_failed() -> str:
+    return SOURCE_LIST_LOAD_FAILED_TEXT
+
+
+def render_source_workspace_unavailable() -> str:
+    return SOURCE_WORKSPACE_UNAVAILABLE_TEXT
+
+
+def render_source_list(sources: list[SlackSourceListItem]) -> str:
+    """Render a safe numbered source list; never includes IDs, paths, or locators."""
+    if not sources:
+        return SOURCE_LIST_EMPTY_TEXT
+
+    lines = [SOURCE_LIST_HEADER, ""]
+    for index, item in enumerate(sources):
+        if index >= MAX_SOURCE_LIST_ITEMS:
+            lines.append(SOURCE_LIST_TRUNCATED_FOOTER)
+            break
+        label = _safe_source_display_label(item.label)
+        if not label:
+            label = "Source"
+        shown = index + 1
+        lines.append(f"{shown}. {label}")
+        lines.append(f"   Type: {_format_source_type(item.source_type)}")
+        lines.append(f"   Status: {_format_source_status(item.status)}")
+        if _show_recursive(item.source_type):
+            lines.append(f"   Recursive: {'yes' if item.recursive else 'no'}")
+        lines.append(f"   Last sync: {_format_last_sync(item.last_sync_at)}")
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _safe_source_display_label(value: str) -> str:
+    cleaned = (value or "").replace("\r", " ").replace("\n", " ").replace("\t", " ")
+    cleaned = _CONTROL_RE.sub(" ", cleaned)
+    cleaned = _WHITESPACE_RE.sub(" ", cleaned).strip()
+    if not cleaned:
+        return ""
+    if len(cleaned) > MAX_SOURCE_LIST_LABEL_CHARS:
+        return cleaned[: MAX_SOURCE_LIST_LABEL_CHARS - 1] + "…"
+    return cleaned
+
+
+def _format_source_type(source_type: str) -> str:
+    raw = (source_type or "").strip()
+    if not raw:
+        return "source"
+    return _safe_source_display_label(raw.replace("_", " ")).casefold() or "source"
+
+
+def _format_source_status(status: str) -> str:
+    raw = (status or "").strip()
+    if not raw:
+        return "unknown"
+    return _safe_source_display_label(raw.replace("_", " ")).casefold() or "unknown"
+
+
+def _show_recursive(source_type: str) -> bool:
+    # Recursive is meaningful for folder-like sources; hide for unknown future types
+    # only when type is blank. Current contract always includes the field.
+    return bool((source_type or "").strip())
+
+
+def _format_last_sync(value: datetime | None) -> str:
+    if value is None:
+        return "never"
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    else:
+        value = value.astimezone(UTC)
+    return value.strftime("%Y-%m-%d %H:%M UTC")
 
 
 def safe_source_labels(response: SlackAskHttpResponse) -> list[str]:

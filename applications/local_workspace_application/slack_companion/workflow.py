@@ -32,6 +32,7 @@ from local_workspace_application.slack_companion.dedupe_repository import (
 from local_workspace_application.slack_companion.models import (
     SlackAskClientError,
     SlackDedupeRecord,
+    SlackSourceListItem,
     SlackWorkspaceListItem,
 )
 from local_workspace_application.slack_companion.pending_deletion_store import (
@@ -44,6 +45,9 @@ from local_workspace_application.slack_companion.rendering import (
     render_error,
     render_no_workspace_available,
     render_selected_workspace_unavailable,
+    render_source_list,
+    render_source_list_load_failed,
+    render_source_workspace_unavailable,
     render_workspace_create_usage,
     render_workspace_created,
     render_workspace_delete_cancelled,
@@ -68,6 +72,8 @@ logger = logging.getLogger(__name__)
 OutboundSender = Callable[[OutboundConversationMessage], Awaitable[object]]
 
 _WORKSPACES_COMMAND = "workspaces"
+_SOURCES_COMMAND = "sources"
+_SAFE_SOURCE_LABEL_FALLBACK = "Source"
 _WORKSPACE_SELECTION_RE = re.compile(
     r"^workspace\s+([1-9]\d*)$",
     re.IGNORECASE,
@@ -87,6 +93,11 @@ _WORKSPACE_DELETE_CANCEL = "workspace delete cancel"
 def is_workspaces_command(text: str) -> bool:
     """Exact ``workspaces`` after trim; case-insensitive. No extra words."""
     return (text or "").strip().casefold() == _WORKSPACES_COMMAND
+
+
+def is_sources_command(text: str) -> bool:
+    """Exact ``sources`` after trim; case-insensitive. No extra words."""
+    return (text or "").strip().casefold() == _SOURCES_COMMAND
 
 
 def parse_workspace_selection(text: str) -> int | None:
@@ -188,6 +199,12 @@ def parse_workspaces_list_command(text: str) -> SlackCommandMatch | None:
     return None
 
 
+def parse_sources_list_command(text: str) -> SlackCommandMatch | None:
+    if is_sources_command(text):
+        return SlackCommandMatch()
+    return None
+
+
 def parse_workspace_delete_confirm_command(text: str) -> SlackCommandMatch | None:
     if is_workspace_delete_confirm(text):
         return SlackCommandMatch()
@@ -268,6 +285,33 @@ def order_workspaces_for_listing(
             (item.workspace_id or "").strip(),
         ),
     )
+
+
+def order_sources_for_listing(
+    sources: list[SlackSourceListItem],
+) -> list[SlackSourceListItem]:
+    """Deterministic order: safe label → source type → source_id (case-insensitive)."""
+    return sorted(
+        sources,
+        key=lambda item: (
+            (item.label or "").strip().casefold(),
+            (item.source_type or "").strip().casefold(),
+            (item.source_id or "").strip(),
+        ),
+    )
+
+
+def normalize_source_list_items(
+    sources: list[SlackSourceListItem],
+) -> list[SlackSourceListItem]:
+    """Ensure each item has a non-blank safe label before rendering."""
+    normalized: list[SlackSourceListItem] = []
+    for item in sources:
+        label = (item.label or "").strip()
+        if not label:
+            item = item.model_copy(update={"label": _SAFE_SOURCE_LABEL_FALLBACK})
+        normalized.append(item)
+    return normalized
 
 
 def resolve_effective_workspace_id(
@@ -409,6 +453,28 @@ class SlackAskWorkflow:
     ) -> None:
         del match
         await self._handle_workspaces_listing(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            configured_workspace_id=context.authorized.workspace_id,
+        )
+
+    @slack_command(
+        command_id="sources.list",
+        syntax="sources",
+        description="List sources in the active workspace.",
+        example="sources",
+        priority=25,
+        parser=parse_sources_list_command,
+    )
+    async def _command_sources_list(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._handle_sources_listing(
             address=context.address,
             claim=context.claim,
             tenant_id=context.authorized.tenant_id,
@@ -885,6 +951,89 @@ class SlackAskWorkflow:
                 type(exc).__name__,
             )
             await self._send_error(address=address, claim=claim)
+
+    async def _handle_sources_listing(
+        self,
+        *,
+        address: ConversationAddress,
+        claim: SlackDedupeRecord,
+        tenant_id: str,
+        actor_key: str,
+        configured_workspace_id: str,
+    ) -> None:
+        try:
+            workspace_id = self._resolve_effective_workspace(
+                actor_key, configured_workspace_id
+            )
+            if not workspace_id:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_no_workspace_available(),
+                    )
+                )
+                self._dedupe.mark_completed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                    ask_run_id=None,
+                )
+                return
+
+            items = await self._ask.list_sources(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            ordered = order_sources_for_listing(normalize_source_list_items(items))
+            final_text = render_source_list(ordered)
+            await self._send(
+                OutboundConversationMessage(address=address, text=final_text)
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+        except SlackAskClientError as exc:
+            if exc.kind == "http_404":
+                text = render_source_workspace_unavailable()
+            else:
+                text = render_source_list_load_failed()
+            try:
+                await self._send(
+                    OutboundConversationMessage(address=address, text=text)
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion sources_listing_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+        except Exception as exc:  # noqa: BLE001 — product-safe error path
+            logger.warning(
+                "slack_companion sources_listing_failed kind=%s",
+                type(exc).__name__,
+            )
+            try:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_source_list_load_failed(),
+                    )
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion sources_listing_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
 
     async def _handle_workspace_selection(
         self,

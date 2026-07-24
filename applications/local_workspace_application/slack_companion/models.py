@@ -99,6 +99,29 @@ class SlackWorkspaceCreateResponse(BaseModel):
     status: str = ""
 
 
+class SlackSourceListItem(BaseModel):
+    """Safe subset of managed source list items for Slack rendering (no path)."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    source_id: str = ""
+    workspace_id: str = ""
+    source_type: str = ""
+    label: str = ""
+    status: str = ""
+    recursive: bool = True
+    created_at: datetime | None = None
+    last_sync_at: datetime | None = None
+
+
+class SlackSourceListResponse(BaseModel):
+    """Typed GET /workspaces/{id}/sources response used by the companion."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    sources: list[SlackSourceListItem] = Field(default_factory=list)
+
+
 class SlackAskClientError(Exception):
     """Controlled Ask/list HTTP failure (no internal diagnostics for Slack rendering)."""
 

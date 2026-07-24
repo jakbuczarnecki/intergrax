@@ -16,12 +16,14 @@ from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
+from local_workspace_application.serving.source_projection import safe_source_label
 from local_workspace_application.serving.workspace_schemas import (
     CreateWorkspaceRequestV1,
     OperationResponseV1,
     RegisterSourceRequestV1,
     SourceListResponseV1,
     SourceResponseV1,
+    SourceSummaryResponseV1,
     SyncOperationAcceptedV1,
     WorkspaceAskCitationLocationV1,
     WorkspaceAskCitationV1,
@@ -91,6 +93,20 @@ def _source_response(source: WorkspaceSource) -> SourceResponseV1:
         workspace_id=source.workspace_id,
         source_type=source.source_type.value,
         path=source.path,
+        status=source.status.value,
+        recursive=source.recursive,
+        created_at=source.created_at,
+        last_sync_at=source.last_sync_at,
+    )
+
+
+def _source_summary_response(source: WorkspaceSource) -> SourceSummaryResponseV1:
+    source_type = source.source_type.value
+    return SourceSummaryResponseV1(
+        source_id=source.source_id,
+        workspace_id=source.workspace_id,
+        source_type=source_type,
+        label=safe_source_label(source_type=source_type, path=source.path),
         status=source.status.value,
         recursive=source.recursive,
         created_at=source.created_at,
@@ -327,7 +343,9 @@ def mount_managed_workspace_routes(
         sources = service.list_sources(tenant_id=tenant_id, workspace_id=workspace_id)
         if sources is None:
             raise _not_found()
-        return SourceListResponseV1(sources=[_source_response(item) for item in sources])
+        return SourceListResponseV1(
+            sources=[_source_summary_response(item) for item in sources]
+        )
 
     @router.post(
         "/workspaces/{workspace_id}/sources/{source_id}/sync",
