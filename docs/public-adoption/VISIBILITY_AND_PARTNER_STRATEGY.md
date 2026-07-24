@@ -349,11 +349,97 @@ looking for technical reviewers and design-partner feedback
 
 ---
 
-## 7. Channel strategy
+## 7. Materials to create
+
+This checklist turns the strategy into a concrete asset backlog.
+
+### 7.1 Required public assets
+
+| Asset | Location / channel | Purpose |
+|---|---|---|
+| README visual proof block | `README.md` | Show the proof before deep architecture navigation |
+| LKW Platform Proof | `docs/public-adoption/LKW_PLATFORM_PROOF.md` | Canonical technical proof path |
+| LKW hardening log | `docs/public-adoption/LKW_PLATFORM_HARDENING_LOG.md` | Show what real product work forced the platform to fix |
+| What LKW proves | `docs/public-adoption/WHAT_LKW_PROVES.md` | Explain the platform claim in one focused document |
+| Main review issue | GitHub issue | Capture all proof feedback in one place |
+| Kibana screenshot | `docs/public-adoption/assets/lkw-platform-proof/` | Visual proof that runtime events are inspectable |
+| Proof-helper PASS screenshot | `docs/public-adoption/assets/lkw-platform-proof/` | Visual proof of duplicate/safety checks |
+| Social preview image | GitHub repository settings | Improve link previews in social feeds |
+| 2-4 minute demo video | Linked from README and proof docs | Reduce friction for non-local evaluators |
+| One-page memo | Website / direct outreach | Explain problem, proof, market thesis, and ask |
+| Design-partner brief | `PARTNERS.md` or a linked public page | Convert interest into structured conversations |
+| Investor/scout memo | Private or semi-private | Support fundraising/scout conversations after signals exist |
+
+### 7.2 Private or semi-private materials
+
+Do not put everything in the public repository.
+
+Keep these outside the public repo unless explicitly prepared for public use:
+
+- detailed fundraising deck;
+- valuation expectations;
+- acquisition target list;
+- confidential investor notes;
+- customer pipeline details;
+- private target contact list;
+- unpublished commercial terms;
+- legal/IP diligence materials.
+
+### 7.3 Minimum launch package
+
+Do not start broad promotion until this minimum package exists:
+
+```text
+README visual proof
+LKW Platform Proof
+Kibana screenshot
+proof-helper PASS screenshot
+short demo video
+main review issue
+reviewer outreach message
+clear source-available disclaimer
+```
+
+---
+
+## 8. Channel launch order
+
+Do not launch everywhere at once.
+
+The promotion sequence should move from controlled feedback to broader visibility.
+
+| Order | Channel | Purpose | When to use |
+|---:|---|---|---|
+| 1 | GitHub README + proof docs | Convert cold visitors and anchor credibility | Before any outreach |
+| 2 | Quiet direct reviewer outreach | Validate clarity with selected technical people | After visual proof exists |
+| 3 | LinkedIn soft posts | Test problem-first messaging with a known network | After proof package exists |
+| 4 | AI Engineer / MLOps / MCP communities | Reach the best-fit technical audience | After first reviewer feedback |
+| 5 | Hacker News / Show HN | Generate technical validation and public criticism | After screenshots/video and first comment are ready |
+| 6 | Reddit | Collect narrow feedback in selected communities | Only with non-promotional framing |
+| 7 | Crunchbase / Dealroom | Become discoverable to investors and corporate scouts | After landing page and demo exist |
+| 8 | Product Hunt | Product discovery and public launch signal | Only after product-language packaging exists |
+| 9 | Investor/scout outreach | Validate funding interest | After external feedback or partner signal |
+
+### 8.1 Rule of sequencing
+
+Use this rule:
+
+```text
+controlled feedback first
+→ public technical validation second
+→ partner discovery third
+→ investor/scout visibility fourth
+```
+
+Do not use investor language before there is at least some external proof of interest.
+
+---
+
+## 9. Channel strategy
 
 Different channels serve different purposes. Do not treat every platform as a sales channel.
 
-### 7.1 GitHub
+### 9.1 GitHub
 
 Purpose:
 
@@ -381,7 +467,7 @@ Success metrics:
 - external references;
 - design-partner inquiries.
 
-### 7.2 LinkedIn
+### 9.2 LinkedIn
 
 Purpose:
 
@@ -410,7 +496,7 @@ I am looking for technical reviewers who can challenge the LKW proof.
 If your team is moving agent workflows beyond demos and needs policy, trace, evidence, or HITL, I would like to compare notes.
 ```
 
-### 7.3 Hacker News / Show HN
+### 9.3 Hacker News / Show HN
 
 Purpose:
 
@@ -448,7 +534,7 @@ Do not expect:
 - acquisition offers;
 - enterprise sales.
 
-### 7.4 Product Hunt
+### 9.4 Product Hunt
 
 Purpose:
 
@@ -477,7 +563,7 @@ Intergrax — governed Agent OS runtime for AI applications
 
 Avoid launching LKW as if it were a consumer product unless LKW becomes a standalone product.
 
-### 7.5 Reddit
+### 9.5 Reddit
 
 Purpose:
 
@@ -509,7 +595,7 @@ Bad format:
 Check out my revolutionary AI platform.
 ```
 
-### 7.6 AI Engineer and MLOps communities
+### 9.6 AI Engineer and MLOps communities
 
 Purpose:
 
@@ -533,7 +619,7 @@ Best message:
 I am looking for critical feedback on a governed agent runtime proof: task → agent → tool → runtime events → policy-safe export → Kibana timeline.
 ```
 
-### 7.7 Crunchbase
+### 9.7 Crunchbase
 
 Purpose:
 
@@ -559,7 +645,7 @@ AI Governance
 AI Observability
 ```
 
-### 7.8 Dealroom
+### 9.8 Dealroom
 
 Purpose:
 
@@ -576,7 +662,7 @@ Use after creating a basic public presence:
 - short product description;
 - founder profile.
 
-### 7.9 Wellfound / AngelList
+### 9.9 Wellfound / AngelList
 
 Purpose:
 
@@ -586,7 +672,7 @@ Purpose:
 
 Use if Intergrax is framed as a company/startup direction, not only a research repo.
 
-### 7.10 Startup and accelerator platforms
+### 9.10 Startup and accelerator platforms
 
 Potential platforms/programs:
 
@@ -617,9 +703,9 @@ Use these after preparing:
 
 ---
 
-## 8. Audience-specific positioning
+## 10. Audience-specific positioning
 
-### 8.1 Technical reviewers
+### 10.1 Technical reviewers
 
 What they care about:
 
@@ -641,7 +727,7 @@ CTA:
 Run Quick Start, inspect the LKW Platform Proof, and comment on the review issue.
 ```
 
-### 8.2 AI platform teams
+### 10.2 AI platform teams
 
 What they care about:
 
@@ -664,7 +750,7 @@ CTA:
 Let us compare your current agent workflow against the Intergrax four-tier boundary model.
 ```
 
-### 8.3 Product teams building agent-backed applications
+### 10.3 Product teams building agent-backed applications
 
 What they care about:
 
@@ -686,7 +772,7 @@ CTA:
 Share one workflow where your current agent prototype becomes hard to govern.
 ```
 
-### 8.4 Observability / governance / attestation builders
+### 10.4 Observability / governance / attestation builders
 
 What they care about:
 
@@ -708,7 +794,7 @@ CTA:
 Review whether the LKW proof exposes the right runtime events and safety boundaries.
 ```
 
-### 8.5 Investors and scouts
+### 10.5 Investors and scouts
 
 What they care about:
 
@@ -734,9 +820,122 @@ We are seeking technical reviewers and design partners before broader commercial
 
 ---
 
-## 9. Outreach strategy
+## 11. Partner funnel
 
-### 9.1 Outreach target list
+Partner discovery should be treated as a funnel, not as a generic request for interest.
+
+```text
+cold target
+→ technical reviewer
+→ qualified conversation
+→ workflow mapping
+→ design-partner fit
+→ pilot/advisory scope
+→ commercial or licensing discussion
+```
+
+| Stage | Goal | Input | Output |
+|---|---|---|---|
+| Cold target | Identify a relevant person or team | Public profile, company context, AI/agent activity | Target added to outreach list |
+| Technical reviewer | Test whether the proof is understandable | LKW proof, README, one review question | Feedback or objection |
+| Qualified conversation | Understand whether they have a real workflow | 15-30 minute call | Workflow notes and pain points |
+| Workflow mapping | Compare their workflow to the Intergrax boundary model | One concrete agent/RAG/workflow scenario | Fit / partial fit / no fit |
+| Design-partner fit | Decide whether deeper validation is worthwhile | Mapped workflow and pain | Mutual next-step decision |
+| Pilot/advisory scope | Define narrow engagement | One workflow, constraints, success criteria | Pilot/advisory brief |
+| Commercial discussion | Discuss licensing/support/advisory options | Evidence from pilot/advisory | Terms discussion or no-go |
+
+### 11.1 Qualification questions
+
+Use these questions before treating a contact as a design-partner candidate:
+
+1. What agent-backed workflow are you trying to ship or govern?
+2. Where does the current prototype break down?
+3. Which actions require policy, approval, audit, or rollback?
+4. What trace/evidence would make the system trustworthy?
+5. What data/RAG/memory boundaries matter?
+6. Who would own the product host in your environment?
+7. What result would make a pilot useful?
+
+### 11.2 Partner disqualification signals
+
+Do not pursue a partner path if:
+
+- they only want free implementation work;
+- they need an immediate production SLA;
+- they expect open-source rights that are not granted;
+- they cannot describe a concrete workflow;
+- they want a generic chatbot rather than a governed runtime;
+- they require confidential disclosure before fit is established;
+- they cannot define what proof would convince them.
+
+---
+
+## 12. Investor funnel
+
+Investor/scout outreach should happen after technical and partner signals exist.
+
+```text
+technical proof
+→ public feedback
+→ design-partner signal
+→ one-page memo
+→ scout/investor conversation
+→ warm intro or follow-up
+→ deck / deeper diligence
+→ funding decision or no-go
+```
+
+| Stage | Goal | Required material | Output |
+|---|---|---|---|
+| Technical proof | Show something real exists | LKW proof, README, screenshots/video | Credibility artifact |
+| Public feedback | Show external interest | Issue comments, stars, mentions, reviewer notes | Social proof |
+| Design-partner signal | Show market relevance | Partner conversations, workflow maps | Commercial signal |
+| One-page memo | Explain the business thesis | Problem, wedge, proof, market, ask | Shareable investor artifact |
+| Scout/investor conversation | Test fundability | Memo, demo, founder story | Feedback or intro |
+| Deck / diligence | Support serious evaluation | 8-10 slide deck, roadmap, IP clarity | Continue / pause / reject |
+
+### 12.1 Investor conversation rules
+
+Do:
+
+- lead with the market problem;
+- show the LKW proof as evidence;
+- be explicit that current stage is validation;
+- show what feedback has already been received;
+- explain why Intergrax is not just another agent framework;
+- ask for advice, intros, or fit feedback before asking for capital.
+
+Do not:
+
+- claim traction that does not exist;
+- imply production readiness;
+- pitch acquisition as the plan;
+- send only a GitHub link without a memo;
+- use investor language before having proof or partner signal;
+- overstate the role of LKW as a standalone product.
+
+### 12.2 Investor-ready artifacts
+
+Prepare these before serious outreach:
+
+- one-sentence thesis;
+- one-page memo;
+- 8-10 slide deck;
+- demo video;
+- LKW proof link;
+- market map;
+- competitor comparison;
+- founder story;
+- design-partner pipeline;
+- commercial path options;
+- IP/licensing clarity;
+- honest limitations.
+
+---
+
+## 13. Outreach strategy
+
+### 13.1 Outreach target list
 
 Build a list of 100 targets:
 
@@ -751,7 +950,7 @@ Build a list of 100 targets:
 | VC scouts / AI infra investors | 10 |
 | technical writers / newsletter authors | 10 |
 
-### 9.2 Reviewer outreach message
+### 13.2 Reviewer outreach message
 
 ```text
 Hi <name>,
@@ -768,7 +967,7 @@ task → agent → rag.retrieve → runtime events → policy-safe export → El
 Would you be open to 15 minutes of critical feedback? I am not looking for generic praise — I am looking for where the proof is unclear or not convincing.
 ```
 
-### 9.3 Design-partner outreach message
+### 13.3 Design-partner outreach message
 
 ```text
 Hi <name>,
@@ -784,7 +983,7 @@ I am looking for design-partner conversations with teams that have real agent wo
 Would it be useful to compare one of your workflows against the Intergrax boundary model?
 ```
 
-### 9.4 Investor/scout message
+### 13.4 Investor/scout message
 
 ```text
 Hi <name>,
@@ -800,9 +999,9 @@ At this stage I am seeking technical reviewers and design-partner validation rat
 
 ---
 
-## 10. Content strategy
+## 14. Content strategy
 
-### 10.1 Content pillars
+### 14.1 Content pillars
 
 Use five recurring pillars:
 
@@ -812,7 +1011,7 @@ Use five recurring pillars:
 4. **Trace, evidence, and observability**
 5. **LKW as platform proof**
 
-### 10.2 LinkedIn post sequence
+### 14.2 LinkedIn post sequence
 
 #### Post 1 — Problem
 
@@ -861,7 +1060,7 @@ Does the LKW proof show that Intergrax is a governed agent runtime rather than o
 If you build AI agents, RAG systems, MCP servers, or AI observability tooling, I would value critical feedback.
 ```
 
-### 10.3 Long-form article ideas
+### 14.3 Long-form article ideas
 
 - Why most AI agents fail after the demo
 - Tool calling is not governance
@@ -873,9 +1072,81 @@ If you build AI agents, RAG systems, MCP servers, or AI observability tooling, I
 
 ---
 
-## 11. Launch sequence
+## 15. Risk register
 
-### 11.1 Phase 0 — Proof completion
+| Risk | Why it matters | Mitigation |
+|---|---|---|
+| LKW is perceived as a NotebookLM or Claude Desktop clone | It creates the wrong comparison and hides the platform thesis | Always position LKW as a platform proof, not the product thesis |
+| Too many public issues confuse visitors | More entry points can lower conversion | Promote one primary review issue and only three top CTAs |
+| HN launch happens too early | The project may be dismissed as abstract or overcomplicated | Launch only after screenshots, demo video, and first comment are ready |
+| Product Hunt launch happens too early | Product Hunt expects a simple product people can try | Wait until landing page, demo, and product-language packaging exist |
+| Investor language appears before traction | It can make the project look inflated | Use reviewer/design-partner language until external signal exists |
+| Source-available license limits community growth | Some open-source contributors may disengage | Target technical reviewers, partners, and commercial users, not mass OSS contribution |
+| No visual proof exists | Cold visitors may not believe the proof without running it | Add Kibana screenshot, proof-helper screenshot, and demo video |
+| LKW scope keeps expanding | Promotion and learning are delayed | Freeze LKW once proof-complete and stop feature expansion |
+| Outreach asks are too generic | People ignore “please check my repo” messages | Ask reviewers to challenge one specific claim |
+| Partner conversations become free implementation requests | Time can be consumed without validation or commercial path | Qualify partners by workflow, proof need, and willingness to define success |
+| Investors ask for traction too early | A GitHub repo alone is not fundable | Build technical feedback, design-partner signal, and one-page memo first |
+| Public docs disclose too much commercial strategy | Competitors or readers may misread intent | Keep fundraising/acquisition details outside the public repo |
+
+---
+
+## 16. Weekly operating rhythm
+
+Use a weekly cadence to keep the adoption effort measurable.
+
+### 16.1 Weekly review checklist
+
+Every Friday, update:
+
+- GitHub visitors;
+- stars;
+- clones;
+- issue comments;
+- proof-path feedback;
+- LinkedIn post views;
+- profile views;
+- direct messages;
+- reviewer conversations;
+- partner conversations;
+- investor/scout conversations;
+- external mentions.
+
+### 16.2 Weekly decision meeting
+
+Answer these questions:
+
+1. What was the strongest external signal this week?
+2. What was the most repeated objection?
+3. What confused people most?
+4. Which proof asset or doc should be improved next?
+5. Which audience segment responded best?
+6. Which outreach channel produced actual conversations?
+7. Should next week focus on proof clarity, outreach, content, or partner discovery?
+
+### 16.3 Weekly output rule
+
+Each week should produce at least one visible improvement:
+
+```text
+1 doc/proof improvement
+or
+1 public post
+or
+1 reviewer conversation
+or
+1 partner conversation
+or
+1 concrete launch asset
+```
+
+Avoid spending a week only planning.
+
+---
+
+## 17. Launch sequence
+
+### 17.1 Phase 0 — Proof completion
 
 Goal: make LKW proof-complete.
 
@@ -895,7 +1166,7 @@ Exit criteria:
 An external reviewer can understand the claim, inspect the proof, and provide feedback without a private explanation.
 ```
 
-### 11.2 Phase 1 — Quiet reviewer loop
+### 17.2 Phase 1 — Quiet reviewer loop
 
 Goal: get quality feedback before broad launch.
 
@@ -916,7 +1187,7 @@ Success metric:
 1 serious design-partner style conversation
 ```
 
-### 11.3 Phase 2 — Public technical launch
+### 17.3 Phase 2 — Public technical launch
 
 Goal: create visible technical signal.
 
@@ -944,7 +1215,7 @@ Success metric:
 1+ serious technical conversation
 ```
 
-### 11.4 Phase 3 — Partner discovery
+### 17.4 Phase 3 — Partner discovery
 
 Goal: convert interest into conversations.
 
@@ -963,7 +1234,7 @@ Success metric:
 1 potential pilot or advisory opportunity
 ```
 
-### 11.5 Phase 4 — Investor/scout visibility
+### 17.5 Phase 4 — Investor/scout visibility
 
 Goal: become discoverable and credible to investors/scouts.
 
@@ -986,7 +1257,7 @@ one follow-up request or intro
 
 ---
 
-## 12. Metrics dashboard
+## 18. Metrics dashboard
 
 Track weekly:
 
@@ -1027,13 +1298,13 @@ Strong 90-day target:
 
 ---
 
-## 13. Commercial path options
+## 19. Commercial path options
 
 Intergrax does not need to choose the final business model immediately.
 
 Possible paths:
 
-### 13.1 Advisory / architecture consulting
+### 19.1 Advisory / architecture consulting
 
 Most likely near-term path.
 
@@ -1052,7 +1323,7 @@ Why it fits:
 - validates market need;
 - creates case studies.
 
-### 13.2 Design-partner pilot
+### 19.2 Design-partner pilot
 
 Offer:
 
@@ -1067,7 +1338,7 @@ Why it fits:
 - may lead to licensing;
 - reveals real requirements.
 
-### 13.3 Commercial licensing
+### 19.3 Commercial licensing
 
 Offer:
 
@@ -1082,7 +1353,7 @@ Requires:
 - support boundaries;
 - paid pilot or partner case.
 
-### 13.4 Venture-backed product company
+### 19.4 Venture-backed product company
 
 Offer:
 
@@ -1105,7 +1376,7 @@ Potential wedges:
 - policy/HITL tool execution platform;
 - MCP backend governance layer.
 
-### 13.5 Acquisition / strategic partnership
+### 19.5 Acquisition / strategic partnership
 
 Possible only after stronger signal.
 
@@ -1128,7 +1399,7 @@ Requires:
 
 ---
 
-## 14. Investor readiness checklist
+## 20. Investor readiness checklist
 
 Do not approach investors seriously until most of these are prepared:
 
@@ -1147,13 +1418,13 @@ Do not approach investors seriously until most of these are prepared:
 - IP/licensing clarity;
 - honest limitations.
 
-### 14.1 One-sentence investor thesis
+### 20.1 One-sentence investor thesis
 
 ```text
 As agent applications move beyond demos, teams need governed runtime infrastructure for policy-controlled execution, trace/evidence, tool governance, RAG/memory boundaries, HITL, and product-host composition. Intergrax validates this platform thesis through LKW as a real end-to-end proof.
 ```
 
-### 14.2 What investors will ask
+### 20.2 What investors will ask
 
 Prepare answers for:
 
@@ -1170,31 +1441,31 @@ Prepare answers for:
 
 ---
 
-## 15. Competitive positioning
+## 21. Competitive positioning
 
 Do not position Intergrax as a replacement for all existing frameworks.
 
 Position it as the governed runtime layer for teams that need more than a demo.
 
-### 15.1 Against agent frameworks
+### 21.1 Against agent frameworks
 
 ```text
 Agent frameworks help create agents. Intergrax focuses on the governed runtime around agents: policy, trace, evidence, orchestration, application-host boundaries, and platform reuse.
 ```
 
-### 15.2 Against MCP
+### 21.2 Against MCP
 
 ```text
 MCP gives models a way to connect to tools and data. Intergrax focuses on the governed runtime behind agent applications: who can act, under which policy, with what evidence, and through which product boundary.
 ```
 
-### 15.3 Against Claude / ChatGPT / Copilot
+### 21.3 Against Claude / ChatGPT / Copilot
 
 ```text
 Consumer assistants provide an interface. Intergrax provides a platform/runtime model for teams building their own governed agent applications.
 ```
 
-### 15.4 Against NotebookLM / document assistants
+### 21.4 Against NotebookLM / document assistants
 
 ```text
 LKW is not trying to win as a document assistant. LKW is a proof workload showing that Intergrax can run controlled RAG, evidence, tool execution, shadow artifacts, and observability end-to-end.
@@ -1202,7 +1473,7 @@ LKW is not trying to win as a document assistant. LKW is a proof workload showin
 
 ---
 
-## 16. What not to do
+## 22. What not to do
 
 Avoid:
 
@@ -1220,7 +1491,7 @@ Avoid:
 
 ---
 
-## 17. 14-day execution plan
+## 23. 14-day execution plan
 
 ### Day 1-2 — Proof visibility
 
@@ -1263,7 +1534,7 @@ Avoid:
 
 ---
 
-## 18. 90-day plan
+## 24. 90-day plan
 
 ### Month 1 — Proof and reviewer loop
 
@@ -1315,7 +1586,7 @@ Deliverables:
 
 ---
 
-## 19. Decision rule: when to build the next application
+## 25. Decision rule: when to build the next application
 
 Do not build another application just to prove variety.
 
@@ -1337,7 +1608,7 @@ proof clarity
 
 ---
 
-## 20. Final operating principle
+## 26. Final operating principle
 
 Intergrax should move from a technically impressive repository to a visible proof-driven platform thesis.
 
