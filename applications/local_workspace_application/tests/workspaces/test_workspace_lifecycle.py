@@ -302,3 +302,84 @@ def test_delete_cleans_sources_docs_ops_ask_vectors_and_preserves_files(
     # Local files never touched.
     assert source_file.exists()
     assert source_file.read_text(encoding="utf-8") == "hello evidence"
+
+
+def test_vector_cleanup_uses_store_tenant_when_product_tenant_differs() -> None:
+    """Slack product tenant must not fail Qdrant/InMemory fixed-tenant search."""
+    vector_store = InMemoryVectorStore(tenant_id="default")
+    manager = VectorstoreManager(vector_store)
+    cleanup = VectorstoreManagerWorkspaceCleanup(manager)
+    workspace_id = "ws-product-tenant-mismatch"
+    manager.add_documents(
+        [Document(page_content="chunk", metadata={"workspace_id": workspace_id})],
+        [[0.1, 0.2]],
+        ids=["vec-mismatch"],
+        base_metadata={
+            "tenant_id": "default",
+            "workspace_id": workspace_id,
+            "collection_id": workspace_id,
+        },
+    )
+
+    deleted = cleanup.delete_workspace_vectors(
+        tenant_id="lkw-ask-qdrant-durability",
+        workspace_id=workspace_id,
+    )
+    assert deleted >= 1
+    remaining = manager.search_by_metadata(
+        conditions={"tenant_id": "default"},
+        limit=50,
+    )
+    assert "vec-mismatch" not in {item["id"] for item in remaining}
+
+
+def test_vector_cleanup_absent_qdrant_collection_is_empty_not_error() -> None:
+    """Never-indexed workspace: missing Qdrant collection must delete 0, not raise."""
+
+    class _UnexpectedResponse(Exception):
+        pass
+
+    class _AbsentCollectionStore:
+        tenant_id = "default"
+
+        def search_by_metadata(self, *, conditions: dict, limit: int = 50) -> list[dict]:
+            raise _UnexpectedResponse(
+                'Unexpected Response: 404 (Not Found)\n'
+                'Raw response content:\n'
+                'b\'{"status":{"error":"Not found: Collection '
+                "`local_workspace__tenant__default` doesn't exist!"
+                '},"time":2.496e-6}\''
+            )
+
+        def delete(self, ids: list[str]) -> None:
+            raise AssertionError("delete must not be called when collection is absent")
+
+    cleanup = VectorstoreManagerWorkspaceCleanup(_AbsentCollectionStore())
+    assert (
+        cleanup.delete_workspace_vectors(
+            tenant_id="lkw-ask-qdrant-durability",
+            workspace_id="adfcd45f-45e1-4d5f-a8f8-01e13a4ebcb8",
+        )
+        == 0
+    )
+
+
+def test_delete_continues_when_vector_cleanup_unsupported(workspace_root: Path) -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+
+    class _BrokenCleanup:
+        def delete_workspace_vectors(self, *, tenant_id: str, workspace_id: str) -> int:
+            raise RuntimeError("vectorstore_workspace_cleanup_not_supported")
+
+    service = ManagedWorkspaceService(
+        repo,
+        allowlist_roots=frozenset({str(workspace_root.resolve())}),
+        vector_cleanup=_BrokenCleanup(),
+    )
+    created = service.create_workspace(tenant_id="t-soft", name="Soft Fail")
+    assert service.delete_workspace(
+        tenant_id="t-soft",
+        workspace_id=created.workspace_id,
+    )
+    assert service.get_workspace(tenant_id="t-soft", workspace_id=created.workspace_id) is None

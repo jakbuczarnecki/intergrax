@@ -99,6 +99,8 @@ class ManagedWorkspaceService:
             return False
 
         # Vectors first while document refs still describe scope; idempotent if empty.
+        # Best-effort: missing Qdrant collection / unsupported lifecycle must not
+        # block deleting workspace metadata (sources/docs/ops/ask/workspace).
         if self._vector_cleanup is not None:
             try:
                 self._vector_cleanup.delete_workspace_vectors(
@@ -106,8 +108,7 @@ class ManagedWorkspaceService:
                     workspace_id=workspace_id,
                 )
             except RuntimeError:
-                logger.warning("workspace_delete vector_cleanup_failed")
-                raise
+                logger.warning("workspace_delete vector_cleanup_failed continuing")
 
         self._repository.delete_sources_for_workspace(
             tenant_id=tenant_id,
