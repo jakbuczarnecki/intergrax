@@ -2,7 +2,12 @@
 
 ```text
 Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_VERIFIED
-Next slice: MVP-4 — Slack conversational MVP (READY_FOR_PRODUCT_IMPLEMENTATION; next task LKW-SLACK-WORKFLOW-1)
+Next slice: MVP-4 — Slack conversational MVP
+  LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
+    approved DM → configured active workspace → Ask HTTP → answer
+  Next task: LKW-SLACK-WORKFLOW-1B
+    workspace listing → workspace selection → pending question
+    → ACTION resume → active workspace persistence → workspaces command
 ```
 
 **Platform runtime status:**
@@ -21,7 +26,18 @@ verified ACTION mapping
 verified confirmation
 
 Platform transport blocker for MVP-4 product work is closed.
-Product workflow (Ask / identity / tenant) remains unimplemented.
+
+LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
+(approved DM → configured tenant/active workspace → product dedupe → Ask HTTP → threaded safe answer)
+Evidence: [proof/LKW_SLACK_ASK_WORKFLOW_1A_LIVE_PROOF.md](proof/LKW_SLACK_ASK_WORKFLOW_1A_LIVE_PROOF.md)
+Real Slack happy path: LIVE_VERIFIED.
+Duplicate-event suppression: DETERMINISTIC_CONCURRENCY_VERIFIED
+(artificial same-event live redelivery not required for 1A completion;
+ multi-process / HA dedupe remains out of scope for single-process MVP).
+Preflight (historical / re-run):
+uv run python applications/local_workspace_application/scripts/run-lkw-slack-ask-configuration-preflight.py
+Proof checklist (historical / re-run):
+uv run python applications/local_workspace_application/scripts/run-lkw-slack-ask-workflow-proof.py
 
 Ownership:
 SlackConversationChannelIntegration
@@ -32,17 +48,23 @@ SlackConversationChannelIntegration
 → Block Kit mapping
 → lifecycle/reconnect/health
 
-LKW Slack conversation handler
-→ authorization
-→ tenant mapping
+LKW Slack companion (applications/local_workspace_application/slack_companion/)
+→ authorization (1A DONE / LIVE_VERIFIED)
+→ tenant + configured active workspace mapping (1A DONE / LIVE_VERIFIED)
+→ product dedupe (1A DONE / LIVE_VERIFIED; DETERMINISTIC_CONCURRENCY_VERIFIED)
+→ Ask HTTP (1A DONE / LIVE_VERIFIED)
+→ answer/citation rendering (1A DONE / LIVE_VERIFIED)
+→ workspace selection / pending question / ACTION resume (1B)
+
+Next exact task: LKW-SLACK-WORKFLOW-1B
+workspace listing
 → workspace selection
 → pending question
-→ product dedupe
-→ Ask HTTP
-→ answer/citation rendering
+→ ACTION resume
+→ active workspace persistence
+→ workspaces command
 
-Next exact task after live proof: LKW-SLACK-WORKFLOW-1
-Live proof command:
+Live transport proof command:
 uv sync --extra integrations-slack
 uv run python scripts/proof/slack_conversation_channel_live_proof.py
 ```
