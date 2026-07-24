@@ -197,8 +197,8 @@ def test_render_marks_active_without_ids() -> None:
         active_workspace_id="ws-active",
     )
     assert "Available workspaces:" in text
-    assert "• Workspace Alpha — active" in text
-    assert "• Workspace Beta" in text
+    assert "1. Workspace Alpha — active" in text
+    assert "2. Workspace Beta" in text
     assert "ws-active" not in text
     assert "ws-beta" not in text
     assert "tenant" not in text.casefold()
@@ -216,7 +216,7 @@ def test_render_does_not_mark_when_active_missing() -> None:
         active_workspace_id="ws-active",
     )
     assert "— active" not in text
-    assert "• Other" in text
+    assert "1. Other" in text
 
 
 @pytest.mark.asyncio

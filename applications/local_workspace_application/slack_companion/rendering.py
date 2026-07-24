@@ -17,6 +17,21 @@ INSUFFICIENT_EVIDENCE_TEXT = (
 GENERIC_ERROR_TEXT = "I could not complete this request. Please try again."
 WORKSPACE_LIST_EMPTY_TEXT = "No available workspaces were found."
 WORKSPACE_LIST_HEADER = "Available workspaces:"
+WORKSPACE_SELECTED_PREFIX = "Selected workspace: "
+WORKSPACE_OUT_OF_RANGE_TEXT = (
+    "Workspace number is not available. Send `workspaces` to see the current list."
+)
+WORKSPACE_LIST_LOAD_FAILED_TEXT = (
+    "I could not load the available workspaces. Please try again."
+)
+WORKSPACE_SELECTION_USAGE_TEXT = (
+    "Use `workspace <number>` to select a workspace. "
+    "Send `workspaces` to see the list."
+)
+SELECTED_WORKSPACE_UNAVAILABLE_TEXT = (
+    "The selected workspace is no longer available. "
+    "Send `workspaces` and select another one."
+)
 
 MAX_ANSWER_CHARS = 3000
 MAX_SOURCE_LABELS = 5
@@ -43,7 +58,7 @@ def render_workspace_list(
     *,
     active_workspace_id: str,
 ) -> str:
-    """Render a safe workspace list; never includes workspace/tenant IDs."""
+    """Render a safe numbered workspace list; never includes workspace/tenant IDs."""
     if not workspaces:
         return WORKSPACE_LIST_EMPTY_TEXT
 
@@ -52,17 +67,42 @@ def render_workspace_list(
         (item.workspace_id or "").strip() == active_id for item in workspaces
     )
     lines = [WORKSPACE_LIST_HEADER, ""]
+    index = 0
     for item in workspaces:
         name = (item.name or "").strip()
         if not name:
             continue
+        index += 1
         if active_present and (item.workspace_id or "").strip() == active_id:
-            lines.append(f"• {name} — active")
+            lines.append(f"{index}. {name} — active")
         else:
-            lines.append(f"• {name}")
-    if len(lines) == 2:
+            lines.append(f"{index}. {name}")
+    if index == 0:
         return WORKSPACE_LIST_EMPTY_TEXT
     return "\n".join(lines)
+
+
+def render_workspace_selected(workspace_name: str) -> str:
+    name = (workspace_name or "").strip()
+    if not name:
+        return WORKSPACE_LIST_EMPTY_TEXT
+    return f"{WORKSPACE_SELECTED_PREFIX}{name}"
+
+
+def render_workspace_out_of_range() -> str:
+    return WORKSPACE_OUT_OF_RANGE_TEXT
+
+
+def render_workspace_list_load_failed() -> str:
+    return WORKSPACE_LIST_LOAD_FAILED_TEXT
+
+
+def render_workspace_selection_usage() -> str:
+    return WORKSPACE_SELECTION_USAGE_TEXT
+
+
+def render_selected_workspace_unavailable() -> str:
+    return SELECTED_WORKSPACE_UNAVAILABLE_TEXT
 
 
 def safe_source_labels(response: SlackAskHttpResponse) -> list[str]:

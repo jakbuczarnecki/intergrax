@@ -5,10 +5,14 @@ Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_V
 Next slice: MVP-4 — Slack conversational MVP
   LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
     approved DM → configured active workspace → Ask HTTP → answer
-  LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / READY_FOR_REVIEW
-    exact DM "workspaces" → tenant-scoped active listing → same-thread reply
-    (Ask count 0; no selection / buttons / pending)
-  Next task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
+  LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / OPERATOR_VERIFIED
+    exact DM "workspaces" → tenant-scoped numbered active listing → same-thread reply
+    (Ask count 0; no buttons / pending)
+  LKW-SLACK-WORKFLOW-1B-2 — IMPLEMENTED / READY_FOR_REVIEW
+    exact DM "workspace <n>" → fresh tenant-scoped list → 1-based in-memory selection
+    (configured active workspace = fallback; restart clears selection;
+     Ask count 0 on selection; no pending / ACTION / persistence)
+  Next task: pending question
 ```
 
 **Platform runtime status:**
@@ -55,10 +59,11 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → product dedupe (1A DONE / LIVE_VERIFIED; DETERMINISTIC_CONCURRENCY_VERIFIED)
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
-→ workspace listing command (1B-1 IMPLEMENTED / READY_FOR_REVIEW)
-→ workspace selection / pending question / ACTION resume (1B-2+)
+→ workspace listing command (1B-1 IMPLEMENTED / OPERATOR_VERIFIED)
+→ text workspace selection (1B-2 IMPLEMENTED / READY_FOR_REVIEW; in-memory only)
+→ pending question / ACTION resume / persistence (1B later)
 
-Next exact task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
+Next exact task: pending question
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -1230,6 +1235,14 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   such as `KeyError` during search/assembly must not present as workspace-not-found.
   Internal logs may use safe reason codes (`workspace_lookup_failed`,
   `tenant_scope_mismatch`, `repository_inconsistency`) without tenant/workspace IDs.
+- **Text workspace selection (LKW-SLACK-WORKFLOW-1B-2):** command `workspace <positive integer>`
+  (trim; `workspace` case-insensitive; 1-based index into a fresh tenant-scoped
+  `GET /v1/local_workspace/workspaces` list with the same active-first ordering as
+  `workspaces`). Selection is process-local (`team_id` + `user_id`); configured
+  `LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` remains the Ask fallback when no
+  selection exists; restart clears selection. No pending question, no ACTION resume,
+  no DocumentStore persistence. Real Ask `http_404` for an in-memory selection clears
+  that selection without silent configured fallback retry.
 
 ---
 
