@@ -316,3 +316,24 @@ async def test_ask_happy_path_still_works() -> None:
     assert len(list_calls) == 0
     assert len(sent) == 2
     assert "Ask answer" in sent[1].text
+
+
+@pytest.mark.asyncio
+async def test_listing_and_ask_use_identical_tenant_header() -> None:
+    """Slack listing and regular Ask must send the same X-Tenant-Id."""
+    ask_calls: list[httpx.Request] = []
+    list_calls: list[httpx.Request] = []
+    transport = _list_transport(
+        workspaces=[_workspace_payload(workspace_id="ws-active", name="Alpha")],
+        ask_calls=ask_calls,
+        list_calls=list_calls,
+    )
+    workflow, _sent = _workflow(transport=transport)
+
+    await workflow.handle(_event(text="workspaces", event_id="Ev-list-tenant"))
+    await workflow.handle(_event(text="What is leave policy?", event_id="Ev-ask-tenant"))
+
+    assert len(list_calls) == 1
+    assert len(ask_calls) == 1
+    assert list_calls[0].headers["X-Tenant-Id"] == ask_calls[0].headers["X-Tenant-Id"]
+    assert list_calls[0].headers["X-Tenant-Id"] == "tenant-a"

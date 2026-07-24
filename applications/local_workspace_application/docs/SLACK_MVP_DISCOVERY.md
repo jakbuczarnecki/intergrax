@@ -1224,6 +1224,12 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
 - Optional start when `LOCAL_WORKSPACE_SLACK_ENABLED=true` and tokens present.
 - Register shutdown hook.
 - Do not mount Slack as a required dependency of HTTP/MCP.
+- **Ask workspace lookup (LKW-SLACK-ASK-404-FIX):** listing/`GET`/`POST …/ask` share
+  `app.state.lkw_managed_workspace_service` (+ repository/document store). Ask HTTP maps
+  only `WorkspaceAskLookupError` to public `404 not_found`; bare `LookupError` subclasses
+  such as `KeyError` during search/assembly must not present as workspace-not-found.
+  Internal logs may use safe reason codes (`workspace_lookup_failed`,
+  `tenant_scope_mismatch`, `repository_inconsistency`) without tenant/workspace IDs.
 
 ---
 
