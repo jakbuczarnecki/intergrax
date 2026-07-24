@@ -1333,16 +1333,18 @@ Binding contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.m
 | Rule | Binding |
 |------|---------|
 | Slack remains a conversation-channel frontend | Collects channel-native input; invokes public LKW capabilities; displays status |
-| Slack attachments | Map to managed upload (`managed_file`) after core capability exists |
-| Multiple attachments | Map to batch intake; per-item success/failure; safe aggregate summary |
-| Folder / archive / channel-exposed collection | Map to `uploaded_folder_snapshot` only (no live sync) |
-| Connected local folder | Selected as safe Source Candidate (`candidate_id` + safe label); never full path |
+| Slack attachments | Map to item-level `managed_file` Knowledge Inputs after core capability exists; LKW resolves/creates managed-upload-backed Source |
+| Multiple attachments | One Intake Batch → N `managed_file` Knowledge Inputs → N item-level Sources → N item-level Ingestion Operations; Slack shows safe aggregate summary only |
+| Folder / archive / channel-exposed collection | Map to `uploaded_folder_snapshot` only (no live sync); one snapshot Source → many Documents |
+| Connected local folder | Selected as safe Source Candidate (`candidate_id` + safe label); never full path; LKW resolves/creates connector-backed Source |
 | Raw filesystem path command | **REJECTED** (not an approved Slack product input) |
 | URL intake | Must be explicit; ordinary Ask messages containing URLs remain Ask |
 | Transport | Acknowledge Slack envelope immediately; long transfer/ingestion does not keep the Slack request open |
-| Adapter must not | Parse, chunk, embed, write Document/Vector Store, select providers, call Qdrant, run filesystem ops, call LLM for ingestion, own operation state |
+| Adapter must not | Parse, chunk, embed, write Document/Vector Store, select providers, call Qdrant, run filesystem ops, call LLM for ingestion, own operation state, create Source identity, own batch state, control retry or partial-success state |
 | LKW core | Does **not** call Slack; completion returns via channel-neutral lifecycle event + Conversation Correlation |
 | Exact commands / Block Kit | **DEFERRED** — do not freeze syntax in this discovery |
+
+Slack maps attachments into public LKW intake requests; it creates neither Source nor Intake Batch state itself. Aggregate summary wording is illustrative only (exact user-facing text **not** frozen).
 
 ---
 

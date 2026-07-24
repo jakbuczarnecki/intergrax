@@ -759,7 +759,9 @@ channel-neutral Knowledge Intake
 → LKW owns durable asynchronous ingestion
 → frontends (Slack / web / mobile / desktop / Teams / Telegram / MCP) are replaceable
 → Knowledge Input ≠ Source ≠ Document ≠ Ingestion Operation
-→ always operation-based; durable operation = source of truth
+→ every persisted Document belongs to exactly one durable Source
+→ Intake Batch = N item-level Knowledge Inputs (not aggregate managed_file_batch)
+→ always operation-based; durable item-level operation = source of truth
 → queue/worker for execution; pub/sub for fan-out only
 → LKW core does not call Slack
 → uploaded folder snapshot ≠ connected local folder
@@ -772,15 +774,18 @@ Frozen user-flow direction:
 ```text
 channel-native user input
 → public LKW Knowledge Intake capability
-→ durable accepted operation
+→ Knowledge Input (multi-item → Intake Batch of item-level inputs)
+→ resolve or create durable Source
+→ durable accepted item-level Ingestion Operation
 → queue/worker processing
+→ Documents owned by that Source
 → channel-neutral lifecycle event
 → response adapter
 ```
 
 Exact Slack command syntax for intake remains **not** frozen. Do not document unimplemented upload/URL endpoints as existing.
 
-**`1B-1` expected concern (NEXT):** channel-neutral intake submission → tenant/workspace-scoped durable operation → idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement all file, URL and connector variants.
+**`1B-1` expected concern (NEXT):** channel-neutral item acceptance → durable Source resolution/creation boundary → durable item-level Ingestion Operation → tenant/workspace-scoped idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement managed upload, Slack attachments, URL fetching, source candidates, or all Source providers.
 
 **Explicit exclusions for the next code task (`1B-1`):** does not automatically mean Slack file support, URL fetching, folder picker, connector marketplace, Kafka, Google Pub/Sub, production Blob Store, all ingestion providers, or background notification UI.
 

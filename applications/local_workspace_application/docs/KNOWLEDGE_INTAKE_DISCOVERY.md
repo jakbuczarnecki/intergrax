@@ -15,16 +15,20 @@
 |----------|----------------|-------------------|
 | LKW / Intergrax owns the complete knowledge intake and ingestion lifecycle | `FROZEN` | Upload acceptance, registration, durable operation state, queue dispatch, extract/parse/chunk/embed, Document/Vector/Blob persistence, retry classification, status events, idempotency, tenant/workspace isolation belong to the platform product boundary — not to any chat client. |
 | Slack (and other channels) are replaceable frontends only | `FROZEN` | Frontends collect channel-native input, invoke the same public LKW capabilities, and display accepted/progress/completion states. They contain no ingestion, RAG, storage or provider logic. |
-| Operation-based asynchronous contract for every ingestion | `FROZEN` | Every Knowledge Input yields a durable Ingestion Operation. Small files may finish quickly internally; the observable product contract remains operation-based. No sync-for-small / async-for-large product split. |
+| Every persisted Document belongs to exactly one durable Source | `FROZEN` | No persisted Document exists without Source ownership. Every accepted Knowledge Input that produces knowledge must resolve or create a durable Source before Document persistence. |
+| Intake Batch groups item-level Knowledge Inputs | `FROZEN` | A multi-item submission is one Intake Batch of N independent Knowledge Inputs — not one aggregate Knowledge Input. Each accepted item has its own Source and Ingestion Operation. |
+| Operation-based asynchronous contract for every ingestion | `FROZEN` | Every Knowledge Input yields a durable item-level Ingestion Operation over a Source created or resolved from that input (or a later sync of an existing Source). Small files may finish quickly internally; the observable product contract remains operation-based. No sync-for-small / async-for-large product split. |
 | Durable Ingestion Operation is the source of truth | `FROZEN` | Operation state must not rest solely on a Slack thread, in-memory future, pub/sub event, or open HTTP connection. |
 | Queue / worker boundary required for ingestion execution | `FROZEN` | Acceptance creates durable state and queues work; a worker performs parse → documents → chunks → embeddings → persistence. |
 | Reuse existing Intergrax queue/message-bus/outbox when verified sufficient | `REUSE` | Do not create an LKW-specific queue framework merely for this feature. Classify a concrete platform gap only after implementation audit. Do **not** claim the current platform queue is production-durable unless verified by code and tests. |
 | Pub/sub (or event bus) for fan-out / notification only | `FROZEN` | Events notify adapters; they are not the operation store. |
 | LKW core does not call Slack | `FROZEN` | Completion reaches Slack only through a channel-neutral lifecycle event and a notification/correlation adapter. |
-| Managed file / managed file batch | `FROZEN` | Uploaded bytes land under LKW-managed storage policy; Slack attachments map to this path after the core capability exists. |
+| Managed file upload | `FROZEN` | Uploaded bytes land under LKW-managed storage policy as a managed-upload-backed Source; Slack attachments map to item-level `managed_file` inputs after the core capability exists. |
 | Uploaded folder snapshot ≠ connected local folder | `FROZEN` | Channel-exposed folder/archive is a one-time copied snapshot with no live sync. Connected folder remains connector-backed and resynchronizable. |
 | Connected source via safe Source Candidate | `FROZEN` | Remote chat clients select opaque `candidate_id` + safe label only; never a raw filesystem path. |
 | Explicit web URL intake | `DIRECTION` | Allowed as a Knowledge Input kind; requires SSRF/egress/private-network policy before acceptance. Ordinary Ask messages containing URLs must not auto-ingest. |
+| Persisted Document directly owned by Knowledge Input | `REJECTED` | Knowledge Input captures submission intent; Source is the durable ownership boundary for Documents. |
+| One aggregate `managed_file_batch` Knowledge Input containing many independent files | `REJECTED` | Multi-file submission uses Intake Batch → N item-level `managed_file` Knowledge Inputs. |
 | Raw local path typed into Slack (or equivalent remote chat) | `REJECTED` | Forbidden product contract (path disclosure, ambiguous host, no FS guarantee, deployment-neutrality violation). |
 | Exact HTTP route / class / enum names | `DEFERRED` | Contract vocabulary only; not implementation claims. |
 | Queue / Blob / pub-sub vendor selection | `DEFERRED` | No Kafka, Google Pub/Sub, RabbitMQ, or Blob provider frozen here. |
@@ -42,15 +46,18 @@ Users need to introduce knowledge into a workspace from many surfaces: Slack att
 ```text
 channel-native user input
 → public LKW Knowledge Intake capability
+→ Knowledge Input (item-level; multi-item → Intake Batch)
+→ resolve or create durable Source
 → durable accepted Ingestion Operation
 → queue/worker processing
+→ Documents owned by that Source → Chunks / Vectors
 → Document Store + Vector Store (+ optional managed originals)
 → channel-neutral lifecycle event
 → response adapter (Slack thread / web / mobile / …)
 → Ask and grounded results over tenant/workspace-scoped knowledge
 ```
 
-One-sentence result: LKW owns durable asynchronous ingestion; Slack is only one replaceable frontend adapter.
+One-sentence result: every accepted knowledge item resolves or creates a durable Source before Document persistence; Slack is only one replaceable frontend adapter.
 
 ---
 
@@ -101,6 +108,12 @@ Slack / Web / Mobile / Desktop / Teams / Telegram / MCP
                          v
                  LKW Knowledge Intake
                          |
+                         v
+                  Knowledge Input
+                         |
+                         v
+            resolve / create Source
+                         |
           +--------------+--------------+
           |              |              |
           v              v              v
@@ -115,7 +128,7 @@ Slack / Web / Mobile / Desktop / Teams / Telegram / MCP
                   Queue / Worker
                          |
                          v
-          Parse → Documents → Chunks → Embeddings
+          Parse → Documents (owned by Source) → Chunks → Embeddings
                          |
               +----------+----------+
               v                     v
@@ -131,14 +144,24 @@ Use these terms consistently. Do not treat them as synonyms.
 | Term | Meaning |
 |------|---------|
 | **Knowledge Intake** | The LKW capability that accepts Knowledge Inputs and drives the ingestion lifecycle. |
-| **Knowledge Input** | A channel-neutral request to introduce knowledge into a workspace. Not automatically a durable resynchronizable Source. |
-| **Source** | A durable logical origin of knowledge associated with a workspace (connector-backed, managed-upload-backed, web-resource-backed, or future application-feed-backed). **Not** defined as “a local filesystem path”. |
-| **Document** | A processed knowledge unit created from a Source or Knowledge Input. One Source may produce one or many Documents, including updates across later sync runs. |
-| **Ingestion Operation** | Durable execution record for accepting/processing a Knowledge Input or synchronizing a Source. Source of truth for execution state. |
+| **Knowledge Input** | A channel-neutral request or item submitted to introduce knowledge into a workspace. It captures submission intent and provenance of acceptance. It does **not** directly own persisted Documents. It may reference the Source created or resolved from it. Not automatically a durable resynchronizable Source by itself. |
+| **Source** | The durable logical origin and ownership boundary for persisted knowledge associated with a workspace (managed-upload-backed, uploaded-folder-snapshot-backed, connector-backed, web-resource-backed, or future application-feed-backed). **Not** defined as “a local filesystem path”. |
+| **Document** | A persisted processed knowledge unit owned by exactly one durable Source. A Source may produce one Document, many Documents, or later versions / reconciled Documents across subsequent operations. Exact document-versioning semantics remain **DEFERRED**. |
+| **Ingestion Operation** | Durable execution record that processes a Source created or resolved from a Knowledge Input, or synchronizes an existing Source. May retain correlation with the initiating Knowledge Input; Document ownership remains on the Source. Source of truth for execution state. |
 | **Upload Session** | Temporary transfer boundary for managed bytes before ingestion begins. |
-| **Intake Batch** | Logical group of multiple inputs submitted together (per-item results, partial success, safe summary). |
+| **Intake Batch** | Logical grouping of multiple item-level Knowledge Inputs submitted as one user action (per-item results, partial success, item-level retry/idempotency, safe aggregate summary). Not an aggregate Knowledge Input kind. |
 | **Source Candidate** | Safe preconfigured source option exposed to a frontend (`opaque candidate identity`, safe label, kind/type, optional description, tenant scope, availability). Must not encode path, credentials, or provider locator. |
 | **Conversation Correlation** | Channel delivery metadata linking an operation to a future response destination (Slack thread, Teams conversation, websocket session, mobile notification target). Must not become part of Source identity or ingestion domain behavior. |
+
+**Binding ownership invariant (`FROZEN`):**
+
+```text
+Every persisted Document belongs to exactly one durable Source.
+No persisted Document exists without Source ownership.
+Knowledge Input → resolve/create Source → Ingestion Operation → Documents
+```
+
+Do **not** allow: Knowledge Input → persisted Document without Source.
 
 Required Ingestion Operation lifecycle vocabulary (`FROZEN`):
 
@@ -152,15 +175,81 @@ Cancellation is **DEFERRED** and must not be presented as implemented.
 
 ## 5. Supported Knowledge Input classes
 
-Contract vocabulary only. Exact enum/class names are **not** implementation claims. Unsupported providers must not be described as implemented.
+Contract vocabulary only. Exact enum/class names are **not** implementation claims. Unsupported providers must not be described as implemented. The first implementation may support only a subset.
 
 | Input kind | Meaning | Managed original | Resynchronizable | Slack support direction |
 |------------|---------|-----------------:|-----------------:|-------------------------|
-| `managed_file` | One uploaded file copied under LKW-managed storage policy | Yes | No, unless later replaced | Native attachment |
-| `managed_file_batch` | Several uploaded files submitted as one user action | Yes | No | Multiple attachments |
-| `uploaded_folder_snapshot` | One-time snapshot of files supplied as archive or channel-exposed collection | Yes | No | Folder/ZIP/multiple files when the channel exposes them |
-| `source_candidate` | Reference to a preconfigured connector-backed source | Provider-dependent | Usually yes | Safe numbered selection |
-| `web_url` | Explicit fetchable web resource | Policy-dependent | Policy-dependent | Explicit URL intake |
+| `managed_file` | One uploaded file → one managed-upload-backed Source | Yes | No, unless later replaced | Native attachment |
+| `uploaded_folder_snapshot` | One-time snapshot → one snapshot-backed Source producing many Documents | Yes | No | Folder/ZIP/channel-exposed collection |
+| `source_candidate` | Resolve or create a connector-backed Source from a safe candidate | Provider-dependent | Usually yes | Safe numbered selection |
+| `web_url` | Explicit fetchable web resource → web-resource-backed Source | Policy-dependent | Policy-dependent | Explicit URL intake |
+
+`managed_file_batch` as a Knowledge Input kind is **REJECTED**. Multi-file submissions use **Intake Batch** (submission grouping), not an aggregate input kind.
+
+### 5.1 Submission grouping — Intake Batch
+
+| Concept | Role |
+|---------|------|
+| **Intake Batch** | Groups N item-level Knowledge Inputs submitted as one user action |
+
+```text
+one channel submission
+→ one Intake Batch
+→ N managed_file Knowledge Inputs
+→ N durable Sources
+→ N Ingestion Operations
+→ independent outcomes
+→ safe aggregate summary
+```
+
+```text
+Intake Batch
+├── Knowledge Input A → Source A → Ingestion Operation A → Document(s) A
+├── Knowledge Input B → Source B → Ingestion Operation B → Document(s) B
+└── Knowledge Input C → Source C → Ingestion Operation C → Document(s) C
+```
+
+Each item must be independently identifiable, idempotent, accepted or rejected, processed, retried, completed or failed, and reported in the aggregate summary. A parent Ingestion Operation for the batch is **not** required. Whether Intake Batch is a dedicated durable entity or a shared correlation/batch identity on item-level records remains **DEFERRED**.
+
+### 5.2 Source resolution examples (`FROZEN` direction)
+
+```text
+managed_file Knowledge Input
+→ managed-upload-backed Source
+→ Ingestion Operation
+→ Document
+
+uploaded_folder_snapshot Knowledge Input
+→ snapshot-backed Source
+→ Ingestion Operation
+→ many Documents
+
+web_url Knowledge Input
+→ web-resource-backed Source
+→ Ingestion Operation
+→ one or more Documents
+
+source_candidate Knowledge Input
+→ resolve or create connector-backed Source
+→ Ingestion Operation / later sync operations
+→ Documents
+```
+
+**Cardinality direction (conceptual; DB constraints not frozen):**
+
+```text
+Knowledge Input → resolves or creates one Source for the accepted item
+Source → owns one or many Documents
+Ingestion Operation → processes one Source in one execution attempt/lifecycle operation
+Intake Batch → groups many item-level Knowledge Inputs
+```
+
+**Lifecycle consequence:** the Source-ownership invariant enables one coherent product lifecycle aligned with contents slices:
+
+```text
+intake (1B) → sources (1A) → ingestion / synchronization (1C)
+→ documents (1D) → removal of source-owned knowledge (1E)
+```
 
 **local-folder** remains the first **implemented** source provider / connector slice. That does not redefine Source as a path.
 
@@ -186,12 +275,24 @@ LKW receives only safe transfer data such as: byte stream or finalized upload re
 
 ```text
 one user submission
-→ several item-level inputs/operations
-→ independent success/failure
+→ one Intake Batch
+→ several managed_file Knowledge Inputs
+→ item-level Sources
+→ item-level Ingestion Operations
+→ independent outcomes
 → safe aggregate summary
 ```
 
-Do not require a long-running synchronous Slack request.
+Example semantic result (exact wording **not** frozen):
+
+```text
+Received 5 files.
+
+Completed: 4
+Failed: 1
+```
+
+Do not require a long-running synchronous Slack request. Do not model the submission as one aggregate Knowledge Input.
 
 ### 6.3 Folder distinction (`FROZEN`)
 
@@ -241,13 +342,39 @@ A local path may be accepted only by a trusted local-capable interface and conve
 
 ```text
 Knowledge Input accepted
-→ durable operation created
+→ resolve or create durable Source
+→ durable Ingestion Operation created
 → operation identity returned
 → work queued
 → processing continues asynchronously
+→ Documents persisted under that Source
 ```
 
 Do **not** document: small file = synchronous endpoint; large file = asynchronous endpoint.
+
+Canonical single-item flow:
+
+```text
+Channel submission
+        |
+        v
+Knowledge Input
+        |
+        v
+resolve/create Source
+        |
+        v
+Ingestion Operation
+        |
+        v
+Queue / Worker
+        |
+        v
+Document(s)
+        |
+        v
+Chunks / Vectors
+```
 
 ### Upload and ingestion are separate phases (`FROZEN`)
 
@@ -258,8 +385,10 @@ create upload session
 → transfer bytes
 → finalize upload
 → create Knowledge Input
+→ resolve or create managed-upload-backed Source
 → create Ingestion Operation
 → queued processing
+→ persist Document(s) owned by that Source
 ```
 
 Large transfers may require resumable upload, checksums, transfer retry, upload expiration, and size policy. Exact endpoints, chunk sizes and provider behavior are **DEFERRED**.
@@ -349,14 +478,14 @@ The LKW core must **not** call Slack directly. Slack thread is only a response d
 
 | Channel-native input | Maps to | Notes |
 |----------------------|---------|-------|
-| Single file attachment | `managed_file` | Adapter downloads with Slack credentials; uploads into LKW; never passes Slack token into core |
-| Multiple attachments | `managed_file_batch` / Intake Batch | Per-item success/failure; safe aggregate summary |
-| Folder / ZIP / channel-exposed collection | `uploaded_folder_snapshot` | Snapshot only; no live sync |
-| Safe numbered candidate selection | `source_candidate` | Opaque id + safe label; never full path |
-| Explicit URL intake action | `web_url` | Not automatic from ordinary Ask text |
+| Single file attachment | `managed_file` | Adapter downloads with Slack credentials; uploads into LKW; never passes Slack token into core; LKW creates managed-upload-backed Source |
+| Multiple attachments | Intake Batch → N `managed_file` Knowledge Inputs | One item-level Source and Ingestion Operation per accepted attachment; Slack shows safe aggregate summary only |
+| Folder / ZIP / channel-exposed collection | `uploaded_folder_snapshot` | Snapshot only; no live sync; one snapshot Source → many Documents |
+| Safe numbered candidate selection | `source_candidate` | Opaque id + safe label; never full path; LKW resolves/creates connector-backed Source |
+| Explicit URL intake action | `web_url` | Not automatic from ordinary Ask text; LKW resolves/creates web-resource-backed Source |
 | Raw filesystem path command | — | `REJECTED` |
 
-Slack acknowledges transport immediately; long transfer/ingestion does not keep the Slack request open. Slack adapter does not parse/embed/store. Completion returns through channel-neutral lifecycle event + Conversation Correlation.
+Slack acknowledges transport immediately; long transfer/ingestion does not keep the Slack request open. Slack creates neither Source nor batch state itself — it maps attachments into public LKW intake requests, displays a safe aggregate summary, and does not control retry or partial-success state. Slack adapter does not parse/embed/store. Completion returns through channel-neutral lifecycle event + Conversation Correlation.
 
 ---
 
@@ -371,7 +500,7 @@ Slack acknowledges transport immediately; long transfer/ingestion does not keep 
 | Temporary transfer data | Upload/session provider |
 | Channel correlation | Conversation notification/correlation storage |
 
-Do **not** claim Document Store automatically stores original file bytes. Do **not** claim Vector Store stores the source document.
+**Source is the ownership boundary for Documents.** Source/document/operation metadata lives in Document Store; managed original bytes (when applicable) live in Blob/Object Store. Do **not** claim Document Store automatically stores original file bytes. Do **not** claim Vector Store stores the source document.
 
 A deployment may use local, cloud, private, or mixed providers. Domain and frontend contract remain unchanged (deployment-neutral).
 
@@ -412,7 +541,7 @@ Accepted media types; file-size limits; batch limits; decompression/archive limi
 |-------|--------|---------|
 | `LKW-WORKSPACE-CONTENTS-1A` | `OPERATOR_VERIFIED` | Inspect active workspace sources (safe summaries; no full path). Not `LIVE_VERIFIED`. |
 | `LKW-WORKSPACE-CONTENTS-1B-0` | `DOCUMENTED / READY_FOR_REVIEW` | This document — freeze channel-neutral Knowledge Intake and async ingestion contract. |
-| `LKW-WORKSPACE-CONTENTS-1B-1` | `NEXT` | Durable Knowledge Intake and Ingestion Operation foundation: channel-neutral intake submission → tenant/workspace-scoped durable operation → idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement all file/URL/connector variants. |
+| `LKW-WORKSPACE-CONTENTS-1B-1` | `NEXT` | Durable Knowledge Intake and Ingestion Operation foundation: channel-neutral item acceptance → durable Source resolution/creation boundary → item-level Ingestion Operation → idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement all file/URL/connector variants or all Source providers. |
 | `LKW-WORKSPACE-CONTENTS-1B-2` | planned | Managed file upload capability |
 | `LKW-WORKSPACE-CONTENTS-1B-3` | planned | Slack attachment and multi-attachment adapter |
 | `LKW-WORKSPACE-CONTENTS-1B-4` | planned | Preconfigured source candidate registration |
@@ -452,7 +581,10 @@ The following remain **DEFERRED** (do not invent details in later docs as if fro
 - original-file retention duration;
 - malware scanner provider;
 - remote connector OAuth implementation;
-- whether batch state is a dedicated entity or derived from child operations.
+- whether Intake Batch is persisted as a dedicated durable entity or represented through a shared correlation/batch identity on item-level records;
+- aggregate batch status schema / enum / parent operation representation;
+- Document versioning and reconciliation model;
+- exact field names such as illustrative `source_id` / `source_ids` (not frozen as implemented).
 
 ---
 
@@ -465,6 +597,9 @@ The following remain **DEFERRED** (do not invent details in later docs as if fro
 | Slack path command is the primary source contract | Paths leak and break deployment neutrality |
 | Every folder upload becomes a live connector | Snapshot ≠ connected folder |
 | Every source is a filesystem path | Source is a durable logical origin |
+| Persisted Document directly owned by Knowledge Input | Source is the ownership boundary; Knowledge Input is submission intent |
+| One aggregate `managed_file_batch` Knowledge Input containing many independent files | **REJECTED** — Intake Batch groups N item-level `managed_file` Knowledge Inputs |
+| Parent Ingestion Operation required for a batch | Item-level operations only; aggregate batch status may be derived later (**DEFERRED**) |
 | Pub/sub is the operation source of truth | Durable operation record is |
 | Slack thread stores job state | Correlation destination only |
 | LKW core sends directly to Slack | Notification adapter resolves destination |
@@ -509,15 +644,18 @@ Do not present `/knowledge-inputs`, upload-session routes or event schemas as ex
 - [x] LKW owns complete intake and ingestion lifecycle
 - [x] Frontends are replaceable; Slack has no ingestion/RAG/storage logic
 - [x] Knowledge Input, Source, Document, Ingestion Operation are distinct
+- [x] Every persisted Document belongs to exactly one durable Source
+- [x] Document directly owned by Knowledge Input rejected
 - [x] Source is not defined only as connector-backed local path
 - [x] managed upload, source candidate and URL represented
 - [x] uploaded folder snapshot vs connected folder distinct
+- [x] `managed_file_batch` removed as Knowledge Input kind; Intake Batch groups item-level inputs
 - [x] raw local path in Slack rejected
 - [x] always operation-based ingestion
 - [x] durable operation is source of truth
 - [x] queue/worker vs pub/sub roles distinct
 - [x] LKW core does not call Slack
-- [x] storage responsibilities separated
+- [x] storage responsibilities separated; Source owns Documents
 - [x] tenant/workspace and idempotency documented
 - [x] deferred decisions listed without invented vendors/routes
 - [x] historical Ask MVP file-ignore scoped, not erased

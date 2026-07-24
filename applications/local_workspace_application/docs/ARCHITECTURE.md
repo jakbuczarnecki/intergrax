@@ -371,24 +371,30 @@ provider and product behavior not yet implemented
 
 | Concept | Meaning |
 |---------|---------|
-| **Knowledge Input** | Channel-neutral request to introduce knowledge; not automatically a durable resynchronizable Source |
-| **Source** | Durable logical origin of knowledge for a workspace |
-| **Document** | Processed knowledge unit derived from a Source or Knowledge Input |
-| **Ingestion Operation** | Durable execution record; source of truth for execution state (`accepted` → `queued` → `processing` → `completed` \| `failed`) |
+| **Knowledge Input** | Channel-neutral request or item submitted to introduce knowledge; captures submission intent; does **not** directly own persisted Documents; not automatically a durable resynchronizable Source |
+| **Source** | Durable logical origin and ownership boundary for persisted knowledge in a workspace |
+| **Document** | Persisted processed knowledge unit owned by exactly one durable Source |
+| **Ingestion Operation** | Durable execution record that processes a Source created or resolved from a Knowledge Input, or synchronizes an existing Source; source of truth for execution state (`accepted` → `queued` → `processing` → `completed` \| `failed`) |
+| **Intake Batch** | Logical grouping of multiple item-level Knowledge Inputs from one user action (not an aggregate Knowledge Input kind) |
+
+**Binding ownership invariant:** every persisted Document belongs to exactly one durable Source. No persisted Document exists without Source ownership. Do **not** allow Knowledge Input → persisted Document without Source.
 
 **Input-kind direction (contract vocabulary — not implementation claims):**
 
 | Input kind | Managed original | Resynchronizable | Notes |
 |------------|-----------------:|-----------------:|-------|
-| `managed_file` | Yes | No (unless later replaced) | Single uploaded file |
-| `managed_file_batch` | Yes | No | Several files, one user action |
-| `uploaded_folder_snapshot` | Yes | No | Copied snapshot; **not** a live connector |
-| `source_candidate` | Provider-dependent | Usually yes | Opaque candidate id + safe label only |
+| `managed_file` | Yes | No (unless later replaced) | Single uploaded file → managed-upload-backed Source → Document |
+| `uploaded_folder_snapshot` | Yes | No | Copied snapshot Source; **not** a live connector; many Documents |
+| `source_candidate` | Provider-dependent | Usually yes | Opaque candidate id + safe label; resolve/create connector-backed Source |
 | `web_url` | Policy-dependent | Policy-dependent | Explicit intake only; Ask text with a URL must not auto-ingest |
+
+**Submission grouping (not an input kind):** multi-file / multi-item submissions use **Intake Batch** → N item-level Knowledge Inputs → N Sources → N Ingestion Operations. Aggregate `managed_file_batch` Knowledge Input kind is **REJECTED**.
 
 ```text
 uploaded folder
 → snapshot copied into managed storage
+→ one snapshot-backed Source
+→ many Documents
 → no live synchronization
 
 connected local folder
@@ -404,21 +410,33 @@ connected local folder
 **Queue / worker vs events:**
 
 ```text
-Knowledge Intake
+Knowledge Input
+→ resolve or create Source
 → durable Ingestion Operation (source of truth)
 → platform queue / message-bus capability
 → ingestion worker
-→ parse → documents → chunks → embeddings → stores
+→ parse → Documents (owned by Source) → chunks → embeddings → stores
 
 Pub/sub or event bus = fan-out / notification only
 (not the operation store)
+```
+
+**Multi-item cardinality:**
+
+```text
+Intake Batch
+├── Knowledge Input A → Source A → Ingestion Operation A → Document(s) A
+├── Knowledge Input B → Source B → Ingestion Operation B → Document(s) B
+└── Knowledge Input C → Source C → Ingestion Operation C → Document(s) C
 ```
 
 Reuse an existing Intergrax queue/message-bus/outbox capability when verified sufficient; do not invent an LKW-specific queue framework merely for this feature; classify a platform gap only after implementation audit. Do **not** claim the current platform queue or a production durable worker already satisfies this contract unless verified.
 
 **Notification correlation:** LKW core never calls Slack (or other channels) directly. Completion emits a channel-neutral lifecycle event; a notification/correlation adapter resolves the destination (Slack thread, websocket, mobile push, Teams, …). Conversation Correlation must not become Source identity or ingestion domain behavior. Slack thread is not a queue, operation store, or retry mechanism.
 
-**Invariants (implementation gates):** every durable Knowledge Input, Source, Document, Ingestion Operation, batch relation and managed original is scoped by `tenant_id` + `workspace_id` (fail closed). Repeated delivery of channel events, uploads, queue messages or completion events must not create unintended duplicate sources/documents/embeddings.
+**Lifecycle alignment:** Source ownership enables coherent contents lifecycle — intake (1B) → sources (1A) → ingestion / synchronization (1C) → documents (1D) → removal of source-owned knowledge (1E).
+
+**Invariants (implementation gates):** every durable Knowledge Input, Source, Document, Ingestion Operation, batch relation and managed original is scoped by `tenant_id` + `workspace_id` (fail closed). Every persisted Document must carry Source ownership. Repeated delivery of channel events, uploads, queue messages or completion events must not create unintended duplicate sources/documents/embeddings.
 
 ### Application and adapter boundaries
 
