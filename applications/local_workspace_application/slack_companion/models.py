@@ -89,6 +89,16 @@ class SlackWorkspaceListResponse(BaseModel):
     workspaces: list[SlackWorkspaceListItem] = Field(default_factory=list)
 
 
+class SlackWorkspaceCreateResponse(BaseModel):
+    """Typed POST /workspaces create response (safe subset for selection)."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    workspace_id: str = ""
+    name: str = ""
+    status: str = ""
+
+
 class SlackAskClientError(Exception):
     """Controlled Ask/list HTTP failure (no internal diagnostics for Slack rendering)."""
 

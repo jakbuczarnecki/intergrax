@@ -75,6 +75,9 @@ class ManagedWorkspaceRepository:
             Workspace,
         )
 
+    def delete_workspace(self, *, tenant_id: str, workspace_id: str) -> None:
+        self._store.delete(_partition(tenant_id, _ENTITY_WORKSPACE), workspace_id)
+
     def list_workspaces(self, *, tenant_id: str) -> list[Workspace]:
         items = self._list(_partition(tenant_id, _ENTITY_WORKSPACE), Workspace)
         return sorted(items, key=lambda item: item.created_at, reverse=True)
@@ -112,6 +115,29 @@ class ManagedWorkspaceRepository:
         items = [WorkspaceSource.model_validate(dict(doc.data)) for doc in result.documents]
         return sorted(items, key=lambda item: item.created_at)
 
+    def delete_source(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+    ) -> None:
+        self._store.delete(
+            _partition(tenant_id, _ENTITY_SOURCE),
+            f"{workspace_id}:{source_id}",
+        )
+
+    def delete_sources_for_workspace(self, *, tenant_id: str, workspace_id: str) -> int:
+        deleted = 0
+        for source in self.list_sources(tenant_id=tenant_id, workspace_id=workspace_id):
+            self.delete_source(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source.source_id,
+            )
+            deleted += 1
+        return deleted
+
     # --- Operation ---
 
     def put_operation(self, operation: WorkspaceOperation) -> WorkspaceOperation:
@@ -128,6 +154,18 @@ class ManagedWorkspaceRepository:
             operation_id,
             WorkspaceOperation,
         )
+
+    def delete_operation(self, *, tenant_id: str, operation_id: str) -> None:
+        self._store.delete(_partition(tenant_id, _ENTITY_OPERATION), operation_id)
+
+    def delete_operations_for_workspace(self, *, tenant_id: str, workspace_id: str) -> int:
+        deleted = 0
+        for operation in self.list_operations(tenant_id=tenant_id):
+            if operation.workspace_id != workspace_id:
+                continue
+            self.delete_operation(tenant_id=tenant_id, operation_id=operation.operation_id)
+            deleted += 1
+        return deleted
 
     # --- Document references ---
 
@@ -202,6 +240,29 @@ class ManagedWorkspaceRepository:
             f"{workspace_id}:{document_id}",
             WorkspaceDocumentReference,
         )
+
+    def delete_document_refs_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        """Remove primary refs and path-index rows for one workspace."""
+        partition = _partition(tenant_id, _ENTITY_DOCUMENT)
+        deleted = 0
+        refs = self.list_document_refs(tenant_id=tenant_id, workspace_id=workspace_id)
+        for ref in refs:
+            self._store.delete(partition, f"{workspace_id}:{ref.document_id}")
+            path_row = f"path:{workspace_id}:{ref.source_id}:{ref.source_path}"
+            self._store.delete(partition, path_row)
+            deleted += 1
+        # Sweep any leftover path-index rows for this workspace.
+        path_prefix = f"path:{workspace_id}:"
+        leftover = self._store.query(partition, limit=2000, row_key_prefix=path_prefix)
+        for doc in leftover.documents:
+            self._store.delete(partition, doc.row_key)
+            deleted += 1
+        return deleted
 
     def list_operations(self, *, tenant_id: str) -> list[WorkspaceOperation]:
         return self._list(_partition(tenant_id, _ENTITY_OPERATION), WorkspaceOperation)

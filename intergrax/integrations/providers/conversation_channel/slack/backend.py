@@ -33,6 +33,7 @@ from intergrax.integrations.providers.conversation_channel.slack.mapping import 
 from intergrax.integrations.providers.conversation_channel.slack.rendering import (
     render_chat_post_message_args,
 )
+from intergrax.utils import attribute_access
 
 _LOG = logging.getLogger(__name__)
 _DEFAULT_MAX_IN_FLIGHT = 32
@@ -175,13 +176,21 @@ class SlackConversationChannelBackend:
     def _register_listener(self) -> None:
         if self._listener_registered or self._socket_client is None:
             return
-        listeners = getattr(self._socket_client, "socket_mode_request_listeners", None)
+        listeners = attribute_access.optional(
+            self._socket_client,
+            "socket_mode_request_listeners",
+            None,
+        )
         if listeners is None:
             raise SlackConversationLifecycleError(
                 "Socket Mode client missing socket_mode_request_listeners",
             )
         listeners.append(self._on_socket_mode_request)
-        on_close = getattr(self._socket_client, "on_close_listeners", None)
+        on_close = attribute_access.optional(
+            self._socket_client,
+            "on_close_listeners",
+            None,
+        )
         if isinstance(on_close, list):
             on_close.append(self._on_socket_close)
         self._listener_registered = True
@@ -193,7 +202,11 @@ class SlackConversationChannelBackend:
             SlackConversationLifecycleState.STARTING,
         }:
             return
-        if getattr(self._socket_client, "auto_reconnect_enabled", False):
+        if attribute_access.optional_bool(
+            self._socket_client,
+            "auto_reconnect_enabled",
+            default=False,
+        ):
             self._state = SlackConversationLifecycleState.RECONNECTING
             _LOG.info("slack conversation: transport closed; SDK reconnect in progress")
         else:
@@ -224,7 +237,11 @@ class SlackConversationChannelBackend:
                     if hasattr(self._socket_client, "default_auto_reconnect_enabled"):
                         self._socket_client.default_auto_reconnect_enabled = True
                 self._register_listener()
-                connect = getattr(self._socket_client, "connect", None)
+                connect = attribute_access.optional(
+                    self._socket_client,
+                    "connect",
+                    None,
+                )
                 if connect is None:
                     raise SlackConversationLifecycleError("Socket Mode client missing connect()")
                 result = connect()
@@ -291,7 +308,7 @@ class SlackConversationChannelBackend:
         if client is None:
             return
         for method_name in ("close", "disconnect"):
-            method = getattr(client, method_name, None)
+            method = attribute_access.optional(client, method_name, None)
             if not callable(method):
                 continue
             try:
@@ -307,7 +324,11 @@ class SlackConversationChannelBackend:
                 )
 
     async def _on_socket_mode_request(self, client: Any, request: Any) -> None:
-        envelope_id = getattr(request, "envelope_id", None)
+        envelope_id = attribute_access.optional(
+            request,
+            "envelope_id",
+            None,
+        )
         envelope_id_text = str(envelope_id).strip() if envelope_id is not None else ""
         if not envelope_id_text:
             _LOG.warning("slack conversation: malformed transport envelope without envelope_id")
@@ -327,8 +348,8 @@ class SlackConversationChannelBackend:
         if self._state is SlackConversationLifecycleState.RECONNECTING:
             self._state = SlackConversationLifecycleState.READY
 
-        envelope_type = getattr(request, "type", None)
-        payload = getattr(request, "payload", None)
+        envelope_type = attribute_access.optional(request, "type", None)
+        payload = attribute_access.optional(request, "payload", None)
         if not isinstance(payload, Mapping):
             _LOG.info(
                 "slack conversation: ignoring envelope type=%s (non-mapping payload)",
@@ -350,7 +371,11 @@ class SlackConversationChannelBackend:
         if response_cls is None:
             _, _, SocketModeResponse, _ = _import_slack_sdk()
             response_cls = SocketModeResponse
-        send = getattr(client, "send_socket_mode_response", None)
+        send = attribute_access.optional(
+            client,
+            "send_socket_mode_response",
+            None,
+        )
         if not callable(send):
             raise SlackConversationLifecycleError("Socket Mode client missing send_socket_mode_response")
         result = send(response_cls(envelope_id=envelope_id))
@@ -411,7 +436,7 @@ class SlackConversationChannelBackend:
             error_cls = self._slack_api_error_cls
             if error_cls is not None and isinstance(exc, error_cls):
                 code = ""
-                response = getattr(exc, "response", None)
+                response = attribute_access.optional(exc, "response", None)
                 if isinstance(response, Mapping):
                     code = str(response.get("error") or "")
                 raise SlackConversationSendError(
@@ -425,7 +450,7 @@ class SlackConversationChannelBackend:
                 SlackApiError = ()  # type: ignore[assignment, misc]
             if SlackApiError and isinstance(exc, SlackApiError):
                 code = ""
-                response = getattr(exc, "response", None)
+                response = attribute_access.optional(exc, "response", None)
                 if isinstance(response, Mapping):
                     code = str(response.get("error") or "")
                 raise SlackConversationSendError(

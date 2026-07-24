@@ -168,7 +168,7 @@ LKW is a **personal Agent OS instance** on the user's computer:
 | Client | Technology | Talks to | Wave |
 |--------|------------|----------|------|
 | **HTTP API** | any HTTP client | `POST /v1/local_workspace/run` | LKW.0 Done |
-| **Managed workspaces API** | any HTTP client | `/v1/local_workspace/workspaces`, sources, sync, operations, search | **LKW-PRODUCT-1 Done** |
+| **Managed workspaces API** | any HTTP client | `/v1/local_workspace/workspaces` (create/list/get/delete), sources, sync, operations, search, ask | **LKW-PRODUCT-1 Done** + **LKW-WORKSPACE-MANAGEMENT-1** delete |
 | **MCP** | Cursor, Claude Desktop | `http://127.0.0.1:8020/mcp` | LKW.0 Done |
 | **LKW Tray** | Tauri/Electron or native | localhost HTTP + folder picker | LKW.8 |
 | **Slack** | Slack App (Socket Mode) | intake via platform interaction stack on LKW host | LKW.6b |

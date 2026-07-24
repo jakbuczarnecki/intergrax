@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.utils import attribute_access
 
 _PRODUCT_MANIFEST_MODULES: tuple[tuple[str, str, str], ...] = (
     ("legal", "legal_application.manifest", "LEGAL_APPLICATION_MANIFEST"),
@@ -27,7 +28,7 @@ def iter_product_manifests() -> Iterator[tuple[str, ApplicationManifest]]:
     """Yield `(product_id, manifest)` for shipped Tier-3 product hosts."""
     for product_id, module_name, attr in _PRODUCT_MANIFEST_MODULES:
         module = importlib.import_module(module_name)
-        yield product_id, getattr(module, attr)
+        yield product_id, attribute_access.optional(module, attr)
 
 
 def iter_strict_product_manifests() -> Iterator[tuple[str, ApplicationManifest]]:

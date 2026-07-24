@@ -66,6 +66,9 @@ from local_workspace_application.workspaces.sync_runtime import (
     build_managed_workspace_sync_runtime,
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+from local_workspace_application.workspaces.vector_cleanup import (
+    VectorstoreManagerWorkspaceCleanup,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +147,7 @@ def mount_managed_workspace_routes(
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
     ask_service: WorkspaceAskService | None = None,
     llm_adapter: Any | None = None,
+    vectorstore_manager: Any | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -153,10 +157,16 @@ def mount_managed_workspace_routes(
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
     if repository is None:
         repository = ManagedWorkspaceRepository(resolve_managed_workspace_document_store())
+    ask_repository = WorkspaceAskRepository(repository.document_store)
+    vector_cleanup = None
+    if vectorstore_manager is not None:
+        vector_cleanup = VectorstoreManagerWorkspaceCleanup(vectorstore_manager)
     service = ManagedWorkspaceService(
         repository,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
         shadow_roots=shadow_roots,
+        ask_repository=ask_repository,
+        vector_cleanup=vector_cleanup,
     )
     sync_service = ManagedWorkspaceSyncService(
         repository,
@@ -186,7 +196,7 @@ def mount_managed_workspace_routes(
         ask_service = WorkspaceAskService(
             workspace_service=service,
             workspace_repository=repository,
-            ask_repository=WorkspaceAskRepository(repository.document_store),
+            ask_repository=ask_repository,
             task_executor=task_executor,
             llm_adapter=llm_adapter,
             llm_adapter_factory=(None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))),
@@ -244,6 +254,37 @@ def mount_managed_workspace_routes(
         if workspace is None:
             raise _not_found()
         return _workspace_response(workspace)
+
+    @router.delete(
+        "/workspaces/{workspace_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+        response_model=None,
+    )
+    async def delete_workspace(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> None:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current: ManagedWorkspaceService = getattr(
+            request.app.state, "lkw_managed_workspace_service", service
+        )
+        try:
+            deleted = current.delete_workspace(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        except RuntimeError as exc:
+            logger.warning(
+                "workspace_delete_failed kind=%s",
+                type(exc).__name__,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="workspace_delete_failed",
+            ) from exc
+        if not deleted:
+            raise _not_found()
 
     @router.post(
         "/workspaces/{workspace_id}/sources",

@@ -454,3 +454,143 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             return int(attribute_access.optional(c, "count", 0))
         except Exception:            
             return 0
+
+    def list_collections(self) -> List[str]:
+        return [self.collection_name]
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]:
+        self._ensure_qdrant_collection()
+        ids: List[str] = []
+        next_offset: Any = None
+        skipped = 0
+        target_offset = max(0, offset)
+        while len(ids) < max(1, limit):
+            records, next_offset = self._client.scroll(
+                collection_name=self.collection_name,
+                limit=min(128, max(1, limit) + target_offset),
+                offset=next_offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            if not records:
+                break
+            for point in records:
+                payload = point.payload or {}
+                logical = str(payload.get(_LOGICAL_ID_METADATA_KEY) or point.id)
+                if skipped < target_offset:
+                    skipped += 1
+                    continue
+                ids.append(logical)
+                if len(ids) >= max(1, limit):
+                    break
+            if next_offset is None:
+                break
+        return ids
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
+        logical = (document_id or "").strip()
+        if not logical:
+            return None
+        cached = self._payloads.get(logical)
+        if cached is not None:
+            metadata = {key: value for key, value in cached.items() if key != "text"}
+            return {
+                "id": logical,
+                "text": str(cached.get("text") or ""),
+                "metadata": metadata,
+            }
+        self._ensure_qdrant_collection()
+        point_id = _normalize_point_id(logical)
+        try:
+            points = self._client.retrieve(
+                collection_name=self.collection_name,
+                ids=[point_id],
+                with_payload=True,
+                with_vectors=False,
+            )
+        except Exception:
+            return None
+        if not points:
+            return None
+        payload = points[0].payload or {}
+        metadata = {key: value for key, value in payload.items() if key != "text"}
+        return {
+            "id": str(payload.get(_LOGICAL_ID_METADATA_KEY) or logical),
+            "text": str(payload.get("text") or ""),
+            "metadata": metadata,
+        }
+
+    def search_by_metadata(
+        self,
+        *,
+        conditions: Dict[str, Any],
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        effective_where = dict(conditions)
+        existing = effective_where.get("tenant_id")
+        if existing is not None and existing != self.cfg.tenant_id:
+            raise ValueError(
+                f"Query tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
+            )
+        effective_where["tenant_id"] = self.cfg.tenant_id
+        self._ensure_qdrant_collection()
+        qfilter = self._qdrant_filter(effective_where)
+        results: List[Dict[str, Any]] = []
+        next_offset: Any = None
+        page_limit = max(1, min(128, int(limit)))
+        while len(results) < max(1, limit):
+            records, next_offset = self._client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=qfilter,
+                limit=min(page_limit, max(1, limit) - len(results)),
+                offset=next_offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            if not records:
+                break
+            for point in records:
+                payload = point.payload or {}
+                logical = str(payload.get(_LOGICAL_ID_METADATA_KEY) or point.id)
+                metadata = {key: value for key, value in payload.items() if key != "text"}
+                results.append(
+                    {
+                        "id": logical,
+                        "text": str(payload.get("text") or ""),
+                        "metadata": metadata,
+                    }
+                )
+                if len(results) >= max(1, limit):
+                    break
+            if next_offset is None:
+                break
+        return results
+
+    def purge_collection(self, *, dry_run: bool = True, tenant_id: str = "") -> Dict[str, Any]:
+        if tenant_id and tenant_id != self.cfg.tenant_id:
+            raise ValueError(
+                f"Purge tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{tenant_id}'."
+            )
+        document_count = self.count()
+        if dry_run:
+            return {
+                "dry_run": True,
+                "would_delete": document_count,
+                "tenant_id": self.cfg.tenant_id,
+            }
+        deleted = 0
+        while True:
+            more = self.list_document_ids(limit=500, offset=0)
+            if not more:
+                break
+            self.delete(more)
+            deleted += len(more)
+            if len(more) < 500:
+                break
+        self._payloads.clear()
+        return {
+            "dry_run": False,
+            "deleted": deleted or document_count,
+            "tenant_id": self.cfg.tenant_id,
+        }
+

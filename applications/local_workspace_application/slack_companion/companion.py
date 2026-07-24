@@ -31,6 +31,12 @@ from local_workspace_application.slack_companion.authorization import SlackCompa
 from local_workspace_application.slack_companion.dedupe_repository import (
     SlackEventDedupeRepository,
 )
+from local_workspace_application.slack_companion.selection_store import (
+    InMemorySlackWorkspaceSelectionStore,
+)
+from local_workspace_application.slack_companion.pending_deletion_store import (
+    InMemorySlackPendingDeletionStore,
+)
 from local_workspace_application.slack_companion.workflow import SlackAskWorkflow
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
@@ -168,6 +174,8 @@ def build_slack_companion(
     """Build a companion from validated product config + platform Slack integration."""
     store = resolve_managed_workspace_document_store(document_store)
     dedupe = SlackEventDedupeRepository(store)
+    selections = InMemorySlackWorkspaceSelectionStore()
+    pending_deletions = InMemorySlackPendingDeletionStore()
     auth = SlackCompanionAuthConfig(
         approved_team_id=runtime.approved_team_id,
         approved_user_id=runtime.approved_user_id,
@@ -197,6 +205,8 @@ def build_slack_companion(
         auth_config=auth,
         dedupe=dedupe,
         ask_client=client,
+        selection_store=selections,
+        pending_deletion_store=pending_deletions,
     )
     return SlackCompanion(integration=resolved_integration, workflow=workflow)
 

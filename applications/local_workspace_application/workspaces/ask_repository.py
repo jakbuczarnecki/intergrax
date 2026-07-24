@@ -39,3 +39,23 @@ class WorkspaceAskRepository:
         if record is None:
             return None
         return WorkspaceAskRun.model_validate(dict(record.data))
+
+    def list_runs(self, *, tenant_id: str, limit: int = 2000) -> list[WorkspaceAskRun]:
+        result = self._store.query(_partition(tenant_id), limit=limit)
+        return [
+            WorkspaceAskRun.model_validate(dict(doc.data)) for doc in result.documents
+        ]
+
+    def delete_run(self, *, tenant_id: str, run_id: str) -> None:
+        self._store.delete(_partition(tenant_id), run_id)
+
+    def delete_runs_for_workspace(self, *, tenant_id: str, workspace_id: str) -> int:
+        """Policy A: remove workspace-owned Ask runs (immutable retention not required)."""
+        deleted = 0
+        target = (workspace_id or "").strip()
+        for run in self.list_runs(tenant_id=tenant_id):
+            if (run.workspace_id or "").strip() != target:
+                continue
+            self.delete_run(tenant_id=tenant_id, run_id=run.run_id)
+            deleted += 1
+        return deleted

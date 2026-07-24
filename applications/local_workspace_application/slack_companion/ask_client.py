@@ -14,6 +14,7 @@ import httpx
 from local_workspace_application.slack_companion.models import (
     SlackAskClientError,
     SlackAskHttpResponse,
+    SlackWorkspaceCreateResponse,
     SlackWorkspaceListItem,
     SlackWorkspaceListResponse,
 )
@@ -107,6 +108,103 @@ class WorkspaceAskHttpClient:
             and (item.workspace_id or "").strip()
             and (item.name or "").strip()
         ]
+
+    async def create_workspace(
+        self,
+        *,
+        tenant_id: str,
+        name: str,
+    ) -> SlackWorkspaceCreateResponse:
+        url = self.build_list_url()
+        headers: dict[str, str] = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-Tenant-Id": tenant_id.strip(),
+        }
+        if self._api_key is not None:
+            headers["X-API-Key"] = self._api_key
+
+        body: dict[str, Any] = {"name": name}
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout,
+                transport=self._transport,
+            ) as client:
+                response = await client.post(url, json=body, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "slack_companion create_workspace timeout kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="timeout") from exc
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "slack_companion create_workspace transport_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="transport_error") from exc
+
+        if response.status_code < 200 or response.status_code >= 300:
+            logger.warning(
+                "slack_companion create_workspace http_error status=%s",
+                response.status_code,
+            )
+            raise SlackAskClientError(kind=f"http_{response.status_code}")
+
+        try:
+            payload = response.json()
+            parsed = SlackWorkspaceCreateResponse.model_validate(payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion create_workspace parse_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="parse_error") from exc
+
+        if not (parsed.workspace_id or "").strip() or not (parsed.name or "").strip():
+            raise SlackAskClientError(kind="parse_error")
+        return parsed
+
+    async def delete_workspace(self, *, tenant_id: str, workspace_id: str) -> None:
+        path = f"v1/local_workspace/workspaces/{workspace_id.strip()}"
+        url = urljoin(self._base_url, path)
+        headers: dict[str, str] = {
+            "Accept": "application/json",
+            "X-Tenant-Id": tenant_id.strip(),
+        }
+        if self._api_key is not None:
+            headers["X-API-Key"] = self._api_key
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout,
+                transport=self._transport,
+            ) as client:
+                response = await client.delete(url, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "slack_companion delete_workspace timeout kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="timeout") from exc
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "slack_companion delete_workspace transport_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="transport_error") from exc
+
+        if response.status_code == 204:
+            return
+        if response.status_code < 200 or response.status_code >= 300:
+            logger.warning(
+                "slack_companion delete_workspace http_error status=%s",
+                response.status_code,
+            )
+            raise SlackAskClientError(kind=f"http_{response.status_code}")
+        # Non-204 success with body is unexpected for this contract.
+        raise SlackAskClientError(kind="parse_error")
 
     async def ask(
         self,

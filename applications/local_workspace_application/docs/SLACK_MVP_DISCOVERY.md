@@ -5,10 +5,25 @@ Status: FROZEN_FOR_IMPLEMENTATION — SLACK-CONVERSATION-RUNTIME-1 DONE / LIVE_V
 Next slice: MVP-4 — Slack conversational MVP
   LKW-SLACK-WORKFLOW-1A — DONE / LIVE_VERIFIED
     approved DM → configured active workspace → Ask HTTP → answer
-  LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / READY_FOR_REVIEW
-    exact DM "workspaces" → tenant-scoped active listing → same-thread reply
-    (Ask count 0; no selection / buttons / pending)
-  Next task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
+  LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / OPERATOR_VERIFIED
+    exact DM "workspaces" → tenant-scoped numbered active listing → same-thread reply
+    (Ask count 0; no buttons / pending)
+  LKW-SLACK-WORKFLOW-1B-2 — OPERATOR_VERIFIED
+    exact DM "workspace <n>" → fresh tenant-scoped list → 1-based in-memory selection
+    (configured workspace = default fallback; selected = effective active;
+     `workspaces` always marks effective active; restart clears selection;
+     Ask count 0 on selection; no pending / ACTION / persistence)
+  LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
+    workspace create <name> → HTTP create → in-memory select (Ask count 0)
+    workspace delete <n> → pending deletion (TTL 5m; no delete yet)
+    workspace delete confirm → DELETE /workspaces/{id} using stored id
+    workspace delete cancel → clear pending only
+    cleanup: workspace/sources/docs/ops/vectors + Ask runs (policy A);
+    local source files never deleted; no source attachment in this task
+  LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
+    exact DM "help" → dynamic command list from decorated handler metadata
+    (registry = parse/dispatch/help; opt-in discovery on workflow; Ask for non-commands)
+  Next task: inspect workspace contents / sources
 ```
 
 **Platform runtime status:**
@@ -55,10 +70,13 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → product dedupe (1A DONE / LIVE_VERIFIED; DETERMINISTIC_CONCURRENCY_VERIFIED)
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
-→ workspace listing command (1B-1 IMPLEMENTED / READY_FOR_REVIEW)
-→ workspace selection / pending question / ACTION resume (1B-2+)
+→ workspace listing command (1B-1 IMPLEMENTED / OPERATOR_VERIFIED)
+→ text workspace selection (1B-2 OPERATOR_VERIFIED; in-memory only)
+→ workspace create / delete confirm (LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ dynamic command catalog + help (LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ inspect contents / sources / pending question / ACTION / persistence (later)
 
-Next exact task: LKW-SLACK-WORKFLOW-1B-2 — workspace selection
+Next exact task: inspect workspace contents / sources
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -1230,6 +1248,46 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   such as `KeyError` during search/assembly must not present as workspace-not-found.
   Internal logs may use safe reason codes (`workspace_lookup_failed`,
   `tenant_scope_mismatch`, `repository_inconsistency`) without tenant/workspace IDs.
+- **Text workspace selection (LKW-SLACK-WORKFLOW-1B-2):** command `workspace <positive integer>`
+  (trim; `workspace` case-insensitive; 1-based index into a fresh tenant-scoped
+  `GET /v1/local_workspace/workspaces` list with the same active-first ordering as
+  `workspaces`). Selection is process-local (`team_id` + `user_id`).
+  Effective active workspace = in-memory selected workspace when present, else
+  configured `LOCAL_WORKSPACE_SLACK_ACTIVE_WORKSPACE_ID` (default fallback only).
+  Ask routing, `workspaces` ordering, and the `— active` marker all use the same
+  effective workspace; `workspaces` always marks effective active. Restart clears
+  selection. No pending question, no ACTION resume, no DocumentStore persistence.
+  Real Ask `http_404` for an in-memory selection clears that selection without
+  silent configured fallback retry (configured then becomes effective again).
+- **Workspace lifecycle (LKW-WORKSPACE-MANAGEMENT-1):**
+  - `workspace create <name>` → tenant-scoped `POST /v1/local_workspace/workspaces`
+    → in-memory select created workspace (effective active immediately; Ask count 0).
+    Name: trim; collapse whitespace; reject control characters; max 100 chars.
+  - `workspace delete <n>` → fresh ordered list; creates actor-scoped pending deletion
+    (workspace_id + safe name + expiry, TTL 5 minutes); **no DELETE yet**.
+  - `workspace delete confirm` → `consume-valid` pending →
+    `DELETE /v1/local_workspace/workspaces/{workspace_id}` (HTTP 204); uses stored id.
+  - `workspace delete cancel` → clear pending only.
+  - Deletion removes LKW-owned state (workspace, sources, document refs, operations,
+    workspace-scoped vectors, Ask runs — **policy A: remove workspace-owned Ask history**).
+    Local source files/directories are never deleted or modified.
+  - Deleting selected clears selection; deleting configured with no selection suppresses
+    configured fallback until create/select; never auto-selects another workspace.
+  - No source attachment, rename, Block Kit, or persisted pending in this task.
+- **Command catalog (LKW-SLACK-COMMAND-CATALOG-1):**
+  - Formal Slack commands are `@slack_command`-annotated async methods on
+    `SlackAskWorkflow`; discovery is opt-in on the workflow instance only
+    (`__lkw_slack_command__`); no module/global scan, no OpenAPI/endpoint mapping,
+    no global Intergrax command framework.
+  - Immutable registry orders by `priority` then `command_id`; drives parse,
+    first-match dispatch, and dynamic `help` from the same metadata
+    (`syntax` / `description` / `example` / `visible_in_help`).
+  - Exact DM `help` (trim; case-insensitive; no aliases): zero HTTP / zero Ask;
+    no selection or pending-deletion mutation; marks dedupe completed.
+  - Invalid formal attempts (`workspace`, invalid create/delete) stay on
+    hidden registry entries (`visible_in_help=False`) and never fall through to Ask.
+  - Non-matching DM still invokes the regular Ask flow after authorization + dedupe.
+  - A future visible decorated command automatically appears in `help`.
 
 ---
 
