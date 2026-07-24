@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceOperation,
@@ -23,6 +25,9 @@ from local_workspace_application.workspaces.path_policy import (
     validate_local_folder_source_path,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.vector_cleanup import WorkspaceVectorCleanupPort
+
+logger = logging.getLogger(__name__)
 
 
 def _utc_now() -> datetime:
@@ -36,10 +41,16 @@ class ManagedWorkspaceService:
         *,
         allowlist_roots: frozenset[str] | None = None,
         shadow_roots: tuple[Path, ...] = (),
+        ask_repository: WorkspaceAskRepository | None = None,
+        vector_cleanup: WorkspaceVectorCleanupPort | None = None,
     ) -> None:
         self._repository = repository
         self._allowlist_roots = allowlist_roots
         self._shadow_roots = shadow_roots
+        self._ask_repository = ask_repository or WorkspaceAskRepository(
+            repository.document_store
+        )
+        self._vector_cleanup = vector_cleanup
 
     @property
     def repository(self) -> ManagedWorkspaceRepository:
@@ -73,6 +84,49 @@ class ManagedWorkspaceService:
     def require_workspace(self, *, tenant_id: str, workspace_id: str) -> Workspace | None:
         """Return workspace for tenant or None (fail-closed 404 semantics)."""
         return self.get_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+
+    def delete_workspace(self, *, tenant_id: str, workspace_id: str) -> bool:
+        """
+        Delete all LKW-owned state for one tenant/workspace.
+
+        Returns False when the workspace is unknown or cross-tenant (caller → 404).
+        Local source files are never touched.
+
+        Ask history policy A: remove workspace-owned Ask runs.
+        """
+        workspace = self.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+        if workspace is None:
+            return False
+
+        # Vectors first while document refs still describe scope; idempotent if empty.
+        if self._vector_cleanup is not None:
+            try:
+                self._vector_cleanup.delete_workspace_vectors(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                )
+            except RuntimeError:
+                logger.warning("workspace_delete vector_cleanup_failed")
+                raise
+
+        self._repository.delete_sources_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        self._repository.delete_document_refs_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        self._repository.delete_operations_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        self._ask_repository.delete_runs_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        self._repository.delete_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
+        return True
 
     def register_local_folder_source(
         self,

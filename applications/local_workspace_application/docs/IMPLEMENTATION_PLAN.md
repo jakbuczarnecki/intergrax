@@ -11,7 +11,7 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 IMPLEMENTED / READY_FOR_REVIEW; next pending question)
+Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -282,7 +282,7 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 IMPLEMENTED / READY_FOR_REVIEW; next pending question)
+Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 Slack conversational adapter: MVP-4 current (not implemented)
@@ -660,21 +660,30 @@ LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / OPERATOR_VERIFIED
 exact DM ``workspaces`` → tenant-scoped numbered active listing → same-thread safe reply
 (Ask call count = 0; no buttons / pending)
 
-LKW-SLACK-WORKFLOW-1B-2 — IMPLEMENTED / READY_FOR_REVIEW
+LKW-SLACK-WORKFLOW-1B-2 — OPERATOR_VERIFIED
 exact DM ``workspace <positive integer>`` → fresh tenant-scoped list → 1-based in-memory selection
 (configured workspace = default fallback; selected = effective active workspace;
  ``workspaces`` always marks effective active; restart clears selection;
  Ask count = 0 on selection; no pending question / ACTION / persistence)
 
+LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
+Slack lifecycle: ``workspace create <name>`` / ``workspace delete <n>`` +
+``workspace delete confirm`` / ``workspace delete cancel``
+(+ DELETE /v1/local_workspace/workspaces/{workspace_id}; Ask history policy A = remove
+ workspace-owned Ask runs; local source files never deleted; pending deletion TTL 5m;
+ created workspace becomes effective active; no source attachment in this task)
+
 LKW-SLACK-WORKFLOW-1B — IN PROGRESS (substeps)
 1B-1 workspace listing — IMPLEMENTED / OPERATOR_VERIFIED
-1B-2 workspace selection — IMPLEMENTED / READY_FOR_REVIEW
-→ pending question — NEXT
+1B-2 workspace selection — OPERATOR_VERIFIED
+LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
+→ inspect workspace contents / sources — NEXT
+→ pending question
 → ACTION resume
 → active workspace persistence
 ```
 
-Next task after acceptance: pending question.
+Next task after acceptance: inspect workspace contents / sources.
 
 Ownership:
 
@@ -694,12 +703,14 @@ LKW slack_companion
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
 → workspace listing command (1B-1 IMPLEMENTED / OPERATOR_VERIFIED)
-→ text workspace selection (1B-2 IMPLEMENTED / READY_FOR_REVIEW; in-memory only;
+→ text workspace selection (1B-2 OPERATOR_VERIFIED; in-memory only;
    configured = fallback; selected = effective active; listing marks effective)
-→ pending question / ACTION resume / persistence (1B later)
+→ workspace create / delete with confirmation (LKW-WORKSPACE-MANAGEMENT-1
+   IMPLEMENTED / READY_FOR_REVIEW; local files never deleted; Ask history policy A)
+→ inspect contents / sources / pending question / ACTION / persistence (later)
 ```
 
-Next exact task: pending question.
+Next exact task: inspect workspace contents / sources.
 
 User-visible result:
 
@@ -1176,10 +1187,10 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 IMPLEMENTED / READY_FOR_REVIEW; next pending question)
+Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; next: inspect workspace contents / sources)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
-Next product task: pending question
+Next product task: inspect workspace contents / sources
 Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof, LKW-SLACK-WORKFLOW-1A (+ configuration closure + live proof)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md

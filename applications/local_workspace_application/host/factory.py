@@ -185,6 +185,7 @@ def create_local_workspace_backend_app(
         task_executor=lkw_task_executor,
         settings=resolved_settings,
         prefix=resolved_settings.route_prefix,
+        vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
     )
     mount_local_workspace_readiness_routes(
         app,

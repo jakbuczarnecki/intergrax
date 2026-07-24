@@ -27,6 +27,7 @@ class InMemorySlackWorkspaceSelectionStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._by_actor: dict[str, SlackWorkspaceSelection] = {}
+        self._configured_suppressed: set[str] = set()
 
     def get(self, actor_key: str) -> SlackWorkspaceSelection | None:
         key = (actor_key or "").strip()
@@ -48,6 +49,7 @@ class InMemorySlackWorkspaceSelectionStore:
                 workspace_id=workspace_id,
                 workspace_name=workspace_name,
             )
+            self._configured_suppressed.discard(key)
 
     def clear(self, actor_key: str) -> None:
         key = (actor_key or "").strip()
@@ -55,3 +57,25 @@ class InMemorySlackWorkspaceSelectionStore:
             return
         with self._lock:
             self._by_actor.pop(key, None)
+
+    def suppress_configured(self, actor_key: str) -> None:
+        """Mark configured fallback unavailable after it was deleted in-process."""
+        key = (actor_key or "").strip()
+        if not key:
+            return
+        with self._lock:
+            self._configured_suppressed.add(key)
+
+    def clear_configured_suppression(self, actor_key: str) -> None:
+        key = (actor_key or "").strip()
+        if not key:
+            return
+        with self._lock:
+            self._configured_suppressed.discard(key)
+
+    def is_configured_suppressed(self, actor_key: str) -> bool:
+        key = (actor_key or "").strip()
+        if not key:
+            return False
+        with self._lock:
+            return key in self._configured_suppressed

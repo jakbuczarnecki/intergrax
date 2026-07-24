@@ -8,12 +8,19 @@ Next slice: MVP-4 — Slack conversational MVP
   LKW-SLACK-WORKFLOW-1B-1 — IMPLEMENTED / OPERATOR_VERIFIED
     exact DM "workspaces" → tenant-scoped numbered active listing → same-thread reply
     (Ask count 0; no buttons / pending)
-  LKW-SLACK-WORKFLOW-1B-2 — IMPLEMENTED / READY_FOR_REVIEW
+  LKW-SLACK-WORKFLOW-1B-2 — OPERATOR_VERIFIED
     exact DM "workspace <n>" → fresh tenant-scoped list → 1-based in-memory selection
     (configured workspace = default fallback; selected = effective active;
      `workspaces` always marks effective active; restart clears selection;
      Ask count 0 on selection; no pending / ACTION / persistence)
-  Next task: pending question
+  LKW-WORKSPACE-MANAGEMENT-1 — IMPLEMENTED / READY_FOR_REVIEW
+    workspace create <name> → HTTP create → in-memory select (Ask count 0)
+    workspace delete <n> → pending deletion (TTL 5m; no delete yet)
+    workspace delete confirm → DELETE /workspaces/{id} using stored id
+    workspace delete cancel → clear pending only
+    cleanup: workspace/sources/docs/ops/vectors + Ask runs (policy A);
+    local source files never deleted; no source attachment in this task
+  Next task: inspect workspace contents / sources
 ```
 
 **Platform runtime status:**
@@ -61,10 +68,11 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → Ask HTTP (1A DONE / LIVE_VERIFIED)
 → answer/citation rendering (1A DONE / LIVE_VERIFIED)
 → workspace listing command (1B-1 IMPLEMENTED / OPERATOR_VERIFIED)
-→ text workspace selection (1B-2 IMPLEMENTED / READY_FOR_REVIEW; in-memory only)
-→ pending question / ACTION resume / persistence (1B later)
+→ text workspace selection (1B-2 OPERATOR_VERIFIED; in-memory only)
+→ workspace create / delete confirm (LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW)
+→ inspect contents / sources / pending question / ACTION / persistence (later)
 
-Next exact task: pending question
+Next exact task: inspect workspace contents / sources
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -1247,6 +1255,21 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   selection. No pending question, no ACTION resume, no DocumentStore persistence.
   Real Ask `http_404` for an in-memory selection clears that selection without
   silent configured fallback retry (configured then becomes effective again).
+- **Workspace lifecycle (LKW-WORKSPACE-MANAGEMENT-1):**
+  - `workspace create <name>` → tenant-scoped `POST /v1/local_workspace/workspaces`
+    → in-memory select created workspace (effective active immediately; Ask count 0).
+    Name: trim; collapse whitespace; reject control characters; max 100 chars.
+  - `workspace delete <n>` → fresh ordered list; creates actor-scoped pending deletion
+    (workspace_id + safe name + expiry, TTL 5 minutes); **no DELETE yet**.
+  - `workspace delete confirm` → `consume-valid` pending →
+    `DELETE /v1/local_workspace/workspaces/{workspace_id}` (HTTP 204); uses stored id.
+  - `workspace delete cancel` → clear pending only.
+  - Deletion removes LKW-owned state (workspace, sources, document refs, operations,
+    workspace-scoped vectors, Ask runs — **policy A: remove workspace-owned Ask history**).
+    Local source files/directories are never deleted or modified.
+  - Deleting selected clears selection; deleting configured with no selection suppresses
+    configured fallback until create/select; never auto-selects another workspace.
+  - No source attachment, rename, Block Kit, or persisted pending in this task.
 
 ---
 
