@@ -12,9 +12,10 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Stage 1 — Trusted Ask Workspace
-Current documentation gate: LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
-Next exact implementation task: LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation
-Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1)
+Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
+Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A — audit existing platform and LKW capabilities required by durable Knowledge Intake
+LKW-WORKSPACE-CONTENTS-1B-1-B — BLOCKED UNTIL AUDIT ACCEPTED
+Current implementation focus: MVP-4 — Slack conversational MVP (1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A)
 
 Immediate goal:
 Deliver the smallest complete LKW experience that a real user can try and value:
@@ -61,6 +62,15 @@ Deliver the smallest real product experience that demonstrates user value.
 Use implementation of that product to discover and improve Intergrax.
 Do not build the platform first and hope a useful product appears later.
 ```
+
+```text
+Every implementation task starts with a bounded platform capability audit.
+
+Cursor must not implement a newly discovered platform-like mechanism
+until its existence, maturity and ownership have been reviewed.
+```
+
+Governing global gate: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate). Binding LKW intake detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md` — Platform capability audit gate for implementation slices](KNOWLEDGE_INTAKE_DISCOVERY.md#platform-capability-audit-gate-for-implementation-slices).
 
 For LKW this means:
 
@@ -292,9 +302,10 @@ faster or easier than the previous manual workflow.
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current active slice: Slack conversational MVP
-Current documentation gate: LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
-Next exact implementation task: LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation
-Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1)
+Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
+Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A — audit existing platform and LKW capabilities required by durable Knowledge Intake
+LKW-WORKSPACE-CONTENTS-1B-1-B — BLOCKED UNTIL AUDIT ACCEPTED
+Current implementation focus: MVP-4 — Slack conversational MVP (1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A)
 Discovery: ASK_WORKSPACE_DISCOVERY.md (MVP-1 complete); SLACK_MVP_DISCOVERY.md (MVP-3 complete); KNOWLEDGE_INTAKE_DISCOVERY.md (1B-0 DOCUMENTED / READY_FOR_REVIEW)
 Ask Workspace HTTP: MVP-2 complete (Qdrant-backed live-verified)
 Slack conversational adapter: MVP-4 current (product slices in progress; see MVP-4 below)
@@ -653,7 +664,7 @@ Canonical reference: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
 ### MVP-4 — Slack conversational MVP
 
-**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; **LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED**; Knowledge Intake contract **`LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW`**; next **`LKW-WORKSPACE-CONTENTS-1B-1`**
+**Status:** `CURRENT` — platform runtime **`DONE / LIVE_VERIFIED`**; product slice **1A DONE / LIVE_VERIFIED**; storage/tenancy contract **DOCUMENTED / READY_FOR_REVIEW**; **LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED**; Knowledge Intake contract **`LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW`**; gate **`PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW`**; next **`LKW-WORKSPACE-CONTENTS-1B-1-A`** (audit); **`1B-1-B` BLOCKED UNTIL AUDIT ACCEPTED**
 
 ```text
 SLACK-CONVERSATION-RUNTIME-1 — DONE / LIVE_VERIFIED
@@ -722,7 +733,9 @@ LKW-SLACK-COMMAND-CATALOG-1 — IMPLEMENTED / READY_FOR_REVIEW
 LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
 LKW-WORKSPACE-CONTENTS-1A — OPERATOR_VERIFIED
 LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
-→ LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation — NEXT
+PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
+→ LKW-WORKSPACE-CONTENTS-1B-1-A — audit existing platform and LKW capabilities required by durable Knowledge Intake — NEXT AFTER GATE ACCEPTANCE
+→ LKW-WORKSPACE-CONTENTS-1B-1-B — implement the frozen result of the accepted capability audit — BLOCKED UNTIL AUDIT ACCEPTED
 → LKW-WORKSPACE-CONTENTS-1B-2 — managed file upload capability — planned
 → LKW-WORKSPACE-CONTENTS-1B-3 — Slack attachment and multi-attachment adapter — planned
 → LKW-WORKSPACE-CONTENTS-1B-4 — preconfigured source candidate registration — planned
@@ -785,13 +798,67 @@ channel-native user input
 
 Exact Slack command syntax for intake remains **not** frozen. Do not document unimplemented upload/URL endpoints as existing.
 
-**`1B-1` expected concern (NEXT):** channel-neutral item acceptance → durable Source resolution/creation boundary → durable item-level Ingestion Operation → tenant/workspace-scoped idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement managed upload, Slack attachments, URL fetching, source candidates, or all Source providers.
+**`1B-1` product concern (unchanged):** channel-neutral item acceptance → durable Source resolution/creation boundary → durable item-level Ingestion Operation → tenant/workspace-scoped idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement managed upload, Slack attachments, URL fetching, source candidates, or all Source providers.
 
-**Explicit exclusions for the next code task (`1B-1`):** does not automatically mean Slack file support, URL fetching, folder picker, connector marketplace, Kafka, Google Pub/Sub, production Blob Store, all ingestion providers, or background notification UI.
+**Mandatory entry gate for `1B-1`:** `PLATFORM-CAPABILITY-AUDIT-GATE-1`.
 
-Current documentation gate: `LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW`
+**Process split under `1B-1` (not a product-roadmap renumbering):**
 
-Next exact implementation task: `LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation`.
+```text
+Phase A — audit only (LKW-WORKSPACE-CONTENTS-1B-1-A)
+→ inspect candidate platform/domain mechanisms
+→ produce capability matrix
+→ classify maturity and ownership
+→ identify at most one pre-approved platform gap
+
+Phase B — implementation (LKW-WORKSPACE-CONTENTS-1B-1-B)
+→ allowed only after the audit result has no unresolved
+  ARCHITECTURE_DECISION_REQUIRED row
+```
+
+```text
+Phase A and Phase B must not automatically occur in one Cursor task.
+```
+
+Preferred workflow:
+
+```text
+audit report
+→ architecture review
+→ exact implementation instruction
+→ code
+```
+
+This is especially required for `1B-1`, because it touches product operation state, queueing, workers, events, idempotency, persistence and platform/domain ownership.
+
+Canonical audit report template: [`KNOWLEDGE_INTAKE_DISCOVERY.md` — Canonical audit report template](KNOWLEDGE_INTAKE_DISCOVERY.md#canonical-audit-report-template).
+
+**Statuses after this documentation gate:**
+
+```text
+PLATFORM-CAPABILITY-AUDIT-GATE-1
+DOCUMENTED / READY_FOR_REVIEW
+
+LKW-WORKSPACE-CONTENTS-1B-1-A
+NEXT AFTER GATE ACCEPTANCE
+
+LKW-WORKSPACE-CONTENTS-1B-1-B
+BLOCKED UNTIL AUDIT ACCEPTED
+```
+
+**Explicit exclusions for the next code task (`1B-1-B`):** does not automatically mean Slack file support, URL fetching, folder picker, connector marketplace, Kafka, Google Pub/Sub, production Blob Store, all ingestion providers, or background notification UI. Implementation is forbidden until `1B-1-A` is accepted with no unresolved `ARCHITECTURE_DECISION_REQUIRED` row.
+
+Current documentation gate: `PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW`
+
+```text
+NEXT:
+LKW-WORKSPACE-CONTENTS-1B-1-A
+audit existing platform and LKW capabilities required by durable Knowledge Intake
+
+Then:
+LKW-WORKSPACE-CONTENTS-1B-1-B
+implement the frozen result of the accepted capability audit
+```
 
 Ownership:
 
@@ -823,12 +890,21 @@ LKW slack_companion
    OPERATOR_VERIFIED; safe summaries; zero Ask; no path disclosure)
 → Knowledge Intake contract (LKW-WORKSPACE-CONTENTS-1B-0
    DOCUMENTED / READY_FOR_REVIEW; Slack frontend only; no ingestion engine in Slack)
+→ platform capability audit gate (PLATFORM-CAPABILITY-AUDIT-GATE-1
+   DOCUMENTED / READY_FOR_REVIEW; 1B-1-A audit before any 1B-1-B code)
 → durable Knowledge Intake foundation / managed upload / Slack attachments /
    candidates / URL / sync notification / docs inspect / safe remove (1B-1…1E later)
 → pending question / ACTION / persistence (later)
 ```
 
-Next exact implementation task: `LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation`.
+```text
+NEXT:
+LKW-WORKSPACE-CONTENTS-1B-1-A
+audit existing platform and LKW capabilities required by durable Knowledge Intake
+
+LKW-WORKSPACE-CONTENTS-1B-1-B
+BLOCKED UNTIL AUDIT ACCEPTED
+```
 
 User-visible result (target after intake slices; Ask path already live-verified):
 
@@ -1325,14 +1401,16 @@ Former proof-first queues, standalone Token Optimization sequences, vendor obser
 
 ```text
 Current milestone: LKW MVP
-Current documentation gate: LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
-Next exact implementation task: LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation
-Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1)
+Current documentation gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 — DOCUMENTED / READY_FOR_REVIEW
+Next exact activity: LKW-WORKSPACE-CONTENTS-1B-1-A — audit existing platform and LKW capabilities required by durable Knowledge Intake
+LKW-WORKSPACE-CONTENTS-1B-1-B — BLOCKED UNTIL AUDIT ACCEPTED
+Current task: MVP-4 — Slack conversational MVP (CURRENT; 1A DONE / LIVE_VERIFIED; 1B-1 OPERATOR_VERIFIED; 1B-2 OPERATOR_VERIFIED; LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW; LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW; LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED; LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW; PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW; next: LKW-WORKSPACE-CONTENTS-1B-1-A)
 Platform gate: Slack conversation runtime LIVE_VERIFIED
 Product slice: LKW-SLACK-WORKFLOW-1A DONE / LIVE_VERIFIED
 Architecture contract: LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW
 Knowledge Intake contract: LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW (KNOWLEDGE_INTAKE_DISCOVERY.md)
-Next product task: LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation
+Platform capability audit gate: PLATFORM-CAPABILITY-AUDIT-GATE-1 DOCUMENTED / READY_FOR_REVIEW
+Next product activity: LKW-WORKSPACE-CONTENTS-1B-1-A — capability audit (1B-1-B blocked until audit acceptance)
 Completed: MVP-1 discovery, MVP-2 Trusted Ask Workspace (HTTP), MVP-3 Slack discovery, CONVERSATION-CHANNEL-1, Slack runtime implementation + live proof, LKW-SLACK-WORKFLOW-1A (+ configuration closure + live proof)
 Frozen Ask contract: ASK_WORKSPACE_DISCOVERY.md
 Frozen Slack contract: SLACK_MVP_DISCOVERY.md

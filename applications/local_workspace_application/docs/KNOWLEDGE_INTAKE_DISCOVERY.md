@@ -535,13 +535,196 @@ Accepted media types; file-size limits; batch limits; decompression/archive limi
 
 ---
 
+## Platform capability audit gate for implementation slices
+
+**Status:** binding process gate from `PLATFORM-CAPABILITY-AUDIT-GATE-1`. Governing rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
+
+Every `1B-*` and `1C` implementation task must begin with an evidence-based platform capability audit.
+
+```text
+Before coding, produce a capability audit matrix.
+```
+
+Required matrix columns:
+
+| Required capability | Existing candidate | Contract | Implementation | Provider | Host wiring | Tests | Maturity | Decision |
+| ------------------- | ------------------ | -------- | -------------- | -------- | ----------- | ----- | -------- | -------- |
+
+Every row requires repository evidence (contract, implementation, provider, wiring, tests, consumers). Documentation and target architecture are not implementation proof.
+
+### Mandatory audit targets for `1B-1`
+
+List these as mandatory audit targets, **not** implementation decisions:
+
+```text
+durable LKW Knowledge Input persistence
+durable LKW Source persistence
+durable LKW Ingestion Operation persistence
+provider-neutral Document Store
+TaskQueue / MessageBus
+worker registration and execution
+task status/result persistence
+idempotency
+restart/interruption recovery
+lifecycle event emission
+event delivery / subscription
+operation-to-task correlation
+tenant/workspace isolation
+host composition and lifecycle
+```
+
+Future capability families that are **not** part of `1B-1` implementation but must be audited before their slices:
+
+```text
+Blob/Object Store
+upload sessions
+resumable transfer
+URL fetch/egress
+source candidate providers
+channel notification delivery
+```
+
+Do not classify the families above as implemented in this documentation gate.
+
+### Mandatory implementation outcomes
+
+The implementation task may continue only when every required `1B-1` row is assigned one of:
+
+```text
+REUSE_AS_IS
+IMPROVE_EXISTING_PLATFORM_CAPABILITY
+WIRE_EXISTING_PLATFORM_CAPABILITY
+IMPLEMENT_IN_PRODUCT_DOMAIN
+DEFER_NON_BLOCKING_GAP
+```
+
+Any row assigned `ARCHITECTURE_DECISION_REQUIRED` blocks coding.
+
+### Candidates to audit — not automatically approved
+
+The following names are **CANDIDATES TO AUDIT** / **NOT AUTOMATICALLY APPROVED FOR REUSE**. Their sufficiency must not be claimed without the focused `1B-1` audit:
+
+```text
+ManagedWorkspaceRepository
+WorkspaceOperation
+DocumentStoreTaskQueue
+TaskQueue / MessageBus
+TaskRegistry
+TaskExecutionRegistry
+WorkerRuntime
+TaskStateStore
+TaskResultStore
+TaskEvent
+existing LKW source-sync runtime
+existing LKW background-ingest proof
+```
+
+### Process split under `1B-1`
+
+```text
+LKW-WORKSPACE-CONTENTS-1B-1-A
+→ audit existing platform and LKW capabilities required by durable Knowledge Intake
+
+LKW-WORKSPACE-CONTENTS-1B-1-B
+→ implement the frozen result of the accepted capability audit
+→ BLOCKED UNTIL AUDIT ACCEPTED
+```
+
+This is a process split under `1B-1`, not a product-roadmap renumbering. Do not reopen accepted `1B-0` domain decisions.
+
+### Canonical audit report template
+
+```text
+STATUS:
+AUDIT_READY_FOR_REVIEW | BLOCKED
+
+Task:
+- product slice:
+- audit phase:
+
+Required product capability:
+- user/product flow:
+- exact required behavior:
+
+Capability matrix:
+- capability:
+- existing candidate:
+- contract evidence:
+- implementation evidence:
+- provider evidence:
+- wiring evidence:
+- test evidence:
+- existing consumer:
+- maturity:
+- proposed decision:
+
+Platform/domain boundary:
+- platform-owned mechanisms:
+- LKW-owned mechanisms:
+- ambiguous mechanisms:
+
+Verified reuse:
+- mechanisms reusable as-is:
+
+Verified platform gaps:
+- gap:
+- why current implementation is insufficient:
+- product blocker:
+- reusable across applications:
+- proposed scope:
+
+Architecture decisions required:
+- decision:
+- options:
+- consequences:
+- implementation performed: none
+
+Non-blocking gaps:
+- deferred:
+
+Recommended implementation scope:
+- product files:
+- platform files:
+- permitted platform improvement:
+- explicit exclusions:
+
+Final audit verdict:
+- READY_FOR_IMPLEMENTATION_SCOPE
+  or
+- BLOCKED / ARCHITECTURE_DECISION_REQUIRED
+```
+
+The audit report must cite exact repository files and tests.
+
+### Explicitly rejected audit/implementation shortcuts
+
+```text
+documentation says it exists, therefore it is implemented;
+a Protocol exists, therefore a provider is ready;
+a provider exists, therefore the host uses it;
+tests exist, therefore the active deployment uses the mechanism;
+a proof exists, therefore the mechanism is production-ready;
+LKW needs it, therefore it belongs in LKW;
+another application might use it, therefore it belongs in platform;
+Cursor may select platform vs domain ownership during implementation;
+missing platform mechanism may be replaced with temporary LKW infrastructure;
+implementation may continue while the architecture decision is unresolved;
+one task may absorb multiple newly discovered platform gaps;
+queue task status may automatically replace LKW Ingestion Operation state.
+```
+
+---
+
 ## 13. Implementation slicing
 
 | Slice | Status | Concern |
 |-------|--------|---------|
 | `LKW-WORKSPACE-CONTENTS-1A` | `OPERATOR_VERIFIED` | Inspect active workspace sources (safe summaries; no full path). Not `LIVE_VERIFIED`. |
 | `LKW-WORKSPACE-CONTENTS-1B-0` | `DOCUMENTED / READY_FOR_REVIEW` | This document — freeze channel-neutral Knowledge Intake and async ingestion contract. |
-| `LKW-WORKSPACE-CONTENTS-1B-1` | `NEXT` | Durable Knowledge Intake and Ingestion Operation foundation: channel-neutral item acceptance → durable Source resolution/creation boundary → item-level Ingestion Operation → idempotent acceptance → queue/worker boundary → neutral lifecycle event boundary. Does **not** yet implement all file/URL/connector variants or all Source providers. |
+| `PLATFORM-CAPABILITY-AUDIT-GATE-1` | `DOCUMENTED / READY_FOR_REVIEW` | Mandatory platform capability audit and architecture stop rule (global + LKW). |
+| `LKW-WORKSPACE-CONTENTS-1B-1` | process-split | Durable Knowledge Intake and Ingestion Operation foundation (product concern unchanged). |
+| `LKW-WORKSPACE-CONTENTS-1B-1-A` | `NEXT AFTER GATE ACCEPTANCE` | Audit existing platform and LKW capabilities required by durable Knowledge Intake. |
+| `LKW-WORKSPACE-CONTENTS-1B-1-B` | `BLOCKED UNTIL AUDIT ACCEPTED` | Implement the frozen result of the accepted capability audit. |
 | `LKW-WORKSPACE-CONTENTS-1B-2` | planned | Managed file upload capability |
 | `LKW-WORKSPACE-CONTENTS-1B-3` | planned | Slack attachment and multi-attachment adapter |
 | `LKW-WORKSPACE-CONTENTS-1B-4` | planned | Preconfigured source candidate registration |

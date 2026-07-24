@@ -378,6 +378,442 @@ Not every discovered pattern becomes a platform task.
 
 ---
 
+## Mandatory platform capability audit and architecture decision gate
+
+**Status:** frozen by `PLATFORM-CAPABILITY-AUDIT-GATE-1` (`DOCUMENTED / READY_FOR_REVIEW`).
+
+### Binding rule
+
+```text
+No new platform-like or infrastructure-like mechanism may be implemented
+until the current Intergrax capability state has been audited with repository evidence.
+```
+
+Every substantial implementation task must begin with an evidence-based audit of existing platform capabilities:
+
+```text
+Before implementing any mechanism:
+
+1. identify the required capability;
+2. inspect whether Intergrax already implements it;
+3. verify the implementation through code, provider, wiring and tests;
+4. classify its actual maturity;
+5. decide whether to reuse it, improve it, or keep the behavior in the product domain;
+6. stop before coding when the classification or architecture decision is not already frozen.
+```
+
+The audit must happen:
+
+- before preparing the final implementation scope;
+- before adding a new abstraction;
+- before adding a new provider;
+- before adding an application-owned queue, worker, event mechanism, persistence layer or integration framework;
+- whenever implementation discovers a capability not covered by the frozen task contract.
+
+```text
+A documentation claim, roadmap item, interface name or target architecture
+is not evidence that a mechanism is implemented and usable.
+```
+
+### What counts as a capability
+
+Examples include, but are not limited to:
+
+```text
+queue / MessageBus
+worker runtime
+task registry
+task status and result persistence
+events / pub-sub
+outbox
+idempotency
+retry infrastructure
+dead-letter handling
+Blob/Object Store
+Document Store
+Vector Store
+upload transfer
+notification dispatch
+connector lifecycle
+secret handling
+authorization
+observability
+provider lifecycle
+health checks
+distributed locks
+scheduling
+```
+
+The list is illustrative, not exhaustive.
+
+### Required audit evidence
+
+The audit must inspect all relevant evidence layers.
+
+Required evidence hierarchy:
+
+```text
+1. public/stable platform contract or port;
+2. concrete implementation;
+3. provider implementation when the mechanism is provider-backed;
+4. composition root / host wiring;
+5. focused tests;
+6. actual use by an application or platform flow;
+7. documentation status.
+```
+
+Documentation is the final context layer, not primary implementation evidence.
+
+```text
+The existence of a class, protocol, documentation section, roadmap item,
+provider folder or target architecture does not by itself prove that the
+capability is complete, wired, tested or reusable.
+```
+
+Target platform architecture is not implementation evidence.
+
+### Audit questions
+
+Every capability audit must answer:
+
+```text
+What exact capability does the active product flow require?
+
+Does a platform contract already exist?
+
+Does a concrete implementation exist?
+
+Is the implementation provider-neutral at the public boundary?
+
+Is at least one provider usable for the required topology?
+
+Is the capability wired into the relevant host/application?
+
+Are lifecycle and failure semantics implemented?
+
+Is tenant isolation implemented?
+
+Is persistence durable for the declared deployment?
+
+Is idempotency implemented where required?
+
+Are focused tests present?
+
+Is the mechanism already used by a real application flow?
+
+Which parts are implemented, partial, target-only or absent?
+
+Can the active task reuse it without changing the frozen product contract?
+```
+
+A simple repository filename search is not a complete audit.
+
+### Mandatory maturity classification
+
+Every audited capability must receive exactly one primary maturity classification:
+
+```text
+IMPLEMENTED_AND_REUSABLE
+IMPLEMENTED_BUT_INCOMPLETE
+IMPLEMENTED_BUT_NOT_WIRED
+PROOF_ONLY
+TARGET_ARCHITECTURE_ONLY
+NOT_FOUND
+DOMAIN_SPECIFIC
+```
+
+#### `IMPLEMENTED_AND_REUSABLE`
+
+A stable contract, implementation, required wiring and focused tests exist for the active use case.
+
+This does not mean every possible provider or production topology is complete.
+
+#### `IMPLEMENTED_BUT_INCOMPLETE`
+
+A real implementation exists, but a requirement of the active product flow is missing.
+
+Examples:
+
+- missing durability;
+- missing tenant isolation;
+- missing restart recovery;
+- missing required provider;
+- incomplete lifecycle;
+- missing idempotency;
+- missing event delivery;
+- insufficient tests.
+
+#### `IMPLEMENTED_BUT_NOT_WIRED`
+
+The contract and implementation exist but are not composed into the required host/runtime path.
+
+#### `PROOF_ONLY`
+
+A controlled proof exists, but the mechanism is not yet a reusable or production-path platform capability for the active flow.
+
+#### `TARGET_ARCHITECTURE_ONLY`
+
+Documentation defines the desired mechanism, but usable implementation evidence is absent or incomplete.
+
+#### `NOT_FOUND`
+
+No relevant platform mechanism was found after a bounded repository audit.
+
+#### `DOMAIN_SPECIFIC`
+
+The required behavior expresses product meaning and belongs in an application/agent domain rather than shared platform infrastructure.
+
+### Mandatory action classification
+
+After maturity classification, choose exactly one action:
+
+```text
+REUSE_AS_IS
+IMPROVE_EXISTING_PLATFORM_CAPABILITY
+WIRE_EXISTING_PLATFORM_CAPABILITY
+IMPLEMENT_IN_PRODUCT_DOMAIN
+ARCHITECTURE_DECISION_REQUIRED
+DEFER_NON_BLOCKING_GAP
+```
+
+#### `REUSE_AS_IS`
+
+Allowed only for `IMPLEMENTED_AND_REUSABLE`.
+
+#### `IMPROVE_EXISTING_PLATFORM_CAPABILITY`
+
+Allowed when:
+
+- a real reusable platform capability exists;
+- the active product flow exposes a concrete missing requirement;
+- the improvement scope is explicitly frozen before coding.
+
+#### `WIRE_EXISTING_PLATFORM_CAPABILITY`
+
+Used when the implementation exists but the required host/application wiring is missing.
+
+#### `IMPLEMENT_IN_PRODUCT_DOMAIN`
+
+Used when the behavior expresses application-specific semantics rather than reusable infrastructure.
+
+#### `ARCHITECTURE_DECISION_REQUIRED`
+
+Mandatory when:
+
+- no mechanism exists;
+- the mechanism is target architecture only;
+- ownership between platform and product is ambiguous;
+- the required platform improvement exceeds the frozen task scope;
+- more than one plausible platform abstraction exists;
+- the implementation would create a new provider family or shared framework;
+- the discovered capability changes architecture or persistence guarantees.
+
+#### `DEFER_NON_BLOCKING_GAP`
+
+Used when the active product workflow works safely without the improvement.
+
+### Mandatory STOP rule
+
+```text
+When a required mechanism is absent, incomplete beyond the frozen scope,
+or architecturally ambiguous, implementation must stop.
+```
+
+Required status:
+
+```text
+BLOCKED / ARCHITECTURE_DECISION_REQUIRED
+```
+
+The implementer must not:
+
+- choose platform vs domain ownership independently;
+- create a temporary application-owned replacement;
+- add a generic abstraction “for later”;
+- select a vendor;
+- introduce a second persistence mechanism;
+- continue by bypassing durability, tenancy or idempotency requirements;
+- reinterpret the product contract to fit available infrastructure.
+
+#### Required STOP report
+
+The blocker report must contain:
+
+```text
+Required capability:
+- what the active product flow needs
+
+Repository audit:
+- contracts found
+- implementations found
+- providers found
+- wiring found
+- tests found
+- current consumers found
+
+Maturity:
+- one mandatory classification
+
+Gap:
+- exact missing behavior
+- why it blocks the active flow
+
+Ownership options:
+- platform interpretation
+- product-domain interpretation
+- consequences of each
+
+Recommended decision:
+- recommendation, clearly marked as recommendation only
+
+Implementation performed after discovery:
+- none
+
+Status:
+- BLOCKED / ARCHITECTURE_DECISION_REQUIRED
+```
+
+The final architecture decision belongs to the architecture discussion, not to Cursor acting alone.
+
+### Pre-approved platform changes
+
+The STOP rule does not prohibit platform work already frozen in the task.
+
+An implementation task may explicitly pre-authorize:
+
+```text
+one bounded platform improvement
+```
+
+but its instruction must define:
+
+- the existing platform capability being changed;
+- evidence that it already exists;
+- the exact missing behavior;
+- why the behavior is reusable;
+- files/layers allowed to change;
+- tests required;
+- what remains outside scope.
+
+If implementation discovers a second material platform gap:
+
+```text
+STOP
+→ BLOCKED_BY_PLATFORM_GAP
+→ architecture review
+```
+
+Do not silently expand the task.
+
+This remains consistent with the one-major-platform-gap and token-discipline rules in this document.
+
+### Platform vs product-domain classification
+
+#### Platform capability
+
+Usually platform-owned when it is:
+
+- reusable by multiple applications;
+- independent of LKW terminology;
+- related to infrastructure, execution, durability or provider lifecycle;
+- expressible without `KnowledgeInput`, `WorkspaceSource`, `Document`, Slack command or other product semantics.
+
+Examples:
+
+```text
+TaskQueue
+MessageBus
+WorkerRuntime
+TaskRegistry
+TaskEvent
+generic idempotency store
+Blob/Object Store port
+generic upload transport
+generic notification delivery
+provider lifecycle
+distributed status/result store
+```
+
+#### Product-domain capability
+
+Usually application-owned when it expresses product meaning. For LKW this includes:
+
+```text
+Knowledge Input
+Source ownership
+Document ownership
+Ingestion Operation as LKW product state
+Source Candidate
+uploaded folder snapshot
+workspace knowledge lifecycle
+web resource intake policy
+source-owned knowledge removal
+```
+
+The fact that a domain behavior may later be useful elsewhere does not automatically make it platform code.
+
+#### Ambiguous capability
+
+When both interpretations are credible:
+
+```text
+ARCHITECTURE_DECISION_REQUIRED
+```
+
+Do not implement first and classify later.
+
+### Platform task state vs product operation state
+
+```text
+Platform task state and product-domain operation state are separate concepts.
+```
+
+Example:
+
+```text
+platform:
+TaskRequest / TaskHandle / TaskStatus / TaskResult
+
+product:
+Knowledge Input / Source / Ingestion Operation
+```
+
+The audit must determine whether an existing platform task mechanism can execute the product operation.
+
+Do not replace product-domain state with queue-provider state merely because the platform already exposes task status.
+
+Do not create a second platform task framework merely because the product has its own operation entity.
+
+### Explicitly rejected behavior
+
+```text
+documentation says it exists, therefore it is implemented;
+
+a Protocol exists, therefore a provider is ready;
+
+a provider exists, therefore the host uses it;
+
+tests exist, therefore the active deployment uses the mechanism;
+
+a proof exists, therefore the mechanism is production-ready;
+
+LKW needs it, therefore it belongs in LKW;
+
+another application might use it, therefore it belongs in platform;
+
+Cursor may select platform vs domain ownership during implementation;
+
+missing platform mechanism may be replaced with temporary LKW infrastructure;
+
+implementation may continue while the architecture decision is unresolved;
+
+one task may absorb multiple newly discovered platform gaps;
+
+queue task status may automatically replace LKW Ingestion Operation state.
+```
+
+---
+
 ## 10. Stop conditions against implementation drift
 
 Stop and reassess when any of the following occurs:

@@ -17,6 +17,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 |------|----------------|
 | Product philosophy, boundaries | §3 · §4 |
 | Deployment, storage, tenancy (canonical) | [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model) |
+| Platform capability audit / architecture stop gate | [Mandatory platform capability audit and architecture stop gate](#mandatory-platform-capability-audit-and-architecture-stop-gate) · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate) |
 | Knowledge Intake / async ingestion (canonical) | [Channel-neutral Knowledge Intake and asynchronous ingestion](#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) |
 | What is frontend vs backend | §4 |
 | Solution + trust zones | §5 |
@@ -358,6 +359,62 @@ For managed uploads a Blob/Object Store provider may be required.
 architectural boundary defined
 provider and product behavior not yet implemented
 ```
+
+### Mandatory platform capability audit and architecture stop gate
+
+LKW is an application-first platform proof.
+
+Before LKW implements queueing, workers, events, persistence, uploads, notifications, connectors or provider lifecycle:
+
+```text
+→ audit existing Intergrax capabilities;
+→ verify contract + implementation + provider + wiring + tests;
+→ classify actual maturity;
+→ reuse or improve existing platform code when appropriate;
+→ keep LKW product semantics in the LKW domain;
+→ stop for architecture decision when ownership or implementation state is unclear.
+```
+
+```text
+Target platform architecture is not implementation evidence.
+```
+
+A documentation claim, roadmap item, interface name or target architecture is not evidence that a mechanism is implemented and usable.
+
+Governing global rule: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate).
+
+Deployment-neutral rules in this document remain unchanged: local or hosted LKW; endpoint appropriate to deployment; storage selected through configuration; local, remote, cloud and hybrid providers; no local/cloud branches in domain logic.
+
+#### Correct reuse
+
+```text
+LKW needs durable background execution
+→ audit TaskQueue / MessageBus / WorkerRuntime
+→ reuse existing capability when sufficient
+→ improve shared capability only for a verified missing requirement
+→ LKW registers product-specific ingestion handler
+```
+
+#### Incorrect duplication — REJECTED
+
+```text
+LKW needs asynchronous work
+→ create LkwPrivateQueue
+→ create SlackUploadWorker
+→ bypass platform task contracts
+```
+
+#### Correct domain ownership
+
+```text
+Knowledge Input and Ingestion Operation
+→ LKW domain
+
+task delivery and worker execution
+→ Intergrax platform
+```
+
+Platform task state and product-domain operation state remain separate. Queue/task status must not automatically replace LKW Ingestion Operation state.
 
 ### Channel-neutral Knowledge Intake and asynchronous ingestion
 
