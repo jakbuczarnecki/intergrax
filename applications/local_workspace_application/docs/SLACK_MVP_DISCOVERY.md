@@ -25,11 +25,16 @@ Next slice: MVP-4 — Slack conversational MVP
     (registry = parse/dispatch/help; opt-in discovery on workflow; Ask for non-commands)
   LKW-STORAGE-TENANCY-CONTRACT-1 — DOCUMENTED / READY_FOR_REVIEW
     Slack is API/capability client only; storage/tenancy canonical in ARCHITECTURE.md
-  LKW-WORKSPACE-CONTENTS-1A — IMPLEMENTED / READY_FOR_REVIEW
+  LKW-WORKSPACE-CONTENTS-1A — OPERATOR_VERIFIED
     exact DM "sources" → effective active workspace → public tenant-scoped HTTP
     source list → safe provider-neutral summaries → same-thread reply
-    (Ask count 0; no source mutations; no full path disclosure)
-  Next task: LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability
+    (Ask count 0; no source mutations; no full path disclosure;
+     real Slack operator verification for help + sources; not LIVE_VERIFIED)
+  LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW
+    channel-neutral Knowledge Intake + async ingestion contract
+    Canonical: KNOWLEDGE_INTAKE_DISCOVERY.md
+  Next exact implementation task: LKW-WORKSPACE-CONTENTS-1B-1
+    durable Knowledge Intake and Ingestion Operation foundation
 ```
 
 **Platform runtime status:**
@@ -81,10 +86,11 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → workspace create / delete confirm (LKW-WORKSPACE-MANAGEMENT-1 IMPLEMENTED / READY_FOR_REVIEW)
 → dynamic command catalog + help (LKW-SLACK-COMMAND-CATALOG-1 IMPLEMENTED / READY_FOR_REVIEW)
 → storage/tenancy contract (LKW-STORAGE-TENANCY-CONTRACT-1 DOCUMENTED / READY_FOR_REVIEW)
-→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A IMPLEMENTED / READY_FOR_REVIEW)
-→ source lifecycle 1B–1E / pending question / ACTION / persistence (later)
+→ inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED)
+→ Knowledge Intake contract (LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW)
+→ source lifecycle 1B-1…1E / pending question / ACTION / persistence (later)
 
-Next exact task: LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability
+Next exact implementation task: LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation
 
 Live transport proof command:
 uv sync --extra integrations-slack
@@ -96,7 +102,7 @@ uv run python scripts/proof/slack_conversation_channel_live_proof.py
 **Base commit:** `6c9e1eab634852e42d45e086faa78aca71a77016`  
 **Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
 **Ask contract:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
-**Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
+**Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Knowledge Intake:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)
 
 Discovery does not implement Slack connectivity, handlers, persistence, UI or tests.
 
@@ -226,7 +232,7 @@ private channels
 app mentions
 slash commands
 message shortcuts
-file uploads
+file uploads   ← original MVP-3 / Ask-only slice only (see clarification below)
 voice messages
 reactions
 edited messages
@@ -237,6 +243,8 @@ multiple Slack organizations
 enterprise-grid behavior
 Teams
 ```
+
+**Clarification — file events (historical vs future):** The file-event exclusion applies to the original MVP-3 / Ask-only slice. It is **not** a permanent prohibition on Slack attachments. Future attachment handling is governed by the channel-neutral Knowledge Intake contract ([`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)) and must be implemented only after the LKW core capability exists (`LKW-WORKSPACE-CONTENTS-1B-1`+). File uploads are **not** implemented in the current Slack companion.
 
 ### 4.3 Unsupported-event handling (`FROZEN`)
 
@@ -1303,12 +1311,38 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   behave the same regardless of where storage is located. Canonical tenancy,
   storage location, private-by-default, source-connector, and future sharing
   contract: [`ARCHITECTURE.md` — Deployment, storage and tenancy model](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
-  LKW-WORKSPACE-CONTENTS-1A — IMPLEMENTED / READY_FOR_REVIEW:
+  LKW-WORKSPACE-CONTENTS-1A — OPERATOR_VERIFIED:
   exact DM `sources` → effective active workspace → public tenant-scoped HTTP
   source list → safe provider-neutral source summaries → same-thread reply
-  (zero Ask; no source mutations; no full path disclosure; dynamic help).
-  Next product task:
-  `LKW-WORKSPACE-CONTENTS-1B — register first source through provider-neutral capability`.
+  (zero Ask; no source mutations; no full path disclosure; dynamic help;
+   real Slack operator verification for `help` and `sources`; not LIVE_VERIFIED).
+  LKW-WORKSPACE-CONTENTS-1B-0 — DOCUMENTED / READY_FOR_REVIEW:
+  channel-neutral Knowledge Intake and asynchronous ingestion contract
+  ([`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)).
+  Next exact implementation task:
+  `LKW-WORKSPACE-CONTENTS-1B-1 — durable Knowledge Intake and Ingestion Operation foundation`.
+
+---
+
+## 19a. Knowledge Intake extension (Slack adapter mapping)
+
+**Status:** `FROZEN ARCHITECTURAL CONTRACT` for adapter rules; **PLANNED** for product behavior. Exact Slack commands and Block Kit design are **DEFERRED**. Attachments / URL intake / candidate selection are **not** implemented yet.
+
+Binding contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) · [`ARCHITECTURE.md` — Channel-neutral Knowledge Intake](ARCHITECTURE.md#channel-neutral-knowledge-intake-and-asynchronous-ingestion).
+
+| Rule | Binding |
+|------|---------|
+| Slack remains a conversation-channel frontend | Collects channel-native input; invokes public LKW capabilities; displays status |
+| Slack attachments | Map to managed upload (`managed_file`) after core capability exists |
+| Multiple attachments | Map to batch intake; per-item success/failure; safe aggregate summary |
+| Folder / archive / channel-exposed collection | Map to `uploaded_folder_snapshot` only (no live sync) |
+| Connected local folder | Selected as safe Source Candidate (`candidate_id` + safe label); never full path |
+| Raw filesystem path command | **REJECTED** (not an approved Slack product input) |
+| URL intake | Must be explicit; ordinary Ask messages containing URLs remain Ask |
+| Transport | Acknowledge Slack envelope immediately; long transfer/ingestion does not keep the Slack request open |
+| Adapter must not | Parse, chunk, embed, write Document/Vector Store, select providers, call Qdrant, run filesystem ops, call LLM for ingestion, own operation state |
+| LKW core | Does **not** call Slack; completion returns via channel-neutral lifecycle event + Conversation Correlation |
+| Exact commands / Block Kit | **DEFERRED** — do not freeze syntax in this discovery |
 
 ---
 

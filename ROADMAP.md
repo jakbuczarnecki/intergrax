@@ -32,11 +32,13 @@ LKW is a **deployment-neutral** knowledge workspace: private by default, tenant-
 The immediate product goal is:
 
 ```text
-controlled sources (first slice: local-folder documents)
-→ Slack question
-→ grounded answer with verifiable sources
+controlled channel-neutral knowledge intake
+→ durable asynchronous processing
+→ grounded Ask across replaceable clients
 → real-user validation
 ```
+
+The first implemented source slice commonly uses **local-folder** documents. Slack remains one optional frontend over the same LKW capabilities — not the ingestion engine.
 
 LKW has three connected roles:
 
@@ -64,9 +66,10 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 
 | Item | Notes |
 |------|-------|
-| **Build the LKW MVP as the primary active Intergrax program** | Complete the smallest real product experience: controlled sources → Slack question → grounded answer with sources (first slice commonly local-folder) |
+| **Build the LKW MVP as the primary active Intergrax program** | Complete the smallest real product experience: channel-neutral knowledge intake → durable async processing → grounded Ask across replaceable clients (first source slice commonly local-folder; Slack is one optional frontend) |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace, grounded answers, citations and persisted runs are implemented and live-verified; see the [LKW Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
-| Slack conversational MVP in active development | Connect the existing Ask Workspace capability to an approved Slack user and workspace through the governed interaction path |
+| Slack conversational MVP in active development | Connect the existing Ask Workspace capability to an approved Slack user and workspace through the governed interaction path; source inspection (`sources`) is operator-verified |
+| Knowledge Intake architecture being frozen | Channel-neutral intake and asynchronous ingestion contract documented for review; upload / URL / Slack attachment intake are **not** claimed as implemented yet — see [Knowledge Intake discovery](applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) |
 | Preserve application-first platform development | Concrete LKW blockers may produce reusable Intergrax improvements; unrelated platform expansion does not override the LKW MVP path |
 | Source-available collaboration model clarified | See [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 | Core harness proof path available from README | Local evaluation path documented in [README.md](README.md) |
@@ -85,6 +88,10 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | Item | Notes |
 |------|-------|
 | Complete the end-to-end LKW Slack workflow | One approved user selects a workspace, asks a real question and receives a grounded answer with verifiable sources |
+| Deliver durable Knowledge Intake foundation | Channel-neutral intake submission, durable ingestion operation, idempotent acceptance and queue/worker boundary before channel-specific adapters |
+| Add managed file upload and later Slack attachment mapping | Core upload capability first; Slack attachments map only after the LKW capability exists |
+| Add connected-source candidate and explicit web URL intake | Safe candidate selection for local-capable connectors; explicit URL intake under policy (other clients such as Teams/mobile/Telegram remain channel-neutrality examples, not committed deliverables) |
+| Surface operation status and completion notification | Channel-neutral lifecycle events with conversation correlation back to replaceable clients |
 | Add the minimum outbound-data warning and policy required by the MVP | Make the local-to-provider boundary understandable and operationally safe enough for controlled validation |
 | Provide a repeatable design-partner setup | A real user must be able to start and try the controlled LKW environment without ad hoc developer reconstruction |
 | Run first real-user LKW validation | Measure usefulness, citation correctness, time saved, trust and blockers to repeated use |
