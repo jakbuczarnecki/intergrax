@@ -43,11 +43,13 @@ class KnowledgeIngestionRecoveryService:
         workspaces_reconciled = 0
         operations_requeued = 0
         processing_failed = 0
-        stale_locators_removed = 0
-        errors = 0
         reconcile_groups: dict[tuple[str, str], None] = {}
 
-        for locator in self._repository.list_active_ingestion_locators():
+        scan = self._repository.scan_active_ingestion_locators()
+        stale_locators_removed = scan.malformed_removed
+        errors = scan.malformed_seen
+
+        for locator in scan.locators:
             locators_seen += 1
             try:
                 operation = self._repository.get_operation(

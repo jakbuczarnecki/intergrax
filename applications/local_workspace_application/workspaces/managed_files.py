@@ -12,9 +12,11 @@ from typing import Protocol, Sequence
 
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from local_workspace_application.workspaces.knowledge_intake import (
+    KnowledgeInputResolutionError,
     KnowledgeIntakeService,
     KnowledgeInputSourceResolver,
     deterministic_knowledge_input_id,
+    deterministic_knowledge_operation_id,
 )
 from local_workspace_application.workspaces.models import (
     IntakeBatch,
@@ -34,13 +36,42 @@ from local_workspace_application.workspaces.repository import ManagedWorkspaceRe
 
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
+_PUBLIC_MANAGED_FILE_ITEM_ERROR_CODES = frozenset(
+    {
+        "managed_file_name_required",
+        "managed_file_name_too_long",
+        "managed_file_name_unsafe",
+        "managed_file_extension_required",
+        "managed_file_content_type_invalid",
+        "managed_file_content_type_too_long",
+        "managed_file_body_required",
+        "managed_file_empty",
+        "managed_file_too_large",
+        "managed_file_upload_read_failed",
+        "managed_file_storage_read_failed",
+        "managed_file_storage_write_failed",
+        "knowledge_intake_accept_failed",
+        "managed_file_accept_failed",
+    }
+)
+
 
 @dataclass(frozen=True)
 class ManagedFileUpload:
     file_name: str
     content_type: str
     body: bytes
-    forced_error_code: str | None = None
+
+
+@dataclass(frozen=True)
+class ManagedFileBatchCandidate:
+    raw_file_name: str
+    raw_content_type: str
+    body: bytes | None
+    size_bytes: int
+    body_hash: str
+    request_fingerprint: str
+    preflight_error_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +122,33 @@ def _content_hash(body: bytes) -> str:
     return f"sha256:{hashlib.sha256(body).hexdigest()}"
 
 
+def managed_file_request_fingerprint(
+    *,
+    raw_file_name: str,
+    raw_content_type: str,
+    size_bytes: int,
+    body_hash: str,
+) -> str:
+    digest = hashlib.sha256(
+        "\0".join(
+            (
+                raw_file_name,
+                raw_content_type,
+                str(size_bytes),
+                body_hash,
+            )
+        ).encode("utf-8")
+    ).hexdigest()
+    return f"sha256:{digest}"
+
+
+def normalize_managed_file_item_error_code(error_code: str | None) -> str:
+    code = (error_code or "").strip()
+    if code in _PUBLIC_MANAGED_FILE_ITEM_ERROR_CODES:
+        return code
+    return "managed_file_accept_failed"
+
+
 def _validate_safe_file_name(file_name: str) -> str:
     raw = (file_name or "").strip()
     if not raw:
@@ -121,7 +179,7 @@ def _validate_content_type(content_type: str) -> str:
 
 
 def _validate_body(body: bytes, *, max_bytes: int) -> None:
-    if not isinstance(body, (bytes, bytearray)):
+    if not isinstance(body, bytes):
         raise ManagedFileValidationError("managed_file_body_required")
     if len(body) < 1:
         raise ManagedFileValidationError("managed_file_empty")
@@ -150,6 +208,70 @@ def _item_id(*, batch_id: str, position: int) -> str:
     return f"item:{_stable_digest(batch_id, str(position))}"
 
 
+def _rejected_item_file_name(position: int) -> str:
+    return f"rejected-item-{position}.bin"
+
+
+def _safe_batch_file_name(raw_file_name: str, position: int) -> str:
+    try:
+        return _validate_safe_file_name(raw_file_name)
+    except ManagedFileValidationError:
+        return _rejected_item_file_name(position)
+
+
+def _candidate_from_upload(
+    upload: ManagedFileUpload,
+    *,
+    max_bytes: int,
+) -> ManagedFileBatchCandidate:
+    raw_file_name = upload.file_name if isinstance(upload.file_name, str) else ""
+    raw_content_type = upload.content_type if isinstance(upload.content_type, str) else ""
+    if not isinstance(upload.body, bytes):
+        body_hash = _content_hash(b"")
+        return ManagedFileBatchCandidate(
+            raw_file_name=raw_file_name,
+            raw_content_type=raw_content_type,
+            body=None,
+            size_bytes=0,
+            body_hash=body_hash,
+            request_fingerprint=managed_file_request_fingerprint(
+                raw_file_name=raw_file_name,
+                raw_content_type=raw_content_type,
+                size_bytes=0,
+                body_hash=body_hash,
+            ),
+            preflight_error_code="managed_file_body_required",
+        )
+    body = upload.body
+    size_bytes = len(body)
+    body_hash = _content_hash(body)
+    request_fingerprint = managed_file_request_fingerprint(
+        raw_file_name=raw_file_name,
+        raw_content_type=raw_content_type,
+        size_bytes=size_bytes,
+        body_hash=body_hash,
+    )
+    if size_bytes > max_bytes:
+        return ManagedFileBatchCandidate(
+            raw_file_name=raw_file_name,
+            raw_content_type=raw_content_type,
+            body=None,
+            size_bytes=size_bytes,
+            body_hash=body_hash,
+            request_fingerprint=request_fingerprint,
+            preflight_error_code="managed_file_too_large",
+        )
+    return ManagedFileBatchCandidate(
+        raw_file_name=raw_file_name,
+        raw_content_type=raw_content_type,
+        body=body,
+        size_bytes=size_bytes,
+        body_hash=body_hash,
+        request_fingerprint=request_fingerprint,
+        preflight_error_code=None,
+    )
+
+
 class ManagedFileSourceResolver(KnowledgeInputSourceResolver):
     def __init__(self, repository: ManagedWorkspaceRepository) -> None:
         self._repository = repository
@@ -161,7 +283,14 @@ class ManagedFileSourceResolver(KnowledgeInputSourceResolver):
         suggested_source_id: str,
     ) -> WorkspaceSource:
         if knowledge_input.input_kind is not KnowledgeInputKind.MANAGED_FILE:
-            raise RuntimeError("managed_file_kind_required")
+            raise KnowledgeInputResolutionError("managed_file_kind_required")
+
+        expected_source_id = suggested_source_id
+        if (
+            knowledge_input.source_id is not None
+            and knowledge_input.source_id != expected_source_id
+        ):
+            raise KnowledgeInputResolutionError("managed_file_source_conflict")
 
         managed = self._repository.get_managed_file(
             tenant_id=knowledge_input.tenant_id,
@@ -169,38 +298,34 @@ class ManagedFileSourceResolver(KnowledgeInputSourceResolver):
             input_id=knowledge_input.input_id,
         )
         if managed is None:
-            raise RuntimeError("managed_file_record_missing")
+            raise KnowledgeInputResolutionError("managed_file_record_missing")
         if managed.operation_id != knowledge_input.operation_id:
-            raise RuntimeError("managed_file_state_conflict")
-
-        if knowledge_input.source_id:
-            existing = self._repository.get_source(
-                tenant_id=knowledge_input.tenant_id,
-                workspace_id=knowledge_input.workspace_id,
-                source_id=knowledge_input.source_id,
-            )
-            if existing is not None:
-                self._validate_existing_source(existing, knowledge_input=knowledge_input)
-                return existing
+            raise KnowledgeInputResolutionError("managed_file_state_conflict")
 
         existing = self._repository.get_source(
             tenant_id=knowledge_input.tenant_id,
             workspace_id=knowledge_input.workspace_id,
-            source_id=suggested_source_id,
+            source_id=expected_source_id,
         )
         if existing is not None:
-            self._validate_existing_source(existing, knowledge_input=knowledge_input)
-            if managed.source_id != existing.source_id:
-                self._repository.put_managed_file(
-                    managed.model_copy(
-                        update={"source_id": existing.source_id, "updated_at": _utc_now()}
-                    )
-                )
+            self._validate_expected_source(
+                existing,
+                knowledge_input=knowledge_input,
+                expected_source_id=expected_source_id,
+            )
+            self._bind_or_validate_managed_source(
+                managed,
+                expected_source_id=expected_source_id,
+            )
             return existing
 
+        self._bind_or_validate_managed_source(
+            managed,
+            expected_source_id=expected_source_id,
+        )
         now = _utc_now()
-        source = WorkspaceSource(
-            source_id=suggested_source_id,
+        return WorkspaceSource(
+            source_id=expected_source_id,
             workspace_id=knowledge_input.workspace_id,
             tenant_id=knowledge_input.tenant_id,
             source_type=WorkspaceSourceType.MANAGED_UPLOAD,
@@ -209,23 +334,40 @@ class ManagedFileSourceResolver(KnowledgeInputSourceResolver):
             status=WorkspaceSourceStatus.REGISTERED,
             created_at=now,
         )
-        self._repository.put_managed_file(
-            managed.model_copy(update={"source_id": source.source_id, "updated_at": now})
-        )
-        return source
 
-    def _validate_existing_source(
+    def _bind_or_validate_managed_source(
+        self,
+        managed: ManagedFileObject,
+        *,
+        expected_source_id: str,
+    ) -> ManagedFileObject:
+        if managed.source_id is None:
+            return self._repository.put_managed_file(
+                managed.model_copy(
+                    update={
+                        "source_id": expected_source_id,
+                        "updated_at": _utc_now(),
+                    }
+                )
+            )
+        if managed.source_id == expected_source_id:
+            return managed
+        raise KnowledgeInputResolutionError("managed_file_source_conflict")
+
+    def _validate_expected_source(
         self,
         source: WorkspaceSource,
         *,
         knowledge_input: KnowledgeInput,
+        expected_source_id: str,
     ) -> None:
         if (
-            source.tenant_id != knowledge_input.tenant_id
+            source.source_id != expected_source_id
+            or source.tenant_id != knowledge_input.tenant_id
             or source.workspace_id != knowledge_input.workspace_id
             or source.source_type is not WorkspaceSourceType.MANAGED_UPLOAD
         ):
-            raise RuntimeError("managed_file_source_conflict")
+            raise KnowledgeInputResolutionError("managed_file_source_conflict")
 
 
 class ManagedFileObjectCleanup:
@@ -307,11 +449,11 @@ class ManagedFileIntakeService:
         if workspace is None:
             raise LookupError("workspace_not_found")
 
-        if upload.forced_error_code:
-            raise ManagedFileValidationError(upload.forced_error_code)
+        if not isinstance(upload.body, bytes):
+            raise ManagedFileValidationError("managed_file_body_required")
         safe_name = _validate_safe_file_name(upload.file_name)
         content_type = _validate_content_type(upload.content_type)
-        body = bytes(upload.body)
+        body = upload.body
         _validate_body(body, max_bytes=self._max_bytes)
         content_hash = _content_hash(body)
         input_id = deterministic_knowledge_input_id(
@@ -329,8 +471,7 @@ class ManagedFileIntakeService:
             workspace_id=workspace_id,
             input_id=input_id,
         )
-        # operation_id is derived by Knowledge Intake; precompute for durable record
-        operation_id = f"op:{_stable_digest('knowledge_ingestion', input_id)}"
+        operation_id = deterministic_knowledge_operation_id(input_id=input_id)
 
         existing = self._repository.get_managed_file(
             tenant_id=tenant_id,
@@ -349,7 +490,21 @@ class ManagedFileIntakeService:
                 content_hash=content_hash,
                 storage_key=storage_key,
             )
-            stored = self._object_storage.get(existing.storage_key)
+            try:
+                stored = self._object_storage.get(existing.storage_key)
+            except Exception:
+                self._repository.put_managed_file(
+                    existing.model_copy(
+                        update={
+                            "status": ManagedFileObjectStatus.ERROR,
+                            "error_code": "managed_file_storage_read_failed",
+                            "updated_at": _utc_now(),
+                        }
+                    )
+                )
+                raise ManagedFileValidationError(
+                    "managed_file_storage_read_failed"
+                ) from None
             if stored is None:
                 self._put_bytes(storage_key=storage_key, body=body, content_type=content_type)
                 existing = self._repository.put_managed_file(
@@ -407,14 +562,32 @@ class ManagedFileIntakeService:
         idempotency_key: str,
         uploads: Sequence[ManagedFileUpload],
     ) -> IntakeBatch:
+        candidates = [
+            _candidate_from_upload(upload, max_bytes=self._max_bytes) for upload in uploads
+        ]
+        return self.accept_prepared_many(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            idempotency_key=idempotency_key,
+            candidates=candidates,
+        )
+
+    def accept_prepared_many(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        idempotency_key: str,
+        candidates: Sequence[ManagedFileBatchCandidate],
+    ) -> IntakeBatch:
         tenant_id = tenant_id.strip()
         workspace_id = workspace_id.strip()
         idempotency_key = idempotency_key.strip()
         if not idempotency_key:
             raise ManagedFileValidationError("managed_file_batch_idempotency_required")
-        if not uploads:
+        if not candidates:
             raise ManagedFileValidationError("managed_file_batch_empty")
-        if len(uploads) > self._max_batch_files:
+        if len(candidates) > self._max_batch_files:
             raise ManagedFileValidationError("managed_file_batch_too_large")
 
         workspace = self._repository.get_workspace(
@@ -429,27 +602,7 @@ class ManagedFileIntakeService:
             workspace_id=workspace_id,
             idempotency_key=idempotency_key,
         )
-        prepared: list[tuple[ManagedFileUpload, str, str]] = []
-        for upload in uploads:
-            try:
-                safe_name = _validate_safe_file_name(upload.file_name)
-            except ManagedFileValidationError:
-                safe_name = (upload.file_name or "").strip() or "invalid"
-            body = bytes(upload.body) if isinstance(upload.body, (bytes, bytearray)) else b""
-            content_hash = _content_hash(body) if body else ""
-            prepared.append(
-                (
-                    ManagedFileUpload(
-                        file_name=upload.file_name,
-                        content_type=upload.content_type,
-                        body=body,
-                        forced_error_code=upload.forced_error_code,
-                    ),
-                    safe_name,
-                    content_hash,
-                )
-            )
-
+        prepared = list(candidates)
         existing = self._repository.get_intake_batch(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -474,11 +627,15 @@ class ManagedFileIntakeService:
                         batch_idempotency_key=idempotency_key,
                         position=position,
                     ),
-                    safe_file_name=safe_name,
+                    safe_file_name=_safe_batch_file_name(
+                        candidate.raw_file_name,
+                        position,
+                    ),
                     status=IntakeBatchItemStatus.PENDING,
-                    content_hash=content_hash or None,
+                    request_fingerprint=candidate.request_fingerprint,
+                    content_hash=candidate.body_hash,
                 )
-                for position, (_upload, safe_name, content_hash) in enumerate(prepared)
+                for position, candidate in enumerate(prepared)
             ]
             batch = IntakeBatch(
                 batch_id=batch_id,
@@ -493,63 +650,104 @@ class ManagedFileIntakeService:
             self._repository.put_intake_batch(batch)
 
         updated_items: list[IntakeBatchItem] = []
-        for position, (upload, _safe_name, _hash) in enumerate(prepared):
+        for position, candidate in enumerate(prepared):
             item = batch.items[position]
             if item.status is IntakeBatchItemStatus.ACCEPTED:
                 updated_items.append(item)
                 continue
             item_key = item.item_idempotency_key
-            try:
-                acceptance = self.accept_one(
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    idempotency_key=item_key,
-                    upload=upload,
-                )
-                updated_items.append(
-                    item.model_copy(
-                        update={
-                            "status": IntakeBatchItemStatus.ACCEPTED,
-                            "input_id": acceptance.knowledge_input.input_id,
-                            "source_id": acceptance.source.source_id,
-                            "operation_id": acceptance.operation.operation_id,
-                            "error_code": None,
-                            "content_hash": acceptance.managed_file.content_hash,
-                            "safe_file_name": acceptance.managed_file.safe_file_name,
-                        }
-                    )
-                )
-            except ManagedFileIdempotencyConflict:
-                raise IntakeBatchIdempotencyConflict("intake_batch_idempotency_conflict") from None
-            except ManagedFileValidationError as exc:
+            preflight = normalize_managed_file_item_error_code(
+                candidate.preflight_error_code
+            ) if candidate.preflight_error_code else None
+            if preflight is not None:
                 updated_items.append(
                     item.model_copy(
                         update={
                             "status": IntakeBatchItemStatus.FAILED,
-                            "error_code": exc.error_code,
+                            "error_code": preflight,
                             "input_id": None,
                             "source_id": None,
                             "operation_id": None,
+                            "safe_file_name": _safe_batch_file_name(
+                                candidate.raw_file_name,
+                                position,
+                            ),
+                            "request_fingerprint": candidate.request_fingerprint,
+                            "content_hash": candidate.body_hash,
                         }
                     )
                 )
-            except Exception as exc:  # noqa: BLE001 - item isolation
-                code = str(exc).strip() or type(exc).__name__
-                if code == "managed_file_idempotency_conflict":
+            else:
+                try:
+                    if candidate.body is None or not isinstance(candidate.body, bytes):
+                        raise ManagedFileValidationError("managed_file_body_required")
+                    acceptance = self.accept_one(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        idempotency_key=item_key,
+                        upload=ManagedFileUpload(
+                            file_name=candidate.raw_file_name,
+                            content_type=candidate.raw_content_type,
+                            body=candidate.body,
+                        ),
+                    )
+                    updated_items.append(
+                        item.model_copy(
+                            update={
+                                "status": IntakeBatchItemStatus.ACCEPTED,
+                                "input_id": acceptance.knowledge_input.input_id,
+                                "source_id": acceptance.source.source_id,
+                                "operation_id": acceptance.operation.operation_id,
+                                "error_code": None,
+                                "content_hash": acceptance.managed_file.content_hash,
+                                "safe_file_name": acceptance.managed_file.safe_file_name,
+                                "request_fingerprint": candidate.request_fingerprint,
+                            }
+                        )
+                    )
+                except ManagedFileIdempotencyConflict:
                     raise IntakeBatchIdempotencyConflict(
                         "intake_batch_idempotency_conflict"
                     ) from None
-                updated_items.append(
-                    item.model_copy(
-                        update={
-                            "status": IntakeBatchItemStatus.FAILED,
-                            "error_code": code[:64],
-                            "input_id": None,
-                            "source_id": None,
-                            "operation_id": None,
-                        }
+                except IntakeBatchIdempotencyConflict:
+                    raise
+                except ManagedFileValidationError as exc:
+                    error_code = normalize_managed_file_item_error_code(exc.error_code)
+                    updated_items.append(
+                        item.model_copy(
+                            update={
+                                "status": IntakeBatchItemStatus.FAILED,
+                                "error_code": error_code,
+                                "input_id": None,
+                                "source_id": None,
+                                "operation_id": None,
+                                "safe_file_name": _safe_batch_file_name(
+                                    candidate.raw_file_name,
+                                    position,
+                                ),
+                                "request_fingerprint": candidate.request_fingerprint,
+                                "content_hash": candidate.body_hash,
+                            }
+                        )
                     )
-                )
+                except Exception:
+                    updated_items.append(
+                        item.model_copy(
+                            update={
+                                "status": IntakeBatchItemStatus.FAILED,
+                                "error_code": "managed_file_accept_failed",
+                                "input_id": None,
+                                "source_id": None,
+                                "operation_id": None,
+                                "safe_file_name": _safe_batch_file_name(
+                                    candidate.raw_file_name,
+                                    position,
+                                ),
+                                "request_fingerprint": candidate.request_fingerprint,
+                                "content_hash": candidate.body_hash,
+                            }
+                        )
+                    )
             batch = batch.model_copy(
                 update={
                     "items": [
@@ -663,7 +861,7 @@ class ManagedFileIntakeService:
         tenant_id: str,
         workspace_id: str,
         idempotency_key: str,
-        prepared: list[tuple[ManagedFileUpload, str, str]],
+        prepared: list[ManagedFileBatchCandidate],
     ) -> None:
         if (
             existing.tenant_id != tenant_id
@@ -672,15 +870,18 @@ class ManagedFileIntakeService:
             or len(existing.items) != len(prepared)
         ):
             raise IntakeBatchIdempotencyConflict("intake_batch_idempotency_conflict")
-        for position, (_upload, safe_name, content_hash) in enumerate(prepared):
+        for position, candidate in enumerate(prepared):
             item = existing.items[position]
             expected_key = _item_idempotency_key(
                 batch_idempotency_key=idempotency_key,
                 position=position,
             )
-            if item.position != position or item.item_idempotency_key != expected_key:
+            expected_item_id = _item_id(batch_id=existing.batch_id, position=position)
+            if (
+                item.position != position
+                or item.item_id != expected_item_id
+                or item.item_idempotency_key != expected_key
+            ):
                 raise IntakeBatchIdempotencyConflict("intake_batch_idempotency_conflict")
-            if item.safe_file_name != safe_name:
-                raise IntakeBatchIdempotencyConflict("intake_batch_idempotency_conflict")
-            if item.content_hash and content_hash and item.content_hash != content_hash:
+            if item.request_fingerprint != candidate.request_fingerprint:
                 raise IntakeBatchIdempotencyConflict("intake_batch_idempotency_conflict")

@@ -91,6 +91,11 @@ def _operation_id(*, input_id: str) -> str:
     return _stable_id("op", "knowledge_ingestion", input_id)
 
 
+def deterministic_knowledge_operation_id(*, input_id: str) -> str:
+    """Public stable Knowledge Ingestion operation identity."""
+    return _operation_id(input_id=input_id)
+
+
 def _suggested_source_id(*, input_id: str) -> str:
     return _stable_id("src", "knowledge_input_source", input_id)
 
@@ -308,8 +313,10 @@ class KnowledgeIntakeService:
                 knowledge_input=knowledge_input,
                 suggested_source_id=suggested_source_id,
             )
-        except Exception as exc:  # noqa: BLE001 - map to domain error
-            raise KnowledgeInputResolutionError(type(exc).__name__) from None
+        except KnowledgeInputResolutionError:
+            raise
+        except Exception:  # noqa: BLE001 - map to domain error
+            raise KnowledgeInputResolutionError("source_resolution_failed") from None
 
         self._validate_resolved_source(
             knowledge_input=knowledge_input,

@@ -311,3 +311,108 @@ def test_partial_and_all_failed(api_bundle) -> None:
     assert failed.status_code == 202
     assert failed.json()["status"] == "failed"
     _assert_safe_response(failed.json())
+
+
+def test_missing_and_unsafe_filename_api(api_bundle) -> None:
+    client, _, _ = api_bundle
+    tenant = f"t-{uuid.uuid4().hex[:8]}"
+    workspace_id = _create_workspace(client, tenant)
+
+    missing = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="missing-name"),
+        files=[("files", ("   ", b"x", "application/pdf"))],
+    )
+    assert missing.status_code == 202
+    body = missing.json()
+    assert body["status"] == "failed"
+    assert body["items"][0]["error_code"] == "managed_file_name_required"
+    assert body["items"][0]["file_name"] == "rejected-item-0.bin"
+    assert "unnamed.bin" not in str(body)
+    _assert_safe_response(body)
+
+    unsafe_name = "evil/../secret.pdf"
+    unsafe = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="unsafe-name"),
+        files=[("files", (unsafe_name, b"x", "application/pdf"))],
+    )
+    assert unsafe.status_code == 202
+    unsafe_body = unsafe.json()
+    assert unsafe_body["items"][0]["file_name"] == "rejected-item-0.bin"
+    assert unsafe_body["items"][0]["error_code"] == "managed_file_name_unsafe"
+    assert unsafe_name not in str(unsafe_body)
+    assert "evil" not in str(unsafe_body)
+    assert "secret.pdf" not in str(unsafe_body)
+    _assert_safe_response(unsafe_body)
+
+
+def test_empty_failed_retry_and_conflict_api(api_bundle) -> None:
+    client, _, _ = api_bundle
+    tenant = f"t-{uuid.uuid4().hex[:8]}"
+    workspace_id = _create_workspace(client, tenant)
+    empty_files = [("files", ("a.pdf", b"", "application/pdf"))]
+    first = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="empty-retry"),
+        files=empty_files,
+    )
+    second = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="empty-retry"),
+        files=empty_files,
+    )
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert first.json()["batch_id"] == second.json()["batch_id"]
+    assert first.json()["items"][0]["error_code"] == "managed_file_empty"
+
+    changed = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="empty-retry"),
+        files=[("files", ("a.pdf", b"%PDF-nonempty", "application/pdf"))],
+    )
+    assert changed.status_code == 409
+    assert changed.json()["detail"] == "intake_batch_idempotency_conflict"
+
+    ctype = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="ctype-api"),
+        files=[("files", ("a.pdf", b"abc", "application/pdf"))],
+    )
+    assert ctype.status_code == 202
+    ctype_conflict = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="ctype-api"),
+        files=[("files", ("a.pdf", b"abc", "text/plain"))],
+    )
+    assert ctype_conflict.status_code == 409
+
+
+def test_unexpected_internal_error_safe_api(api_bundle, monkeypatch) -> None:
+    client, _, _ = api_bundle
+    tenant = f"t-{uuid.uuid4().hex[:8]}"
+    workspace_id = _create_workspace(client, tenant)
+
+    from local_workspace_application.workspaces import managed_files as mf_mod
+
+    original = mf_mod.ManagedFileIntakeService.accept_one
+
+    def boom(self, **kwargs):  # type: ignore[no-untyped-def]
+        _ = self, kwargs
+        raise RuntimeError("s3://private-bucket/key credential=secret")
+
+    monkeypatch.setattr(mf_mod.ManagedFileIntakeService, "accept_one", boom)
+    response = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/files",
+        headers=_headers(tenant, idempotency="boom-api"),
+        files=[("files", ("a.pdf", b"%PDF", "application/pdf"))],
+    )
+    assert response.status_code == 202
+    body = response.json()
+    assert body["items"][0]["error_code"] == "managed_file_accept_failed"
+    text = str(body)
+    for forbidden in ("s3://", "private-bucket", "credential", "secret", "RuntimeError"):
+        assert forbidden not in text
+    _assert_safe_response(body)
+    _ = original

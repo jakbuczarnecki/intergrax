@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import Any
 
@@ -63,11 +64,13 @@ from local_workspace_application.workspaces.managed_file_ingestion import (
 )
 from local_workspace_application.workspaces.managed_files import (
     IntakeBatchIdempotencyConflict,
+    ManagedFileBatchCandidate,
     ManagedFileIntakeService,
     ManagedFileObjectCleanup,
     ManagedFileSourceResolver,
-    ManagedFileUpload,
     ManagedFileValidationError,
+    managed_file_request_fingerprint,
+    normalize_managed_file_item_error_code,
 )
 from local_workspace_application.workspaces.models import (
     IntakeBatchItemStatus,
@@ -178,21 +181,74 @@ def resolve_tenant_id(
     return default_tenant_id
 
 
-async def _read_upload_bounded(upload: UploadFile, *, max_bytes: int) -> bytes:
+async def _prepare_managed_file_batch_candidate(
+    upload: UploadFile,
+    *,
+    max_bytes: int,
+) -> ManagedFileBatchCandidate:
+    raw_file_name = upload.filename or ""
+    raw_content_type = upload.content_type or ""
+    hasher = hashlib.sha256()
     chunks: list[bytes] = []
     total = 0
+    exceeded = False
+    read_failed = False
     try:
-        while True:
-            chunk = await upload.read(64 * 1024)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > max_bytes:
-                raise ManagedFileValidationError("managed_file_too_large")
-            chunks.append(chunk)
+        try:
+            while True:
+                chunk = await upload.read(64 * 1024)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+                total += len(chunk)
+                if exceeded:
+                    continue
+                if total > max_bytes:
+                    exceeded = True
+                    chunks.clear()
+                else:
+                    chunks.append(chunk)
+        except Exception:
+            read_failed = True
     finally:
         await upload.close()
-    return b"".join(chunks)
+
+    body_hash = f"sha256:{hasher.hexdigest()}"
+    request_fingerprint = managed_file_request_fingerprint(
+        raw_file_name=raw_file_name,
+        raw_content_type=raw_content_type,
+        size_bytes=total,
+        body_hash=body_hash,
+    )
+    if read_failed:
+        return ManagedFileBatchCandidate(
+            raw_file_name=raw_file_name,
+            raw_content_type=raw_content_type,
+            body=None,
+            size_bytes=total,
+            body_hash=body_hash,
+            request_fingerprint=request_fingerprint,
+            preflight_error_code="managed_file_upload_read_failed",
+        )
+    if exceeded:
+        return ManagedFileBatchCandidate(
+            raw_file_name=raw_file_name,
+            raw_content_type=raw_content_type,
+            body=None,
+            size_bytes=total,
+            body_hash=body_hash,
+            request_fingerprint=request_fingerprint,
+            preflight_error_code="managed_file_too_large",
+        )
+    return ManagedFileBatchCandidate(
+        raw_file_name=raw_file_name,
+        raw_content_type=raw_content_type,
+        body=b"".join(chunks),
+        size_bytes=total,
+        body_hash=body_hash,
+        request_fingerprint=request_fingerprint,
+        preflight_error_code=None,
+    )
 
 
 def mount_managed_workspace_routes(
@@ -430,39 +486,21 @@ def mount_managed_workspace_routes(
         if service.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             raise _not_found()
 
-        uploads: list[ManagedFileUpload] = []
+        candidates: list[ManagedFileBatchCandidate] = []
         for upload in files:
-            file_name = upload.filename or "unnamed.bin"
-            content_type = upload.content_type or "application/octet-stream"
-            try:
-                body = await _read_upload_bounded(
+            candidates.append(
+                await _prepare_managed_file_batch_candidate(
                     upload,
                     max_bytes=settings.managed_file_max_bytes,
-                )
-            except ManagedFileValidationError as exc:
-                uploads.append(
-                    ManagedFileUpload(
-                        file_name=file_name,
-                        content_type=content_type,
-                        body=b"",
-                        forced_error_code=exc.error_code,
-                    )
-                )
-                continue
-            uploads.append(
-                ManagedFileUpload(
-                    file_name=file_name,
-                    content_type=content_type,
-                    body=body,
                 )
             )
 
         try:
-            batch = intake.accept_many(
+            batch = intake.accept_prepared_many(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 idempotency_key=idempotency_key.strip(),
-                uploads=uploads,
+                candidates=candidates,
             )
         except LookupError:
             raise _not_found() from None
@@ -506,7 +544,11 @@ def mount_managed_workspace_routes(
                     source_id=item.source_id,
                     operation_id=item.operation_id,
                     operation_status=op_status,
-                    error_code=item.error_code,
+                    error_code=(
+                        normalize_managed_file_item_error_code(item.error_code)
+                        if item.error_code
+                        else None
+                    ),
                 )
             )
         accepted_count = sum(1 for item in items if item.status == "accepted")

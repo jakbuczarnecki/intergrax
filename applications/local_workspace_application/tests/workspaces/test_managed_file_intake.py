@@ -34,12 +34,14 @@ from local_workspace_application.workspaces.managed_file_ingestion import (
 )
 from local_workspace_application.workspaces.managed_files import (
     IntakeBatchIdempotencyConflict,
+    ManagedFileBatchCandidate,
     ManagedFileIdempotencyConflict,
     ManagedFileIntakeService,
     ManagedFileObjectCleanup,
     ManagedFileSourceResolver,
     ManagedFileUpload,
     ManagedFileValidationError,
+    managed_file_request_fingerprint,
 )
 from local_workspace_application.workspaces.models import (
     ActiveKnowledgeIngestionLocator,
@@ -749,3 +751,501 @@ def test_sync_service_uses_indexing_service() -> None:
         indexing_service=spy,  # type: ignore[arg-type]
     )
     assert sync._indexing_service is spy  # noqa: SLF001
+
+
+def test_failed_empty_item_changed_on_retry_conflicts() -> None:
+    repo, storage, managed, _, _, _, _ = _build_intake()
+    first = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="failed-retry",
+        uploads=[ManagedFileUpload("a.pdf", "application/pdf", b"")],
+    )
+    assert first.status is IntakeBatchStatus.FAILED
+    assert first.items[0].error_code == "managed_file_empty"
+    assert first.items[0].request_fingerprint.startswith("sha256:")
+    fp = first.items[0].request_fingerprint
+    assert "a.pdf" not in fp
+    assert "application/pdf" not in fp
+
+    with pytest.raises(IntakeBatchIdempotencyConflict):
+        managed.accept_many(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            idempotency_key="failed-retry",
+            uploads=[ManagedFileUpload("a.pdf", "application/pdf", b"%PDF-nonempty")],
+        )
+    assert repo.list_managed_files(tenant_id=TENANT, workspace_id=WORKSPACE) == []
+    assert repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE) == []
+    assert [
+        op
+        for op in repo.list_operations(tenant_id=TENANT)
+        if op.operation_type is WorkspaceOperationType.KNOWLEDGE_INGESTION
+    ] == []
+    assert storage.objects == {}
+
+
+def test_failed_invalid_filename_changed_on_retry_conflicts() -> None:
+    _, _, managed, _, _, _, _ = _build_intake()
+    first = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="bad-name-retry",
+        uploads=[ManagedFileUpload("bad/name.pdf", "application/pdf", b"x")],
+    )
+    assert first.items[0].error_code == "managed_file_name_unsafe"
+    assert first.items[0].safe_file_name == "rejected-item-0.bin"
+    with pytest.raises(IntakeBatchIdempotencyConflict):
+        managed.accept_many(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            idempotency_key="bad-name-retry",
+            uploads=[ManagedFileUpload("different/name.pdf", "application/pdf", b"x")],
+        )
+
+
+def test_exact_failed_retry_is_idempotent() -> None:
+    repo, _, managed, _, _, _, _ = _build_intake()
+    upload = ManagedFileUpload("a.pdf", "application/pdf", b"")
+    first = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="exact-fail",
+        uploads=[upload],
+    )
+    second = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="exact-fail",
+        uploads=[upload],
+    )
+    assert first.batch_id == second.batch_id
+    assert first.items[0].item_id == second.items[0].item_id
+    assert first.items[0].request_fingerprint == second.items[0].request_fingerprint
+    assert first.items[0].error_code == second.items[0].error_code == "managed_file_empty"
+    assert repo.list_managed_files(tenant_id=TENANT, workspace_id=WORKSPACE) == []
+    assert [
+        op
+        for op in repo.list_operations(tenant_id=TENANT)
+        if op.operation_type is WorkspaceOperationType.KNOWLEDGE_INGESTION
+    ] == []
+
+
+def test_content_type_conflict_under_same_batch_key() -> None:
+    _, _, managed, _, _, _, _ = _build_intake()
+    managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="ctype-conflict",
+        uploads=[ManagedFileUpload("a.pdf", "application/pdf", b"abc")],
+    )
+    with pytest.raises(IntakeBatchIdempotencyConflict):
+        managed.accept_many(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            idempotency_key="ctype-conflict",
+            uploads=[ManagedFileUpload("a.pdf", "text/plain", b"abc")],
+        )
+
+
+def test_input_boundary_rejects_non_bytes_and_forced_error_code() -> None:
+    _, _, managed, _, _, _, _ = _build_intake()
+    assert "forced_error_code" not in ManagedFileUpload.__dataclass_fields__
+    for body in (bytearray(b"x"), memoryview(b"x"), "x"):  # type: ignore[arg-type]
+        with pytest.raises(ManagedFileValidationError, match="managed_file_body_required"):
+            managed.accept_one(
+                tenant_id=TENANT,
+                workspace_id=WORKSPACE,
+                idempotency_key=f"body-{type(body).__name__}",
+                upload=ManagedFileUpload("a.pdf", "application/pdf", body),  # type: ignore[arg-type]
+            )
+
+
+def test_unsafe_filename_not_persisted_or_returned() -> None:
+    repo, _, managed, _, _, _, _ = _build_intake()
+    unsafe = "evil/../secret.pdf"
+    batch = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="unsafe-name",
+        uploads=[ManagedFileUpload(unsafe, "application/pdf", b"x")],
+    )
+    assert batch.items[0].safe_file_name == "rejected-item-0.bin"
+    dumped = str(batch.model_dump())
+    assert unsafe not in dumped
+    assert "evil" not in dumped
+    assert "secret.pdf" not in dumped
+    assert repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE) == []
+    assert repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE) == []
+
+
+def test_unexpected_acceptance_exception_is_safe() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    storage = FakeObjectStorage()
+    _seed_workspace(repo)
+
+    class BoomIntake:
+        def accept(self, **kwargs: object) -> object:
+            _ = kwargs
+            raise RuntimeError("s3://private-bucket/key credential=secret")
+
+    managed = ManagedFileIntakeService(
+        repo,
+        storage,
+        BoomIntake(),  # type: ignore[arg-type]
+        max_bytes=1024 * 1024,
+        max_batch_files=20,
+    )
+    body = b"%PDF"
+    body_hash = f"sha256:{__import__('hashlib').sha256(body).hexdigest()}"
+    batch = managed.accept_prepared_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="boom-batch",
+        candidates=[
+            ManagedFileBatchCandidate(
+                raw_file_name="a.pdf",
+                raw_content_type="application/pdf",
+                body=body,
+                size_bytes=len(body),
+                body_hash=body_hash,
+                request_fingerprint=managed_file_request_fingerprint(
+                    raw_file_name="a.pdf",
+                    raw_content_type="application/pdf",
+                    size_bytes=len(body),
+                    body_hash=body_hash,
+                ),
+            )
+        ],
+    )
+    assert batch.items[0].error_code == "managed_file_accept_failed"
+    text = str(batch.model_dump())
+    for forbidden in ("s3://", "private-bucket", "credential", "secret", "RuntimeError"):
+        assert forbidden not in text
+
+
+def test_existing_object_storage_read_failure() -> None:
+    class BoomGetStorage(FakeObjectStorage):
+        def get(self, key: str) -> StoredObject | None:
+            _ = key
+            raise RuntimeError("bucket=private key=lkw/managed/x token=secret")
+
+    storage = BoomGetStorage()
+    _, _, managed, _, _, _, _ = _build_intake(storage=storage)
+    upload = ManagedFileUpload("a.pdf", "application/pdf", b"%PDF-1")
+    first = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="read-fail",
+        upload=upload,
+    )
+    # Force retry path against existing managed object.
+    with pytest.raises(ManagedFileValidationError, match="managed_file_storage_read_failed"):
+        managed.accept_one(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            idempotency_key="read-fail",
+            upload=upload,
+        )
+    mf = managed._repository.get_managed_file(  # noqa: SLF001
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=first.knowledge_input.input_id,
+    )
+    assert mf is not None
+    assert mf.status is ManagedFileObjectStatus.ERROR
+    assert mf.error_code == "managed_file_storage_read_failed"
+    assert "secret" not in str(mf.model_dump())
+    assert "bucket=private" not in str(mf.model_dump())
+
+
+def test_materializer_storage_read_failure_through_worker(tmp_path: Path) -> None:
+    class BoomGetStorage(FakeObjectStorage):
+        def get(self, key: str) -> StoredObject | None:
+            _ = key
+            raise RuntimeError("bucket=private key=lkw/managed/x token=secret")
+
+    storage = BoomGetStorage()
+    repo, _, managed, queue, worker, _, _ = _build_intake(storage=storage)
+    acceptance = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="mat-read-fail",
+        upload=ManagedFileUpload("contract.pdf", "application/pdf", b"%PDF"),
+    )
+    assert worker.drain_once() == 1
+    _ = tmp_path
+    op = repo.get_operation(tenant_id=TENANT, operation_id=acceptance.operation.operation_id)
+    assert op is not None
+    assert op.status is WorkspaceOperationStatus.FAILED
+    assert op.error_code == "managed_object_read_failed"
+    assert op.error == "managed_object_read_failed"
+    source = repo.get_source(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        source_id=acceptance.source.source_id,
+    )
+    assert source is not None
+    assert source.status is WorkspaceSourceStatus.ERROR
+    mf = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert mf is not None
+    assert mf.status is ManagedFileObjectStatus.ERROR
+    assert mf.error_code == "managed_object_read_failed"
+    assert (
+        queue.get_status(
+            TaskHandle(
+                task_id=acceptance.operation.queue_task_id or "",
+                provider=acceptance.operation.queue_provider or "",
+                tenant_id=TENANT,
+            )
+        )
+        is TaskStatus.SUCCEEDED
+    )
+    assert not repo.list_active_ingestion_locators()
+    durable = (
+        str(op.error)
+        + str(op.error_code)
+        + str(mf.error_code)
+        + str(source.status.value)
+    )
+    for forbidden in ("bucket=private", "token=secret", "RuntimeError"):
+        assert forbidden not in durable
+
+
+def test_malformed_locator_recovery_isolation() -> None:
+    from intergrax.integrations.contracts.document_store import DocumentRecord
+
+    repo, _, managed, queue, _, _, _ = _build_intake()
+    intake = KnowledgeIntakeService(
+        repo,
+        ManagedFileSourceResolver(repo),
+        ToolWiringContext(message_bus=queue),
+    )
+    recovery = KnowledgeIngestionRecoveryService(repo, intake)
+
+    accepted = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="rec-ok",
+        upload=ManagedFileUpload("ok.pdf", "application/pdf", b"ok"),
+    )
+    processing = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="rec-proc",
+        upload=ManagedFileUpload("p.pdf", "application/pdf", b"p"),
+    )
+    repo.put_operation(
+        processing.operation.model_copy(update={"status": WorkspaceOperationStatus.PROCESSING})
+    )
+    terminal = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="rec-term",
+        upload=ManagedFileUpload("t.pdf", "application/pdf", b"t"),
+    )
+    repo.put_operation(
+        terminal.operation.model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _now(),
+            }
+        )
+    )
+    repo.put_active_ingestion_locator(
+        ActiveKnowledgeIngestionLocator(
+            operation_id=terminal.operation.operation_id,
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            created_at=_now(),
+        )
+    )
+    partition = "lkw.managed_workspace:active_knowledge_ingestion"
+    repo.document_store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key="malformed-missing-tenant",
+            data={"operation_id": "malformed-1", "workspace_id": WORKSPACE},
+        )
+    )
+
+    result = recovery.recover_all()
+    assert result.errors >= 1
+    assert result.stale_locators_removed >= 1
+    assert result.processing_failed >= 1
+    failed_p = repo.get_operation(
+        tenant_id=TENANT, operation_id=processing.operation.operation_id
+    )
+    assert failed_p is not None
+    assert failed_p.status is WorkspaceOperationStatus.FAILED
+    assert failed_p.error_code == "interrupted_by_host_restart"
+    assert accepted.operation.queue_task_id
+    remaining = {
+        loc.operation_id for loc in repo.list_active_ingestion_locators()
+    }
+    assert "malformed-missing-tenant" not in remaining
+    assert terminal.operation.operation_id not in remaining
+
+
+def test_malformed_locator_delete_failure_still_recovers() -> None:
+    from intergrax.integrations.contracts.document_store import DocumentRecord
+
+    store = InMemoryDocumentStore()
+    original_delete = store.delete
+
+    def flaky_delete(partition_key: str, row_key: str) -> None:
+        if row_key == "malformed-boom":
+            raise RuntimeError("delete-failed")
+        return original_delete(partition_key, row_key)
+
+    store.delete = flaky_delete  # type: ignore[method-assign]
+    repo = ManagedWorkspaceRepository(store)
+    storage = FakeObjectStorage()
+    queue = DocumentStoreTaskQueue(store)
+    ctx = ToolWiringContext(message_bus=queue)
+    resolver = ManagedFileSourceResolver(repo)
+    intake_svc = KnowledgeIntakeService(repo, resolver, ctx)
+    managed = ManagedFileIntakeService(
+        repo,
+        storage,
+        intake_svc,
+        max_bytes=1024 * 1024,
+        max_batch_files=20,
+    )
+    _seed_workspace(repo)
+    recovery = KnowledgeIngestionRecoveryService(repo, intake_svc)
+
+    processing = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="rec-proc-2",
+        upload=ManagedFileUpload("p.pdf", "application/pdf", b"p"),
+    )
+    repo.put_operation(
+        processing.operation.model_copy(update={"status": WorkspaceOperationStatus.PROCESSING})
+    )
+    partition = "lkw.managed_workspace:active_knowledge_ingestion"
+    repo.document_store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key="malformed-boom",
+            data={
+                "operation_id": "malformed-boom",
+                "tenant_id": TENANT,
+                "workspace_id": WORKSPACE,
+                "created_at": "not-a-timestamp",
+            },
+        )
+    )
+    result = recovery.recover_all()
+    assert result.errors >= 1
+    failed_p = repo.get_operation(
+        tenant_id=TENANT, operation_id=processing.operation.operation_id
+    )
+    assert failed_p is not None
+    assert failed_p.status is WorkspaceOperationStatus.FAILED
+
+
+def test_managed_source_correlation_bind_reuse_and_conflict() -> None:
+    from local_workspace_application.workspaces.knowledge_intake import (
+        KnowledgeInputResolutionError,
+    )
+
+    repo, _, managed, _, _, _, _ = _build_intake()
+    acceptance = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="src-bind",
+        upload=ManagedFileUpload("a.pdf", "application/pdf", b"a"),
+    )
+    resolver = ManagedFileSourceResolver(repo)
+    expected = acceptance.source.source_id
+
+    # Bind from None
+    mf = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert mf is not None
+    repo.put_managed_file(mf.model_copy(update={"source_id": None}))
+    ki = acceptance.knowledge_input.model_copy(update={"source_id": None})
+    resolved = resolver.resolve(knowledge_input=ki, suggested_source_id=expected)
+    assert resolved.source_id == expected
+    rebound = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert rebound is not None
+    assert rebound.source_id == expected
+
+    # Matching ID reused
+    again = resolver.resolve(
+        knowledge_input=acceptance.knowledge_input,
+        suggested_source_id=expected,
+    )
+    assert again.source_id == expected
+    same = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert same is not None
+    assert same.source_id == expected
+
+    # Conflicting managed source_id
+    repo.put_managed_file(same.model_copy(update={"source_id": "wrong-source"}))
+    before_sources = repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE)
+    with pytest.raises(KnowledgeInputResolutionError, match="managed_file_source_conflict"):
+        resolver.resolve(
+            knowledge_input=acceptance.knowledge_input.model_copy(update={"source_id": None}),
+            suggested_source_id=expected,
+        )
+    conflicted = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert conflicted is not None
+    assert conflicted.source_id == "wrong-source"
+    assert repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE) == before_sources
+
+    # KnowledgeInput mismatch
+    with pytest.raises(KnowledgeInputResolutionError, match="managed_file_source_conflict"):
+        resolver.resolve(
+            knowledge_input=acceptance.knowledge_input.model_copy(
+                update={"source_id": "other-source"}
+            ),
+            suggested_source_id=expected,
+        )
+    still = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert still is not None
+    assert still.source_id == "wrong-source"
+
+
+def test_deterministic_operation_id_helper_matches_accept() -> None:
+    from local_workspace_application.workspaces.knowledge_intake import (
+        deterministic_knowledge_operation_id,
+    )
+
+    _, _, managed, _, _, _, _ = _build_intake()
+    acceptance = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="op-id",
+        upload=ManagedFileUpload("a.pdf", "application/pdf", b"a"),
+    )
+    assert acceptance.operation.operation_id == deterministic_knowledge_operation_id(
+        input_id=acceptance.knowledge_input.input_id
+    )
+    assert acceptance.managed_file.operation_id == acceptance.operation.operation_id

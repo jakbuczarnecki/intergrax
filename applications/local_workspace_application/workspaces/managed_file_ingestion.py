@@ -44,7 +44,10 @@ class ManagedObjectMaterializer:
 
     @contextmanager
     def materialize(self, *, managed_file: ManagedFileObject) -> Iterator[Path]:
-        stored = self._object_storage.get(managed_file.storage_key)
+        try:
+            stored = self._object_storage.get(managed_file.storage_key)
+        except Exception:
+            raise KnowledgeIngestionProcessorError("managed_object_read_failed") from None
         if stored is None:
             raise KnowledgeIngestionProcessorError("managed_object_missing")
         body = stored.body
@@ -166,6 +169,20 @@ class ManagedFileKnowledgeIngestionProcessor:
                         update={
                             "status": ManagedFileObjectStatus.MISSING,
                             "error_code": "managed_object_missing",
+                            "updated_at": datetime.now(UTC),
+                        }
+                    )
+                )
+            elif exc.error_code in {
+                "managed_object_read_failed",
+                "managed_object_size_mismatch",
+                "managed_object_hash_mismatch",
+            }:
+                self._repository.put_managed_file(
+                    managed.model_copy(
+                        update={
+                            "status": ManagedFileObjectStatus.ERROR,
+                            "error_code": exc.error_code,
                             "updated_at": datetime.now(UTC),
                         }
                     )

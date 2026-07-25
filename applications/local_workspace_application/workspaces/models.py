@@ -299,11 +299,19 @@ class IntakeBatchItem(BaseModel):
     item_idempotency_key: str = Field(..., min_length=1)
     safe_file_name: str = Field(..., min_length=1)
     status: IntakeBatchItemStatus
+    request_fingerprint: str = Field(..., min_length=1)
     input_id: str | None = None
     source_id: str | None = None
     operation_id: str | None = None
     error_code: str | None = None
     content_hash: str | None = None
+
+    @field_validator("request_fingerprint")
+    @classmethod
+    def _validate_request_fingerprint(cls, value: str) -> str:
+        if _CONTENT_HASH_RE.fullmatch(value) is None:
+            raise ValueError("request_fingerprint_invalid")
+        return value
 
     @model_validator(mode="after")
     def _validate_item_state(self) -> Self:

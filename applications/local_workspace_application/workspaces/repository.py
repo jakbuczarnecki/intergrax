@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TypeVar
 
 from pydantic import BaseModel
@@ -23,6 +24,13 @@ from local_workspace_application.workspaces.models import (
 )
 
 T = TypeVar("T", bound=BaseModel)
+
+
+@dataclass(frozen=True)
+class ActiveKnowledgeIngestionLocatorScan:
+    locators: tuple[ActiveKnowledgeIngestionLocator, ...]
+    malformed_seen: int
+    malformed_removed: int
 
 _ENTITY_WORKSPACE = "workspace"
 _ENTITY_SOURCE = "source"
@@ -529,16 +537,40 @@ class ManagedWorkspaceRepository:
         )
         return locator
 
+    def scan_active_ingestion_locators(
+        self,
+        *,
+        limit: int = 5000,
+    ) -> ActiveKnowledgeIngestionLocatorScan:
+        result = self._store.query(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, limit=limit)
+        locators: list[ActiveKnowledgeIngestionLocator] = []
+        malformed_seen = 0
+        malformed_removed = 0
+        for doc in result.documents:
+            try:
+                locators.append(
+                    ActiveKnowledgeIngestionLocator.model_validate(dict(doc.data))
+                )
+            except Exception:  # noqa: BLE001 - isolate malformed locator rows
+                malformed_seen += 1
+                try:
+                    self._store.delete(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, doc.row_key)
+                    malformed_removed += 1
+                except Exception:  # noqa: BLE001 - continue scan after delete failure
+                    pass
+        locators.sort(key=lambda item: (item.created_at, item.operation_id))
+        return ActiveKnowledgeIngestionLocatorScan(
+            locators=tuple(locators),
+            malformed_seen=malformed_seen,
+            malformed_removed=malformed_removed,
+        )
+
     def list_active_ingestion_locators(
         self,
         *,
         limit: int = 5000,
     ) -> list[ActiveKnowledgeIngestionLocator]:
-        return self._list(
-            _ACTIVE_KNOWLEDGE_INGESTION_PARTITION,
-            ActiveKnowledgeIngestionLocator,
-            limit=limit,
-        )
+        return list(self.scan_active_ingestion_locators(limit=limit).locators)
 
     def delete_active_ingestion_locator(self, operation_id: str) -> None:
         self._store.delete(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, operation_id)
