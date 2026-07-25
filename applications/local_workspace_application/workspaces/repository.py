@@ -10,10 +10,12 @@ from pydantic import BaseModel
 
 from intergrax.integrations.contracts.document_store import DocumentRecord, DocumentStore
 from local_workspace_application.workspaces.models import (
+    KnowledgeInput,
     Workspace,
     WorkspaceDocumentReference,
     WorkspaceOperation,
     WorkspaceOperationStatus,
+    WorkspaceOperationType,
     WorkspaceSource,
 )
 
@@ -23,6 +25,7 @@ _ENTITY_WORKSPACE = "workspace"
 _ENTITY_SOURCE = "source"
 _ENTITY_OPERATION = "operation"
 _ENTITY_DOCUMENT = "document"
+_ENTITY_KNOWLEDGE_INPUT = "knowledge_input"
 
 
 def _partition(tenant_id: str, entity: str) -> str:
@@ -266,6 +269,77 @@ class ManagedWorkspaceRepository:
 
     def list_operations(self, *, tenant_id: str) -> list[WorkspaceOperation]:
         return self._list(_partition(tenant_id, _ENTITY_OPERATION), WorkspaceOperation)
+
+    def list_ingestion_operations(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        statuses: set[WorkspaceOperationStatus] | None = None,
+    ) -> list[WorkspaceOperation]:
+        items = [
+            op
+            for op in self.list_operations(tenant_id=tenant_id)
+            if op.workspace_id == workspace_id
+            and op.operation_type is WorkspaceOperationType.KNOWLEDGE_INGESTION
+            and (statuses is None or op.status in statuses)
+        ]
+        return sorted(items, key=lambda item: item.created_at or item.operation_id)
+
+    # --- Knowledge Input ---
+
+    def put_knowledge_input(self, knowledge_input: KnowledgeInput) -> KnowledgeInput:
+        self._put(
+            _partition(knowledge_input.tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+            f"{knowledge_input.workspace_id}:{knowledge_input.input_id}",
+            knowledge_input,
+        )
+        return knowledge_input
+
+    def get_knowledge_input(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        input_id: str,
+    ) -> KnowledgeInput | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+            f"{workspace_id}:{input_id}",
+            KnowledgeInput,
+        )
+
+    def list_knowledge_inputs(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[KnowledgeInput]:
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+            limit=500,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        items = [KnowledgeInput.model_validate(dict(doc.data)) for doc in result.documents]
+        return sorted(items, key=lambda item: item.created_at)
+
+    def delete_knowledge_inputs_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        deleted = 0
+        for knowledge_input in self.list_knowledge_inputs(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            self._store.delete(
+                _partition(tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+                f"{workspace_id}:{knowledge_input.input_id}",
+            )
+            deleted += 1
+        return deleted
 
     def find_active_sync_operation(
         self,

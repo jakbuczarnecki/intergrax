@@ -122,6 +122,10 @@ class ManagedWorkspaceService:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
+        self._repository.delete_knowledge_inputs_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
         self._ask_repository.delete_runs_for_workspace(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
