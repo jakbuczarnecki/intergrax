@@ -39,6 +39,10 @@ class KnowledgeIntakeDispatchError(Exception):
     """MessageBus enqueue failed after durable operation creation."""
 
 
+class KnowledgeIntakeStateConflict(Exception):
+    """Existing durable state conflicts with deterministic Knowledge Intake identity."""
+
+
 class KnowledgeInputSourceResolver(Protocol):
     def resolve(
         self,
@@ -277,6 +281,11 @@ class KnowledgeIntakeService:
                 source_id=knowledge_input.source_id,
             )
             if existing is not None:
+                if (
+                    existing.tenant_id != knowledge_input.tenant_id
+                    or existing.workspace_id != knowledge_input.workspace_id
+                ):
+                    raise KnowledgeIntakeStateConflict("knowledge_input_source_state_conflict")
                 return existing
 
         try:
@@ -342,11 +351,23 @@ class KnowledgeIntakeService:
         knowledge_input: KnowledgeInput,
         source: WorkspaceSource,
     ) -> WorkspaceOperation:
+        expected_operation_id = _operation_id(input_id=knowledge_input.input_id)
+        if knowledge_input.operation_id != expected_operation_id:
+            raise KnowledgeIntakeStateConflict("knowledge_input_operation_id_conflict")
+
         existing = self._repository.get_operation(
             tenant_id=knowledge_input.tenant_id,
             operation_id=knowledge_input.operation_id,
         )
         if existing is not None:
+            if (
+                existing.tenant_id != knowledge_input.tenant_id
+                or existing.workspace_id != knowledge_input.workspace_id
+                or existing.operation_type is not WorkspaceOperationType.KNOWLEDGE_INGESTION
+                or existing.input_id != knowledge_input.input_id
+                or existing.source_id != source.source_id
+            ):
+                raise KnowledgeIntakeStateConflict("knowledge_intake_operation_state_conflict")
             return existing
         now = _utc_now()
         operation = WorkspaceOperation(

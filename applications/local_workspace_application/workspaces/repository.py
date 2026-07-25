@@ -357,6 +357,7 @@ class ManagedWorkspaceRepository:
             for op in self.list_operations(tenant_id=tenant_id)
             if op.workspace_id == workspace_id
             and op.source_id == source_id
+            and op.operation_type is WorkspaceOperationType.SOURCE_SYNC
             and op.status in active
         ]
         if not candidates:

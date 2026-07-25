@@ -23,6 +23,7 @@ from local_workspace_application.workspaces.models import (
     WorkspaceOperation,
     WorkspaceOperationStatus,
     WorkspaceSourceStatus,
+    WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
@@ -88,6 +89,8 @@ class ManagedWorkspaceSyncService:
         )
         if source is None:
             return self._fail(operation, "source_not_found")
+        if source.source_type is not WorkspaceSourceType.LOCAL_FOLDER:
+            return self._fail(operation, "source_sync_unsupported_for_source_type")
 
         started = _utc_now()
         operation = operation.model_copy(

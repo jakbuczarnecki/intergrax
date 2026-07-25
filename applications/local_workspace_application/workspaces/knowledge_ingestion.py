@@ -203,6 +203,13 @@ class KnowledgeIngestionService:
                 source=source,
             )
 
+        if not isinstance(result, KnowledgeIngestionResult):
+            return self._fail(
+                operation,
+                error_code="invalid_processor_result",
+                source=source,
+            )
+
         completed = _utc_now()
         operation = operation.model_copy(
             update={
@@ -290,6 +297,7 @@ def make_knowledge_ingestion_worker_handler(
                     "knowledge_ingestion_invalid_result",
                     "knowledge_ingestion_invalid_result",
                 )
+            # A durably recorded domain failure is a successfully handled queue task.
             return ToolExecutionResult.ok(
                 KnowledgeIngestionWorkerOutput(
                     operation_id=operation.operation_id,

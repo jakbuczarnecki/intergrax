@@ -4,11 +4,40 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+_SUBMISSION_METADATA_MAX_ENTRIES = 16
+_SUBMISSION_METADATA_MAX_KEY_LEN = 64
+_SUBMISSION_METADATA_MAX_VALUE_LEN = 256
+_SUBMISSION_METADATA_KEY_RE = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
+_SUBMISSION_METADATA_SENSITIVE_SEGMENTS = frozenset(
+    {
+        "token",
+        "secret",
+        "password",
+        "passwd",
+        "credential",
+        "credentials",
+        "authorization",
+        "auth",
+        "api_key",
+        "apikey",
+        "url",
+        "uri",
+        "path",
+        "filepath",
+        "file_path",
+        "local_path",
+    }
+)
+_SUBMISSION_METADATA_SCHEME_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://")
+_SUBMISSION_METADATA_WINDOWS_PATH_RE = re.compile(r"(?i)^[a-z]:[\\/]")
+_SUBMISSION_METADATA_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
 class WorkspaceStatus(StrEnum):
@@ -137,15 +166,50 @@ class KnowledgeInput(BaseModel):
     updated_at: datetime
     error_code: str | None = None
 
-    @field_validator("submission_metadata")
+    @field_validator("submission_metadata", mode="before")
     @classmethod
-    def _validate_submission_metadata(cls, value: dict[str, str]) -> dict[str, str]:
+    def _validate_submission_metadata(cls, value: Any) -> dict[str, str]:
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("submission_metadata_must_be_string_map")
+        if len(value) > _SUBMISSION_METADATA_MAX_ENTRIES:
+            raise ValueError("submission_metadata_too_many_entries")
+        validated: dict[str, str] = {}
         for key, item in value.items():
             if not isinstance(key, str) or not isinstance(item, str):
-                raise ValueError("submission_metadata_must_be_str_values")
-            if "\n" in item or "\r" in item:
-                raise ValueError("submission_metadata_multiline_forbidden")
-        return value
+                raise ValueError("submission_metadata_must_be_string_map")
+            if len(key) > _SUBMISSION_METADATA_MAX_KEY_LEN:
+                raise ValueError("submission_metadata_key_too_long")
+            if len(item) > _SUBMISSION_METADATA_MAX_VALUE_LEN:
+                raise ValueError("submission_metadata_value_too_long")
+            if _SUBMISSION_METADATA_KEY_RE.fullmatch(key) is None:
+                raise ValueError("submission_metadata_invalid_key")
+            segments = re.split(r"[._-]", key)
+            if any(segment in _SUBMISSION_METADATA_SENSITIVE_SEGMENTS for segment in segments):
+                raise ValueError("submission_metadata_sensitive_key_forbidden")
+            if _is_unsafe_submission_metadata_value(item):
+                raise ValueError("submission_metadata_unsafe_value")
+            validated[key] = item
+        return validated
+
+
+def _is_unsafe_submission_metadata_value(value: str) -> bool:
+    if _SUBMISSION_METADATA_CONTROL_RE.search(value) is not None:
+        return True
+    if _SUBMISSION_METADATA_SCHEME_RE.search(value) is not None:
+        return True
+    if _SUBMISSION_METADATA_WINDOWS_PATH_RE.match(value) is not None:
+        return True
+    if value.startswith("\\\\"):
+        return True
+    if value.startswith("/"):
+        return True
+    if value.startswith("~/") or value.startswith("~\\"):
+        return True
+    if value.casefold().startswith("bearer "):
+        return True
+    return False
 
 
 class WorkspaceDocumentReference(BaseModel):
