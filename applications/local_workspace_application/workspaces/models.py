@@ -25,19 +25,32 @@ _SUBMISSION_METADATA_SENSITIVE_SEGMENTS = frozenset(
         "credentials",
         "authorization",
         "auth",
-        "api_key",
         "apikey",
         "url",
         "uri",
         "path",
         "filepath",
-        "file_path",
-        "local_path",
+    }
+)
+_SUBMISSION_METADATA_SENSITIVE_TOKEN_SEQUENCES = frozenset(
+    {
+        ("api", "key"),
+        ("file", "path"),
+        ("local", "path"),
     }
 )
 _SUBMISSION_METADATA_SCHEME_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://")
 _SUBMISSION_METADATA_WINDOWS_PATH_RE = re.compile(r"(?i)^[a-z]:[\\/]")
 _SUBMISSION_METADATA_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _contains_sensitive_token_sequence(tokens: tuple[str, ...]) -> bool:
+    for sequence in _SUBMISSION_METADATA_SENSITIVE_TOKEN_SEQUENCES:
+        width = len(sequence)
+        for start in range(len(tokens) - width + 1):
+            if tokens[start : start + width] == sequence:
+                return True
+    return False
 
 
 class WorkspaceStatus(StrEnum):
@@ -185,8 +198,10 @@ class KnowledgeInput(BaseModel):
                 raise ValueError("submission_metadata_value_too_long")
             if _SUBMISSION_METADATA_KEY_RE.fullmatch(key) is None:
                 raise ValueError("submission_metadata_invalid_key")
-            segments = re.split(r"[._-]", key)
-            if any(segment in _SUBMISSION_METADATA_SENSITIVE_SEGMENTS for segment in segments):
+            tokens = tuple(re.split(r"[._-]", key))
+            if any(token in _SUBMISSION_METADATA_SENSITIVE_SEGMENTS for token in tokens):
+                raise ValueError("submission_metadata_sensitive_key_forbidden")
+            if _contains_sensitive_token_sequence(tokens):
                 raise ValueError("submission_metadata_sensitive_key_forbidden")
             if _is_unsafe_submission_metadata_value(item):
                 raise ValueError("submission_metadata_unsafe_value")

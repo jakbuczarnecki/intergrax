@@ -824,6 +824,36 @@ def test_safe_submission_metadata_accepted() -> None:
 
 
 @pytest.mark.parametrize(
+    "metadata",
+    [
+        {
+            "pathology_label": "Research",
+            "author": "Artur",
+            "authority_label": "Internal",
+            "api_version": "v1",
+            "key_label": "Primary",
+            "localization_label": "Polish",
+            "filename_label": "Contract",
+        },
+    ],
+)
+def test_innocent_compound_metadata_keys_accepted(metadata: dict[str, str]) -> None:
+    knowledge_input = KnowledgeInput(
+        input_id="ki:meta-innocent",
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_kind=KnowledgeInputKind.MANAGED_FILE,
+        idempotency_key="meta-innocent",
+        operation_id="op:meta-innocent",
+        status=KnowledgeInputStatus.ACCEPTED,
+        submission_metadata=metadata,
+        created_at=_now(),
+        updated_at=_now(),
+    )
+    assert knowledge_input.submission_metadata == metadata
+
+
+@pytest.mark.parametrize(
     ("metadata", "code"),
     [
         ({"label": 123}, "submission_metadata_must_be_string_map"),
@@ -831,6 +861,15 @@ def test_safe_submission_metadata_accepted() -> None:
         ({"Label": "x"}, "submission_metadata_invalid_key"),
         ({"access_token": "x"}, "submission_metadata_sensitive_key_forbidden"),
         ({"source.url": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"api_key": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"source.api_key": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"provider-api-key": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"file_path": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"source.file_path": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"provider-file-path": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"local_path": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"source.local_path": "x"}, "submission_metadata_sensitive_key_forbidden"),
+        ({"provider-local-path": "x"}, "submission_metadata_sensitive_key_forbidden"),
         ({"label": "https://example.com/file"}, "submission_metadata_unsafe_value"),
         ({"label": r"C:\secret\file.txt"}, "submission_metadata_unsafe_value"),
         ({"label": "/home/user/file.txt"}, "submission_metadata_unsafe_value"),
