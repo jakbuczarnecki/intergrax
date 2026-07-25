@@ -21,7 +21,7 @@ Two evaluation paths — start with the lighter lab path, then run the full prod
 | Path | Best for | Requires |
 |------|----------|----------|
 | **[Quick start](#quick-start)** | First contact — clone, verify, lab run, trace inspect | `uv sync`, lab host on `:8090` |
-| **[LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)** | Full Tier-3 product proof — RAG, observability export, Elasticsearch, Kibana | Docker Compose, prerequisites above |
+| **[LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)** | Full Tier-3 product proof — RAG, observability export, Elasticsearch, Kibana, Slack, qdrant, other vendors | Docker Compose, prerequisites above |
 
 **Quick start** runs the lab host and a traced Echo capability run. **LKW platform proof** validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
 
