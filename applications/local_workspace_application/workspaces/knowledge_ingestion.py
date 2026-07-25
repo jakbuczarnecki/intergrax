@@ -109,6 +109,17 @@ def _safe_error_message(exc: BaseException) -> str:
     return first_line[:500]
 
 
+class KnowledgeIngestionProcessorError(RuntimeError):
+    """Stable processor failure with a durable domain error code."""
+
+    def __init__(self, error_code: str) -> None:
+        code = (error_code or "").strip()
+        if not code:
+            raise ValueError("error_code_required")
+        self.error_code = code
+        super().__init__(code)
+
+
 class KnowledgeIngestionService:
     """Executes a durable Knowledge Ingestion operation via a processor port."""
 
@@ -185,6 +196,7 @@ class KnowledgeIngestionService:
             }
         )
         self._repository.put_operation(operation)
+        self._ensure_active_locator(operation)
         self._repository.put_source(
             source.model_copy(update={"status": WorkspaceSourceStatus.PROCESSING})
         )
@@ -194,6 +206,13 @@ class KnowledgeIngestionService:
                 knowledge_input=knowledge_input,
                 source=source,
                 operation=operation,
+            )
+        except KnowledgeIngestionProcessorError as exc:
+            return self._fail(
+                operation,
+                error_code=exc.error_code,
+                error=exc.error_code,
+                source=source,
             )
         except Exception as exc:  # noqa: BLE001 - persist fail-closed product state
             return self._fail(
@@ -232,7 +251,29 @@ class KnowledgeIngestionService:
                 }
             )
         )
+        self._clear_active_locator(operation.operation_id)
         return operation
+
+    def _ensure_active_locator(self, operation: WorkspaceOperation) -> None:
+        from local_workspace_application.workspaces.models import ActiveKnowledgeIngestionLocator
+
+        if operation.status not in {
+            WorkspaceOperationStatus.ACCEPTED,
+            WorkspaceOperationStatus.QUEUED,
+            WorkspaceOperationStatus.PROCESSING,
+        }:
+            return
+        self._repository.put_active_ingestion_locator(
+            ActiveKnowledgeIngestionLocator(
+                operation_id=operation.operation_id,
+                tenant_id=operation.tenant_id,
+                workspace_id=operation.workspace_id,
+                created_at=operation.created_at or _utc_now(),
+            )
+        )
+
+    def _clear_active_locator(self, operation_id: str) -> None:
+        self._repository.delete_active_ingestion_locator(operation_id)
 
     def _fail(
         self,
@@ -255,6 +296,7 @@ class KnowledgeIngestionService:
             self._repository.put_source(
                 source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
             )
+        self._clear_active_locator(failed.operation_id)
         return failed
 
 

@@ -171,3 +171,27 @@ class WorkspaceAskResponseV1(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     error: WorkspaceAskErrorV1 | None = None
+
+
+class ManagedFileBatchItemAcceptedV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    position: int
+    file_name: str
+    status: Literal["accepted", "failed"]
+    input_id: str | None = None
+    source_id: str | None = None
+    operation_id: str | None = None
+    operation_status: str | None = None
+    error_code: str | None = None
+
+
+class ManagedFileBatchAcceptedV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    batch_id: str
+    workspace_id: str
+    status: Literal["accepted", "partial", "failed"]
+    accepted_count: int
+    failed_count: int
+    items: list[ManagedFileBatchItemAcceptedV1]

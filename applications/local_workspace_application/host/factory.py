@@ -186,6 +186,7 @@ def create_local_workspace_backend_app(
         settings=resolved_settings,
         prefix=resolved_settings.route_prefix,
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
+        object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
     )
     mount_local_workspace_readiness_routes(
         app,

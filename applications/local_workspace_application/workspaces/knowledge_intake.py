@@ -16,6 +16,7 @@ from local_workspace_application.workspaces.knowledge_ingestion import (
     build_knowledge_ingestion_enqueue_input,
 )
 from local_workspace_application.workspaces.models import (
+    ActiveKnowledgeIngestionLocator,
     KnowledgeInput,
     KnowledgeInputKind,
     KnowledgeInputStatus,
@@ -68,8 +69,22 @@ def _stable_id(prefix: str, *parts: str) -> str:
     return f"{prefix}:{digest}"
 
 
-def _input_id(*, tenant_id: str, workspace_id: str, idempotency_key: str) -> str:
+def deterministic_knowledge_input_id(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    idempotency_key: str,
+) -> str:
+    """Public stable Knowledge Input identity (same algorithm as 1B-1)."""
     return _stable_id("ki", tenant_id, workspace_id, idempotency_key)
+
+
+def _input_id(*, tenant_id: str, workspace_id: str, idempotency_key: str) -> str:
+    return deterministic_knowledge_input_id(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        idempotency_key=idempotency_key,
+    )
 
 
 def _operation_id(*, input_id: str) -> str:
@@ -368,6 +383,7 @@ class KnowledgeIntakeService:
                 or existing.source_id != source.source_id
             ):
                 raise KnowledgeIntakeStateConflict("knowledge_intake_operation_state_conflict")
+            self._ensure_active_locator(existing)
             return existing
         now = _utc_now()
         operation = WorkspaceOperation(
@@ -380,7 +396,28 @@ class KnowledgeIntakeService:
             input_id=knowledge_input.input_id,
             created_at=now,
         )
-        return self._repository.put_operation(operation)
+        persisted = self._repository.put_operation(operation)
+        self._ensure_active_locator(persisted)
+        return persisted
+
+    def _ensure_active_locator(self, operation: WorkspaceOperation) -> None:
+        if operation.status not in {
+            WorkspaceOperationStatus.ACCEPTED,
+            WorkspaceOperationStatus.QUEUED,
+            WorkspaceOperationStatus.PROCESSING,
+        }:
+            return
+        self._repository.put_active_ingestion_locator(
+            ActiveKnowledgeIngestionLocator(
+                operation_id=operation.operation_id,
+                tenant_id=operation.tenant_id,
+                workspace_id=operation.workspace_id,
+                created_at=operation.created_at or _utc_now(),
+            )
+        )
+
+    def _clear_active_locator(self, operation_id: str) -> None:
+        self._repository.delete_active_ingestion_locator(operation_id)
 
     def _dispatch(
         self,
@@ -394,6 +431,8 @@ class KnowledgeIntakeService:
             WorkspaceOperationStatus.FAILED,
             WorkspaceOperationStatus.PROCESSING,
         }:
+            if operation.status is WorkspaceOperationStatus.PROCESSING:
+                self._ensure_active_locator(operation)
             return operation
 
         if operation.status not in {
@@ -401,6 +440,8 @@ class KnowledgeIntakeService:
             WorkspaceOperationStatus.QUEUED,
         }:
             return operation
+
+        self._ensure_active_locator(operation)
 
         job = KnowledgeIngestionJob(
             tenant_id=knowledge_input.tenant_id,
@@ -424,6 +465,7 @@ class KnowledgeIntakeService:
                 }
             )
             self._repository.put_operation(failed)
+            self._clear_active_locator(failed.operation_id)
             raise KnowledgeIntakeDispatchError(type(exc).__name__) from None
 
         queued = operation.model_copy(
@@ -436,4 +478,6 @@ class KnowledgeIntakeService:
                 "completed_at": None,
             }
         )
-        return self._repository.put_operation(queued)
+        persisted = self._repository.put_operation(queued)
+        self._ensure_active_locator(persisted)
+        return persisted

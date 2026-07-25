@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.managed_files import ManagedFileCleanupPort
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceOperation,
@@ -43,6 +44,7 @@ class ManagedWorkspaceService:
         shadow_roots: tuple[Path, ...] = (),
         ask_repository: WorkspaceAskRepository | None = None,
         vector_cleanup: WorkspaceVectorCleanupPort | None = None,
+        managed_file_cleanup: ManagedFileCleanupPort | None = None,
     ) -> None:
         self._repository = repository
         self._allowlist_roots = allowlist_roots
@@ -51,6 +53,7 @@ class ManagedWorkspaceService:
             repository.document_store
         )
         self._vector_cleanup = vector_cleanup
+        self._managed_file_cleanup = managed_file_cleanup
 
     @property
     def repository(self) -> ManagedWorkspaceRepository:
@@ -109,6 +112,12 @@ class ManagedWorkspaceService:
                 )
             except RuntimeError:
                 logger.warning("workspace_delete vector_cleanup_failed continuing")
+
+        if self._managed_file_cleanup is not None:
+            self._managed_file_cleanup.delete_workspace_files(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
 
         self._repository.delete_sources_for_workspace(
             tenant_id=tenant_id,

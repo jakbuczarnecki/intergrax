@@ -238,3 +238,114 @@ class WorkspaceDocumentReference(BaseModel):
     file_name: str = Field(..., min_length=1)
     content_hash: str = Field(..., min_length=1)
     indexed_at: datetime
+
+
+class ManagedFileObjectStatus(StrEnum):
+    STORED = "stored"
+    ACCEPTED = "accepted"
+    ERROR = "error"
+    MISSING = "missing"
+    DELETED = "deleted"
+
+
+_CONTENT_HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+class ManagedFileObject(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    object_id: str = Field(..., min_length=1)
+    tenant_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    input_id: str = Field(..., min_length=1)
+    operation_id: str = Field(..., min_length=1)
+    source_id: str | None = None
+    storage_key: str = Field(..., min_length=1)
+    safe_file_name: str = Field(..., min_length=1)
+    content_type: str = Field(..., min_length=1)
+    size_bytes: int = Field(..., ge=1)
+    content_hash: str = Field(..., min_length=1)
+    status: ManagedFileObjectStatus
+    created_at: datetime
+    updated_at: datetime
+    error_code: str | None = None
+
+    @field_validator("content_hash")
+    @classmethod
+    def _validate_content_hash(cls, value: str) -> str:
+        if _CONTENT_HASH_RE.fullmatch(value) is None:
+            raise ValueError("content_hash_invalid")
+        return value
+
+
+class IntakeBatchStatus(StrEnum):
+    ACCEPTING = "accepting"
+    ACCEPTED = "accepted"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
+class IntakeBatchItemStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    FAILED = "failed"
+
+
+class IntakeBatchItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    position: int = Field(..., ge=0)
+    item_id: str = Field(..., min_length=1)
+    item_idempotency_key: str = Field(..., min_length=1)
+    safe_file_name: str = Field(..., min_length=1)
+    status: IntakeBatchItemStatus
+    input_id: str | None = None
+    source_id: str | None = None
+    operation_id: str | None = None
+    error_code: str | None = None
+    content_hash: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_item_state(self) -> Self:
+        if self.status is IntakeBatchItemStatus.ACCEPTED:
+            if not self.input_id or not self.source_id or not self.operation_id:
+                raise ValueError("accepted_item_requires_identities")
+        if self.status is IntakeBatchItemStatus.FAILED and not self.error_code:
+            raise ValueError("failed_item_requires_error_code")
+        return self
+
+
+class IntakeBatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    batch_id: str = Field(..., min_length=1)
+    tenant_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    idempotency_key: str = Field(..., min_length=1)
+    status: IntakeBatchStatus
+    items: list[IntakeBatchItem]
+    created_at: datetime
+    updated_at: datetime
+
+    @model_validator(mode="after")
+    def _validate_batch(self) -> Self:
+        if not self.items:
+            raise ValueError("intake_batch_requires_items")
+        positions = [item.position for item in self.items]
+        if len(positions) != len(set(positions)):
+            raise ValueError("intake_batch_positions_not_unique")
+        if sorted(positions) != list(range(len(self.items))):
+            raise ValueError("intake_batch_positions_not_contiguous")
+        item_ids = [item.item_id for item in self.items]
+        if len(item_ids) != len(set(item_ids)):
+            raise ValueError("intake_batch_item_ids_not_unique")
+        return self
+
+
+class ActiveKnowledgeIngestionLocator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    operation_id: str = Field(..., min_length=1)
+    tenant_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    created_at: datetime

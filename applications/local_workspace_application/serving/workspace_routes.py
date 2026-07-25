@@ -7,9 +7,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
+from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile, status
 
 from intergrax.fastapi_core.context import get_request_context
+from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
@@ -19,6 +20,8 @@ from local_workspace_application.serving.run_metadata import attach_lkw_evidence
 from local_workspace_application.serving.source_projection import safe_source_label
 from local_workspace_application.serving.workspace_schemas import (
     CreateWorkspaceRequestV1,
+    ManagedFileBatchAcceptedV1,
+    ManagedFileBatchItemAcceptedV1,
     OperationResponseV1,
     RegisterSourceRequestV1,
     SourceListResponseV1,
@@ -46,7 +49,29 @@ from local_workspace_application.workspaces.ask_service import (
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
 )
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.ingestion_recovery import (
+    KnowledgeIngestionRecoveryService,
+)
+from local_workspace_application.workspaces.knowledge_ingestion import KnowledgeIngestionService
+from local_workspace_application.workspaces.knowledge_intake import KnowledgeIntakeService
+from local_workspace_application.workspaces.managed_file_ingestion import (
+    ManagedFileKnowledgeIngestionProcessor,
+    ManagedObjectMaterializer,
+)
+from local_workspace_application.workspaces.managed_files import (
+    IntakeBatchIdempotencyConflict,
+    ManagedFileIntakeService,
+    ManagedFileObjectCleanup,
+    ManagedFileSourceResolver,
+    ManagedFileUpload,
+    ManagedFileValidationError,
+)
 from local_workspace_application.workspaces.models import (
+    IntakeBatchItemStatus,
+    IntakeBatchStatus,
     Workspace,
     WorkspaceOperation,
     WorkspaceOperationStatus,
@@ -153,6 +178,23 @@ def resolve_tenant_id(
     return default_tenant_id
 
 
+async def _read_upload_bounded(upload: UploadFile, *, max_bytes: int) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
+    try:
+        while True:
+            chunk = await upload.read(64 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise ManagedFileValidationError("managed_file_too_large")
+            chunks.append(chunk)
+    finally:
+        await upload.close()
+    return b"".join(chunks)
+
+
 def mount_managed_workspace_routes(
     app: FastAPI,
     *,
@@ -164,12 +206,14 @@ def mount_managed_workspace_routes(
     ask_service: WorkspaceAskService | None = None,
     llm_adapter: Any | None = None,
     vectorstore_manager: Any | None = None,
+    object_storage: ObjectStorage | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
     from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
 
-    allowlist = settings.allowed_read_roots or read_allowlist_roots_from_env()
+    configured = settings.allowed_read_roots or read_allowlist_roots_from_env()
+    allowlist = frozenset(set(configured) | {settings.managed_upload_staging_dir})
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
     if repository is None:
         repository = ManagedWorkspaceRepository(resolve_managed_workspace_document_store())
@@ -177,18 +221,27 @@ def mount_managed_workspace_routes(
     vector_cleanup = None
     if vectorstore_manager is not None:
         vector_cleanup = VectorstoreManagerWorkspaceCleanup(vectorstore_manager)
+
+    managed_file_cleanup = None
+    if object_storage is not None:
+        managed_file_cleanup = ManagedFileObjectCleanup(repository, object_storage)
+
     service = ManagedWorkspaceService(
         repository,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
         shadow_roots=shadow_roots,
         ask_repository=ask_repository,
         vector_cleanup=vector_cleanup,
+        managed_file_cleanup=managed_file_cleanup,
     )
+    indexing_service = WorkspaceDocumentIndexingService(repository, task_executor)
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
+        indexing_service=indexing_service,
     )
+    owns_runtime = sync_runtime is None
     if sync_runtime is None:
         sync_runtime = build_managed_workspace_sync_runtime(
             document_store=repository.document_store,
@@ -196,6 +249,39 @@ def mount_managed_workspace_routes(
             repository=repository,
         )
         app.state.lkw_managed_workspace_sync_runtime = sync_runtime
+
+    managed_file_intake_service: ManagedFileIntakeService | None = None
+    knowledge_intake_service: KnowledgeIntakeService | None = None
+    knowledge_ingestion_service: KnowledgeIngestionService | None = None
+    if object_storage is not None:
+        materializer = ManagedObjectMaterializer(
+            object_storage,
+            Path(settings.managed_upload_staging_dir),
+        )
+        processor = ManagedFileKnowledgeIngestionProcessor(
+            repository,
+            materializer,
+            indexing_service,
+        )
+        knowledge_ingestion_service = KnowledgeIngestionService(repository, processor)
+        sync_runtime.register_knowledge_ingestion_service(knowledge_ingestion_service)
+        source_resolver = ManagedFileSourceResolver(repository)
+        knowledge_intake_service = KnowledgeIntakeService(
+            repository,
+            source_resolver,
+            sync_runtime.wiring_context,
+        )
+        managed_file_intake_service = ManagedFileIntakeService(
+            repository,
+            object_storage,
+            knowledge_intake_service,
+            max_bytes=settings.managed_file_max_bytes,
+            max_batch_files=settings.managed_file_max_batch_files,
+        )
+        recovery = KnowledgeIngestionRecoveryService(repository, knowledge_intake_service)
+        sync_runtime.attach_recovery_service(recovery)
+
+    if owns_runtime:
 
         @app.on_event("startup")
         async def _start_managed_workspace_sync_runtime() -> None:
@@ -222,6 +308,9 @@ def mount_managed_workspace_routes(
     app.state.lkw_managed_workspace_repository = repository
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
     app.state.lkw_ask_service = ask_service
+    app.state.lkw_managed_file_intake_service = managed_file_intake_service
+    app.state.lkw_knowledge_intake_service = knowledge_intake_service
+    app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service
 
     router = APIRouter(prefix=prefix, tags=["local_workspace_managed"])
 
@@ -301,6 +390,135 @@ def mount_managed_workspace_routes(
             ) from exc
         if not deleted:
             raise _not_found()
+
+    @router.post(
+        "/workspaces/{workspace_id}/knowledge/files",
+        response_model=ManagedFileBatchAcceptedV1,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def upload_managed_files(
+        request: Request,
+        workspace_id: str,
+        files: list[UploadFile] = File(...),
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> ManagedFileBatchAcceptedV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        intake: ManagedFileIntakeService | None = getattr(
+            request.app.state, "lkw_managed_file_intake_service", managed_file_intake_service
+        )
+        if intake is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="managed_file_storage_unavailable",
+            )
+        if not idempotency_key or not idempotency_key.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="idempotency_key_required",
+            )
+        if not files:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="managed_file_batch_empty",
+            )
+        if len(files) > settings.managed_file_max_batch_files:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail="managed_file_batch_too_large",
+            )
+        if service.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+
+        uploads: list[ManagedFileUpload] = []
+        for upload in files:
+            file_name = upload.filename or "unnamed.bin"
+            content_type = upload.content_type or "application/octet-stream"
+            try:
+                body = await _read_upload_bounded(
+                    upload,
+                    max_bytes=settings.managed_file_max_bytes,
+                )
+            except ManagedFileValidationError as exc:
+                uploads.append(
+                    ManagedFileUpload(
+                        file_name=file_name,
+                        content_type=content_type,
+                        body=b"",
+                        forced_error_code=exc.error_code,
+                    )
+                )
+                continue
+            uploads.append(
+                ManagedFileUpload(
+                    file_name=file_name,
+                    content_type=content_type,
+                    body=body,
+                )
+            )
+
+        try:
+            batch = intake.accept_many(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                idempotency_key=idempotency_key.strip(),
+                uploads=uploads,
+            )
+        except LookupError:
+            raise _not_found() from None
+        except IntakeBatchIdempotencyConflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="intake_batch_idempotency_conflict",
+            ) from None
+        except ManagedFileValidationError as exc:
+            status_code = status.HTTP_400_BAD_REQUEST
+            if exc.error_code == "managed_file_batch_too_large":
+                status_code = status.HTTP_413_CONTENT_TOO_LARGE
+            raise HTTPException(status_code=status_code, detail=exc.error_code) from None
+
+        status_map = {
+            IntakeBatchStatus.ACCEPTED: "accepted",
+            IntakeBatchStatus.PARTIAL: "partial",
+            IntakeBatchStatus.FAILED: "failed",
+            IntakeBatchStatus.ACCEPTING: "partial",
+        }
+        items: list[ManagedFileBatchItemAcceptedV1] = []
+        for item in batch.items:
+            op_status = None
+            if item.operation_id:
+                operation = repository.get_operation(
+                    tenant_id=tenant_id,
+                    operation_id=item.operation_id,
+                )
+                if operation is not None:
+                    op_status = operation.status.value
+            items.append(
+                ManagedFileBatchItemAcceptedV1(
+                    position=item.position,
+                    file_name=item.safe_file_name,
+                    status=(
+                        "accepted"
+                        if item.status is IntakeBatchItemStatus.ACCEPTED
+                        else "failed"
+                    ),
+                    input_id=item.input_id,
+                    source_id=item.source_id,
+                    operation_id=item.operation_id,
+                    operation_status=op_status,
+                    error_code=item.error_code,
+                )
+            )
+        accepted_count = sum(1 for item in items if item.status == "accepted")
+        failed_count = sum(1 for item in items if item.status == "failed")
+        return ManagedFileBatchAcceptedV1(
+            batch_id=batch.batch_id,
+            workspace_id=batch.workspace_id,
+            status=status_map[batch.status],  # type: ignore[arg-type]
+            accepted_count=accepted_count,
+            failed_count=failed_count,
+            items=items,
+        )
 
     @router.post(
         "/workspaces/{workspace_id}/sources",
