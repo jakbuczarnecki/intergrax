@@ -28,6 +28,7 @@ from local_workspace_application.workspaces.knowledge_intake import (
     KnowledgeIntakeStateConflict,
     _input_id,
     _operation_id,
+    _suggested_source_id,
 )
 from local_workspace_application.workspaces.models import (
     KnowledgeInput,
@@ -305,7 +306,8 @@ def test_deterministic_idempotency() -> None:
     assert first.source.source_id == second.source.source_id
     assert first.operation.operation_id == second.operation.operation_id
     assert first.operation.queue_task_id == second.operation.queue_task_id
-    assert resolver.calls == 1
+    # Resolver runs on every resume, including when KnowledgeInput.source_id already exists.
+    assert resolver.calls == 2
     assert len(repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE)) == 1
     assert (
         len(
@@ -579,7 +581,7 @@ def test_reconcile_workspace_requeues_accepted_operation() -> None:
         idempotency_key="reconcile",
     )
     operation_id = _operation_id(input_id=input_id)
-    source_id = "src:reconcile"
+    source_id = _suggested_source_id(input_id=input_id)
     knowledge_input = KnowledgeInput(
         input_id=input_id,
         tenant_id=TENANT,
@@ -1014,7 +1016,8 @@ def test_existing_operation_correlation_conflict(corrupt: dict[str, object]) -> 
     for key, value in corrupt.items():
         assert getattr(loaded, key) == value
     assert len(repo.list_operations(tenant_id=TENANT)) == ops_before
-    assert resolver.calls == resolver_calls_before
+    # Source resolution runs before operation correlation; no fast-path bypass.
+    assert resolver.calls == resolver_calls_before + 1
     _ = queue
 
 

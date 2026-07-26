@@ -17,6 +17,7 @@ from intergrax.queueing.providers.document_store.colocated_worker import Documen
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingError,
     WorkspaceDocumentIndexingResult,
 )
 from local_workspace_application.workspaces.ingestion_recovery import (
@@ -27,7 +28,10 @@ from local_workspace_application.workspaces.knowledge_ingestion import (
     LKW_KNOWLEDGE_INGESTION_TASK_NAME,
     register_knowledge_ingestion_worker_handler,
 )
-from local_workspace_application.workspaces.knowledge_intake import KnowledgeIntakeService
+from local_workspace_application.workspaces.knowledge_intake import (
+    KnowledgeInputResolutionError,
+    KnowledgeIntakeService,
+)
 from local_workspace_application.workspaces.managed_file_ingestion import (
     ManagedFileKnowledgeIngestionProcessor,
     ManagedObjectMaterializer,
@@ -1152,10 +1156,6 @@ def test_malformed_locator_delete_failure_still_recovers() -> None:
 
 
 def test_managed_source_correlation_bind_reuse_and_conflict() -> None:
-    from local_workspace_application.workspaces.knowledge_intake import (
-        KnowledgeInputResolutionError,
-    )
-
     repo, _, managed, _, _, _, _ = _build_intake()
     acceptance = managed.accept_one(
         tenant_id=TENANT,
@@ -1249,3 +1249,465 @@ def test_deterministic_operation_id_helper_matches_accept() -> None:
         input_id=acceptance.knowledge_input.input_id
     )
     assert acceptance.managed_file.operation_id == acceptance.operation.operation_id
+
+
+def test_fingerprint_canonical_json_removes_nul_ambiguity() -> None:
+    import hashlib
+    import json
+    import re
+
+    body_hash = f"sha256:{hashlib.sha256(b"x").hexdigest()}"
+    fp_a = managed_file_request_fingerprint(
+        raw_file_name="a\0b",
+        raw_content_type="c",
+        size_bytes=1,
+        body_hash=body_hash,
+        request_state="complete",
+    )
+    fp_b = managed_file_request_fingerprint(
+        raw_file_name="a",
+        raw_content_type="b\0c",
+        size_bytes=1,
+        body_hash=body_hash,
+        request_state="complete",
+    )
+    assert fp_a != fp_b
+    assert re.fullmatch(r"sha256:[0-9a-f]{64}", fp_a)
+    assert re.fullmatch(r"sha256:[0-9a-f]{64}", fp_b)
+    again = managed_file_request_fingerprint(
+        raw_file_name="a\0b",
+        raw_content_type="c",
+        size_bytes=1,
+        body_hash=body_hash,
+        request_state="complete",
+    )
+    assert again == fp_a
+    payload = {
+        "body_hash": body_hash,
+        "raw_content_type": "c",
+        "raw_file_name": "a\0b",
+        "request_state": "complete",
+        "size_bytes": 1,
+        "version": 2,
+    }
+    expected = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+    )
+    assert fp_a == expected
+    with pytest.raises(ValueError, match="request_state_invalid"):
+        managed_file_request_fingerprint(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            size_bytes=1,
+            body_hash=body_hash,
+            request_state="unknown",
+        )
+
+
+def test_candidate_invariants_accept_and_reject() -> None:
+    import hashlib
+
+    empty_hash = f"sha256:{hashlib.sha256(b"").hexdigest()}"
+    body = b"%PDF"
+    body_hash = f"sha256:{hashlib.sha256(body).hexdigest()}"
+    ok_fp = managed_file_request_fingerprint(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        size_bytes=len(body),
+        body_hash=body_hash,
+    )
+    ManagedFileBatchCandidate(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        body=body,
+        size_bytes=len(body),
+        body_hash=body_hash,
+        request_fingerprint=ok_fp,
+    )
+    empty_fp = managed_file_request_fingerprint(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        size_bytes=0,
+        body_hash=empty_hash,
+    )
+    ManagedFileBatchCandidate(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        body=b"",
+        size_bytes=0,
+        body_hash=empty_hash,
+        request_fingerprint=empty_fp,
+    )
+    oversized = b"x" * 10
+    oversized_hash = f"sha256:{hashlib.sha256(oversized).hexdigest()}"
+    ManagedFileBatchCandidate(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        body=None,
+        size_bytes=len(oversized),
+        body_hash=oversized_hash,
+        request_fingerprint=managed_file_request_fingerprint(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            size_bytes=len(oversized),
+            body_hash=oversized_hash,
+            request_state="complete",
+        ),
+        preflight_error_code="managed_file_too_large",
+    )
+    ManagedFileBatchCandidate(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        body=None,
+        size_bytes=3,
+        body_hash=f"sha256:{hashlib.sha256(b"abc").hexdigest()}",
+        request_fingerprint=managed_file_request_fingerprint(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            size_bytes=3,
+            body_hash=f"sha256:{hashlib.sha256(b"abc").hexdigest()}",
+            request_state="read_failed",
+        ),
+        preflight_error_code="managed_file_upload_read_failed",
+    )
+
+    with pytest.raises(ValueError, match="candidate_state_invalid"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=body,
+            size_bytes=len(body),
+            body_hash=body_hash,
+            request_fingerprint=ok_fp,
+            preflight_error_code="managed_file_empty",
+        )
+    with pytest.raises(ValueError, match="candidate_state_invalid"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=None,
+            size_bytes=0,
+            body_hash=empty_hash,
+            request_fingerprint=empty_fp,
+            preflight_error_code=None,
+        )
+    with pytest.raises(ValueError, match="preflight_error_code_invalid"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=None,
+            size_bytes=0,
+            body_hash=empty_hash,
+            request_fingerprint=empty_fp,
+            preflight_error_code="not_a_public_code",
+        )
+    with pytest.raises(ValueError, match="body_size_mismatch"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=body,
+            size_bytes=99,
+            body_hash=body_hash,
+            request_fingerprint=ok_fp,
+        )
+    with pytest.raises(ValueError, match="body_hash_mismatch"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=body,
+            size_bytes=len(body),
+            body_hash=empty_hash,
+            request_fingerprint=ok_fp,
+        )
+    with pytest.raises(ValueError, match="request_fingerprint_invalid"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=body,
+            size_bytes=len(body),
+            body_hash=body_hash,
+            request_fingerprint="not-a-digest",
+        )
+    with pytest.raises(ValueError, match="size_bytes_invalid"):
+        ManagedFileBatchCandidate(
+            raw_file_name="a.pdf",
+            raw_content_type="application/pdf",
+            body=None,
+            size_bytes=-1,
+            body_hash=empty_hash,
+            request_fingerprint=empty_fp,
+            preflight_error_code="managed_file_empty",
+        )
+
+
+def test_invalid_body_type_fingerprint_differs_from_empty_bytes() -> None:
+    _, _, managed, _, _, _, _ = _build_intake()
+    invalid = ManagedFileUpload("a.pdf", "application/pdf", bytearray(b""))  # type: ignore[arg-type]
+    empty = ManagedFileUpload("a.pdf", "application/pdf", b"")
+    first = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="inv-body",
+        uploads=[invalid],
+    )
+    second = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="inv-body",
+        uploads=[invalid],
+    )
+    assert first.items[0].error_code == "managed_file_body_required"
+    assert second.batch_id == first.batch_id
+    with pytest.raises(IntakeBatchIdempotencyConflict):
+        managed.accept_many(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            idempotency_key="inv-body",
+            uploads=[empty],
+        )
+    empty_batch = managed.accept_many(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="empty-body",
+        uploads=[empty],
+    )
+    assert empty_batch.items[0].error_code == "managed_file_empty"
+    assert empty_batch.items[0].request_fingerprint != first.items[0].request_fingerprint
+
+
+def test_intake_service_validates_managed_source_on_existing_source() -> None:
+    repo, _, managed, queue, _, _, _ = _build_intake()
+    intake = managed._knowledge_intake  # noqa: SLF001
+    acceptance = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="src-svc",
+        upload=ManagedFileUpload("a.pdf", "application/pdf", b"a"),
+    )
+    expected = acceptance.source.source_id
+    ops_before = len(repo.list_operations(tenant_id=TENANT))
+    sources_before = repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE)
+    task_before = acceptance.operation.queue_task_id
+
+    mf = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert mf is not None
+    repo.put_managed_file(mf.model_copy(update={"source_id": "wrong-source"}))
+
+    with pytest.raises(KnowledgeInputResolutionError, match="managed_file_source_conflict"):
+        intake.reconcile_workspace(tenant_id=TENANT, workspace_id=WORKSPACE)
+
+    conflicted = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert conflicted is not None
+    assert conflicted.source_id == "wrong-source"
+    ki = repo.get_knowledge_input(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert ki is not None
+    assert ki.source_id == expected
+    assert repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE) == sources_before
+    assert len(repo.list_operations(tenant_id=TENANT)) == ops_before
+    loaded_op = repo.get_operation(
+        tenant_id=TENANT, operation_id=acceptance.operation.operation_id
+    )
+    assert loaded_op is not None
+    assert loaded_op.queue_task_id == task_before
+    _ = queue
+
+
+def test_intake_service_knowledge_input_source_conflict() -> None:
+    repo, _, managed, _, _, _, _ = _build_intake()
+    intake = managed._knowledge_intake  # noqa: SLF001
+    first = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="ki-conflict-a",
+        upload=ManagedFileUpload("a.pdf", "application/pdf", b"a"),
+    )
+    second = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="ki-conflict-b",
+        upload=ManagedFileUpload("b.pdf", "application/pdf", b"b"),
+    )
+    mf_before = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=first.knowledge_input.input_id,
+    )
+    assert mf_before is not None
+    repo.put_knowledge_input(
+        first.knowledge_input.model_copy(update={"source_id": second.source.source_id})
+    )
+    with pytest.raises(KnowledgeInputResolutionError, match="managed_file_source_conflict"):
+        intake.reconcile_workspace(tenant_id=TENANT, workspace_id=WORKSPACE)
+    ki = repo.get_knowledge_input(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=first.knowledge_input.input_id,
+    )
+    assert ki is not None
+    assert ki.source_id == second.source.source_id
+    mf = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=first.knowledge_input.input_id,
+    )
+    assert mf is not None
+    assert mf.source_id == mf_before.source_id
+    assert mf.source_id != second.source.source_id
+
+
+def test_intake_service_valid_existing_source_reuse() -> None:
+    repo, _, managed, _, _, _, _ = _build_intake()
+    first = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="reuse-ok",
+        upload=ManagedFileUpload("a.pdf", "application/pdf", b"a"),
+    )
+    second = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="reuse-ok",
+        upload=ManagedFileUpload("a.pdf", "application/pdf", b"a"),
+    )
+    assert second.source.source_id == first.source.source_id
+    assert second.operation.operation_id == first.operation.operation_id
+    assert second.operation.queue_task_id == first.operation.queue_task_id
+    assert (
+        len(repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE))
+        == len({first.source.source_id})
+    )
+
+
+def test_materialization_failure_marks_managed_object_error(tmp_path: Path) -> None:
+    repo, storage, managed, queue, _, _, indexing = _build_intake()
+    # Staging root outside itself via symlink-style escape is hard; force mkdir/write fail
+    # by pointing materializer at a file path instead of a directory.
+    staging_as_file = tmp_path / "not-a-dir"
+    staging_as_file.write_text("x", encoding="utf-8")
+    materializer = ManagedObjectMaterializer(storage, staging_as_file)
+    processor = ManagedFileKnowledgeIngestionProcessor(repo, materializer, indexing)  # type: ignore[arg-type]
+    ingestion = KnowledgeIngestionService(repo, processor)
+    registry = TaskExecutionRegistry()
+    register_knowledge_ingestion_worker_handler(registry, ingestion)
+    worker = DocumentStoreTaskWorker(queue, registry)
+
+    acceptance = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="mat-fail",
+        upload=ManagedFileUpload("contract.pdf", "application/pdf", b"%PDF"),
+    )
+    assert worker.drain_once() == 1
+    op = repo.get_operation(tenant_id=TENANT, operation_id=acceptance.operation.operation_id)
+    assert op is not None
+    assert op.status is WorkspaceOperationStatus.FAILED
+    assert op.error_code == "managed_object_materialization_failed"
+    assert op.error == "managed_object_materialization_failed"
+    source = repo.get_source(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        source_id=acceptance.source.source_id,
+    )
+    assert source is not None
+    assert source.status is WorkspaceSourceStatus.ERROR
+    mf = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert mf is not None
+    assert mf.status is ManagedFileObjectStatus.ERROR
+    assert mf.error_code == "managed_object_materialization_failed"
+    assert (
+        queue.get_status(
+            TaskHandle(
+                task_id=acceptance.operation.queue_task_id or "",
+                provider=acceptance.operation.queue_provider or "",
+                tenant_id=TENANT,
+            )
+        )
+        is TaskStatus.SUCCEEDED
+    )
+    assert not repo.list_active_ingestion_locators()
+    durable = str(op.error) + str(op.error_code) + str(mf.error_code)
+    assert str(staging_as_file) not in durable
+    assert "RuntimeError" not in durable
+
+
+def test_indexing_failure_marks_managed_object_error(tmp_path: Path) -> None:
+    class BoomIndexing:
+        async def index_one(self, **kwargs: object) -> WorkspaceDocumentIndexingResult:
+            _ = kwargs
+            raise WorkspaceDocumentIndexingError("parser_boom_detail")
+
+    repo, storage, managed, queue, _, _, _ = _build_intake()
+    materializer = ManagedObjectMaterializer(storage, tmp_path / "staging")
+    processor = ManagedFileKnowledgeIngestionProcessor(
+        repo, materializer, BoomIndexing()  # type: ignore[arg-type]
+    )
+    ingestion = KnowledgeIngestionService(repo, processor)
+    registry = TaskExecutionRegistry()
+    register_knowledge_ingestion_worker_handler(registry, ingestion)
+    worker = DocumentStoreTaskWorker(queue, registry)
+
+    acceptance = managed.accept_one(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        idempotency_key="idx-fail",
+        upload=ManagedFileUpload("contract.pdf", "application/pdf", b"%PDF"),
+    )
+    assert worker.drain_once() == 1
+    op = repo.get_operation(tenant_id=TENANT, operation_id=acceptance.operation.operation_id)
+    assert op is not None
+    assert op.status is WorkspaceOperationStatus.FAILED
+    assert op.error_code == "managed_file_indexing_failed"
+    assert op.error == "managed_file_indexing_failed"
+    source = repo.get_source(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        source_id=acceptance.source.source_id,
+    )
+    assert source is not None
+    assert source.status is WorkspaceSourceStatus.ERROR
+    mf = repo.get_managed_file(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        input_id=acceptance.knowledge_input.input_id,
+    )
+    assert mf is not None
+    assert mf.status is ManagedFileObjectStatus.ERROR
+    assert mf.error_code == "managed_file_indexing_failed"
+    assert (
+        queue.get_status(
+            TaskHandle(
+                task_id=acceptance.operation.queue_task_id or "",
+                provider=acceptance.operation.queue_provider or "",
+                tenant_id=TENANT,
+            )
+        )
+        is TaskStatus.SUCCEEDED
+    )
+    assert not repo.list_active_ingestion_locators()
+    durable = str(op.error) + str(op.error_code) + str(mf.error_code)
+    assert "parser_boom_detail" not in durable
+    assert "WorkspaceDocumentIndexingError" not in durable

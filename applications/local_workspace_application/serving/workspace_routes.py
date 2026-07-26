@@ -194,31 +194,34 @@ async def _prepare_managed_file_batch_candidate(
     exceeded = False
     read_failed = False
     try:
-        try:
-            while True:
-                chunk = await upload.read(64 * 1024)
-                if not chunk:
-                    break
-                hasher.update(chunk)
-                total += len(chunk)
-                if exceeded:
-                    continue
-                if total > max_bytes:
-                    exceeded = True
-                    chunks.clear()
-                else:
-                    chunks.append(chunk)
-        except Exception:
-            read_failed = True
-    finally:
+        while True:
+            chunk = await upload.read(64 * 1024)
+            if not chunk:
+                break
+            hasher.update(chunk)
+            total += len(chunk)
+            if exceeded:
+                continue
+            if total > max_bytes:
+                exceeded = True
+                chunks.clear()
+            else:
+                chunks.append(chunk)
+    except Exception:
+        read_failed = True
+    try:
         await upload.close()
+    except Exception:
+        read_failed = True
 
     body_hash = f"sha256:{hasher.hexdigest()}"
+    request_state = "read_failed" if read_failed else "complete"
     request_fingerprint = managed_file_request_fingerprint(
         raw_file_name=raw_file_name,
         raw_content_type=raw_content_type,
         size_bytes=total,
         body_hash=body_hash,
+        request_state=request_state,
     )
     if read_failed:
         return ManagedFileBatchCandidate(

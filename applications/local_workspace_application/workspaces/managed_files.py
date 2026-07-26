@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -35,6 +36,8 @@ from local_workspace_application.workspaces.models import (
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
+_SHA256_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_ALLOWED_REQUEST_STATES = frozenset({"complete", "read_failed", "invalid_body_type"})
 
 _PUBLIC_MANAGED_FILE_ITEM_ERROR_CODES = frozenset(
     {
@@ -72,6 +75,38 @@ class ManagedFileBatchCandidate:
     body_hash: str
     request_fingerprint: str
     preflight_error_code: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.raw_file_name, str):
+            raise ValueError("raw_file_name_must_be_str")
+        if not isinstance(self.raw_content_type, str):
+            raise ValueError("raw_content_type_must_be_str")
+        if (
+            not isinstance(self.size_bytes, int)
+            or isinstance(self.size_bytes, bool)
+            or self.size_bytes < 0
+        ):
+            raise ValueError("size_bytes_invalid")
+        if _SHA256_DIGEST_RE.fullmatch(self.body_hash) is None:
+            raise ValueError("body_hash_invalid")
+        if _SHA256_DIGEST_RE.fullmatch(self.request_fingerprint) is None:
+            raise ValueError("request_fingerprint_invalid")
+
+        has_body = self.body is not None
+        has_error = self.preflight_error_code is not None
+        if has_body == has_error:
+            raise ValueError("candidate_state_invalid")
+        if has_body:
+            if not isinstance(self.body, bytes):
+                raise ValueError("body_must_be_bytes")
+            if len(self.body) != self.size_bytes:
+                raise ValueError("body_size_mismatch")
+            digest = f"sha256:{hashlib.sha256(self.body).hexdigest()}"
+            if digest != self.body_hash:
+                raise ValueError("body_hash_mismatch")
+            return
+        if self.preflight_error_code not in _PUBLIC_MANAGED_FILE_ITEM_ERROR_CODES:
+            raise ValueError("preflight_error_code_invalid")
 
 
 @dataclass(frozen=True)
@@ -128,18 +163,25 @@ def managed_file_request_fingerprint(
     raw_content_type: str,
     size_bytes: int,
     body_hash: str,
+    request_state: str = "complete",
 ) -> str:
-    digest = hashlib.sha256(
-        "\0".join(
-            (
-                raw_file_name,
-                raw_content_type,
-                str(size_bytes),
-                body_hash,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return f"sha256:{digest}"
+    if request_state not in _ALLOWED_REQUEST_STATES:
+        raise ValueError("request_state_invalid")
+    payload = {
+        "version": 2,
+        "raw_file_name": raw_file_name,
+        "raw_content_type": raw_content_type,
+        "size_bytes": size_bytes,
+        "body_hash": body_hash,
+        "request_state": request_state,
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
 
 def normalize_managed_file_item_error_code(error_code: str | None) -> str:
@@ -239,6 +281,7 @@ def _candidate_from_upload(
                 raw_content_type=raw_content_type,
                 size_bytes=0,
                 body_hash=body_hash,
+                request_state="invalid_body_type",
             ),
             preflight_error_code="managed_file_body_required",
         )

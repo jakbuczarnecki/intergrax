@@ -294,20 +294,6 @@ class KnowledgeIntakeService:
         knowledge_input: KnowledgeInput,
         suggested_source_id: str,
     ) -> WorkspaceSource:
-        if knowledge_input.source_id:
-            existing = self._repository.get_source(
-                tenant_id=knowledge_input.tenant_id,
-                workspace_id=knowledge_input.workspace_id,
-                source_id=knowledge_input.source_id,
-            )
-            if existing is not None:
-                if (
-                    existing.tenant_id != knowledge_input.tenant_id
-                    or existing.workspace_id != knowledge_input.workspace_id
-                ):
-                    raise KnowledgeIntakeStateConflict("knowledge_input_source_state_conflict")
-                return existing
-
         try:
             resolved = self._source_resolver.resolve(
                 knowledge_input=knowledge_input,
@@ -323,6 +309,43 @@ class KnowledgeIntakeService:
             source=resolved,
             suggested_source_id=suggested_source_id,
         )
+
+        if knowledge_input.source_id:
+            existing = self._repository.get_source(
+                tenant_id=knowledge_input.tenant_id,
+                workspace_id=knowledge_input.workspace_id,
+                source_id=knowledge_input.source_id,
+            )
+            if existing is not None:
+                self._validate_resolved_source(
+                    knowledge_input=knowledge_input,
+                    source=existing,
+                    suggested_source_id=suggested_source_id,
+                )
+                if not (
+                    existing.source_id == resolved.source_id == suggested_source_id
+                ):
+                    raise KnowledgeIntakeStateConflict(
+                        "knowledge_input_source_state_conflict"
+                    )
+                return existing
+
+        persisted = self._repository.get_source(
+            tenant_id=knowledge_input.tenant_id,
+            workspace_id=knowledge_input.workspace_id,
+            source_id=resolved.source_id,
+        )
+        if persisted is not None:
+            self._validate_resolved_source(
+                knowledge_input=knowledge_input,
+                source=persisted,
+                suggested_source_id=suggested_source_id,
+            )
+            if persisted.source_id != suggested_source_id:
+                raise KnowledgeIntakeStateConflict(
+                    "knowledge_input_source_state_conflict"
+                )
+            return persisted
         return self._repository.put_source(resolved)
 
     def _validate_resolved_source(

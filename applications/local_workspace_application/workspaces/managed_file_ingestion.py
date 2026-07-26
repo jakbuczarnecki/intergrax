@@ -177,6 +177,8 @@ class ManagedFileKnowledgeIngestionProcessor:
                 "managed_object_read_failed",
                 "managed_object_size_mismatch",
                 "managed_object_hash_mismatch",
+                "managed_object_materialization_failed",
+                "managed_file_indexing_failed",
             }:
                 self._repository.put_managed_file(
                     managed.model_copy(

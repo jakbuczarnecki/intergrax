@@ -15,7 +15,15 @@ from fastapi.testclient import TestClient
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.object_storage import StoredObject
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
+from local_workspace_application.serving.workspace_routes import (
+    _prepare_managed_file_batch_candidate,
+    mount_managed_workspace_routes,
+)
+from local_workspace_application.workspaces.managed_files import (
+    IntakeBatchIdempotencyConflict,
+    ManagedFileIntakeService,
+    managed_file_request_fingerprint,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
@@ -416,3 +424,151 @@ def test_unexpected_internal_error_safe_api(api_bundle, monkeypatch) -> None:
         assert forbidden not in text
     _assert_safe_response(body)
     _ = original
+
+
+class _PartialFailUpload:
+    def __init__(self) -> None:
+        self.filename = "a.pdf"
+        self.content_type = "application/pdf"
+        self._reads = 0
+
+    async def read(self, size: int = -1) -> bytes:
+        _ = size
+        self._reads += 1
+        if self._reads == 1:
+            return b"abc"
+        raise RuntimeError("stream broken token=secret-path=/tmp/x")
+
+    async def close(self) -> None:
+        return None
+
+
+class _CloseFailUpload:
+    def __init__(self, body: bytes) -> None:
+        self.filename = "a.pdf"
+        self.content_type = "application/pdf"
+        self._body = body
+        self._done = False
+
+    async def read(self, size: int = -1) -> bytes:
+        _ = size
+        if self._done:
+            return b""
+        self._done = True
+        return self._body
+
+    async def close(self) -> None:
+        raise RuntimeError("close failed token=secret")
+
+
+class _CompleteUpload:
+    def __init__(
+        self,
+        body: bytes,
+        *,
+        filename: str = "a.pdf",
+        content_type: str = "application/pdf",
+    ) -> None:
+        self.filename = filename
+        self.content_type = content_type
+        self._body = body
+        self._done = False
+
+    async def read(self, size: int = -1) -> bytes:
+        _ = size
+        if self._done:
+            return b""
+        self._done = True
+        return self._body
+
+    async def close(self) -> None:
+        return None
+
+
+@pytest.mark.asyncio
+async def test_upload_read_failure_bound_into_fingerprint() -> None:
+    from datetime import UTC, datetime
+
+    from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
+    from intergrax.tools.registry.wiring import ToolWiringContext
+    from local_workspace_application.workspaces.knowledge_intake import KnowledgeIntakeService
+    from local_workspace_application.workspaces.managed_files import ManagedFileSourceResolver
+    from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
+
+    failed = await _prepare_managed_file_batch_candidate(
+        _PartialFailUpload(),  # type: ignore[arg-type]
+        max_bytes=1024,
+    )
+    assert failed.preflight_error_code == "managed_file_upload_read_failed"
+    assert failed.body is None
+    assert "secret" not in failed.request_fingerprint
+    assert "token" not in str(failed)
+    expected_failed = managed_file_request_fingerprint(
+        raw_file_name="a.pdf",
+        raw_content_type="application/pdf",
+        size_bytes=3,
+        body_hash=failed.body_hash,
+        request_state="read_failed",
+    )
+    assert failed.request_fingerprint == expected_failed
+
+    complete = await _prepare_managed_file_batch_candidate(
+        _CompleteUpload(b"abc"),  # type: ignore[arg-type]
+        max_bytes=1024,
+    )
+    assert failed.request_fingerprint != complete.request_fingerprint
+
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_workspace(
+        Workspace(
+            workspace_id="ws",
+            tenant_id="t",
+            name="Demo",
+            status=WorkspaceStatus.ACTIVE,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+    )
+    queue = DocumentStoreTaskQueue(store)
+    intake = KnowledgeIntakeService(
+        repo,
+        ManagedFileSourceResolver(repo),
+        ToolWiringContext(message_bus=queue),
+    )
+    managed = ManagedFileIntakeService(
+        repo,
+        FakeObjectStorage(),
+        intake,
+        max_bytes=1024,
+        max_batch_files=20,
+    )
+    managed.accept_prepared_many(
+        tenant_id="t",
+        workspace_id="ws",
+        idempotency_key="read-retry",
+        candidates=[failed],
+    )
+    with pytest.raises(IntakeBatchIdempotencyConflict):
+        managed.accept_prepared_many(
+            tenant_id="t",
+            workspace_id="ws",
+            idempotency_key="read-retry",
+            candidates=[complete],
+        )
+
+
+@pytest.mark.asyncio
+async def test_close_failure_becomes_safe_rejected_candidate() -> None:
+    failed = await _prepare_managed_file_batch_candidate(
+        _CloseFailUpload(b"abc"),  # type: ignore[arg-type]
+        max_bytes=1024,
+    )
+    assert failed.preflight_error_code == "managed_file_upload_read_failed"
+    assert failed.body is None
+    complete = await _prepare_managed_file_batch_candidate(
+        _CompleteUpload(b"abc"),  # type: ignore[arg-type]
+        max_bytes=1024,
+    )
+    assert failed.request_fingerprint != complete.request_fingerprint
+    assert "secret" not in str(failed)
