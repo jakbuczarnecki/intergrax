@@ -42,6 +42,11 @@ DONE:     VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-CORE-1
 NEXT:     VENDOR-KNOWLEDGE-CONNECTION-1
 PLANNED:  VENDOR-KNOWLEDGE-SYNC-1A
+PLANNED:  VENDOR-KNOWLEDGE-SYNC-1B
+PLANNED:  JIRA-KNOWLEDGE-ADAPTER-1
+PLANNED:  CONFLUENCE-KNOWLEDGE-ADAPTER-1
+PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1
+PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
@@ -55,6 +60,7 @@ Stateless facade core implemented
 Connection/source binding not implemented
 Synchronization coordinator not implemented
 Vendor adapters not implemented
+Microsoft Graph knowledge read surface not implemented
 LKW connected-source bridge not implemented
 ```
 
@@ -79,7 +85,8 @@ LKW connected-source bridge not implemented
 15. Stable remote identity is separate from version, ETag and content hash.
 16. One shared parser/chunk/embedding/indexing pipeline remains downstream.
 17. ACL must be enforceable before model access.
-18. All work remains on branch `development`.
+18. One existing provider/category integration may expose multiple knowledge `source_kind` values through separate thin adapters.
+19. All work remains on branch `development`.
 
 ---
 
@@ -90,6 +97,7 @@ LKW connected-source bridge not implemented
 | Integration resolution | Reuse `IntegrationProfile.resolve()` / `resolve_from_profile()` through an injected resolver port. |
 | Integration catalog | Reuse unchanged. Do not create another vendor catalog. |
 | Adapter resolution | Add one minimal source-adapter registry keyed by provider, category and source kind. |
+| Multi-surface vendors | One provider/category integration may serve several source adapters, for example Microsoft Graph `drive`, `mail`, `calendar`, `teams_chat` and `teams_channel`. |
 | Multiple connections | Add tenant-scoped facade bindings above `IntegrationProfile`; the profile itself remains application composition. |
 | Secrets | Reuse `SecretsStore`; persist only `connection_ref` / `credential_ref`. |
 | Durable work | Reuse DocumentStore-backed queue and worker. |
@@ -304,6 +312,7 @@ Rules:
 - no raw tokens or secrets;
 - multiple connections/scopes per tenant supported;
 - binding resolves exactly one existing integration and one source adapter;
+- one Microsoft 365 connection may expose several independently configured source bindings;
 - revocation/expiry represented explicitly;
 - broad scopes require explicit policy approval.
 
@@ -362,13 +371,96 @@ Content mode: `RICH_TEXT`.
 
 Extend the existing Confluence integration only where required, then map pages, versions and visibility through a Confluence adapter.
 
-#### `MSGRAPH-DRIVE-KNOWLEDGE-ADAPTER-1`
+#### `MSGRAPH-KNOWLEDGE-READ-SURFACE-1`
 
 **Status:** `PLANNED`
 
-Content mode: `BINARY`.
+Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 
-Extend the existing Microsoft Graph integration/private client with Drive/SharePoint delta, binary content and permissions, then add the drive adapter.
+Approved source kinds:
+
+```text
+drive
+mail
+calendar
+teams_chat
+teams_channel
+```
+
+Shared responsibilities:
+
+- bounded inventory and pagination;
+- delta/cursor support where Microsoft Graph provides it;
+- stable object identity separated from revision;
+- ETag/cTag or equivalent revision information;
+- tombstones, deletions and revocations;
+- attachment inventory and content retrieval;
+- safe provider error and throttling mapping;
+- permission and visibility reads where available;
+- no LKW, RAG, parser, chunker or embedding imports.
+
+Surface-specific low-level behavior:
+
+- `drive`: SharePoint sites, document libraries, OneDrive drives/folders/files, delta, binary content and permissions;
+- `mail`: Outlook folders, messages, conversation/thread metadata, bodies and attachments;
+- `calendar`: calendars, events, organizers, attendees, recurrence and online-meeting metadata;
+- `teams_chat`: one-to-one and group chats, messages, replies, edits, deletions, attachments and links;
+- `teams_channel`: teams, channels, posts, threaded replies, mentions, edits, deletions and attachments.
+
+This task must not create separate public Microsoft integrations for Drive, mail, calendar or Teams. The existing Microsoft Graph integration remains the single provider/category entrypoint.
+
+#### `MSGRAPH-KNOWLEDGE-ADAPTERS-1`
+
+**Status:** `PLANNED`
+
+Add separate thin adapters over the same resolved Microsoft Graph integration:
+
+```text
+MsGraphDriveKnowledgeAdapter
+MsGraphMailKnowledgeAdapter
+MsGraphCalendarKnowledgeAdapter
+MsGraphTeamsChatKnowledgeAdapter
+MsGraphTeamsChannelKnowledgeAdapter
+```
+
+Registry keys:
+
+```text
+(ms365_graph, collaboration_suite, drive)
+(ms365_graph, collaboration_suite, mail)
+(ms365_graph, collaboration_suite, calendar)
+(ms365_graph, collaboration_suite, teams_chat)
+(ms365_graph, collaboration_suite, teams_channel)
+```
+
+Content mapping:
+
+- `drive` → `BINARY` for files, with safe structured metadata for folders and inventory records;
+- `mail` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items;
+- `calendar` → `STRUCTURED_RECORD`;
+- `teams_chat` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items;
+- `teams_channel` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items.
+
+Each adapter:
+
+- declares only its own capabilities;
+- maps provider records into the canonical facade models;
+- receives the already resolved Microsoft Graph integration;
+- owns no client, credentials, persistence, checkpoint or retry runtime;
+- uses the shared synchronization coordinator;
+- remains independent from LKW.
+
+Recommended implementation/proof order inside the Microsoft scope:
+
+```text
+1. drive / SharePoint
+2. mail
+3. teams_channel
+4. teams_chat
+5. calendar
+```
+
+The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
 #### `DATABRICKS-KNOWLEDGE-ADAPTER-1`
 
@@ -387,6 +479,7 @@ First select one precise source kind: Unity Catalog metadata, workspace tree, vo
 Dependency:
 
 - facade core stable;
+- connection/source binding stable;
 - synchronization coordinator stable;
 - at least one vendor proof stable;
 - LKW managed-file intake stable.
@@ -424,4 +517,4 @@ Implement only:
 VENDOR-KNOWLEDGE-CONNECTION-1
 ```
 
-Do not start Jira, Graph, Confluence, persistence, queues or LKW changes in the same task.
+Do not start Jira, Microsoft Graph, Confluence, persistence, queues or LKW changes in the same task.
