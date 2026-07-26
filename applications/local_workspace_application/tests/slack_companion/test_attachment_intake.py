@@ -36,6 +36,7 @@ from local_workspace_application.slack_companion.models import (
 from local_workspace_application.slack_companion.rendering import (
     NO_WORKSPACE_AVAILABLE_TEXT,
     SELECTED_WORKSPACE_UNAVAILABLE_TEXT,
+    render_attachment_intake_failed,
 )
 from local_workspace_application.slack_companion.selection_store import (
     InMemorySlackWorkspaceSelectionStore,
@@ -134,6 +135,40 @@ class RecordingSender:
             address=message.address,
             delivered_at=datetime.now(timezone.utc),
         )
+
+
+class SelectiveFailingSender(RecordingSender):
+    """Fail on selected outbound texts while recording successful deliveries."""
+
+    def __init__(
+        self,
+        *,
+        fail_on_receiving: bool = False,
+        fail_on_acceptance: bool = False,
+        fail_on_intake_failed: bool = False,
+        fail_exception: BaseException | None = None,
+    ) -> None:
+        super().__init__()
+        self.fail_on_receiving = fail_on_receiving
+        self.fail_on_acceptance = fail_on_acceptance
+        self.fail_on_intake_failed = fail_on_intake_failed
+        self.fail_exception = fail_exception or RuntimeError(
+            "slack delivery secret xoxb-leaked https://files.slack.com"
+        )
+
+    async def __call__(
+        self, message: OutboundConversationMessage
+    ) -> ConversationDeliveryReceipt:
+        text = message.text
+        if self.fail_on_receiving and text.startswith("Receiving "):
+            raise self.fail_exception
+        if self.fail_on_acceptance and (
+            "Accepted " in text or "None of the attached files were accepted" in text
+        ):
+            raise self.fail_exception
+        if self.fail_on_intake_failed and text == render_attachment_intake_failed():
+            raise self.fail_exception
+        return await super().__call__(message)
 
 
 def _auth() -> SlackCompanionAuthConfig:
@@ -463,6 +498,77 @@ async def test_all_failed_acceptance() -> None:
     record = dedupe._get(build_slack_dedupe_key(team_id="T_OK", event_id="Ev-att-1"))
     assert record is not None
     assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_successful_intake_summary_delivery_failure_keeps_completed() -> None:
+    sender = SelectiveFailingSender(fail_on_acceptance=True)
+    workflow, ask, fetcher, _, dedupe = _workflow(sender=sender)
+    assert fetcher is not None
+    await workflow.handle(_event())
+    assert fetcher.calls == ["F1"]
+    assert len(ask.upload_calls) == 1
+    assert ask.ask_calls == 0
+    assert len(sender.sent) == 1
+    assert "Receiving 1 attached file" in sender.sent[0].text
+    assert render_attachment_intake_failed() not in {m.text for m in sender.sent}
+    joined = "\n".join(m.text for m in sender.sent)
+    assert "xoxb" not in joined
+    assert "files.slack.com" not in joined
+    assert "secret" not in joined
+    record = dedupe._get(build_slack_dedupe_key(team_id="T_OK", event_id="Ev-att-1"))
+    assert record is not None
+    assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_ack_delivery_failure_does_not_block_intake() -> None:
+    sender = SelectiveFailingSender(fail_on_receiving=True)
+    workflow, ask, fetcher, _, dedupe = _workflow(sender=sender)
+    assert fetcher is not None
+    await workflow.handle(_event())
+    assert fetcher.calls == ["F1"]
+    assert len(ask.upload_calls) == 1
+    assert len(sender.sent) == 1
+    assert "Accepted 1 file for processing" in sender.sent[0].text
+    record = dedupe._get(build_slack_dedupe_key(team_id="T_OK", event_id="Ev-att-1"))
+    assert record is not None
+    assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_upload_failure_marks_dedupe_failed() -> None:
+    ask = FakeAskClient()
+    ask.upload_error = SlackAskClientError(kind="http_503")
+    sender = RecordingSender()
+    workflow, _, fetcher, _, dedupe = _workflow(ask=ask, sender=sender)
+    assert fetcher is not None
+    await workflow.handle(_event())
+    assert len(ask.upload_calls) == 1
+    assert sender.sent[-1].text == render_attachment_intake_failed()
+    assert not any("Accepted" in m.text for m in sender.sent)
+    record = dedupe._get(build_slack_dedupe_key(team_id="T_OK", event_id="Ev-att-1"))
+    assert record is not None
+    assert record.status is SlackDedupeStatus.FAILED
+
+
+@pytest.mark.asyncio
+async def test_upload_failure_plus_error_delivery_failure_keeps_failed() -> None:
+    ask = FakeAskClient()
+    ask.upload_error = SlackAskClientError(kind="http_503")
+    sender = SelectiveFailingSender(fail_on_intake_failed=True)
+    workflow, _, fetcher, _, dedupe = _workflow(ask=ask, sender=sender)
+    assert fetcher is not None
+    await workflow.handle(_event())
+    assert len(ask.upload_calls) == 1
+    assert render_attachment_intake_failed() not in {m.text for m in sender.sent}
+    joined = "\n".join(m.text for m in sender.sent)
+    assert "xoxb" not in joined
+    assert "http_503" not in joined
+    assert "secret" not in joined
+    record = dedupe._get(build_slack_dedupe_key(team_id="T_OK", event_id="Ev-att-1"))
+    assert record is not None
+    assert record.status is SlackDedupeStatus.FAILED
 
 
 @pytest.mark.asyncio

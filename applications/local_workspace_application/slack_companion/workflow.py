@@ -591,56 +591,83 @@ class SlackAskWorkflow:
                 idempotency_key=idempotency_key,
                 attachments=downloaded,
             )
-            await self._send(
-                OutboundConversationMessage(
-                    address=address,
-                    text=render_attachment_batch_response(batch),
-                )
-            )
-            self._dedupe.mark_completed(
-                dedupe_key=claim.dedupe_key,
-                claim_token=claim.claim_token,
-                ask_run_id=None,
-            )
         except SlackAskClientError as exc:
             if used_in_memory_selection and exc.kind == "http_404":
                 self._selections.clear(actor_key)
-                await self._send(
-                    OutboundConversationMessage(
-                        address=address,
-                        text=render_selected_workspace_unavailable(),
+                try:
+                    await self._send(
+                        OutboundConversationMessage(
+                            address=address,
+                            text=render_selected_workspace_unavailable(),
+                        )
                     )
-                )
+                except Exception as send_exc:  # noqa: BLE001 — best-effort error delivery
+                    logger.warning(
+                        "slack_companion attachment_error_delivery_failed kind=%s",
+                        type(send_exc).__name__,
+                    )
                 self._dedupe.mark_completed(
                     dedupe_key=claim.dedupe_key,
                     claim_token=claim.claim_token,
                     ask_run_id=None,
                 )
-            else:
+                return
+            try:
                 await self._send(
                     OutboundConversationMessage(
                         address=address,
                         text=render_attachment_intake_failed(),
                     )
                 )
-                self._dedupe.mark_failed(
-                    dedupe_key=claim.dedupe_key,
-                    claim_token=claim.claim_token,
+            except Exception as send_exc:  # noqa: BLE001 — best-effort error delivery
+                logger.warning(
+                    "slack_companion attachment_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
                 )
+            self._dedupe.mark_failed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+            )
+            return
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "slack_companion attachment_upload_failed kind=%s",
                 type(exc).__name__,
             )
-            await self._send(
-                OutboundConversationMessage(
-                    address=address,
-                    text=render_attachment_intake_failed(),
+            try:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_attachment_intake_failed(),
+                    )
                 )
-            )
+            except Exception as send_exc:  # noqa: BLE001 — best-effort error delivery
+                logger.warning(
+                    "slack_companion attachment_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
             self._dedupe.mark_failed(
                 dedupe_key=claim.dedupe_key,
                 claim_token=claim.claim_token,
+            )
+            return
+
+        self._dedupe.mark_completed(
+            dedupe_key=claim.dedupe_key,
+            claim_token=claim.claim_token,
+            ask_run_id=None,
+        )
+        try:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_batch_response(batch),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 — intake already completed
+            logger.warning(
+                "slack_companion attachment_summary_delivery_failed kind=%s",
+                type(exc).__name__,
             )
 
     @slack_command(

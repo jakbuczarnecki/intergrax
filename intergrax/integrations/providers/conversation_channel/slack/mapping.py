@@ -162,6 +162,9 @@ def map_events_api_message(payload: Mapping[str, Any]) -> InboundConversationEve
     if attachments is None:
         _LOG.info("slack conversation: events_api malformed files; ignoring")
         return None
+    if subtype == "file_share" and not attachments:
+        _LOG.info("slack conversation: file_share without files; ignoring")
+        return None
 
     channel = _non_blank(event.get("channel"))
     user = _non_blank(event.get("user"))

@@ -86,7 +86,6 @@ class ConversationAttachmentReference(BaseModel):
     file_name: str | None = None
     content_type: str | None = None
     size_bytes: int | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("attachment_id")
     @classmethod

@@ -155,7 +155,12 @@ def test_ordinary_dm_message_with_files_maps_attachments() -> None:
     assert ref.file_name == "contract.pdf"
     assert ref.content_type == "application/pdf"
     assert ref.size_bytes == 1234
-    assert ref.metadata == {}
+    serialized_ref = ref.model_dump()
+    assert "metadata" not in serialized_ref
+    assert "url_private" not in serialized_ref
+    assert "url_private_download" not in serialized_ref
+    assert "permalink" not in serialized_ref
+    assert "token" not in serialized_ref
     assert "url_private" not in event.metadata
     assert "url_private_download" not in event.metadata
 
@@ -217,7 +222,70 @@ def test_private_url_not_mapped_and_file_object_not_copied() -> None:
     assert "files.slack.com" not in serialized
     assert "url_private" not in serialized
     assert "permalink" not in event.metadata
-    assert event.attachments[0].metadata == {}
+    serialized_ref = event.attachments[0].model_dump()
+    assert "metadata" not in serialized_ref
+    assert "url_private" not in serialized_ref
+    assert "url_private_download" not in serialized_ref
+    assert "permalink" not in serialized_ref
+    assert "token" not in serialized_ref
+
+
+def test_file_share_missing_files_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"subtype": "file_share", "text": "", "files": None})
+        )
+        is None
+    )
+
+
+def test_file_share_empty_files_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"subtype": "file_share", "text": "", "files": []})
+        )
+        is None
+    )
+
+
+def test_file_share_missing_files_with_command_text_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"subtype": "file_share", "text": "workspaces"})
+        )
+        is None
+    )
+
+
+def test_file_share_empty_files_with_ask_text_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(
+                event={
+                    "subtype": "file_share",
+                    "text": "What is in the workspace?",
+                    "files": [],
+                }
+            )
+        )
+        is None
+    )
+
+
+def test_ordinary_text_message_with_files_missing_accepted() -> None:
+    event = map_events_api_message(_dm_payload(event={"text": "hello workspace"}))
+    assert event is not None
+    assert event.text == "hello workspace"
+    assert event.attachments == ()
+
+
+def test_ordinary_text_message_with_empty_files_accepted() -> None:
+    event = map_events_api_message(
+        _dm_payload(event={"text": "hello workspace", "files": []})
+    )
+    assert event is not None
+    assert event.text == "hello workspace"
+    assert event.attachments == ()
 
 
 def test_malformed_files_value_rejected() -> None:

@@ -112,6 +112,24 @@ def test_attachment_reference_immutable() -> None:
         ref.attachment_id = "F2"  # type: ignore[misc]
 
 
+def test_attachment_reference_rejects_metadata_extra_field() -> None:
+    with pytest.raises(ValidationError):
+        ConversationAttachmentReference(
+            attachment_id="F1",
+            metadata={"url_private": "https://files.slack.com/private"},
+        )
+    ref = ConversationAttachmentReference(
+        attachment_id="F1",
+        file_name="a.txt",
+        content_type="text/plain",
+        size_bytes=3,
+    )
+    dumped = ref.model_dump()
+    assert set(dumped) == {"attachment_id", "file_name", "content_type", "size_bytes"}
+    assert "metadata" not in dumped
+    assert "url_private" not in dumped
+
+
 def test_attachment_content_immutable() -> None:
     content = ConversationAttachmentContent(
         attachment_id="F1",

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Any
 
 import httpx
@@ -79,13 +80,13 @@ class FakeSocketClient:
 @dataclass
 class FakeWebClient:
     files_info_calls: list[str] = field(default_factory=list)
-    files_info_response: dict[str, Any] | None = None
+    files_info_response: Any | None = None
     files_info_error: BaseException | None = None
 
     async def chat_postMessage(self, **kwargs: Any) -> dict[str, Any]:
         return {"ok": True, "ts": "1.0"}
 
-    async def files_info(self, *, file: str) -> dict[str, Any]:
+    async def files_info(self, *, file: str) -> Any:
         self.files_info_calls.append(file)
         if self.files_info_error is not None:
             raise self.files_info_error
@@ -102,6 +103,19 @@ class FakeWebClient:
                 "url_private": "https://files.slack.com/files-pri/T-F/private",
             },
         }
+
+
+class _DataEnvelope:
+    def __init__(self, data: Mapping[str, Any]) -> None:
+        self.data = data
+
+
+class _GetEnvelope:
+    def __init__(self, payload: Mapping[str, Any]) -> None:
+        self._payload = payload
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self._payload.get(key, default)
 
 
 def _config() -> SlackConversationChannelIntegrationConfig:
@@ -666,6 +680,62 @@ async def test_check_file_info_rejected() -> None:
 @pytest.mark.asyncio
 async def test_malformed_files_info_rejected() -> None:
     web = FakeWebClient(files_info_response={"ok": True, "file": "bad"})
+    backend, _, _ = _backend(web_client=web)
+    with pytest.raises(ConversationAttachmentFetchError) as exc:
+        await backend.fetch_attachment(
+            ConversationAttachmentReference(attachment_id="F111"),
+            max_bytes=100,
+        )
+    assert exc.value.kind == "attachment_metadata_invalid"
+
+
+@pytest.mark.asyncio
+async def test_files_info_mapping_response_supported() -> None:
+    web = FakeWebClient(files_info_response=_file_payload())
+    backend, _, _ = _backend(
+        web_client=web,
+        attachment_transport=_download_transport(body=b"data"),
+    )
+    content = await backend.fetch_attachment(
+        ConversationAttachmentReference(attachment_id="F111"),
+        max_bytes=100,
+    )
+    assert content.body == b"data"
+
+
+@pytest.mark.asyncio
+async def test_files_info_data_envelope_response_supported() -> None:
+    web = FakeWebClient(files_info_response=_DataEnvelope(_file_payload()))
+    backend, _, _ = _backend(
+        web_client=web,
+        attachment_transport=_download_transport(body=b"data"),
+    )
+    content = await backend.fetch_attachment(
+        ConversationAttachmentReference(attachment_id="F111"),
+        max_bytes=100,
+    )
+    assert content.body == b"data"
+    assert content.file_name == "contract.pdf"
+
+
+@pytest.mark.asyncio
+async def test_files_info_callable_get_response_supported() -> None:
+    web = FakeWebClient(files_info_response=_GetEnvelope(_file_payload()))
+    backend, _, _ = _backend(
+        web_client=web,
+        attachment_transport=_download_transport(body=b"data"),
+    )
+    content = await backend.fetch_attachment(
+        ConversationAttachmentReference(attachment_id="F111"),
+        max_bytes=100,
+    )
+    assert content.body == b"data"
+    assert content.content_type == "application/pdf"
+
+
+@pytest.mark.asyncio
+async def test_files_info_malformed_non_mapping_response() -> None:
+    web = FakeWebClient(files_info_response=object())
     backend, _, _ = _backend(web_client=web)
     with pytest.raises(ConversationAttachmentFetchError) as exc:
         await backend.fetch_attachment(

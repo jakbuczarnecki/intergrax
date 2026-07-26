@@ -61,15 +61,16 @@ _ALLOWED_SLACK_FILE_HOSTS = frozenset(
 def _response_as_mapping(response: Any) -> Mapping[str, Any] | None:
     if isinstance(response, Mapping):
         return response
-    data = getattr(response, "data", None)
+    data = attribute_access.optional(response, "data", None)
     if isinstance(data, Mapping):
         return data
-    if hasattr(response, "get") and callable(response.get):
+    response_get = attribute_access.optional(response, "get", None)
+    if callable(response_get):
         try:
             return {
-                "ok": response.get("ok"),
-                "file": response.get("file"),
-                "error": response.get("error"),
+                "ok": response_get("ok"),
+                "file": response_get("file"),
+                "error": response_get("error"),
             }
         except Exception:  # noqa: BLE001
             return None
