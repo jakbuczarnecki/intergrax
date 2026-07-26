@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 import pytest
@@ -158,6 +159,55 @@ def test_rejects_empty_identifiers() -> None:
         )
     with pytest.raises(ValidationError):
         KnowledgePrincipal(principal_type="user", principal_id="")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("factory", "field_name"),
+    [
+        (
+            lambda: KnowledgeSourceRef(
+                tenant_id=" ",
+                provider_id="example",
+                integration_kind=IntegrationCategory.ISSUE_TRACKER,
+                source_kind="issues",
+                scope=_scope(),
+            ),
+            "tenant_id",
+        ),
+        (
+            lambda: KnowledgeSourceRef(
+                tenant_id="tenant-1",
+                provider_id="",
+                integration_kind=IntegrationCategory.ISSUE_TRACKER,
+                source_kind="issues",
+                scope=_scope(),
+            ),
+            "provider_id",
+        ),
+        (lambda: _scope(remote_scope_id=""), "remote_scope_id"),
+        (lambda: KnowledgeItemRevision(version=" "), "version"),
+        (lambda: _descriptor(title=""), "title"),
+        (
+            lambda: KnowledgePrincipal(principal_type="user", principal_id=""),
+            "principal_id",
+        ),
+        (
+            lambda: KnowledgeContent(
+                mode=KnowledgeContentMode.RICH_TEXT,
+                rich_text="body",
+                mime_type=" ",
+            ),
+            "mime_type",
+        ),
+    ],
+)
+def test_empty_field_validation_names_the_field(
+    factory: Callable[[], object], field_name: str
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        factory()
+    assert field_name in str(exc_info.value)
 
 
 @pytest.mark.unit

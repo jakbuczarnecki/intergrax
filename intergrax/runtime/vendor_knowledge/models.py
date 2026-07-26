@@ -15,6 +15,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -158,9 +159,9 @@ class KnowledgeSourceScope(BaseModel):
 
     @field_validator("remote_scope_id", "remote_scope_type", "safe_display_name")
     @classmethod
-    def _non_empty_identity(cls, value: str, info: object) -> str:
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+    def _non_empty_identity(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
     @field_validator("parameters")
     @classmethod
@@ -180,9 +181,9 @@ class KnowledgeSourceRef(BaseModel):
 
     @field_validator("tenant_id", "provider_id", "source_kind")
     @classmethod
-    def _non_empty_ids(cls, value: str, info: object) -> str:
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+    def _non_empty_ids(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
     @field_validator("connection_ref")
     @classmethod
@@ -221,11 +222,11 @@ class KnowledgeItemIdentity(BaseModel):
 
     @field_validator("parent_remote_id", "logical_key")
     @classmethod
-    def _optional_non_empty(cls, value: str | None, info: object) -> str | None:
+    def _optional_non_empty(cls, value: str | None, info: ValidationInfo) -> str | None:
         if value is None:
             return None
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
 
 class KnowledgeItemRevision(BaseModel):
@@ -239,11 +240,11 @@ class KnowledgeItemRevision(BaseModel):
 
     @field_validator("version", "etag", "content_hash", "acl_hash")
     @classmethod
-    def _optional_non_empty(cls, value: str | None, info: object) -> str | None:
+    def _optional_non_empty(cls, value: str | None, info: ValidationInfo) -> str | None:
         if value is None:
             return None
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
 
 class KnowledgeItemProvenance(BaseModel):
@@ -257,9 +258,9 @@ class KnowledgeItemProvenance(BaseModel):
 
     @field_validator("provider_id", "source_kind", "remote_id")
     @classmethod
-    def _non_empty_ids(cls, value: str, info: object) -> str:
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+    def _non_empty_ids(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
     @field_validator("web_url")
     @classmethod
@@ -293,9 +294,9 @@ class KnowledgeItemDescriptor(BaseModel):
 
     @field_validator("title", "item_type")
     @classmethod
-    def _non_empty_text(cls, value: str, info: object) -> str:
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+    def _non_empty_text(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
     @field_validator("metadata")
     @classmethod
@@ -318,9 +319,9 @@ class KnowledgePrincipal(BaseModel):
 
     @field_validator("principal_type", "principal_id")
     @classmethod
-    def _non_empty_ids(cls, value: str, info: object) -> str:
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+    def _non_empty_ids(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
     @field_validator("provider_id")
     @classmethod
@@ -378,11 +379,11 @@ class KnowledgeContent(BaseModel):
 
     @field_validator("mime_type", "encoding", "content_hash")
     @classmethod
-    def _optional_non_empty(cls, value: str | None, info: object) -> str | None:
+    def _optional_non_empty(cls, value: str | None, info: ValidationInfo) -> str | None:
         if value is None:
             return None
-        field_name = getattr(info, "field_name", "field")
-        return _require_non_empty(value, field_name=str(field_name))
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
 
     @model_validator(mode="after")
     def _exactly_one_payload(self) -> KnowledgeContent:
