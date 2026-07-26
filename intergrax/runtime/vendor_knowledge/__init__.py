@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Vendor Knowledge Facade contract layer — models, errors, and protocols only."""
+"""Vendor Knowledge Facade — contracts and stateless core services."""
 
 from intergrax.runtime.vendor_knowledge.contracts import (
     VendorIntegrationResolver,
@@ -12,6 +12,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
 )
+from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeAdapterCapabilities,
     KnowledgeChange,
@@ -31,9 +32,13 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeSourceScope,
     KnowledgeVisibility,
 )
+from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
+from intergrax.runtime.vendor_knowledge.resolver import IntegrationProfileVendorResolver
 
 __all__ = [
+    "IntegrationProfileVendorResolver",
     "KnowledgeAdapterCapabilities",
+    "KnowledgeAdapterRegistry",
     "KnowledgeChange",
     "KnowledgeChangeKind",
     "KnowledgeContent",
@@ -55,4 +60,5 @@ __all__ = [
     "VendorKnowledgeError",
     "VendorKnowledgeErrorCode",
     "VendorKnowledgeFacade",
+    "VendorKnowledgeFacadeService",
 ]

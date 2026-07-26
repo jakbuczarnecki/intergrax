@@ -39,8 +39,8 @@ DONE:     VENDOR-KNOWLEDGE-FACADE-ARCH-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-PLAN-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-AUDIT-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
-NEXT:     VENDOR-KNOWLEDGE-FACADE-CORE-1
-PLANNED:  VENDOR-KNOWLEDGE-CONNECTION-1
+DONE:     VENDOR-KNOWLEDGE-FACADE-CORE-1
+NEXT:     VENDOR-KNOWLEDGE-CONNECTION-1
 PLANNED:  VENDOR-KNOWLEDGE-SYNC-1A
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
@@ -48,12 +48,14 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 Current runtime state:
 
 ```text
-Facade contract models/errors/protocols under intergrax/runtime/vendor_knowledge/
-No adapter registry implemented
-No connection/source binding implemented
-No synchronization coordinator implemented
-No vendor knowledge adapter implemented
-No LKW connected-source bridge implemented
+Facade contracts implemented
+Adapter registry implemented
+IntegrationProfile resolver implemented
+Stateless facade core implemented
+Connection/source binding not implemented
+Synchronization coordinator not implemented
+Vendor adapters not implemented
+LKW connected-source bridge not implemented
 ```
 
 ---
@@ -240,7 +242,7 @@ tests/unit/runtime/vendor_knowledge/
 
 #### `VENDOR-KNOWLEDGE-FACADE-CORE-1`
 
-**Status:** `NEXT`
+**Status:** `DONE`
 
 **Dependency:** Phase 1
 
@@ -279,7 +281,7 @@ Acceptance:
 
 #### `VENDOR-KNOWLEDGE-CONNECTION-1`
 
-**Status:** `PLANNED`
+**Status:** `NEXT`
 
 Add tenant-scoped binding semantics:
 
@@ -419,7 +421,7 @@ Add safe source discovery, selection, sync request and status through Slack. Sla
 Implement only:
 
 ```text
-VENDOR-KNOWLEDGE-FACADE-CORE-1
+VENDOR-KNOWLEDGE-CONNECTION-1
 ```
 
 Do not start Jira, Graph, Confluence, persistence, queues or LKW changes in the same task.
