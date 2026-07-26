@@ -34,12 +34,6 @@ from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 
 _T = TypeVar("_T")
 
-_CONTENT_MODE_CAPABILITY: dict[KnowledgeContentMode, str] = {
-    KnowledgeContentMode.BINARY: "binary_content",
-    KnowledgeContentMode.RICH_TEXT: "rich_text_content",
-    KnowledgeContentMode.STRUCTURED_RECORD: "structured_content",
-}
-
 
 class VendorKnowledgeFacadeService:
     """Application-facing vendor-neutral knowledge access boundary.
@@ -136,6 +130,7 @@ class VendorKnowledgeFacadeService:
         item: KnowledgeItemDescriptor,
     ) -> KnowledgeContent:
         integration, adapter = self._prepare(source=source)
+        self._validate_item_provenance(item, source=source)
         capabilities = adapter.capabilities
 
         if not capabilities.content_fetch:
@@ -147,8 +142,16 @@ class VendorKnowledgeFacadeService:
                 retryable=False,
             )
 
-        capability_attr = _CONTENT_MODE_CAPABILITY.get(item.content_mode)
-        if capability_attr is None or not getattr(capabilities, capability_attr):
+        if item.content_mode is KnowledgeContentMode.BINARY:
+            mode_supported = capabilities.binary_content
+        elif item.content_mode is KnowledgeContentMode.RICH_TEXT:
+            mode_supported = capabilities.rich_text_content
+        elif item.content_mode is KnowledgeContentMode.STRUCTURED_RECORD:
+            mode_supported = capabilities.structured_content
+        else:
+            mode_supported = False
+
+        if not mode_supported:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
                 safe_message="Requested content mode is not supported for this adapter",
@@ -182,6 +185,7 @@ class VendorKnowledgeFacadeService:
         item: KnowledgeItemDescriptor,
     ) -> KnowledgePermissions:
         integration, adapter = self._prepare(source=source)
+        self._validate_item_provenance(item, source=source)
         if not adapter.capabilities.permissions:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
@@ -231,6 +235,25 @@ class VendorKnowledgeFacadeService:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Resolved adapter identity does not match the requested source",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+
+    def _validate_item_provenance(
+        self,
+        item: KnowledgeItemDescriptor,
+        *,
+        source: KnowledgeSourceRef,
+    ) -> None:
+        provenance = item.provenance
+        if (
+            provenance.provider_id != source.provider_id
+            or provenance.source_kind != source.source_kind
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Item provenance does not match the requested source",
                 provider_id=source.provider_id,
                 source_kind=source.source_kind,
                 retryable=False,

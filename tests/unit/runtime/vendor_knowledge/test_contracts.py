@@ -261,7 +261,7 @@ def test_package_does_not_import_lkw() -> None:
     import subprocess
     import sys
 
-    module_names = set(getattr(package, "__all__", ()))
+    module_names = set(package.__all__)
     assert "local_workspace_application" not in repr(package)
     assert "ManagedWorkspace" not in module_names
 
@@ -278,6 +278,23 @@ def test_package_does_not_import_lkw() -> None:
         text=True,
     )
     assert result.stdout.strip() == "CLEAN"
+
+
+@pytest.mark.unit
+def test_package_tests_contain_no_getattr() -> None:
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent
+    pattern = re.compile(r"\b(getattr|setattr)\s*\(")
+    for path in sorted(root.glob("*.py")):
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if "monkeypatch.setattr" in stripped:
+                continue
+            assert pattern.search(stripped) is None, f"{path.name}:{line_no}: {stripped}"
 
 
 @pytest.mark.unit

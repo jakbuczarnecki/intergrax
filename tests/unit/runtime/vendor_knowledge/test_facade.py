@@ -132,6 +132,53 @@ async def test_permission_fetch() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method_name", "mismatch"),
+    [
+        ("fetch_content", {"provider_id": "other"}),
+        ("fetch_content", {"source_kind": "pages"}),
+        ("fetch_permissions", {"provider_id": "other"}),
+        ("fetch_permissions", {"source_kind": "pages"}),
+    ],
+)
+async def test_fetch_rejects_item_provenance_mismatch(
+    method_name: str,
+    mismatch: dict[str, str],
+) -> None:
+    source = make_source()
+    item = make_descriptor(source=source, **mismatch)
+    service, _resolver, adapter = _facade()
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        if method_name == "fetch_content":
+            await service.fetch_content(source=source, item=item)
+        else:
+            await service.fetch_permissions(source=source, item=item)
+
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert exc_info.value.retryable is False
+    assert adapter.content_calls == []
+    assert adapter.permissions_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_fetch_accepts_matching_item_provenance() -> None:
+    source = make_source()
+    item = make_descriptor(source=source)
+    service, _resolver, adapter = _facade()
+
+    content = await service.fetch_content(source=source, item=item)
+    permissions = await service.fetch_permissions(source=source, item=item)
+
+    assert content.mode is item.content_mode
+    assert permissions.visibility is KnowledgeVisibility.TENANT
+    assert len(adapter.content_calls) == 1
+    assert len(adapter.permissions_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_tenant_mismatch_before_dependency_calls() -> None:
     resolver = RecordingResolver(integration=FakeIntegration())
     registry = KnowledgeAdapterRegistry()

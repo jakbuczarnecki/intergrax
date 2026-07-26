@@ -17,6 +17,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeErrorCode,
 )
 from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef
+from intergrax.utils.attribute_access import optional
 
 
 class IntegrationProfileVendorResolver:
@@ -99,9 +100,9 @@ class IntegrationProfileVendorResolver:
         source: KnowledgeSourceRef,
     ) -> object:
         try:
-            provider_id = getattr(integration, "provider_id")
-            integration_kind = getattr(integration, "integration_kind")
-        except Exception:
+            provider_id = optional(integration, "provider_id")
+            integration_kind = optional(integration, "integration_kind")
+        except AttributeError:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Resolved integration is missing required identity attributes",
