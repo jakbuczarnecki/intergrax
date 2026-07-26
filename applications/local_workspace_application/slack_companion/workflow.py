@@ -4,12 +4,17 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import re
 from collections.abc import Awaitable, Callable
 
 from intergrax.integrations.contracts.conversation_channel import (
     ConversationAddress,
+    ConversationAttachmentContent,
+    ConversationAttachmentFetchError,
+    ConversationAttachmentFetcher,
     ConversationChannelBackend,
     InboundConversationEvent,
     OutboundConversationMessage,
@@ -17,7 +22,7 @@ from intergrax.integrations.contracts.conversation_channel import (
 from local_workspace_application.slack_companion.ask_client import WorkspaceAskHttpClient
 from local_workspace_application.slack_companion.authorization import (
     SlackCompanionAuthConfig,
-    authorize_inbound_ask,
+    authorize_inbound_message,
 )
 from local_workspace_application.slack_companion.commands import (
     SlackCommandContext,
@@ -42,6 +47,12 @@ from local_workspace_application.slack_companion.rendering import (
     MAX_WORKSPACE_NAME_CHARS,
     render_acknowledgement,
     render_ask_response,
+    render_attachment_batch_response,
+    render_attachment_fetch_failed,
+    render_attachment_fetch_unavailable,
+    render_attachment_intake_failed,
+    render_attachment_receiving,
+    render_attachment_too_many,
     render_error,
     render_no_workspace_available,
     render_selected_workspace_unavailable,
@@ -185,6 +196,25 @@ def is_workspace_delete_attempt(text: str) -> bool:
         and parts[0].casefold() == "workspace"
         and parts[1].casefold() == "delete"
     )
+
+
+def slack_attachment_intake_idempotency_key(
+    *,
+    team_id: str,
+    event_id: str,
+) -> str:
+    """Deterministic intake idempotency key for one Slack attachment event."""
+    canonical = json.dumps(
+        {
+            "version": 1,
+            "team_id": team_id.strip(),
+            "event_id": event_id.strip(),
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return f"slack-attachment:v1:{digest}"
 
 
 def parse_help_command(text: str) -> SlackCommandMatch | None:
@@ -342,7 +372,22 @@ class SlackAskWorkflow:
         send: OutboundSender,
         selection_store: InMemorySlackWorkspaceSelectionStore | None = None,
         pending_deletion_store: InMemorySlackPendingDeletionStore | None = None,
+        attachment_fetcher: ConversationAttachmentFetcher | None = None,
+        attachment_max_bytes: int = 25 * 1024 * 1024,
+        attachment_max_batch_files: int = 20,
     ) -> None:
+        if (
+            not isinstance(attachment_max_bytes, int)
+            or isinstance(attachment_max_bytes, bool)
+            or attachment_max_bytes < 1
+        ):
+            raise ValueError("attachment_max_bytes must be >= 1")
+        if (
+            not isinstance(attachment_max_batch_files, int)
+            or isinstance(attachment_max_batch_files, bool)
+            or attachment_max_batch_files < 1
+        ):
+            raise ValueError("attachment_max_batch_files must be >= 1")
         self._auth = auth_config
         self._dedupe = dedupe
         self._ask = ask_client
@@ -351,6 +396,9 @@ class SlackAskWorkflow:
         self._pending_deletions = (
             pending_deletion_store or InMemorySlackPendingDeletionStore()
         )
+        self._attachment_fetcher = attachment_fetcher
+        self._attachment_max_bytes = attachment_max_bytes
+        self._attachment_max_batch_files = attachment_max_batch_files
         self._commands = discover_slack_commands(self)
 
     def _resolve_effective_workspace(
@@ -372,7 +420,12 @@ class SlackAskWorkflow:
         ask_client: WorkspaceAskHttpClient,
         selection_store: InMemorySlackWorkspaceSelectionStore | None = None,
         pending_deletion_store: InMemorySlackPendingDeletionStore | None = None,
+        attachment_max_bytes: int = 25 * 1024 * 1024,
+        attachment_max_batch_files: int = 20,
     ) -> SlackAskWorkflow:
+        fetcher: ConversationAttachmentFetcher | None = (
+            backend if isinstance(backend, ConversationAttachmentFetcher) else None
+        )
         return cls(
             auth_config=auth_config,
             dedupe=dedupe,
@@ -380,10 +433,13 @@ class SlackAskWorkflow:
             send=backend.send,
             selection_store=selection_store,
             pending_deletion_store=pending_deletion_store,
+            attachment_fetcher=fetcher,
+            attachment_max_bytes=attachment_max_bytes,
+            attachment_max_batch_files=attachment_max_batch_files,
         )
 
     async def handle(self, event: InboundConversationEvent) -> None:
-        authorized = authorize_inbound_ask(event, config=self._auth)
+        authorized = authorize_inbound_message(event, config=self._auth)
         if authorized is None:
             return
 
@@ -407,12 +463,185 @@ class SlackAskWorkflow:
             actor_key=actor_key,
         )
 
-        resolved = self._commands.match(authorized.question)
+        if event.attachments:
+            await self._handle_attachments(context)
+            return
+
+        resolved = self._commands.match(authorized.text)
         if resolved is not None:
             await resolved.handler(context, resolved.match)
             return
 
         await self._handle_regular_ask(context)
+
+    async def _handle_attachments(self, context: SlackCommandContext) -> None:
+        address = context.address
+        claim = context.claim
+        actor_key = context.actor_key
+        authorized = context.authorized
+        attachments = context.event.attachments
+
+        selection = self._selections.get(actor_key)
+        workspace_id = self._resolve_effective_workspace(
+            actor_key, authorized.workspace_id
+        )
+        used_in_memory_selection = (
+            selection is not None and bool((selection.workspace_id or "").strip())
+        )
+
+        if not workspace_id:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_no_workspace_available(),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        if len(attachments) > self._attachment_max_batch_files:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_too_many(self._attachment_max_batch_files),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        if self._attachment_fetcher is None:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_fetch_unavailable(),
+                )
+            )
+            self._dedupe.mark_failed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+            )
+            return
+
+        try:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_receiving(len(attachments)),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 — ack failure must not block intake
+            logger.warning(
+                "slack_companion attachment_ack_failed kind=%s",
+                type(exc).__name__,
+            )
+
+        downloaded: list[ConversationAttachmentContent] = []
+        try:
+            for reference in attachments:
+                content = await self._attachment_fetcher.fetch_attachment(
+                    reference,
+                    max_bytes=self._attachment_max_bytes,
+                )
+                downloaded.append(content)
+        except ConversationAttachmentFetchError as exc:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_fetch_failed(exc.kind),
+                )
+            )
+            self._dedupe.mark_failed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+            )
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion attachment_fetch_failed kind=%s",
+                type(exc).__name__,
+            )
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_fetch_failed("attachment_download_failed"),
+                )
+            )
+            self._dedupe.mark_failed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+            )
+            return
+
+        idempotency_key = slack_attachment_intake_idempotency_key(
+            team_id=authorized.team_id,
+            event_id=authorized.event_id,
+        )
+        try:
+            batch = await self._ask.upload_managed_files(
+                tenant_id=authorized.tenant_id,
+                workspace_id=workspace_id,
+                idempotency_key=idempotency_key,
+                attachments=downloaded,
+            )
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_batch_response(batch),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+        except SlackAskClientError as exc:
+            if used_in_memory_selection and exc.kind == "http_404":
+                self._selections.clear(actor_key)
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_selected_workspace_unavailable(),
+                    )
+                )
+                self._dedupe.mark_completed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                    ask_run_id=None,
+                )
+            else:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_attachment_intake_failed(),
+                    )
+                )
+                self._dedupe.mark_failed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion attachment_upload_failed kind=%s",
+                type(exc).__name__,
+            )
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_attachment_intake_failed(),
+                )
+            )
+            self._dedupe.mark_failed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+            )
 
     @slack_command(
         command_id="help",
@@ -691,7 +920,7 @@ class SlackAskWorkflow:
         claim = context.claim
         actor_key = context.actor_key
         authorized = context.authorized
-        question = authorized.question
+        question = authorized.text
 
         selection = self._selections.get(actor_key)
         workspace_id = self._resolve_effective_workspace(

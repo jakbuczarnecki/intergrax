@@ -5,15 +5,20 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin
 
 import httpx
 
+from intergrax.integrations.contracts.conversation_channel import (
+    ConversationAttachmentContent,
+)
 from local_workspace_application.slack_companion.models import (
     SlackAskClientError,
     SlackAskHttpResponse,
+    SlackManagedFileBatchResponse,
     SlackSourceListItem,
     SlackSourceListResponse,
     SlackWorkspaceCreateResponse,
@@ -60,6 +65,88 @@ class WorkspaceAskHttpClient:
     def build_sources_url(self, workspace_id: str) -> str:
         path = f"v1/local_workspace/workspaces/{workspace_id}/sources"
         return urljoin(self._base_url, path)
+
+    def build_managed_files_url(self, workspace_id: str) -> str:
+        path = f"v1/local_workspace/workspaces/{workspace_id}/knowledge/files"
+        return urljoin(self._base_url, path)
+
+    async def upload_managed_files(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        idempotency_key: str,
+        attachments: Sequence[ConversationAttachmentContent],
+    ) -> SlackManagedFileBatchResponse:
+        tenant = tenant_id.strip()
+        workspace = workspace_id.strip()
+        idem = idempotency_key.strip()
+        if not tenant or not workspace or not idem:
+            raise SlackAskClientError(kind="parse_error")
+        if not attachments:
+            raise SlackAskClientError(kind="parse_error")
+
+        url = self.build_managed_files_url(workspace)
+        headers: dict[str, str] = {
+            "Accept": "application/json",
+            "X-Tenant-Id": tenant,
+            "Idempotency-Key": idem,
+        }
+        if self._api_key is not None:
+            headers["X-API-Key"] = self._api_key
+
+        files = [
+            (
+                "files",
+                (
+                    attachment.file_name,
+                    attachment.body,
+                    attachment.content_type,
+                ),
+            )
+            for attachment in attachments
+        ]
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout,
+                transport=self._transport,
+            ) as client:
+                response = await client.post(url, files=files, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "slack_companion upload_managed_files timeout kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="timeout") from exc
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "slack_companion upload_managed_files transport_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="transport_error") from exc
+
+        if response.status_code < 200 or response.status_code >= 300:
+            status = response.status_code
+            logger.warning(
+                "slack_companion upload_managed_files http_error status=%s",
+                status,
+            )
+            raise SlackAskClientError(kind=f"http_{status}")
+
+        try:
+            payload = response.json()
+            parsed = SlackManagedFileBatchResponse.model_validate(payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion upload_managed_files parse_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="parse_error") from exc
+
+        if (parsed.workspace_id or "").strip() != workspace:
+            raise SlackAskClientError(kind="parse_error")
+        return parsed
 
     async def list_workspaces(self, *, tenant_id: str) -> list[SlackWorkspaceListItem]:
         """Return tenant-scoped workspaces allowed for Ask (status=active)."""

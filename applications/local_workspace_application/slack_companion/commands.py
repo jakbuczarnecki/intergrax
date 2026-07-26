@@ -14,7 +14,7 @@ from intergrax.integrations.contracts.conversation_channel import (
     InboundConversationEvent,
 )
 from local_workspace_application.slack_companion.models import (
-    AuthorizedSlackAskContext,
+    AuthorizedSlackMessageContext,
     SlackDedupeRecord,
 )
 
@@ -93,7 +93,7 @@ class SlackCommandContext:
 
     event: InboundConversationEvent
     address: ConversationAddress
-    authorized: AuthorizedSlackAskContext
+    authorized: AuthorizedSlackMessageContext
     claim: SlackDedupeRecord
     actor_key: str
 

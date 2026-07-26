@@ -9,12 +9,14 @@ import pytest
 from intergrax.integrations.contracts.conversation_channel import (
     ConversationActor,
     ConversationAddress,
+    ConversationAttachmentReference,
     ConversationEventKind,
     InboundConversationEvent,
 )
 from local_workspace_application.slack_companion.authorization import (
     SlackCompanionAuthConfig,
     authorize_inbound_ask,
+    authorize_inbound_message,
 )
 
 pytestmark = pytest.mark.unit
@@ -32,8 +34,9 @@ def _message(
     team_id: str = "T_APPROVED",
     user_id: str = "U_APPROVED",
     event_id: str = "Ev123",
-    text: str = "What is the policy?",
+    text: str | None = "What is the policy?",
     is_bot: bool = False,
+    attachments: tuple[ConversationAttachmentReference, ...] = (),
 ) -> InboundConversationEvent:
     return InboundConversationEvent(
         event_id=event_id,
@@ -45,6 +48,7 @@ def _message(
         actor=ConversationActor(actor_id=user_id, is_bot=is_bot),
         kind=ConversationEventKind.MESSAGE,
         text=text,
+        attachments=attachments,
         occurred_at=datetime.now(timezone.utc),
     )
 
@@ -90,6 +94,7 @@ def test_whitespace_question_not_accepted_via_stripped_empty() -> None:
         text="   ",
         occurred_at=None,
         action=None,
+        attachments=(),
         metadata={},
     )
     assert authorize_inbound_ask(event, config=_AUTH) is None
@@ -108,6 +113,89 @@ def test_missing_event_identity_fail_closed() -> None:
         text="hello",
         occurred_at=None,
         action=None,
+        attachments=(),
         metadata={},
     )
     assert authorize_inbound_ask(event, config=_AUTH) is None
+
+
+def test_attachment_only_message_authorized() -> None:
+    result = authorize_inbound_message(
+        _message(
+            text=None,
+            attachments=(ConversationAttachmentReference(attachment_id="F1"),),
+        ),
+        config=_AUTH,
+    )
+    assert result is not None
+    assert result.text == ""
+    assert result.team_id == "T_APPROVED"
+    assert result.user_id == "U_APPROVED"
+
+
+def test_authorize_inbound_ask_rejects_attachment_only() -> None:
+    assert (
+        authorize_inbound_ask(
+            _message(
+                text=None,
+                attachments=(ConversationAttachmentReference(attachment_id="F1"),),
+            ),
+            config=_AUTH,
+        )
+        is None
+    )
+
+
+def test_authorize_inbound_message_wrong_team_ignored() -> None:
+    assert (
+        authorize_inbound_message(_message(team_id="T_OTHER"), config=_AUTH) is None
+    )
+
+
+def test_authorize_inbound_message_wrong_user_ignored() -> None:
+    assert (
+        authorize_inbound_message(_message(user_id="U_OTHER"), config=_AUTH) is None
+    )
+
+
+def test_authorize_inbound_message_bot_ignored() -> None:
+    assert authorize_inbound_message(_message(is_bot=True), config=_AUTH) is None
+
+
+def test_authorize_inbound_message_missing_tenant_ignored() -> None:
+    auth = SlackCompanionAuthConfig(
+        approved_team_id="T_APPROVED",
+        approved_user_id="U_APPROVED",
+        tenant_id="  ",
+        active_workspace_id="ws-1",
+    )
+    assert authorize_inbound_message(_message(), config=auth) is None
+
+
+def test_authorize_inbound_message_missing_workspace_ignored() -> None:
+    auth = SlackCompanionAuthConfig(
+        approved_team_id="T_APPROVED",
+        approved_user_id="U_APPROVED",
+        tenant_id="tenant-1",
+        active_workspace_id="",
+    )
+    assert authorize_inbound_message(_message(), config=auth) is None
+
+
+def test_textless_event_with_no_attachments_ignored() -> None:
+    event = InboundConversationEvent.model_construct(
+        event_id="Ev123",
+        address=ConversationAddress(
+            installation_id="T_APPROVED",
+            conversation_id="D123",
+            thread_id="1710000.000100",
+        ),
+        actor=ConversationActor(actor_id="U_APPROVED", is_bot=False),
+        kind=ConversationEventKind.MESSAGE,
+        text=None,
+        occurred_at=None,
+        action=None,
+        attachments=(),
+        metadata={},
+    )
+    assert authorize_inbound_message(event, config=_AUTH) is None
