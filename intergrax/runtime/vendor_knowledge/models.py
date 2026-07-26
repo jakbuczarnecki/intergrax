@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from enum import StrEnum
 from typing import Mapping
@@ -27,6 +28,8 @@ type JsonObject = dict[str, JsonValue]
 _SECRET_KEY_NAMES: frozenset[str] = frozenset(
     {
         "token",
+        "access_token",
+        "refresh_token",
         "password",
         "secret",
         "api_key",
@@ -35,6 +38,8 @@ _SECRET_KEY_NAMES: frozenset[str] = frozenset(
         "bearer",
     }
 )
+
+_URL_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*$")
 
 _SECRET_KEY_SUFFIXES: tuple[str, ...] = (
     "_token",
@@ -67,30 +72,14 @@ def _is_forbidden_secret_key(key: str) -> bool:
     return any(segment in _SECRET_KEY_NAMES for segment in segments)
 
 
-def _assert_safe_mapping(value: Mapping[str, JsonValue], *, field_name: str) -> dict[str, JsonValue]:
-    def _walk(node: JsonValue, path: str) -> None:
-        if isinstance(node, dict):
-            for raw_key, child in node.items():
-                key = str(raw_key)
-                if _is_forbidden_secret_key(key):
-                    raise ValueError(
-                        f"{field_name} must not contain secret-bearing key '{path + key}'"
-                    )
-                _walk(child, f"{path}{key}.")
-        elif isinstance(node, list):
-            for index, child in enumerate(node):
-                _walk(child, f"{path}[{index}].")
-
-    as_dict = dict(value)
-    _walk(as_dict, "")
-    return as_dict
-
-
-def _require_non_empty(value: str, *, field_name: str) -> str:
+def _is_url_like(value: str) -> bool:
     cleaned = value.strip()
-    if not cleaned:
-        raise ValueError(f"{field_name} must be a non-empty string")
-    return cleaned
+    if "://" not in cleaned:
+        return False
+    scheme, _, rest = cleaned.partition("://")
+    if not scheme or not rest:
+        return False
+    return _URL_SCHEME_RE.fullmatch(scheme) is not None
 
 
 def _validate_safe_url(url: str, *, field_name: str) -> str:
@@ -105,6 +94,35 @@ def _validate_safe_url(url: str, *, field_name: str) -> str:
             raise ValueError(
                 f"{field_name} must not include secret-bearing query parameter '{raw_key}'"
             )
+    return cleaned
+
+
+def _assert_safe_mapping(value: Mapping[str, JsonValue], *, field_name: str) -> dict[str, JsonValue]:
+    def _walk(node: JsonValue, path: str) -> None:
+        if isinstance(node, dict):
+            for raw_key, child in node.items():
+                key = str(raw_key)
+                if _is_forbidden_secret_key(key):
+                    raise ValueError(
+                        f"{field_name} must not contain secret-bearing key '{path + key}'"
+                    )
+                _walk(child, f"{path}{key}.")
+        elif isinstance(node, list):
+            for index, child in enumerate(node):
+                _walk(child, f"{path}[{index}].")
+        elif isinstance(node, str) and _is_url_like(node):
+            label = path.rstrip(".") if path else field_name
+            _validate_safe_url(node, field_name=f"{field_name} value '{label}'")
+
+    as_dict = dict(value)
+    _walk(as_dict, "")
+    return as_dict
+
+
+def _require_non_empty(value: str, *, field_name: str) -> str:
+    cleaned = value.strip()
+    if not cleaned:
+        raise ValueError(f"{field_name} must be a non-empty string")
     return cleaned
 
 
@@ -255,7 +273,10 @@ class KnowledgeItemProvenance(BaseModel):
     def _optional_locator(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        return _require_non_empty(value, field_name="safe_locator")
+        cleaned = _require_non_empty(value, field_name="safe_locator")
+        if _is_url_like(cleaned):
+            return _validate_safe_url(cleaned, field_name="safe_locator")
+        return cleaned
 
 
 class KnowledgeItemDescriptor(BaseModel):
@@ -280,6 +301,12 @@ class KnowledgeItemDescriptor(BaseModel):
     @classmethod
     def _safe_metadata(cls, value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
         return _assert_safe_mapping(value, field_name="metadata")
+
+    @model_validator(mode="after")
+    def _identity_matches_provenance(self) -> KnowledgeItemDescriptor:
+        if self.identity.remote_id != self.provenance.remote_id:
+            raise ValueError("identity.remote_id must equal provenance.remote_id")
+        return self
 
 
 class KnowledgePrincipal(BaseModel):

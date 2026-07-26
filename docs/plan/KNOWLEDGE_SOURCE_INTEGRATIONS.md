@@ -38,8 +38,8 @@ Existing integrations remain low-level and authoritative. The facade is not an i
 DONE:     VENDOR-KNOWLEDGE-FACADE-ARCH-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-PLAN-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-AUDIT-1
-NEXT:     VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
-PLANNED:  VENDOR-KNOWLEDGE-FACADE-CORE-1
+DONE:     VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
+NEXT:     VENDOR-KNOWLEDGE-FACADE-CORE-1
 PLANNED:  VENDOR-KNOWLEDGE-CONNECTION-1
 PLANNED:  VENDOR-KNOWLEDGE-SYNC-1A
 DEFERRED: LKW-CONNECTED-SOURCE-1
@@ -48,7 +48,7 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 Current runtime state:
 
 ```text
-No facade contract implemented
+Facade contract models/errors/protocols under intergrax/runtime/vendor_knowledge/
 No adapter registry implemented
 No connection/source binding implemented
 No synchronization coordinator implemented
@@ -183,17 +183,18 @@ Confirmed gaps:
 
 #### `VENDOR-KNOWLEDGE-FACADE-CONTRACT-1`
 
-**Status:** `NEXT`
+**Status:** `DONE`
 
 **Purpose:** Define the minimum stable vocabulary and ports without implementing runtime behavior.
 
 **Allowed scope:**
 
 ```text
-intergrax/knowledge_sources/__init__.py
-intergrax/knowledge_sources/contracts.py
-intergrax/knowledge_sources/errors.py
-tests/unit/knowledge_sources/test_contracts.py
+intergrax/runtime/vendor_knowledge/__init__.py
+intergrax/runtime/vendor_knowledge/models.py
+intergrax/runtime/vendor_knowledge/contracts.py
+intergrax/runtime/vendor_knowledge/errors.py
+tests/unit/runtime/vendor_knowledge/
 ```
 
 **Deliverables:**
@@ -239,7 +240,7 @@ tests/unit/knowledge_sources/test_contracts.py
 
 #### `VENDOR-KNOWLEDGE-FACADE-CORE-1`
 
-**Status:** `PLANNED`
+**Status:** `NEXT`
 
 **Dependency:** Phase 1
 
@@ -418,7 +419,7 @@ Add safe source discovery, selection, sync request and status through Slack. Sla
 Implement only:
 
 ```text
-VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
+VENDOR-KNOWLEDGE-FACADE-CORE-1
 ```
 
 Do not start Jira, Graph, Confluence, persistence, queues or LKW changes in the same task.

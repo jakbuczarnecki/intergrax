@@ -258,14 +258,26 @@ def test_contracts_are_vendor_neutral() -> None:
 
 @pytest.mark.unit
 def test_package_does_not_import_lkw() -> None:
+    import subprocess
+    import sys
+
     module_names = set(getattr(package, "__all__", ()))
     assert "local_workspace_application" not in repr(package)
     assert "ManagedWorkspace" not in module_names
-    import sys
 
-    loaded = " ".join(sys.modules)
-    # Importing the contract package must not pull LKW modules.
-    assert "local_workspace_application" not in loaded
+    probe = (
+        "import sys\n"
+        "import intergrax.runtime.vendor_knowledge\n"
+        "loaded = any('local_workspace_application' in name for name in sys.modules)\n"
+        "print('LOADED' if loaded else 'CLEAN')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip() == "CLEAN"
 
 
 @pytest.mark.unit

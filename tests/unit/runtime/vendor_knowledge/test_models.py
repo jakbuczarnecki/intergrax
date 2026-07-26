@@ -163,14 +163,25 @@ def test_rejects_empty_identifiers() -> None:
 @pytest.mark.unit
 def test_identity_is_separate_from_revision() -> None:
     identity = _identity(remote_id="stable-id")
+    provenance = _provenance(remote_id="stable-id")
     revision_a = KnowledgeItemRevision(content_hash="hash-a")
     revision_b = KnowledgeItemRevision(content_hash="hash-b", version="2")
-    left = _descriptor(identity=identity, revision=revision_a)
-    right = _descriptor(identity=identity, revision=revision_b)
+    left = _descriptor(identity=identity, revision=revision_a, provenance=provenance)
+    right = _descriptor(identity=identity, revision=revision_b, provenance=provenance)
 
     assert left.identity.remote_id == right.identity.remote_id == "stable-id"
+    assert left.provenance.remote_id == "stable-id"
     assert left.revision.content_hash != right.revision.content_hash
     assert left.identity.model_dump() == right.identity.model_dump()
+
+
+@pytest.mark.unit
+def test_rejects_mismatched_identity_and_provenance_remote_ids() -> None:
+    with pytest.raises(ValidationError):
+        _descriptor(
+            identity=_identity(remote_id="id-a"),
+            provenance=_provenance(remote_id="id-b"),
+        )
 
 
 @pytest.mark.unit
@@ -217,10 +228,53 @@ def test_rejects_secrets_in_parameters_and_metadata() -> None:
 
 @pytest.mark.unit
 def test_accepts_safe_credential_ref() -> None:
-    scope = _scope(parameters={"credential_ref": "vault://conn/1", "region": "eu"})
+    scope = _scope(parameters={"credential_ref": "vault://connection/1", "region": "eu"})
     descriptor = _descriptor(metadata={"credential_ref": "vault://item/1"})
-    assert scope.parameters["credential_ref"] == "vault://conn/1"
+    assert scope.parameters["credential_ref"] == "vault://connection/1"
     assert descriptor.metadata["credential_ref"] == "vault://item/1"
+
+
+@pytest.mark.unit
+def test_accepts_ordinary_text_containing_secret_words() -> None:
+    scope = _scope(parameters={"note": "Reset the password using the token from email"})
+    descriptor = _descriptor(metadata={"hint": "do not paste an api_key into chat"})
+    assert "password" in str(scope.parameters["note"])
+    assert "token" in str(scope.parameters["note"])
+    assert "api_key" in str(descriptor.metadata["hint"])
+
+
+@pytest.mark.unit
+def test_rejects_credentials_in_nested_parameters_url() -> None:
+    with pytest.raises(ValidationError):
+        _scope(
+            parameters={
+                "nested": {"endpoint": "https://user:pass@example.test/api"},
+            }
+        )
+
+
+@pytest.mark.unit
+def test_rejects_token_query_in_nested_metadata_url() -> None:
+    with pytest.raises(ValidationError):
+        _descriptor(
+            metadata={
+                "links": [{"href": "https://example.test/item?token=abc"}],
+            }
+        )
+
+
+@pytest.mark.unit
+def test_rejects_unsafe_url_in_safe_locator() -> None:
+    with pytest.raises(ValidationError):
+        _provenance(safe_locator="https://user:secret@example.test/item")
+    with pytest.raises(ValidationError):
+        _provenance(safe_locator="https://example.test/item?api_key=x")
+
+
+@pytest.mark.unit
+def test_accepts_safe_non_url_locator() -> None:
+    provenance = _provenance(safe_locator="pages/item-1")
+    assert provenance.safe_locator == "pages/item-1"
 
 
 @pytest.mark.unit

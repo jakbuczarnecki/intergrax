@@ -257,6 +257,7 @@ remote_item_revoked
 invalid_cursor
 invalid_scope
 tenant_mismatch
+invalid_provider_response
 ```
 
 The envelope must be safe for logs and application status. It must not expose tokens, authorization headers, credential paths containing secrets or unsafe response bodies.
@@ -319,7 +320,8 @@ The first code slice should live in a platform-neutral package and must not impo
 Recommended location after contract review:
 
 ```text
-intergrax/knowledge_sources/
+intergrax/runtime/vendor_knowledge/
+    models.py
     contracts.py
     errors.py
 ```
@@ -345,15 +347,16 @@ The package name is a platform service namespace, not an integration category.
 ### `VENDOR-KNOWLEDGE-FACADE-CONTRACT-1`
 
 **Type:** small code task  
-**Status:** `NEXT`
+**Status:** `DONE`
 
 Allowed initial scope:
 
 ```text
-intergrax/knowledge_sources/__init__.py
-intergrax/knowledge_sources/contracts.py
-intergrax/knowledge_sources/errors.py
-tests/unit/knowledge_sources/test_contracts.py
+intergrax/runtime/vendor_knowledge/__init__.py
+intergrax/runtime/vendor_knowledge/models.py
+intergrax/runtime/vendor_knowledge/contracts.py
+intergrax/runtime/vendor_knowledge/errors.py
+tests/unit/runtime/vendor_knowledge/
 ```
 
 Semantic deliverables:
@@ -390,8 +393,8 @@ Explicitly out of scope:
 DONE:    VENDOR-KNOWLEDGE-FACADE-ARCH-1
 DONE:    VENDOR-KNOWLEDGE-FACADE-PLAN-1
 DONE:    VENDOR-KNOWLEDGE-FACADE-AUDIT-1
-NEXT:    VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
-LATER:   VENDOR-KNOWLEDGE-FACADE-CORE-1
+DONE:    VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
+NEXT:    VENDOR-KNOWLEDGE-FACADE-CORE-1
 LATER:   VENDOR-KNOWLEDGE-CONNECTION-1
 LATER:   VENDOR-KNOWLEDGE-SYNC-1A
 DEFERRED: LKW-CONNECTED-SOURCE-1
