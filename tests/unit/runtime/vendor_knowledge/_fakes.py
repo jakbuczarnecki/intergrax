@@ -6,9 +6,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.document_store import (
+    DocumentQueryResult,
+    DocumentRecord,
+)
 from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeAdapterCapabilities,
@@ -279,3 +283,52 @@ def raise_vendor_error(
     safe_message: str = "adapter domain failure",
 ) -> VendorKnowledgeError:
     return VendorKnowledgeError(code=code, safe_message=safe_message)
+
+
+@dataclass
+class FakeConnectionIntegration:
+    """Neutral integration instance for connection-registry tests."""
+
+    provider_id: str = "ms365_graph"
+    integration_kind: str = IntegrationCategory.COLLABORATION_SUITE.value
+    label: str = "connection-a"
+
+
+class InMemoryDocumentStore:
+    """Minimal DocumentStore fake for binding repository tests."""
+
+    def __init__(self) -> None:
+        self._rows: dict[tuple[str, str], DocumentRecord] = {}
+        self.closed = False
+        self.close_calls = 0
+
+    def get(self, partition_key: str, row_key: str) -> Optional[DocumentRecord]:
+        return self._rows.get((partition_key, row_key))
+
+    def put(self, document: DocumentRecord) -> None:
+        self._rows[(document.partition_key, document.row_key)] = document
+
+    def delete(self, partition_key: str, row_key: str) -> None:
+        self._rows.pop((partition_key, row_key), None)
+
+    def query(
+        self,
+        partition_key: str,
+        *,
+        limit: int = 100,
+        row_key_prefix: Optional[str] = None,
+    ) -> DocumentQueryResult:
+        matches: list[DocumentRecord] = []
+        for (pk, rk), document in sorted(self._rows.items(), key=lambda item: item[0][1]):
+            if pk != partition_key:
+                continue
+            if row_key_prefix is not None and not rk.startswith(row_key_prefix):
+                continue
+            matches.append(document)
+            if len(matches) >= limit:
+                break
+        return DocumentQueryResult(documents=matches, total=len(matches))
+
+    def close(self) -> None:
+        self.closed = True
+        self.close_calls += 1

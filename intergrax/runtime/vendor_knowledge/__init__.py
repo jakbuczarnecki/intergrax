@@ -1,8 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Vendor Knowledge Facade — contracts and stateless core services."""
+"""Vendor Knowledge Facade — contracts and core services."""
 
+from intergrax.runtime.vendor_knowledge.binding_document_store import (
+    DocumentStoreKnowledgeSourceBindingRepository,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingRepository,
+    KnowledgeSourceBindingService,
+    KnowledgeSourceBindingStatus,
+    to_source_ref,
+)
+from intergrax.runtime.vendor_knowledge.connections import (
+    ConnectionAwareVendorResolver,
+    KnowledgeConnectionRegistry,
+)
 from intergrax.runtime.vendor_knowledge.contracts import (
     VendorIntegrationResolver,
     VendorKnowledgeAdapter,
@@ -36,11 +50,14 @@ from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 from intergrax.runtime.vendor_knowledge.resolver import IntegrationProfileVendorResolver
 
 __all__ = [
+    "ConnectionAwareVendorResolver",
+    "DocumentStoreKnowledgeSourceBindingRepository",
     "IntegrationProfileVendorResolver",
     "KnowledgeAdapterCapabilities",
     "KnowledgeAdapterRegistry",
     "KnowledgeChange",
     "KnowledgeChangeKind",
+    "KnowledgeConnectionRegistry",
     "KnowledgeContent",
     "KnowledgeContentMode",
     "KnowledgeCursor",
@@ -52,6 +69,10 @@ __all__ = [
     "KnowledgePermissions",
     "KnowledgePrincipal",
     "KnowledgeScopeInfo",
+    "KnowledgeSourceBinding",
+    "KnowledgeSourceBindingRepository",
+    "KnowledgeSourceBindingService",
+    "KnowledgeSourceBindingStatus",
     "KnowledgeSourceRef",
     "KnowledgeSourceScope",
     "KnowledgeVisibility",
@@ -61,4 +82,5 @@ __all__ = [
     "VendorKnowledgeErrorCode",
     "VendorKnowledgeFacade",
     "VendorKnowledgeFacadeService",
+    "to_source_ref",
 ]
