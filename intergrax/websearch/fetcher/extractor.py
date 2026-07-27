@@ -104,6 +104,7 @@ def extract_advanced(
 
     html = page.html
     extracted_text: Optional[str] = None
+    extraction_method = "beautifulsoup"
 
     # ---------------------------------
     # STEP 1: Try readability extraction via trafilatura (if installed)
@@ -116,6 +117,8 @@ def extract_advanced(
                 include_comments=False,
                 favor_precision=True,
             )
+            if extracted_text:
+                extraction_method = "trafilatura"
         except Exception:
             extracted_text = None
 
@@ -126,12 +129,28 @@ def extract_advanced(
         soup = BeautifulSoup(html, "lxml")
 
         # Remove non-content HTML nodes
-        for tag in soup(["script", "style", "noscript", "iframe", "header", "footer"]):
+        for tag in soup(
+            [
+                "script",
+                "style",
+                "noscript",
+                "iframe",
+                "header",
+                "footer",
+                "nav",
+                "aside",
+                "form",
+                "button",
+                "svg",
+                "canvas",
+            ]
+        ):
             tag.decompose()
 
         # Extract readable text and normalize formatting
         raw_text = soup.get_text(separator="\n", strip=True)
         extracted_text = _normalize_whitespace(raw_text)
+        extraction_method = "beautifulsoup"
 
     # ---------------------------------
     # STEP 3: Respect overwrite mode
@@ -141,16 +160,17 @@ def extract_advanced(
     if page.text and not overwrite_existing_text:
         _attach_extraction_metadata(
             page,
-            used_trafilatura=HAS_TRAFILATURA,
+            extraction_method=extraction_method,
             overwritten=False,
             length_before=len(page.text),
-            length_after=len(extracted_text),
+            length_after=len(extracted_text or ""),
         )
         return page
 
     # ---------------------------------
     # STEP 4: Replace or set PageContent.text with extracted form
     # ---------------------------------
+    length_before = len(page.text) if page.text else 0
     page.text = extracted_text
 
     # Optional threshold check: flag unusually small content bodies
@@ -167,9 +187,9 @@ def extract_advanced(
     # ---------------------------------
     _attach_extraction_metadata(
         page,
-        used_trafilatura=HAS_TRAFILATURA,
+        extraction_method=extraction_method,
         overwritten=True,
-        length_before=0 if not page.text else len(page.text),
+        length_before=length_before,
         length_after=len(extracted_text or ""),
     )
 
@@ -186,14 +206,14 @@ def _normalize_whitespace(text: str) -> str:
     trimming trailing/leading spaces, and collapsing empty lines.
     """
     lines = [line.strip() for line in text.splitlines()]
-    non_empty = [l for l in lines if l]
+    non_empty = [line for line in lines if line]
     return "\n".join(non_empty)
 
 
 def _attach_extraction_metadata(
     page: PageContent,
     *,
-    used_trafilatura: bool,
+    extraction_method: str,
     overwritten: bool,
     length_before: int,
     length_after: int,
@@ -202,7 +222,7 @@ def _attach_extraction_metadata(
     Attaches metadata to PageContent.extra to help debugging and analysis.
 
     Metadata recorded includes:
-    - whether trafilatura was used,
+    - extraction method used,
     - whether existing text was overwritten,
     - before/after text length comparison.
 
@@ -213,7 +233,7 @@ def _attach_extraction_metadata(
 
     extraction_info.update(
         {
-            "used_trafilatura": used_trafilatura,
+            "extraction_method": extraction_method,
             "overwritten_existing_text": overwritten,
             "length_before": length_before,
             "length_after": length_after,
