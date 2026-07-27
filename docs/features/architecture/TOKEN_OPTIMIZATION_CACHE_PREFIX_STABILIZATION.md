@@ -308,7 +308,7 @@ These are conceptual names only. Actual event ownership remains with the existin
 
 ## 10. Roadmap impact
 
-`TOKEN-OPT-4B` is **Done / Closed**. `TOKEN-OPT-5A` is **Done / Closed**. The next strategic Token Optimization step is provider cache policy and capability contract, not advisory recommendations or additional lossy mechanisms.
+`TOKEN-OPT-4B` is **Done / Closed**. `TOKEN-OPT-5A` is **Done / Closed**. `TOKEN-OPT-5B` is **Done / Closed** as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. Next step is `TOKEN-OPT-5E` — cache-aware compaction timing policy. Intergrax now has provider-neutral prompt-cache contracts and synthetic prefix-stability proof. Runtime/provider integration remains deferred. Cache attribution remains separate from content-reduction savings.
 
 Recommended order:
 
@@ -316,10 +316,10 @@ Recommended order:
 |-------|------|-------|--------|------------------|
 | 1 | `TOKEN-OPT-4B` | Extractive filtering evaluation cases / regression pack | **Done / Closed** | No new runtime algorithm |
 | 2 | `TOKEN-OPT-5A` | Cache-prefix stabilization architecture / contract | **Done / Closed** | Docs/contracts only |
-| 3 | `TOKEN-OPT-5B` | Provider cache policy and capability contract | **Next / Planned** | Contracts only |
-| 4 | `TOKEN-OPT-5C` | Append-only prompt/thread invariant tests | Planned | Test-only / helper-only |
-| 5 | `TOKEN-OPT-5D` | Cache-prefix stability evaluation pack | Planned | Synthetic evaluation only |
-| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing design | Planned | Docs/contracts only |
+| 3 | `TOKEN-OPT-5B` | Prompt-cache contracts and cache-prefix stability proof | **Done / Closed** | Contracts + helpers + synthetic eval |
+| 4 | `TOKEN-OPT-5C` | Folded into `TOKEN-OPT-5B` | Folded | — |
+| 5 | `TOKEN-OPT-5D` | Folded into `TOKEN-OPT-5B` | Folded | — |
+| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing policy | **Next / Planned** | Docs/contracts only |
 | 7 | `TOKEN-7A` | Advisory recommendation contract | Deferred | Still deferred |
 
 ### TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
@@ -365,49 +365,38 @@ compaction timing must account for cache invalidation cost
 no runtime behavior added
 ```
 
-### TOKEN-OPT-5B — provider cache policy and capability contract
+### TOKEN-OPT-5B — prompt-cache contracts and cache-prefix stability proof
 
-**Status:** **Next / Planned**.
+**Status:** **Done / Closed**.
 
-Potential contracts:
+`TOKEN-OPT-5B` is Done / Closed as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. Next step is `TOKEN-OPT-5E` — cache-aware compaction timing policy.
+
+Delivered contracts and helpers (no provider API calls, no runtime prompt assembly):
 
 ```text
+PromptCacheMode
+PromptCacheInvalidationReason
 PromptCachePolicy
 PromptCacheProviderCapabilities
 PromptCacheUsageSnapshot
 PromptCacheAttribution
-PromptCacheInvalidationReason
+PromptCacheBlock / PromptCachePrefixSnapshot / PromptCachePrefixStabilityResult
+build_prefix_snapshot / compute_prefix_hash / evaluate_prefix_stability
+preserves_append_only_prefix
+synthetic prompt_cache_prefix corpus
 ```
-
-Initial behavior should remain contract-only.
 
 ### TOKEN-OPT-5C — append-only prompt/thread invariant tests
 
-**Status:** Planned.
-
-Purpose:
-
-```text
-Prove that helper-level prompt/thread assembly examples preserve byte-stable prefix blocks and isolate dynamic tail content.
-```
-
-No production prompt assembly changes in this slice.
+**Status:** Folded into `TOKEN-OPT-5B`.
 
 ### TOKEN-OPT-5D — cache-prefix stability evaluation pack
 
-**Status:** Planned.
+**Status:** Folded into `TOKEN-OPT-5B`.
 
-Purpose:
+### TOKEN-OPT-5E — cache-aware compaction timing policy
 
-```text
-Add synthetic cases measuring prefix stability, prefix hash consistency, invalidation reasons, and dynamic-tail isolation.
-```
-
-This pack must not claim content savings.
-
-### TOKEN-OPT-5E — cache-aware compaction timing design
-
-**Status:** Planned.
+**Status:** **Next / Planned**.
 
 Purpose:
 
@@ -460,10 +449,12 @@ known limitations
 
 `TOKEN-OPT-5A` is **Done / Closed**.
 
+`TOKEN-OPT-5B` is **Done / Closed**.
+
 Next step:
 
 ```text
-TOKEN-OPT-5B — provider cache policy and capability contract
+TOKEN-OPT-5E — cache-aware compaction timing policy
 ```
 
 Do not return to `TOKEN-7A` advisory recommendations until Intergrax has enough real optimization mechanisms, provider/cache attribution contracts, and evaluation data to make recommendations useful and safe.

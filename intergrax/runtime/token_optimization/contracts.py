@@ -787,3 +787,249 @@ class TokenOptimizationPipelineResult:
         _validate_non_empty_id_tuple(self.applied_layer_ids, "applied_layer_ids")
         _validate_non_empty_id_tuple(self.bypassed_layer_ids, "bypassed_layer_ids")
         _validate_non_empty_id_tuple(self.failed_layer_ids, "failed_layer_ids")
+
+
+class PromptCacheMode(StrEnum):
+    """Requested prompt-cache behavior mode (provider-neutral)."""
+
+    OFF = "off"
+    PROVIDER_DEFAULT = "provider_default"
+    EXPLICIT_BREAKPOINTS = "explicit_breakpoints"
+    CACHE_KEY = "cache_key"
+    SESSION_AFFINITY = "session_affinity"
+
+
+class PromptCacheInvalidationReason(StrEnum):
+    """Why a stable prompt-cache prefix became invalid (no raw content)."""
+
+    NONE = "none"
+    DISABLED = "disabled"
+    UNSUPPORTED_PROVIDER = "unsupported_provider"
+    PREFIX_CHANGED = "prefix_changed"
+    TOOL_ENVELOPE_CHANGED = "tool_envelope_changed"
+    DYNAMIC_DATA_IN_PREFIX = "dynamic_data_in_prefix"
+    TTL_EXPIRED = "ttl_expired"
+    CACHE_KEY_CHANGED = "cache_key_changed"
+    SESSION_CHANGED = "session_changed"
+    PROVIDER_NOT_REPORTED = "provider_not_reported"
+    UNKNOWN = "unknown"
+
+
+def _validate_optional_non_negative_int(value: int | None, field_name: str) -> None:
+    if value is not None and value < 0:
+        raise ValueError(f"{field_name} cannot be negative")
+
+
+def _validate_optional_non_negative_float(value: float | None, field_name: str) -> None:
+    if value is not None and value < 0:
+        raise ValueError(f"{field_name} cannot be negative")
+
+
+def _validate_stripped_non_empty(value: str, field_name: str) -> None:
+    if not value.strip():
+        raise ValueError(f"{field_name} cannot be empty")
+
+
+def _validate_optional_stripped_non_empty(value: str | None, field_name: str) -> None:
+    if value is not None and not value.strip():
+        raise ValueError(f"{field_name} cannot be empty")
+
+
+@dataclass(frozen=True, slots=True)
+class PromptCacheProviderCapabilities:
+    """Declared prompt-cache capabilities of an LLM provider."""
+
+    provider: str
+    supports_prompt_caching: bool = False
+    supports_automatic_caching: bool = False
+    supports_explicit_breakpoints: bool = False
+    supports_cache_key: bool = False
+    supports_cache_retention_ttl: bool = False
+    supports_cache_usage_tokens: bool = False
+    supports_cache_creation_tokens: bool = False
+    supports_cache_read_tokens: bool = False
+    requires_session_affinity: bool = False
+    max_cache_breakpoints: int | None = None
+    default_ttl_seconds: int | None = None
+    max_ttl_seconds: int | None = None
+
+    def __post_init__(self) -> None:
+        _validate_stripped_non_empty(self.provider, "provider")
+        _validate_optional_non_negative_int(
+            self.max_cache_breakpoints, "max_cache_breakpoints"
+        )
+        _validate_optional_non_negative_int(self.default_ttl_seconds, "default_ttl_seconds")
+        _validate_optional_non_negative_int(self.max_ttl_seconds, "max_ttl_seconds")
+        if (
+            self.default_ttl_seconds is not None
+            and self.max_ttl_seconds is not None
+            and self.default_ttl_seconds > self.max_ttl_seconds
+        ):
+            raise ValueError(
+                "default_ttl_seconds cannot exceed max_ttl_seconds"
+            )
+        if not self.supports_prompt_caching:
+            feature_flags = (
+                self.supports_automatic_caching,
+                self.supports_explicit_breakpoints,
+                self.supports_cache_key,
+                self.supports_cache_retention_ttl,
+                self.supports_cache_usage_tokens,
+                self.supports_cache_creation_tokens,
+                self.supports_cache_read_tokens,
+                self.requires_session_affinity,
+            )
+            if any(feature_flags):
+                raise ValueError(
+                    "provider must not claim specific prompt-cache features "
+                    "when supports_prompt_caching is False"
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class PromptCachePolicy:
+    """Shared prompt-cache policy envelope (no provider API calls)."""
+
+    enabled: bool = False
+    mode: PromptCacheMode = PromptCacheMode.OFF
+    stable_prefix_required: bool = False
+    append_only_thread_required: bool = False
+    allow_explicit_breakpoints: bool = False
+    allow_cache_key: bool = False
+    allow_session_affinity: bool = False
+    cache_key_scope: str | None = None
+    max_cache_breakpoints: int | None = None
+    requested_ttl_seconds: int | None = None
+
+    def __post_init__(self) -> None:
+        if not self.enabled and self.mode is not PromptCacheMode.OFF:
+            raise ValueError("mode must be OFF when enabled is False")
+        if self.enabled and self.mode is PromptCacheMode.OFF:
+            raise ValueError("mode must not be OFF when enabled is True")
+        _validate_optional_stripped_non_empty(self.cache_key_scope, "cache_key_scope")
+        _validate_optional_non_negative_int(
+            self.max_cache_breakpoints, "max_cache_breakpoints"
+        )
+        _validate_optional_non_negative_int(
+            self.requested_ttl_seconds, "requested_ttl_seconds"
+        )
+        if (
+            self.mode is PromptCacheMode.EXPLICIT_BREAKPOINTS
+            and not self.allow_explicit_breakpoints
+        ):
+            raise ValueError(
+                "EXPLICIT_BREAKPOINTS requires allow_explicit_breakpoints=True"
+            )
+        if self.mode is PromptCacheMode.CACHE_KEY:
+            if not self.allow_cache_key:
+                raise ValueError("CACHE_KEY requires allow_cache_key=True")
+            if self.cache_key_scope is None:
+                raise ValueError("CACHE_KEY requires cache_key_scope")
+        if (
+            self.mode is PromptCacheMode.SESSION_AFFINITY
+            and not self.allow_session_affinity
+        ):
+            raise ValueError(
+                "SESSION_AFFINITY requires allow_session_affinity=True"
+            )
+
+    @classmethod
+    def disabled(cls) -> "PromptCachePolicy":
+        return cls(enabled=False, mode=PromptCacheMode.OFF)
+
+
+@dataclass(frozen=True, slots=True)
+class PromptCacheUsageSnapshot:
+    """Provider-reported prompt-cache usage signals (not content-reduction savings)."""
+
+    provider: str
+    model: str | None = None
+    cache_read_tokens: int | None = None
+    cache_creation_tokens: int | None = None
+    cached_input_tokens: int | None = None
+    uncached_input_tokens: int | None = None
+    cache_hit_ratio: float | None = None
+    cache_latency_delta_estimate_ms: float | None = None
+    cache_discount_estimate: float | None = None
+
+    def __post_init__(self) -> None:
+        _validate_stripped_non_empty(self.provider, "provider")
+        _validate_optional_non_negative_int(self.cache_read_tokens, "cache_read_tokens")
+        _validate_optional_non_negative_int(
+            self.cache_creation_tokens, "cache_creation_tokens"
+        )
+        _validate_optional_non_negative_int(
+            self.cached_input_tokens, "cached_input_tokens"
+        )
+        _validate_optional_non_negative_int(
+            self.uncached_input_tokens, "uncached_input_tokens"
+        )
+        if self.cache_hit_ratio is not None and not 0.0 <= self.cache_hit_ratio <= 1.0:
+            raise ValueError("cache_hit_ratio must be between 0.0 and 1.0 inclusive")
+        _validate_optional_non_negative_float(
+            self.cache_latency_delta_estimate_ms, "cache_latency_delta_estimate_ms"
+        )
+        _validate_optional_non_negative_float(
+            self.cache_discount_estimate, "cache_discount_estimate"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class PromptCacheAttribution:
+    """Attribution that keeps provider-cache usage separate from content reduction."""
+
+    policy: PromptCachePolicy
+    provider_capabilities: PromptCacheProviderCapabilities | None = None
+    usage: PromptCacheUsageSnapshot | None = None
+    prefix_hash: str | None = None
+    prefix_stability_status: str | None = None
+    invalidation_reason: PromptCacheInvalidationReason = PromptCacheInvalidationReason.NONE
+    content_reduction_strategy: str | None = None
+    content_saved_chars: int | None = None
+    content_saved_tokens: int | None = None
+
+    def __post_init__(self) -> None:
+        _validate_optional_stripped_non_empty(self.prefix_hash, "prefix_hash")
+        _validate_optional_stripped_non_empty(
+            self.prefix_stability_status, "prefix_stability_status"
+        )
+        _validate_optional_stripped_non_empty(
+            self.content_reduction_strategy, "content_reduction_strategy"
+        )
+        _validate_optional_non_negative_int(
+            self.content_saved_chars, "content_saved_chars"
+        )
+        _validate_optional_non_negative_int(
+            self.content_saved_tokens, "content_saved_tokens"
+        )
+        if (
+            self.provider_capabilities is not None
+            and self.usage is not None
+            and self.provider_capabilities.provider != self.usage.provider
+        ):
+            raise ValueError(
+                "provider_capabilities.provider and usage.provider must match"
+            )
+
+    def has_provider_cache_usage(self) -> bool:
+        if self.usage is None:
+            return False
+        return any(
+            value is not None
+            for value in (
+                self.usage.cache_read_tokens,
+                self.usage.cache_creation_tokens,
+                self.usage.cached_input_tokens,
+                self.usage.uncached_input_tokens,
+                self.usage.cache_hit_ratio,
+                self.usage.cache_latency_delta_estimate_ms,
+                self.usage.cache_discount_estimate,
+            )
+        )
+
+    def has_content_reduction(self) -> bool:
+        return (
+            self.content_reduction_strategy is not None
+            or self.content_saved_chars is not None
+            or self.content_saved_tokens is not None
+        )

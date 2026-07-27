@@ -672,10 +672,10 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 9 | **TOKEN-OPT-4A** | Extractive filtering layer — **Done / Closed** |
 | 10 | **TOKEN-OPT-4B** | Extractive filtering evaluation / regression pack — **Done / Closed** |
 | 11 | **TOKEN-OPT-5A** | Cache-prefix stabilization architecture / contract — **Done / Closed** |
-| 12 | **TOKEN-OPT-5B** | Provider cache policy and capability contract — **Next / Planned** |
-| 13 | **TOKEN-OPT-5C** | Append-only prompt/thread invariant tests — Planned |
-| 14 | **TOKEN-OPT-5D** | Cache-prefix stability evaluation pack — Planned |
-| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing design — Planned |
+| 12 | **TOKEN-OPT-5B** | Prompt-cache contracts and cache-prefix stability proof — **Done / Closed** (folds former **TOKEN-OPT-5C** / **TOKEN-OPT-5D**) |
+| 13 | **TOKEN-OPT-5C** | Folded into **TOKEN-OPT-5B** functional block |
+| 14 | **TOKEN-OPT-5D** | Folded into **TOKEN-OPT-5B** functional block |
+| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Next / Planned** |
 | — | **TOKEN-7A** | Advisory recommendation contract — Deferred |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
@@ -695,7 +695,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
 | Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | **TOKEN-OPT-4A** | **Implemented** |
-| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** (architecture) → **TOKEN-OPT-5B+** | Architecture **Done / Closed**; runtime deferred |
+| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** → **TOKEN-OPT-5B** (contracts + synthetic proof) → **TOKEN-OPT-5E+** | Architecture + contracts/helpers **Done / Closed**; runtime/provider integration deferred |
 | Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Retrieval-on-demand | `rag_context_pack`, `retrieved_evidence` | `reversible` / `lossy` (partial) | `balanced` | Yes | Yes | Yes | RAG integration slice | Deferred |
 | Safe lossy summarization | `memory`, `rag_context_pack` | `lossy` | `aggressive` (explicit `allow_lossy`) | Yes | Yes | Yes | Post-3D eval | **Excluded** from next slice |
@@ -1031,6 +1031,46 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no README or public adoption documentation updated
 - next step: TOKEN-OPT-5B — provider cache policy and capability contract
 
+#### TOKEN-OPT-5B — prompt-cache contracts and cache-prefix stability proof
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add provider prompt-cache contracts, helper-level stable-prefix/dynamic-tail modeling, append-only prefix invariant checks, and synthetic prefix-stability evaluation without provider API calls or runtime prompt assembly.
+
+**Deliverables:**
+
+- provider prompt-cache contract types
+- provider cache invalidation reason vocabulary
+- helper-level prompt cache block/snapshot/stability model
+- deterministic prefix hashing
+- append-only prefix invariant helper
+- synthetic prefix-stability corpus
+- focused contract and prefix-stability tests
+
+**Closeout:**
+
+- prompt cache mode enum added
+- cache invalidation reason enum added
+- provider cache capabilities contract added
+- prompt cache policy contract added
+- provider cache usage snapshot contract added
+- prompt cache attribution contract added
+- stable prefix / dynamic tail helper model added
+- deterministic prefix hash helper added
+- append-only prefix invariant helper added
+- synthetic cache-prefix stability corpus added
+- prefix stability and invalidation cases covered
+- cache usage fields kept separate from content-reduction fields
+- provider/cache attribution does not compute token savings from cache reads
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adapter wiring added
+- no observability emission added
+- no benchmark runner added
+- no semantic compression or LLM summarization added
+- no README or public adoption documentation updated
+- next step: TOKEN-OPT-5E — cache-aware compaction timing policy
+
 ### TOKEN-OPT-3A acceptance
 
 Done / Closed when:
@@ -1286,10 +1326,10 @@ TOKEN-OBS-3G safe public wording / proof claims — Done / Closed
 TOKEN-OPT-4A extractive filtering layer — Done / Closed
 TOKEN-OPT-4B extractive filtering evaluation cases / regression pack — Done / Closed
 TOKEN-OPT-5A cache-prefix stabilization architecture / contract — Done / Closed
-TOKEN-OPT-5B provider cache policy and capability contract — Next / Planned
-TOKEN-OPT-5C append-only prompt/thread invariant tests — Planned
-TOKEN-OPT-5D cache-prefix stability evaluation pack — Planned
-TOKEN-OPT-5E cache-aware compaction timing design — Planned
+TOKEN-OPT-5B prompt-cache contracts and cache-prefix stability proof — Done / Closed
+TOKEN-OPT-5C folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5D folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5E cache-aware compaction timing policy — Next / Planned
 TOKEN-7A    advisory recommendation contract — Deferred
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
