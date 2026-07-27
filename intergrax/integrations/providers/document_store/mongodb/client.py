@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, Mapping, Optional
 
@@ -38,6 +39,38 @@ def _row_from_doc(doc: Mapping[str, Any]) -> DocumentRecord:
     )
 
 
+def _payload_from_document(document: DocumentRecord) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "partition_key": document.partition_key,
+        "row_key": document.row_key,
+        "data": dict(document.data),
+    }
+    if document.ttl_seconds is not None and document.ttl_seconds > 0:
+        payload["expires_at"] = _utcnow() + timedelta(seconds=int(document.ttl_seconds))
+    else:
+        payload["expires_at"] = None
+    return payload
+
+
+def _require_matching_keys(*, expected: DocumentRecord, replacement: DocumentRecord) -> None:
+    if (
+        expected.partition_key != replacement.partition_key
+        or expected.row_key != replacement.row_key
+    ):
+        raise ValueError(
+            "replace_if_match requires expected and replacement to share "
+            "partition_key and row_key"
+        )
+
+
+def _match_filter(expected: DocumentRecord) -> dict[str, Any]:
+    return {
+        "partition_key": expected.partition_key,
+        "row_key": expected.row_key,
+        "data": dict(expected.data),
+    }
+
+
 class MongoCollectionClient:
     """Minimal MongoDB client for partition-scoped document CRUD."""
 
@@ -47,6 +80,7 @@ class MongoCollectionClient:
         *,
         collection: Any,
         client: Any | None = None,
+        is_duplicate_key_error: Callable[[BaseException], bool] | None = None,
     ) -> None:
         if not config.uri:
             raise IntegrationConfigurationError(
@@ -55,6 +89,7 @@ class MongoCollectionClient:
         self._config = config
         self._collection = collection
         self._client = client
+        self._is_duplicate_key_error = is_duplicate_key_error or (lambda _exc: False)
 
     @property
     def config(self) -> MongoDBIntegrationConfig:
@@ -70,15 +105,7 @@ class MongoCollectionClient:
         return _row_from_doc(doc)
 
     def put(self, document: DocumentRecord) -> None:
-        payload: dict[str, Any] = {
-            "partition_key": document.partition_key,
-            "row_key": document.row_key,
-            "data": dict(document.data),
-        }
-        if document.ttl_seconds is not None and document.ttl_seconds > 0:
-            payload["expires_at"] = _utcnow() + timedelta(seconds=int(document.ttl_seconds))
-        else:
-            payload["expires_at"] = None
+        payload = _payload_from_document(document)
         self._collection.replace_one(
             _document_filter(document.partition_key, document.row_key),
             payload,
@@ -109,6 +136,38 @@ class MongoCollectionClient:
                 continue
             documents.append(_row_from_doc(doc))
         return DocumentQueryResult(documents=documents, total=len(documents))
+
+    def put_if_absent(self, document: DocumentRecord) -> bool:
+        payload = _payload_from_document(document)
+        try:
+            result = self._collection.update_one(
+                _document_filter(document.partition_key, document.row_key),
+                {"$setOnInsert": payload},
+                upsert=True,
+            )
+        except Exception as exc:
+            if self._is_duplicate_key_error(exc):
+                return False
+            raise
+        return result.upserted_id is not None
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        _require_matching_keys(expected=expected, replacement=replacement)
+        result = self._collection.replace_one(
+            _match_filter(expected),
+            _payload_from_document(replacement),
+            upsert=False,
+        )
+        return int(result.matched_count) == 1
+
+    def delete_if_match(self, *, expected: DocumentRecord) -> bool:
+        result = self._collection.delete_one(_match_filter(expected))
+        return int(result.deleted_count) == 1
 
     def close(self) -> None:
         if self._client is not None:

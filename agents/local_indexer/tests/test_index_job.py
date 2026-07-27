@@ -303,6 +303,149 @@ async def test_run_index_job_reads_source_paths_from_step_metadata_without_exec_
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_index_job_preserves_physical_provenance_without_overrides(
+    tmp_path: Path,
+) -> None:
+    allowed_root = tmp_path / "allowed"
+    allowed_root.mkdir()
+    doc = allowed_root / "report.txt"
+    doc.write_text("hello", encoding="utf-8")
+    captured: dict[str, object] = {}
+
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        captured["source_path"] = request.input["source_path"]
+        captured["metadata"] = request.input["metadata"]
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={"used": True, "num_chunks": 1, "vector_ids": ["v1"]},
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        request=RuntimeRequest(
+            agent_id="local_indexer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="index docs",
+            metadata={"source_paths": [str(doc)]},
+        ),
+        tool_gateway=gateway,
+    )
+    exec_ctx.metadata["runtime_state"] = type(
+        "RuntimeStateStub",
+        (),
+        {
+            "context": type(
+                "ContextStub",
+                (),
+                {
+                    "config": type(
+                        "ConfigStub",
+                        (),
+                        {
+                            "tool_wiring_context": type(
+                                "WiringStub",
+                                (),
+                                {"read_allowlist_roots": frozenset({str(allowed_root.resolve())})},
+                            )()
+                        },
+                    )()
+                },
+            )()
+        },
+    )()
+
+    output = await run_index_job(_step_ctx(exec_ctx))
+    assert captured["source_path"] == str(doc.resolve())
+    metadata = captured["metadata"]
+    assert isinstance(metadata, dict)
+    assert metadata["source_path"] == str(doc.resolve())
+    assert metadata["file_name"] == "report.txt"
+    assert str(allowed_root.resolve()) in str(output["ingest_summary"]["accepted_paths"][0])
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_index_job_managed_logical_provenance_override(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    doc = staging / "contract.pdf"
+    doc.write_bytes(b"%PDF")
+    captured: dict[str, object] = {}
+
+    async def _invoke_tool(request: ToolRequest) -> ToolResponse:
+        captured["source_path"] = request.input["source_path"]
+        captured["metadata"] = request.input["metadata"]
+        return ToolResponse(
+            request_id=request.request_id,
+            status=ToolResponseStatus.SUCCESS,
+            output={"used": True, "num_chunks": 1, "vector_ids": ["v1"]},
+        )
+
+    gateway = AsyncMock()
+    gateway.invoke = AsyncMock(side_effect=_invoke_tool)
+    exec_ctx = RuntimeExecutionContext(
+        task_id="task-1",
+        run_id="run-1",
+        agent_id="local_indexer",
+        request=RuntimeRequest(
+            agent_id="local_indexer",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            message="index docs",
+            metadata={
+                "source_paths": [str(doc)],
+                "logical_source_path": "managed/src-123/contract.pdf",
+                "display_file_name": "contract.pdf",
+            },
+        ),
+        tool_gateway=gateway,
+    )
+    exec_ctx.metadata["runtime_state"] = type(
+        "RuntimeStateStub",
+        (),
+        {
+            "context": type(
+                "ContextStub",
+                (),
+                {
+                    "config": type(
+                        "ConfigStub",
+                        (),
+                        {
+                            "tool_wiring_context": type(
+                                "WiringStub",
+                                (),
+                                {"read_allowlist_roots": frozenset({str(staging.resolve())})},
+                            )()
+                        },
+                    )()
+                },
+            )()
+        },
+    )()
+
+    output = await run_index_job(_step_ctx(exec_ctx))
+    assert captured["source_path"] == str(doc.resolve())
+    metadata = captured["metadata"]
+    assert isinstance(metadata, dict)
+    assert metadata["source_path"] == "managed/src-123/contract.pdf"
+    assert metadata["file_name"] == "contract.pdf"
+    summary = output["ingest_summary"]
+    assert "managed/src-123/contract.pdf" in summary["accepted_paths"]
+    assert str(staging.resolve()) not in str(summary["accepted_paths"])
+    assert summary["ingested"][0]["source_path"] == "managed/src-123/contract.pdf"
+
+
+@pytest.mark.unit
 def test_run_index_job_output_attaches_index_summary_diagnostic() -> None:
     output = {
         "ingest_summary": {

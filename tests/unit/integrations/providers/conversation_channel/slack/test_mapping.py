@@ -112,12 +112,267 @@ def test_bot_authored_message_ignored() -> None:
     assert map_events_api_message(_dm_payload(event={"bot_id": "B123"})) is None
 
 
-def test_subtype_ignored() -> None:
-    assert map_events_api_message(_dm_payload(event={"subtype": "message_changed"})) is None
+def test_unsupported_subtype_ignored() -> None:
+    for subtype in (
+        "message_changed",
+        "message_deleted",
+        "bot_message",
+        "thread_broadcast",
+        "channel_join",
+        "channel_leave",
+    ):
+        assert map_events_api_message(_dm_payload(event={"subtype": subtype})) is None
 
 
-def test_blank_text_rejected() -> None:
+def test_blank_text_without_files_rejected() -> None:
     assert map_events_api_message(_dm_payload(event={"text": "  "})) is None
+
+
+def _file_entry(**overrides: object) -> dict:
+    entry: dict = {
+        "id": "F111",
+        "name": "contract.pdf",
+        "mimetype": "application/pdf",
+        "size": 1234,
+        "url_private": "https://files.slack.com/files-pri/T-F/private",
+        "url_private_download": "https://files.slack.com/files-pri/T-F/download",
+        "permalink": "https://slack.com/files/U/F",
+        "title": "should-not-map",
+    }
+    entry.update(overrides)
+    return entry
+
+
+def test_ordinary_dm_message_with_files_maps_attachments() -> None:
+    event = map_events_api_message(
+        _dm_payload(event={"files": [_file_entry()], "text": "please index"})
+    )
+    assert event is not None
+    assert event.text == "please index"
+    assert len(event.attachments) == 1
+    ref = event.attachments[0]
+    assert ref.attachment_id == "F111"
+    assert ref.file_name == "contract.pdf"
+    assert ref.content_type == "application/pdf"
+    assert ref.size_bytes == 1234
+    serialized_ref = ref.model_dump()
+    assert "metadata" not in serialized_ref
+    assert "url_private" not in serialized_ref
+    assert "url_private_download" not in serialized_ref
+    assert "permalink" not in serialized_ref
+    assert "token" not in serialized_ref
+    assert "url_private" not in event.metadata
+    assert "url_private_download" not in event.metadata
+
+
+def test_file_share_subtype_with_files_maps_attachments() -> None:
+    event = map_events_api_message(
+        _dm_payload(
+            event={
+                "subtype": "file_share",
+                "text": "",
+                "files": [_file_entry(id="F222", name="notes.txt", mimetype="text/plain")],
+            }
+        )
+    )
+    assert event is not None
+    assert event.text is None or event.text == ""
+    assert len(event.attachments) == 1
+    assert event.attachments[0].attachment_id == "F222"
+
+
+def test_attachment_only_dm_maps() -> None:
+    event = map_events_api_message(
+        _dm_payload(event={"text": "  ", "files": [_file_entry()]})
+    )
+    assert event is not None
+    assert event.text is None
+    assert len(event.attachments) == 1
+
+
+def test_text_and_files_maps_both() -> None:
+    event = map_events_api_message(
+        _dm_payload(event={"text": "caption", "files": [_file_entry()]})
+    )
+    assert event is not None
+    assert event.text == "caption"
+    assert len(event.attachments) == 1
+
+
+def test_multiple_files_preserve_provider_order() -> None:
+    event = map_events_api_message(
+        _dm_payload(
+            event={
+                "files": [
+                    _file_entry(id="F1", name="a.pdf"),
+                    _file_entry(id="F2", name="b.pdf"),
+                    _file_entry(id="F3", name="c.pdf"),
+                ]
+            }
+        )
+    )
+    assert event is not None
+    assert [a.attachment_id for a in event.attachments] == ["F1", "F2", "F3"]
+
+
+def test_private_url_not_mapped_and_file_object_not_copied() -> None:
+    event = map_events_api_message(_dm_payload(event={"files": [_file_entry()]}))
+    assert event is not None
+    serialized = str(event.model_dump())
+    assert "files.slack.com" not in serialized
+    assert "url_private" not in serialized
+    assert "permalink" not in event.metadata
+    serialized_ref = event.attachments[0].model_dump()
+    assert "metadata" not in serialized_ref
+    assert "url_private" not in serialized_ref
+    assert "url_private_download" not in serialized_ref
+    assert "permalink" not in serialized_ref
+    assert "token" not in serialized_ref
+
+
+def test_file_share_missing_files_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"subtype": "file_share", "text": "", "files": None})
+        )
+        is None
+    )
+
+
+def test_file_share_empty_files_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"subtype": "file_share", "text": "", "files": []})
+        )
+        is None
+    )
+
+
+def test_file_share_missing_files_with_command_text_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"subtype": "file_share", "text": "workspaces"})
+        )
+        is None
+    )
+
+
+def test_file_share_empty_files_with_ask_text_returns_none() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(
+                event={
+                    "subtype": "file_share",
+                    "text": "What is in the workspace?",
+                    "files": [],
+                }
+            )
+        )
+        is None
+    )
+
+
+def test_ordinary_text_message_with_files_missing_accepted() -> None:
+    event = map_events_api_message(_dm_payload(event={"text": "hello workspace"}))
+    assert event is not None
+    assert event.text == "hello workspace"
+    assert event.attachments == ()
+
+
+def test_ordinary_text_message_with_empty_files_accepted() -> None:
+    event = map_events_api_message(
+        _dm_payload(event={"text": "hello workspace", "files": []})
+    )
+    assert event is not None
+    assert event.text == "hello workspace"
+    assert event.attachments == ()
+
+
+def test_malformed_files_value_rejected() -> None:
+    assert map_events_api_message(_dm_payload(event={"files": "bad"})) is None
+
+
+def test_missing_file_id_rejects_whole_event() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"files": [{"name": "a.pdf", "mimetype": "application/pdf"}]})
+        )
+        is None
+    )
+
+
+def test_one_malformed_item_rejects_whole_event() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(
+                event={
+                    "files": [
+                        _file_entry(id="F1"),
+                        "not-a-mapping",
+                    ]
+                }
+            )
+        )
+        is None
+    )
+
+
+def test_bot_file_message_ignored() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(event={"bot_id": "B1", "files": [_file_entry()], "text": ""})
+        )
+        is None
+    )
+
+
+def test_non_im_file_message_ignored() -> None:
+    assert (
+        map_events_api_message(
+            _dm_payload(
+                event={
+                    "channel_type": "channel",
+                    "files": [_file_entry()],
+                    "text": "",
+                }
+            )
+        )
+        is None
+    )
+
+
+def test_file_shared_top_level_event_ignored() -> None:
+    payload = {
+        "event_id": "EvFILE",
+        "team_id": "TTEAM1",
+        "event": {
+            "type": "file_shared",
+            "file_id": "F111",
+            "user_id": "UUSER1",
+            "channel_id": "DCHANNEL1",
+        },
+    }
+    assert map_events_api_message(payload) is None
+
+
+def test_attachment_event_id_remains_top_level() -> None:
+    event = map_events_api_message(_dm_payload(event={"files": [_file_entry()]}))
+    assert event is not None
+    assert event.event_id == "EvMESSAGE1"
+
+
+def test_attachment_thread_ts_behavior_unchanged() -> None:
+    event = map_events_api_message(
+        _dm_payload(
+            event={
+                "thread_ts": "1700000000.000001",
+                "files": [_file_entry()],
+                "text": "",
+            }
+        )
+    )
+    assert event is not None
+    assert event.address.thread_id == "1700000000.000001"
 
 
 def test_missing_user_rejected() -> None:

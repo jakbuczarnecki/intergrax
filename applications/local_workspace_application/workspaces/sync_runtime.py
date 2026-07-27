@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.message_bus import MessageBus
@@ -17,6 +18,10 @@ from intergrax.queueing.providers.document_store import (
 )
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from local_workspace_application.workspaces.knowledge_ingestion import (
+    KnowledgeIngestionService,
+    register_knowledge_ingestion_worker_handler,
+)
 from local_workspace_application.workspaces.models import WorkspaceOperationStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.sync_jobs import (
@@ -28,6 +33,11 @@ from local_workspace_application.workspaces.sync_worker import (
     register_managed_workspace_sync_worker_handler,
 )
 
+if TYPE_CHECKING:
+    from local_workspace_application.workspaces.ingestion_recovery import (
+        KnowledgeIngestionRecoveryService,
+    )
+
 
 @dataclass(slots=True)
 class ManagedWorkspaceSyncRuntime:
@@ -36,6 +46,9 @@ class ManagedWorkspaceSyncRuntime:
     worker: DocumentStoreTaskWorker
     registry: TaskExecutionRegistry
     _main_loop: asyncio.AbstractEventLoop | None = field(default=None, repr=False)
+    _knowledge_ingestion_registered: bool = field(default=False, repr=False)
+    _recovery_service: KnowledgeIngestionRecoveryService | None = field(default=None, repr=False)
+    _started: bool = field(default=False, repr=False)
 
     def bind_main_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         self._main_loop = loop
@@ -43,8 +56,34 @@ class ManagedWorkspaceSyncRuntime:
     def main_loop(self) -> asyncio.AbstractEventLoop | None:
         return self._main_loop
 
+    def register_knowledge_ingestion_service(
+        self,
+        service: KnowledgeIngestionService,
+    ) -> None:
+        if self._started:
+            raise RuntimeError("knowledge_ingestion_register_after_start")
+        if self._knowledge_ingestion_registered:
+            raise RuntimeError("knowledge_ingestion_already_registered")
+        register_knowledge_ingestion_worker_handler(
+            self.registry,
+            service,
+            main_loop_provider=self.main_loop,
+        )
+        self._knowledge_ingestion_registered = True
+
+    def attach_recovery_service(
+        self,
+        recovery_service: KnowledgeIngestionRecoveryService,
+    ) -> None:
+        if self._started:
+            raise RuntimeError("knowledge_ingestion_recovery_after_start")
+        self._recovery_service = recovery_service
+
     def start(self) -> None:
+        if self._recovery_service is not None:
+            self._recovery_service.recover_all()
         self.worker.start()
+        self._started = True
 
     def stop(self) -> None:
         self.worker.stop()

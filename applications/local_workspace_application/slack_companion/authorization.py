@@ -10,7 +10,10 @@ from intergrax.integrations.contracts.conversation_channel import (
     ConversationEventKind,
     InboundConversationEvent,
 )
-from local_workspace_application.slack_companion.models import AuthorizedSlackAskContext
+from local_workspace_application.slack_companion.models import (
+    AuthorizedSlackAskContext,
+    AuthorizedSlackMessageContext,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,16 +24,12 @@ class SlackCompanionAuthConfig:
     active_workspace_id: str
 
 
-def authorize_inbound_ask(
+def authorize_inbound_message(
     event: InboundConversationEvent,
     *,
     config: SlackCompanionAuthConfig,
-) -> AuthorizedSlackAskContext | None:
-    """Return an authorized Ask context or ``None`` when the event must be ignored.
-
-    Fail-closed: any missing identity, bot actor, wrong team/user, or blank
-    question yields ``None`` (no Ask, no product side effects).
-    """
+) -> AuthorizedSlackMessageContext | None:
+    """Return an authorized message context or ``None`` when the event must be ignored."""
     if event.kind is not ConversationEventKind.MESSAGE:
         return None
 
@@ -51,8 +50,8 @@ def authorize_inbound_ask(
     if event.actor.is_bot:
         return None
 
-    question = (event.text or "").strip()
-    if not question:
+    text = (event.text or "").strip()
+    if not text and not event.attachments:
         return None
 
     tenant_id = config.tenant_id.strip()
@@ -60,11 +59,37 @@ def authorize_inbound_ask(
     if not tenant_id or not workspace_id:
         return None
 
-    return AuthorizedSlackAskContext(
+    return AuthorizedSlackMessageContext(
         team_id=team_id,
         user_id=actor_id,
         tenant_id=tenant_id,
         workspace_id=workspace_id,
-        question=question,
+        text=text,
         event_id=event_id,
+    )
+
+
+def authorize_inbound_ask(
+    event: InboundConversationEvent,
+    *,
+    config: SlackCompanionAuthConfig,
+) -> AuthorizedSlackAskContext | None:
+    """Return an authorized Ask context or ``None`` when the event must be ignored.
+
+    Fail-closed: any missing identity, bot actor, wrong team/user, or blank
+    question yields ``None`` (no Ask, no product side effects).
+    """
+    authorized = authorize_inbound_message(event, config=config)
+    if authorized is None:
+        return None
+    question = authorized.text.strip()
+    if not question:
+        return None
+    return AuthorizedSlackAskContext(
+        team_id=authorized.team_id,
+        user_id=authorized.user_id,
+        tenant_id=authorized.tenant_id,
+        workspace_id=authorized.workspace_id,
+        question=question,
+        event_id=authorized.event_id,
     )

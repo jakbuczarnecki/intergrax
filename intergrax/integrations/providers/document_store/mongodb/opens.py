@@ -10,7 +10,8 @@ Only this module may construct ``pymongo.MongoClient``. All composition roots us
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentStore
@@ -18,6 +19,12 @@ from intergrax.integrations.providers.document_store.mongodb.adapter import _Mon
 from intergrax.integrations.providers.document_store.mongodb.integration import MongoDBDocumentStoreIntegration
 from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
+
+DOCUMENT_KEY_INDEX_NAME = "uq_intergrax_document_key"
+DOCUMENT_KEY_INDEX_KEYS: tuple[tuple[str, int], ...] = (
+    ("partition_key", 1),
+    ("row_key", 1),
+)
 
 
 def _import_pymongo() -> Any:
@@ -29,6 +36,29 @@ def _import_pymongo() -> Any:
             "Install with: uv sync --extra dev  (includes pymongo)"
         ) from exc
     return MongoClient
+
+
+def _is_duplicate_key_error(exc: BaseException) -> bool:
+    try:
+        from pymongo.errors import DuplicateKeyError
+    except ImportError:
+        return False
+    return isinstance(exc, DuplicateKeyError)
+
+
+def _ensure_document_key_index(collection: Any) -> None:
+    try:
+        collection.create_index(
+            list(DOCUMENT_KEY_INDEX_KEYS),
+            unique=True,
+            name=DOCUMENT_KEY_INDEX_NAME,
+        )
+    except Exception:
+        raise IntegrationConfigurationError(
+            "MongoDB document store requires unique compound index "
+            f"{DOCUMENT_KEY_INDEX_NAME} on (partition_key, row_key); "
+            "index creation failed"
+        ) from None
 
 
 def _open_collection(
@@ -53,11 +83,20 @@ def open_mongodb_collection_client(
     collection_factory: Optional[Callable[[], Any]] = None,
 ) -> MongoCollectionClient:
     if collection is not None:
-        return MongoCollectionClient(config, collection=collection, client=client)
-    if collection_factory is not None:
-        return MongoCollectionClient(config, collection=collection_factory(), client=client)
-    opened_collection, opened_client = _open_collection(config)
-    return MongoCollectionClient(config, collection=opened_collection, client=opened_client)
+        opened_collection = collection
+        opened_client = client
+    elif collection_factory is not None:
+        opened_collection = collection_factory()
+        opened_client = client
+    else:
+        opened_collection, opened_client = _open_collection(config)
+    _ensure_document_key_index(opened_collection)
+    return MongoCollectionClient(
+        config,
+        collection=opened_collection,
+        client=opened_client,
+        is_duplicate_key_error=_is_duplicate_key_error,
+    )
 
 
 def open_mongodb_document_store(

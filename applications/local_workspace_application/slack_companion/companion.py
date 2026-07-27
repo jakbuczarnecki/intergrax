@@ -71,6 +71,8 @@ class SlackCompanionRuntimeConfig:
     ask_base_url: str
     ask_api_key: str | None
     ask_timeout_seconds: float
+    attachment_max_bytes: int
+    attachment_max_batch_files: int
 
 
 def resolve_slack_companion_runtime_config(
@@ -86,6 +88,8 @@ def resolve_slack_companion_runtime_config(
     active_workspace_id = settings.slack_active_workspace_id.strip()
     ask_base_url = settings.slack_ask_base_url.strip()
     ask_api_key = settings.slack_ask_api_key.strip() or None
+    attachment_max_bytes = int(settings.managed_file_max_bytes)
+    attachment_max_batch_files = int(settings.managed_file_max_batch_files)
 
     required = (
         approved_team_id,
@@ -98,6 +102,8 @@ def resolve_slack_companion_runtime_config(
         return None
     if settings.slack_ask_timeout_seconds <= 0:
         return None
+    if attachment_max_bytes < 1 or attachment_max_batch_files < 1:
+        return None
 
     return SlackCompanionRuntimeConfig(
         approved_team_id=approved_team_id,
@@ -107,6 +113,8 @@ def resolve_slack_companion_runtime_config(
         ask_base_url=ask_base_url,
         ask_api_key=ask_api_key,
         ask_timeout_seconds=float(settings.slack_ask_timeout_seconds),
+        attachment_max_bytes=attachment_max_bytes,
+        attachment_max_batch_files=attachment_max_batch_files,
     )
 
 
@@ -207,6 +215,8 @@ def build_slack_companion(
         ask_client=client,
         selection_store=selections,
         pending_deletion_store=pending_deletions,
+        attachment_max_bytes=runtime.attachment_max_bytes,
+        attachment_max_batch_files=runtime.attachment_max_batch_files,
     )
     return SlackCompanion(integration=resolved_integration, workflow=workflow)
 

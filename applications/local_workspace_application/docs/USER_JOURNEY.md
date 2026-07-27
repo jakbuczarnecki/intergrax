@@ -6,7 +6,7 @@
 
 **Status:** target onboarding narrative for the final LKW experience  
 **Scope:** from GitHub discovery to first useful local workspace run  
-**Related:** [`README.md`](../README.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)
+**Related:** [`README.md`](../README.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)
 
 ---
 
@@ -18,26 +18,50 @@ A new user lands on the Intergrax repository and should understand this in the f
 
 **LKW** is the first product-grade proof application built on that platform.
 
-LKW gives the user a local assistant over their own files:
+LKW gives the user a private-by-default knowledge workspace over sources they control:
 
-- it runs on the user's machine;
-- it reads only allowed folders or explicitly provided files;
-- it indexes documents into a local knowledge workspace;
-- it answers questions with evidence from those files;
+- it can run fully locally or under other deployment topologies (storage location is configuration — see [`ARCHITECTURE.md`](ARCHITECTURE.md#deployment-storage-and-tenancy-model));
+- knowledge enters through **channel-neutral Knowledge Intake** (managed upload, connected source, or explicit web URL) — see [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md);
+- the first **implemented** source provider is local-folder (connected folder / allowlisted roots remain the common first slice);
+- it indexes documents asynchronously into a tenant-scoped knowledge workspace;
+- it answers questions with evidence from those sources;
 - it writes generated drafts only into a shadow workspace;
 - it exposes what happened through trace/evidence inspection;
 - it proves that Intergrax can create, configure, run, package, deploy, and observe real agent applications.
 
-The first expected mental model:
+**Target mental model (FROZEN ARCHITECTURAL CONTRACT):**
 
 ```text
-User files
-  -> local LKW backend
+user-controlled knowledge input
+→ LKW Knowledge Intake
+→ managed upload / source connector / web resource
+→ asynchronous ingestion (durable Ingestion Operation)
+→ Document Store + Vector Store
+→ Ask and grounded results
+```
+
+Common self-hosted / local-folder first slice (still valid):
+
+```text
+User sources (e.g. connected local folder)
+  -> LKW host
   -> Intergrax Nexus
   -> local_indexer / local_search / local_synthesizer agents
-  -> RAG + shadow workspace
+  -> Document Store + Vector Store (provider-selected) + shadow workspace
   -> answer, draft, and trace/evidence
 ```
+
+Target input modes (product direction — not all implemented yet):
+
+| User action | Target semantic |
+|-------------|-----------------|
+| Upload one file | managed file |
+| Upload many files | managed batch |
+| Upload folder/archive | snapshot (copied; no live sync) |
+| Connect local folder | connector / source candidate |
+| Add web URL | explicit web intake |
+
+Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat clients must never receive a raw local path as the product input.
 
 ---
 
@@ -146,15 +170,32 @@ Final product rule:
 
 ### Step 5 — Choose data access
 
-The user chooses one of two safe input modes.
+#### Target path — channel-neutral Knowledge Intake (PLANNED / FROZEN CONTRACT)
 
-#### Explicit files for a single run
+Replaceable clients (Slack, web, mobile, desktop, MCP, HTTP) submit a Knowledge Input to the public LKW Knowledge Intake capability. LKW accepts a durable Ingestion Operation, processes asynchronously, and notifies through a channel-neutral lifecycle event. See [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md).
+
+Asynchronous user journey (target):
+
+```text
+submit input
+→ receive accepted/operation status
+→ continue using client
+→ receive completion or failure notification
+→ inspect source/documents later
+→ Ask with grounded results
+```
+
+#### CURRENT LOW-LEVEL / DEVELOPER FLOW — NOT THE TARGET CHANNEL-NEUTRAL KNOWLEDGE INTAKE CONTRACT
+
+The following remain valid **current development** mechanisms. They are **not** the target contract for Slack, mobile, web or other interchangeable product clients.
+
+##### Explicit files for a single run
 
 The user sends `metadata.source_paths` in the request.
 
-This is the first LKW.1 path.
+This is the first LKW.1 path (developer/low-level).
 
-#### Allowed folders
+##### Allowed folders
 
 The user configures allowed read roots:
 
@@ -162,7 +203,7 @@ The user configures allowed read roots:
 INTERGRAX_ALLOWED_READ_ROOTS=/path/to/docs,/path/to/projects
 ```
 
-LKW may read from those folders. It must not write into them.
+LKW may read from those folders. It must not write into them. Remote chat adapters do not accept typed filesystem paths as product commands.
 
 ### Step 6 — Start the local backend
 

@@ -33,6 +33,8 @@ _LKW_INDEX_METADATA_KEYS = frozenset(
         "document_id",
         "content_hash",
         "operation_id",
+        "logical_source_path",
+        "display_file_name",
     }
 )
 
@@ -130,10 +132,24 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
             raw = metadata.get(key)
             if raw is not None and str(raw).strip():
                 ingest_metadata[key] = str(raw).strip()
+        logical_source_path_raw = metadata.get("logical_source_path")
+        logical_source_path = (
+            str(logical_source_path_raw).strip()
+            if logical_source_path_raw is not None and str(logical_source_path_raw).strip()
+            else None
+        )
+        display_file_name_raw = metadata.get("display_file_name")
+        display_file_name = (
+            str(display_file_name_raw).strip()
+            if display_file_name_raw is not None and str(display_file_name_raw).strip()
+            else None
+        )
         for path in validated:
+            provenance_source_path = logical_source_path or str(path)
+            provenance_file_name = display_file_name or path.name
             path_metadata = dict(ingest_metadata)
-            path_metadata.setdefault("source_path", str(path))
-            path_metadata.setdefault("file_name", path.name)
+            path_metadata["source_path"] = provenance_source_path
+            path_metadata["file_name"] = provenance_file_name
             tool_input: dict[str, Any] = {
                 "source_path": str(path),
                 "metadata": path_metadata,
@@ -151,10 +167,19 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
                 step_id=INDEX_STEP_ID,
                 tool_input=tool_input,
             )
-            entry["source_path"] = str(path)
+            entry["source_path"] = provenance_source_path
+            entry["file_name"] = provenance_file_name
             ingested.append(entry)
 
-    accepted_paths = [str(path) for path in validated]
+    accepted_paths = [
+        (
+            str(metadata.get("logical_source_path")).strip()
+            if metadata.get("logical_source_path") is not None
+            and str(metadata.get("logical_source_path")).strip()
+            else str(path)
+        )
+        for path in validated
+    ]
     num_chunks = sum(int(item.get("num_chunks") or 0) for item in ingested if item.get("status") == "success")
     vector_ids: list[str] = []
     for item in ingested:

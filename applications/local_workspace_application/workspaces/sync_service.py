@@ -6,23 +6,20 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any, Protocol
 
-from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
-from local_workspace_application.workspaces.discovery import discover_source_files
-from local_workspace_application.workspaces.idempotency import (
-    content_hash_for_file,
-    logical_document_id,
-    normalize_source_path,
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+    extract_ingest_summary,
+)
+from local_workspace_application.workspaces.local_folder_indexing import (
+    LocalFolderIndexingService,
 )
 from local_workspace_application.workspaces.models import (
-    WorkspaceDocumentReference,
     WorkspaceOperation,
     WorkspaceOperationStatus,
     WorkspaceSourceStatus,
+    WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
@@ -30,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class TaskExecutorPort(Protocol):
-    async def execute(self, task: Task) -> Any: ...
+    async def execute(self, task: Any) -> Any: ...
 
 
 def _utc_now() -> datetime:
@@ -45,7 +42,7 @@ def _safe_error_message(exc: BaseException) -> str:
 
 
 class ManagedWorkspaceSyncService:
-    """Runs source sync via the existing LocalWorkspaceTaskExecutor / indexer path."""
+    """Runs source sync via the shared local-folder indexing path."""
 
     def __init__(
         self,
@@ -53,10 +50,20 @@ class ManagedWorkspaceSyncService:
         task_executor: TaskExecutorPort,
         *,
         allowlist_roots: frozenset[str] | None = None,
+        indexing_service: WorkspaceDocumentIndexingService | None = None,
+        folder_indexing: LocalFolderIndexingService | None = None,
     ) -> None:
         self._repository = repository
         self._task_executor = task_executor
         self._allowlist_roots = allowlist_roots
+        self._indexing_service = indexing_service or WorkspaceDocumentIndexingService(
+            repository,
+            task_executor,
+        )
+        self._folder_indexing = folder_indexing or LocalFolderIndexingService(
+            self._indexing_service,
+            allowlist_roots=allowlist_roots,
+        )
 
     async def run_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation:
         operation = self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
@@ -88,6 +95,8 @@ class ManagedWorkspaceSyncService:
         )
         if source is None:
             return self._fail(operation, "source_not_found")
+        if source.source_type is not WorkspaceSourceType.LOCAL_FOLDER:
+            return self._fail(operation, "source_sync_unsupported_for_source_type")
 
         started = _utc_now()
         operation = operation.model_copy(
@@ -102,94 +111,21 @@ class ManagedWorkspaceSyncService:
             source.model_copy(update={"status": WorkspaceSourceStatus.SYNCING})
         )
 
-        roots = self._allowlist_roots
-        if roots is None:
-            roots = read_allowlist_roots_from_env()
-
         try:
-            root = Path(source.path)
-            discovered, skipped = discover_source_files(
-                root,
-                recursive=source.recursive,
-                allowlist_roots=roots,
+            result = await self._folder_indexing.index_source(
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source=source,
+                operation_id=operation.operation_id,
             )
-            files_discovered = len(discovered) + len(skipped)
-            files_processed = 0
-            files_failed = len(skipped)
-            documents_indexed = 0
-            documents_unchanged = 0
-
-            for path in discovered:
-                files_processed += 1
-                normalized = normalize_source_path(path)
-                digest = content_hash_for_file(path)
-                existing = self._repository.get_document_ref_by_path(
-                    tenant_id=tenant_id,
-                    workspace_id=operation.workspace_id,
-                    source_id=operation.source_id,
-                    source_path=normalized,
-                )
-                if existing is not None and existing.content_hash == digest:
-                    documents_unchanged += 1
-                    continue
-
-                document_id = logical_document_id(
-                    tenant_id=tenant_id,
-                    workspace_id=operation.workspace_id,
-                    source_id=operation.source_id,
-                    normalized_source_path=normalized,
-                    content_hash=digest,
-                )
-                run_id = new_run_id()
-                task = Task(
-                    task_id=run_id,
-                    tenant_id=tenant_id,
-                    user_id="lkw.managed_workspace",
-                    message=f"Index managed workspace source file {path.name}",
-                    context=TaskContext(capability="local.workspace.index"),
-                    metadata={
-                        "tenant_id": tenant_id,
-                        "workspace_id": operation.workspace_id,
-                        "source_id": operation.source_id,
-                        "collection_id": operation.workspace_id,
-                        "document_id": document_id,
-                        "source_paths": [str(path)],
-                        "content_hash": digest,
-                        "operation_id": operation.operation_id,
-                        "requested_by": "lkw.managed_workspace.sync",
-                    },
-                )
-                result = await self._task_executor.execute(task)
-                ingest_summary = _extract_ingest_summary(result)
-                if not ingest_summary.get("used"):
-                    files_failed += 1
-                    reason = str(ingest_summary.get("reason") or "ingest_failed")
-                    logger.warning(
-                        "managed_workspace_sync_file_failed operation_id=%s path=%s reason=%s",
-                        operation.operation_id,
-                        normalized,
-                        reason,
-                    )
-                    continue
-
-                self._repository.put_document_ref(
-                    WorkspaceDocumentReference(
-                        document_id=document_id,
-                        tenant_id=tenant_id,
-                        workspace_id=operation.workspace_id,
-                        source_id=operation.source_id,
-                        source_path=normalized,
-                        file_name=path.name,
-                        content_hash=digest,
-                        indexed_at=_utc_now(),
-                    )
-                )
-                documents_indexed += 1
-
             completed = _utc_now()
             final_status = (
                 WorkspaceOperationStatus.FAILED
-                if files_discovered > 0 and documents_indexed == 0 and documents_unchanged == 0
+                if (
+                    result.files_discovered > 0
+                    and result.documents_indexed == 0
+                    and result.documents_unchanged == 0
+                )
                 else WorkspaceOperationStatus.COMPLETED
             )
             error = None
@@ -198,11 +134,11 @@ class ManagedWorkspaceSyncService:
             operation = operation.model_copy(
                 update={
                     "status": final_status,
-                    "files_discovered": files_discovered,
-                    "files_processed": files_processed,
-                    "files_failed": files_failed,
-                    "documents_indexed": documents_indexed,
-                    "documents_unchanged": documents_unchanged,
+                    "files_discovered": result.files_discovered,
+                    "files_processed": result.files_processed,
+                    "files_failed": result.files_failed,
+                    "documents_indexed": result.documents_indexed,
+                    "documents_unchanged": result.documents_unchanged,
                     "completed_at": completed,
                     "error": error,
                 }
@@ -245,50 +181,5 @@ class ManagedWorkspaceSyncService:
         return failed
 
 
-def _extract_ingest_summary(result: Any) -> dict[str, Any]:
-    metadata = getattr(result, "metadata", None)
-    if isinstance(metadata, dict):
-        summary = metadata.get("ingest_summary")
-        if isinstance(summary, dict):
-            return summary
-        for key in ("domain_summary", "result"):
-            nested = metadata.get(key)
-            if isinstance(nested, dict) and isinstance(nested.get("ingest_summary"), dict):
-                return nested["ingest_summary"]
-        evidence = metadata.get("lkw_evidence.v1")
-        if isinstance(evidence, dict):
-            diagnostics = evidence.get("diagnostics")
-            if isinstance(diagnostics, dict):
-                index_diag = diagnostics.get("lkw.index_summary.v1")
-                if isinstance(index_diag, dict):
-                    ingested_count = int(index_diag.get("ingested_count") or 0)
-                    return {
-                        "used": ingested_count > 0,
-                        "reason": "ingest_complete" if ingested_count > 0 else "ingest_failed",
-                    }
-
-    execution = getattr(result, "execution_result", None)
-    if execution is not None:
-        structured = getattr(execution, "structured_data", None)
-        if isinstance(structured, dict):
-            summary = structured.get("ingest_summary")
-            if isinstance(summary, dict):
-                return summary
-
-    answer = str(getattr(result, "answer", "") or "")
-    if "index failed" in answer:
-        return {"used": False, "reason": "index_failed"}
-    if "ingested=" in answer:
-        # Parse ``ingested=N`` from the indexer answer line.
-        try:
-            token = next(part for part in answer.split(",") if "ingested=" in part)
-            count = int(token.split("ingested=", 1)[1].strip())
-            return {
-                "used": count > 0,
-                "reason": "ingest_complete" if count > 0 else "no_paths_ingested",
-            }
-        except (StopIteration, ValueError):
-            pass
-    if "ingest_complete" in answer:
-        return {"used": True, "reason": "ingest_complete"}
-    return {"used": False, "reason": "ingest_summary_missing"}
+# Backward-compatible alias for callers that imported the private helper.
+_extract_ingest_summary = extract_ingest_summary

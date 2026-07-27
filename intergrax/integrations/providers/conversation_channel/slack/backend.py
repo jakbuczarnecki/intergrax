@@ -6,9 +6,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from enum import Enum
 from typing import Any, Callable, Mapping
+from urllib.parse import urlparse
+
+import httpx
 
 from intergrax.integrations.contracts.base import (
     HealthStatus,
@@ -17,6 +21,10 @@ from intergrax.integrations.contracts.base import (
     IntegrationError,
 )
 from intergrax.integrations.contracts.conversation_channel import (
+    ConversationAttachmentContent,
+    ConversationAttachmentFetchError,
+    ConversationAttachmentFetcher,
+    ConversationAttachmentReference,
     ConversationChannelBackend,
     ConversationDeliveryReceipt,
     ConversationEventHandler,
@@ -38,6 +46,65 @@ from intergrax.utils import attribute_access
 _LOG = logging.getLogger(__name__)
 _DEFAULT_MAX_IN_FLIGHT = 32
 _SLUG = "slack"
+_ALLOWED_SLACK_FILE_HOST_SUFFIXES = (
+    ".files.slack.com",
+    ".slack-files.com",
+)
+_ALLOWED_SLACK_FILE_HOSTS = frozenset(
+    {
+        "files.slack.com",
+        "slack-files.com",
+    }
+)
+
+
+def _response_as_mapping(response: Any) -> Mapping[str, Any] | None:
+    if isinstance(response, Mapping):
+        return response
+    data = attribute_access.optional(response, "data", None)
+    if isinstance(data, Mapping):
+        return data
+    response_get = attribute_access.optional(response, "get", None)
+    if callable(response_get):
+        try:
+            return {
+                "ok": response_get("ok"),
+                "file": response_get("file"),
+                "error": response_get("error"),
+            }
+        except Exception:  # noqa: BLE001
+            return None
+    return None
+
+
+def _is_allowed_slack_file_host(hostname: str) -> bool:
+    host = hostname.strip().lower().rstrip(".")
+    if not host:
+        return False
+    if host in _ALLOWED_SLACK_FILE_HOSTS:
+        return True
+    return any(host.endswith(suffix) for suffix in _ALLOWED_SLACK_FILE_HOST_SUFFIXES)
+
+
+def _non_blank_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _nonnegative_int(value: Any) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float) and value.is_integer() and value >= 0:
+        return int(value)
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.isdigit():
+            return int(stripped)
+    return None
 
 
 class SlackConversationLifecycleState(str, Enum):
@@ -101,6 +168,7 @@ class SlackConversationChannelBackend:
         web_client_factory: Callable[[str, float], Any] | None = None,
         socket_mode_response_cls: Any | None = None,
         slack_api_error_cls: type[BaseException] | None = None,
+        attachment_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if max_in_flight_handlers < 1:
             raise IntegrationConfigurationError("max_in_flight_handlers must be >= 1")
@@ -114,6 +182,7 @@ class SlackConversationChannelBackend:
         self._web_client_factory = web_client_factory
         self._socket_mode_response_cls = socket_mode_response_cls
         self._slack_api_error_cls = slack_api_error_cls
+        self._attachment_transport = attachment_transport
         self._sdk_available = True
         self._config_valid = True
         self._last_transport_failure: str | None = None
@@ -515,6 +584,195 @@ class SlackConversationChannelBackend:
             delivered_at=parse_slack_ts(ts.strip()),
         )
 
+    async def fetch_attachment(
+        self,
+        attachment: ConversationAttachmentReference,
+        *,
+        max_bytes: int,
+    ) -> ConversationAttachmentContent:
+        if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes < 1:
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+        attachment_id = (attachment.attachment_id or "").strip()
+        if not attachment_id:
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+
+        if self._web_client is None:
+            try:
+                self._ensure_clients()
+            except Exception:
+                raise ConversationAttachmentFetchError(
+                    kind="attachment_fetch_unavailable"
+                ) from None
+        assert self._web_client is not None
+
+        try:
+            response = await self._web_client.files_info(file=attachment_id)
+        except Exception as exc:
+            _LOG.warning(
+                "slack conversation: files.info failed (%s)",
+                _redacted_error(exc),
+            )
+            raise ConversationAttachmentFetchError(
+                kind="attachment_metadata_unavailable"
+            ) from None
+
+        data = _response_as_mapping(response)
+        if data is None:
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+        if data.get("ok") is False:
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_unavailable")
+
+        file_obj = data.get("file")
+        if not isinstance(file_obj, Mapping):
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+
+        file_id = _non_blank_str(file_obj.get("id"))
+        if file_id != attachment_id:
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+
+        if file_obj.get("is_external") is True:
+            raise ConversationAttachmentFetchError(kind="attachment_unsupported")
+        mode = _non_blank_str(file_obj.get("mode"))
+        if mode in {"external", "remote"}:
+            raise ConversationAttachmentFetchError(kind="attachment_unsupported")
+        if isinstance(file_obj.get("remote"), Mapping):
+            raise ConversationAttachmentFetchError(kind="attachment_unsupported")
+
+        file_access = _non_blank_str(file_obj.get("file_access"))
+        if file_access == "check_file_info":
+            raise ConversationAttachmentFetchError(kind="attachment_access_denied")
+
+        download_url = _non_blank_str(file_obj.get("url_private_download")) or _non_blank_str(
+            file_obj.get("url_private")
+        )
+        if download_url is None:
+            raise ConversationAttachmentFetchError(kind="attachment_access_denied")
+
+        parsed = urlparse(download_url)
+        if parsed.scheme.lower() != "https":
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+        if parsed.username is not None or parsed.password is not None:
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+        hostname = (parsed.hostname or "").strip().lower()
+        if not _is_allowed_slack_file_host(hostname):
+            raise ConversationAttachmentFetchError(kind="attachment_metadata_invalid")
+
+        file_name = (
+            _non_blank_str(file_obj.get("name"))
+            or _non_blank_str(attachment.file_name)
+            or f"attachment-{hashlib.sha256(attachment_id.encode('utf-8')).hexdigest()[:12]}.bin"
+        )
+        content_type = (
+            _non_blank_str(file_obj.get("mimetype"))
+            or _non_blank_str(attachment.content_type)
+            or "application/octet-stream"
+        )
+        declared_size = _nonnegative_int(file_obj.get("size"))
+        if declared_size is None:
+            declared_size = attachment.size_bytes
+            if declared_size is not None and (
+                not isinstance(declared_size, int)
+                or isinstance(declared_size, bool)
+                or declared_size < 0
+            ):
+                declared_size = None
+
+        if declared_size is not None and declared_size > max_bytes:
+            raise ConversationAttachmentFetchError(kind="attachment_too_large")
+
+        try:
+            _, bot_token = self._config.require_runtime_tokens()
+        except Exception:
+            raise ConversationAttachmentFetchError(
+                kind="attachment_fetch_unavailable"
+            ) from None
+
+        body = await self._download_private_file(
+            url=download_url,
+            bot_token=bot_token,
+            max_bytes=max_bytes,
+            declared_size=declared_size,
+        )
+        try:
+            return ConversationAttachmentContent(
+                attachment_id=attachment_id,
+                file_name=file_name,
+                content_type=content_type,
+                body=body,
+            )
+        except Exception:
+            raise ConversationAttachmentFetchError(
+                kind="attachment_metadata_invalid"
+            ) from None
+
+    async def _download_private_file(
+        self,
+        *,
+        url: str,
+        bot_token: str,
+        max_bytes: int,
+        declared_size: int | None,
+    ) -> bytes:
+        headers = {"Authorization": f"Bearer {bot_token}"}
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._config.api_timeout_seconds,
+                transport=self._attachment_transport,
+                follow_redirects=False,
+            ) as client:
+                async with client.stream("GET", url, headers=headers) as response:
+                    if response.status_code in {301, 302, 303, 307, 308}:
+                        raise ConversationAttachmentFetchError(
+                            kind="attachment_download_failed"
+                        )
+                    if response.status_code in {401, 403}:
+                        raise ConversationAttachmentFetchError(
+                            kind="attachment_access_denied"
+                        )
+                    if response.status_code == 404:
+                        raise ConversationAttachmentFetchError(
+                            kind="attachment_metadata_unavailable"
+                        )
+                    if response.status_code < 200 or response.status_code >= 300:
+                        raise ConversationAttachmentFetchError(
+                            kind="attachment_download_failed"
+                        )
+
+                    content_length = _nonnegative_int(
+                        response.headers.get("Content-Length")
+                    )
+                    if content_length is not None and content_length > max_bytes:
+                        raise ConversationAttachmentFetchError(
+                            kind="attachment_too_large"
+                        )
+
+                    chunks: list[bytes] = []
+                    total = 0
+                    async for chunk in response.aiter_bytes():
+                        if not chunk:
+                            continue
+                        total += len(chunk)
+                        if total > max_bytes:
+                            raise ConversationAttachmentFetchError(
+                                kind="attachment_too_large"
+                            )
+                        chunks.append(chunk)
+                    body = b"".join(chunks)
+        except ConversationAttachmentFetchError:
+            raise
+        except Exception as exc:
+            _LOG.warning(
+                "slack conversation: attachment download failed (%s)",
+                _redacted_error(exc),
+            )
+            raise ConversationAttachmentFetchError(
+                kind="attachment_download_failed"
+            ) from None
+
+        if declared_size is not None and declared_size != len(body):
+            raise ConversationAttachmentFetchError(kind="attachment_size_mismatch")
+        return body
+
     def health(self) -> HealthStatus:
         detail_parts = [
             f"lifecycle={self._state.value}",
@@ -530,6 +788,7 @@ class SlackConversationChannelBackend:
 
 
 ConversationChannelBackend.register(SlackConversationChannelBackend)
+ConversationAttachmentFetcher.register(SlackConversationChannelBackend)
 
 __all__ = [
     "SlackConversationChannelBackend",

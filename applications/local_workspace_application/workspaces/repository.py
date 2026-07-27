@@ -4,25 +4,42 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TypeVar
 
 from pydantic import BaseModel
 
 from intergrax.integrations.contracts.document_store import DocumentRecord, DocumentStore
 from local_workspace_application.workspaces.models import (
+    ActiveKnowledgeIngestionLocator,
+    IntakeBatch,
+    KnowledgeInput,
+    ManagedFileObject,
     Workspace,
     WorkspaceDocumentReference,
     WorkspaceOperation,
     WorkspaceOperationStatus,
+    WorkspaceOperationType,
     WorkspaceSource,
 )
 
 T = TypeVar("T", bound=BaseModel)
 
+
+@dataclass(frozen=True)
+class ActiveKnowledgeIngestionLocatorScan:
+    locators: tuple[ActiveKnowledgeIngestionLocator, ...]
+    malformed_seen: int
+    malformed_removed: int
+
 _ENTITY_WORKSPACE = "workspace"
 _ENTITY_SOURCE = "source"
 _ENTITY_OPERATION = "operation"
 _ENTITY_DOCUMENT = "document"
+_ENTITY_KNOWLEDGE_INPUT = "knowledge_input"
+_ENTITY_MANAGED_FILE = "managed_file"
+_ENTITY_INTAKE_BATCH = "intake_batch"
+_ACTIVE_KNOWLEDGE_INGESTION_PARTITION = "lkw.managed_workspace:active_knowledge_ingestion"
 
 
 def _partition(tenant_id: str, entity: str) -> str:
@@ -267,6 +284,77 @@ class ManagedWorkspaceRepository:
     def list_operations(self, *, tenant_id: str) -> list[WorkspaceOperation]:
         return self._list(_partition(tenant_id, _ENTITY_OPERATION), WorkspaceOperation)
 
+    def list_ingestion_operations(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        statuses: set[WorkspaceOperationStatus] | None = None,
+    ) -> list[WorkspaceOperation]:
+        items = [
+            op
+            for op in self.list_operations(tenant_id=tenant_id)
+            if op.workspace_id == workspace_id
+            and op.operation_type is WorkspaceOperationType.KNOWLEDGE_INGESTION
+            and (statuses is None or op.status in statuses)
+        ]
+        return sorted(items, key=lambda item: item.created_at or item.operation_id)
+
+    # --- Knowledge Input ---
+
+    def put_knowledge_input(self, knowledge_input: KnowledgeInput) -> KnowledgeInput:
+        self._put(
+            _partition(knowledge_input.tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+            f"{knowledge_input.workspace_id}:{knowledge_input.input_id}",
+            knowledge_input,
+        )
+        return knowledge_input
+
+    def get_knowledge_input(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        input_id: str,
+    ) -> KnowledgeInput | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+            f"{workspace_id}:{input_id}",
+            KnowledgeInput,
+        )
+
+    def list_knowledge_inputs(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[KnowledgeInput]:
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+            limit=500,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        items = [KnowledgeInput.model_validate(dict(doc.data)) for doc in result.documents]
+        return sorted(items, key=lambda item: item.created_at)
+
+    def delete_knowledge_inputs_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        deleted = 0
+        for knowledge_input in self.list_knowledge_inputs(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            self._store.delete(
+                _partition(tenant_id, _ENTITY_KNOWLEDGE_INPUT),
+                f"{workspace_id}:{knowledge_input.input_id}",
+            )
+            deleted += 1
+        return deleted
+
     def find_active_sync_operation(
         self,
         *,
@@ -283,6 +371,7 @@ class ManagedWorkspaceRepository:
             for op in self.list_operations(tenant_id=tenant_id)
             if op.workspace_id == workspace_id
             and op.source_id == source_id
+            and op.operation_type is WorkspaceOperationType.SOURCE_SYNC
             and op.status in active
         ]
         if not candidates:
@@ -314,3 +403,174 @@ class ManagedWorkspaceRepository:
             )
             recovered += 1
         return recovered
+
+    # --- Managed file ---
+
+    def put_managed_file(self, managed_file: ManagedFileObject) -> ManagedFileObject:
+        self._put(
+            _partition(managed_file.tenant_id, _ENTITY_MANAGED_FILE),
+            f"{managed_file.workspace_id}:{managed_file.input_id}",
+            managed_file,
+        )
+        return managed_file
+
+    def get_managed_file(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        input_id: str,
+    ) -> ManagedFileObject | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_MANAGED_FILE),
+            f"{workspace_id}:{input_id}",
+            ManagedFileObject,
+        )
+
+    def list_managed_files(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[ManagedFileObject]:
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_MANAGED_FILE),
+            limit=2000,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        items = [ManagedFileObject.model_validate(dict(doc.data)) for doc in result.documents]
+        return sorted(items, key=lambda item: item.created_at)
+
+    def delete_managed_file(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        input_id: str,
+    ) -> None:
+        self._store.delete(
+            _partition(tenant_id, _ENTITY_MANAGED_FILE),
+            f"{workspace_id}:{input_id}",
+        )
+
+    def delete_managed_files_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        deleted = 0
+        for managed_file in self.list_managed_files(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            self.delete_managed_file(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                input_id=managed_file.input_id,
+            )
+            deleted += 1
+        return deleted
+
+    # --- Intake batch ---
+
+    def put_intake_batch(self, batch: IntakeBatch) -> IntakeBatch:
+        self._put(
+            _partition(batch.tenant_id, _ENTITY_INTAKE_BATCH),
+            f"{batch.workspace_id}:{batch.batch_id}",
+            batch,
+        )
+        return batch
+
+    def get_intake_batch(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        batch_id: str,
+    ) -> IntakeBatch | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_INTAKE_BATCH),
+            f"{workspace_id}:{batch_id}",
+            IntakeBatch,
+        )
+
+    def list_intake_batches(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[IntakeBatch]:
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_INTAKE_BATCH),
+            limit=500,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        items = [IntakeBatch.model_validate(dict(doc.data)) for doc in result.documents]
+        return sorted(items, key=lambda item: item.created_at)
+
+    def delete_intake_batches_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        deleted = 0
+        for batch in self.list_intake_batches(tenant_id=tenant_id, workspace_id=workspace_id):
+            self._store.delete(
+                _partition(tenant_id, _ENTITY_INTAKE_BATCH),
+                f"{workspace_id}:{batch.batch_id}",
+            )
+            deleted += 1
+        return deleted
+
+    # --- Active knowledge-ingestion locators ---
+
+    def put_active_ingestion_locator(
+        self,
+        locator: ActiveKnowledgeIngestionLocator,
+    ) -> ActiveKnowledgeIngestionLocator:
+        self._put(
+            _ACTIVE_KNOWLEDGE_INGESTION_PARTITION,
+            locator.operation_id,
+            locator,
+        )
+        return locator
+
+    def scan_active_ingestion_locators(
+        self,
+        *,
+        limit: int = 5000,
+    ) -> ActiveKnowledgeIngestionLocatorScan:
+        result = self._store.query(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, limit=limit)
+        locators: list[ActiveKnowledgeIngestionLocator] = []
+        malformed_seen = 0
+        malformed_removed = 0
+        for doc in result.documents:
+            try:
+                locators.append(
+                    ActiveKnowledgeIngestionLocator.model_validate(dict(doc.data))
+                )
+            except Exception:  # noqa: BLE001 - isolate malformed locator rows
+                malformed_seen += 1
+                try:
+                    self._store.delete(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, doc.row_key)
+                    malformed_removed += 1
+                except Exception:  # noqa: BLE001 - continue scan after delete failure
+                    pass
+        locators.sort(key=lambda item: (item.created_at, item.operation_id))
+        return ActiveKnowledgeIngestionLocatorScan(
+            locators=tuple(locators),
+            malformed_seen=malformed_seen,
+            malformed_removed=malformed_removed,
+        )
+
+    def list_active_ingestion_locators(
+        self,
+        *,
+        limit: int = 5000,
+    ) -> list[ActiveKnowledgeIngestionLocator]:
+        return list(self.scan_active_ingestion_locators(limit=limit).locators)
+
+    def delete_active_ingestion_locator(self, operation_id: str) -> None:
+        self._store.delete(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, operation_id)

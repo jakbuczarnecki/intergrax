@@ -135,10 +135,16 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     slack_ask_base_url: str = ""
     slack_ask_api_key: str = ""
     slack_ask_timeout_seconds: float = 60.0
+    managed_file_max_bytes: int = 25 * 1024 * 1024
+    managed_file_max_batch_files: int = 20
 
     @property
     def config_dir(self) -> str:
         return _data_home_path(self.data_home, "config")
+
+    @property
+    def source_candidates_file(self) -> str:
+        return _data_home_path(self.data_home, "config", "source_candidates.json")
 
     @property
     def data_dir(self) -> str:
@@ -151,6 +157,14 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     @property
     def shadow_workspaces_dir(self) -> str:
         return _data_home_path(self.data_home, "data", "shadow_workspaces")
+
+    @property
+    def managed_file_storage_dir(self) -> str:
+        return _data_home_path(self.data_home, "data", "managed_files")
+
+    @property
+    def managed_upload_staging_dir(self) -> str:
+        return _data_home_path(self.data_home, "run", "managed_upload_staging")
 
     @property
     def logs_dir(self) -> str:
@@ -520,6 +534,21 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "SLACK_ASK_TIMEOUT_SECONDS",
             default=cls._field_default("slack_ask_timeout_seconds"),  # type: ignore[arg-type]
         )
+        managed_file_max_bytes = env.int(
+            "MANAGED_FILE_MAX_BYTES",
+            default=cls._field_default("managed_file_max_bytes"),  # type: ignore[arg-type]
+        )
+        managed_file_max_batch_files = env.int(
+            "MANAGED_FILE_MAX_BATCH_FILES",
+            default=cls._field_default("managed_file_max_batch_files"),  # type: ignore[arg-type]
+        )
+        if managed_file_max_bytes < 1:
+            raise ValueError("LOCAL_WORKSPACE_MANAGED_FILE_MAX_BYTES must be >= 1")
+        if managed_file_max_batch_files < 1:
+            raise ValueError("LOCAL_WORKSPACE_MANAGED_FILE_MAX_BATCH_FILES must be >= 1")
+
+        staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
+        allowed_read_roots = frozenset(set(allowed_read_roots) | {staging_root})
 
         return {
             "data_home": data_home,
@@ -575,4 +604,6 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "slack_ask_base_url": slack_ask_base_url,
             "slack_ask_api_key": slack_ask_api_key,
             "slack_ask_timeout_seconds": slack_ask_timeout_seconds,
+            "managed_file_max_bytes": managed_file_max_bytes,
+            "managed_file_max_batch_files": managed_file_max_batch_files,
         }

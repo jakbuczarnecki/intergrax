@@ -31,6 +31,19 @@ class SlackDedupeRecord(BaseModel):
     ask_run_id: str | None = None
 
 
+class AuthorizedSlackMessageContext(BaseModel):
+    """Fail-closed authorization for an inbound Slack MESSAGE (text and/or files)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    team_id: str
+    user_id: str
+    tenant_id: str
+    workspace_id: str
+    text: str
+    event_id: str
+
+
 class AuthorizedSlackAskContext(BaseModel):
     """Fail-closed authorization + configured tenant/workspace mapping."""
 
@@ -42,6 +55,34 @@ class AuthorizedSlackAskContext(BaseModel):
     workspace_id: str
     question: str
     event_id: str
+
+
+class SlackManagedFileBatchItem(BaseModel):
+    """Safe subset of managed-file batch item response for Slack rendering."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    position: int
+    file_name: str
+    status: Literal["accepted", "failed"]
+    input_id: str | None = None
+    source_id: str | None = None
+    operation_id: str | None = None
+    operation_status: str | None = None
+    error_code: str | None = None
+
+
+class SlackManagedFileBatchResponse(BaseModel):
+    """Typed managed-file batch HTTP response used by the companion (safe subset)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    batch_id: str
+    workspace_id: str
+    status: Literal["accepted", "partial", "failed"]
+    accepted_count: int
+    failed_count: int
+    items: list[SlackManagedFileBatchItem] = Field(default_factory=list)
 
 
 class SlackAskHttpStatus(str, Enum):
@@ -97,6 +138,29 @@ class SlackWorkspaceCreateResponse(BaseModel):
     workspace_id: str = ""
     name: str = ""
     status: str = ""
+
+
+class SlackSourceListItem(BaseModel):
+    """Safe subset of managed source list items for Slack rendering (no path)."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    source_id: str = ""
+    workspace_id: str = ""
+    source_type: str = ""
+    label: str = ""
+    status: str = ""
+    recursive: bool = True
+    created_at: datetime | None = None
+    last_sync_at: datetime | None = None
+
+
+class SlackSourceListResponse(BaseModel):
+    """Typed GET /workspaces/{id}/sources response used by the companion."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    sources: list[SlackSourceListItem] = Field(default_factory=list)
 
 
 class SlackAskClientError(Exception):

@@ -17,6 +17,9 @@ from intergrax.applications.contracts.graph_spec import (
     GraphNode,
 )
 from intergrax.integrations.core.binding import IntegrationBinding
+from intergrax.integrations.providers.object_storage.filesystem.manifest import (
+    MANIFEST as FILESYSTEM_OBJECT_STORAGE,
+)
 from intergrax.integrations.registry.catalog_manifests import DOCLING, INMEMORY, KAFKA, OTEL, QDRANT, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import llm_profile_from_env
@@ -59,7 +62,9 @@ def build_local_workspace_pipeline_graph_spec() -> ApplicationGraphSpec:
     )
 
 
-def build_local_workspace_integration_profile() -> IntegrationProfile:
+def build_local_workspace_integration_profile(
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> IntegrationProfile:
     """Local-first product integrations for LKW.
 
     Defaults are intentionally local/persistent: SQLite for relational state and
@@ -72,10 +77,15 @@ def build_local_workspace_integration_profile() -> IntegrationProfile:
     enable_message_bus = local_workspace_message_bus_enabled()
     if enable_message_bus:
         enable_redis = True
+    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
     options: dict[str, dict[str, object]] = {
         OTEL.slug: {},
         SQLITE.slug: {},
         vector_store.slug: {},
+        FILESYSTEM_OBJECT_STORAGE.slug: {
+            "root_dir": resolved_settings.managed_file_storage_dir,
+            "prefix": "",
+        },
     }
     if enable_redis:
         options[REDIS.slug] = {}
@@ -86,6 +96,7 @@ def build_local_workspace_integration_profile() -> IntegrationProfile:
         vector_store=vector_store,
         key_value_cache=REDIS if enable_redis else None,
         message_bus=KAFKA if enable_message_bus else None,
+        object_storage=FILESYSTEM_OBJECT_STORAGE,
         document_parser=DOCLING,
         observability_backend=OTEL,
         options=options,
@@ -103,7 +114,7 @@ def build_local_workspace_environment_profile(
         )
         .model_copy(
             update={
-                "integration_profile": build_local_workspace_integration_profile(),
+                "integration_profile": build_local_workspace_integration_profile(settings),
                 "context_profile": ContextProfile(
                     enable_rag=True if settings is None else settings.enable_rag,
                     enable_websearch=False,

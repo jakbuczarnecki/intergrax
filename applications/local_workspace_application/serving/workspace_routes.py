@@ -4,24 +4,33 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import Any
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
+from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile, status
 
 from intergrax.fastapi_core.context import get_request_context
+from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
+from local_workspace_application.serving.source_projection import safe_source_label
 from local_workspace_application.serving.workspace_schemas import (
     CreateWorkspaceRequestV1,
+    ManagedFileBatchAcceptedV1,
+    ManagedFileBatchItemAcceptedV1,
     OperationResponseV1,
     RegisterSourceRequestV1,
+    SourceCandidateAcceptedV1,
+    SourceCandidateListResponseV1,
+    SourceCandidateSummaryV1,
     SourceListResponseV1,
     SourceResponseV1,
+    SourceSummaryResponseV1,
     SyncOperationAcceptedV1,
     WorkspaceAskCitationLocationV1,
     WorkspaceAskCitationV1,
@@ -44,11 +53,56 @@ from local_workspace_application.workspaces.ask_service import (
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
 )
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.ingestion_recovery import (
+    KnowledgeIngestionRecoveryService,
+)
+from local_workspace_application.workspaces.knowledge_ingestion import (
+    KnowledgeIngestionProcessorRouter,
+    KnowledgeIngestionService,
+)
+from local_workspace_application.workspaces.knowledge_intake import (
+    KnowledgeInputSourceResolverRouter,
+    KnowledgeIntakeDispatchError,
+    KnowledgeIntakeService,
+)
+from local_workspace_application.workspaces.local_folder_indexing import (
+    LocalFolderIndexingService,
+)
+from local_workspace_application.workspaces.managed_file_ingestion import (
+    ManagedFileKnowledgeIngestionProcessor,
+    ManagedObjectMaterializer,
+)
+from local_workspace_application.workspaces.managed_files import (
+    IntakeBatchIdempotencyConflict,
+    ManagedFileBatchCandidate,
+    ManagedFileIntakeService,
+    ManagedFileObjectCleanup,
+    ManagedFileSourceResolver,
+    ManagedFileValidationError,
+    managed_file_request_fingerprint,
+    normalize_managed_file_item_error_code,
+)
 from local_workspace_application.workspaces.models import (
+    IntakeBatchItemStatus,
+    IntakeBatchStatus,
+    KnowledgeInputKind,
     Workspace,
     WorkspaceOperation,
     WorkspaceOperationStatus,
     WorkspaceSource,
+)
+from local_workspace_application.workspaces.source_candidates import (
+    SourceCandidateAlreadyRegistered,
+    SourceCandidateIdempotencyConflict,
+    SourceCandidateIntakeService,
+    SourceCandidateKnowledgeIngestionProcessor,
+    SourceCandidateRegistry,
+    SourceCandidateRegistryError,
+    SourceCandidateSourceResolver,
+    SourceCandidateUnavailable,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.search_evidence import (
@@ -98,6 +152,20 @@ def _source_response(source: WorkspaceSource) -> SourceResponseV1:
     )
 
 
+def _source_summary_response(source: WorkspaceSource) -> SourceSummaryResponseV1:
+    source_type = source.source_type.value
+    return SourceSummaryResponseV1(
+        source_id=source.source_id,
+        workspace_id=source.workspace_id,
+        source_type=source_type,
+        label=safe_source_label(source_type=source_type, path=source.path),
+        status=source.status.value,
+        recursive=source.recursive,
+        created_at=source.created_at,
+        last_sync_at=source.last_sync_at,
+    )
+
+
 def _operation_response(operation: WorkspaceOperation) -> OperationResponseV1:
     return OperationResponseV1(
         operation_id=operation.operation_id,
@@ -137,6 +205,79 @@ def resolve_tenant_id(
     return default_tenant_id
 
 
+async def _prepare_managed_file_batch_candidate(
+    upload: UploadFile,
+    *,
+    max_bytes: int,
+) -> ManagedFileBatchCandidate:
+    raw_file_name = upload.filename or ""
+    raw_content_type = upload.content_type or ""
+    hasher = hashlib.sha256()
+    chunks: list[bytes] = []
+    total = 0
+    exceeded = False
+    read_failed = False
+    try:
+        while True:
+            chunk = await upload.read(64 * 1024)
+            if not chunk:
+                break
+            hasher.update(chunk)
+            total += len(chunk)
+            if exceeded:
+                continue
+            if total > max_bytes:
+                exceeded = True
+                chunks.clear()
+            else:
+                chunks.append(chunk)
+    except Exception:
+        read_failed = True
+    try:
+        await upload.close()
+    except Exception:
+        read_failed = True
+
+    body_hash = f"sha256:{hasher.hexdigest()}"
+    request_state = "read_failed" if read_failed else "complete"
+    request_fingerprint = managed_file_request_fingerprint(
+        raw_file_name=raw_file_name,
+        raw_content_type=raw_content_type,
+        size_bytes=total,
+        body_hash=body_hash,
+        request_state=request_state,
+    )
+    if read_failed:
+        return ManagedFileBatchCandidate(
+            raw_file_name=raw_file_name,
+            raw_content_type=raw_content_type,
+            body=None,
+            size_bytes=total,
+            body_hash=body_hash,
+            request_fingerprint=request_fingerprint,
+            preflight_error_code="managed_file_upload_read_failed",
+        )
+    if exceeded:
+        return ManagedFileBatchCandidate(
+            raw_file_name=raw_file_name,
+            raw_content_type=raw_content_type,
+            body=None,
+            size_bytes=total,
+            body_hash=body_hash,
+            request_fingerprint=request_fingerprint,
+            preflight_error_code="managed_file_too_large",
+        )
+    return ManagedFileBatchCandidate(
+        raw_file_name=raw_file_name,
+        raw_content_type=raw_content_type,
+        body=b"".join(chunks),
+        size_bytes=total,
+        body_hash=body_hash,
+        request_fingerprint=request_fingerprint,
+        preflight_error_code=None,
+    )
+
+
 def mount_managed_workspace_routes(
     app: FastAPI,
     *,
@@ -148,12 +289,14 @@ def mount_managed_workspace_routes(
     ask_service: WorkspaceAskService | None = None,
     llm_adapter: Any | None = None,
     vectorstore_manager: Any | None = None,
+    object_storage: ObjectStorage | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
     from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
 
-    allowlist = settings.allowed_read_roots or read_allowlist_roots_from_env()
+    configured = settings.allowed_read_roots or read_allowlist_roots_from_env()
+    allowlist = frozenset(set(configured) | {settings.managed_upload_staging_dir})
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
     if repository is None:
         repository = ManagedWorkspaceRepository(resolve_managed_workspace_document_store())
@@ -161,18 +304,32 @@ def mount_managed_workspace_routes(
     vector_cleanup = None
     if vectorstore_manager is not None:
         vector_cleanup = VectorstoreManagerWorkspaceCleanup(vectorstore_manager)
+
+    managed_file_cleanup = None
+    if object_storage is not None:
+        managed_file_cleanup = ManagedFileObjectCleanup(repository, object_storage)
+
     service = ManagedWorkspaceService(
         repository,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
         shadow_roots=shadow_roots,
         ask_repository=ask_repository,
         vector_cleanup=vector_cleanup,
+        managed_file_cleanup=managed_file_cleanup,
+    )
+    indexing_service = WorkspaceDocumentIndexingService(repository, task_executor)
+    folder_indexing = LocalFolderIndexingService(
+        indexing_service,
+        allowlist_roots=frozenset(allowlist) if allowlist else None,
     )
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
+        indexing_service=indexing_service,
+        folder_indexing=folder_indexing,
     )
+    owns_runtime = sync_runtime is None
     if sync_runtime is None:
         sync_runtime = build_managed_workspace_sync_runtime(
             document_store=repository.document_store,
@@ -180,6 +337,63 @@ def mount_managed_workspace_routes(
             repository=repository,
         )
         app.state.lkw_managed_workspace_sync_runtime = sync_runtime
+
+    source_candidate_registry = SourceCandidateRegistry.load(settings.source_candidates_file)
+    resolver_map: dict[KnowledgeInputKind, object] = {
+        KnowledgeInputKind.SOURCE_CANDIDATE: SourceCandidateSourceResolver(
+            repository,
+            source_candidate_registry,
+            allowlist_roots=frozenset(allowlist) if allowlist else None,
+            shadow_roots=shadow_roots,
+        ),
+    }
+    processor_map: dict[KnowledgeInputKind, object] = {
+        KnowledgeInputKind.SOURCE_CANDIDATE: SourceCandidateKnowledgeIngestionProcessor(
+            folder_indexing,
+        ),
+    }
+
+    if object_storage is not None:
+        materializer = ManagedObjectMaterializer(
+            object_storage,
+            Path(settings.managed_upload_staging_dir),
+        )
+        processor_map[KnowledgeInputKind.MANAGED_FILE] = ManagedFileKnowledgeIngestionProcessor(
+            repository,
+            materializer,
+            indexing_service,
+        )
+        resolver_map[KnowledgeInputKind.MANAGED_FILE] = ManagedFileSourceResolver(repository)
+
+    source_resolver = KnowledgeInputSourceResolverRouter(resolver_map)  # type: ignore[arg-type]
+    processor = KnowledgeIngestionProcessorRouter(processor_map)  # type: ignore[arg-type]
+    knowledge_ingestion_service = KnowledgeIngestionService(repository, processor)
+    sync_runtime.register_knowledge_ingestion_service(knowledge_ingestion_service)
+    knowledge_intake_service = KnowledgeIntakeService(
+        repository,
+        source_resolver,
+        sync_runtime.wiring_context,
+    )
+    managed_file_intake_service: ManagedFileIntakeService | None = None
+    if object_storage is not None:
+        managed_file_intake_service = ManagedFileIntakeService(
+            repository,
+            object_storage,
+            knowledge_intake_service,
+            max_bytes=settings.managed_file_max_bytes,
+            max_batch_files=settings.managed_file_max_batch_files,
+        )
+    recovery = KnowledgeIngestionRecoveryService(repository, knowledge_intake_service)
+    sync_runtime.attach_recovery_service(recovery)
+    source_candidate_intake_service = SourceCandidateIntakeService(
+        repository,
+        source_candidate_registry,
+        knowledge_intake_service,
+        allowlist_roots=frozenset(allowlist) if allowlist else None,
+        shadow_roots=shadow_roots,
+    )
+
+    if owns_runtime:
 
         @app.on_event("startup")
         async def _start_managed_workspace_sync_runtime() -> None:
@@ -206,6 +420,12 @@ def mount_managed_workspace_routes(
     app.state.lkw_managed_workspace_repository = repository
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
     app.state.lkw_ask_service = ask_service
+    app.state.lkw_managed_file_intake_service = managed_file_intake_service
+    app.state.lkw_knowledge_intake_service = knowledge_intake_service
+    app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service
+    app.state.lkw_source_candidate_registry = source_candidate_registry
+    app.state.lkw_source_candidate_intake_service = source_candidate_intake_service
+    app.state.lkw_local_folder_indexing_service = folder_indexing
 
     router = APIRouter(prefix=prefix, tags=["local_workspace_managed"])
 
@@ -287,6 +507,218 @@ def mount_managed_workspace_routes(
             raise _not_found()
 
     @router.post(
+        "/workspaces/{workspace_id}/knowledge/files",
+        response_model=ManagedFileBatchAcceptedV1,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def upload_managed_files(
+        request: Request,
+        workspace_id: str,
+        files: list[UploadFile] = File(...),
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> ManagedFileBatchAcceptedV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        intake: ManagedFileIntakeService | None = getattr(
+            request.app.state, "lkw_managed_file_intake_service", managed_file_intake_service
+        )
+        if intake is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="managed_file_storage_unavailable",
+            )
+        if not idempotency_key or not idempotency_key.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="idempotency_key_required",
+            )
+        if not files:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="managed_file_batch_empty",
+            )
+        if len(files) > settings.managed_file_max_batch_files:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail="managed_file_batch_too_large",
+            )
+        if service.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
+            raise _not_found()
+
+        candidates: list[ManagedFileBatchCandidate] = []
+        for upload in files:
+            candidates.append(
+                await _prepare_managed_file_batch_candidate(
+                    upload,
+                    max_bytes=settings.managed_file_max_bytes,
+                )
+            )
+
+        try:
+            batch = intake.accept_prepared_many(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                idempotency_key=idempotency_key.strip(),
+                candidates=candidates,
+            )
+        except LookupError:
+            raise _not_found() from None
+        except IntakeBatchIdempotencyConflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="intake_batch_idempotency_conflict",
+            ) from None
+        except ManagedFileValidationError as exc:
+            status_code = status.HTTP_400_BAD_REQUEST
+            if exc.error_code == "managed_file_batch_too_large":
+                status_code = status.HTTP_413_CONTENT_TOO_LARGE
+            raise HTTPException(status_code=status_code, detail=exc.error_code) from None
+
+        status_map = {
+            IntakeBatchStatus.ACCEPTED: "accepted",
+            IntakeBatchStatus.PARTIAL: "partial",
+            IntakeBatchStatus.FAILED: "failed",
+            IntakeBatchStatus.ACCEPTING: "partial",
+        }
+        items: list[ManagedFileBatchItemAcceptedV1] = []
+        for item in batch.items:
+            op_status = None
+            if item.operation_id:
+                operation = repository.get_operation(
+                    tenant_id=tenant_id,
+                    operation_id=item.operation_id,
+                )
+                if operation is not None:
+                    op_status = operation.status.value
+            items.append(
+                ManagedFileBatchItemAcceptedV1(
+                    position=item.position,
+                    file_name=item.safe_file_name,
+                    status=(
+                        "accepted"
+                        if item.status is IntakeBatchItemStatus.ACCEPTED
+                        else "failed"
+                    ),
+                    input_id=item.input_id,
+                    source_id=item.source_id,
+                    operation_id=item.operation_id,
+                    operation_status=op_status,
+                    error_code=(
+                        normalize_managed_file_item_error_code(item.error_code)
+                        if item.error_code
+                        else None
+                    ),
+                )
+            )
+        accepted_count = sum(1 for item in items if item.status == "accepted")
+        failed_count = sum(1 for item in items if item.status == "failed")
+        return ManagedFileBatchAcceptedV1(
+            batch_id=batch.batch_id,
+            workspace_id=batch.workspace_id,
+            status=status_map[batch.status],  # type: ignore[arg-type]
+            accepted_count=accepted_count,
+            failed_count=failed_count,
+            items=items,
+        )
+
+    @router.get(
+        "/workspaces/{workspace_id}/source-candidates",
+        response_model=SourceCandidateListResponseV1,
+    )
+    async def list_source_candidates(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> SourceCandidateListResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        try:
+            candidates = source_candidate_intake_service.list_candidates(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        except LookupError:
+            raise _not_found() from None
+        except SourceCandidateRegistryError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="source_candidate_registry_unavailable",
+            ) from None
+        return SourceCandidateListResponseV1(
+            workspace_id=workspace_id,
+            candidates=[
+                SourceCandidateSummaryV1(
+                    candidate_id=item.candidate_id,
+                    label=item.label,
+                    description=item.description,
+                    source_type="local_folder",
+                    available=item.available,
+                )
+                for item in candidates
+            ],
+        )
+
+    @router.post(
+        "/workspaces/{workspace_id}/knowledge/source-candidates/{candidate_id}",
+        response_model=SourceCandidateAcceptedV1,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def accept_source_candidate(
+        request: Request,
+        workspace_id: str,
+        candidate_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> SourceCandidateAcceptedV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if idempotency_key is None or not idempotency_key.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="idempotency_key_required",
+            )
+        try:
+            accepted = source_candidate_intake_service.accept(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                candidate_id=candidate_id,
+                idempotency_key=idempotency_key.strip(),
+            )
+        except LookupError:
+            raise _not_found() from None
+        except SourceCandidateRegistryError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="source_candidate_registry_unavailable",
+            ) from None
+        except SourceCandidateUnavailable:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_candidate_unavailable",
+            ) from None
+        except SourceCandidateIdempotencyConflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_candidate_idempotency_conflict",
+            ) from None
+        except SourceCandidateAlreadyRegistered:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_candidate_already_registered",
+            ) from None
+        except KnowledgeIntakeDispatchError:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="source_candidate_dispatch_failed",
+            ) from None
+        return SourceCandidateAcceptedV1(
+            candidate_id=accepted.candidate_id,
+            label=accepted.label,
+            workspace_id=accepted.workspace_id,
+            source_id=accepted.source_id,
+            operation_id=accepted.operation_id,
+            status=accepted.status,  # type: ignore[arg-type]
+        )
+
+    @router.post(
         "/workspaces/{workspace_id}/sources",
         response_model=SourceResponseV1,
         status_code=status.HTTP_201_CREATED,
@@ -327,7 +759,9 @@ def mount_managed_workspace_routes(
         sources = service.list_sources(tenant_id=tenant_id, workspace_id=workspace_id)
         if sources is None:
             raise _not_found()
-        return SourceListResponseV1(sources=[_source_response(item) for item in sources])
+        return SourceListResponseV1(
+            sources=[_source_summary_response(item) for item in sources]
+        )
 
     @router.post(
         "/workspaces/{workspace_id}/sources/{source_id}/sync",

@@ -516,6 +516,7 @@ async def test_no_formal_command_routed_outside_registry() -> None:
     public_ids = {
         "help",
         "workspaces.list",
+        "sources.list",
         "workspace.select",
         "workspace.create",
         "workspace.delete.request",

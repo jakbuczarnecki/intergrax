@@ -40,6 +40,7 @@ def test_data_home_defaults_to_repo_dev_build_path() -> None:
 
     assert _posix(settings.data_home) == _DEFAULT_DATA_HOME
     assert _posix(settings.config_dir).endswith("config")
+    assert _posix(settings.source_candidates_file).endswith("config/source_candidates.json")
     assert _posix(settings.data_dir).endswith("data")
     assert _posix(settings.sqlite_data_dir).endswith("data/sqlite")
     assert _posix(settings.shadow_workspaces_dir).endswith("data/shadow_workspaces")

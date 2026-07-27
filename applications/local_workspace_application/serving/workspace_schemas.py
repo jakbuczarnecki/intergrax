@@ -41,6 +41,8 @@ class RegisterSourceRequestV1(BaseModel):
 
 
 class SourceResponseV1(BaseModel):
+    """Detailed source registration response (may include provider locator)."""
+
     source_id: str
     workspace_id: str
     source_type: str
@@ -51,8 +53,21 @@ class SourceResponseV1(BaseModel):
     last_sync_at: datetime | None = None
 
 
+class SourceSummaryResponseV1(BaseModel):
+    """Safe list-item projection for source inspection (no full locator/path)."""
+
+    source_id: str
+    workspace_id: str
+    source_type: str
+    label: str
+    status: str
+    recursive: bool = True
+    created_at: datetime | None = None
+    last_sync_at: datetime | None = None
+
+
 class SourceListResponseV1(BaseModel):
-    sources: list[SourceResponseV1]
+    sources: list[SourceSummaryResponseV1]
 
 
 class SyncOperationAcceptedV1(BaseModel):
@@ -156,3 +171,61 @@ class WorkspaceAskResponseV1(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     error: WorkspaceAskErrorV1 | None = None
+
+
+class ManagedFileBatchItemAcceptedV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    position: int
+    file_name: str
+    status: Literal["accepted", "failed"]
+    input_id: str | None = None
+    source_id: str | None = None
+    operation_id: str | None = None
+    operation_status: str | None = None
+    error_code: str | None = None
+
+
+class ManagedFileBatchAcceptedV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    batch_id: str
+    workspace_id: str
+    status: Literal["accepted", "partial", "failed"]
+    accepted_count: int
+    failed_count: int
+    items: list[ManagedFileBatchItemAcceptedV1]
+
+
+class SourceCandidateSummaryV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str
+    label: str
+    description: str
+    source_type: Literal["local_folder"]
+    available: bool
+
+
+class SourceCandidateListResponseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    candidates: list[SourceCandidateSummaryV1]
+
+
+class SourceCandidateAcceptedV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str
+    label: str
+    workspace_id: str
+    source_id: str
+    operation_id: str
+    status: Literal[
+        "accepted",
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+    ]

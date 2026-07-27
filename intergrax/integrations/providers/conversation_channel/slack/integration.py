@@ -10,6 +10,10 @@ from pydantic import PrivateAttr
 from intergrax.integrations._shared.health import probe_client_health
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.conversation_channel import (
+    ConversationAttachmentContent,
+    ConversationAttachmentFetchError,
+    ConversationAttachmentFetcher,
+    ConversationAttachmentReference,
     ConversationChannelBackend,
     ConversationDeliveryReceipt,
     ConversationEventHandler,
@@ -45,6 +49,17 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
 
     async def send(self, message: OutboundConversationMessage) -> ConversationDeliveryReceipt:
         return await self._require_backend().send(message)
+
+    async def fetch_attachment(
+        self,
+        attachment: ConversationAttachmentReference,
+        *,
+        max_bytes: int,
+    ) -> ConversationAttachmentContent:
+        backend = self._require_backend()
+        if not isinstance(backend, ConversationAttachmentFetcher):
+            raise ConversationAttachmentFetchError(kind="attachment_fetch_unavailable")
+        return await backend.fetch_attachment(attachment, max_bytes=max_bytes)
 
     def health(self) -> HealthStatus:
         return probe_client_health(

@@ -14,6 +14,7 @@ from intergrax.integrations.contracts.conversation_channel import (
     ConversationActionSelection,
     ConversationActor,
     ConversationAddress,
+    ConversationAttachmentReference,
     ConversationEventKind,
     InboundConversationEvent,
 )
@@ -22,6 +23,7 @@ _LOG = logging.getLogger(__name__)
 
 SUPPORTED_ENVELOPE_TYPES = frozenset({"events_api", "interactive"})
 _STATIC_SELECT = "static_select"
+_SUPPORTED_MESSAGE_SUBTYPES = frozenset({"file_share"})
 
 
 def _non_blank(value: Any) -> str | None:
@@ -75,6 +77,56 @@ def deterministic_block_action_event_id(
     return f"slack:block_action:v1:{digest}"
 
 
+def _map_size_bytes(value: Any) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float):
+        if value < 0 or not value.is_integer():
+            return None
+        return int(value)
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped or not stripped.isdigit():
+            return None
+        return int(stripped)
+    return None
+
+
+def _map_attachment_references(
+    files_value: Any,
+) -> tuple[ConversationAttachmentReference, ...] | None:
+    """Map Slack ``files`` array; return None when malformed (fail-closed)."""
+    if files_value is None:
+        return ()
+    if not isinstance(files_value, list):
+        return None
+    if not files_value:
+        return ()
+    mapped: list[ConversationAttachmentReference] = []
+    for item in files_value:
+        entry = _as_mapping(item)
+        if entry is None:
+            return None
+        attachment_id = _non_blank(entry.get("id"))
+        if attachment_id is None:
+            return None
+        size_bytes = _map_size_bytes(entry.get("size"))
+        try:
+            mapped.append(
+                ConversationAttachmentReference(
+                    attachment_id=attachment_id,
+                    file_name=_non_blank(entry.get("name")),
+                    content_type=_non_blank(entry.get("mimetype")),
+                    size_bytes=size_bytes,
+                )
+            )
+        except Exception:  # noqa: BLE001 — malformed entry rejects whole event
+            return None
+    return tuple(mapped)
+
+
 def map_events_api_message(payload: Mapping[str, Any]) -> InboundConversationEvent | None:
     """Map Events API DM ``message`` payload to ``InboundConversationEvent`` or None."""
     event_id = _non_blank(payload.get("event_id"))
@@ -100,16 +152,29 @@ def map_events_api_message(payload: Mapping[str, Any]) -> InboundConversationEve
     if _non_blank(event.get("bot_id")) is not None:
         _LOG.debug("slack conversation: ignoring bot-authored message")
         return None
-    if _non_blank(event.get("subtype")) is not None:
+
+    subtype = _non_blank(event.get("subtype"))
+    if subtype is not None and subtype not in _SUPPORTED_MESSAGE_SUBTYPES:
         _LOG.debug("slack conversation: ignoring message subtype")
+        return None
+
+    attachments = _map_attachment_references(event.get("files"))
+    if attachments is None:
+        _LOG.info("slack conversation: events_api malformed files; ignoring")
+        return None
+    if subtype == "file_share" and not attachments:
+        _LOG.info("slack conversation: file_share without files; ignoring")
         return None
 
     channel = _non_blank(event.get("channel"))
     user = _non_blank(event.get("user"))
     text = _non_blank(event.get("text"))
     ts = _non_blank(event.get("ts"))
-    if channel is None or user is None or text is None or ts is None:
+    if channel is None or user is None or ts is None:
         _LOG.info("slack conversation: events_api message missing required fields; ignoring")
+        return None
+    if text is None and not attachments:
+        _LOG.info("slack conversation: events_api message missing text/attachments; ignoring")
         return None
 
     thread_ts = _non_blank(event.get("thread_ts"))
@@ -131,6 +196,7 @@ def map_events_api_message(payload: Mapping[str, Any]) -> InboundConversationEve
         kind=ConversationEventKind.MESSAGE,
         text=text,
         occurred_at=parse_slack_ts(ts),
+        attachments=attachments,
         metadata=metadata,
     )
 
