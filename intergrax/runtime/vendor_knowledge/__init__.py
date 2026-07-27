@@ -48,6 +48,26 @@ from intergrax.runtime.vendor_knowledge.models import (
 )
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 from intergrax.runtime.vendor_knowledge.resolver import IntegrationProfileVendorResolver
+from intergrax.runtime.vendor_knowledge.sync_contracts import (
+    KnowledgeRemoteItemStateRepository,
+    KnowledgeSourceLeaseRepository,
+    KnowledgeSyncCheckpointConflict,
+    KnowledgeSyncCheckpointRepository,
+    KnowledgeSyncCorruptState,
+    KnowledgeSyncSink,
+)
+from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeRemoteItemState,
+    KnowledgeRemoteItemStatus,
+    KnowledgeSourceLeaseToken,
+    KnowledgeSyncBatch,
+    KnowledgeSyncCheckpoint,
+    KnowledgeSyncEnvelope,
+    KnowledgeSyncMode,
+    KnowledgeSyncRunResult,
+    KnowledgeSyncRunStatus,
+)
 
 __all__ = [
     "ConnectionAwareVendorResolver",
@@ -68,13 +88,28 @@ __all__ = [
     "KnowledgePage",
     "KnowledgePermissions",
     "KnowledgePrincipal",
+    "KnowledgeRemoteItemState",
+    "KnowledgeRemoteItemStateRepository",
+    "KnowledgeRemoteItemStatus",
     "KnowledgeScopeInfo",
     "KnowledgeSourceBinding",
     "KnowledgeSourceBindingRepository",
     "KnowledgeSourceBindingService",
     "KnowledgeSourceBindingStatus",
+    "KnowledgeSourceLeaseRepository",
+    "KnowledgeSourceLeaseToken",
     "KnowledgeSourceRef",
     "KnowledgeSourceScope",
+    "KnowledgeSyncBatch",
+    "KnowledgeSyncCheckpoint",
+    "KnowledgeSyncCheckpointConflict",
+    "KnowledgeSyncCheckpointRepository",
+    "KnowledgeSyncCorruptState",
+    "KnowledgeSyncEnvelope",
+    "KnowledgeSyncMode",
+    "KnowledgeSyncRunResult",
+    "KnowledgeSyncRunStatus",
+    "KnowledgeSyncSink",
     "KnowledgeVisibility",
     "VendorIntegrationResolver",
     "VendorKnowledgeAdapter",
@@ -82,5 +117,6 @@ __all__ = [
     "VendorKnowledgeErrorCode",
     "VendorKnowledgeFacade",
     "VendorKnowledgeFacadeService",
+    "VendorKnowledgeSyncCoordinator",
     "to_source_ref",
 ]

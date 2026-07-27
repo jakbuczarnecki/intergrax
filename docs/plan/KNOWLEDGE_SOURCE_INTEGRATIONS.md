@@ -41,8 +41,8 @@ DONE:     VENDOR-KNOWLEDGE-FACADE-AUDIT-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-CORE-1
 DONE:     VENDOR-KNOWLEDGE-CONNECTION-1
-NEXT:     VENDOR-KNOWLEDGE-SYNC-1A
-PLANNED:  VENDOR-KNOWLEDGE-SYNC-1B
+DONE:     VENDOR-KNOWLEDGE-SYNC-1A
+NEXT:     VENDOR-KNOWLEDGE-SYNC-1B
 PLANNED:  JIRA-KNOWLEDGE-ADAPTER-1
 PLANNED:  CONFLUENCE-KNOWLEDGE-ADAPTER-1
 PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1
@@ -60,7 +60,10 @@ Connection-aware resolver implemented
 Stateless facade core implemented
 Tenant-scoped source bindings implemented
 DocumentStore binding repository implemented
-Synchronization coordinator not implemented
+Platform-neutral synchronization coordinator implemented
+Synchronization repository ports implemented
+Queue/worker wiring not implemented
+Facade sync DocumentStore repositories not implemented
 Vendor adapters not implemented
 LKW connected-source bridge not implemented
 ```
@@ -323,7 +326,7 @@ Rules:
 
 #### `VENDOR-KNOWLEDGE-SYNC-1A`
 
-**Status:** `NEXT`
+**Status:** `DONE`
 
 Implement platform-neutral orchestration with fake adapters and repository ports:
 
@@ -341,7 +344,7 @@ The coordinator outputs normalized items to a sink port. It does not parse, chun
 
 #### `VENDOR-KNOWLEDGE-SYNC-1B`
 
-**Status:** `PLANNED`
+**Status:** `NEXT`
 
 Wire the coordinator onto:
 
@@ -515,7 +518,7 @@ Add safe source discovery, selection, sync request and status through Slack. Sla
 Implement only:
 
 ```text
-VENDOR-KNOWLEDGE-SYNC-1A
+VENDOR-KNOWLEDGE-SYNC-1B
 ```
 
 Do not start Jira, Microsoft Graph, Confluence, secrets resolution, LKW bridge or vendor adapters in the same task.
