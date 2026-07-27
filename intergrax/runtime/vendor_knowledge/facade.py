@@ -102,7 +102,11 @@ class VendorKnowledgeFacadeService:
                     source_kind=source.source_kind,
                     retryable=False,
                 )
-        elif not (capabilities.full_inventory or capabilities.incremental_changes):
+        elif not (
+            capabilities.full_inventory
+            or capabilities.incremental_changes
+            or capabilities.reconciliation
+        ):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
                 safe_message="Page reads are not supported for this adapter",

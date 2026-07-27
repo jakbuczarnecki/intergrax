@@ -19,6 +19,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeErrorCode,
 )
 from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeAdapterCapabilities,
     KnowledgeChange,
     KnowledgeChangeKind,
     KnowledgeContent,
@@ -235,6 +236,8 @@ class VendorKnowledgeSyncCoordinator:
         if operation_error is not None:
             raise operation_error
         if release_error is not None:
+            if isinstance(release_error, VendorKnowledgeError):
+                raise release_error
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
                 safe_message="Failed to release knowledge source lease",
@@ -245,7 +248,7 @@ class VendorKnowledgeSyncCoordinator:
 
     def _acquire_lease(self, *, binding_id: str) -> KnowledgeSourceLeaseToken | None:
         try:
-            return self._lease_repository.acquire(
+            lease = self._lease_repository.acquire(
                 tenant_id=self._tenant_id,
                 binding_id=binding_id,
                 owner_id=self._owner_id,
@@ -253,6 +256,12 @@ class VendorKnowledgeSyncCoordinator:
             )
         except VendorKnowledgeError:
             raise
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source lease state is corrupt",
+                retryable=False,
+            ) from None
         except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
@@ -260,11 +269,31 @@ class VendorKnowledgeSyncCoordinator:
                 retryable=True,
             ) from None
 
+        if lease is None:
+            return None
+        if (
+            lease.tenant_id != self._tenant_id
+            or lease.binding_id != binding_id
+            or lease.owner_id != self._owner_id
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source lease identity is inconsistent",
+                retryable=False,
+            )
+        return lease
+
     def _release_lease(self, lease: KnowledgeSourceLeaseToken) -> None:
         try:
             self._lease_repository.release(lease=lease)
         except VendorKnowledgeError:
             raise
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source lease state is corrupt",
+                retryable=False,
+            ) from None
         except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
@@ -300,18 +329,13 @@ class VendorKnowledgeSyncCoordinator:
                 retryable=True,
             ) from None
 
-        if mode is KnowledgeSyncMode.RECONCILIATION:
-            capabilities = scope_info.capabilities
-            if not capabilities.reconciliation and not capabilities.full_inventory:
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
-                    safe_message=(
-                        "Reconciliation requires reconciliation or full_inventory capability"
-                    ),
-                    provider_id=source.provider_id,
-                    source_kind=source.source_kind,
-                    retryable=False,
-                )
+        self._enforce_read_capabilities(
+            mode=mode,
+            input_cursor=input_cursor,
+            capabilities=scope_info.capabilities,
+            provider_id=source.provider_id,
+            source_kind=source.source_kind,
+        )
 
         try:
             page = await self._facade.read_page(
@@ -423,7 +447,7 @@ class VendorKnowledgeSyncCoordinator:
 
     def _read_checkpoint(self, *, binding_id: str) -> KnowledgeSyncCheckpoint | None:
         try:
-            return self._checkpoint_repository.get(
+            checkpoint = self._checkpoint_repository.get(
                 tenant_id=self._tenant_id,
                 binding_id=binding_id,
             )
@@ -442,6 +466,17 @@ class VendorKnowledgeSyncCoordinator:
                 retryable=True,
             ) from None
 
+        if checkpoint is not None and (
+            checkpoint.tenant_id != self._tenant_id
+            or checkpoint.binding_id != binding_id
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge sync checkpoint identity is inconsistent",
+                retryable=False,
+            )
+        return checkpoint
+
     def _resolve_input_cursor(
         self,
         *,
@@ -453,15 +488,6 @@ class VendorKnowledgeSyncCoordinator:
             return None
         if loaded_checkpoint is None:
             return None
-        if (
-            loaded_checkpoint.tenant_id != self._tenant_id
-            or loaded_checkpoint.binding_id != binding.binding_id
-        ):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message="Knowledge sync checkpoint identity is inconsistent",
-                retryable=False,
-            )
         if loaded_checkpoint.binding_configuration_version != binding.configuration_version:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_CURSOR,
@@ -474,6 +500,49 @@ class VendorKnowledgeSyncCoordinator:
                 retryable=False,
             )
         return loaded_checkpoint.cursor
+
+    def _enforce_read_capabilities(
+        self,
+        *,
+        mode: KnowledgeSyncMode,
+        input_cursor: KnowledgeCursor | None,
+        capabilities: KnowledgeAdapterCapabilities,
+        provider_id: str,
+        source_kind: str,
+    ) -> None:
+        if mode is KnowledgeSyncMode.RECONCILIATION:
+            if not capabilities.reconciliation and not capabilities.full_inventory:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
+                    safe_message=(
+                        "Reconciliation requires reconciliation or full_inventory capability"
+                    ),
+                    provider_id=provider_id,
+                    source_kind=source_kind,
+                    retryable=False,
+                )
+            return
+        if input_cursor is None:
+            if not capabilities.full_inventory and not capabilities.incremental_changes:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
+                    safe_message=(
+                        "Incremental sync requires full_inventory or incremental_changes "
+                        "capability"
+                    ),
+                    provider_id=provider_id,
+                    source_kind=source_kind,
+                    retryable=False,
+                )
+            return
+        if not capabilities.incremental_changes:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
+                safe_message="Incremental sync requires incremental_changes capability",
+                provider_id=provider_id,
+                source_kind=source_kind,
+                retryable=False,
+            )
 
     def _validate_page(
         self,
@@ -663,6 +732,12 @@ class VendorKnowledgeSyncCoordinator:
             await self._sink.apply_batch(batch=batch)
         except VendorKnowledgeError:
             raise
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge sync sink state is corrupt",
+                retryable=False,
+            ) from None
         except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,

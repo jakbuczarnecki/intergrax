@@ -11,17 +11,26 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
 )
+from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeAdapterCapabilities,
     KnowledgeChangeKind,
     KnowledgeCursor,
 )
+from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemStatus,
+    KnowledgeSourceLeaseToken,
     KnowledgeSyncCheckpoint,
     KnowledgeSyncMode,
     KnowledgeSyncRunStatus,
+)
+from tests.unit.runtime.vendor_knowledge._fakes import (
+    FakeAdapter,
+    FakeIntegration,
+    RecordingResolver,
+    make_page as make_facade_page,
 )
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
@@ -462,3 +471,292 @@ async def test_upsert_skips_content_when_unavailable() -> None:
     await coordinator.sync_once(binding_id="binding-1")
     assert facade.content_calls == []
     assert len(facade.permissions_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("token_kwargs",),
+    [
+        ({"tenant_id": "other-tenant"},),
+        ({"binding_id": "other-binding"},),
+        ({"owner_id": "other-owner"},),
+    ],
+)
+async def test_lease_token_identity_mismatch_is_rejected(
+    token_kwargs: dict[str, str],
+) -> None:
+    token_fields = {
+        "tenant_id": "tenant-1",
+        "binding_id": "binding-1",
+        "owner_id": "owner-1",
+        "token": "foreign-secret-token",
+    }
+    token_fields.update(token_kwargs)
+    lease = InMemoryLeaseRepository(
+        forced_token=KnowledgeSourceLeaseToken(**token_fields)
+    )
+    binding_service = RecordingBindingService(binding=make_binding())
+    facade = RecordingFacade()
+    checkpoint = InMemoryCheckpointRepository()
+    state = InMemoryRemoteItemStateRepository()
+    sink = IdempotentRecordingSink()
+    coordinator, *_ = _coordinator(
+        lease=lease,
+        binding_service=binding_service,
+        facade=facade,
+        checkpoint=checkpoint,
+        state=state,
+        sink=sink,
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.sync_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    assert "foreign-secret-token" not in str(exc_info.value)
+    assert "other-tenant" not in str(exc_info.value)
+    assert "other-binding" not in str(exc_info.value)
+    assert "other-owner" not in str(exc_info.value)
+    assert binding_service.get_calls == []
+    assert facade.inspect_calls == []
+    assert facade.read_calls == []
+    assert checkpoint.get_calls == []
+    assert sink.calls == []
+    assert state.apply_calls == []
+    assert lease.release_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_valid_lease_token_still_runs_full_flow() -> None:
+    lease = InMemoryLeaseRepository(
+        forced_token=KnowledgeSourceLeaseToken(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            owner_id="owner-1",
+            token="ok-token",
+        )
+    )
+    coordinator, _, facade, lease_repo, checkpoint, state, sink = _coordinator(lease=lease)
+    result = await coordinator.sync_once(binding_id="binding-1")
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert facade.read_calls
+    assert sink.calls
+    assert state.apply_calls
+    assert checkpoint.commit_calls
+    assert len(lease_repo.release_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("mode", "checkpoint_kwargs"),
+    [
+        ("incremental", {"tenant_id": "other-tenant"}),
+        ("incremental", {"binding_id": "other-binding"}),
+        ("reconciliation", {"tenant_id": "other-tenant"}),
+        ("reconciliation", {"binding_id": "other-binding"}),
+    ],
+)
+async def test_checkpoint_identity_mismatch_rejected_before_reads(
+    mode: str,
+    checkpoint_kwargs: dict[str, str],
+) -> None:
+    fields = {
+        "tenant_id": "tenant-1",
+        "binding_id": "binding-1",
+        "binding_configuration_version": 1,
+        "cursor": KnowledgeCursor(value="secret-cursor-value"),
+    }
+    fields.update(checkpoint_kwargs)
+    checkpoint = InMemoryCheckpointRepository(
+        forced_checkpoint=KnowledgeSyncCheckpoint(**fields)
+    )
+    facade = RecordingFacade()
+    state = InMemoryRemoteItemStateRepository()
+    sink = IdempotentRecordingSink()
+    coordinator, *_ = _coordinator(facade=facade, checkpoint=checkpoint, state=state, sink=sink)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        if mode == "incremental":
+            await coordinator.sync_once(binding_id="binding-1")
+        else:
+            await coordinator.reconcile_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    assert "secret-cursor-value" not in str(exc_info.value)
+    assert facade.inspect_calls == []
+    assert facade.read_calls == []
+    assert sink.calls == []
+    assert state.apply_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_accepts_older_configuration_checkpoint_as_cas() -> None:
+    previous = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="old-config-cursor"),
+    )
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.checkpoints[("tenant-1", "binding-1")] = previous
+    binding = make_binding(configuration_version=2)
+    facade = RecordingFacade(
+        default_page=make_page(proposed_checkpoint=KnowledgeCursor(value="new-cursor"))
+    )
+    coordinator, *_ = _coordinator(binding=binding, facade=facade, checkpoint=checkpoint)
+    result = await coordinator.reconcile_once(binding_id="binding-1")
+    assert result.mode is KnowledgeSyncMode.RECONCILIATION
+    assert checkpoint.commit_calls[0]["expected_previous"] == previous
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].binding_configuration_version == 2
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_first_incremental_allows_full_inventory_only() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(full_inventory=True, content_fetch=True)
+    )
+    coordinator, *_ = _coordinator(facade=facade)
+    result = await coordinator.sync_once(binding_id="binding-1")
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert len(facade.read_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_first_incremental_allows_incremental_changes_only() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(
+            incremental_changes=True, content_fetch=True
+        )
+    )
+    coordinator, *_ = _coordinator(facade=facade)
+    result = await coordinator.sync_once(binding_id="binding-1")
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert len(facade.read_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_first_incremental_rejects_reconciliation_only_capability() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(reconciliation=True, content_fetch=True)
+    )
+    coordinator, *_ = _coordinator(facade=facade)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.sync_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
+    assert exc_info.value.retryable is False
+    assert facade.read_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_subsequent_incremental_requires_incremental_changes() -> None:
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.checkpoints[("tenant-1", "binding-1")] = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="cursor-a"),
+    )
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(full_inventory=True, content_fetch=True),
+        default_page=make_page(proposed_checkpoint=KnowledgeCursor(value="cursor-b")),
+    )
+    coordinator, *_ = _coordinator(facade=facade, checkpoint=checkpoint)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.sync_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
+    assert facade.read_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_allows_full_inventory_without_reconciliation_flag() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(full_inventory=True, content_fetch=True)
+    )
+    coordinator, *_ = _coordinator(facade=facade)
+    result = await coordinator.reconcile_once(binding_id="binding-1")
+    assert result.mode is KnowledgeSyncMode.RECONCILIATION
+    assert len(facade.read_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_allows_reconciliation_without_full_inventory() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(reconciliation=True, content_fetch=True)
+    )
+    coordinator, *_ = _coordinator(facade=facade)
+    result = await coordinator.reconcile_once(binding_id="binding-1")
+    assert result.mode is KnowledgeSyncMode.RECONCILIATION
+    assert len(facade.read_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_missing_capability_stops_before_read_page() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(incremental_changes=True)
+    )
+    coordinator, *_ = _coordinator(facade=facade)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
+    assert facade.read_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_coordinator_with_production_facade_reconciliation_only() -> None:
+    from intergrax.runtime.vendor_knowledge.models import KnowledgePage
+
+    base_page = make_facade_page(next_cursor=None, has_more=False)
+    page = KnowledgePage(
+        changes=base_page.changes,
+        next_cursor=None,
+        proposed_checkpoint=KnowledgeCursor(value="reconciled-1"),
+        has_more=False,
+    )
+    adapter = FakeAdapter(
+        capabilities=KnowledgeAdapterCapabilities(
+            reconciliation=True,
+            full_inventory=False,
+            incremental_changes=False,
+            content_fetch=True,
+            structured_content=True,
+        ),
+        page=page,
+    )
+    registry = KnowledgeAdapterRegistry()
+    registry.register(adapter)
+    facade = VendorKnowledgeFacadeService(
+        tenant_id="tenant-1",
+        resolver=RecordingResolver(integration=FakeIntegration()),
+        adapter_registry=registry,
+    )
+    sink = IdempotentRecordingSink()
+    state = InMemoryRemoteItemStateRepository()
+    checkpoint = InMemoryCheckpointRepository()
+    coordinator = VendorKnowledgeSyncCoordinator(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        binding_service=RecordingBindingService(binding=make_binding()),  # type: ignore[arg-type]
+        facade=facade,
+        lease_repository=InMemoryLeaseRepository(),
+        checkpoint_repository=checkpoint,
+        item_state_repository=state,
+        sink=sink,
+        lease_ttl_seconds=30,
+    )
+    result = await coordinator.reconcile_once(binding_id="binding-1")
+    assert result.mode is KnowledgeSyncMode.RECONCILIATION
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert len(adapter.read_calls) == 1
+    assert adapter.read_calls[0]["cursor"] is None
+    assert len(sink.calls) == 1
+    assert shared_order(sink, state, checkpoint) == ["sink", "state", "checkpoint"]

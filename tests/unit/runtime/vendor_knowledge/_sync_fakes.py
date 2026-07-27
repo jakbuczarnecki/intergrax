@@ -141,6 +141,7 @@ class InMemoryLeaseRepository:
     acquire_error: Exception | None = None
     release_error: Exception | None = None
     force_busy: bool = False
+    forced_token: KnowledgeSourceLeaseToken | None = None
     _counter: int = 0
 
     def acquire(
@@ -163,6 +164,8 @@ class InMemoryLeaseRepository:
             raise self.acquire_error
         if self.force_busy:
             return None
+        if self.forced_token is not None:
+            return self.forced_token
         key = (tenant_id, binding_id)
         if key in self.held:
             return None
@@ -195,6 +198,7 @@ class InMemoryCheckpointRepository:
     get_error: Exception | None = None
     commit_error: Exception | None = None
     fail_commit_times: int = 0
+    forced_checkpoint: KnowledgeSyncCheckpoint | None = None
 
     def get(
         self,
@@ -205,6 +209,8 @@ class InMemoryCheckpointRepository:
         self.get_calls.append((tenant_id, binding_id))
         if self.get_error is not None:
             raise self.get_error
+        if self.forced_checkpoint is not None:
+            return self.forced_checkpoint
         return self.checkpoints.get((tenant_id, binding_id))
 
     def commit(

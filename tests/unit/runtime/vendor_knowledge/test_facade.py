@@ -222,6 +222,46 @@ async def test_unsupported_inventory_incremental_read() -> None:
         capabilities=KnowledgeAdapterCapabilities(
             full_inventory=False,
             incremental_changes=False,
+            reconciliation=False,
+        )
+    )
+    service, _resolver, resolved = _facade(adapter=adapter)
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await service.read_page(source=make_source(), cursor=None, limit=10)
+
+    assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
+    assert resolved.read_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_read_page_null_cursor_allows_reconciliation_capability() -> None:
+    adapter = FakeAdapter(
+        capabilities=KnowledgeAdapterCapabilities(
+            reconciliation=True,
+            full_inventory=False,
+            incremental_changes=False,
+        )
+    )
+    service, _resolver, resolved = _facade(adapter=adapter)
+
+    page = await service.read_page(source=make_source(), cursor=None, limit=10)
+
+    assert len(page.changes) == 1
+    assert len(resolved.read_calls) == 1
+    assert resolved.read_calls[0]["cursor"] is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_read_page_null_cursor_rejects_without_any_read_capability() -> None:
+    adapter = FakeAdapter(
+        capabilities=KnowledgeAdapterCapabilities(
+            full_inventory=False,
+            incremental_changes=False,
+            reconciliation=False,
+            content_fetch=True,
         )
     )
     service, _resolver, resolved = _facade(adapter=adapter)
@@ -240,6 +280,7 @@ async def test_unsupported_incremental_when_cursor_present() -> None:
         capabilities=KnowledgeAdapterCapabilities(
             full_inventory=True,
             incremental_changes=False,
+            reconciliation=True,
         )
     )
     service, _resolver, resolved = _facade(adapter=adapter)

@@ -267,17 +267,73 @@ async def test_facade_vendor_knowledge_error_preserves_retryable() -> None:
     assert exc_info.value.retryable is False
 
 
+_CORRUPT_SECRET = (
+    "Authorization: Bearer secret-token "
+    "https://user:password@example.test?access_token=leak"
+)
+
+
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_corrupt_state_maps_to_non_retryable() -> None:
-    state = InMemoryRemoteItemStateRepository(
-        apply_error=KnowledgeSyncCorruptState("bad state")
+@pytest.mark.parametrize(
+    "port",
+    [
+        "lease_acquire",
+        "lease_release",
+        "sink_apply",
+        "remote_state_apply",
+        "checkpoint_get",
+        "checkpoint_commit",
+    ],
+)
+async def test_corrupt_state_maps_to_invalid_provider_response(port: str) -> None:
+    corrupt = KnowledgeSyncCorruptState(_CORRUPT_SECRET)
+    lease = InMemoryLeaseRepository()
+    checkpoint = InMemoryCheckpointRepository()
+    state = InMemoryRemoteItemStateRepository()
+    sink = IdempotentRecordingSink()
+    if port == "lease_acquire":
+        lease.acquire_error = corrupt
+    elif port == "lease_release":
+        lease.release_error = corrupt
+    elif port == "sink_apply":
+        sink.apply_error = corrupt
+    elif port == "remote_state_apply":
+        state.apply_error = corrupt
+    elif port == "checkpoint_get":
+        checkpoint.get_error = corrupt
+    else:
+        checkpoint.commit_error = corrupt
+
+    coordinator, *_ = _build(
+        lease=lease, checkpoint=checkpoint, state=state, sink=sink
     )
-    coordinator, *_ = _build(state=state)
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.sync_once(binding_id="binding-1")
-    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
-    assert exc_info.value.retryable is False
+    error = exc_info.value
+    assert error.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert error.retryable is False
+    assert error.__cause__ is None
+    text = str(error)
+    assert "secret-token" not in text
+    assert "example.test" not in text
+    assert "access_token" not in text
+    assert "password" not in text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_operation_error_takes_precedence_over_release_corrupt() -> None:
+    lease = InMemoryLeaseRepository(
+        release_error=KnowledgeSyncCorruptState(_CORRUPT_SECRET)
+    )
+    sink = IdempotentRecordingSink(apply_error=RuntimeError("primary sink boom"))
+    coordinator, *_ = _build(lease=lease, sink=sink)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.sync_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert "Knowledge sync sink failed" in exc_info.value.safe_message
+    assert "secret-token" not in str(exc_info.value)
 
 
 @pytest.mark.unit
@@ -290,6 +346,21 @@ async def test_release_failure_after_success_is_retryable_dependency() -> None:
     assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
     assert exc_info.value.retryable is True
     assert "release boom" not in str(exc_info.value)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_release_corrupt_after_success_is_non_retryable() -> None:
+    lease = InMemoryLeaseRepository(
+        release_error=KnowledgeSyncCorruptState(_CORRUPT_SECRET)
+    )
+    coordinator, *_ = _build(lease=lease)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.sync_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    assert exc_info.value.__cause__ is None
+    assert "secret-token" not in str(exc_info.value)
 
 
 @pytest.mark.unit
