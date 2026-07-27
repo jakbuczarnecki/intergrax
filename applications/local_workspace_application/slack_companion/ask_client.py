@@ -33,6 +33,13 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT_SECONDS = 60.0
 _DEFAULT_LIMIT = 10
+_SAFE_SOURCE_CANDIDATE_409_DETAILS = frozenset(
+    {
+        "source_candidate_unavailable",
+        "source_candidate_idempotency_conflict",
+        "source_candidate_already_registered",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -378,6 +385,10 @@ class WorkspaceAskHttpClient:
                 "slack_companion accept_source_candidate http_error status=%s",
                 response.status_code,
             )
+            if response.status_code == 409:
+                raise SlackAskClientError(
+                    kind=_safe_source_candidate_409_kind(response)
+                )
             raise SlackAskClientError(kind=f"http_{response.status_code}")
 
         try:
@@ -540,3 +551,17 @@ class WorkspaceAskHttpClient:
         except Exception as exc:  # noqa: BLE001 — map parse failures to product error
             logger.warning("slack_companion ask parse_error kind=%s", type(exc).__name__)
             raise SlackAskClientError(kind="parse_error") from exc
+
+
+def _safe_source_candidate_409_kind(response: httpx.Response) -> str:
+    """Map HTTP 409 detail to a closed safe kind; never retain raw body."""
+    try:
+        payload = response.json()
+    except Exception:  # noqa: BLE001
+        return "http_409"
+    if not isinstance(payload, dict):
+        return "http_409"
+    detail = payload.get("detail")
+    if isinstance(detail, str) and detail in _SAFE_SOURCE_CANDIDATE_409_DETAILS:
+        return detail
+    return "http_409"

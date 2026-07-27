@@ -14,8 +14,8 @@ Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Workspace Contents — Knowledge Intake source expansion
 Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-1 + corrections
-Current implementation: LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / READY_FOR_REVIEW
-Current review gate: audit actual 1B-4-2 commit before advancing
+Current implementation: LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / CORRECTION REQUIRED
+Current review gate: audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1
 Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5 — explicit Web URL intake
 Following source expansion: 1B-6 VENDOR-KNOWLEDGE integration
 Then: 1C shared synchronization and completion lifecycle → 1D provenance inspection → 1E safe removal
@@ -96,9 +96,9 @@ Microsoft Teams in `1B-6` means Teams-hosted organizational knowledge. It does n
 |---|---|---|
 | `LKW-WORKSPACE-CONTENTS-1B-4-1` | HTTP listing and acceptance of opaque preconfigured `LOCAL_FOLDER` Source Candidates | ACCEPTED (with corrections) |
 | `LKW-WORKSPACE-CONTENTS-1B-4-1-C1` | Harden public safety, candidate identity and operation evidence | ACCEPTED |
-| `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | **IMPLEMENTED / READY_FOR_REVIEW** |
+| `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | **IMPLEMENTED / CORRECTION REQUIRED** |
 
-Current review gate: audit the actual `1B-4-2` commit before advancing to `1B-5`.
+Current review gate: audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C1` before advancing to `1B-5`.
 
 ---
 
@@ -119,7 +119,7 @@ LKW-WORKSPACE-CONTENTS-1B-4-2
 
 | Task | User/product outcome | Status |
 |---|---|---|
-| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | IMPLEMENTED / READY_FOR_REVIEW |
+| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | IMPLEMENTED / CORRECTION REQUIRED |
 | `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | PLANNED |
 | `1B-6-0` | LKW and VENDOR-KNOWLEDGE have a frozen ownership and integration contract | PLANNED |
 | `1B-6-1` | A user can discover safe opaque vendor connections and resources | PLANNED |
@@ -432,10 +432,10 @@ A second conversational adapter and broad provider matrix do not delay the curre
 CURRENT:
 LKW-WORKSPACE-CONTENTS-1B-4-2
 Slack safe numbered Source Candidate selection
-IMPLEMENTED / READY_FOR_REVIEW
+IMPLEMENTED / CORRECTION REQUIRED
 
 REVIEW GATE:
-audit the actual 1B-4-2 commit
+audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1
 → ACCEPTED: advance to 1B-5
 → NEEDS_CORRECTION: issue only the next bounded 1B-4-2 correction
 

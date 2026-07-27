@@ -66,6 +66,7 @@ from local_workspace_application.slack_companion.rendering import (
     render_source_candidate_list_empty,
     render_source_candidate_list_load_failed,
     render_source_candidate_out_of_range,
+    render_source_candidate_selection_conflict,
     render_source_candidate_service_unavailable,
     render_source_candidate_unavailable,
     render_source_candidate_usage,
@@ -415,6 +416,15 @@ def order_source_candidates_for_listing(
             (item.candidate_id or "").strip(),
         ),
     )
+
+
+def available_source_candidates_for_listing(
+    candidates: list[SlackSourceCandidateListItem],
+) -> list[SlackSourceCandidateListItem]:
+    """Visible/selectable candidates: available only, ordered, capped."""
+    available = [item for item in candidates if item.available is True]
+    ordered = order_source_candidates_for_listing(available)
+    return ordered[:MAX_SOURCE_CANDIDATE_ITEMS]
 
 
 def normalize_source_list_items(
@@ -1485,8 +1495,7 @@ class SlackAskWorkflow:
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
             )
-            ordered = order_source_candidates_for_listing(items)
-            visible = ordered[:MAX_SOURCE_CANDIDATE_ITEMS]
+            visible = available_source_candidates_for_listing(items)
             if not visible:
                 final_text = render_source_candidate_list_empty()
             else:
@@ -1625,8 +1634,7 @@ class SlackAskWorkflow:
             )
             return
 
-        ordered = order_source_candidates_for_listing(items)
-        visible = ordered[:MAX_SOURCE_CANDIDATE_ITEMS]
+        visible = available_source_candidates_for_listing(items)
         if not visible:
             await self._send(
                 OutboundConversationMessage(
@@ -1676,38 +1684,27 @@ class SlackAskWorkflow:
             event_id=authorized.event_id,
         )
         try:
-            await self._ask.accept_source_candidate(
+            accepted = await self._ask.accept_source_candidate(
                 tenant_id=authorized.tenant_id,
                 workspace_id=workspace_id,
                 candidate_id=candidate_id,
                 idempotency_key=idempotency_key,
             )
         except SlackAskClientError as exc:
-            if used_in_memory_selection and exc.kind == "http_404":
-                self._selections.clear(actor_key)
-                try:
-                    await self._send(
-                        OutboundConversationMessage(
-                            address=address,
-                            text=render_selected_workspace_unavailable(),
-                        )
-                    )
-                except Exception as send_exc:  # noqa: BLE001
-                    logger.warning(
-                        "slack_companion source_candidate_accept_error_delivery_failed kind=%s",
-                        type(send_exc).__name__,
-                    )
-                self._dedupe.mark_completed(
-                    dedupe_key=claim.dedupe_key,
-                    claim_token=claim.claim_token,
-                    ask_run_id=None,
-                )
-                return
-            if exc.kind == "http_404":
+            if (
+                exc.kind == "http_404"
+                or exc.kind == "source_candidate_unavailable"
+            ):
                 text = render_source_candidate_unavailable()
                 complete = True
-            elif exc.kind == "http_409":
+            elif exc.kind == "source_candidate_already_registered":
                 text = render_source_candidate_already_attached()
+                complete = True
+            elif exc.kind == "source_candidate_idempotency_conflict":
+                text = render_source_candidate_selection_conflict()
+                complete = True
+            elif exc.kind == "http_409":
+                text = render_source_candidate_accept_failed()
                 complete = True
             elif exc.kind == "http_503":
                 text = render_source_candidate_service_unavailable()
@@ -1773,7 +1770,7 @@ class SlackAskWorkflow:
             await self._send(
                 OutboundConversationMessage(
                     address=address,
-                    text=render_source_candidate_accepted(chosen.label),
+                    text=render_source_candidate_accepted(accepted.label),
                 )
             )
         except Exception as exc:  # noqa: BLE001

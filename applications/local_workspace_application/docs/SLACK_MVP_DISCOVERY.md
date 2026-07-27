@@ -39,7 +39,7 @@ Next slice: MVP-4 — Slack conversational MVP
      provider downloads private files; one Slack event → one IntakeBatch;
      completion notification deferred to LKW-WORKSPACE-CONTENTS-1C;
      no separate file_shared event subscription)
-  LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / READY_FOR_REVIEW
+  LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / CORRECTION REQUIRED
     exact DM "source candidates"
     → safe numbered candidate list
     exact DM "source add <n>"
@@ -49,6 +49,11 @@ Next slice: MVP-4 — Slack conversational MVP
     → existing Knowledge Intake lifecycle
     Ask count 0
     no path/fingerprint disclosure
+    unavailable candidates are excluded from numbering and selection
+    safe acceptance error codes are normalized
+    POST candidate disappearance does not clear workspace selection
+    review gate: audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1
+    not ACCEPTED
 ```
 
 **Platform runtime status:**
@@ -103,7 +108,7 @@ LKW Slack companion (applications/local_workspace_application/slack_companion/)
 → inspect active workspace sources (LKW-WORKSPACE-CONTENTS-1A OPERATOR_VERIFIED)
 → Knowledge Intake contract (LKW-WORKSPACE-CONTENTS-1B-0 DOCUMENTED / READY_FOR_REVIEW)
 → Slack attachments → managed-file intake (LKW-WORKSPACE-CONTENTS-1B-3 IMPLEMENTED / READY_FOR_REVIEW)
-→ Source Candidate selection (LKW-WORKSPACE-CONTENTS-1B-4-2 IMPLEMENTED / READY_FOR_REVIEW)
+→ Source Candidate selection (LKW-WORKSPACE-CONTENTS-1B-4-2 IMPLEMENTED / CORRECTION REQUIRED)
 → completion notification / source lifecycle remainder / pending question / ACTION / persistence (later; 1C+)
 
 Live transport proof command:
@@ -1340,17 +1345,21 @@ MVP-4 may add a small dependency on an official Slack Socket Mode client library
   (`files:read`; `message.im` preserved; no separate `file_shared` subscription;
    provider-local private download; one event → one IntakeBatch;
    immediate acceptance summary only; completion notification = 1C).
-  LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / READY_FOR_REVIEW:
-  exact DM `source candidates` → safe numbered candidate list;
+  LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / CORRECTION REQUIRED:
+  exact DM `source candidates` → safe numbered candidate list
+  (unavailable candidates excluded from numbering and selection);
   exact DM `source add <n>` → fresh public candidate list → opaque candidate_id
   → existing public acceptance → existing Knowledge Intake lifecycle
-  (Ask count 0; no path/fingerprint disclosure).
+  (Ask count 0; no path/fingerprint disclosure;
+   safe acceptance error codes normalized;
+   POST candidate disappearance does not clear workspace selection).
+  Review gate: audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1. Not ACCEPTED.
 
 ---
 
 ## 19a. Knowledge Intake extension (Slack adapter mapping)
 
-**Status:** `FROZEN ARCHITECTURAL CONTRACT` for adapter rules. **`LKW-WORKSPACE-CONTENTS-1B-3`** implements DM message attachment → managed-file intake. **`LKW-WORKSPACE-CONTENTS-1B-4-2`** implements safe numbered Source Candidate selection over the public HTTP API (Ask count 0; no path/fingerprint disclosure). Exact Block Kit design for other intake paths remains **DEFERRED**. URL intake remains **not** implemented yet. Completion notification remains **`LKW-WORKSPACE-CONTENTS-1C`**.
+**Status:** `FROZEN ARCHITECTURAL CONTRACT` for adapter rules. **`LKW-WORKSPACE-CONTENTS-1B-3`** implements DM message attachment → managed-file intake. **`LKW-WORKSPACE-CONTENTS-1B-4-2`** implements safe numbered Source Candidate selection over the public HTTP API (Ask count 0; no path/fingerprint disclosure; unavailable candidates excluded from numbering/selection; safe acceptance error codes normalized; POST candidate disappearance does not clear workspace selection). Status: **IMPLEMENTED / CORRECTION REQUIRED** — review gate `audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1`; not ACCEPTED. Exact Block Kit design for other intake paths remains **DEFERRED**. URL intake remains **not** implemented yet. Completion notification remains **`LKW-WORKSPACE-CONTENTS-1C`**.
 
 Binding contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) · [`ARCHITECTURE.md` — Channel-neutral Knowledge Intake](ARCHITECTURE.md#channel-neutral-knowledge-intake-and-asynchronous-ingestion).
 

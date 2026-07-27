@@ -97,6 +97,10 @@ SOURCE_CANDIDATE_ALREADY_ATTACHED_TEXT = (
 SOURCE_CANDIDATE_UNAVAILABLE_TEXT = (
     "That source candidate is not available right now."
 )
+SOURCE_CANDIDATE_SELECTION_CONFLICT_TEXT = (
+    "The source selection could not be applied.\n"
+    "Send `source candidates` and choose again."
+)
 SOURCE_CANDIDATE_ACCEPT_FAILED_TEXT = (
     "The source candidate could not be attached. Please try again later."
 )
@@ -350,6 +354,10 @@ def render_source_candidate_already_attached() -> str:
 
 def render_source_candidate_unavailable() -> str:
     return SOURCE_CANDIDATE_UNAVAILABLE_TEXT
+
+
+def render_source_candidate_selection_conflict() -> str:
+    return SOURCE_CANDIDATE_SELECTION_CONFLICT_TEXT
 
 
 def render_source_candidate_accept_failed() -> str:

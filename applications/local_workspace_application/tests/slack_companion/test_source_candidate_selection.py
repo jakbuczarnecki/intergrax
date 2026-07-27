@@ -41,10 +41,12 @@ from local_workspace_application.slack_companion.rendering import (
     NO_WORKSPACE_AVAILABLE_TEXT,
     SELECTED_WORKSPACE_UNAVAILABLE_TEXT,
     SOURCE_CANDIDATE_ACCEPTED_FOOTER,
+    SOURCE_CANDIDATE_ACCEPT_FAILED_TEXT,
     SOURCE_CANDIDATE_ALREADY_ATTACHED_TEXT,
     SOURCE_CANDIDATE_LIST_EMPTY_TEXT,
     SOURCE_CANDIDATE_LIST_LOAD_FAILED_TEXT,
     SOURCE_CANDIDATE_OUT_OF_RANGE_TEXT,
+    SOURCE_CANDIDATE_SELECTION_CONFLICT_TEXT,
     SOURCE_CANDIDATE_SERVICE_UNAVAILABLE_TEXT,
     SOURCE_CANDIDATE_UNAVAILABLE_TEXT,
     SOURCE_CANDIDATE_USAGE_TEXT,
@@ -58,6 +60,7 @@ from local_workspace_application.slack_companion.selection_store import (
 )
 from local_workspace_application.slack_companion.workflow import (
     SlackAskWorkflow,
+    available_source_candidates_for_listing,
     is_sources_command,
     order_source_candidates_for_listing,
     parse_source_candidate_accept_command,
@@ -120,6 +123,7 @@ def _transport(
     list_status: int = 200,
     accept_status: int = 202,
     accept_payload: dict[str, object] | None = None,
+    accept_detail: str | None = None,
     ask_calls: list[httpx.Request] | None = None,
     list_calls: list[httpx.Request] | None = None,
     accept_calls: list[httpx.Request] | None = None,
@@ -177,10 +181,12 @@ def _transport(
             if transport_error_on == "accept":
                 raise httpx.ConnectError("down", request=request)
             if accept_status < 200 or accept_status >= 300:
-                return httpx.Response(
-                    accept_status,
-                    json={"detail": "boom-secret-path-/srv/private"},
+                detail = (
+                    accept_detail
+                    if accept_detail is not None
+                    else "boom-secret-path-/srv/private"
                 )
+                return httpx.Response(accept_status, json={"detail": detail})
             if accept_malformed:
                 return httpx.Response(202, text="not-json")
             workspace_id = path.split("/")[-4]
@@ -584,7 +590,7 @@ async def test_accept_source_candidate_http_contract() -> None:
         )
     assert workspace_mismatch.value.kind == "parse_error"
 
-    for status, kind in ((404, "http_404"), (409, "http_409"), (503, "http_503")):
+    for status, kind in ((404, "http_404"), (503, "http_503")):
         err_client = WorkspaceAskHttpClient(
             SlackAskClientConfig(base_url="http://lkw.test"),
             transport=_transport(accept_status=status),
@@ -598,6 +604,49 @@ async def test_accept_source_candidate_http_contract() -> None:
             )
         assert exc.value.kind == kind
         assert "/srv/private" not in str(exc.value)
+
+    for detail, kind in (
+        ("source_candidate_unavailable", "source_candidate_unavailable"),
+        (
+            "source_candidate_already_registered",
+            "source_candidate_already_registered",
+        ),
+        (
+            "source_candidate_idempotency_conflict",
+            "source_candidate_idempotency_conflict",
+        ),
+    ):
+        mapped = WorkspaceAskHttpClient(
+            SlackAskClientConfig(base_url="http://lkw.test"),
+            transport=_transport(accept_status=409, accept_detail=detail),
+        )
+        with pytest.raises(SlackAskClientError) as mapped_exc:
+            await mapped.accept_source_candidate(
+                tenant_id="t",
+                workspace_id="ws",
+                candidate_id="c",
+                idempotency_key="i",
+            )
+        assert mapped_exc.value.kind == kind
+        assert "/srv/private" not in str(mapped_exc.value)
+
+    unknown_409 = WorkspaceAskHttpClient(
+        SlackAskClientConfig(base_url="http://lkw.test"),
+        transport=_transport(
+            accept_status=409,
+            accept_detail="secret path /srv/private leaked",
+        ),
+    )
+    with pytest.raises(SlackAskClientError) as unknown_exc:
+        await unknown_409.accept_source_candidate(
+            tenant_id="t",
+            workspace_id="ws",
+            candidate_id="c",
+            idempotency_key="i",
+        )
+    assert unknown_exc.value.kind == "http_409"
+    assert "/srv/private" not in str(unknown_exc.value)
+    assert "secret" not in str(unknown_exc.value)
 
 
 # --- Workflow list ---
@@ -726,6 +775,14 @@ async def test_workflow_accept_maps_number_and_idempotency() -> None:
             list_calls=list_calls,
             accept_calls=accept_calls,
             ask_calls=ask_calls,
+            accept_payload={
+                "candidate_id": "product",
+                "label": "Product documentation",
+                "workspace_id": "ws-configured",
+                "source_id": "src-1",
+                "operation_id": "op-1",
+                "status": "queued",
+            },
         ),
         event_id="Ev-add-2",
     )
@@ -795,7 +852,6 @@ async def test_workflow_accept_empty_list_no_post() -> None:
 async def test_workflow_accept_http_product_errors() -> None:
     for status, expected in (
         (404, SOURCE_CANDIDATE_UNAVAILABLE_TEXT),
-        (409, SOURCE_CANDIDATE_ALREADY_ATTACHED_TEXT),
         (503, SOURCE_CANDIDATE_SERVICE_UNAVAILABLE_TEXT),
     ):
         outbound, _, dedupe = await _run(
@@ -813,6 +869,207 @@ async def test_workflow_accept_http_product_errors() -> None:
         )
         assert record is not None
         assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_workflow_accept_safe_409_details() -> None:
+    cases = (
+        (
+            "source_candidate_unavailable",
+            SOURCE_CANDIDATE_UNAVAILABLE_TEXT,
+            "Ev-409-unavail",
+        ),
+        (
+            "source_candidate_already_registered",
+            SOURCE_CANDIDATE_ALREADY_ATTACHED_TEXT,
+            "Ev-409-registered",
+        ),
+        (
+            "source_candidate_idempotency_conflict",
+            SOURCE_CANDIDATE_SELECTION_CONFLICT_TEXT,
+            "Ev-409-conflict",
+        ),
+    )
+    for detail, expected, event_id in cases:
+        outbound, _, dedupe = await _run(
+            "source add 1",
+            transport=_transport(
+                candidates=[_candidate_payload(candidate_id="c", label="C")],
+                accept_status=409,
+                accept_detail=detail,
+            ),
+            event_id=event_id,
+        )
+        assert outbound == [expected]
+        assert "idempotency" not in outbound[0].casefold()
+        assert detail not in outbound[0]
+        record = dedupe._get(build_slack_dedupe_key(team_id="T_OK", event_id=event_id))
+        assert record is not None
+        assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_workflow_accept_unknown_409_no_detail_leak() -> None:
+    outbound, _, dedupe = await _run(
+        "source add 1",
+        transport=_transport(
+            candidates=[_candidate_payload(candidate_id="c", label="C")],
+            accept_status=409,
+            accept_detail="secret path /srv/private leaked",
+        ),
+        event_id="Ev-409-unknown",
+    )
+    assert outbound == [SOURCE_CANDIDATE_ACCEPT_FAILED_TEXT]
+    assert "/srv/private" not in outbound[0]
+    assert "secret" not in outbound[0]
+    record = dedupe._get(
+        build_slack_dedupe_key(team_id="T_OK", event_id="Ev-409-unknown")
+    )
+    assert record is not None
+    assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_workflow_accept_post_404_keeps_workspace_selection() -> None:
+    store = InMemorySlackWorkspaceSelectionStore()
+    actor = slack_selection_actor_key(team_id="T_OK", user_id="U_OK")
+    store.set(
+        actor,
+        SlackWorkspaceSelection(workspace_id="ws-selected", workspace_name="Selected"),
+    )
+    outbound, _, dedupe = await _run(
+        "source add 1",
+        selection_store=store,
+        transport=_transport(
+            candidates=[_candidate_payload(candidate_id="c", label="C")],
+            accept_status=404,
+        ),
+        event_id="Ev-post-404",
+    )
+    assert outbound == [SOURCE_CANDIDATE_UNAVAILABLE_TEXT]
+    assert SELECTED_WORKSPACE_UNAVAILABLE_TEXT not in outbound[0]
+    selection = store.get(actor)
+    assert selection is not None
+    assert selection.workspace_id == "ws-selected"
+    record = dedupe._get(
+        build_slack_dedupe_key(team_id="T_OK", event_id="Ev-post-404")
+    )
+    assert record is not None
+    assert record.status is SlackDedupeStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_workflow_accept_uses_response_label_not_list_label() -> None:
+    outbound, _, _ = await _run(
+        "source add 1",
+        transport=_transport(
+            candidates=[_candidate_payload(candidate_id="c", label="Old label")],
+            accept_payload={
+                "candidate_id": "c",
+                "label": "Current label",
+                "workspace_id": "ws-configured",
+                "source_id": "src-1",
+                "operation_id": "op-1",
+                "status": "queued",
+            },
+        ),
+        event_id="Ev-label",
+    )
+    assert "Source accepted: Current label" in outbound[0]
+    assert "Old label" not in outbound[0]
+
+
+@pytest.mark.asyncio
+async def test_available_filter_hides_unavailable_from_list_and_selection() -> None:
+    candidates = [
+        _candidate_payload(
+            candidate_id="hidden",
+            label="Aaa Hidden",
+            available=False,
+        ),
+        _candidate_payload(candidate_id="visible", label="Beta Visible"),
+        _candidate_payload(
+            candidate_id="also-hidden",
+            label="Zed Hidden",
+            available=False,
+        ),
+    ]
+    list_out, _, _ = await _run(
+        "source candidates",
+        transport=_transport(candidates=candidates),
+        event_id="Ev-avail-list",
+    )
+    text = list_out[0]
+    assert "1. Beta Visible" in text
+    assert "Aaa Hidden" not in text
+    assert "Zed Hidden" not in text
+    assert "unavailable" not in text.casefold()
+    numbered = [
+        line
+        for line in text.splitlines()
+        if len(line) >= 3 and line[0].isdigit() and line[1:3] == ". "
+    ]
+    assert numbered == ["1. Beta Visible"]
+
+    accept_calls: list[httpx.Request] = []
+    await _run(
+        "source add 1",
+        transport=_transport(candidates=candidates, accept_calls=accept_calls),
+        event_id="Ev-avail-add",
+    )
+    assert len(accept_calls) == 1
+    assert accept_calls[0].url.path.endswith("/knowledge/source-candidates/visible")
+
+
+@pytest.mark.asyncio
+async def test_all_unavailable_behaves_as_empty_list() -> None:
+    candidates = [
+        _candidate_payload(candidate_id="a", label="A", available=False),
+        _candidate_payload(candidate_id="b", label="B", available=False),
+    ]
+    list_out, _, _ = await _run(
+        "source candidates",
+        transport=_transport(candidates=candidates),
+        event_id="Ev-all-unavail-list",
+    )
+    assert list_out == [SOURCE_CANDIDATE_LIST_EMPTY_TEXT]
+
+    accept_calls: list[httpx.Request] = []
+    add_out, _, _ = await _run(
+        "source add 1",
+        transport=_transport(candidates=candidates, accept_calls=accept_calls),
+        event_id="Ev-all-unavail-add",
+    )
+    assert add_out == [SOURCE_CANDIDATE_LIST_EMPTY_TEXT]
+    assert accept_calls == []
+
+
+def test_available_source_candidates_helper_filters_sorts_and_caps() -> None:
+    items = [
+        SlackSourceCandidateListItem(
+            candidate_id="z", label="Zebra", available=True
+        ),
+        SlackSourceCandidateListItem(
+            candidate_id="hidden", label="Apple", available=False
+        ),
+        SlackSourceCandidateListItem(
+            candidate_id="a", label="Apple", available=True
+        ),
+    ]
+    visible = available_source_candidates_for_listing(items)
+    assert [item.candidate_id for item in visible] == ["a", "z"]
+    assert all(item.available is True for item in visible)
+
+    many = [
+        SlackSourceCandidateListItem(
+            candidate_id=f"c{i:02d}",
+            label=f"Item {i:02d}",
+            available=True,
+        )
+        for i in range(1, 40)
+    ]
+    capped = available_source_candidates_for_listing(many)
+    assert len(capped) == MAX_SOURCE_CANDIDATE_ITEMS
 
 
 @pytest.mark.asyncio
