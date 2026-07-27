@@ -19,6 +19,7 @@ from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
     parse_jira_knowledge_issue,
     parse_jira_knowledge_issue_page,
     validate_jira_issue_key,
+    validate_jira_knowledge_issue_project_scope,
     validate_jira_project_key,
 )
 
@@ -78,8 +79,38 @@ def _raise_for_knowledge_response(response: object, *, operation: str) -> None:
         raise IntegrationConfigurationError(f"Jira {operation} configuration failure")
     if operation == "get_knowledge_issue" and status_code == 404:
         raise IntegrationDependencyError("Jira issue fetch dependency failure")
-    raise_for_status = response.raise_for_status  # type: ignore[attr-defined]
-    raise_for_status()
+    raise IntegrationConfigurationError(f"Jira {operation} configuration failure")
+
+
+def _execute_knowledge_transport(operation: str, transport_fn: Any) -> object:
+    try:
+        return transport_fn()
+    except (IntegrationConfigurationError, IntegrationDependencyError):
+        raise
+    except Exception:
+        raise IntegrationDependencyError(
+            "Jira knowledge dependency is unavailable"
+        ) from None
+
+
+def _decode_knowledge_json(response: object) -> dict[str, Any]:
+    try:
+        json_method = response.json  # type: ignore[attr-defined]
+        payload = json_method()
+    except Exception:
+        raise ValueError("unexpected Jira knowledge response") from None
+    if not isinstance(payload, dict):
+        raise ValueError("unexpected Jira knowledge response")
+    return payload
+
+
+def _validate_knowledge_page_scope(
+    page: JiraKnowledgeIssuePage,
+    *,
+    project_key: str,
+) -> None:
+    for issue in page.issues:
+        validate_jira_knowledge_issue_project_scope(issue, project_key=project_key)
 
 
 def _issue_from_payload(config: JiraIntegrationConfig, payload: Mapping[str, Any]) -> IssueRecord:
@@ -195,17 +226,25 @@ class JiraRestClient:
             "fields": list(_KNOWLEDGE_ISSUE_FIELDS),
         }
         if next_page_token is not None:
-            body["nextPageToken"] = next_page_token
-        response = self._http_client.post("/search/jql", json=body)
+            if not isinstance(next_page_token, str):
+                raise ValueError("next_page_token must be a string")
+            token = next_page_token.strip()
+            if not token:
+                raise ValueError("next_page_token must be a non-empty string")
+            body["nextPageToken"] = token
+        response = _execute_knowledge_transport(
+            "search_knowledge_issues",
+            lambda: self._http_client.post("/search/jql", json=body),
+        )
         _raise_for_knowledge_response(response, operation="search_knowledge_issues")
-        payload = response.json()
-        if not isinstance(payload, dict):
-            raise ValueError("unexpected Jira knowledge search response")
-        return parse_jira_knowledge_issue_page(
+        payload = _decode_knowledge_json(response)
+        page = parse_jira_knowledge_issue_page(
             payload,
             issue_url_builder=self._config.issue_url,
             plain_description=_plain_description,
         )
+        _validate_knowledge_page_scope(page, project_key=validated_project_key)
+        return page
 
     def get_knowledge_issue(
         self,
@@ -214,14 +253,15 @@ class JiraRestClient:
     ) -> JiraKnowledgeIssue:
         validated_issue_key = validate_jira_issue_key(issue_key)
         fields_param = ",".join(_KNOWLEDGE_ISSUE_FIELDS)
-        response = self._http_client.get(
-            f"/issue/{validated_issue_key}",
-            params={"fields": fields_param},
+        response = _execute_knowledge_transport(
+            "get_knowledge_issue",
+            lambda: self._http_client.get(
+                f"/issue/{validated_issue_key}",
+                params={"fields": fields_param},
+            ),
         )
         _raise_for_knowledge_response(response, operation="get_knowledge_issue")
-        payload = response.json()
-        if not isinstance(payload, dict):
-            raise ValueError("unexpected Jira knowledge issue response")
+        payload = _decode_knowledge_json(response)
         return parse_jira_knowledge_issue(
             payload,
             issue_url=self._config.issue_url(validated_issue_key),

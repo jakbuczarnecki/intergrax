@@ -32,6 +32,10 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeSourceLeaseRepository,
     DocumentStoreKnowledgeSyncCheckpointRepository,
 )
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
 from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
@@ -46,7 +50,13 @@ _JQL = 'project = "PROJ" ORDER BY id ASC'
 _PAGE_TOKEN = "page-2"
 
 
-def _issue_payload(*, issue_id: str, key: str) -> dict[str, Any]:
+def _issue_payload(
+    *,
+    issue_id: str,
+    key: str,
+    project_key: str = "PROJ",
+    project_id: str = "10000",
+) -> dict[str, Any]:
     return {
         "id": issue_id,
         "key": key,
@@ -55,7 +65,7 @@ def _issue_payload(*, issue_id: str, key: str) -> dict[str, Any]:
             "description": f"Description for {key}",
             "status": {"id": "3", "name": "In Progress"},
             "issuetype": {"id": "1", "name": "Task"},
-            "project": {"id": "10000", "key": "PROJ", "name": "Project"},
+            "project": {"id": project_id, "key": project_key, "name": "Project"},
             "priority": {"name": "High"},
             "labels": ["backend"],
             "components": [{"name": "API"}],
@@ -233,6 +243,14 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
         assert envelope.content.mode is KnowledgeContentMode.STRUCTURED_RECORD
         assert envelope.content.structured_record is not None
         assert envelope.content.structured_record["schema_version"] == "jira.issue.knowledge.v1"
+        descriptor = envelope.descriptor
+        assert descriptor is not None
+        assert descriptor.metadata is not None
+        assert descriptor.metadata["project_key"] == "PROJ"
+        logical_key = descriptor.identity.logical_key
+        assert logical_key is not None
+        assert logical_key.startswith("PROJ-")
+        assert envelope.content.structured_record["remote_id"] == descriptor.identity.remote_id
         _assert_envelope_safe(envelope)
 
 
@@ -280,3 +298,90 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
         }
     )
     _assert_no_secrets(public_proof)
+
+
+class _JiraHttpFakeWrongProjectFirstPage:
+    def post(self, path: str, *, json: dict[str, Any] | None = None) -> _FakeHttpResponse:
+        return _FakeHttpResponse(
+            _payload={
+                "issues": [
+                    _issue_payload(
+                        issue_id="10099",
+                        key="OTHER-1",
+                        project_key="OTHER",
+                        project_id="20000",
+                    )
+                ],
+                "isLast": True,
+            }
+        )
+
+    def get(self, path: str, *, params: dict[str, str] | None = None) -> _FakeHttpResponse:
+        raise AssertionError("get should not be called")
+
+
+@pytest.mark.asyncio
+async def test_jira_coordinator_rejects_cross_project_first_page() -> None:
+    config = JiraIntegrationConfig(
+        base_url="https://example.atlassian.net",
+        email=_EMAIL,
+        api_token=_API_TOKEN,
+    )
+    integration = JiraIssueTrackerIntegration.from_client(
+        _JiraIssueTracker(JiraRestClient(config, http_client=_JiraHttpFakeWrongProjectFirstPage()))
+    )
+    registry = KnowledgeAdapterRegistry()
+    register_jira_issues_knowledge_adapter(registry)
+    facade = VendorKnowledgeFacadeService(
+        tenant_id="tenant-1",
+        resolver=_JiraResolver(integration=integration),
+        adapter_registry=registry,
+    )
+    document_store = InMemoryDocumentStore()
+    sink = IdempotentRecordingSink()
+    binding = KnowledgeSourceBinding(
+        binding_id="jira-binding",
+        tenant_id="tenant-1",
+        provider_id="jira",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind=JIRA_ISSUES_SOURCE_KIND,
+        connection_ref="conn-1",
+        safe_display_name="Jira Binding",
+        scope=KnowledgeSourceScope(
+            remote_scope_id="PROJ",
+            remote_scope_type="jira_project",
+            safe_display_name="Project PROJ",
+            parameters={},
+        ),
+        status=KnowledgeSourceBindingStatus.ACTIVE,
+        configuration_version=1,
+    )
+    coordinator = VendorKnowledgeSyncCoordinator(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
+        facade=facade,
+        lease_repository=DocumentStoreKnowledgeSourceLeaseRepository(document_store),
+        checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(document_store),
+        item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(document_store),
+        sink=sink,
+        lease_ttl_seconds=30,
+    )
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(binding_id="jira-binding", restart=True)
+
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    assert sink.calls == []
+    checkpoint = DocumentStoreKnowledgeSyncCheckpointRepository(document_store).get(
+        tenant_id="tenant-1",
+        binding_id="jira-binding",
+    )
+    assert checkpoint is None
+    state = DocumentStoreKnowledgeRemoteItemStateRepository(document_store).get(
+        tenant_id="tenant-1",
+        binding_id="jira-binding",
+        remote_id="10099",
+    )
+    assert state is None

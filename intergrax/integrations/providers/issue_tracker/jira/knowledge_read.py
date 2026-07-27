@@ -9,7 +9,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Mapping, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 JIRA_ISSUES_SOURCE_KIND = "issues"
 JIRA_PROJECT_SCOPE_TYPE = "jira_project"
@@ -17,6 +17,8 @@ JIRA_KNOWLEDGE_CURSOR_VERSION = "jira.issues.cursor.v1"
 
 _JIRA_PROJECT_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,31}$")
 _JIRA_ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,31}-[1-9][0-9]*$")
+_JIRA_REMOTE_ID_RE = re.compile(r"^[1-9][0-9]*$")
+_STRICT_MODEL_CONFIG = ConfigDict(extra="forbid", frozen=True, strict=True)
 
 
 def validate_jira_project_key(project_key: str) -> str:
@@ -33,16 +35,43 @@ def validate_jira_issue_key(issue_key: str) -> str:
     return cleaned
 
 
+def issue_key_project_part(issue_key: str) -> str:
+    validated_key = validate_jira_issue_key(issue_key)
+    return validated_key.rsplit("-", 1)[0]
+
+
+def validate_jira_knowledge_issue_project_scope(
+    issue: JiraKnowledgeIssue,
+    *,
+    project_key: str,
+) -> None:
+    validated_project_key = validate_jira_project_key(project_key)
+    if issue.project_key != validated_project_key:
+        raise ValueError("Jira knowledge issue does not belong to requested project")
+    if issue_key_project_part(issue.key) != validated_project_key:
+        raise ValueError("Jira knowledge issue does not belong to requested project")
+
+
 class JiraKnowledgeUser(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = _STRICT_MODEL_CONFIG
 
     account_id: str | None = None
     display_name: str | None = None
     active: bool | None = None
 
+    @field_validator("account_id", "display_name", mode="before")
+    @classmethod
+    def _validate_optional_identity(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        cleaned = str(value).strip()
+        if not cleaned:
+            raise ValueError("identity field must not be empty when provided")
+        return cleaned
+
 
 class JiraKnowledgeIssue(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = _STRICT_MODEL_CONFIG
 
     remote_id: str
     key: str
@@ -65,9 +94,51 @@ class JiraKnowledgeIssue(BaseModel):
     updated_at: datetime
     web_url: str
 
+    @field_validator("remote_id")
+    @classmethod
+    def _validate_remote_id(cls, value: str) -> str:
+        cleaned = str(value).strip()
+        if not _JIRA_REMOTE_ID_RE.fullmatch(cleaned):
+            raise ValueError("remote_id must be a positive numeric Jira ID")
+        return cleaned
+
+    @field_validator("key")
+    @classmethod
+    def _validate_key(cls, value: str) -> str:
+        return validate_jira_issue_key(value)
+
+    @field_validator("project_key")
+    @classmethod
+    def _validate_project_key(cls, value: str) -> str:
+        return validate_jira_project_key(value)
+
+    @field_validator(
+        "summary",
+        "status_name",
+        "issue_type_name",
+        "project_id",
+        "project_name",
+        "web_url",
+    )
+    @classmethod
+    def _validate_required_text(cls, value: str) -> str:
+        cleaned = str(value).strip()
+        if not cleaned:
+            raise ValueError("field must be a non-empty string")
+        return cleaned
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def _validate_timezone_aware_utc(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("timestamp must be timezone-aware")
+        if value.utcoffset() is None:
+            raise ValueError("timestamp must have a defined UTC offset")
+        return value.astimezone(timezone.utc)
+
 
 class JiraKnowledgeIssuePage(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = _STRICT_MODEL_CONFIG
 
     issues: tuple[JiraKnowledgeIssue, ...] = ()
     next_page_token: str | None = Field(default=None, repr=False)
@@ -79,6 +150,11 @@ class JiraKnowledgeIssuePage(BaseModel):
             raise ValueError("next_page_token is required when is_last is False")
         if self.is_last and self.next_page_token is not None:
             raise ValueError("next_page_token must be None when is_last is True")
+        seen_ids: set[str] = set()
+        for issue in self.issues:
+            if issue.remote_id in seen_ids:
+                raise ValueError("duplicate issue id on page")
+            seen_ids.add(issue.remote_id)
         return self
 
 
@@ -123,8 +199,20 @@ def _parse_user(raw: object) -> JiraKnowledgeUser | None:
     account_id_raw = raw.get("accountId")
     display_name_raw = raw.get("displayName")
     active_raw = raw.get("active")
-    account_id = str(account_id_raw).strip() if account_id_raw is not None else None
-    display_name = str(display_name_raw).strip() if display_name_raw is not None else None
+    account_id: str | None
+    if account_id_raw is None:
+        account_id = None
+    else:
+        account_id = str(account_id_raw).strip()
+        if not account_id:
+            raise ValueError("user account id must not be empty when provided")
+    display_name: str | None
+    if display_name_raw is None:
+        display_name = None
+    else:
+        display_name = str(display_name_raw).strip()
+        if not display_name:
+            raise ValueError("user display name must not be empty when provided")
     active = bool(active_raw) if isinstance(active_raw, bool) else None
     if account_id is None and display_name is None and active is None:
         return None

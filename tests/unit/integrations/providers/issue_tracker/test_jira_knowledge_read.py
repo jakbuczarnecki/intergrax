@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -21,6 +22,9 @@ from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestC
 from intergrax.integrations.providers.issue_tracker.jira.config import JiraIntegrationConfig
 from intergrax.integrations.providers.issue_tracker.jira.integration import JiraIssueTrackerIntegration
 from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
+    JiraKnowledgeIssue,
+    JiraKnowledgeIssuePage,
+    JiraKnowledgeUser,
     validate_jira_issue_key,
     validate_jira_project_key,
 )
@@ -337,3 +341,191 @@ def test_existing_jira_tracker_still_works() -> None:
     assert issue.key == "PROJ-1"
     result = tracker.search_issues("project = PROJ", limit=5)
     assert result.total == 0
+
+
+def _valid_issue_kwargs(**overrides: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "remote_id": "10001",
+        "key": "PROJ-1",
+        "summary": "Summary",
+        "description": "Description",
+        "status_name": "In Progress",
+        "issue_type_name": "Task",
+        "project_id": "10000",
+        "project_key": "PROJ",
+        "project_name": "Project",
+        "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        "updated_at": datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+        "web_url": "https://example.atlassian.net/browse/PROJ-1",
+    }
+    base.update(overrides)
+    return base
+
+
+@pytest.mark.parametrize("remote_id", ["abc", "0"])
+def test_jira_knowledge_issue_rejects_invalid_remote_id(remote_id: str) -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeIssue(**_valid_issue_kwargs(remote_id=remote_id))
+
+
+def test_jira_knowledge_issue_rejects_malformed_issue_key() -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeIssue(**_valid_issue_kwargs(key="bad key"))
+
+
+def test_jira_knowledge_issue_rejects_malformed_project_key() -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeIssue(**_valid_issue_kwargs(project_key="bad key"))
+
+
+def test_jira_knowledge_issue_rejects_naive_created_at() -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeIssue(
+            **_valid_issue_kwargs(created_at=datetime(2024, 1, 1, 10, 0))
+        )
+
+
+def test_jira_knowledge_issue_rejects_naive_updated_at() -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeIssue(
+            **_valid_issue_kwargs(updated_at=datetime(2024, 1, 2, 11, 0))
+        )
+
+
+def test_jira_knowledge_issue_normalizes_non_utc_aware_datetime() -> None:
+    offset = timezone(timedelta(hours=-5))
+    issue = JiraKnowledgeIssue(
+        **_valid_issue_kwargs(
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=offset),
+            updated_at=datetime(2024, 1, 2, 11, 0, tzinfo=offset),
+        )
+    )
+    assert issue.created_at.tzinfo == timezone.utc
+    assert issue.updated_at.tzinfo == timezone.utc
+
+
+def test_jira_knowledge_issue_page_rejects_duplicate_remote_ids() -> None:
+    issue = JiraKnowledgeIssue(**_valid_issue_kwargs())
+    with pytest.raises(ValueError, match="duplicate issue id on page"):
+        JiraKnowledgeIssuePage(issues=(issue, issue), is_last=True)
+
+
+def test_jira_knowledge_user_rejects_empty_optional_identity() -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeUser(account_id="   ")
+    with pytest.raises(ValueError):
+        JiraKnowledgeUser(display_name="")
+
+
+def test_jira_knowledge_models_are_frozen_and_extra_forbid() -> None:
+    issue = JiraKnowledgeIssue(**_valid_issue_kwargs())
+    with pytest.raises(Exception):
+        issue.summary = "changed"  # type: ignore[misc]
+    with pytest.raises(Exception):
+        JiraKnowledgeIssue(**_valid_issue_kwargs(), unexpected=True)  # type: ignore[call-arg]
+
+
+def _issue_fields_for_project(
+    *,
+    project_key: str,
+    issue_key: str,
+) -> dict[str, Any]:
+    payload = _issue_fields(key=issue_key)
+    payload["fields"]["project"]["key"] = project_key
+    return payload
+
+
+def test_project_scope_mismatch_both_keys_other() -> None:
+    http = _mock_http(
+        post_payload={
+            "issues": [_issue_fields_for_project(project_key="OTHER", issue_key="OTHER-1")],
+            "isLast": True,
+        }
+    )
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="does not belong to requested project") as exc_info:
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+    message = str(exc_info.value)
+    assert "PROJ" not in message
+    assert "OTHER" not in message
+    assert "OTHER-1" not in message
+    assert "project =" not in message
+
+
+def test_project_scope_mismatch_project_key_matches_issue_key_other() -> None:
+    http = _mock_http(
+        post_payload={
+            "issues": [_issue_fields_for_project(project_key="PROJ", issue_key="OTHER-1")],
+            "isLast": True,
+        }
+    )
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="does not belong to requested project"):
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+
+
+def test_project_scope_mismatch_issue_key_proj_project_other() -> None:
+    http = _mock_http(
+        post_payload={
+            "issues": [_issue_fields_for_project(project_key="OTHER", issue_key="PROJ-1")],
+            "isLast": True,
+        }
+    )
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="does not belong to requested project"):
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+
+
+def test_post_transport_exception_maps_to_dependency_error() -> None:
+    http = _mock_http()
+    http.post.side_effect = RuntimeError("network down secret")
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(IntegrationDependencyError) as exc_info:
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+    assert exc_info.value.__cause__ is None
+    assert "network down" not in str(exc_info.value)
+
+
+def test_get_transport_exception_maps_to_dependency_error() -> None:
+    http = _mock_http()
+    http.get.side_effect = RuntimeError("socket reset secret")
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(IntegrationDependencyError) as exc_info:
+        client.get_knowledge_issue(issue_key="PROJ-1")
+    assert exc_info.value.__cause__ is None
+    assert "socket reset" not in str(exc_info.value)
+
+
+def test_json_decode_exception_is_safe() -> None:
+    http = _mock_http()
+    http.post.return_value.json.side_effect = ValueError("secret body payload")
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response") as exc_info:
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+    assert exc_info.value.__cause__ is None
+    assert "secret body" not in str(exc_info.value)
+
+
+def test_unhandled_4xx_maps_to_configuration_error_without_raise_for_status() -> None:
+    http = _mock_http()
+    http.post.return_value.status_code = 418
+    http.post.return_value.raise_for_status.side_effect = AssertionError("raise_for_status called")
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(IntegrationConfigurationError):
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+
+
+def test_empty_next_page_token_rejected_before_http() -> None:
+    http = _mock_http()
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="next_page_token"):
+        client.search_knowledge_issues(project_key="PROJ", next_page_token="", limit=10)
+    http.post.assert_not_called()
+
+
+def test_whitespace_next_page_token_rejected_before_http() -> None:
+    http = _mock_http()
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="next_page_token"):
+        client.search_knowledge_issues(project_key="PROJ", next_page_token="   ", limit=10)
+    http.post.assert_not_called()

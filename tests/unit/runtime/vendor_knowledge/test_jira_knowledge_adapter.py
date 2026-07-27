@@ -82,6 +82,8 @@ def _issue(
     *,
     remote_id: str = "10001",
     key: str = "PROJ-1",
+    project_key: str = "PROJ",
+    project_id: str = "10000",
     updated: datetime | None = None,
 ) -> JiraKnowledgeIssue:
     stamp = updated or datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc)
@@ -94,8 +96,8 @@ def _issue(
         status_name="In Progress",
         issue_type_id="1",
         issue_type_name="Task",
-        project_id="10000",
-        project_key="PROJ",
+        project_id=project_id,
+        project_key=project_key,
         project_name="Project",
         priority_name="High",
         labels=("backend",),
@@ -518,3 +520,243 @@ async def test_duplicate_registration_rejected() -> None:
     register_jira_issues_knowledge_adapter(registry)
     with pytest.raises(ValueError, match="already registered"):
         register_jira_issues_knowledge_adapter(registry)
+
+
+def _descriptor(
+    *,
+    remote_id: str = "10001",
+    logical_key: str = "PROJ-1",
+    parent_remote_id: str | None = "10000",
+    item_type: str = "jira_issue",
+    content_available: bool = True,
+) -> KnowledgeItemDescriptor:
+    return KnowledgeItemDescriptor(
+        identity=KnowledgeItemIdentity(
+            remote_id=remote_id,
+            logical_key=logical_key,
+            parent_remote_id=parent_remote_id,
+        ),
+        revision=KnowledgeItemRevision(version="1"),
+        title="Summary",
+        item_type=item_type,
+        content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        content_available=content_available,
+        provenance=KnowledgeItemProvenance(
+            provider_id="jira",
+            source_kind=JIRA_ISSUES_SOURCE_KIND,
+            remote_id=remote_id,
+        ),
+    )
+
+
+async def test_read_page_rejects_issue_from_other_project() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    tracker = _FakeKnowledgeTracker(
+        pages=[
+            JiraKnowledgeIssuePage(
+                issues=(_issue(remote_id="10001", key="OTHER-1", project_key="OTHER"),),
+                is_last=True,
+            )
+        ]
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+
+
+async def test_read_page_rejects_issue_key_from_other_project() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    tracker = _FakeKnowledgeTracker(
+        pages=[
+            JiraKnowledgeIssuePage(
+                issues=(_issue(key="OTHER-1"),),
+                is_last=True,
+            )
+        ]
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+
+
+async def test_read_page_rejects_duplicate_issue_ids() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    duplicate = _issue()
+    page = JiraKnowledgeIssuePage.model_construct(
+        issues=(duplicate, duplicate),
+        next_page_token=None,
+        is_last=True,
+    )
+    tracker = _FakeKnowledgeTracker(pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+
+
+async def test_read_page_rejects_model_mismatched_with_source() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    tracker = _FakeKnowledgeTracker(
+        pages=[
+            JiraKnowledgeIssuePage(
+                issues=(_issue(key="PROJ-1", project_key="OTHER"),),
+                is_last=True,
+            )
+        ]
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+
+
+@pytest.mark.parametrize(
+    ("logical_key", "remote_id", "item_type", "content_available"),
+    [
+        ("OTHER-1", "10001", "jira_issue", True),
+        ("PROJ-1", "abc", "jira_issue", True),
+        ("PROJ-1", "10001", "wiki_page", True),
+        ("PROJ-1", "10001", "jira_issue", False),
+    ],
+)
+async def test_fetch_content_descriptor_scope_rejected_before_integration(
+    logical_key: str,
+    remote_id: str,
+    item_type: str,
+    content_available: bool,
+) -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    tracker = _FakeKnowledgeTracker()
+    tracker.get_knowledge_issue = MagicMock(side_effect=AssertionError("must not be called"))  # type: ignore[method-assign]
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            item=_descriptor(
+                logical_key=logical_key,
+                remote_id=remote_id,
+                item_type=item_type,
+                content_available=content_available,
+            ),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert exc_info.value.retryable is False
+    tracker.get_knowledge_issue.assert_not_called()  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize(
+    "issue_override",
+    [
+        {"remote_id": "99999"},
+        {"key": "PROJ-2"},
+        {"project_key": "OTHER"},
+        {"project_id": "20000"},
+    ],
+)
+async def test_fetch_content_rejects_mismatched_integration_identity(
+    issue_override: dict[str, str],
+) -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    issue = _issue(**issue_override)  # type: ignore[arg-type]
+    tracker = _FakeKnowledgeTracker(issue=issue)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            item=_descriptor(),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    message = str(exc_info.value)
+    for forbidden in ("10001", "PROJ-1", "10000", "99999", "PROJ-2", "OTHER", "20000"):
+        assert forbidden not in message
+
+
+async def test_cursor_valid_version_works() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    cursor = _encode_cursor(
+        {
+            "schema_version": JIRA_KNOWLEDGE_CURSOR_VERSION,
+            "project_key": "PROJ",
+            "next_page_token": "page-2",
+            "complete": False,
+        }
+    )
+    integration = _integration_with_tracker(
+        _FakeKnowledgeTracker(
+            pages=[JiraKnowledgeIssuePage(issues=(_issue(),), is_last=True)]
+        )
+    )
+    page = await adapter.read_page(
+        integration=integration,
+        source=_source(),
+        cursor=cursor,
+        limit=10,
+    )
+    assert page.has_more is False
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["jira.issues.cursor.v2", None],
+)
+async def test_cursor_invalid_version_rejected(version: str | None) -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    cursor = KnowledgeCursor(value="ignored", version=version)
+    tracker = _FakeKnowledgeTracker()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=cursor,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert exc_info.value.retryable is False
+    assert tracker.search_calls == []
+
+
+async def test_cursor_missing_version_rejected_before_search() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    cursor = _encode_cursor(
+        {
+            "schema_version": JIRA_KNOWLEDGE_CURSOR_VERSION,
+            "project_key": "PROJ",
+            "next_page_token": "secret-page-token",
+            "complete": False,
+        }
+    )
+    cursor = KnowledgeCursor(value=cursor.value, version=None)
+    tracker = _FakeKnowledgeTracker()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=cursor,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert "secret-page-token" not in str(exc_info.value)
+    assert tracker.search_calls == []

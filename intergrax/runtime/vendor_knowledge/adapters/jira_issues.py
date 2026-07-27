@@ -9,9 +9,10 @@ import asyncio
 import base64
 import hashlib
 import json
-from typing import Any
+import re
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.issue_tracker.jira.integration import JiraIssueTrackerIntegration
@@ -21,7 +22,9 @@ from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
     JIRA_PROJECT_SCOPE_TYPE,
     JiraKnowledgeIssue,
     JiraKnowledgeUser,
+    issue_key_project_part,
     validate_jira_issue_key,
+    validate_jira_knowledge_issue_project_scope,
     validate_jira_project_key,
 )
 from intergrax.runtime.vendor_knowledge.errors import (
@@ -49,15 +52,31 @@ from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 
 _STRUCTURED_RECORD_SCHEMA = "jira.issue.knowledge.v1"
 _STRUCTURED_RECORD_MIME = "application/vnd.intergrax.jira-issue+json"
+_JIRA_REMOTE_ID_RE = re.compile(r"^[1-9][0-9]*$")
 
 
 class _JiraIssuesReconciliationCursor(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: str = JIRA_KNOWLEDGE_CURSOR_VERSION
+    schema_version: Literal["jira.issues.cursor.v1"]
     project_key: str
     next_page_token: str | None = Field(default=None, repr=False)
     complete: bool
+
+    @field_validator("project_key")
+    @classmethod
+    def _validate_project_key(cls, value: str) -> str:
+        return validate_jira_project_key(value)
+
+    @field_validator("next_page_token")
+    @classmethod
+    def _validate_next_page_token(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = str(value).strip()
+        if not cleaned:
+            raise ValueError("next_page_token must not be empty")
+        return cleaned
 
     @model_validator(mode="after")
     def _token_rules(self) -> _JiraIssuesReconciliationCursor:
@@ -139,10 +158,26 @@ class JiraIssuesKnowledgeAdapter:
             next_page_token=next_page_token,
             limit=limit,
         )
+        try:
+            seen_remote_ids: set[str] = set()
+            for issue in page.issues:
+                if issue.remote_id in seen_remote_ids:
+                    raise ValueError("duplicate issue id on page")
+                seen_remote_ids.add(issue.remote_id)
+                self._validate_issue_for_source(issue, project_key=project_key)
+        except ValueError:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Jira knowledge page contains an issue outside the requested project",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
         changes = tuple(self._issue_to_change(issue) for issue in page.issues)
         if not page.is_last:
             checkpoint = self._encode_cursor(
                 _JiraIssuesReconciliationCursor(
+                    schema_version=JIRA_KNOWLEDGE_CURSOR_VERSION,
                     project_key=project_key,
                     next_page_token=page.next_page_token,
                     complete=False,
@@ -157,6 +192,7 @@ class JiraIssuesKnowledgeAdapter:
 
         final_checkpoint = self._encode_cursor(
             _JiraIssuesReconciliationCursor(
+                schema_version=JIRA_KNOWLEDGE_CURSOR_VERSION,
                 project_key=project_key,
                 next_page_token=None,
                 complete=True,
@@ -177,7 +213,7 @@ class JiraIssuesKnowledgeAdapter:
         item: KnowledgeItemDescriptor,
     ) -> KnowledgeContent:
         jira_integration = self._require_jira_integration(integration=integration, source=source)
-        self._validate_source(source)
+        project_key = self._validate_source(source)
         self._validate_item(item, source=source)
         issue_key = item.identity.logical_key
         if issue_key is None:
@@ -203,6 +239,21 @@ class JiraIssuesKnowledgeAdapter:
             jira_integration.get_knowledge_issue,
             issue_key=validated_issue_key,
         )
+        try:
+            self._validate_issue_for_source(issue, project_key=project_key)
+            self._validate_fetched_issue_identity(
+                issue,
+                item=item,
+                project_key=project_key,
+            )
+        except ValueError:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Jira issue response identity does not match requested item",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
         structured_record = _build_structured_record(issue)
         canonical = json.dumps(
             structured_record,
@@ -318,6 +369,98 @@ class JiraIssuesKnowledgeAdapter:
                 source_kind=source.source_kind,
                 retryable=False,
             )
+        if item.item_type != "jira_issue":
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira knowledge item type is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        if not item.content_available:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira knowledge item content is not available",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        remote_id = item.identity.remote_id
+        if not _JIRA_REMOTE_ID_RE.fullmatch(str(remote_id).strip()):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira issue remote id is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        logical_key = item.identity.logical_key
+        if logical_key is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira issue logical key is required",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        try:
+            validated_logical_key = validate_jira_issue_key(logical_key)
+            project_key = validate_jira_project_key(source.scope.remote_scope_id)
+        except ValueError:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira issue logical key is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            ) from None
+        if issue_key_project_part(validated_logical_key) != project_key:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira issue logical key does not match source scope",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        parent_remote_id = item.identity.parent_remote_id
+        if parent_remote_id is not None and not str(parent_remote_id).strip():
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Jira issue parent remote id is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+
+    def _validate_issue_for_source(
+        self,
+        issue: JiraKnowledgeIssue,
+        *,
+        project_key: str,
+    ) -> None:
+        validate_jira_knowledge_issue_project_scope(issue, project_key=project_key)
+        if issue.created_at.tzinfo is None or issue.updated_at.tzinfo is None:
+            raise ValueError("Jira issue timestamps must be timezone-aware")
+
+    def _validate_fetched_issue_identity(
+        self,
+        issue: JiraKnowledgeIssue,
+        *,
+        item: KnowledgeItemDescriptor,
+        project_key: str,
+    ) -> None:
+        validated_issue_key = validate_jira_issue_key(item.identity.logical_key or "")
+        if issue.key != validated_issue_key:
+            raise ValueError("Jira issue response identity does not match requested item")
+        if issue.remote_id != str(item.identity.remote_id).strip():
+            raise ValueError("Jira issue response identity does not match requested item")
+        if issue.project_key != project_key:
+            raise ValueError("Jira issue response identity does not match requested item")
+        if issue_key_project_part(issue.key) != project_key:
+            raise ValueError("Jira issue response identity does not match requested item")
+        parent_remote_id = item.identity.parent_remote_id
+        if parent_remote_id is not None and issue.project_id != str(parent_remote_id).strip():
+            raise ValueError("Jira issue response identity does not match requested item")
 
     def _issue_to_change(self, issue: JiraKnowledgeIssue) -> KnowledgeChange:
         descriptor = KnowledgeItemDescriptor(
@@ -368,7 +511,7 @@ class JiraIssuesKnowledgeAdapter:
     ) -> _JiraIssuesReconciliationCursor | None:
         if cursor is None:
             return None
-        if cursor.version is not None and cursor.version != JIRA_KNOWLEDGE_CURSOR_VERSION:
+        if cursor.version != JIRA_KNOWLEDGE_CURSOR_VERSION:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_CURSOR,
                 safe_message="Jira reconciliation cursor version is invalid",
@@ -389,14 +532,6 @@ class JiraIssuesKnowledgeAdapter:
                 source_kind=self.source_kind,
                 retryable=False,
             ) from None
-        if decoded.schema_version != JIRA_KNOWLEDGE_CURSOR_VERSION:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                safe_message="Jira reconciliation cursor schema is invalid",
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            )
         if decoded.project_key != project_key:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_CURSOR,
