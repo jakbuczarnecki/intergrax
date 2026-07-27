@@ -225,6 +225,22 @@ repacking old thread history on every step
 changing stable tool catalog formatting per request
 ```
 
+### Cache-aware compaction timing policy (`TOKEN-OPT-5E`)
+
+`TOKEN-OPT-5E` is **Done / Closed**. Cache-aware compaction timing policy is now documented and covered by synthetic policy tests.
+
+Intergrax now has a provider-neutral cache-aware compaction timing policy. Runtime/provider integration remains deferred. The policy helps avoid rewriting hot cacheable prefixes when estimated cache invalidation cost outweighs estimated content-reduction benefit.
+
+```text
+dynamic tail reduction preferred over stable-prefix rewrite
+stable-prefix / full-thread compaction remains conservative
+protected/semantic risk → require manual review
+near-expiry or cold-history may allow RUN
+helper-level / provider-neutral only
+no runtime provider caching in TOKEN-OPT-5E
+in-cache compaction remains future work
+```
+
 ---
 
 ## 8. In-cache compaction is future work
@@ -308,7 +324,7 @@ These are conceptual names only. Actual event ownership remains with the existin
 
 ## 10. Roadmap impact
 
-`TOKEN-OPT-4B` is **Done / Closed**. `TOKEN-OPT-5A` is **Done / Closed**. `TOKEN-OPT-5B` is **Done / Closed** as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. Next step is `TOKEN-OPT-5E` — cache-aware compaction timing policy. Intergrax now has provider-neutral prompt-cache contracts and synthetic prefix-stability proof. Runtime/provider integration remains deferred. Cache attribution remains separate from content-reduction savings.
+`TOKEN-OPT-4B` is **Done / Closed**. `TOKEN-OPT-5A` is **Done / Closed**. `TOKEN-OPT-5B` is **Done / Closed** as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. `TOKEN-OPT-5E` is **Done / Closed** — cache-aware compaction timing policy is documented and covered by synthetic policy tests. Runtime/provider integration remains deferred. In-cache compaction remains future work. Cache attribution remains separate from content-reduction savings. Next decision: choose the next functional Token Optimization block before returning to `TOKEN-7A` advisory recommendations.
 
 Recommended order:
 
@@ -319,7 +335,7 @@ Recommended order:
 | 3 | `TOKEN-OPT-5B` | Prompt-cache contracts and cache-prefix stability proof | **Done / Closed** | Contracts + helpers + synthetic eval |
 | 4 | `TOKEN-OPT-5C` | Folded into `TOKEN-OPT-5B` | Folded | — |
 | 5 | `TOKEN-OPT-5D` | Folded into `TOKEN-OPT-5B` | Folded | — |
-| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing policy | **Next / Planned** | Docs/contracts only |
+| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing policy | **Done / Closed** | Contracts + helper + synthetic policy tests |
 | 7 | `TOKEN-7A` | Advisory recommendation contract | Deferred | Still deferred |
 
 ### TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
@@ -369,7 +385,7 @@ no runtime behavior added
 
 **Status:** **Done / Closed**.
 
-`TOKEN-OPT-5B` is Done / Closed as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. Next step is `TOKEN-OPT-5E` — cache-aware compaction timing policy.
+`TOKEN-OPT-5B` is Done / Closed as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. `TOKEN-OPT-5E` is Done / Closed.
 
 Delivered contracts and helpers (no provider API calls, no runtime prompt assembly):
 
@@ -396,15 +412,27 @@ synthetic prompt_cache_prefix corpus
 
 ### TOKEN-OPT-5E — cache-aware compaction timing policy
 
-**Status:** **Next / Planned**.
+**Status:** **Done / Closed**.
 
 Purpose:
 
 ```text
-Define when a compaction layer should defer, bypass, or run based on cache hotness, TTL, prefix stability, and expected content-reduction benefit.
+Add a provider-neutral policy/helper layer deciding when compaction should run, defer, bypass, or require manual review based on cache prefix stability, cache hotness, TTL proximity, expected content-reduction benefit, expected cache invalidation cost, and safety risk.
 ```
 
-This is policy design only until provider cache signals exist.
+Delivered (no provider API calls, no runtime prompt assembly):
+
+```text
+CacheAwareCompactionTarget
+CacheAwareCompactionDecision
+CacheAwareCompactionReason
+CacheAwareCompactionTimingInput / CacheAwareCompactionTimingDecision
+decide_cache_aware_compaction_timing
+synthetic cache_aware_compaction corpus
+focused policy tests
+```
+
+Runtime/provider integration remains deferred. In-cache compaction remains future work.
 
 ---
 
@@ -451,10 +479,12 @@ known limitations
 
 `TOKEN-OPT-5B` is **Done / Closed**.
 
-Next step:
+`TOKEN-OPT-5E` is **Done / Closed**.
+
+Next decision:
 
 ```text
-TOKEN-OPT-5E — cache-aware compaction timing policy
+Choose the next functional Token Optimization block before returning to TOKEN-7A advisory recommendations.
 ```
 
-Do not return to `TOKEN-7A` advisory recommendations until Intergrax has enough real optimization mechanisms, provider/cache attribution contracts, and evaluation data to make recommendations useful and safe.
+Runtime/provider integration remains deferred. In-cache compaction remains future work. Do not return to `TOKEN-7A` advisory recommendations until Intergrax has enough real optimization mechanisms, provider/cache attribution contracts, and evaluation data to make recommendations useful and safe.

@@ -5,6 +5,11 @@
 from __future__ import annotations
 
 from intergrax.runtime.token_optimization.contracts import (
+    CacheAwareCompactionDecision,
+    CacheAwareCompactionReason,
+    CacheAwareCompactionTarget,
+    CacheAwareCompactionTimingDecision,
+    CacheAwareCompactionTimingInput,
     CompressionLevel,
     CompressionReceiptRef,
     OutputPolicy,
@@ -47,6 +52,7 @@ from intergrax.runtime.token_optimization.prompt_cache import (
     PromptCachePrefixStabilityResult,
     build_prefix_snapshot,
     compute_prefix_hash,
+    decide_cache_aware_compaction_timing,
     evaluate_prefix_stability,
     preserves_append_only_prefix,
 )
@@ -166,11 +172,17 @@ __all__ = [
     "ContextPackOptimizationOutcome",
     "ContextPackOptimizationStatus",
     "ContextPackOptimizer",
+    "CacheAwareCompactionDecision",
+    "CacheAwareCompactionReason",
+    "CacheAwareCompactionTarget",
+    "CacheAwareCompactionTimingDecision",
+    "CacheAwareCompactionTimingInput",
     "CompressionLevel",
     "CompressionReceipt",
     "CompressionReceiptRef",
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
+    "decide_cache_aware_compaction_timing",
     "MAX_ENV_PROTECTED_TERMS",
     "MAX_PROTECTED_TERM_LENGTH",
     "PROTECTED_TERMS_ENV_VAR",

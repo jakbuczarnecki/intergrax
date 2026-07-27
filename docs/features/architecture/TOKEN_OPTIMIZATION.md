@@ -525,6 +525,26 @@ repacking old thread history on every step
 changing stable tool catalog formatting per request
 ```
 
+##### Cache-aware compaction timing policy
+
+`TOKEN-OPT-5E` adds a provider-neutral helper/policy layer that decides whether compaction should **run**, **defer**, **bypass**, or **require manual review**.
+
+Intergrax now has a provider-neutral cache-aware compaction timing policy. Runtime/provider integration remains deferred. The policy helps avoid rewriting hot cacheable prefixes when estimated cache invalidation cost outweighs estimated content-reduction benefit.
+
+Key rules:
+
+```text
+compaction can destroy more cache value than it saves
+dynamic tail compaction is preferred over stable prefix rewriting
+stable prefix / full-thread compaction is conservative
+protected/semantic risk requires manual review
+near-expiry or cold-history compaction may be allowed
+policy decisions are helper-level / provider-neutral
+no runtime provider caching is implemented in TOKEN-OPT-5E
+```
+
+Contracts and helper live under `intergrax/runtime/token_optimization/` (`CacheAwareCompaction*` types and `decide_cache_aware_compaction_timing`). Decisions must not include raw prompt/thread content and must not treat mixed-unit estimates as measured token savings.
+
 #### In-cache compaction boundary (`TOKEN-OPT-5A`)
 
 ```text

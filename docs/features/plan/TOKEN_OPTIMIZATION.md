@@ -675,7 +675,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 12 | **TOKEN-OPT-5B** | Prompt-cache contracts and cache-prefix stability proof — **Done / Closed** (folds former **TOKEN-OPT-5C** / **TOKEN-OPT-5D**) |
 | 13 | **TOKEN-OPT-5C** | Folded into **TOKEN-OPT-5B** functional block |
 | 14 | **TOKEN-OPT-5D** | Folded into **TOKEN-OPT-5B** functional block |
-| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Next / Planned** |
+| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Done / Closed** |
 | — | **TOKEN-7A** | Advisory recommendation contract — Deferred |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
@@ -695,7 +695,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
 | Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | **TOKEN-OPT-4A** | **Implemented** |
-| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** → **TOKEN-OPT-5B** (contracts + synthetic proof) → **TOKEN-OPT-5E+** | Architecture + contracts/helpers **Done / Closed**; runtime/provider integration deferred |
+| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** → **TOKEN-OPT-5B** (contracts + synthetic proof) → **TOKEN-OPT-5E** | Architecture + contracts/helpers + compaction timing policy **Done / Closed**; runtime/provider integration deferred |
 | Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Retrieval-on-demand | `rag_context_pack`, `retrieved_evidence` | `reversible` / `lossy` (partial) | `balanced` | Yes | Yes | Yes | RAG integration slice | Deferred |
 | Safe lossy summarization | `memory`, `rag_context_pack` | `lossy` | `aggressive` (explicit `allow_lossy`) | Yes | Yes | Yes | Post-3D eval | **Excluded** from next slice |
@@ -1071,6 +1071,50 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no README or public adoption documentation updated
 - next step: TOKEN-OPT-5E — cache-aware compaction timing policy
 
+#### TOKEN-OPT-5E — cache-aware compaction timing policy
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a provider-neutral policy/helper layer deciding when compaction should run, defer, bypass, or require manual review based on cache prefix stability, cache hotness, TTL proximity, expected content-reduction benefit, expected cache invalidation cost, and safety risk.
+
+**Deliverables:**
+
+- cache-aware compaction target enum
+- cache-aware compaction decision enum
+- cache-aware compaction reason enum
+- timing input and decision contracts
+- deterministic compaction timing decision helper
+- synthetic cache-aware compaction corpus
+- focused policy tests
+- architecture/addendum/plan documentation updates
+
+**Closeout:**
+
+- cache-aware compaction target contract added
+- cache-aware compaction decision contract added
+- cache-aware compaction reason contract added
+- timing input and decision contracts added
+- deterministic compaction timing helper added
+- dynamic-tail-safe reduction path covered
+- cold-history compaction path covered
+- hot stable-prefix defer path covered
+- near-expiry stable-prefix run path covered
+- unstable-prefix defer path covered
+- low-benefit bypass path covered
+- full-thread rewrite review path covered
+- protected/semantic risk review path covered
+- synthetic compaction timing corpus added
+- decision reports remain raw-content-safe
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adapter wiring added
+- no observability emission added
+- no benchmark runner added
+- no semantic compression or LLM summarization added
+- no in-cache compaction added
+- no README or public adoption documentation updated
+- next decision: choose the next functional Token Optimization block before returning to TOKEN-7A advisory recommendations
+
 ### TOKEN-OPT-3A acceptance
 
 Done / Closed when:
@@ -1329,10 +1373,12 @@ TOKEN-OPT-5A cache-prefix stabilization architecture / contract — Done / Close
 TOKEN-OPT-5B prompt-cache contracts and cache-prefix stability proof — Done / Closed
 TOKEN-OPT-5C folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5D folded into TOKEN-OPT-5B functional block
-TOKEN-OPT-5E cache-aware compaction timing policy — Next / Planned
-TOKEN-7A    advisory recommendation contract — Deferred
+TOKEN-OPT-5E cache-aware compaction timing policy — Done / Closed
+TOKEN-7A    advisory recommendation contract — Deferred (unless explicitly re-opened later)
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
+
+Next decision: choose the next functional Token Optimization block before returning to TOKEN-7A advisory recommendations.
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 

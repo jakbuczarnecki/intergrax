@@ -1033,3 +1033,99 @@ class PromptCacheAttribution:
             or self.content_saved_chars is not None
             or self.content_saved_tokens is not None
         )
+
+
+class CacheAwareCompactionTarget(StrEnum):
+    """Where compaction would rewrite relative to a cacheable prefix."""
+
+    STABLE_PREFIX = "stable_prefix"
+    DYNAMIC_TAIL = "dynamic_tail"
+    COLD_HISTORY = "cold_history"
+    FULL_THREAD = "full_thread"
+    UNKNOWN = "unknown"
+
+
+class CacheAwareCompactionDecision(StrEnum):
+    """Whether compaction should run, wait, skip, or require review."""
+
+    RUN = "run"
+    DEFER = "defer"
+    BYPASS = "bypass"
+    REQUIRE_MANUAL_REVIEW = "require_manual_review"
+
+
+class CacheAwareCompactionReason(StrEnum):
+    """Why a cache-aware compaction timing decision was chosen (no raw content)."""
+
+    DYNAMIC_TAIL_SAFE_TO_REDUCE = "dynamic_tail_safe_to_reduce"
+    COLD_HISTORY_SAFE_TO_COMPACT = "cold_history_safe_to_compact"
+    CACHE_INVALIDATION_COST_TOO_HIGH = "cache_invalidation_cost_too_high"
+    PREFIX_NOT_STABLE = "prefix_not_stable"
+    CACHE_NEAR_EXPIRY = "cache_near_expiry"
+    LOW_CONTENT_REDUCTION_BENEFIT = "low_content_reduction_benefit"
+    FULL_THREAD_REWRITE_RISK = "full_thread_rewrite_risk"
+    PROTECTED_OR_SEMANTIC_RISK = "protected_or_semantic_risk"
+    INSUFFICIENT_SIGNALS = "insufficient_signals"
+
+
+@dataclass(frozen=True, slots=True)
+class CacheAwareCompactionTimingInput:
+    """Signals for cache-aware compaction timing (helper/policy only)."""
+
+    target: CacheAwareCompactionTarget
+    prefix_stability_status: str | None = None
+    invalidation_reason: PromptCacheInvalidationReason = PromptCacheInvalidationReason.NONE
+    cache_hot: bool | None = None
+    ttl_seconds_remaining: int | None = None
+    near_expiry_threshold_seconds: int = 60
+    estimated_content_reduction_chars: int | None = None
+    estimated_cache_invalidation_cost_tokens: int | None = None
+    protected_or_semantic_risk: bool = False
+    dynamic_tail_reduction_available: bool = False
+
+    def __post_init__(self) -> None:
+        _validate_optional_non_negative_int(
+            self.ttl_seconds_remaining, "ttl_seconds_remaining"
+        )
+        if self.near_expiry_threshold_seconds < 0:
+            raise ValueError("near_expiry_threshold_seconds cannot be negative")
+        _validate_optional_non_negative_int(
+            self.estimated_content_reduction_chars,
+            "estimated_content_reduction_chars",
+        )
+        _validate_optional_non_negative_int(
+            self.estimated_cache_invalidation_cost_tokens,
+            "estimated_cache_invalidation_cost_tokens",
+        )
+        _validate_optional_stripped_non_empty(
+            self.prefix_stability_status, "prefix_stability_status"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CacheAwareCompactionTimingDecision:
+    """Deterministic cache-aware compaction timing outcome (no raw content)."""
+
+    decision: CacheAwareCompactionDecision
+    reason: CacheAwareCompactionReason
+    target: CacheAwareCompactionTarget
+    cache_hot: bool | None
+    ttl_seconds_remaining: int | None
+    estimated_content_reduction_chars: int | None
+    estimated_cache_invalidation_cost_tokens: int | None
+    raw_content_included: bool = False
+
+    def __post_init__(self) -> None:
+        if self.raw_content_included:
+            raise ValueError("raw_content_included must remain False")
+        _validate_optional_non_negative_int(
+            self.ttl_seconds_remaining, "ttl_seconds_remaining"
+        )
+        _validate_optional_non_negative_int(
+            self.estimated_content_reduction_chars,
+            "estimated_content_reduction_chars",
+        )
+        _validate_optional_non_negative_int(
+            self.estimated_cache_invalidation_cost_tokens,
+            "estimated_cache_invalidation_cost_tokens",
+        )

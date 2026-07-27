@@ -11,7 +11,14 @@ import hashlib
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from intergrax.runtime.token_optimization.contracts import PromptCacheInvalidationReason
+from intergrax.runtime.token_optimization.contracts import (
+    CacheAwareCompactionDecision,
+    CacheAwareCompactionReason,
+    CacheAwareCompactionTarget,
+    CacheAwareCompactionTimingDecision,
+    CacheAwareCompactionTimingInput,
+    PromptCacheInvalidationReason,
+)
 
 PREFIX_STABILITY_INITIAL = "initial"
 PREFIX_STABILITY_STABLE = "stable"
@@ -220,3 +227,102 @@ def preserves_append_only_prefix(
         ):
             return False
     return True
+
+
+_PREFIX_REWRITE_TARGETS = frozenset(
+    {
+        CacheAwareCompactionTarget.STABLE_PREFIX,
+        CacheAwareCompactionTarget.FULL_THREAD,
+    }
+)
+
+
+def _prefix_is_stable_or_initial(status: str | None) -> bool:
+    return status in {PREFIX_STABILITY_STABLE, PREFIX_STABILITY_INITIAL}
+
+
+def decide_cache_aware_compaction_timing(
+    timing_input: CacheAwareCompactionTimingInput,
+) -> CacheAwareCompactionTimingDecision:
+    """Decide whether compaction should run, defer, bypass, or require review.
+
+    Deterministic helper/policy only: no provider calls, no prompt mutation.
+    """
+    target = timing_input.target
+    decision = CacheAwareCompactionDecision.DEFER
+    reason = CacheAwareCompactionReason.INSUFFICIENT_SIGNALS
+
+    if timing_input.protected_or_semantic_risk:
+        decision = CacheAwareCompactionDecision.REQUIRE_MANUAL_REVIEW
+        reason = CacheAwareCompactionReason.PROTECTED_OR_SEMANTIC_RISK
+    elif target is CacheAwareCompactionTarget.UNKNOWN:
+        decision = CacheAwareCompactionDecision.REQUIRE_MANUAL_REVIEW
+        reason = CacheAwareCompactionReason.INSUFFICIENT_SIGNALS
+    elif (
+        target in _PREFIX_REWRITE_TARGETS
+        and timing_input.cache_hot is None
+        and timing_input.ttl_seconds_remaining is None
+    ):
+        decision = CacheAwareCompactionDecision.REQUIRE_MANUAL_REVIEW
+        reason = CacheAwareCompactionReason.INSUFFICIENT_SIGNALS
+    elif target in _PREFIX_REWRITE_TARGETS and (
+        not _prefix_is_stable_or_initial(timing_input.prefix_stability_status)
+        or timing_input.invalidation_reason is not PromptCacheInvalidationReason.NONE
+    ):
+        decision = CacheAwareCompactionDecision.DEFER
+        reason = CacheAwareCompactionReason.PREFIX_NOT_STABLE
+    elif (
+        target is CacheAwareCompactionTarget.DYNAMIC_TAIL
+        and timing_input.dynamic_tail_reduction_available
+    ):
+        decision = CacheAwareCompactionDecision.RUN
+        reason = CacheAwareCompactionReason.DYNAMIC_TAIL_SAFE_TO_REDUCE
+    elif (
+        target is CacheAwareCompactionTarget.COLD_HISTORY
+        and timing_input.cache_hot is False
+    ):
+        decision = CacheAwareCompactionDecision.RUN
+        reason = CacheAwareCompactionReason.COLD_HISTORY_SAFE_TO_COMPACT
+    elif (
+        target in _PREFIX_REWRITE_TARGETS
+        and timing_input.ttl_seconds_remaining is not None
+        and timing_input.ttl_seconds_remaining
+        <= timing_input.near_expiry_threshold_seconds
+    ):
+        decision = CacheAwareCompactionDecision.RUN
+        reason = CacheAwareCompactionReason.CACHE_NEAR_EXPIRY
+    elif (
+        target in _PREFIX_REWRITE_TARGETS
+        and timing_input.cache_hot is True
+        and timing_input.estimated_cache_invalidation_cost_tokens is not None
+        and timing_input.estimated_content_reduction_chars is not None
+        and timing_input.estimated_cache_invalidation_cost_tokens
+        > timing_input.estimated_content_reduction_chars
+    ):
+        decision = CacheAwareCompactionDecision.DEFER
+        reason = CacheAwareCompactionReason.CACHE_INVALIDATION_COST_TOO_HIGH
+    elif (
+        timing_input.estimated_content_reduction_chars is not None
+        and timing_input.estimated_content_reduction_chars < 1
+    ):
+        decision = CacheAwareCompactionDecision.BYPASS
+        reason = CacheAwareCompactionReason.LOW_CONTENT_REDUCTION_BENEFIT
+    elif target is CacheAwareCompactionTarget.FULL_THREAD:
+        decision = CacheAwareCompactionDecision.REQUIRE_MANUAL_REVIEW
+        reason = CacheAwareCompactionReason.FULL_THREAD_REWRITE_RISK
+    else:
+        decision = CacheAwareCompactionDecision.DEFER
+        reason = CacheAwareCompactionReason.INSUFFICIENT_SIGNALS
+
+    return CacheAwareCompactionTimingDecision(
+        decision=decision,
+        reason=reason,
+        target=target,
+        cache_hot=timing_input.cache_hot,
+        ttl_seconds_remaining=timing_input.ttl_seconds_remaining,
+        estimated_content_reduction_chars=timing_input.estimated_content_reduction_chars,
+        estimated_cache_invalidation_cost_tokens=(
+            timing_input.estimated_cache_invalidation_cost_tokens
+        ),
+        raw_content_included=False,
+    )
