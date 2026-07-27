@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -252,10 +253,12 @@ async def test_jira_facade_coordinator_reconciliation_proof() -> None:
         assert logical_key.startswith("PROJ-")
         assert envelope.content.structured_record["remote_id"] == descriptor.identity.remote_id
         _assert_envelope_safe(envelope)
+        assert re.fullmatch(r"^[1-9][0-9]*$", descriptor.identity.remote_id)
 
 
     remote_ids = set()
     for remote_id in ("10001", "10002"):
+        assert re.fullmatch(r"^[1-9][0-9]*$", remote_id)
         state = state_repo.get(
             tenant_id="tenant-1",
             binding_id="jira-binding",
