@@ -79,6 +79,17 @@ uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port
 
 Before indexing real files, set `INTERGRAX_ALLOWED_READ_ROOTS` in `.env` to one or more absolute folders that LKW may read.
 
+### Preconfigured Source Candidates
+
+Operators may expose safe, preconfigured local-folder Source Candidates without revealing filesystem paths to remote clients:
+
+1. Copy `config/source_candidates.example.json` to `<DATA_HOME>/config/source_candidates.json`.
+2. Set opaque `candidate_id` values (identity only — not derived from path).
+3. Keep `label` / `description` public-safe; keep `path` host-private and inside the existing read allowlist.
+4. Restart the LKW host after changing the file (configuration is loaded at composition time).
+
+List/accept candidates through the HTTP API (`GET .../source-candidates`, `POST .../knowledge/source-candidates/{candidate_id}`). Slack candidate selection is a separate task.
+
 ## HTTP
 
 ```bash

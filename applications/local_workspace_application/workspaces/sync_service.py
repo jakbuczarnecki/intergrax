@@ -6,19 +6,14 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any, Protocol
 
-from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
-from local_workspace_application.workspaces.discovery import discover_source_files
 from local_workspace_application.workspaces.document_indexing import (
-    WorkspaceDocumentIndexingError,
     WorkspaceDocumentIndexingService,
     extract_ingest_summary,
 )
-from local_workspace_application.workspaces.idempotency import (
-    content_hash_for_file,
-    normalize_source_path,
+from local_workspace_application.workspaces.local_folder_indexing import (
+    LocalFolderIndexingService,
 )
 from local_workspace_application.workspaces.models import (
     WorkspaceOperation,
@@ -47,7 +42,7 @@ def _safe_error_message(exc: BaseException) -> str:
 
 
 class ManagedWorkspaceSyncService:
-    """Runs source sync via the existing LocalWorkspaceTaskExecutor / indexer path."""
+    """Runs source sync via the shared local-folder indexing path."""
 
     def __init__(
         self,
@@ -56,6 +51,7 @@ class ManagedWorkspaceSyncService:
         *,
         allowlist_roots: frozenset[str] | None = None,
         indexing_service: WorkspaceDocumentIndexingService | None = None,
+        folder_indexing: LocalFolderIndexingService | None = None,
     ) -> None:
         self._repository = repository
         self._task_executor = task_executor
@@ -63,6 +59,10 @@ class ManagedWorkspaceSyncService:
         self._indexing_service = indexing_service or WorkspaceDocumentIndexingService(
             repository,
             task_executor,
+        )
+        self._folder_indexing = folder_indexing or LocalFolderIndexingService(
+            self._indexing_service,
+            allowlist_roots=allowlist_roots,
         )
 
     async def run_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation:
@@ -111,60 +111,21 @@ class ManagedWorkspaceSyncService:
             source.model_copy(update={"status": WorkspaceSourceStatus.SYNCING})
         )
 
-        roots = self._allowlist_roots
-        if roots is None:
-            roots = read_allowlist_roots_from_env()
-
         try:
-            root = Path(source.path)
-            discovered, skipped = discover_source_files(
-                root,
-                recursive=source.recursive,
-                allowlist_roots=roots,
+            result = await self._folder_indexing.index_source(
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source=source,
+                operation_id=operation.operation_id,
             )
-            files_discovered = len(discovered) + len(skipped)
-            files_processed = 0
-            files_failed = len(skipped)
-            documents_indexed = 0
-            documents_unchanged = 0
-
-            for path in discovered:
-                files_processed += 1
-                normalized = normalize_source_path(path)
-                digest = content_hash_for_file(path)
-                try:
-                    index_result = await self._indexing_service.index_one(
-                        tenant_id=tenant_id,
-                        workspace_id=operation.workspace_id,
-                        source_id=operation.source_id,
-                        operation_id=operation.operation_id,
-                        physical_path=path,
-                        logical_source_path=normalized,
-                        safe_file_name=path.name,
-                        content_hash=digest,
-                    )
-                except WorkspaceDocumentIndexingError as exc:
-                    files_failed += 1
-                    logger.warning(
-                        "managed_workspace_sync_file_failed operation_id=%s path=%s reason=%s",
-                        operation.operation_id,
-                        normalized,
-                        exc.error_code,
-                    )
-                    continue
-
-                if index_result.unchanged:
-                    documents_unchanged += 1
-                    continue
-                if index_result.indexed:
-                    documents_indexed += 1
-                else:
-                    files_failed += 1
-
             completed = _utc_now()
             final_status = (
                 WorkspaceOperationStatus.FAILED
-                if files_discovered > 0 and documents_indexed == 0 and documents_unchanged == 0
+                if (
+                    result.files_discovered > 0
+                    and result.documents_indexed == 0
+                    and result.documents_unchanged == 0
+                )
                 else WorkspaceOperationStatus.COMPLETED
             )
             error = None
@@ -173,11 +134,11 @@ class ManagedWorkspaceSyncService:
             operation = operation.model_copy(
                 update={
                     "status": final_status,
-                    "files_discovered": files_discovered,
-                    "files_processed": files_processed,
-                    "files_failed": files_failed,
-                    "documents_indexed": documents_indexed,
-                    "documents_unchanged": documents_unchanged,
+                    "files_discovered": result.files_discovered,
+                    "files_processed": result.files_processed,
+                    "files_failed": result.files_failed,
+                    "documents_indexed": result.documents_indexed,
+                    "documents_unchanged": result.documents_unchanged,
                     "completed_at": completed,
                     "error": error,
                 }

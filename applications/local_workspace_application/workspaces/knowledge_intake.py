@@ -53,6 +53,36 @@ class KnowledgeInputSourceResolver(Protocol):
     ) -> WorkspaceSource: ...
 
 
+class KnowledgeInputSourceResolverRouter:
+    """Immutable product-local router of Knowledge Input resolvers by input kind."""
+
+    def __init__(
+        self,
+        resolvers: Mapping[KnowledgeInputKind, KnowledgeInputSourceResolver],
+    ) -> None:
+        mapping = dict(resolvers)
+        if len(mapping) != len(resolvers):
+            raise ValueError("duplicate_source_resolver_kind")
+        kinds = list(resolvers.keys())
+        if len(kinds) != len(set(kinds)):
+            raise ValueError("duplicate_source_resolver_kind")
+        self._resolvers: dict[KnowledgeInputKind, KnowledgeInputSourceResolver] = mapping
+
+    def resolve(
+        self,
+        *,
+        knowledge_input: KnowledgeInput,
+        suggested_source_id: str,
+    ) -> WorkspaceSource:
+        resolver = self._resolvers.get(knowledge_input.input_kind)
+        if resolver is None:
+            raise KnowledgeInputResolutionError("source_resolver_unavailable")
+        return resolver.resolve(
+            knowledge_input=knowledge_input,
+            suggested_source_id=suggested_source_id,
+        )
+
+
 @dataclass(frozen=True)
 class KnowledgeIntakeAcceptance:
     knowledge_input: KnowledgeInput

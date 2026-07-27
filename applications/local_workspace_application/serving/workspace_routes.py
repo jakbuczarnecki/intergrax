@@ -25,6 +25,9 @@ from local_workspace_application.serving.workspace_schemas import (
     ManagedFileBatchItemAcceptedV1,
     OperationResponseV1,
     RegisterSourceRequestV1,
+    SourceCandidateAcceptedV1,
+    SourceCandidateListResponseV1,
+    SourceCandidateSummaryV1,
     SourceListResponseV1,
     SourceResponseV1,
     SourceSummaryResponseV1,
@@ -56,8 +59,18 @@ from local_workspace_application.workspaces.document_indexing import (
 from local_workspace_application.workspaces.ingestion_recovery import (
     KnowledgeIngestionRecoveryService,
 )
-from local_workspace_application.workspaces.knowledge_ingestion import KnowledgeIngestionService
-from local_workspace_application.workspaces.knowledge_intake import KnowledgeIntakeService
+from local_workspace_application.workspaces.knowledge_ingestion import (
+    KnowledgeIngestionProcessorRouter,
+    KnowledgeIngestionService,
+)
+from local_workspace_application.workspaces.knowledge_intake import (
+    KnowledgeInputSourceResolverRouter,
+    KnowledgeIntakeDispatchError,
+    KnowledgeIntakeService,
+)
+from local_workspace_application.workspaces.local_folder_indexing import (
+    LocalFolderIndexingService,
+)
 from local_workspace_application.workspaces.managed_file_ingestion import (
     ManagedFileKnowledgeIngestionProcessor,
     ManagedObjectMaterializer,
@@ -75,10 +88,21 @@ from local_workspace_application.workspaces.managed_files import (
 from local_workspace_application.workspaces.models import (
     IntakeBatchItemStatus,
     IntakeBatchStatus,
+    KnowledgeInputKind,
     Workspace,
     WorkspaceOperation,
     WorkspaceOperationStatus,
     WorkspaceSource,
+)
+from local_workspace_application.workspaces.source_candidates import (
+    SourceCandidateAlreadyRegistered,
+    SourceCandidateIdempotencyConflict,
+    SourceCandidateIntakeService,
+    SourceCandidateKnowledgeIngestionProcessor,
+    SourceCandidateRegistry,
+    SourceCandidateRegistryError,
+    SourceCandidateSourceResolver,
+    SourceCandidateUnavailable,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.search_evidence import (
@@ -294,11 +318,16 @@ def mount_managed_workspace_routes(
         managed_file_cleanup=managed_file_cleanup,
     )
     indexing_service = WorkspaceDocumentIndexingService(repository, task_executor)
+    folder_indexing = LocalFolderIndexingService(
+        indexing_service,
+        allowlist_roots=frozenset(allowlist) if allowlist else None,
+    )
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
         indexing_service=indexing_service,
+        folder_indexing=folder_indexing,
     )
     owns_runtime = sync_runtime is None
     if sync_runtime is None:
@@ -309,27 +338,44 @@ def mount_managed_workspace_routes(
         )
         app.state.lkw_managed_workspace_sync_runtime = sync_runtime
 
-    managed_file_intake_service: ManagedFileIntakeService | None = None
-    knowledge_intake_service: KnowledgeIntakeService | None = None
-    knowledge_ingestion_service: KnowledgeIngestionService | None = None
+    source_candidate_registry = SourceCandidateRegistry.load(settings.source_candidates_file)
+    resolver_map: dict[KnowledgeInputKind, object] = {
+        KnowledgeInputKind.SOURCE_CANDIDATE: SourceCandidateSourceResolver(
+            repository,
+            source_candidate_registry,
+            allowlist_roots=frozenset(allowlist) if allowlist else None,
+            shadow_roots=shadow_roots,
+        ),
+    }
+    processor_map: dict[KnowledgeInputKind, object] = {
+        KnowledgeInputKind.SOURCE_CANDIDATE: SourceCandidateKnowledgeIngestionProcessor(
+            folder_indexing,
+        ),
+    }
+
     if object_storage is not None:
         materializer = ManagedObjectMaterializer(
             object_storage,
             Path(settings.managed_upload_staging_dir),
         )
-        processor = ManagedFileKnowledgeIngestionProcessor(
+        processor_map[KnowledgeInputKind.MANAGED_FILE] = ManagedFileKnowledgeIngestionProcessor(
             repository,
             materializer,
             indexing_service,
         )
-        knowledge_ingestion_service = KnowledgeIngestionService(repository, processor)
-        sync_runtime.register_knowledge_ingestion_service(knowledge_ingestion_service)
-        source_resolver = ManagedFileSourceResolver(repository)
-        knowledge_intake_service = KnowledgeIntakeService(
-            repository,
-            source_resolver,
-            sync_runtime.wiring_context,
-        )
+        resolver_map[KnowledgeInputKind.MANAGED_FILE] = ManagedFileSourceResolver(repository)
+
+    source_resolver = KnowledgeInputSourceResolverRouter(resolver_map)  # type: ignore[arg-type]
+    processor = KnowledgeIngestionProcessorRouter(processor_map)  # type: ignore[arg-type]
+    knowledge_ingestion_service = KnowledgeIngestionService(repository, processor)
+    sync_runtime.register_knowledge_ingestion_service(knowledge_ingestion_service)
+    knowledge_intake_service = KnowledgeIntakeService(
+        repository,
+        source_resolver,
+        sync_runtime.wiring_context,
+    )
+    managed_file_intake_service: ManagedFileIntakeService | None = None
+    if object_storage is not None:
         managed_file_intake_service = ManagedFileIntakeService(
             repository,
             object_storage,
@@ -337,8 +383,15 @@ def mount_managed_workspace_routes(
             max_bytes=settings.managed_file_max_bytes,
             max_batch_files=settings.managed_file_max_batch_files,
         )
-        recovery = KnowledgeIngestionRecoveryService(repository, knowledge_intake_service)
-        sync_runtime.attach_recovery_service(recovery)
+    recovery = KnowledgeIngestionRecoveryService(repository, knowledge_intake_service)
+    sync_runtime.attach_recovery_service(recovery)
+    source_candidate_intake_service = SourceCandidateIntakeService(
+        repository,
+        source_candidate_registry,
+        knowledge_intake_service,
+        allowlist_roots=frozenset(allowlist) if allowlist else None,
+        shadow_roots=shadow_roots,
+    )
 
     if owns_runtime:
 
@@ -370,6 +423,9 @@ def mount_managed_workspace_routes(
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
     app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service
+    app.state.lkw_source_candidate_registry = source_candidate_registry
+    app.state.lkw_source_candidate_intake_service = source_candidate_intake_service
+    app.state.lkw_local_folder_indexing_service = folder_indexing
 
     router = APIRouter(prefix=prefix, tags=["local_workspace_managed"])
 
@@ -563,6 +619,113 @@ def mount_managed_workspace_routes(
             accepted_count=accepted_count,
             failed_count=failed_count,
             items=items,
+        )
+
+    @router.get(
+        "/workspaces/{workspace_id}/source-candidates",
+        response_model=SourceCandidateListResponseV1,
+    )
+    async def list_source_candidates(
+        request: Request,
+        workspace_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> SourceCandidateListResponseV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        intake: SourceCandidateIntakeService = getattr(
+            request.app.state,
+            "lkw_source_candidate_intake_service",
+            source_candidate_intake_service,
+        )
+        try:
+            candidates = intake.list_candidates(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        except LookupError:
+            raise _not_found() from None
+        except SourceCandidateRegistryError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="source_candidate_registry_unavailable",
+            ) from None
+        return SourceCandidateListResponseV1(
+            workspace_id=workspace_id,
+            candidates=[
+                SourceCandidateSummaryV1(
+                    candidate_id=item.candidate_id,
+                    label=item.label,
+                    description=item.description,
+                    source_type="local_folder",
+                    available=item.available,
+                )
+                for item in candidates
+            ],
+        )
+
+    @router.post(
+        "/workspaces/{workspace_id}/knowledge/source-candidates/{candidate_id}",
+        response_model=SourceCandidateAcceptedV1,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def accept_source_candidate(
+        request: Request,
+        workspace_id: str,
+        candidate_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> SourceCandidateAcceptedV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if idempotency_key is None or not idempotency_key.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="idempotency_key_required",
+            )
+        intake: SourceCandidateIntakeService = getattr(
+            request.app.state,
+            "lkw_source_candidate_intake_service",
+            source_candidate_intake_service,
+        )
+        try:
+            accepted = intake.accept(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                candidate_id=candidate_id,
+                idempotency_key=idempotency_key.strip(),
+            )
+        except LookupError:
+            raise _not_found() from None
+        except SourceCandidateRegistryError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="source_candidate_registry_unavailable",
+            ) from None
+        except SourceCandidateUnavailable:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_candidate_unavailable",
+            ) from None
+        except SourceCandidateIdempotencyConflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_candidate_idempotency_conflict",
+            ) from None
+        except SourceCandidateAlreadyRegistered:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_candidate_already_registered",
+            ) from None
+        except KnowledgeIntakeDispatchError:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="source_candidate_dispatch_failed",
+            ) from None
+        return SourceCandidateAcceptedV1(
+            candidate_id=accepted.candidate_id,
+            label=accepted.label,
+            workspace_id=accepted.workspace_id,
+            source_id=accepted.source_id,
+            operation_id=accepted.operation_id,
+            status=accepted.status,  # type: ignore[arg-type]
         )
 
     @router.post(

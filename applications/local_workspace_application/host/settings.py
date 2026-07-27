@@ -143,6 +143,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         return _data_home_path(self.data_home, "config")
 
     @property
+    def source_candidates_file(self) -> str:
+        return _data_home_path(self.data_home, "config", "source_candidates.json")
+
+    @property
     def data_dir(self) -> str:
         return _data_home_path(self.data_home, "data")
 

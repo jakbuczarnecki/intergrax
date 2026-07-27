@@ -8,7 +8,7 @@ import asyncio
 import base64
 import json
 from datetime import UTC, datetime
-from typing import Callable, Literal, Optional, Protocol
+from typing import Callable, Literal, Mapping, Optional, Protocol
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,7 @@ from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.providers.message_bus.contracts import MessageBusEnqueueInput
 from local_workspace_application.workspaces.models import (
     KnowledgeInput,
+    KnowledgeInputKind,
     WorkspaceOperation,
     WorkspaceOperationStatus,
     WorkspaceOperationType,
@@ -118,6 +119,38 @@ class KnowledgeIngestionProcessorError(RuntimeError):
             raise ValueError("error_code_required")
         self.error_code = code
         super().__init__(code)
+
+
+class KnowledgeIngestionProcessorRouter:
+    """Immutable product-local router of ingestion processors by input kind."""
+
+    def __init__(
+        self,
+        processors: Mapping[KnowledgeInputKind, KnowledgeIngestionProcessor],
+    ) -> None:
+        mapping = dict(processors)
+        kinds = list(processors.keys())
+        if len(kinds) != len(set(kinds)):
+            raise ValueError("duplicate_ingestion_processor_kind")
+        self._processors: dict[KnowledgeInputKind, KnowledgeIngestionProcessor] = mapping
+
+    async def process(
+        self,
+        *,
+        knowledge_input: KnowledgeInput,
+        source: WorkspaceSource,
+        operation: WorkspaceOperation,
+    ) -> KnowledgeIngestionResult:
+        processor = self._processors.get(knowledge_input.input_kind)
+        if processor is None:
+            raise KnowledgeIngestionProcessorError(
+                "knowledge_ingestion_processor_unavailable"
+            )
+        return await processor.process(
+            knowledge_input=knowledge_input,
+            source=source,
+            operation=operation,
+        )
 
 
 class KnowledgeIngestionService:

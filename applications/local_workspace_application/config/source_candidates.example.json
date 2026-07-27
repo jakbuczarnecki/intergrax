@@ -1,0 +1,25 @@
+{
+  "schema_version": "lkw.source_candidates.v1",
+  "candidates": [
+    {
+      "candidate_id": "contracts",
+      "tenant_id": "default",
+      "label": "Contracts",
+      "description": "Current contract documents",
+      "source_type": "local_folder",
+      "path": "C:\\replace\\with\\allowed\\folder",
+      "recursive": true,
+      "enabled": true
+    },
+    {
+      "candidate_id": "policies",
+      "tenant_id": "default",
+      "label": "Policies",
+      "description": "Internal policy drafts for indexing",
+      "source_type": "local_folder",
+      "path": "/replace/with/allowed/folder",
+      "recursive": false,
+      "enabled": true
+    }
+  ]
+}
