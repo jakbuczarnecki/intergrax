@@ -79,6 +79,7 @@ class FakeStreamSocket:
         self.connect_calls: list[tuple[str, int]] = []
         self.recv_sizes = list(recv_sizes or [])
         self.recv_calls = 0
+        self.timeouts: list[float] = []
 
     def connect(self, address: tuple[str, int]) -> None:
         self.connect_calls.append(address)
@@ -94,7 +95,10 @@ class FakeStreamSocket:
         self.recv_calls += 1
         return chunk
 
-    def settimeout(self, _timeout: float) -> None:
+    def settimeout(self, timeout: float) -> None:
+        self.timeouts.append(timeout)
+
+    def do_handshake(self) -> None:
         return None
 
     def close(self) -> None:
@@ -110,6 +114,14 @@ class FakeMonotonic:
 
     def advance(self, delta: float) -> None:
         self.value += delta
+
+
+def _wrap_passthrough(
+    sock: socket.socket,
+    server_hostname: str | None = None,
+    **kwargs: object,
+) -> socket.socket:
+    return sock
 
 
 def test_build_request_bytes_uses_hostname_in_host_header() -> None:
@@ -137,7 +149,7 @@ async def test_approved_ip_used_as_connect_target() -> None:
         return fake_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         response = await transport.fetch(_request())
 
@@ -154,7 +166,11 @@ async def test_tls_hostname_preserved() -> None:
     def connect_factory(_host: str, _port: int, _timeout: float) -> FakeStreamSocket:
         return fake_sock
 
-    def wrap_socket(sock: socket.socket, server_hostname: str | None = None) -> socket.socket:
+    def wrap_socket(
+        sock: socket.socket,
+        server_hostname: str | None = None,
+        **kwargs: object,
+    ) -> socket.socket:
         captured_hostnames.append(server_hostname or "")
         return sock
 
@@ -177,7 +193,7 @@ async def test_response_read_in_bounded_chunks() -> None:
         return fake_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         response = await transport.fetch(_request(max_response_bytes=10000))
 
@@ -192,7 +208,7 @@ async def test_content_length_preflight_enforced() -> None:
         return fake_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request(max_response_bytes=100))
@@ -208,7 +224,7 @@ async def test_streamed_overflow_enforced() -> None:
         return fake_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request(max_response_bytes=50))
@@ -223,7 +239,7 @@ async def test_socket_closes_after_success() -> None:
         return fake_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         await transport.fetch(_request())
 
@@ -238,7 +254,7 @@ async def test_socket_closes_after_failure() -> None:
         return fake_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         with pytest.raises(WebContentCaptureError):
             await transport.fetch(_request(max_response_bytes=10))
@@ -272,7 +288,7 @@ async def test_content_length_body_split_across_recv() -> None:
     fake_sock = FakeStreamSocket(payload, recv_sizes=[20, 20, 200])
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(
             connect_factory=lambda *_args: fake_sock,
         )
@@ -288,7 +304,7 @@ async def test_transport_stops_exactly_at_content_length() -> None:
     fake_sock = FakeStreamSocket(payload)
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(
             connect_factory=lambda *_args: fake_sock,
         )
@@ -302,7 +318,7 @@ async def test_premature_eof_rejected() -> None:
     fake_sock = FakeStreamSocket(header)
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -317,7 +333,7 @@ async def test_premature_eof_rejected() -> None:
 async def test_invalid_content_length_rejected(content_length: str) -> None:
     fake_sock = FakeStreamSocket(_http_bytes(200, {"Content-Length": content_length}, b""))
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -335,7 +351,7 @@ async def test_conflicting_duplicate_content_length_rejected() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -353,7 +369,7 @@ async def test_te_plus_cl_rejected() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -364,7 +380,7 @@ async def test_te_plus_cl_rejected() -> None:
 async def test_valid_chunked_response_decoded() -> None:
     fake_sock = FakeStreamSocket(_chunked_http_bytes(200, [b"hello", b" world"]))
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         response = await transport.fetch(_request())
     assert response.body == b"hello world"
@@ -382,7 +398,7 @@ async def test_chunk_extensions_supported() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         response = await transport.fetch(_request())
     assert response.body == b"hello"
@@ -393,7 +409,7 @@ async def test_chunked_body_split_across_recv_boundaries() -> None:
     payload = _chunked_http_bytes(200, [b"abc", b"def"])
     fake_sock = FakeStreamSocket(payload, recv_sizes=[1, 1, 1, 200])
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         response = await transport.fetch(_request())
     assert response.body == b"abcdef"
@@ -410,7 +426,7 @@ async def test_malformed_chunk_size_rejected() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -429,7 +445,7 @@ async def test_missing_chunk_crlf_rejected() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -447,7 +463,7 @@ async def test_missing_zero_chunk_rejected() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -458,7 +474,7 @@ async def test_missing_zero_chunk_rejected() -> None:
 async def test_chunked_decoded_overflow_rejected() -> None:
     fake_sock = FakeStreamSocket(_chunked_http_bytes(200, [b"x" * 100]))
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request(max_response_bytes=50))
@@ -470,7 +486,7 @@ async def test_oversized_trailers_rejected() -> None:
     trailers = "X-Trailer: " + ("a" * 5000) + "\r\n"
     fake_sock = FakeStreamSocket(_chunked_http_bytes(200, [b"ok"], trailers=trailers))
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -490,7 +506,7 @@ async def test_unsupported_transfer_encoding_rejected() -> None:
     )
     fake_sock = FakeStreamSocket(raw)
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -509,7 +525,7 @@ async def test_first_connect_failure_second_ip_success() -> None:
         return good_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         response = await transport.fetch(
             _request(approved_ips=("1.1.1.1", "93.184.216.34")),
@@ -527,7 +543,11 @@ async def test_first_tls_failure_second_ip_success() -> None:
         connections.append(host)
         return good_sock
 
-    def wrap_socket(sock: socket.socket, server_hostname: str | None = None) -> socket.socket:
+    def wrap_socket(
+        sock: socket.socket,
+        server_hostname: str | None = None,
+        **kwargs: object,
+    ) -> socket.socket:
         if connections[-1] == "1.1.1.1":
             raise ssl.SSLError("tls failed")
         return sock
@@ -574,7 +594,7 @@ async def test_non_retryable_framing_error_skips_next_ip() -> None:
         return bad_sock
 
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=connect_factory)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(
@@ -594,7 +614,7 @@ async def test_content_encoding_rejected(encoding: str) -> None:
         _http_bytes(200, {"Content-Encoding": encoding, "Content-Length": "2"}, b"ok"),
     )
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         with pytest.raises(WebContentCaptureError) as exc:
             await transport.fetch(_request())
@@ -607,7 +627,191 @@ async def test_content_encoding_identity_accepted() -> None:
         _http_bytes(200, {"Content-Encoding": "identity", "Content-Length": "2"}, b"ok"),
     )
     with patch("ssl.create_default_context") as mock_ctx:
-        mock_ctx.return_value.wrap_socket.side_effect = lambda sock, server_hostname=None: sock
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
         transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
         response = await transport.fetch(_request())
     assert response.body == b"ok"
+
+
+def test_connect_time_reduces_tls_handshake_timeout() -> None:
+    clock = FakeMonotonic(0.0)
+    fake_sock = FakeStreamSocket(_http_bytes(200, {"Content-Length": "2"}, b"ok"))
+    request = ApprovedHttpsRequest(
+        hostname="example.com",
+        port=443,
+        request_target="/",
+        approved_ips=("93.184.216.34",),
+        deadline=10.0,
+        max_response_bytes=1024,
+    )
+
+    def connect_factory(_host: str, _port: int, timeout: float) -> FakeStreamSocket:
+        assert timeout == pytest.approx(10.0)
+        clock.advance(9.0)
+        return fake_sock
+
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        _sync_pinned_fetch(request, "93.184.216.34", connect_factory, clock)
+
+    assert fake_sock.timeouts[0] == pytest.approx(1.0)
+
+
+def test_deadline_expires_after_connect_before_handshake() -> None:
+    clock = FakeMonotonic(0.0)
+    fake_sock = FakeStreamSocket(_http_bytes(200, {"Content-Length": "2"}, b"ok"))
+    request = ApprovedHttpsRequest(
+        hostname="example.com",
+        port=443,
+        request_target="/",
+        approved_ips=("93.184.216.34",),
+        deadline=1.0,
+        max_response_bytes=1024,
+    )
+
+    def connect_factory(_host: str, _port: int, _timeout: float) -> FakeStreamSocket:
+        clock.advance(1.5)
+        return fake_sock
+
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        with pytest.raises(WebContentCaptureError) as exc:
+            _sync_pinned_fetch(request, "93.184.216.34", connect_factory, clock)
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_TIMEOUT
+    assert exc.value.retryable is True
+
+
+@pytest.mark.asyncio
+async def test_cumulative_trailer_limit_exceeded() -> None:
+    trailer_lines = "".join(f"T-{index:02d}: {'a' * 90}\r\n" for index in range(60))
+    fake_sock = FakeStreamSocket(_chunked_http_bytes(200, [b"ok"], trailers=trailer_lines))
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID
+
+
+@pytest.mark.asyncio
+async def test_malformed_trailer_name_rejected() -> None:
+    trailers = " bad-name: value\r\n"
+    fake_sock = FakeStreamSocket(_chunked_http_bytes(200, [b"ok"], trailers=trailers))
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID
+
+
+@pytest.mark.asyncio
+async def test_trailer_obs_fold_rejected() -> None:
+    trailers = " X-Trailer: folded\r\n"
+    fake_sock = FakeStreamSocket(_chunked_http_bytes(200, [b"ok"], trailers=trailers))
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID
+
+
+@pytest.mark.asyncio
+async def test_non_ascii_chunk_size_rejected() -> None:
+    raw = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"\r\n"
+        b"\xff5\r\n"
+        b"hello\r\n"
+        b"0\r\n\r\n"
+    )
+    fake_sock = FakeStreamSocket(raw)
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID
+
+
+@pytest.mark.asyncio
+async def test_duplicate_transfer_encoding_rejected() -> None:
+    raw = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"Transfer-Encoding: chunked\r\n"
+        b"\r\n"
+        b"0\r\n\r\n"
+    )
+    fake_sock = FakeStreamSocket(raw)
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID
+
+
+@pytest.mark.asyncio
+async def test_duplicate_content_encoding_rejected() -> None:
+    raw = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Content-Encoding: identity\r\n"
+        b"Content-Encoding: identity\r\n"
+        b"Content-Length: 2\r\n"
+        b"\r\n"
+        b"ok"
+    )
+    fake_sock = FakeStreamSocket(raw)
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_CONTENT_ENCODING_UNSUPPORTED
+
+
+@pytest.mark.parametrize(
+    "raw_headers",
+    [
+        b"Content-Length : 5\r\n",
+        b"Content Length: 5\r\n",
+        b": value\r\n",
+        b"name\t: value\r\n",
+    ],
+)
+@pytest.mark.asyncio
+async def test_invalid_header_name_whitespace_rejected(raw_headers: bytes) -> None:
+    raw = b"HTTP/1.1 200 OK\r\n" + raw_headers + b"\r\n" + b"12345"
+    fake_sock = FakeStreamSocket(raw)
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID
+
+
+@pytest.mark.parametrize(
+    "status_line",
+    [
+        "XYZ 200 OK",
+        "HTTP/2 200",
+        "HTTP/1.1 OK",
+        "HTTP/1.1 20",
+        "HTTP/1.1 2000",
+        "HTTP/1.1 999",
+    ],
+)
+@pytest.mark.asyncio
+async def test_invalid_status_line_rejected(status_line: str) -> None:
+    raw = f"{status_line}\r\nContent-Length: 2\r\n\r\nok".encode("ascii")
+    fake_sock = FakeStreamSocket(raw)
+    with patch("ssl.create_default_context") as mock_ctx:
+        mock_ctx.return_value.wrap_socket.side_effect = _wrap_passthrough
+        transport = PinnedHttpsTransport(connect_factory=lambda *_args: fake_sock)
+        with pytest.raises(WebContentCaptureError) as exc:
+            await transport.fetch(_request())
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID

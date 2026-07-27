@@ -162,6 +162,27 @@ class SecureHttpWebContentCapture:
         self._clock = clock or (lambda: datetime.now(UTC))
         self._transport_fetch_count = transport_fetch_count
 
+    async def _fetch_with_deadline(
+        self,
+        approved_request: ApprovedHttpsRequest,
+    ) -> RawHttpsResponse:
+        remaining = approved_request.deadline - self._monotonic()
+        if remaining <= 0:
+            raise WebContentCaptureError(
+                WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                retryable=True,
+            )
+        try:
+            return await asyncio.wait_for(
+                self._transport.fetch(approved_request),
+                timeout=remaining,
+            )
+        except asyncio.TimeoutError:
+            raise WebContentCaptureError(
+                WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                retryable=True,
+            ) from None
+
     async def capture(self, request: WebContentCaptureRequest) -> CapturedWebContent:
         try:
             return await self._capture_impl(request)
@@ -201,7 +222,7 @@ class SecureHttpWebContentCapture:
                 )
             current = approved.canonical
 
-            raw = await self._transport.fetch(
+            raw = await self._fetch_with_deadline(
                 ApprovedHttpsRequest(
                     hostname=approved.hostname,
                     port=approved.port,
@@ -323,6 +344,12 @@ class SecureHttpWebContentCapture:
 
         final = current
         fetched_at = self._clock()
+
+        if deadline - self._monotonic() <= 0:
+            raise WebContentCaptureError(
+                WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                retryable=True,
+            )
 
         return CapturedWebContent(
             safe_display_url=final.safe_display_url,

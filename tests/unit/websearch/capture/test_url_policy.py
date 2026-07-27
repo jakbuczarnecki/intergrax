@@ -10,6 +10,7 @@ from intergrax.websearch.capture.contracts import (
     WebContentCaptureError,
     WebContentCaptureErrorCode,
 )
+from intergrax.websearch.capture.http_transport import ApprovedHttpsRequest
 from intergrax.websearch.capture.url_policy import WebUrlAccessPolicy
 
 pytestmark = pytest.mark.unit
@@ -441,3 +442,49 @@ async def test_transport_not_called_after_rejection() -> None:
     with pytest.raises(WebContentCaptureError):
         await policy.approve_target(canonical)
     assert fetch_count == []
+
+
+_PRIVATE_URL = "https://example.com/private?q=secret-token"
+_PRIVATE_IP = "93.184.216.34"
+
+
+def test_canonical_url_repr_hides_private_url() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize(_PRIVATE_URL)
+    rendered = repr(canonical)
+    assert "secret-token" not in rendered
+    assert "?q=" not in rendered
+    assert "private" not in rendered
+    assert canonical.hostname in rendered
+    assert canonical.fingerprint in rendered
+
+
+@pytest.mark.asyncio
+async def test_approved_target_repr_hides_query_and_ip() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize(_PRIVATE_URL)
+    approved = await policy.approve_target(canonical)
+    rendered = repr(approved)
+    assert "secret-token" not in rendered
+    assert "?q=" not in rendered
+    assert _PRIVATE_IP not in rendered
+    assert approved.hostname in rendered
+    assert canonical.fingerprint in rendered
+
+
+def test_approved_https_request_repr_hides_query_and_ip() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize(_PRIVATE_URL)
+    request = ApprovedHttpsRequest(
+        hostname=canonical.hostname,
+        port=canonical.port,
+        request_target=canonical.request_target,
+        approved_ips=(_PRIVATE_IP,),
+        deadline=1.0,
+        max_response_bytes=1024,
+    )
+    rendered = repr(request)
+    assert "secret-token" not in rendered
+    assert "?q=" not in rendered
+    assert _PRIVATE_IP not in rendered
+    assert "approved_ip_count=1" in rendered

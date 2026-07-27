@@ -182,7 +182,7 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
 | `1B-5-4` | Slack explicit Web URL intake | PLANNED |
 
-Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../docs/architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` review gate: audit `LKW-WORKSPACE-CONTENTS-1B-5-1-C1`; LKW intake (`1B-5-2` onward) must not start until review accepts the capture contract.
+Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../docs/architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` review gate: audit `LKW-WORKSPACE-CONTENTS-1B-5-1-C2`; LKW intake (`1B-5-2` onward) must not start until review accepts the capture contract.
 
 Current review gate for `1B-4-2` remains unchanged — audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C2` before advancing the Slack Source Candidate slice; `1B-5-1` does not replace that gate.
 

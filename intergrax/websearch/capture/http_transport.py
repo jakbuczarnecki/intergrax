@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import socket
 import ssl
 import time
@@ -29,6 +30,8 @@ _RETRYABLE_IP_ERRORS = frozenset(
         WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
     },
 )
+_HEADER_TOKEN_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
+_ALLOWED_HTTP_VERSIONS = frozenset({"HTTP/1.0", "HTTP/1.1"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +42,13 @@ class ApprovedHttpsRequest:
     approved_ips: tuple[str, ...]
     deadline: float
     max_response_bytes: int
+
+    def __repr__(self) -> str:
+        return (
+            f"ApprovedHttpsRequest(hostname={self.hostname!r}, port={self.port}, "
+            f"approved_ip_count={len(self.approved_ips)}, "
+            f"max_response_bytes={self.max_response_bytes})"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,18 +104,40 @@ def _build_request_bytes(hostname: str, port: int, request_target: str) -> bytes
     return "\r\n".join(lines).encode("ascii")
 
 
+def _framing_invalid() -> WebContentCaptureError:
+    return WebContentCaptureError(
+        WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
+    )
+
+
 def _parse_status_line(line: str) -> int:
     parts = line.split(" ", 2)
     if len(parts) < 2:
-        raise WebContentCaptureError(
-            WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-        )
+        raise _framing_invalid()
+    version = parts[0]
+    if version not in _ALLOWED_HTTP_VERSIONS:
+        raise _framing_invalid()
+    status_str = parts[1]
+    if len(status_str) != 3 or not status_str.isdigit():
+        raise _framing_invalid()
+    status_code = int(status_str)
+    if status_code < 100 or status_code > 599:
+        raise _framing_invalid()
+    return status_code
+
+
+def _validate_header_name(name: str) -> None:
+    if not name or name != name.strip():
+        raise _framing_invalid()
+    if not _HEADER_TOKEN_RE.match(name):
+        raise _framing_invalid()
+
+
+def _decode_chunk_size_line(line_bytes: bytes) -> str:
     try:
-        return int(parts[1])
-    except ValueError:
-        raise WebContentCaptureError(
-            WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-        )
+        return line_bytes[:-2].decode("ascii", errors="strict")
+    except UnicodeDecodeError:
+        raise _framing_invalid() from None
 
 
 def _normalize_header_value(value: str) -> str:
@@ -135,12 +167,11 @@ def _validate_content_length_values(values: list[str]) -> str:
 
 
 def _validate_content_encoding_values(values: list[str]) -> str:
-    normalized = [_normalize_header_value(value).lower() for value in values]
-    unique = set(normalized)
-    if len(unique) > 1:
+    if len(values) > 1:
         raise WebContentCaptureError(
             WebContentCaptureErrorCode.WEB_URL_CONTENT_ENCODING_UNSUPPORTED,
         )
+    normalized = [_normalize_header_value(value).lower() for value in values]
     encoding = normalized[0]
     if encoding and encoding != "identity":
         raise WebContentCaptureError(
@@ -150,19 +181,13 @@ def _validate_content_encoding_values(values: list[str]) -> str:
 
 
 def _validate_transfer_encoding_values(values: list[str]) -> str | None:
-    normalized = [_normalize_header_value(value).lower() for value in values]
-    unique = set(normalized)
-    if len(unique) > 1:
-        raise WebContentCaptureError(
-            WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-        )
-    if not normalized:
+    if len(values) > 1:
+        raise _framing_invalid()
+    if not values:
         return None
-    encoding = normalized[0]
+    encoding = _normalize_header_value(values[0]).lower()
     if encoding != "chunked":
-        raise WebContentCaptureError(
-            WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-        )
+        raise _framing_invalid()
     return encoding
 
 
@@ -269,11 +294,10 @@ def _read_headers(
                 WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
             )
         if ":" not in line:
-            raise WebContentCaptureError(
-                WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-            )
+            raise _framing_invalid()
         name, value = line.split(":", 1)
-        header_entries.append((name.strip().lower(), value))
+        _validate_header_name(name)
+        header_entries.append((name.lower(), value))
 
     headers = _finalize_headers(header_entries)
     return status_code, headers, remainder
@@ -394,7 +418,7 @@ def _read_chunked_body(
                     WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
                 )
 
-        line = line_bytes[:-2].decode("ascii", errors="strict")
+        line = _decode_chunk_size_line(line_bytes)
         size_part = line.split(";", 1)[0].strip()
         if not size_part:
             raise WebContentCaptureError(
@@ -412,6 +436,7 @@ def _read_chunked_body(
             )
 
         if chunk_size == 0:
+            trailer_total_bytes = 0
             while True:
                 line_bytes = bytearray()
                 while True:
@@ -427,22 +452,24 @@ def _read_chunked_body(
                             retryable=retryable,
                         )
                         if not byte:
-                            raise WebContentCaptureError(
-                                WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-                            )
+                            raise _framing_invalid()
                     line_bytes.extend(byte)
                     if line_bytes.endswith(b"\r\n"):
                         break
                     if len(line_bytes) > _MAX_TRAILER_BYTES:
-                        raise WebContentCaptureError(
-                            WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-                        )
+                        raise _framing_invalid()
+                trailer_total_bytes += len(line_bytes)
+                if trailer_total_bytes > _MAX_TRAILER_BYTES:
+                    raise _framing_invalid()
                 if line_bytes == b"\r\n":
                     return bytes(body)
-                if len(line_bytes) > _MAX_TRAILER_BYTES:
-                    raise WebContentCaptureError(
-                        WebContentCaptureErrorCode.WEB_URL_RESPONSE_FRAMING_INVALID,
-                    )
+                trailer_line = line_bytes[:-2].decode("ascii", errors="strict")
+                if trailer_line[0] in " \t":
+                    raise _framing_invalid()
+                if ":" not in trailer_line:
+                    raise _framing_invalid()
+                trailer_name, _trailer_value = trailer_line.split(":", 1)
+                _validate_header_name(trailer_name)
 
         if chunk_size > max_response_bytes - len(body):
             raise WebContentCaptureError(
@@ -471,11 +498,6 @@ def _read_body_bounded(
     monotonic: MonotonicClock,
     retryable: bool,
 ) -> bytes:
-    if len(initial_body) > max_response_bytes:
-        raise WebContentCaptureError(
-            WebContentCaptureErrorCode.WEB_URL_CONTENT_TOO_LARGE,
-        )
-
     transfer_encoding = headers.get("transfer-encoding")
     if transfer_encoding:
         return _read_chunked_body(
@@ -485,6 +507,11 @@ def _read_body_bounded(
             deadline=deadline,
             monotonic=monotonic,
             retryable=retryable,
+        )
+
+    if len(initial_body) > max_response_bytes:
+        raise WebContentCaptureError(
+            WebContentCaptureErrorCode.WEB_URL_CONTENT_TOO_LARGE,
         )
 
     content_length_raw = headers.get("content-length")
@@ -525,8 +552,15 @@ def _sync_pinned_fetch(
     try:
         timeout = _remaining_seconds(request.deadline, monotonic)
         sock = connect_factory(connect_ip, request.port, timeout)
+        sock.settimeout(_remaining_seconds(request.deadline, monotonic))
         context = ssl.create_default_context()
-        ssl_sock = context.wrap_socket(sock, server_hostname=request.hostname)
+        ssl_sock = context.wrap_socket(
+            sock,
+            server_hostname=request.hostname,
+            do_handshake_on_connect=False,
+        )
+        ssl_sock.settimeout(_remaining_seconds(request.deadline, monotonic))
+        ssl_sock.do_handshake()
         ssl_sock.settimeout(_remaining_seconds(request.deadline, monotonic))
         request_bytes = _build_request_bytes(
             request.hostname,
@@ -560,6 +594,11 @@ def _sync_pinned_fetch(
         if headers_received and exc.retryable:
             raise WebContentCaptureError(exc.code, retryable=False) from None
         raise
+    except socket.timeout:
+        raise WebContentCaptureError(
+            WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+            retryable=not headers_received,
+        )
     except ssl.SSLError:
         raise WebContentCaptureError(
             WebContentCaptureErrorCode.WEB_URL_TLS_FAILED,

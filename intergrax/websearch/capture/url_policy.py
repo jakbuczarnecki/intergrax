@@ -38,6 +38,12 @@ class CanonicalUrl:
     request_target: str
     scheme: str
 
+    def __repr__(self) -> str:
+        return (
+            f"CanonicalUrl(hostname={self.hostname!r}, port={self.port}, "
+            f"fingerprint={self.fingerprint!r})"
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class ApprovedTarget:
@@ -46,6 +52,13 @@ class ApprovedTarget:
     request_target: str
     approved_ips: tuple[str, ...]
     canonical: CanonicalUrl
+
+    def __repr__(self) -> str:
+        return (
+            f"ApprovedTarget(hostname={self.hostname!r}, port={self.port}, "
+            f"approved_ip_count={len(self.approved_ips)}, "
+            f"fingerprint={self.canonical.fingerprint!r})"
+        )
 
 
 DnsResolver = Callable[[str], Awaitable[tuple[str, ...]]]

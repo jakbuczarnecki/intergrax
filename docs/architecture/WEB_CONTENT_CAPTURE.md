@@ -130,11 +130,14 @@ Supported body framing modes:
 Rejected framing:
 
 - conflicting duplicate `Content-Length` values
+- duplicate `Transfer-Encoding` or `Content-Encoding` headers (even when values match)
 - `Transfer-Encoding` combined with `Content-Length`
 - multiple `Location` headers
-- malformed header lines / obs-fold
+- malformed header lines / obs-fold / invalid header-name token grammar
+- invalid HTTP status line (only `HTTP/1.0` / `HTTP/1.1` with three-digit status `100`–`599`)
 - unsupported `Transfer-Encoding` codings (for example `gzip`)
 - premature EOF before complete `Content-Length` body
+- cumulative chunked trailer block exceeding the trailer byte limit
 
 Body is read in bounded chunks under the global response size limit.
 
@@ -145,12 +148,18 @@ One monotonic deadline covers the entire capture operation:
 - URL canonicalization
 - DNS resolution (`approve_target`)
 - connect attempts across approved IPs
-- TLS handshake
+- TLS handshake (remaining time recomputed after connect)
+- request send (remaining time recomputed after handshake)
 - header and body reads (including slowloris protection — partial reads do not reset the full timeout)
 - redirects (same deadline, not a fresh timeout window)
 - decode, extraction and normalization
+- final result check before returning `CapturedWebContent`
+
+The capture service enforces the deadline independently of transport backends via `asyncio.wait_for` around each transport fetch. Connect, TLS handshake, and send each recompute remaining time from the same absolute deadline.
 
 DNS or extraction exceeding remaining time → `web_url_timeout` (`retryable=true`); transport call count remains `0` when DNS times out before any connect.
+
+Private locator structures (`CanonicalUrl`, `ApprovedTarget`, `ApprovedHttpsRequest`) use safe `repr` that omits query strings, full private URLs, request targets, and IP addresses.
 
 ### Content-Encoding
 

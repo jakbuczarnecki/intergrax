@@ -895,3 +895,68 @@ async def test_extraction_exceeds_remaining_deadline(monkeypatch: pytest.MonkeyP
             WebContentCaptureRequest(url="https://example.com/page", timeout_seconds=5),
         )
     assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_TIMEOUT
+
+
+async def test_service_enforces_timeout_on_non_cooperative_transport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import asyncio
+
+    call_count = 0
+    original_wait_for = asyncio.wait_for
+
+    async def timeout_on_transport(
+        coro: object,
+        timeout: float | None = None,
+        **kwargs: object,
+    ) -> object:
+        nonlocal call_count
+        call_count += 1
+        if call_count >= 2:
+            if hasattr(coro, "close"):
+                coro.close()  # type: ignore[union-attr]
+            raise asyncio.TimeoutError
+        return await original_wait_for(coro, timeout=timeout)  # type: ignore[arg-type]
+
+    class HangingTransport:
+        async def fetch(self, request: ApprovedHttpsRequest) -> RawHttpsResponse:
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+    monkeypatch.setattr(asyncio, "wait_for", timeout_on_transport)
+    service = SecureHttpWebContentCapture(
+        policy=WebUrlAccessPolicy(dns_resolver=_public_resolver),
+        transport=HangingTransport(),
+    )
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(
+            WebContentCaptureRequest(url="https://example.com/page", timeout_seconds=5),
+        )
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_TIMEOUT
+    assert exc.value.retryable is True
+
+
+async def test_deadline_checked_before_final_result() -> None:
+    clock = FakeMonotonic(0.0)
+
+    class AdvanceClockTransport:
+        async def fetch(self, request: ApprovedHttpsRequest) -> RawHttpsResponse:
+            clock.advance(100.0)
+            return RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/plain"},
+                body=b"late but processed",
+                content_bytes=0,
+            )
+
+    service = SecureHttpWebContentCapture(
+        policy=WebUrlAccessPolicy(dns_resolver=_public_resolver),
+        transport=AdvanceClockTransport(),
+        monotonic=clock,
+    )
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(
+            WebContentCaptureRequest(url="https://example.com/page", timeout_seconds=5),
+        )
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_TIMEOUT
+    assert exc.value.retryable is True
