@@ -679,6 +679,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 16 | **TOKEN-7A** | Advisory recommendation contract and policy-only recommender — **Done / Closed** |
 | 17 | **TOKEN-7B** | Advisory recommendation evaluation and report pack — **Done / Closed** |
 | 18 | **TOKEN-7C** | Policy-gated advisory integration surface — **Done / Closed** |
+| 19 | **TOKEN-7D** | Advisory policy presets and resolver — **Done / Closed** |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -1177,6 +1178,64 @@ TOKEN-7 — broader runtime/adaptive integration remains future work; no product
 
 **Next decision:** choose the next Token Optimization-only block; production auto-apply remains forbidden until explicitly designed and reviewed.
 
+#### TOKEN-7D — advisory policy presets and resolver
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add named advisory policy presets and a deterministic resolver that maps each preset to an explicit `TokenOptimizationAdvisoryIntegrationPolicy` without adding global/env/YAML configuration or auto-apply behavior.
+
+**Deliverables:**
+
+- advisory policy preset enum
+- advisory policy overrides contract
+- advisory policy resolution contract
+- deterministic advisory policy resolver
+- redaction-safe policy resolution dict helper
+- deterministic policy resolution text formatter
+- synthetic advisory policy corpus
+- focused advisory policy tests
+- integration checks with TOKEN-7C gate
+- architecture / feature plan documentation updates
+
+**Closeout:**
+
+- advisory policy preset enum added
+- advisory policy overrides contract added
+- advisory policy resolution contract added
+- deterministic policy resolver added
+- disabled preset covered
+- report-only preset covered
+- dry-run-safe preset covered
+- review-first preset covered
+- advisory-allowed-safe preset covered
+- safe override paths covered
+- disabled preset rejects overrides
+- resolved policies remain non-auto-apply
+- resolved policy serialization remains raw-content-safe
+- synthetic advisory policy corpus added
+- integration checks with TOKEN-7C gate added
+- no global config resolver added
+- no env/YAML config resolver added
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adaptive runtime integration added
+- no observability/HOS emission added
+- no benchmark CLI runner added
+- no semantic compression or LLM summarization added
+- no README or public adoption documentation updated
+
+**Roadmap/order update:**
+
+```text
+TOKEN-7A — Done / Closed
+TOKEN-7B — Done / Closed
+TOKEN-7C — Done / Closed
+TOKEN-7D — Done / Closed
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+```
+
+**Next decision:** choose the next Token Optimization-only block; production auto-apply remains forbidden until explicitly designed and reviewed.
+
 #### TOKEN-7C — policy-gated advisory integration surface
 
 **Status:** **Done / Closed**.
@@ -1552,6 +1611,7 @@ TOKEN-OPT-5E cache-aware compaction timing policy — Done / Closed
 TOKEN-7A    advisory recommendation contract and policy-only recommender — Done / Closed
 TOKEN-7B    advisory recommendation evaluation and report pack — Done / Closed
 TOKEN-7C    policy-gated advisory integration surface — Done / Closed
+TOKEN-7D    advisory policy presets and resolver — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 

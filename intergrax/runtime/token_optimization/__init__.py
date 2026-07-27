@@ -26,6 +26,14 @@ from intergrax.runtime.token_optimization.advisory_integration import (
     format_token_optimization_advisory_integration_result,
     token_optimization_advisory_integration_result_to_dict,
 )
+from intergrax.runtime.token_optimization.advisory_policy import (
+    TokenOptimizationAdvisoryPolicyOverrides,
+    TokenOptimizationAdvisoryPolicyPreset,
+    TokenOptimizationAdvisoryPolicyResolution,
+    format_token_optimization_advisory_policy_resolution,
+    resolve_token_optimization_advisory_policy,
+    token_optimization_advisory_policy_resolution_to_dict,
+)
 from intergrax.runtime.token_optimization.contracts import (
     CacheAwareCompactionDecision,
     CacheAwareCompactionReason,
@@ -253,6 +261,9 @@ __all__ = [
     "TokenOptimizationAdvisoryEvaluationResult",
     "TokenOptimizationAdvisoryEvaluationSummary",
     "TokenOptimizationAdvisoryGateReason",
+    "TokenOptimizationAdvisoryPolicyOverrides",
+    "TokenOptimizationAdvisoryPolicyPreset",
+    "TokenOptimizationAdvisoryPolicyResolution",
     "TokenOptimizationAdvisoryIntegrationMode",
     "TokenOptimizationAdvisoryIntegrationPolicy",
     "TokenOptimizationAdvisoryIntegrationRequest",
@@ -264,8 +275,11 @@ __all__ = [
     "evaluate_advisory_recommendation_cases",
     "evaluate_policy_gated_advisory_request",
     "format_token_optimization_advisory_integration_result",
+    "format_token_optimization_advisory_policy_resolution",
     "format_token_optimization_advisory_report",
+    "resolve_token_optimization_advisory_policy",
     "token_optimization_advisory_integration_result_to_dict",
+    "token_optimization_advisory_policy_resolution_to_dict",
     "token_optimization_advisory_report_to_dict",
     "TokenOptimizationAttribution",
     "build_prefix_snapshot",
