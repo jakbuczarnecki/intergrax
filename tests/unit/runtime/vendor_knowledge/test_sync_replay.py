@@ -384,3 +384,203 @@ async def test_reconciliation_cas_uses_loaded_checkpoint_expectation() -> None:
     )
     await coordinator.reconcile_once(binding_id="binding-1")
     assert checkpoint.commit_calls[0]["expected_previous"] == previous
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_document_store_replay_after_state_crash_before_marker() -> None:
+    """Sink accepted delivery; state batch interrupted; replay completes without duplicates."""
+    from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+    from intergrax.runtime.vendor_knowledge.sync_document_store import (
+        DocumentStoreKnowledgeRemoteItemStateRepository,
+        DocumentStoreKnowledgeSourceLeaseRepository,
+        DocumentStoreKnowledgeSyncCheckpointRepository,
+    )
+
+    store = InMemoryDocumentStore()
+    lease = DocumentStoreKnowledgeSourceLeaseRepository(store)
+    checkpoint = DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    inner_state = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+
+    class _CrashOnceState:
+        def __init__(self) -> None:
+            self._failed = False
+
+        def get(self, *, tenant_id: str, binding_id: str, remote_id: str):
+            return inner_state.get(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                remote_id=remote_id,
+            )
+
+        def apply_batch(self, *, tenant_id: str, binding_id: str, delivery_id: str, states):
+            if not self._failed:
+                self._failed = True
+                if states:
+                    first = states[0]
+                    inner_state.apply_batch(
+                        tenant_id=tenant_id,
+                        binding_id=binding_id,
+                        delivery_id=delivery_id,
+                        states=(first,),
+                    )
+                    # Remove marker so batch looks incomplete after crash.
+                    store.delete(
+                        f"vendor_knowledge.remote_item.v1:{tenant_id}:{binding_id}",
+                        f"delivery:{delivery_id}",
+                    )
+                raise RuntimeError("crash before full state batch")
+            return inner_state.apply_batch(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                delivery_id=delivery_id,
+                states=states,
+            )
+
+    sink = IdempotentRecordingSink()
+    facade = RecordingFacade(
+        default_page=make_page(
+            changes=(make_change(remote_id="item-1"), make_change(remote_id="item-2")),
+            proposed_checkpoint=KnowledgeCursor(value="cp1"),
+        )
+    )
+    coordinator, *_ = _build(
+        facade=facade,
+        lease=lease,
+        checkpoint=checkpoint,
+        state=_CrashOnceState(),
+        sink=sink,
+    )
+    with pytest.raises(VendorKnowledgeError):
+        await coordinator.sync_once(binding_id="binding-1")
+    assert len(sink.durable_delivery_ids) == 1
+    result = await coordinator.sync_once(binding_id="binding-1")
+    assert result.status.value == "completed"
+    assert len(sink.durable_delivery_ids) == 1
+    assert sink.calls[0].delivery_id == result.delivery_id
+    assert checkpoint.get(tenant_id="tenant-1", binding_id="binding-1") is not None
+    assert (
+        inner_state.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="item-2")
+        is not None
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_document_store_replay_after_checkpoint_crash() -> None:
+    """States+marker durable; checkpoint commit fails once; replay commits checkpoint."""
+    from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+    from intergrax.runtime.vendor_knowledge.sync_document_store import (
+        DocumentStoreKnowledgeRemoteItemStateRepository,
+        DocumentStoreKnowledgeSourceLeaseRepository,
+        DocumentStoreKnowledgeSyncCheckpointRepository,
+    )
+
+    store = InMemoryDocumentStore()
+    lease = DocumentStoreKnowledgeSourceLeaseRepository(store)
+    inner_checkpoint = DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    state = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+
+    class _FailOnceCheckpoint:
+        def __init__(self) -> None:
+            self._failed = False
+
+        def get(self, *, tenant_id: str, binding_id: str):
+            return inner_checkpoint.get(tenant_id=tenant_id, binding_id=binding_id)
+
+        def commit(self, checkpoint, *, expected_previous):
+            if not self._failed:
+                self._failed = True
+                raise RuntimeError("crash before checkpoint commit")
+            return inner_checkpoint.commit(
+                checkpoint,
+                expected_previous=expected_previous,
+            )
+
+    sink = IdempotentRecordingSink()
+    coordinator, *_ = _build(
+        lease=lease,
+        checkpoint=_FailOnceCheckpoint(),
+        state=state,
+        sink=sink,
+    )
+    with pytest.raises(VendorKnowledgeError):
+        await coordinator.sync_once(binding_id="binding-1")
+    assert len(sink.durable_delivery_ids) == 1
+    result = await coordinator.sync_once(binding_id="binding-1")
+    assert result.status.value == "completed"
+    assert result.checkpoint_advanced is True
+    assert len(sink.durable_delivery_ids) == 1
+    assert inner_checkpoint.get(tenant_id="tenant-1", binding_id="binding-1") is not None
+
+
+@pytest.mark.unit
+def test_document_store_stale_checkpoint_and_lease_token() -> None:
+    from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCheckpointConflict,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_document_store import (
+        DocumentStoreKnowledgeSourceLeaseRepository,
+        DocumentStoreKnowledgeSyncCheckpointRepository,
+    )
+
+    store = InMemoryDocumentStore()
+    checkpoints = DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    first = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="a"),
+    )
+    second = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="b"),
+    )
+    checkpoints.commit(first, expected_previous=None)
+    checkpoints.commit(second, expected_previous=first)
+    with pytest.raises(KnowledgeSyncCheckpointConflict):
+        checkpoints.commit(
+            KnowledgeSyncCheckpoint(
+                tenant_id="tenant-1",
+                binding_id="binding-1",
+                binding_configuration_version=1,
+                cursor=KnowledgeCursor(value="stale"),
+            ),
+            expected_previous=first,
+        )
+
+    clock = {"now": 1.0}
+    tokens = iter(["lease-a", "lease-probe", "lease-b", "lease-busy-probe"])
+    leases = DocumentStoreKnowledgeSourceLeaseRepository(
+        store,
+        clock=lambda: clock["now"],
+        token_factory=lambda: next(tokens),
+    )
+    lease_a = leases.acquire(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        owner_id="owner-a",
+        ttl_seconds=5,
+    )
+    assert lease_a is not None
+    clock["now"] = 10.0
+    lease_b = leases.acquire(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        owner_id="owner-b",
+        ttl_seconds=5,
+    )
+    assert lease_b is not None
+    leases.release(lease=lease_a)
+    assert (
+        leases.acquire(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            owner_id="owner-c",
+            ttl_seconds=5,
+        )
+        is None
+    )

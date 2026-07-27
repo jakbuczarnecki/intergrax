@@ -62,15 +62,6 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeSourceLeaseRepository,
     DocumentStoreKnowledgeSyncCheckpointRepository,
 )
-from intergrax.runtime.vendor_knowledge.sync_jobs import (
-    VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA,
-    VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
-    VendorKnowledgeSyncJob,
-    VendorKnowledgeSyncScheduler,
-    decode_vendor_knowledge_sync_job,
-    encode_vendor_knowledge_sync_job,
-    vendor_knowledge_sync_idempotency_key,
-)
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStatus,
@@ -82,14 +73,13 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncRunResult,
     KnowledgeSyncRunStatus,
 )
-from intergrax.runtime.vendor_knowledge.sync_runtime import (
-    VendorKnowledgeSyncRuntime,
-    build_vendor_knowledge_sync_runtime,
-)
-from intergrax.runtime.vendor_knowledge.sync_worker import (
+from intergrax.runtime.vendor_knowledge.sync_task import (
+    VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
+    VendorKnowledgeSyncDispatcher,
+    VendorKnowledgeSyncJob,
     VendorKnowledgeSyncWorkerOutput,
-    make_vendor_knowledge_sync_worker_handler,
-    register_vendor_knowledge_sync_worker_handler,
+    make_vendor_knowledge_sync_handler,
+    register_vendor_knowledge_sync_handler,
 )
 
 __all__ = [
@@ -137,7 +127,6 @@ __all__ = [
     "KnowledgeSyncRunStatus",
     "KnowledgeSyncSink",
     "KnowledgeVisibility",
-    "VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA",
     "VENDOR_KNOWLEDGE_SYNC_TASK_NAME",
     "VendorIntegrationResolver",
     "VendorKnowledgeAdapter",
@@ -146,15 +135,10 @@ __all__ = [
     "VendorKnowledgeFacade",
     "VendorKnowledgeFacadeService",
     "VendorKnowledgeSyncCoordinator",
+    "VendorKnowledgeSyncDispatcher",
     "VendorKnowledgeSyncJob",
-    "VendorKnowledgeSyncRuntime",
-    "VendorKnowledgeSyncScheduler",
     "VendorKnowledgeSyncWorkerOutput",
-    "build_vendor_knowledge_sync_runtime",
-    "decode_vendor_knowledge_sync_job",
-    "encode_vendor_knowledge_sync_job",
-    "make_vendor_knowledge_sync_worker_handler",
-    "register_vendor_knowledge_sync_worker_handler",
+    "make_vendor_knowledge_sync_handler",
+    "register_vendor_knowledge_sync_handler",
     "to_source_ref",
-    "vendor_knowledge_sync_idempotency_key",
 ]

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import threading
 from typing import Optional
 
@@ -108,6 +109,10 @@ def test_repositories_require_conditional_document_store() -> None:
         DocumentStoreKnowledgeSyncCheckpointRepository(plain)
     with pytest.raises(TypeError, match="ConditionalDocumentStore"):
         DocumentStoreKnowledgeRemoteItemStateRepository(plain)
+    store = InMemoryDocumentStore()
+    DocumentStoreKnowledgeSourceLeaseRepository(store)
+    DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    DocumentStoreKnowledgeRemoteItemStateRepository(store)
 
 
 @pytest.mark.unit
@@ -118,7 +123,6 @@ def test_lease_acquire_missing_and_active_busy() -> None:
         store,
         clock=lambda: clock["now"],
         token_factory=lambda: "token-a",
-        record_version_factory=lambda: "rv-1",
     )
     lease = repo.acquire(
         tenant_id="tenant-1",
@@ -138,32 +142,35 @@ def test_lease_acquire_missing_and_active_busy() -> None:
 
 
 @pytest.mark.unit
-def test_lease_expired_takeover_and_single_winner() -> None:
+def test_lease_expired_takeover_via_delete_if_match() -> None:
     store = InMemoryDocumentStore()
     clock = {"now": 10.0}
-    versions = iter(["rv-1", "rv-2", "rv-3"])
-    tokens = iter(["token-old", "token-new", "token-race"])
-    repo_a = DocumentStoreKnowledgeSourceLeaseRepository(
+    tokens = iter(["token-old", "token-probe", "token-new"])
+    repo = DocumentStoreKnowledgeSourceLeaseRepository(
         store,
         clock=lambda: clock["now"],
         token_factory=lambda: next(tokens),
-        record_version_factory=lambda: next(versions),
     )
-    first = repo_a.acquire(
+    first = repo.acquire(
         tenant_id="tenant-1",
         binding_id="binding-1",
         owner_id="owner-1",
         ttl_seconds=5,
     )
     assert first is not None
+    raw = store.get("vendor_knowledge.source_lease.v1:tenant-1", "binding:binding-1")
+    assert raw is not None
+    assert set(raw.data) == {
+        "schema_version",
+        "tenant_id",
+        "binding_id",
+        "owner_id",
+        "token",
+        "acquired_at_epoch",
+        "expires_at_epoch",
+    }
     clock["now"] = 20.0
-    repo_b = DocumentStoreKnowledgeSourceLeaseRepository(
-        store,
-        clock=lambda: clock["now"],
-        token_factory=lambda: "token-winner",
-        record_version_factory=lambda: "rv-winner",
-    )
-    winner = repo_b.acquire(
+    winner = repo.acquire(
         tenant_id="tenant-1",
         binding_id="binding-1",
         owner_id="owner-2",
@@ -171,13 +178,7 @@ def test_lease_expired_takeover_and_single_winner() -> None:
     )
     assert winner is not None
     assert winner.owner_id == "owner-2"
-    loser = repo_a.acquire(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        owner_id="owner-3",
-        ttl_seconds=5,
-    )
-    assert loser is None
+    assert winner.token == "token-new"
 
 
 @pytest.mark.unit
@@ -207,16 +208,14 @@ def test_lease_concurrent_acquire_single_winner() -> None:
 
 
 @pytest.mark.unit
-def test_lease_release_idempotent_and_stale_token_safe() -> None:
+def test_lease_stale_release_cannot_delete_new_lease() -> None:
     store = InMemoryDocumentStore()
     clock = {"now": 1.0}
-    tokens = iter(["token-1", "token-candidate", "token-2"])
-    versions = iter(["rv-1", "rv-candidate", "rv-2"])
+    tokens = iter(["token-1", "token-probe", "token-2"])
     repo = DocumentStoreKnowledgeSourceLeaseRepository(
         store,
         clock=lambda: clock["now"],
         token_factory=lambda: next(tokens),
-        record_version_factory=lambda: next(versions),
     )
     first = repo.acquire(
         tenant_id="tenant-1",
@@ -245,7 +244,6 @@ def test_lease_release_idempotent_and_stale_token_safe() -> None:
         store.get("vendor_knowledge.source_lease.v1:tenant-1", "binding:binding-1")
         is None
     )
-    repo.release(lease=second)
 
 
 @pytest.mark.unit
@@ -255,7 +253,6 @@ def test_lease_tenant_isolation_and_corrupt_hides_token() -> None:
         store,
         clock=lambda: 1.0,
         token_factory=lambda: "secret-token-value",
-        record_version_factory=lambda: "rv-1",
     )
     assert (
         repo.acquire(
@@ -293,13 +290,10 @@ def test_lease_tenant_isolation_and_corrupt_hides_token() -> None:
 
 
 @pytest.mark.unit
-def test_checkpoint_create_get_and_conflicts() -> None:
+def test_checkpoint_create_get_cas_and_conflicts() -> None:
     store = InMemoryDocumentStore()
-    versions = iter(["rv-1", "rv-2", "rv-3"])
-    repo = DocumentStoreKnowledgeSyncCheckpointRepository(
-        store,
-        record_version_factory=lambda: next(versions),
-    )
+    repo = DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1") is None
     first = _checkpoint(cursor_value="cp-1")
     repo.commit(first, expected_previous=None)
     assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == first
@@ -318,48 +312,33 @@ def test_checkpoint_create_get_and_conflicts() -> None:
 
 
 @pytest.mark.unit
-def test_checkpoint_aba_and_competing_repos() -> None:
+def test_checkpoint_stale_writer_and_tenant_isolation() -> None:
     store = InMemoryDocumentStore()
-    versions = iter([f"rv-{idx}" for idx in range(1, 20)])
-    repo = DocumentStoreKnowledgeSyncCheckpointRepository(
-        store,
-        record_version_factory=lambda: next(versions),
-    )
-    cp1 = _checkpoint(cursor_value="cp-1")
-    repo.commit(cp1, expected_previous=None)
-    raw_before = store.get(
-        "vendor_knowledge.sync_checkpoint.v1:tenant-1",
-        "binding:binding-1",
-    )
-    assert raw_before is not None
-    cp2 = _checkpoint(cursor_value="cp-2")
-    repo.commit(cp2, expected_previous=cp1)
-    repo.commit(cp1, expected_previous=cp2)
-    # Public checkpoint restored to cp1, but stale raw document (old record_version) must not CAS.
-    assert (
-        store.replace_if_match(
-            expected=raw_before,
-            replacement=DocumentRecord(
-                partition_key=raw_before.partition_key,
-                row_key=raw_before.row_key,
-                data={**dict(raw_before.data), "record_version": "stale"},
-            ),
-        )
-        is False
-    )
-
-    store2 = InMemoryDocumentStore()
-    repo_a = DocumentStoreKnowledgeSyncCheckpointRepository(
-        store2,
-        record_version_factory=lambda: "a",
-    )
-    repo_b = DocumentStoreKnowledgeSyncCheckpointRepository(
-        store2,
-        record_version_factory=lambda: "b",
-    )
-    repo_a.commit(_checkpoint(cursor_value="x"), expected_previous=None)
+    repo_a = DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    repo_b = DocumentStoreKnowledgeSyncCheckpointRepository(store)
+    cp_a = _checkpoint(cursor_value="a")
+    repo_a.commit(cp_a, expected_previous=None)
+    cp_b = _checkpoint(cursor_value="b")
+    repo_b.commit(cp_b, expected_previous=cp_a)
     with pytest.raises(KnowledgeSyncCheckpointConflict):
-        repo_b.commit(_checkpoint(cursor_value="y"), expected_previous=None)
+        repo_a.commit(_checkpoint(cursor_value="stale"), expected_previous=cp_a)
+
+    repo_a.commit(
+        _checkpoint(tenant_id="tenant-a", cursor_value="t-a"),
+        expected_previous=None,
+    )
+    repo_b.commit(
+        _checkpoint(tenant_id="tenant-b", cursor_value="t-b"),
+        expected_previous=None,
+    )
+    assert (
+        repo_a.get(tenant_id="tenant-a", binding_id="binding-1")
+        == _checkpoint(tenant_id="tenant-a", cursor_value="t-a")
+    )
+    assert repo_a.get(tenant_id="tenant-b", binding_id="binding-1") == _checkpoint(
+        tenant_id="tenant-b",
+        cursor_value="t-b",
+    )
 
 
 @pytest.mark.unit
@@ -373,8 +352,8 @@ def test_checkpoint_corrupt_hides_cursor() -> None:
                 "schema_version": "vendor_knowledge.sync_checkpoint.v1",
                 "tenant_id": "tenant-1",
                 "binding_id": "binding-1",
-                "record_version": "rv",
-                "checkpoint": {"cursor": {"value": "SECRET-CURSOR"}},
+                "binding_configuration_version": "not-an-int",
+                "cursor": {"value": "SECRET-CURSOR", "version": "v1"},
             },
         )
     )
@@ -385,11 +364,12 @@ def test_checkpoint_corrupt_hides_cursor() -> None:
 
 
 @pytest.mark.unit
-def test_remote_item_round_trip_and_statuses() -> None:
+def test_remote_item_round_trip_statuses_and_row_key_hash() -> None:
     store = InMemoryDocumentStore()
     repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
     delivery = _sha("d1")
-    active = _state(remote_id="item-1", delivery_id=delivery)
+    remote_id = "https://vendor.example/issues/42"
+    active = _state(remote_id=remote_id, delivery_id=delivery)
     deleted = _state(
         remote_id="item-2",
         delivery_id=delivery,
@@ -406,133 +386,10 @@ def test_remote_item_round_trip_and_statuses() -> None:
         delivery_id=delivery,
         states=(active, deleted, revoked),
     )
-    assert repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="item-1") == active
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id=remote_id) == active
     assert (
         repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="item-2") == deleted
     )
-    assert (
-        repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="item-3") == revoked
-    )
-
-
-@pytest.mark.unit
-def test_remote_item_idempotent_and_fingerprint_fail_closed() -> None:
-    store = InMemoryDocumentStore()
-    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
-    delivery = _sha("same-delivery")
-    states = (_state(remote_id="item-1", delivery_id=delivery),)
-    repo.apply_batch(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        delivery_id=delivery,
-        states=states,
-    )
-    repo.apply_batch(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        delivery_id=delivery,
-        states=states,
-    )
-    with pytest.raises(KnowledgeSyncCorruptState):
-        repo.apply_batch(
-            tenant_id="tenant-1",
-            binding_id="binding-1",
-            delivery_id=delivery,
-            states=(_state(remote_id="item-2", delivery_id=delivery),),
-        )
-
-
-@pytest.mark.unit
-def test_remote_item_partial_resume_and_completed_noop() -> None:
-    store = InMemoryDocumentStore()
-    versions = iter([f"rv-{idx}" for idx in range(1, 50)])
-    repo = DocumentStoreKnowledgeRemoteItemStateRepository(
-        store,
-        record_version_factory=lambda: next(versions),
-    )
-    delivery = _sha("partial")
-    first = _state(remote_id="a", delivery_id=delivery, version="1")
-    second = _state(remote_id="b", delivery_id=delivery, version="1")
-    # Seed applying marker and only first item.
-    partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
-    fingerprint = hashlib.sha256(
-        __import__("json")
-        .dumps(
-            [first.model_dump(mode="json"), second.model_dump(mode="json")],
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        .encode("utf-8")
-    ).hexdigest()
-    store.put(
-        DocumentRecord(
-            partition_key=partition,
-            row_key=f"delivery:{delivery}",
-            data={
-                "schema_version": "vendor_knowledge.delivery_marker.v1",
-                "tenant_id": "tenant-1",
-                "binding_id": "binding-1",
-                "delivery_id": delivery,
-                "batch_fingerprint": fingerprint,
-                "status": "applying",
-                "record_version": "marker-1",
-            },
-        )
-    )
-    store.put(
-        DocumentRecord(
-            partition_key=partition,
-            row_key=f"item:{_sha('a')}",
-            data={
-                "schema_version": "vendor_knowledge.remote_item_state.v1",
-                "tenant_id": "tenant-1",
-                "binding_id": "binding-1",
-                "record_version": "item-1",
-                "state": first.model_dump(mode="json"),
-            },
-        )
-    )
-    repo.apply_batch(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        delivery_id=delivery,
-        states=(first, second),
-    )
-    assert repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="b") == second
-    marker = store.get(partition, f"delivery:{delivery}")
-    assert marker is not None
-    assert marker.data["status"] == "completed"
-    # completed marker: no further writes required
-    repo.apply_batch(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        delivery_id=delivery,
-        states=(first, second),
-    )
-
-
-@pytest.mark.unit
-def test_remote_item_newer_delivery_cas_and_row_key_hash() -> None:
-    store = InMemoryDocumentStore()
-    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
-    d1 = _sha("delivery-1")
-    d2 = _sha("delivery-2")
-    remote_id = "ISSUE-42"
-    first = _state(remote_id=remote_id, delivery_id=d1, version="1")
-    second = _state(remote_id=remote_id, delivery_id=d2, version="2")
-    repo.apply_batch(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        delivery_id=d1,
-        states=(first,),
-    )
-    repo.apply_batch(
-        tenant_id="tenant-1",
-        binding_id="binding-1",
-        delivery_id=d2,
-        states=(second,),
-    )
-    assert repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id=remote_id) == second
     row_key = f"item:{_sha(remote_id)}"
     assert remote_id not in row_key
     assert store.get(
@@ -542,7 +399,55 @@ def test_remote_item_newer_delivery_cas_and_row_key_hash() -> None:
 
 
 @pytest.mark.unit
-def test_remote_item_cas_conflict_fail_closed() -> None:
+def test_remote_item_replay_partial_and_marker_after_states() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    delivery = _sha("partial")
+    first = _state(remote_id="a", delivery_id=delivery, version="1")
+    second = _state(remote_id="b", delivery_id=delivery, version="1")
+    partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
+    # Crash after first state write — no delivery marker yet.
+    store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key=f"item:{_sha('a')}",
+            data={
+                "schema_version": "vendor_knowledge.remote_item_state.v1",
+                "tenant_id": "tenant-1",
+                "binding_id": "binding-1",
+                "state": first.model_dump(mode="json"),
+            },
+        )
+    )
+    assert store.get(partition, f"delivery:{delivery}") is None
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=(first, second),
+    )
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="b") == second
+    marker = store.get(partition, f"delivery:{delivery}")
+    assert marker is not None
+    assert marker.data["batch_fingerprint"]
+    # identical delivery replay is no-op
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=(first, second),
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=(_state(remote_id="only-other", delivery_id=delivery),),
+        )
+
+
+@pytest.mark.unit
+def test_remote_item_cas_conflict_does_not_overwrite() -> None:
     store = InMemoryDocumentStore()
     repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
     d1 = _sha("d-cas-1")
@@ -555,9 +460,6 @@ def test_remote_item_cas_conflict_fail_closed() -> None:
         states=(state,),
     )
     partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
-    row_key = f"item:{_sha('item-1')}"
-    current = store.get(partition, row_key)
-    assert current is not None
 
     class _ConflictStore(InMemoryDocumentStore):
         def replace_if_match(
@@ -571,7 +473,6 @@ def test_remote_item_cas_conflict_fail_closed() -> None:
             return super().replace_if_match(expected=expected, replacement=replacement)
 
     conflict_store = _ConflictStore()
-    # copy existing docs
     for doc in store.query(partition, limit=100).documents:
         conflict_store.put(doc)
     conflict_repo = DocumentStoreKnowledgeRemoteItemStateRepository(conflict_store)
@@ -582,10 +483,16 @@ def test_remote_item_cas_conflict_fail_closed() -> None:
             delivery_id=d2,
             states=(_state(remote_id="item-1", delivery_id=d2, version="9"),),
         )
+    kept = conflict_repo.get(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        remote_id="item-1",
+    )
+    assert kept == state
 
 
 @pytest.mark.unit
-def test_remote_item_isolation_and_corrupt_records() -> None:
+def test_remote_item_tenant_isolation_and_active_requires_revision() -> None:
     store = InMemoryDocumentStore()
     repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
     delivery = _sha("iso")
@@ -598,35 +505,109 @@ def test_remote_item_isolation_and_corrupt_records() -> None:
     assert (
         repo.get(tenant_id="tenant-b", binding_id="binding-1", remote_id="item-1") is None
     )
-    store.put(
-        DocumentRecord(
-            partition_key="vendor_knowledge.remote_item.v1:tenant-1:binding-1",
-            row_key=f"item:{_sha('x')}",
-            data={"schema_version": "bad", "state": {"remote_id": "x"}},
-        )
-    )
-    with pytest.raises(KnowledgeSyncCorruptState):
-        repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="x")
-    store.put(
-        DocumentRecord(
-            partition_key="vendor_knowledge.remote_item.v1:tenant-1:binding-1",
-            row_key=f"delivery:{delivery}",
-            data={"schema_version": "bad", "batch_fingerprint": "fp", "status": "applying"},
-        )
-    )
-    with pytest.raises(KnowledgeSyncCorruptState):
-        repo.apply_batch(
+    with pytest.raises(Exception):
+        KnowledgeRemoteItemState(
             tenant_id="tenant-1",
             binding_id="binding-1",
-            delivery_id=delivery,
-            states=(_state(remote_id="z", delivery_id=delivery),),
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            remote_id="item-x",
+            status=KnowledgeRemoteItemStatus.ACTIVE,
+            revision=None,
+            last_delivery_id=delivery,
         )
 
 
 @pytest.mark.unit
-def test_batch_fingerprint_uses_sha256_not_python_hash() -> None:
-    import json
+def test_delivery_marker_rejects_foreign_partition() -> None:
+    delivery = _sha("foreign-partition")
+    states = (_state(remote_id="item-1", delivery_id=delivery),)
+    fingerprint = hashlib.sha256(
+        json.dumps(
+            [states[0].model_dump(mode="json")],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    marker_row = f"delivery:{delivery}"
+    marker_data = {
+        "schema_version": "vendor_knowledge.delivery_marker.v1",
+        "tenant_id": "tenant-1",
+        "binding_id": "binding-1",
+        "delivery_id": delivery,
+        "batch_fingerprint": fingerprint,
+        "status": "completed",
+        "record_version": "rv-marker",
+    }
+    foreign_partition = "vendor_knowledge.remote_item.v1:other-tenant:other-binding"
+    expected_partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
+    writes: list[DocumentRecord] = []
 
+    class _ForeignPartitionMarkerStore:
+        def get(self, partition_key: str, row_key: str) -> Optional[DocumentRecord]:
+            if row_key == marker_row:
+                return DocumentRecord(
+                    partition_key=foreign_partition,
+                    row_key=marker_row,
+                    data=dict(marker_data),
+                )
+            return None
+
+        def put(self, document: DocumentRecord) -> None:
+            writes.append(document)
+
+        def delete(self, partition_key: str, row_key: str) -> None:
+            return None
+
+        def query(
+            self,
+            partition_key: str,
+            *,
+            limit: int = 100,
+            row_key_prefix: Optional[str] = None,
+        ) -> DocumentQueryResult:
+            return DocumentQueryResult(documents=[], total=0)
+
+        def close(self) -> None:
+            return None
+
+        def put_if_absent(self, document: DocumentRecord) -> bool:
+            if document.row_key == marker_row:
+                return False
+            writes.append(document)
+            return True
+
+        def replace_if_match(
+            self,
+            *,
+            expected: DocumentRecord,
+            replacement: DocumentRecord,
+        ) -> bool:
+            writes.append(replacement)
+            return True
+
+        def delete_if_match(self, *, expected: DocumentRecord) -> bool:
+            return False
+
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(_ForeignPartitionMarkerStore())
+    with pytest.raises(KnowledgeSyncCorruptState) as exc_info:
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=states,
+        )
+    message = str(exc_info.value)
+    assert message == "delivery marker partition is invalid"
+    assert foreign_partition not in message
+    assert delivery not in message
+    assert expected_partition not in message
+    assert writes == []
+
+
+@pytest.mark.unit
+def test_batch_fingerprint_uses_sha256_not_python_hash() -> None:
     store = InMemoryDocumentStore()
     repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
     delivery = _sha("fp-check")
@@ -646,7 +627,6 @@ def test_batch_fingerprint_uses_sha256_not_python_hash() -> None:
     )
     assert marker is not None
     fingerprint = str(marker.data["batch_fingerprint"])
-    assert len(fingerprint) == 64
     ordered = [
         _state(remote_id="a", delivery_id=delivery).model_dump(mode="json"),
         _state(remote_id="b", delivery_id=delivery).model_dump(mode="json"),

@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import secrets
 import time
-import uuid
 from typing import Any, Callable, Mapping
 
 from pydantic import ValidationError
@@ -37,9 +37,22 @@ _LEASE_PARTITION_PREFIX = "vendor_knowledge.source_lease.v1"
 _CHECKPOINT_PARTITION_PREFIX = "vendor_knowledge.sync_checkpoint.v1"
 _ITEM_PARTITION_PREFIX = "vendor_knowledge.remote_item.v1"
 
+_MAX_LEASE_ACQUIRE_ATTEMPTS = 4
+
+_FORBIDDEN_SECRET_FIELDS: frozenset[str] = frozenset(
+    {
+        "access_token",
+        "refresh_token",
+        "api_key",
+        "password",
+        "client_secret",
+        "authorization_header",
+        "signed_download_url",
+    }
+)
+
 Clock = Callable[[], float]
 TokenFactory = Callable[[], str]
-RecordVersionFactory = Callable[[], str]
 
 
 def _default_clock() -> float:
@@ -47,11 +60,7 @@ def _default_clock() -> float:
 
 
 def _default_token_factory() -> str:
-    return uuid.uuid4().hex
-
-
-def _default_record_version_factory() -> str:
-    return str(uuid.uuid4())
+    return secrets.token_urlsafe(32)
 
 
 def _require_non_empty(value: str, *, field_name: str) -> str:
@@ -69,6 +78,14 @@ def _require_conditional_document_store(
             "vendor knowledge sync repositories require ConditionalDocumentStore"
         )
     return document_store
+
+
+def _reject_secret_fields(data: Mapping[str, Any], *, kind: str) -> None:
+    for key in _FORBIDDEN_SECRET_FIELDS:
+        if key in data:
+            raise KnowledgeSyncCorruptState(
+                f"{kind} must not contain secret-bearing fields"
+            )
 
 
 def _lease_partition_key(tenant_id: str) -> str:
@@ -129,14 +146,10 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
         *,
         clock: Clock | None = None,
         token_factory: TokenFactory | None = None,
-        record_version_factory: RecordVersionFactory | None = None,
     ) -> None:
         self._store = _require_conditional_document_store(document_store)
         self._clock = clock or _default_clock
         self._token_factory = token_factory or _default_token_factory
-        self._record_version_factory = (
-            record_version_factory or _default_record_version_factory
-        )
 
     def acquire(
         self,
@@ -152,67 +165,41 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
         if ttl_seconds < 1:
             raise ValueError("ttl_seconds must be >= 1")
 
-        token = self._token_factory()
-        token = _require_non_empty(str(token), field_name="token")
-        now = float(self._clock())
-        expires_at = now + float(ttl_seconds)
-        record_version = str(self._record_version_factory())
         partition_key = _lease_partition_key(cleaned_tenant)
         row_key = _lease_row_key(cleaned_binding)
-        candidate = DocumentRecord(
-            partition_key=partition_key,
-            row_key=row_key,
-            data={
-                "schema_version": _LEASE_SCHEMA,
-                "tenant_id": cleaned_tenant,
-                "binding_id": cleaned_binding,
-                "owner_id": cleaned_owner,
-                "token": token,
-                "record_version": record_version,
-                "expires_at_epoch": expires_at,
-            },
-            ttl_seconds=ttl_seconds,
-        )
-        if self._store.put_if_absent(candidate):
-            return KnowledgeSourceLeaseToken(
+
+        for _ in range(_MAX_LEASE_ACQUIRE_ATTEMPTS):
+            token = _require_non_empty(str(self._token_factory()), field_name="token")
+            now = float(self._clock())
+            candidate = self._lease_document(
                 tenant_id=cleaned_tenant,
                 binding_id=cleaned_binding,
                 owner_id=cleaned_owner,
                 token=token,
+                acquired_at_epoch=now,
+                expires_at_epoch=now + float(ttl_seconds),
+                ttl_seconds=ttl_seconds,
             )
+            if self._store.put_if_absent(candidate):
+                return KnowledgeSourceLeaseToken(
+                    tenant_id=cleaned_tenant,
+                    binding_id=cleaned_binding,
+                    owner_id=cleaned_owner,
+                    token=token,
+                )
 
-        existing = self._store.get(partition_key, row_key)
-        if existing is None:
-            return None
-        parsed = self._parse_lease_document(existing, expected_tenant=cleaned_tenant)
-        if float(self._clock()) < float(parsed["expires_at_epoch"]):
-            return None
-
-        takeover_version = str(self._record_version_factory())
-        takeover_token = _require_non_empty(str(self._token_factory()), field_name="token")
-        takeover_expires = float(self._clock()) + float(ttl_seconds)
-        replacement = DocumentRecord(
-            partition_key=partition_key,
-            row_key=row_key,
-            data={
-                "schema_version": _LEASE_SCHEMA,
-                "tenant_id": cleaned_tenant,
-                "binding_id": cleaned_binding,
-                "owner_id": cleaned_owner,
-                "token": takeover_token,
-                "record_version": takeover_version,
-                "expires_at_epoch": takeover_expires,
-            },
-            ttl_seconds=ttl_seconds,
-        )
-        if not self._store.replace_if_match(expected=existing, replacement=replacement):
-            return None
-        return KnowledgeSourceLeaseToken(
-            tenant_id=cleaned_tenant,
-            binding_id=cleaned_binding,
-            owner_id=cleaned_owner,
-            token=takeover_token,
-        )
+            existing = self._store.get(partition_key, row_key)
+            if existing is None:
+                continue
+            parsed = self._parse_lease_document(
+                existing,
+                expected_tenant=cleaned_tenant,
+            )
+            if float(self._clock()) < float(parsed["expires_at_epoch"]):
+                return None
+            if not self._store.delete_if_match(expected=existing):
+                continue
+        return None
 
     def release(self, *, lease: KnowledgeSourceLeaseToken) -> None:
         partition_key = _lease_partition_key(lease.tenant_id)
@@ -220,7 +207,10 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
         existing = self._store.get(partition_key, row_key)
         if existing is None:
             return
-        parsed = self._parse_lease_document(existing, expected_tenant=lease.tenant_id)
+        parsed = self._parse_lease_document(
+            existing,
+            expected_tenant=lease.tenant_id,
+        )
         if (
             parsed["token"] != lease.token
             or parsed["owner_id"] != lease.owner_id
@@ -229,6 +219,34 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
             return
         self._store.delete_if_match(expected=existing)
 
+    def _lease_document(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        owner_id: str,
+        token: str,
+        acquired_at_epoch: float,
+        expires_at_epoch: float,
+        ttl_seconds: int,
+    ) -> DocumentRecord:
+        data = {
+            "schema_version": _LEASE_SCHEMA,
+            "tenant_id": tenant_id,
+            "binding_id": binding_id,
+            "owner_id": owner_id,
+            "token": token,
+            "acquired_at_epoch": acquired_at_epoch,
+            "expires_at_epoch": expires_at_epoch,
+        }
+        _reject_secret_fields(data, kind="sync lease")
+        return DocumentRecord(
+            partition_key=_lease_partition_key(tenant_id),
+            row_key=_lease_row_key(binding_id),
+            data=data,
+            ttl_seconds=ttl_seconds,
+        )
+
     def _parse_lease_document(
         self,
         document: DocumentRecord,
@@ -236,13 +254,14 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
         expected_tenant: str,
     ) -> dict[str, Any]:
         data = _data_as_dict(document.data)
+        _reject_secret_fields(data, kind="sync lease")
         try:
             schema_version = data.get("schema_version")
             tenant_id = data.get("tenant_id")
             binding_id = data.get("binding_id")
             owner_id = data.get("owner_id")
             token = data.get("token")
-            record_version = data.get("record_version")
+            acquired_at = data.get("acquired_at_epoch")
             expires_at = data.get("expires_at_epoch")
             if schema_version != _LEASE_SCHEMA:
                 raise KnowledgeSyncCorruptState("sync lease schema is invalid")
@@ -258,8 +277,8 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
                 raise KnowledgeSyncCorruptState("sync lease owner identity is invalid")
             if not isinstance(token, str) or not token.strip():
                 raise KnowledgeSyncCorruptState("sync lease token is invalid")
-            if not isinstance(record_version, str) or not record_version.strip():
-                raise KnowledgeSyncCorruptState("sync lease record version is invalid")
+            if not isinstance(acquired_at, (int, float)):
+                raise KnowledgeSyncCorruptState("sync lease acquired_at is invalid")
             if not isinstance(expires_at, (int, float)):
                 raise KnowledgeSyncCorruptState("sync lease expiry is invalid")
         except KnowledgeSyncCorruptState:
@@ -271,7 +290,7 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
             "binding_id": str(binding_id).strip(),
             "owner_id": str(owner_id).strip(),
             "token": str(token).strip(),
-            "record_version": str(record_version).strip(),
+            "acquired_at_epoch": float(acquired_at),
             "expires_at_epoch": float(expires_at),
         }
 
@@ -279,16 +298,8 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
 class DocumentStoreKnowledgeSyncCheckpointRepository:
     """CAS checkpoint repository backed by ConditionalDocumentStore."""
 
-    def __init__(
-        self,
-        document_store: DocumentStore,
-        *,
-        record_version_factory: RecordVersionFactory | None = None,
-    ) -> None:
+    def __init__(self, document_store: DocumentStore) -> None:
         self._store = _require_conditional_document_store(document_store)
-        self._record_version_factory = (
-            record_version_factory or _default_record_version_factory
-        )
 
     def get(
         self,
@@ -304,7 +315,7 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
         )
         if document is None:
             return None
-        return self._public_checkpoint(
+        return self._parse_checkpoint(
             document,
             expected_tenant=cleaned_tenant,
             expected_binding=cleaned_binding,
@@ -316,42 +327,40 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
     ) -> None:
-        partition_key = _checkpoint_partition_key(checkpoint.tenant_id)
-        row_key = _checkpoint_row_key(checkpoint.binding_id)
-        if expected_previous is None:
-            document = self._to_document(checkpoint)
-            if not self._store.put_if_absent(document):
-                raise KnowledgeSyncCheckpointConflict("checkpoint create conflict")
+        if expected_previous is not None:
+            if (
+                expected_previous.tenant_id != checkpoint.tenant_id
+                or expected_previous.binding_id != checkpoint.binding_id
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "checkpoint identity must remain stable across commit"
+                )
+            expected_document = self._to_document(expected_previous)
+            replacement = self._to_document(checkpoint)
+            if not self._store.replace_if_match(
+                expected=expected_document,
+                replacement=replacement,
+            ):
+                raise KnowledgeSyncCheckpointConflict("checkpoint cas conflict")
             return
 
-        current = self._store.get(partition_key, row_key)
-        if current is None:
-            raise KnowledgeSyncCheckpointConflict("checkpoint missing for expected previous")
-        public = self._public_checkpoint(
-            current,
-            expected_tenant=checkpoint.tenant_id,
-            expected_binding=checkpoint.binding_id,
-        )
-        if public != expected_previous:
-            raise KnowledgeSyncCheckpointConflict("checkpoint expected previous mismatch")
-        replacement = self._to_document(checkpoint)
-        if not self._store.replace_if_match(expected=current, replacement=replacement):
-            raise KnowledgeSyncCheckpointConflict("checkpoint cas conflict")
+        document = self._to_document(checkpoint)
+        if not self._store.put_if_absent(document):
+            raise KnowledgeSyncCheckpointConflict("checkpoint create conflict")
 
     def _to_document(self, checkpoint: KnowledgeSyncCheckpoint) -> DocumentRecord:
+        data = {
+            "schema_version": _CHECKPOINT_SCHEMA,
+            **checkpoint.model_dump(mode="json"),
+        }
+        _reject_secret_fields(data, kind="sync checkpoint")
         return DocumentRecord(
             partition_key=_checkpoint_partition_key(checkpoint.tenant_id),
             row_key=_checkpoint_row_key(checkpoint.binding_id),
-            data={
-                "schema_version": _CHECKPOINT_SCHEMA,
-                "tenant_id": checkpoint.tenant_id,
-                "binding_id": checkpoint.binding_id,
-                "record_version": str(self._record_version_factory()),
-                "checkpoint": checkpoint.model_dump(mode="json"),
-            },
+            data=data,
         )
 
-    def _public_checkpoint(
+    def _parse_checkpoint(
         self,
         document: DocumentRecord,
         *,
@@ -359,26 +368,16 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
         expected_binding: str,
     ) -> KnowledgeSyncCheckpoint:
         data = _data_as_dict(document.data)
+        _reject_secret_fields(data, kind="sync checkpoint")
         try:
             if data.get("schema_version") != _CHECKPOINT_SCHEMA:
                 raise KnowledgeSyncCorruptState("sync checkpoint schema is invalid")
-            tenant_id = data.get("tenant_id")
-            binding_id = data.get("binding_id")
-            record_version = data.get("record_version")
-            raw_checkpoint = data.get("checkpoint")
-            if not isinstance(tenant_id, str) or tenant_id.strip() != expected_tenant:
-                raise KnowledgeSyncCorruptState("sync checkpoint tenant identity is invalid")
-            if not isinstance(binding_id, str) or binding_id.strip() != expected_binding:
-                raise KnowledgeSyncCorruptState("sync checkpoint binding identity is invalid")
             if document.partition_key != _checkpoint_partition_key(expected_tenant):
                 raise KnowledgeSyncCorruptState("sync checkpoint partition is invalid")
             if document.row_key != _checkpoint_row_key(expected_binding):
                 raise KnowledgeSyncCorruptState("sync checkpoint row key is invalid")
-            if not isinstance(record_version, str) or not record_version.strip():
-                raise KnowledgeSyncCorruptState("sync checkpoint record version is invalid")
-            if not isinstance(raw_checkpoint, Mapping):
-                raise KnowledgeSyncCorruptState("sync checkpoint payload is invalid")
-            checkpoint = KnowledgeSyncCheckpoint.model_validate(dict(raw_checkpoint))
+            payload = {key: value for key, value in data.items() if key != "schema_version"}
+            checkpoint = KnowledgeSyncCheckpoint.model_validate(payload)
             if (
                 checkpoint.tenant_id != expected_tenant
                 or checkpoint.binding_id != expected_binding
@@ -396,16 +395,8 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
 class DocumentStoreKnowledgeRemoteItemStateRepository:
     """Idempotent remote-item state repository with delivery markers."""
 
-    def __init__(
-        self,
-        document_store: DocumentStore,
-        *,
-        record_version_factory: RecordVersionFactory | None = None,
-    ) -> None:
+    def __init__(self, document_store: DocumentStore) -> None:
         self._store = _require_conditional_document_store(document_store)
-        self._record_version_factory = (
-            record_version_factory or _default_record_version_factory
-        )
 
     def get(
         self,
@@ -452,18 +443,8 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             binding_id=cleaned_binding,
         )
         marker_row = _delivery_row_key(cleaned_delivery)
-        marker_applying = self._marker_document(
-            tenant_id=cleaned_tenant,
-            binding_id=cleaned_binding,
-            delivery_id=cleaned_delivery,
-            batch_fingerprint=fingerprint,
-            status="applying",
-        )
-        created = self._store.put_if_absent(marker_applying)
-        if not created:
-            existing_marker = self._store.get(partition_key, marker_row)
-            if existing_marker is None:
-                raise KnowledgeSyncCorruptState("delivery marker disappeared")
+        existing_marker = self._store.get(partition_key, marker_row)
+        if existing_marker is not None:
             marker = self._parse_marker(
                 existing_marker,
                 expected_tenant=cleaned_tenant,
@@ -472,47 +453,31 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             )
             if marker["batch_fingerprint"] != fingerprint:
                 raise KnowledgeSyncCorruptState("delivery marker fingerprint mismatch")
-            if marker["status"] == "completed":
-                return
-            if marker["status"] != "applying":
-                raise KnowledgeSyncCorruptState("delivery marker status is invalid")
-            current_marker = existing_marker
-        else:
-            current_marker = marker_applying
+            return
 
         ordered = tuple(sorted(states, key=lambda state: state.remote_id))
         for state in ordered:
-            self._apply_one_state(
-                partition_key=partition_key,
-                state=state,
-            )
+            self._apply_one_state(partition_key=partition_key, state=state)
 
-        completed = self._marker_document(
+        marker_document = self._marker_document(
             tenant_id=cleaned_tenant,
             binding_id=cleaned_binding,
             delivery_id=cleaned_delivery,
             batch_fingerprint=fingerprint,
-            status="completed",
         )
-        if not self._store.replace_if_match(
-            expected=current_marker,
-            replacement=completed,
-        ):
-            latest = self._store.get(partition_key, marker_row)
-            if latest is None:
-                raise KnowledgeSyncCorruptState("delivery marker missing after apply")
-            marker = self._parse_marker(
-                latest,
-                expected_tenant=cleaned_tenant,
-                expected_binding=cleaned_binding,
-                expected_delivery=cleaned_delivery,
-            )
-            if (
-                marker["status"] == "completed"
-                and marker["batch_fingerprint"] == fingerprint
-            ):
-                return
-            raise KnowledgeSyncCorruptState("delivery marker completion conflict")
+        if self._store.put_if_absent(marker_document):
+            return
+        latest = self._store.get(partition_key, marker_row)
+        if latest is None:
+            raise KnowledgeSyncCorruptState("delivery marker disappeared")
+        marker = self._parse_marker(
+            latest,
+            expected_tenant=cleaned_tenant,
+            expected_binding=cleaned_binding,
+            expected_delivery=cleaned_delivery,
+        )
+        if marker["batch_fingerprint"] != fingerprint:
+            raise KnowledgeSyncCorruptState("delivery marker fingerprint mismatch")
 
     def _validate_batch_states(
         self,
@@ -561,19 +526,21 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             raise KnowledgeSyncCorruptState("remote item state cas conflict")
 
     def _state_document(self, state: KnowledgeRemoteItemState) -> DocumentRecord:
+        data = {
+            "schema_version": _ITEM_STATE_SCHEMA,
+            "tenant_id": state.tenant_id,
+            "binding_id": state.binding_id,
+            "state": state.model_dump(mode="json"),
+        }
+        _reject_secret_fields(data, kind="remote item state")
+        _reject_secret_fields(data["state"], kind="remote item state")
         return DocumentRecord(
             partition_key=_item_partition_key(
                 tenant_id=state.tenant_id,
                 binding_id=state.binding_id,
             ),
             row_key=_item_row_key(state.remote_id),
-            data={
-                "schema_version": _ITEM_STATE_SCHEMA,
-                "tenant_id": state.tenant_id,
-                "binding_id": state.binding_id,
-                "record_version": str(self._record_version_factory()),
-                "state": state.model_dump(mode="json"),
-            },
+            data=data,
         )
 
     def _marker_document(
@@ -583,23 +550,22 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         binding_id: str,
         delivery_id: str,
         batch_fingerprint: str,
-        status: str,
     ) -> DocumentRecord:
+        data = {
+            "schema_version": _DELIVERY_MARKER_SCHEMA,
+            "tenant_id": tenant_id,
+            "binding_id": binding_id,
+            "delivery_id": delivery_id,
+            "batch_fingerprint": batch_fingerprint,
+        }
+        _reject_secret_fields(data, kind="delivery marker")
         return DocumentRecord(
             partition_key=_item_partition_key(
                 tenant_id=tenant_id,
                 binding_id=binding_id,
             ),
             row_key=_delivery_row_key(delivery_id),
-            data={
-                "schema_version": _DELIVERY_MARKER_SCHEMA,
-                "tenant_id": tenant_id,
-                "binding_id": binding_id,
-                "delivery_id": delivery_id,
-                "batch_fingerprint": batch_fingerprint,
-                "status": status,
-                "record_version": str(self._record_version_factory()),
-            },
+            data=data,
         )
 
     def _parse_state(
@@ -610,12 +576,12 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         expected_binding: str,
     ) -> KnowledgeRemoteItemState:
         data = _data_as_dict(document.data)
+        _reject_secret_fields(data, kind="remote item state")
         try:
             if data.get("schema_version") != _ITEM_STATE_SCHEMA:
                 raise KnowledgeSyncCorruptState("remote item state schema is invalid")
             tenant_id = data.get("tenant_id")
             binding_id = data.get("binding_id")
-            record_version = data.get("record_version")
             raw_state = data.get("state")
             if not isinstance(tenant_id, str) or tenant_id.strip() != expected_tenant:
                 raise KnowledgeSyncCorruptState("remote item tenant identity is invalid")
@@ -627,10 +593,9 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             )
             if document.partition_key != expected_partition:
                 raise KnowledgeSyncCorruptState("remote item partition is invalid")
-            if not isinstance(record_version, str) or not record_version.strip():
-                raise KnowledgeSyncCorruptState("remote item record version is invalid")
             if not isinstance(raw_state, Mapping):
                 raise KnowledgeSyncCorruptState("remote item state payload is invalid")
+            _reject_secret_fields(raw_state, kind="remote item state")
             state = KnowledgeRemoteItemState.model_validate(dict(raw_state))
             if state.tenant_id != expected_tenant or state.binding_id != expected_binding:
                 raise KnowledgeSyncCorruptState("remote item payload identity is invalid")
@@ -653,6 +618,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         expected_delivery: str,
     ) -> dict[str, str]:
         data = _data_as_dict(document.data)
+        _reject_secret_fields(data, kind="delivery marker")
         try:
             if data.get("schema_version") != _DELIVERY_MARKER_SCHEMA:
                 raise KnowledgeSyncCorruptState("delivery marker schema is invalid")
@@ -660,8 +626,6 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             binding_id = data.get("binding_id")
             delivery_id = data.get("delivery_id")
             fingerprint = data.get("batch_fingerprint")
-            status = data.get("status")
-            record_version = data.get("record_version")
             if not isinstance(tenant_id, str) or tenant_id.strip() != expected_tenant:
                 raise KnowledgeSyncCorruptState("delivery marker tenant identity is invalid")
             if not isinstance(binding_id, str) or binding_id.strip() != expected_binding:
@@ -670,16 +634,15 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 raise KnowledgeSyncCorruptState("delivery marker delivery identity is invalid")
             if document.row_key != _delivery_row_key(expected_delivery):
                 raise KnowledgeSyncCorruptState("delivery marker row key is invalid")
+            expected_partition = _item_partition_key(
+                tenant_id=expected_tenant,
+                binding_id=expected_binding,
+            )
+            if document.partition_key != expected_partition:
+                raise KnowledgeSyncCorruptState("delivery marker partition is invalid")
             if not isinstance(fingerprint, str) or not fingerprint.strip():
                 raise KnowledgeSyncCorruptState("delivery marker fingerprint is invalid")
-            if status not in {"applying", "completed"}:
-                raise KnowledgeSyncCorruptState("delivery marker status is invalid")
-            if not isinstance(record_version, str) or not record_version.strip():
-                raise KnowledgeSyncCorruptState("delivery marker record version is invalid")
-            return {
-                "batch_fingerprint": fingerprint.strip(),
-                "status": str(status),
-            }
+            return {"batch_fingerprint": fingerprint.strip()}
         except KnowledgeSyncCorruptState:
             raise
         except Exception:
