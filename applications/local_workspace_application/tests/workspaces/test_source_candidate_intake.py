@@ -347,6 +347,16 @@ def test_invalid_candidate_fields_make_registry_unavailable(
         ("description", "Files from \\\\server\\secret", "\\\\server\\secret"),
         ("description", "Open https://internal.example/private", "https://internal.example/private"),
         ("label", "Location file:///srv/private", "file:///srv/private"),
+        ("label", "/srv/private", "/srv/private"),
+        ("description", "Documents in /srv/private", "/srv/private"),
+        ("label", "Path:/srv/private", "/srv/private"),
+        ("label", "Path=/srv/private", "/srv/private"),
+        ("description", "Location[/srv/private]", "/srv/private"),
+        ("description", "Location{/srv/private}", "/srv/private"),
+        ("description", "Location(/srv/private)", "/srv/private"),
+        ("label", 'Files,"/srv/private"', "/srv/private"),
+        ("description", "Source;/var/company/contracts", "/var/company/contracts"),
+        ("description", "Documents:/var/company/contracts", "/var/company/contracts"),
     ],
 )
 def test_embedded_path_or_uri_in_public_fields_makes_registry_unavailable(
@@ -367,11 +377,25 @@ def test_embedded_path_or_uri_in_public_fields_makes_registry_unavailable(
     assert not registry.is_available
     joined = " ".join(record.message for record in caplog.records)
     assert "source_candidate_configuration_invalid" in joined
+    assert "exception_class=" in joined
     assert forbidden_fragment not in joined
     assert value not in joined
 
 
-def test_safe_ordinary_label_and_description_accepted(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "label,description",
+    [
+        ("Version 1/2", "ratio 3/4"),
+        ("AC/DC documents", "contracts and policies"),
+        ("release v1/docs", "Current docs — v1.2 (draft)"),
+        ("Contracts, policies & notes.", "safe ordinary text"),
+    ],
+)
+def test_safe_ordinary_label_and_description_accepted(
+    tmp_path: Path,
+    label: str,
+    description: str,
+) -> None:
     folder = tmp_path / "docs"
     folder.mkdir()
     config = tmp_path / "source_candidates.json"
@@ -380,8 +404,8 @@ def test_safe_ordinary_label_and_description_accepted(tmp_path: Path) -> None:
         [
             _candidate_dict(
                 folder=folder,
-                label="Contracts, policies & notes.",
-                description="Current docs — v1.2 (draft)",
+                label=label,
+                description=description,
             )
         ],
     )
@@ -389,8 +413,8 @@ def test_safe_ordinary_label_and_description_accepted(tmp_path: Path) -> None:
     assert registry.is_available
     items = registry.list_for_tenant(TENANT)
     assert len(items) == 1
-    assert items[0].label == "Contracts, policies & notes."
-    assert items[0].description == "Current docs — v1.2 (draft)"
+    assert items[0].label == label
+    assert items[0].description == description
 
 
 def test_malformed_json_unavailable_without_parser_details(tmp_path: Path, caplog) -> None:

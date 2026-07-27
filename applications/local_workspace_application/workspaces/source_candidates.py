@@ -49,8 +49,9 @@ _WHITESPACE_RE = re.compile(r"\s+")
 _URL_SCHEME_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _WINDOWS_ABS_RE = re.compile(r"[A-Za-z]:[\\/]")
 _UNC_RE = re.compile(r"\\\\")
-# Absolute POSIX path at start or embedded after whitespace / openers (fail-closed).
-_UNIX_ABS_RE = re.compile(r"(?:^|(?<=[\s\"'(]))/(?:[\w.-]+(?:/[\w.-]+)+|[\w.-]+)")
+# Absolute POSIX path at start or after non-alphanumeric separator (fail-closed).
+# Slash between alphanumerics (e.g. Version 1/2, AC/DC) is not treated as a path.
+_UNIX_ABS_RE = re.compile(r"(?:^|(?<![A-Za-z0-9]))/(?:[\w.-]+(?:/[\w.-]+)+|[\w.-]+)")
 _ALLOWED_METADATA_KEYS = frozenset({"candidate_id", "candidate_fingerprint"})
 _FINGERPRINT_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
