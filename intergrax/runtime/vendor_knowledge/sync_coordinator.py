@@ -175,6 +175,7 @@ class VendorKnowledgeSyncCoordinator:
             binding_id=binding_id,
             page_size=page_size,
             mode=KnowledgeSyncMode.INCREMENTAL,
+            restart=True,
         )
 
     async def reconcile_once(
@@ -182,11 +183,13 @@ class VendorKnowledgeSyncCoordinator:
         *,
         binding_id: str,
         page_size: int = 100,
+        restart: bool = True,
     ) -> KnowledgeSyncRunResult:
         return await self._run_once(
             binding_id=binding_id,
             page_size=page_size,
             mode=KnowledgeSyncMode.RECONCILIATION,
+            restart=restart,
         )
 
     async def _run_once(
@@ -195,6 +198,7 @@ class VendorKnowledgeSyncCoordinator:
         binding_id: str,
         page_size: int,
         mode: KnowledgeSyncMode,
+        restart: bool,
     ) -> KnowledgeSyncRunResult:
         cleaned_binding_id = _require_non_empty(binding_id, field_name="binding_id")
         if page_size < 1 or page_size > 1000:
@@ -223,6 +227,7 @@ class VendorKnowledgeSyncCoordinator:
                 binding_id=cleaned_binding_id,
                 page_size=page_size,
                 mode=mode,
+                restart=restart,
             )
         except BaseException as exc:
             operation_error = exc
@@ -307,6 +312,7 @@ class VendorKnowledgeSyncCoordinator:
         binding_id: str,
         page_size: int,
         mode: KnowledgeSyncMode,
+        restart: bool,
     ) -> KnowledgeSyncRunResult:
         binding, source = self._load_binding_and_source(binding_id=binding_id)
         loaded_checkpoint = self._read_checkpoint(binding_id=binding_id)
@@ -314,6 +320,7 @@ class VendorKnowledgeSyncCoordinator:
             mode=mode,
             binding=binding,
             loaded_checkpoint=loaded_checkpoint,
+            restart=restart,
         )
 
         try:
@@ -483,9 +490,37 @@ class VendorKnowledgeSyncCoordinator:
         mode: KnowledgeSyncMode,
         binding: KnowledgeSourceBinding,
         loaded_checkpoint: KnowledgeSyncCheckpoint | None,
+        restart: bool,
     ) -> KnowledgeCursor | None:
         if mode is KnowledgeSyncMode.RECONCILIATION:
-            return None
+            if restart:
+                return None
+            if loaded_checkpoint is None:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                    safe_message=(
+                        "Knowledge sync continuation requires an existing checkpoint; "
+                        "no continuation checkpoint is available"
+                    ),
+                    provider_id=binding.provider_id,
+                    source_kind=binding.source_kind,
+                    retryable=False,
+                )
+            if (
+                loaded_checkpoint.binding_configuration_version
+                != binding.configuration_version
+            ):
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                    safe_message=(
+                        "Knowledge sync checkpoint configuration version is stale; "
+                        "restart reconciliation is required"
+                    ),
+                    provider_id=binding.provider_id,
+                    source_kind=binding.source_kind,
+                    retryable=False,
+                )
+            return loaded_checkpoint.cursor
         if loaded_checkpoint is None:
             return None
         if loaded_checkpoint.binding_configuration_version != binding.configuration_version:
@@ -578,6 +613,17 @@ class VendorKnowledgeSyncCoordinator:
                     safe_message=(
                         "Knowledge page with has_more requires next_cursor and "
                         "proposed_checkpoint"
+                    ),
+                    provider_id=source.provider_id,
+                    source_kind=source.source_kind,
+                    retryable=False,
+                )
+            if page.next_cursor != page.proposed_checkpoint:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message=(
+                        "Knowledge page continuation and checkpoint response are "
+                        "inconsistent"
                     ),
                     provider_id=source.provider_id,
                     source_kind=source.source_kind,

@@ -275,22 +275,50 @@ async def test_read_page_null_cursor_rejects_without_any_read_capability() -> No
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_unsupported_incremental_when_cursor_present() -> None:
+@pytest.mark.parametrize(
+    ("capabilities", "cursor_value"),
+    [
+        (KnowledgeAdapterCapabilities(full_inventory=True), None),
+        (KnowledgeAdapterCapabilities(reconciliation=True), None),
+        (KnowledgeAdapterCapabilities(incremental_changes=True), "c1"),
+        (KnowledgeAdapterCapabilities(full_inventory=True), "c1"),
+        (KnowledgeAdapterCapabilities(reconciliation=True), "c1"),
+    ],
+)
+async def test_read_page_allows_any_single_read_capability(
+    capabilities: KnowledgeAdapterCapabilities,
+    cursor_value: str | None,
+) -> None:
+    adapter = FakeAdapter(capabilities=capabilities)
+    service, _resolver, resolved = _facade(adapter=adapter)
+    cursor = None if cursor_value is None else KnowledgeCursor(value=cursor_value)
+
+    page = await service.read_page(source=make_source(), cursor=cursor, limit=10)
+
+    assert len(page.changes) == 1
+    assert len(resolved.read_calls) == 1
+    assert resolved.read_calls[0]["cursor"] == cursor
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("cursor_value", [None, "c1"])
+async def test_read_page_rejects_without_any_read_capability_regardless_of_cursor(
+    cursor_value: str | None,
+) -> None:
     adapter = FakeAdapter(
         capabilities=KnowledgeAdapterCapabilities(
-            full_inventory=True,
+            full_inventory=False,
             incremental_changes=False,
-            reconciliation=True,
+            reconciliation=False,
+            content_fetch=True,
         )
     )
     service, _resolver, resolved = _facade(adapter=adapter)
+    cursor = None if cursor_value is None else KnowledgeCursor(value=cursor_value)
 
     with pytest.raises(VendorKnowledgeError) as exc_info:
-        await service.read_page(
-            source=make_source(),
-            cursor=KnowledgeCursor(value="c1"),
-            limit=10,
-        )
+        await service.read_page(source=make_source(), cursor=cursor, limit=10)
 
     assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
     assert resolved.read_calls == []

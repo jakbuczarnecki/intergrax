@@ -93,16 +93,7 @@ class VendorKnowledgeFacadeService:
         integration, adapter = self._prepare(source=source)
         capabilities = adapter.capabilities
 
-        if cursor is not None:
-            if not capabilities.incremental_changes:
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
-                    safe_message="Incremental page reads are not supported for this adapter",
-                    provider_id=source.provider_id,
-                    source_kind=source.source_kind,
-                    retryable=False,
-                )
-        elif not (
+        if not (
             capabilities.full_inventory
             or capabilities.incremental_changes
             or capabilities.reconciliation

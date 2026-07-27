@@ -155,17 +155,213 @@ async def test_next_sync_uses_committed_checkpoint() -> None:
     cursor_b = KnowledgeCursor(value="cursor-b", version="v1")
     facade = RecordingFacade(
         pages_by_cursor={
-            None: make_page(proposed_checkpoint=cursor_a),
+            None: make_page(
+                has_more=True,
+                next_cursor=cursor_a,
+                proposed_checkpoint=cursor_a,
+            ),
             "cursor-a": make_page(proposed_checkpoint=cursor_b),
         }
     )
-    coordinator, _, _, _, checkpoint, _, _ = _coordinator(facade=facade)
+    coordinator, _, _, _, checkpoint, _, sink = _coordinator(facade=facade)
     first = await coordinator.sync_once(binding_id="binding-1")
     assert first.checkpoint_advanced is True
+    assert first.has_more is True
+    assert len(sink.calls) == 1
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == cursor_a
     second = await coordinator.sync_once(binding_id="binding-1")
     assert facade.read_calls[1]["cursor"] == cursor_a
     assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == cursor_b
     assert second.delivery_id != first.delivery_id
+    assert sink.calls[0].delivery_id != sink.calls[1].delivery_id
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_incremental_two_page_continuation() -> None:
+    cp1 = KnowledgeCursor(value="cp-1")
+    final_delta = KnowledgeCursor(value="final-delta")
+    facade = RecordingFacade(
+        pages_by_cursor={
+            None: make_page(
+                changes=(make_change(remote_id="item-1"),),
+                has_more=True,
+                next_cursor=cp1,
+                proposed_checkpoint=cp1,
+            ),
+            "cp-1": make_page(
+                changes=(make_change(remote_id="item-2"),),
+                proposed_checkpoint=final_delta,
+                has_more=False,
+            ),
+        }
+    )
+    coordinator, _, _, _, checkpoint, _, sink = _coordinator(facade=facade)
+    first = await coordinator.sync_once(binding_id="binding-1")
+    assert first.has_more is True
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == cp1
+    assert len(sink.calls) == 1
+    second = await coordinator.sync_once(binding_id="binding-1")
+    assert facade.read_calls[1]["cursor"] == cp1
+    assert second.has_more is False
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == final_delta
+    assert sink.calls[0].delivery_id != sink.calls[1].delivery_id
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_two_page_continuation() -> None:
+    reconcile_cp1 = KnowledgeCursor(value="reconcile-cp-1")
+    final_cp = KnowledgeCursor(value="reconcile-final")
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(
+            reconciliation=True,
+            full_inventory=False,
+            incremental_changes=False,
+            content_fetch=True,
+            structured_content=True,
+        ),
+        pages_by_cursor={
+            None: make_page(
+                changes=(make_change(remote_id="item-1"),),
+                has_more=True,
+                next_cursor=reconcile_cp1,
+                proposed_checkpoint=reconcile_cp1,
+            ),
+            "reconcile-cp-1": make_page(
+                changes=(make_change(remote_id="item-2"),),
+                proposed_checkpoint=final_cp,
+                has_more=False,
+            ),
+        },
+    )
+    coordinator, _, _, _, checkpoint, _, sink = _coordinator(facade=facade)
+    first = await coordinator.reconcile_once(binding_id="binding-1", restart=True)
+    assert first.mode is KnowledgeSyncMode.RECONCILIATION
+    assert first.has_more is True
+    assert facade.read_calls[0]["cursor"] is None
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == reconcile_cp1
+    second = await coordinator.reconcile_once(binding_id="binding-1", restart=False)
+    assert second.mode is KnowledgeSyncMode.RECONCILIATION
+    assert second.has_more is False
+    assert facade.read_calls[1]["cursor"] == reconcile_cp1
+    assert len(facade.read_calls) == 2
+    assert len(sink.calls) == 2
+    assert sink.calls[0].delivery_id != sink.calls[1].delivery_id
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == final_cp
+    assert [call["checkpoint"].cursor for call in checkpoint.commit_calls] == [
+        reconcile_cp1,
+        final_cp,
+    ]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_restart_false_without_checkpoint() -> None:
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(reconciliation=True, content_fetch=True)
+    )
+    coordinator, _, facade_rec, _, checkpoint, state, sink = _coordinator(facade=facade)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(binding_id="binding-1", restart=False)
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert exc_info.value.retryable is False
+    assert "continuation" in exc_info.value.safe_message.lower()
+    assert facade_rec.inspect_calls == []
+    assert facade_rec.read_calls == []
+    assert sink.calls == []
+    assert state.apply_calls == []
+    assert checkpoint.commit_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_restart_false_stale_configuration() -> None:
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.checkpoints[("tenant-1", "binding-1")] = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="secret-reconcile-cursor"),
+    )
+    binding = make_binding(configuration_version=2)
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(reconciliation=True, content_fetch=True)
+    )
+    coordinator, *_ = _coordinator(binding=binding, facade=facade, checkpoint=checkpoint)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(binding_id="binding-1", restart=False)
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert exc_info.value.retryable is False
+    assert "restart reconciliation" in exc_info.value.safe_message.lower()
+    assert "secret-reconcile-cursor" not in exc_info.value.safe_message
+    assert facade.inspect_calls == []
+    assert facade.read_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reconciliation_restart_true_with_stale_checkpoint() -> None:
+    previous = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="old-config-cursor"),
+    )
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.checkpoints[("tenant-1", "binding-1")] = previous
+    binding = make_binding(configuration_version=2)
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(reconciliation=True, content_fetch=True),
+        default_page=make_page(proposed_checkpoint=KnowledgeCursor(value="new-cursor")),
+    )
+    coordinator, *_ = _coordinator(binding=binding, facade=facade, checkpoint=checkpoint)
+    result = await coordinator.reconcile_once(binding_id="binding-1", restart=True)
+    assert result.mode is KnowledgeSyncMode.RECONCILIATION
+    assert facade.read_calls[0]["cursor"] is None
+    assert checkpoint.commit_calls[0]["expected_previous"] == previous
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor.value == "new-cursor"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_has_more_mismatched_next_and_proposed_checkpoint_fail_closed() -> None:
+    facade = RecordingFacade(
+        default_page=make_page(
+            has_more=True,
+            next_cursor=KnowledgeCursor(value="next-token"),
+            proposed_checkpoint=KnowledgeCursor(value="other-token"),
+        )
+    )
+    coordinator, *_, checkpoint, state, sink = _coordinator(facade=facade)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.sync_once(binding_id="binding-1")
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    assert "inconsistent" in exc_info.value.safe_message.lower()
+    assert "next-token" not in exc_info.value.safe_message
+    assert "other-token" not in exc_info.value.safe_message
+    assert sink.calls == []
+    assert state.apply_calls == []
+    assert checkpoint.commit_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_has_more_with_matching_continuation_cursor_succeeds() -> None:
+    continuation = KnowledgeCursor(value="shared-continuation")
+    facade = RecordingFacade(
+        default_page=make_page(
+            has_more=True,
+            next_cursor=continuation,
+            proposed_checkpoint=continuation,
+        )
+    )
+    coordinator, *_, checkpoint, _, sink = _coordinator(facade=facade)
+    result = await coordinator.sync_once(binding_id="binding-1")
+    assert result.has_more is True
+    assert len(sink.calls) == 1
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == continuation
 
 
 @pytest.mark.unit
@@ -238,11 +434,12 @@ async def test_page_size_validation() -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_exactly_one_page_per_call() -> None:
+    continuation = KnowledgeCursor(value="cp1")
     facade = RecordingFacade(
         default_page=make_page(
             has_more=True,
-            next_cursor=KnowledgeCursor(value="next"),
-            proposed_checkpoint=KnowledgeCursor(value="cp1"),
+            next_cursor=continuation,
+            proposed_checkpoint=continuation,
         )
     )
     coordinator, *_ = _coordinator(facade=facade)
@@ -393,6 +590,7 @@ async def test_state_status_mapping() -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_result_counts_and_has_more() -> None:
+    continuation = KnowledgeCursor(value="cp1")
     facade = RecordingFacade(
         default_page=make_page(
             changes=(
@@ -400,8 +598,8 @@ async def test_result_counts_and_has_more() -> None:
                 make_change(kind=KnowledgeChangeKind.DELETED, remote_id="d"),
             ),
             has_more=True,
-            next_cursor=KnowledgeCursor(value="next"),
-            proposed_checkpoint=KnowledgeCursor(value="cp1"),
+            next_cursor=continuation,
+            proposed_checkpoint=continuation,
         )
     )
     coordinator, *_ = _coordinator(facade=facade)
@@ -712,16 +910,27 @@ async def test_missing_capability_stops_before_read_page() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_coordinator_with_production_facade_reconciliation_only() -> None:
+async def test_coordinator_with_production_facade_reconciliation_two_pages() -> None:
     from intergrax.runtime.vendor_knowledge.models import KnowledgePage
 
-    base_page = make_facade_page(next_cursor=None, has_more=False)
-    page = KnowledgePage(
-        changes=base_page.changes,
-        next_cursor=None,
-        proposed_checkpoint=KnowledgeCursor(value="reconciled-1"),
-        has_more=False,
-    )
+    reconcile_cp1 = KnowledgeCursor(value="reconcile-cp-1")
+    final_cp = KnowledgeCursor(value="reconcile-final")
+    first_base = make_facade_page(remote_id="item-1")
+    second_base = make_facade_page(remote_id="item-2")
+    pages_by_cursor = {
+        None: KnowledgePage(
+            changes=first_base.changes,
+            next_cursor=reconcile_cp1,
+            proposed_checkpoint=reconcile_cp1,
+            has_more=True,
+        ),
+        "reconcile-cp-1": KnowledgePage(
+            changes=second_base.changes,
+            next_cursor=None,
+            proposed_checkpoint=final_cp,
+            has_more=False,
+        ),
+    }
     adapter = FakeAdapter(
         capabilities=KnowledgeAdapterCapabilities(
             reconciliation=True,
@@ -730,7 +939,7 @@ async def test_coordinator_with_production_facade_reconciliation_only() -> None:
             content_fetch=True,
             structured_content=True,
         ),
-        page=page,
+        pages_by_cursor=pages_by_cursor,
     )
     registry = KnowledgeAdapterRegistry()
     registry.register(adapter)
@@ -753,10 +962,17 @@ async def test_coordinator_with_production_facade_reconciliation_only() -> None:
         sink=sink,
         lease_ttl_seconds=30,
     )
-    result = await coordinator.reconcile_once(binding_id="binding-1")
-    assert result.mode is KnowledgeSyncMode.RECONCILIATION
-    assert result.status is KnowledgeSyncRunStatus.COMPLETED
-    assert len(adapter.read_calls) == 1
-    assert adapter.read_calls[0]["cursor"] is None
-    assert len(sink.calls) == 1
-    assert shared_order(sink, state, checkpoint) == ["sink", "state", "checkpoint"]
+    first = await coordinator.reconcile_once(binding_id="binding-1", restart=True)
+    second = await coordinator.reconcile_once(binding_id="binding-1", restart=False)
+    assert first.mode is KnowledgeSyncMode.RECONCILIATION
+    assert second.mode is KnowledgeSyncMode.RECONCILIATION
+    assert second.has_more is False
+    assert [call["cursor"] for call in adapter.read_calls] == [None, reconcile_cp1]
+    assert len(sink.calls) == 2
+    assert len(state.apply_calls) == 2
+    assert len(checkpoint.commit_calls) == 2
+    assert sink.order == ["sink", "sink"]
+    assert state.order == ["state", "state"]
+    assert checkpoint.order == ["checkpoint", "checkpoint"]
+    assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == final_cp
+    assert not isinstance(facade, RecordingFacade)

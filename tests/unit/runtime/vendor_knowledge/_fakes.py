@@ -71,6 +71,7 @@ class FakeAdapter:
         capabilities: KnowledgeAdapterCapabilities | None = None,
         scope_info: KnowledgeScopeInfo | None = None,
         page: KnowledgePage | None = None,
+        pages_by_cursor: dict[str | None, KnowledgePage] | None = None,
         content: KnowledgeContent | None = None,
         permissions: KnowledgePermissions | None = None,
         inspect_error: Exception | None = None,
@@ -92,6 +93,7 @@ class FakeAdapter:
         )
         self._scope_info = scope_info
         self._page = page
+        self._pages_by_cursor = pages_by_cursor
         self._content = content
         self._permissions = permissions
         self._inspect_error = inspect_error
@@ -154,6 +156,10 @@ class FakeAdapter:
         )
         if self._read_error is not None:
             raise self._read_error
+        if self._pages_by_cursor is not None:
+            key = None if cursor is None else cursor.value
+            if key in self._pages_by_cursor:
+                return self._pages_by_cursor[key]
         if self._page is not None:
             return self._page
         return make_page(source=source)
