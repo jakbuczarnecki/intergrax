@@ -46,9 +46,11 @@ _SCHEMA_VERSION = "lkw.source_candidates.v1"
 _CANDIDATE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 _WHITESPACE_RE = re.compile(r"\s+")
-_URL_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
-_WINDOWS_ABS_RE = re.compile(r"^[A-Za-z]:[\\/]")
-_UNC_RE = re.compile(r"^\\\\")
+_URL_SCHEME_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
+_WINDOWS_ABS_RE = re.compile(r"[A-Za-z]:[\\/]")
+_UNC_RE = re.compile(r"\\\\")
+# Absolute POSIX path at start or embedded after whitespace / openers (fail-closed).
+_UNIX_ABS_RE = re.compile(r"(?:^|(?<=[\s\"'(]))/(?:[\w.-]+(?:/[\w.-]+)+|[\w.-]+)")
 _ALLOWED_METADATA_KEYS = frozenset({"candidate_id", "candidate_fingerprint"})
 _FINGERPRINT_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -144,7 +146,7 @@ def _reject_public_text(value: str, *, field_name: str, max_length: int) -> str:
         raise ValueError(f"{field_name}_unsafe")
     if _UNC_RE.search(cleaned):
         raise ValueError(f"{field_name}_unsafe")
-    if cleaned.startswith("/"):
+    if _UNIX_ABS_RE.search(cleaned):
         raise ValueError(f"{field_name}_unsafe")
     return cleaned
 
@@ -489,7 +491,6 @@ class SourceCandidateIntakeService:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             candidate_id=candidate_id,
-            fingerprint=fingerprint,
         )
 
         try:
@@ -545,7 +546,6 @@ class SourceCandidateIntakeService:
         tenant_id: str,
         workspace_id: str,
         candidate_id: str,
-        fingerprint: str,
     ) -> None:
         for item in self._repository.list_knowledge_inputs(
             tenant_id=tenant_id,
@@ -559,8 +559,6 @@ class SourceCandidateIntakeService:
                 continue
             meta = item.submission_metadata
             if meta.get("candidate_id") != candidate_id:
-                continue
-            if meta.get("candidate_fingerprint") != fingerprint:
                 continue
             source = self._repository.get_source(
                 tenant_id=tenant_id,
@@ -745,6 +743,7 @@ class SourceCandidateKnowledgeIngestionProcessor:
             )
 
         return KnowledgeIngestionResult(
+            files_discovered=result.files_discovered,
             files_processed=result.files_processed,
             files_failed=result.files_failed,
             documents_indexed=result.documents_indexed,

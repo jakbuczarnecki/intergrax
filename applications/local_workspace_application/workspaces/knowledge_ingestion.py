@@ -44,6 +44,7 @@ class KnowledgeIngestionJob(BaseModel):
 
 
 class KnowledgeIngestionResult(BaseModel):
+    files_discovered: int = Field(default=0, ge=0)
     files_processed: int = Field(default=0, ge=0)
     files_failed: int = Field(default=0, ge=0)
     documents_indexed: int = Field(default=0, ge=0)
@@ -266,6 +267,7 @@ class KnowledgeIngestionService:
         operation = operation.model_copy(
             update={
                 "status": WorkspaceOperationStatus.COMPLETED,
+                "files_discovered": result.files_discovered,
                 "files_processed": result.files_processed,
                 "files_failed": result.files_failed,
                 "documents_indexed": result.documents_indexed,
@@ -381,6 +383,7 @@ def make_knowledge_ingestion_worker_handler(
                         "workspace_id": operation.workspace_id,
                         "source_id": operation.source_id,
                         "input_id": operation.input_id,
+                        "files_discovered": operation.files_discovered,
                         "files_processed": operation.files_processed,
                         "files_failed": operation.files_failed,
                         "documents_indexed": operation.documents_indexed,

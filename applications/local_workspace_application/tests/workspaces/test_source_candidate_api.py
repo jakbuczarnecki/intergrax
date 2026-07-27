@@ -316,7 +316,77 @@ def test_accept_success_and_operation_get(api_bundle) -> None:
         headers=_headers("tenant-a"),
     )
     assert op.status_code == 200
-    assert op.json()["operation_id"] == payload["operation_id"]
+    body = op.json()
+    assert body["operation_id"] == payload["operation_id"]
+    assert body["files_discovered"] == 1
+    assert body["files_processed"] == 1
+    assert body["files_failed"] == 0
+    assert body["documents_indexed"] == 1
+    _assert_safe(body, forbidden=(str(docs), "sha256:"))
+
+
+def test_embedded_path_in_public_fields_returns_503_without_path_leak(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "a.txt").write_text("hello", encoding="utf-8")
+    private = "C:\\Private\\Acquisition"
+    data_home = tmp_path / "data"
+    data_home.mkdir()
+    _write_candidates(
+        data_home / "config" / "source_candidates.json",
+        [
+            {
+                "candidate_id": "contracts",
+                "tenant_id": "tenant-a",
+                "label": f"Contracts from {private}",
+                "description": "Documents in /srv/company/confidential",
+                "source_type": "local_folder",
+                "path": str(docs.resolve()),
+                "recursive": True,
+                "enabled": True,
+            }
+        ],
+    )
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+    monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(docs.resolve()))
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(),
+        data_home=str(data_home),
+        allowed_read_roots=frozenset({str(docs.resolve())}),
+    )
+    executor = _FakeExecutor()
+    sync = ManagedWorkspaceSyncService(repo, executor)  # type: ignore[arg-type]
+    runtime = build_managed_workspace_sync_runtime(
+        document_store=store,
+        sync_service=sync,
+        repository=repo,
+    )
+    app = FastAPI()
+    mount_managed_workspace_routes(
+        app,
+        task_executor=executor,  # type: ignore[arg-type]
+        settings=settings,
+        repository=repo,
+        sync_runtime=runtime,
+        object_storage=None,
+    )
+    with TestClient(app) as client:
+        workspace_id = _create_workspace(client, "tenant-a")
+        response = client.get(
+            f"{_PREFIX}/workspaces/{workspace_id}/source-candidates",
+            headers=_headers("tenant-a"),
+        )
+        assert response.status_code == 503
+        assert response.json()["detail"] == "source_candidate_registry_unavailable"
+        text = str(response.json())
+        assert private not in text
+        assert "/srv/company/confidential" not in text
+        assert str(docs) not in text
 
 
 def test_accept_error_matrix(api_bundle) -> None:

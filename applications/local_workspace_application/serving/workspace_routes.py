@@ -631,13 +631,8 @@ def mount_managed_workspace_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> SourceCandidateListResponseV1:
         tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        intake: SourceCandidateIntakeService = getattr(
-            request.app.state,
-            "lkw_source_candidate_intake_service",
-            source_candidate_intake_service,
-        )
         try:
-            candidates = intake.list_candidates(
+            candidates = source_candidate_intake_service.list_candidates(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
             )
@@ -680,13 +675,8 @@ def mount_managed_workspace_routes(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="idempotency_key_required",
             )
-        intake: SourceCandidateIntakeService = getattr(
-            request.app.state,
-            "lkw_source_candidate_intake_service",
-            source_candidate_intake_service,
-        )
         try:
-            accepted = intake.accept(
+            accepted = source_candidate_intake_service.accept(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 candidate_id=candidate_id,

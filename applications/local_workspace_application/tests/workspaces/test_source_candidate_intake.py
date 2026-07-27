@@ -339,6 +339,60 @@ def test_invalid_candidate_fields_make_registry_unavailable(
     assert not registry.is_available
 
 
+@pytest.mark.parametrize(
+    "field,value,forbidden_fragment",
+    [
+        ("label", "Contracts from C:\\Private\\Acquisition", "C:\\Private\\Acquisition"),
+        ("description", "Documents in /srv/company/confidential", "/srv/company/confidential"),
+        ("description", "Files from \\\\server\\secret", "\\\\server\\secret"),
+        ("description", "Open https://internal.example/private", "https://internal.example/private"),
+        ("label", "Location file:///srv/private", "file:///srv/private"),
+    ],
+)
+def test_embedded_path_or_uri_in_public_fields_makes_registry_unavailable(
+    tmp_path: Path,
+    caplog,
+    field: str,
+    value: str,
+    forbidden_fragment: str,
+) -> None:
+    folder = tmp_path / "docs"
+    folder.mkdir()
+    raw = _candidate_dict(folder=folder)
+    raw[field] = value
+    config = tmp_path / "source_candidates.json"
+    _write_config(config, [raw])
+    with caplog.at_level("WARNING"):
+        registry = SourceCandidateRegistry.load(config)
+    assert not registry.is_available
+    joined = " ".join(record.message for record in caplog.records)
+    assert "source_candidate_configuration_invalid" in joined
+    assert forbidden_fragment not in joined
+    assert value not in joined
+
+
+def test_safe_ordinary_label_and_description_accepted(tmp_path: Path) -> None:
+    folder = tmp_path / "docs"
+    folder.mkdir()
+    config = tmp_path / "source_candidates.json"
+    _write_config(
+        config,
+        [
+            _candidate_dict(
+                folder=folder,
+                label="Contracts, policies & notes.",
+                description="Current docs — v1.2 (draft)",
+            )
+        ],
+    )
+    registry = SourceCandidateRegistry.load(config)
+    assert registry.is_available
+    items = registry.list_for_tenant(TENANT)
+    assert len(items) == 1
+    assert items[0].label == "Contracts, policies & notes."
+    assert items[0].description == "Current docs — v1.2 (draft)"
+
+
 def test_malformed_json_unavailable_without_parser_details(tmp_path: Path, caplog) -> None:
     config = tmp_path / "source_candidates.json"
     config.write_text("{not-json", encoding="utf-8")
@@ -544,6 +598,63 @@ def test_candidate_intake_works_without_object_storage_routing(tmp_path: Path) -
     assert op.status is WorkspaceOperationStatus.COMPLETED
 
 
+def test_files_discovered_persisted_and_in_worker_metadata(tmp_path: Path) -> None:
+    folder = tmp_path / "docs"
+    folder.mkdir()
+    (folder / "a.txt").write_text("a", encoding="utf-8")
+    (folder / "b.txt").write_text("b", encoding="utf-8")
+    (
+        repo,
+        _registry,
+        candidate_intake,
+        _intake,
+        _ingestion,
+        queue,
+        worker,
+        *_rest,
+    ) = _build_stack(
+        tmp_path,
+        folder=folder,
+        config_candidates=[_candidate_dict(folder=folder, recursive=False)],
+    )
+    accepted = candidate_intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        candidate_id="contracts",
+        idempotency_key="files-discovered-1",
+    )
+    operation = repo.get_operation(tenant_id=TENANT, operation_id=accepted.operation_id)
+    assert operation is not None
+    assert operation.queue_task_id
+    assert worker.drain_once() == 1
+    operation = repo.get_operation(tenant_id=TENANT, operation_id=accepted.operation_id)
+    assert operation is not None
+    assert operation.status is WorkspaceOperationStatus.COMPLETED
+    assert operation.files_discovered == 2
+    assert operation.files_processed == 2
+    assert operation.files_failed == 0
+    assert operation.documents_indexed == 2
+
+    from intergrax.queueing.contracts.task_queue import TaskHandle
+
+    task_result = queue.get_result(
+        TaskHandle(
+            task_id=str(operation.queue_task_id),
+            provider=str(operation.queue_provider or "document_store"),
+            tenant_id=TENANT,
+        )
+    )
+    assert task_result is not None
+    assert task_result.output is not None
+    payload = json.loads(task_result.output.decode("utf-8"))
+    metadata = payload.get("metadata") if isinstance(payload, dict) else None
+    assert isinstance(metadata, dict)
+    assert metadata["files_discovered"] == 2
+    assert metadata["files_processed"] == 2
+    assert metadata["files_failed"] == 0
+    assert metadata["documents_indexed"] == 2
+
+
 def test_exact_retry_preserves_identities(tmp_path: Path) -> None:
     (
         repo,
@@ -628,6 +739,113 @@ def test_already_registered_same_fingerprint_different_key(tmp_path: Path) -> No
     sources = repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE)
     assert len(sources) == 1
     assert sources[0].source_id == first.source_id
+
+
+def test_already_registered_after_restart_with_changed_fingerprint(tmp_path: Path) -> None:
+    folder_a = tmp_path / "docs-a"
+    folder_a.mkdir()
+    (folder_a / "note.txt").write_text("hello", encoding="utf-8")
+    folder_b = tmp_path / "docs-b"
+    folder_b.mkdir()
+    (folder_b / "note.txt").write_text("hello", encoding="utf-8")
+
+    (
+        repo,
+        _registry,
+        candidate_intake,
+        intake,
+        *_rest,
+    ) = _build_stack(
+        tmp_path,
+        folder=folder_a,
+        config_candidates=[_candidate_dict(folder=folder_a, candidate_id="contracts")],
+    )
+    first = candidate_intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        candidate_id="contracts",
+        idempotency_key="key-before-restart",
+    )
+    inputs_before = repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE)
+    ops_before = [
+        op
+        for op in repo.list_operations(tenant_id=TENANT)
+        if op.operation_type is WorkspaceOperationType.KNOWLEDGE_INGESTION
+    ]
+    assert len(inputs_before) == 1
+    assert len(ops_before) == 1
+
+    config_path = tmp_path / "config" / "source_candidates.json"
+    _write_config(
+        config_path,
+        [_candidate_dict(folder=folder_b, candidate_id="contracts", recursive=False)],
+    )
+    registry_after = SourceCandidateRegistry.load(config_path)
+    restarted = SourceCandidateIntakeService(
+        repo,
+        registry_after,
+        intake,
+        allowlist_roots=frozenset({str(folder_a.resolve()), str(folder_b.resolve())}),
+    )
+    with pytest.raises(SourceCandidateAlreadyRegistered):
+        restarted.accept(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            candidate_id="contracts",
+            idempotency_key="key-after-restart",
+        )
+
+    sources = repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE)
+    inputs_after = repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE)
+    ops_after = [
+        op
+        for op in repo.list_operations(tenant_id=TENANT)
+        if op.operation_type is WorkspaceOperationType.KNOWLEDGE_INGESTION
+    ]
+    assert len(sources) == 1
+    assert sources[0].source_id == first.source_id
+    assert len(inputs_after) == 1
+    assert len(ops_after) == 1
+    assert inputs_after[0].input_id == inputs_before[0].input_id
+    assert ops_after[0].operation_id == first.operation_id
+
+
+def test_reregister_allowed_after_durable_source_removed(tmp_path: Path) -> None:
+    (
+        repo,
+        _registry,
+        candidate_intake,
+        *_rest,
+    ) = _build_stack(tmp_path)
+    first = candidate_intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        candidate_id="contracts",
+        idempotency_key="key-removed-source",
+    )
+    repo.delete_source(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        source_id=first.source_id,
+    )
+    assert (
+        repo.get_source(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            source_id=first.source_id,
+        )
+        is None
+    )
+    second = candidate_intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        candidate_id="contracts",
+        idempotency_key="key-reregister",
+    )
+    sources = repo.list_sources(tenant_id=TENANT, workspace_id=WORKSPACE)
+    assert len(sources) == 1
+    assert sources[0].source_id == second.source_id
+    assert second.source_id != first.source_id
 
 
 @pytest.mark.parametrize(
@@ -894,7 +1112,7 @@ async def test_shared_folder_indexing_used_by_sync_and_candidate(tmp_path: Path)
         _indexing,
         _folder,
         _allowlist,
-        _tasks,
+        _task_registry,
     ) = _build_stack(
         tmp_path,
         folder=folder,
@@ -909,6 +1127,17 @@ async def test_shared_folder_indexing_used_by_sync_and_candidate(tmp_path: Path)
     await ingestion.run_operation(tenant_id=TENANT, operation_id=accepted.operation_id)
     refs = repo.list_document_refs(tenant_id=TENANT, workspace_id=WORKSPACE)
     assert len(refs) == 2
+
+    operation = repo.get_operation(tenant_id=TENANT, operation_id=accepted.operation_id)
+    assert operation is not None
+    assert operation.status is WorkspaceOperationStatus.COMPLETED
+    # a.txt + nested/b.txt discovered and indexed; unsupported skip.bin is filtered
+    # before discovery in LocalFolderIndexingService.
+    assert operation.files_discovered == 2
+    assert operation.files_processed == 2
+    assert operation.files_failed == 0
+    assert operation.documents_indexed == 2
+    assert operation.documents_unchanged == 0
 
     source = repo.get_source(
         tenant_id=TENANT,
