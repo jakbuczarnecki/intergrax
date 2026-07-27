@@ -5,6 +5,16 @@
 from __future__ import annotations
 
 from intergrax.runtime.token_optimization.advisory import recommend_token_optimization_action
+from intergrax.runtime.token_optimization.advisory_evaluation import (
+    TokenOptimizationAdvisoryEvaluationCase,
+    TokenOptimizationAdvisoryEvaluationReport,
+    TokenOptimizationAdvisoryEvaluationResult,
+    TokenOptimizationAdvisoryEvaluationSummary,
+    evaluate_advisory_recommendation_case,
+    evaluate_advisory_recommendation_cases,
+    format_token_optimization_advisory_report,
+    token_optimization_advisory_report_to_dict,
+)
 from intergrax.runtime.token_optimization.contracts import (
     CacheAwareCompactionDecision,
     CacheAwareCompactionReason,
@@ -227,8 +237,16 @@ __all__ = [
     "ProtectedRegionValidationStatus",
     "StrategySafetyClass",
     "TokenCategory",
+    "TokenOptimizationAdvisoryEvaluationCase",
+    "TokenOptimizationAdvisoryEvaluationReport",
+    "TokenOptimizationAdvisoryEvaluationResult",
+    "TokenOptimizationAdvisoryEvaluationSummary",
     "TokenOptimizationAdvisoryRecommendation",
     "TokenOptimizationAdvisorySignal",
+    "evaluate_advisory_recommendation_case",
+    "evaluate_advisory_recommendation_cases",
+    "format_token_optimization_advisory_report",
+    "token_optimization_advisory_report_to_dict",
     "TokenOptimizationAttribution",
     "build_prefix_snapshot",
     "compute_prefix_hash",

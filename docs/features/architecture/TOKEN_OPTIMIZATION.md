@@ -563,6 +563,24 @@ runtime/adaptive integration remains deferred
 
 Contracts and helper live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisory*` types and `recommend_token_optimization_action`). Every recommendation keeps `auto_apply_allowed=False` and `raw_content_included=False`.
 
+##### Advisory evaluation and reporting (`TOKEN-7B`)
+
+`TOKEN-7B` adds a redaction-safe advisory evaluation and reporting layer on top of the policy-only recommender. Advisory reports evaluate recommendation outcomes, not runtime behavior. Reports use safe scalar fields only, must not include raw prompt/context/evidence/tool output, and must prove non-auto-apply status across evaluated cases. Runtime/adaptive integration remains deferred.
+
+Key properties:
+
+```text
+evaluation/reporting only — no autonomous production auto-apply
+deterministic per-case evaluation against expected action/reason/confidence
+aggregate pass/fail/manual-review/insufficient-data/non-auto-apply/raw-content-safe counts
+redaction-safe dict and text report formatters
+must not include raw signal or recommendation objects in report output
+must not include saved_tokens / optimized_tokens / baseline_tokens / compressed_tokens fields
+runtime/adaptive integration remains deferred
+```
+
+Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryEvaluation*` types, `evaluate_advisory_recommendation_case`, `evaluate_advisory_recommendation_cases`, `token_optimization_advisory_report_to_dict`, `format_token_optimization_advisory_report`).
+
 #### In-cache compaction boundary (`TOKEN-OPT-5A`)
 
 ```text

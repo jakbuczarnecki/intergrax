@@ -677,6 +677,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 14 | **TOKEN-OPT-5D** | Folded into **TOKEN-OPT-5B** functional block |
 | 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Done / Closed** |
 | 16 | **TOKEN-7A** | Advisory recommendation contract and policy-only recommender — **Done / Closed** |
+| 17 | **TOKEN-7B** | Advisory recommendation evaluation and report pack — **Done / Closed** |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -1169,7 +1170,61 @@ TOKEN-OPT-5C — folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5D — folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5E — Done / Closed
 TOKEN-7A — Done / Closed
-TOKEN-7 — still future work; no production auto-apply
+TOKEN-7B — Done / Closed
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+```
+
+**Next decision:** choose whether to proceed to policy-gated integration surface or return to LKW proof measurement.
+
+#### TOKEN-7B — advisory recommendation evaluation and report pack
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a redaction-safe evaluation runner and report pack for the policy-only advisory recommender, proving deterministic recommendations, expected safety behavior, non-auto-apply status, and raw-content-safe reporting.
+
+**Deliverables:**
+
+- advisory evaluation case contract
+- advisory evaluation result contract
+- advisory evaluation summary contract
+- advisory evaluation report contract
+- deterministic advisory evaluation runner
+- redaction-safe report dict formatter
+- deterministic text report formatter
+- synthetic advisory evaluation corpus
+- focused advisory evaluation tests
+- architecture / feature plan documentation updates
+
+**Closeout:**
+
+- advisory evaluation case contract added
+- advisory evaluation result contract added
+- advisory evaluation summary contract added
+- advisory evaluation report contract added
+- deterministic single-case evaluation helper added
+- deterministic multi-case evaluation helper added
+- redaction-safe advisory report dict helper added
+- deterministic advisory report text formatter added
+- synthetic advisory evaluation corpus added
+- all expected advisory scenarios covered
+- summary counts pass/fail/manual-review/insufficient-data/non-auto-apply/raw-content-safe results
+- advisory reports remain raw-content-safe
+- auto_apply_allowed remains False across evaluated recommendations
+- no raw signal or recommendation objects emitted in reports
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adaptive runtime integration added
+- no observability/HOS emission added
+- no benchmark CLI runner added
+- no semantic compression or LLM summarization added
+- no README or public adoption documentation updated
+
+**Roadmap/order update:**
+
+```text
+TOKEN-7A — Done / Closed
+TOKEN-7B — Done / Closed
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
 ```
 
 ### TOKEN-OPT-3A acceptance
@@ -1432,10 +1487,11 @@ TOKEN-OPT-5C folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5D folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5E cache-aware compaction timing policy — Done / Closed
 TOKEN-7A    advisory recommendation contract and policy-only recommender — Done / Closed
+TOKEN-7B    advisory recommendation evaluation and report pack — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
-TOKEN-7 remains future work; no production auto-apply. Runtime/adaptive integration remains deferred.
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply. Runtime/adaptive integration remains deferred.
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 
