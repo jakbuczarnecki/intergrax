@@ -42,6 +42,7 @@ DONE:     VENDOR-KNOWLEDGE-FACADE-CONTRACT-1
 DONE:     VENDOR-KNOWLEDGE-FACADE-CORE-1
 DONE:     VENDOR-KNOWLEDGE-CONNECTION-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1A
+DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
 NEXT:     VENDOR-KNOWLEDGE-SYNC-1B
 PLANNED:  JIRA-KNOWLEDGE-ADAPTER-1
 PLANNED:  CONFLUENCE-KNOWLEDGE-ADAPTER-1
@@ -346,12 +347,28 @@ The coordinator outputs normalized items to a sink port. It does not parse, chun
 
 **Status:** `NEXT`
 
+**Prerequisites:**
+
+```text
+DONE:     VENDOR-KNOWLEDGE-SYNC-1A
+DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
+NEXT:     VENDOR-KNOWLEDGE-SYNC-1B
+```
+
 Wire the coordinator onto:
 
 - `DocumentStoreTaskQueue`;
 - `DocumentStoreTaskWorker`;
 - `TaskExecutionRegistry`;
 - facade-owned `DocumentStore` repositories.
+
+Conditional write requirements (from `PLATFORM-DOCUMENT-STORE-CONDITIONAL-1`):
+
+- source lease requires atomic `put_if_absent` / CAS;
+- checkpoint commit requires CAS;
+- remote delivery marker requires conditional write;
+- implementation must fail closed when the resolved `DocumentStore` does not satisfy `ConditionalDocumentStore`;
+- do not emulate CAS with ordinary `get()` + `put()`.
 
 Add retry/backoff only as a scoped extension of existing queue/runtime behavior.
 

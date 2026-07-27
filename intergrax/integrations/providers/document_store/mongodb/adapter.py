@@ -54,6 +54,26 @@ class _MongoDBDocumentStore:
             row_key_prefix=row_key_prefix,
         )
 
+    def put_if_absent(self, document: DocumentRecord) -> bool:
+        self._require_open()
+        return self._client.put_if_absent(document)
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        self._require_open()
+        return self._client.replace_if_match(
+            expected=expected,
+            replacement=replacement,
+        )
+
+    def delete_if_match(self, *, expected: DocumentRecord) -> bool:
+        self._require_open()
+        return self._client.delete_if_match(expected=expected)
+
     def close(self) -> None:
         if not self._closed:
             self._client.close()

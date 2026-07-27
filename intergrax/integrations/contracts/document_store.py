@@ -52,3 +52,34 @@ class DocumentStore(Protocol):
 
     def close(self) -> None:
         """Release resources."""
+
+
+@runtime_checkable
+class ConditionalDocumentStore(DocumentStore, Protocol):
+    """
+    Optional single-record conditional write capability.
+
+    Compare partition_key, row_key and data only — not ttl_seconds.
+    Normal conflicts return False; they are not errors.
+    """
+
+    def put_if_absent(
+        self,
+        document: DocumentRecord,
+    ) -> bool:
+        """Atomically insert when missing; return False if the key already exists."""
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        """Atomically replace when current record matches expected keys+data."""
+
+    def delete_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+    ) -> bool:
+        """Atomically delete when current record matches expected keys+data."""

@@ -12,12 +12,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from intergrax.integrations._shared.conformance import assert_document_store
+from intergrax.integrations._shared.conformance import (
+    assert_conditional_document_store,
+    assert_document_store,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.integrations.providers.document_store.mongodb.integration import (
     MongoDBDocumentStoreIntegration,
-    MongodbDocumentStoreIntegration,
+)
+from intergrax.integrations.providers.document_store.mongodb.opens import (
+    DOCUMENT_KEY_INDEX_KEYS,
+    DOCUMENT_KEY_INDEX_NAME,
 )
 from intergrax.integrations.providers.document_store.mongodb.bundle import (
     MongoDBIntegrationBundle,
@@ -76,10 +82,40 @@ class _FakeCursor:
         return iter(self._rows)
 
 
+class _FakeWriteResult:
+    def __init__(
+        self,
+        *,
+        matched_count: int = 0,
+        modified_count: int = 0,
+        upserted_id: object | None = None,
+        deleted_count: int = 0,
+    ) -> None:
+        self.matched_count = matched_count
+        self.modified_count = modified_count
+        self.upserted_id = upserted_id
+        self.deleted_count = deleted_count
+
+
 class _FakeCollection:
     def __init__(self) -> None:
         self.storage: dict[tuple[str, str], dict[str, Any]] = {}
         self.operations: list[tuple[str, Any]] = []
+        self.indexes: list[tuple[Any, bool, str | None]] = []
+        self.fail_create_index = False
+
+    def create_index(
+        self,
+        keys: Any,
+        *,
+        unique: bool = False,
+        name: str | None = None,
+    ) -> str:
+        self.operations.append(("create_index", keys, unique, name))
+        if self.fail_create_index:
+            raise RuntimeError("index creation failed")
+        self.indexes.append((keys, unique, name))
+        return name or "index"
 
     def find_one(self, query: dict[str, Any]) -> Optional[dict[str, Any]]:
         self.operations.append(("find_one", query))
@@ -87,15 +123,67 @@ class _FakeCollection:
             return self.storage.get((query["partition_key"], query["row_key"]))
         return None
 
-    def replace_one(self, query: dict[str, Any], doc: dict[str, Any], *, upsert: bool = False) -> None:
-        self.operations.append(("replace_one", query, doc, upsert))
-        key = (doc["partition_key"], doc["row_key"])
-        self.storage[key] = dict(doc)
+    def _matches(self, query: dict[str, Any], doc: dict[str, Any]) -> bool:
+        if query.get("partition_key") != doc.get("partition_key"):
+            return False
+        if query.get("row_key") != doc.get("row_key"):
+            return False
+        if "data" in query and query["data"] != doc.get("data"):
+            return False
+        return True
 
-    def delete_one(self, query: dict[str, Any]) -> None:
+    def replace_one(
+        self,
+        query: dict[str, Any],
+        doc: dict[str, Any],
+        *,
+        upsert: bool = False,
+    ) -> _FakeWriteResult:
+        self.operations.append(("replace_one", query, doc, upsert))
+        key = (query.get("partition_key"), query.get("row_key"))
+        if not isinstance(key[0], str) or not isinstance(key[1], str):
+            key = (doc["partition_key"], doc["row_key"])
+        existing = self.storage.get(key)  # type: ignore[arg-type]
+        if existing is None:
+            if upsert:
+                self.storage[key] = dict(doc)  # type: ignore[index]
+                return _FakeWriteResult(matched_count=0, modified_count=1, upserted_id="upserted")
+            return _FakeWriteResult(matched_count=0, modified_count=0)
+        if not self._matches(query, existing):
+            return _FakeWriteResult(matched_count=0, modified_count=0)
+        modified = 0 if existing == doc else 1
+        self.storage[key] = dict(doc)  # type: ignore[index]
+        return _FakeWriteResult(matched_count=1, modified_count=modified)
+
+    def update_one(
+        self,
+        query: dict[str, Any],
+        update: dict[str, Any],
+        *,
+        upsert: bool = False,
+    ) -> _FakeWriteResult:
+        self.operations.append(("update_one", query, update, upsert))
+        key = (query["partition_key"], query["row_key"])
+        existing = self.storage.get(key)
+        if existing is not None:
+            return _FakeWriteResult(matched_count=1, modified_count=0, upserted_id=None)
+        if upsert and "$setOnInsert" in update:
+            self.storage[key] = dict(update["$setOnInsert"])
+            return _FakeWriteResult(matched_count=0, modified_count=0, upserted_id="new")
+        return _FakeWriteResult(matched_count=0, modified_count=0, upserted_id=None)
+
+    def delete_one(self, query: dict[str, Any]) -> _FakeWriteResult:
         self.operations.append(("delete_one", query))
-        if "partition_key" in query and "row_key" in query:
-            self.storage.pop((query["partition_key"], query["row_key"]), None)
+        if "partition_key" not in query or "row_key" not in query:
+            return _FakeWriteResult(deleted_count=0)
+        key = (query["partition_key"], query["row_key"])
+        existing = self.storage.get(key)
+        if existing is None:
+            return _FakeWriteResult(deleted_count=0)
+        if not self._matches(query, existing):
+            return _FakeWriteResult(deleted_count=0)
+        del self.storage[key]
+        return _FakeWriteResult(deleted_count=1)
 
     def find(self, query: dict[str, Any]) -> _FakeCursor:
         self.operations.append(("find", query))
@@ -363,3 +451,134 @@ def test_opens_creates_driver_client_when_not_injected() -> None:
 
     open_mock.assert_called_once_with(config)
     assert client.config is config
+    mock_collection.create_index.assert_called_once_with(
+        list(DOCUMENT_KEY_INDEX_KEYS),
+        unique=True,
+        name=DOCUMENT_KEY_INDEX_NAME,
+    )
+
+
+def test_open_creates_unique_document_key_index() -> None:
+    factory, collection = _collection_factory()
+    create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    assert collection.indexes == [
+        (list(DOCUMENT_KEY_INDEX_KEYS), True, DOCUMENT_KEY_INDEX_NAME)
+    ]
+    create_ops = [op for op in collection.operations if op[0] == "create_index"]
+    assert create_ops == [
+        ("create_index", list(DOCUMENT_KEY_INDEX_KEYS), True, DOCUMENT_KEY_INDEX_NAME)
+    ]
+
+
+def test_open_with_injected_collection_creates_unique_index() -> None:
+    collection = _FakeCollection()
+    create_mongodb_document_store(**_mongodb_config().model_dump(), collection=collection)
+
+    assert collection.indexes[0][2] == DOCUMENT_KEY_INDEX_NAME
+    assert collection.indexes[0][1] is True
+
+
+def test_index_creation_failure_maps_to_safe_configuration_error() -> None:
+    collection = _FakeCollection()
+    collection.fail_create_index = True
+    factory, _ = _collection_factory(collection)
+
+    with pytest.raises(IntegrationConfigurationError, match=DOCUMENT_KEY_INDEX_NAME) as exc_info:
+        create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+
+    message = str(exc_info.value)
+    assert "status" not in message
+    assert "secret" not in message
+
+
+def test_put_if_absent_creates_document() -> None:
+    factory, collection = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+
+    assert store.put_if_absent(document) is True
+    assert store.get("t1", "r1") is not None
+    assert any(op[0] == "update_one" for op in collection.operations)
+
+
+def test_second_put_if_absent_does_not_overwrite() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    first = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+    second = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 2})
+
+    assert store.put_if_absent(first) is True
+    assert store.put_if_absent(second) is False
+    doc = store.get("t1", "r1")
+    assert doc is not None
+    assert doc.data == {"v": 1}
+
+
+def test_replace_if_match_updates_current_document() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    expected = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+    replacement = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 2})
+    store.put(expected)
+
+    assert store.replace_if_match(expected=expected, replacement=replacement) is True
+    doc = store.get("t1", "r1")
+    assert doc is not None
+    assert doc.data == {"v": 2}
+
+
+def test_stale_replace_if_match_returns_false_and_preserves() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    current = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+    stale = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 0})
+    replacement = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 2})
+    store.put(current)
+
+    assert store.replace_if_match(expected=stale, replacement=replacement) is False
+    doc = store.get("t1", "r1")
+    assert doc is not None
+    assert doc.data == {"v": 1}
+
+
+def test_delete_if_match_removes_matching_document() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    expected = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+    store.put(expected)
+
+    assert store.delete_if_match(expected=expected) is True
+    assert store.get("t1", "r1") is None
+
+
+def test_stale_delete_if_match_does_not_remove() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    current = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+    stale = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 0})
+    store.put(current)
+
+    assert store.delete_if_match(expected=stale) is False
+    assert store.get("t1", "r1") is not None
+
+
+def test_closed_store_rejects_conditional_operations() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+    store.close()
+
+    with pytest.raises(IntegrationConfigurationError, match="closed"):
+        store.put_if_absent(document)
+    with pytest.raises(IntegrationConfigurationError, match="closed"):
+        store.replace_if_match(expected=document, replacement=document)
+    with pytest.raises(IntegrationConfigurationError, match="closed"):
+        store.delete_if_match(expected=document)
+
+
+def test_mongodb_store_implements_conditional_document_store() -> None:
+    factory, _ = _collection_factory()
+    store = create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
+    assert_document_store(store)
+    assert_conditional_document_store(store)
