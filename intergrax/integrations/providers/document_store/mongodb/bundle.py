@@ -21,11 +21,29 @@ from intergrax.integrations.providers.document_store.mongodb.client import Mongo
 from intergrax.integrations.providers.document_store.mongodb.config import MongoDBIntegrationConfig
 from intergrax.integrations.providers.document_store.mongodb.integration import (
     MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+    MongoDBDocumentStoreClient,
     MongoDBDocumentStoreIntegration,
     MongoDBDocumentStoreIntegrationConfig,
     MongodbDocumentStoreClient,
+    MongodbDocumentStoreIntegration,
+    MongodbDocumentStoreIntegrationConfig,
 )
 from intergrax.integrations.providers.document_store.mongodb.opens import open_mongodb_document_store
+
+__all__ = [
+    "MongoDBIntegrationBundle",
+    "resolve_mongodb_config",
+    "create_mongodb_integration",
+    "create_mongodb_document_store",
+    "create_mongodb_document_store_integration",
+    "MONGODB_DOCUMENT_STORE_PROVIDER_ID",
+    "MongoDBDocumentStoreClient",
+    "MongoDBDocumentStoreIntegration",
+    "MongoDBDocumentStoreIntegrationConfig",
+    "MongodbDocumentStoreClient",
+    "MongodbDocumentStoreIntegration",
+    "MongodbDocumentStoreIntegrationConfig",
+]
 
 
 @dataclass(frozen=True)

@@ -53,12 +53,12 @@ def _ensure_document_key_index(collection: Any) -> None:
             unique=True,
             name=DOCUMENT_KEY_INDEX_NAME,
         )
-    except Exception as exc:
+    except Exception:
         raise IntegrationConfigurationError(
             "MongoDB document store requires unique compound index "
             f"{DOCUMENT_KEY_INDEX_NAME} on (partition_key, row_key); "
-            "index creation failed (possible duplicate keys)"
-        ) from exc
+            "index creation failed"
+        ) from None
 
 
 def _open_collection(

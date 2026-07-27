@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import traceback
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Optional
@@ -18,6 +19,9 @@ from intergrax.integrations._shared.conformance import (
 )
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.providers.document_store.mongodb import bundle as mongodb_bundle
+from intergrax.integrations.providers.document_store.mongodb import integration as mongodb_integration
+from intergrax.integrations.providers.document_store.mongodb.client import MongoCollectionClient
 from intergrax.integrations.providers.document_store.mongodb.integration import (
     MongoDBDocumentStoreIntegration,
 )
@@ -103,6 +107,8 @@ class _FakeCollection:
         self.operations: list[tuple[str, Any]] = []
         self.indexes: list[tuple[Any, bool, str | None]] = []
         self.fail_create_index = False
+        self.create_index_error: BaseException | None = None
+        self.update_one_error: BaseException | None = None
 
     def create_index(
         self,
@@ -112,8 +118,13 @@ class _FakeCollection:
         name: str | None = None,
     ) -> str:
         self.operations.append(("create_index", keys, unique, name))
+        if self.create_index_error is not None:
+            raise self.create_index_error
         if self.fail_create_index:
-            raise RuntimeError("index creation failed")
+            raise RuntimeError(
+                "duplicate key tenant=secret-tenant "
+                "mongodb://user:password@example.test/private"
+            )
         self.indexes.append((keys, unique, name))
         return name or "index"
 
@@ -163,6 +174,8 @@ class _FakeCollection:
         upsert: bool = False,
     ) -> _FakeWriteResult:
         self.operations.append(("update_one", query, update, upsert))
+        if self.update_one_error is not None:
+            raise self.update_one_error
         key = (query["partition_key"], query["row_key"])
         existing = self.storage.get(key)
         if existing is not None:
@@ -487,9 +500,80 @@ def test_index_creation_failure_maps_to_safe_configuration_error() -> None:
     with pytest.raises(IntegrationConfigurationError, match=DOCUMENT_KEY_INDEX_NAME) as exc_info:
         create_mongodb_document_store(**_mongodb_config().model_dump(), collection_factory=factory)
 
-    message = str(exc_info.value)
-    assert "status" not in message
-    assert "secret" not in message
+    error = exc_info.value
+    assert error.__cause__ is None
+    assert error.__suppress_context__ is True
+    message = str(error)
+    assert DOCUMENT_KEY_INDEX_NAME in message
+    rendered = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+    assert "secret-tenant" not in rendered
+    assert "user:password" not in rendered
+    assert "example.test" not in rendered
+    assert "/private" not in rendered
+    assert "duplicate key" not in rendered
+    assert DOCUMENT_KEY_INDEX_NAME in rendered
+
+
+def test_bundle_preserves_compatibility_aliases() -> None:
+    assert (
+        mongodb_bundle.MongoDBDocumentStoreClient
+        is mongodb_integration.MongoDBDocumentStoreClient
+    )
+    assert (
+        mongodb_bundle.MongodbDocumentStoreIntegration
+        is mongodb_integration.MongodbDocumentStoreIntegration
+    )
+    assert (
+        mongodb_bundle.MongodbDocumentStoreIntegrationConfig
+        is mongodb_integration.MongodbDocumentStoreIntegrationConfig
+    )
+    assert (
+        mongodb_bundle.MongodbDocumentStoreClient
+        is mongodb_integration.MongodbDocumentStoreClient
+    )
+
+
+def test_put_if_absent_duplicate_key_race_returns_false_without_overwrite() -> None:
+    collection = _FakeCollection()
+    existing = {
+        "partition_key": "t1",
+        "row_key": "r1",
+        "data": {"v": 1},
+        "etag": None,
+        "expires_at": None,
+        "created_at": None,
+        "updated_at": None,
+    }
+    collection.storage[("t1", "r1")] = dict(existing)
+    duplicate_key_error = RuntimeError("sentinel-duplicate-key")
+    collection.update_one_error = duplicate_key_error
+    client = MongoCollectionClient(
+        _mongodb_config(),
+        collection=collection,
+        is_duplicate_key_error=lambda exc: exc is duplicate_key_error,
+    )
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 99})
+
+    assert client.put_if_absent(document) is False
+    assert collection.storage[("t1", "r1")]["data"] == {"v": 1}
+
+
+def test_put_if_absent_unknown_update_error_is_reraised() -> None:
+    collection = _FakeCollection()
+    unknown_error = RuntimeError("unrelated-mongo-failure")
+    collection.update_one_error = unknown_error
+    client = MongoCollectionClient(
+        _mongodb_config(),
+        collection=collection,
+        is_duplicate_key_error=lambda exc: False,
+    )
+    document = DocumentRecord(partition_key="t1", row_key="r1", data={"v": 1})
+
+    with pytest.raises(RuntimeError, match="unrelated-mongo-failure") as exc_info:
+        client.put_if_absent(document)
+
+    assert exc_info.value is unknown_error
+    assert ("t1", "r1") not in collection.storage
 
 
 def test_put_if_absent_creates_document() -> None:
