@@ -4,11 +4,14 @@ Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# Token Optimization — Cache-prefix Stabilization Architecture and Roadmap Addendum
+# Token Optimization — Cache-prefix Stabilization Architecture and Contract Addendum
 
-**Status:** Planned architecture / roadmap addendum  
-**Parent feature architecture:** [`TOKEN_OPTIMIZATION.md`](TOKEN_OPTIMIZATION.md)  
-**Parent feature plan:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)  
+**Status:** Done / Closed architecture / contract addendum (`TOKEN-OPT-5A`)
+
+**Parent feature architecture:** [`TOKEN_OPTIMIZATION.md`](TOKEN_OPTIMIZATION.md) (§8.3.1 Cache-prefix stabilization)
+
+**Parent feature plan:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
+
 **Scope:** cache-aware prompt/thread architecture, provider cache attribution, and cache-safe optimization sequencing.
 
 ---
@@ -30,7 +33,7 @@ Cache-prefix stabilization is a first-class Token Optimization surface.
 It must be measured separately from content-reduction strategies.
 ```
 
-This addendum does not implement runtime behavior. It records the architecture and roadmap changes that should be folded into the canonical Token Optimization feature architecture and plan in a later docs-sync task.
+`TOKEN-OPT-5A` closes the architecture/contract slice for cache-prefix stabilization. The canonical feature architecture now cross-references this addendum as the detailed supporting contract. This addendum does not implement runtime behavior.
 
 ---
 
@@ -228,7 +231,14 @@ changing stable tool catalog formatting per request
 
 In-cache compaction means asking a model to compact a long history while the long history itself is read from provider cache.
 
-This can be useful, but it is intentionally out of scope for the current implementation phase because Intergrax has not yet enabled semantic compression, LLM summarization, or adaptive rewriting in the optimization path.
+This can be useful, but it is intentionally out of scope for `TOKEN-OPT-5A` because Intergrax has not yet enabled semantic compression, LLM summarization, or adaptive rewriting in the optimization path.
+
+```text
+No in-cache compaction in TOKEN-OPT-5A.
+No LLM summarization in TOKEN-OPT-5A.
+No semantic compression in TOKEN-OPT-5A.
+No adaptive rewriting in TOKEN-OPT-5A.
+```
 
 Future work must require:
 
@@ -278,7 +288,7 @@ Important rule:
 ```text
 cache_* metrics describe provider cache behavior.
 content_saved_* metrics describe content reduction.
-They must remain separable in telemetry and public proof claims.
+They must remain separable in telemetry, receipts, benchmark summaries, and public proof claims.
 ```
 
 Candidate domain signals / event kinds for later implementation:
@@ -298,21 +308,23 @@ These are conceptual names only. Actual event ownership remains with the existin
 
 ## 10. Roadmap impact
 
-After `TOKEN-OPT-4B` closes extractive filtering evaluation coverage, the next strategic Token Optimization step should be cache-prefix stabilization, not advisory recommendations or additional lossy mechanisms.
+`TOKEN-OPT-4B` is **Done / Closed**. `TOKEN-OPT-5A` is **Done / Closed**. The next strategic Token Optimization step is provider cache policy and capability contract, not advisory recommendations or additional lossy mechanisms.
 
 Recommended order:
 
-| Order | Task | Scope | Runtime behavior |
-|-------|------|-------|------------------|
-| 1 | `TOKEN-OPT-4B` | Extractive filtering evaluation cases / regression pack | No new runtime algorithm |
-| 2 | `TOKEN-OPT-5A` | Cache-prefix stabilization architecture / contract | Docs/contracts only |
-| 3 | `TOKEN-OPT-5B` | Provider cache policy and capability contract | Contracts only |
-| 4 | `TOKEN-OPT-5C` | Append-only prompt/thread invariant tests | Test-only / helper-only |
-| 5 | `TOKEN-OPT-5D` | Cache-prefix stability evaluation pack | Synthetic evaluation only |
-| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing design | Docs/contracts only |
-| 7 | `TOKEN-7A` | Advisory recommendation contract | Still deferred |
+| Order | Task | Scope | Status | Runtime behavior |
+|-------|------|-------|--------|------------------|
+| 1 | `TOKEN-OPT-4B` | Extractive filtering evaluation cases / regression pack | **Done / Closed** | No new runtime algorithm |
+| 2 | `TOKEN-OPT-5A` | Cache-prefix stabilization architecture / contract | **Done / Closed** | Docs/contracts only |
+| 3 | `TOKEN-OPT-5B` | Provider cache policy and capability contract | **Next / Planned** | Contracts only |
+| 4 | `TOKEN-OPT-5C` | Append-only prompt/thread invariant tests | Planned | Test-only / helper-only |
+| 5 | `TOKEN-OPT-5D` | Cache-prefix stability evaluation pack | Planned | Synthetic evaluation only |
+| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing design | Planned | Docs/contracts only |
+| 7 | `TOKEN-7A` | Advisory recommendation contract | Deferred | Still deferred |
 
 ### TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
+
+**Status:** **Done / Closed**.
 
 **Purpose:** Define prompt-cache-aware optimization boundaries, provider responsibilities, cache attribution, and cache-safe prompt/thread assembly invariants.
 
@@ -355,6 +367,8 @@ no runtime behavior added
 
 ### TOKEN-OPT-5B — provider cache policy and capability contract
 
+**Status:** **Next / Planned**.
+
 Potential contracts:
 
 ```text
@@ -369,6 +383,8 @@ Initial behavior should remain contract-only.
 
 ### TOKEN-OPT-5C — append-only prompt/thread invariant tests
 
+**Status:** Planned.
+
 Purpose:
 
 ```text
@@ -379,6 +395,8 @@ No production prompt assembly changes in this slice.
 
 ### TOKEN-OPT-5D — cache-prefix stability evaluation pack
 
+**Status:** Planned.
+
 Purpose:
 
 ```text
@@ -388,6 +406,8 @@ Add synthetic cases measuring prefix stability, prefix hash consistency, invalid
 This pack must not claim content savings.
 
 ### TOKEN-OPT-5E — cache-aware compaction timing design
+
+**Status:** Planned.
 
 Purpose:
 
@@ -436,12 +456,14 @@ known limitations
 
 ## 12. Current decision
 
-`TOKEN-OPT-4B` remains the immediate next task because it closes evaluation coverage for `ExtractiveFilteringLayer`.
+`TOKEN-OPT-4B` is **Done / Closed**.
 
-After `TOKEN-OPT-4B`, prioritize:
+`TOKEN-OPT-5A` is **Done / Closed**.
+
+Next step:
 
 ```text
-TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
+TOKEN-OPT-5B — provider cache policy and capability contract
 ```
 
 Do not return to `TOKEN-7A` advisory recommendations until Intergrax has enough real optimization mechanisms, provider/cache attribution contracts, and evaluation data to make recommendations useful and safe.

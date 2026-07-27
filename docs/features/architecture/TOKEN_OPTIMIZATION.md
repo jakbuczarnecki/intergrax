@@ -354,6 +354,197 @@ Rules:
 - `measurement-only` and `policy-only` strategies may run without mutating payload content,
 - experimental strategies require an explicit `experimental` profile and operator opt-in.
 
+### 8.3.1 Cache-prefix stabilization
+
+**Status:** architecture / contract closed by `TOKEN-OPT-5A` (**Done / Closed**). Runtime and provider implementation remain deferred to `TOKEN-OPT-5B+`.
+
+**Detailed supporting contract:** [`TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md`](TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md).
+
+Cache-prefix stabilization defines a future provider-cache-aware optimization surface. Prompt caching is a **cost/latency optimization**, not content reduction. It is a **first-class Token Optimization surface** and must be measured separately from content-reduction strategies.
+
+#### Stable prefix and dynamic tail
+
+Prompt assembly must treat **stable prefix** and **dynamic tail** as separate zones.
+
+The stable prefix may contain:
+
+```text
+system policy
+agent role and stable instructions
+stable safety policy
+stable product/runtime conventions
+stable tool envelope / deterministic compact tool catalog view
+long-lived workspace/thread context only when intentionally cacheable
+```
+
+The stable prefix must **not** contain volatile values such as:
+
+```text
+wall-clock timestamps
+run_id
+trace_id
+request_id
+random IDs
+provider-generated metadata
+per-step diagnostic counters
+per-request user text
+fresh retrieved evidence
+dynamic source payloads
+ephemeral tool results
+```
+
+```text
+Dynamic content belongs in the prompt tail, not in the stable prefix.
+```
+
+Where provider cache reuse is intended, the stable prefix must be **byte-stable**.
+
+#### Append-only prompt/thread invariant
+
+```text
+When provider cache reuse is active, prompt/thread assembly should preserve already-sent cacheable prefix blocks and append new information after them.
+```
+
+**Cache-safe behavior:**
+
+```text
+append new information
+preserve byte-stable already-sent prefix
+preserve ordering of cacheable blocks
+keep dynamic per-step data after the cacheable prefix
+```
+
+**Cache-hostile behavior:**
+
+```text
+rewriting old thread messages
+reordering historical blocks
+inserting timestamps/run IDs/trace IDs into the prefix
+regenerating tool catalog text differently per step
+compacting hot cacheable prefix blocks while cache value is still high
+```
+
+#### Tool-surface cache-stability rule
+
+Tool optimization has two independent goals:
+
+```text
+1. reduce LLM-facing tool catalog size
+2. keep the LLM-facing tool envelope cache-stable
+```
+
+```text
+A shorter tool catalog that changes frequently can be worse than a slightly longer stable tool catalog that achieves high provider-cache reuse.
+```
+
+Boundary:
+
+- `ToolSchemaOptimizer` must **not** mutate canonical `ToolContract` definitions.
+- Future compact tool views must be **deterministic**, **cache-stable for the same effective tool set**, and **separate from per-request tool metadata**.
+
+#### Provider ownership boundary
+
+| Owner | Responsibility |
+|-------|----------------|
+| `LLM_ADAPTERS` | Provider-specific prompt cache capabilities; explicit cache breakpoints; automatic/implicit provider caching behavior; cache key / retention / TTL support; cache read/write usage fields; cached-token accounting; provider-specific price/latency interpretation; session affinity requirements where applicable |
+| `TOKEN_OPTIMIZATION` | Shared cache-prefix stabilization strategy; shared attribution vocabulary; policy and safety boundaries; cache-vs-content-reduction separation; compaction timing rules |
+| `OBSERVABILITY` | Cache hit/miss/invalidation attribution; safe counters/signals through existing approved HOS/domain-signal paths |
+
+Token Optimization must **not** create:
+
+```text
+a second tokenizer
+a provider-specific prompt cache client
+a private provider-cache telemetry bus
+hidden prompt-cache configuration
+```
+
+Provider-cache attribution must be measured separately from content-reduction savings. Runtime/provider implementation is deferred to later `TOKEN-OPT-5B+` tasks.
+
+#### Cache attribution vocabulary
+
+**Cache-related terms** (contract vocabulary only — not claimed as implemented):
+
+```text
+cache_read_tokens
+cache_creation_tokens
+cached_input_tokens
+uncached_input_tokens
+cache_hit_ratio
+prefix_hash
+prefix_stability_status
+cache_invalidation_reason
+cache_discount_estimate
+cache_latency_delta_estimate
+```
+
+**Content-reduction terms** (separate attribution family):
+
+```text
+content_saved_chars
+content_saved_tokens
+content_reduction_strategy
+```
+
+```text
+cache_* metrics describe provider cache behavior.
+content_saved_* metrics describe content reduction.
+They must remain separable in telemetry, receipts, benchmark summaries, and public proof claims.
+```
+
+#### Cache-aware compaction timing
+
+Content compaction is not always beneficial when prompt caching is active.
+
+```text
+A compaction step that rewrites a hot cached prefix may destroy more value than it saves.
+```
+
+Future compaction policy must compare:
+
+```text
+estimated content-reduction benefit
+estimated cache invalidation cost
+```
+
+**Prefer:**
+
+```text
+filtering dynamic tool/log output before it becomes stable prefix
+packing/reducing dynamic tail content
+preserving hot cacheable prefix while cache value is high
+compacting cold or idle thread history
+```
+
+**Avoid:**
+
+```text
+rewriting stable prefix during active multi-step runs
+semantic summarization of hot cacheable history
+repacking old thread history on every step
+changing stable tool catalog formatting per request
+```
+
+#### In-cache compaction boundary (`TOKEN-OPT-5A`)
+
+```text
+No in-cache compaction in TOKEN-OPT-5A.
+No LLM summarization in TOKEN-OPT-5A.
+No semantic compression in TOKEN-OPT-5A.
+No adaptive rewriting in TOKEN-OPT-5A.
+```
+
+Future in-cache compaction requires:
+
+```text
+explicit lossy/semantic opt-in
+protected-region validation
+quality/regression gates
+receipts and rollback metadata where persistent
+provider-cache attribution separated from content-reduction attribution
+operator-visible fallback behavior
+```
+
 ### 8.4 Configuration model
 
 External product configuration should expose a simple operator-facing switch:
