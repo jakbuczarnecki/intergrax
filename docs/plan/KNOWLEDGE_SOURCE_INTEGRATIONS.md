@@ -43,8 +43,8 @@ DONE:     VENDOR-KNOWLEDGE-FACADE-CORE-1
 DONE:     VENDOR-KNOWLEDGE-CONNECTION-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1A
 DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
-NEXT:     VENDOR-KNOWLEDGE-SYNC-1B
-PLANNED:  JIRA-KNOWLEDGE-ADAPTER-1
+DONE:     VENDOR-KNOWLEDGE-SYNC-1B
+NEXT:     JIRA-KNOWLEDGE-ADAPTER-1
 PLANNED:  CONFLUENCE-KNOWLEDGE-ADAPTER-1
 PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
@@ -62,12 +62,24 @@ Stateless facade core implemented
 Tenant-scoped source bindings implemented
 DocumentStore binding repository implemented
 Platform-neutral synchronization coordinator implemented
-Synchronization repository ports implemented
-Queue/worker wiring not implemented
-Facade sync DocumentStore repositories not implemented
+Conditional DocumentStore capability implemented
+DocumentStore sync lease repository implemented
+DocumentStore checkpoint repository implemented
+DocumentStore remote-item state repository implemented
+DocumentStoreTaskQueue/Worker wiring implemented
+Delivery-ID continuation scheduling implemented
+Interrupted-task recovery implemented
+Bounded sync-handler retry/backoff implemented
 Vendor adapters not implemented
 LKW connected-source bridge not implemented
 ```
+
+Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
+
+- generic delayed queue scheduling was **not** added;
+- retry/backoff is scoped to the Vendor Knowledge sync handler only;
+- the sink remains an injected port (`KnowledgeSyncSink`);
+- LKW intake / connected-source bridge remains a separate later task.
 
 ---
 
@@ -345,17 +357,18 @@ The coordinator outputs normalized items to a sink port. It does not parse, chun
 
 #### `VENDOR-KNOWLEDGE-SYNC-1B`
 
-**Status:** `NEXT`
+**Status:** `DONE`
 
 **Prerequisites:**
 
 ```text
 DONE:     VENDOR-KNOWLEDGE-SYNC-1A
 DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
-NEXT:     VENDOR-KNOWLEDGE-SYNC-1B
+DONE:     VENDOR-KNOWLEDGE-SYNC-1B
+NEXT:     JIRA-KNOWLEDGE-ADAPTER-1
 ```
 
-Wire the coordinator onto:
+Wired the coordinator onto:
 
 - `DocumentStoreTaskQueue`;
 - `DocumentStoreTaskWorker`;
@@ -370,7 +383,7 @@ Conditional write requirements (from `PLATFORM-DOCUMENT-STORE-CONDITIONAL-1`):
 - implementation must fail closed when the resolved `DocumentStore` does not satisfy `ConditionalDocumentStore`;
 - do not emulate CAS with ordinary `get()` + `put()`.
 
-Add retry/backoff only as a scoped extension of existing queue/runtime behavior.
+Retry/backoff is a bounded Vendor Knowledge handler policy only — not a generic delayed queue scheduler. The sync sink remains an injected port; LKW intake remains separate.
 
 ---
 
@@ -535,7 +548,7 @@ Add safe source discovery, selection, sync request and status through Slack. Sla
 Implement only:
 
 ```text
-VENDOR-KNOWLEDGE-SYNC-1B
+JIRA-KNOWLEDGE-ADAPTER-1
 ```
 
-Do not start Jira, Microsoft Graph, Confluence, secrets resolution, LKW bridge or vendor adapters in the same task.
+Do not start Microsoft Graph, Confluence, secrets resolution, LKW bridge or unrelated vendor adapters in the same task.

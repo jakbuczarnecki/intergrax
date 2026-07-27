@@ -57,6 +57,20 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeSyncSink,
 )
 from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_document_store import (
+    DocumentStoreKnowledgeRemoteItemStateRepository,
+    DocumentStoreKnowledgeSourceLeaseRepository,
+    DocumentStoreKnowledgeSyncCheckpointRepository,
+)
+from intergrax.runtime.vendor_knowledge.sync_jobs import (
+    VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA,
+    VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
+    VendorKnowledgeSyncJob,
+    VendorKnowledgeSyncScheduler,
+    decode_vendor_knowledge_sync_job,
+    encode_vendor_knowledge_sync_job,
+    vendor_knowledge_sync_idempotency_key,
+)
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStatus,
@@ -68,10 +82,22 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncRunResult,
     KnowledgeSyncRunStatus,
 )
+from intergrax.runtime.vendor_knowledge.sync_runtime import (
+    VendorKnowledgeSyncRuntime,
+    build_vendor_knowledge_sync_runtime,
+)
+from intergrax.runtime.vendor_knowledge.sync_worker import (
+    VendorKnowledgeSyncWorkerOutput,
+    make_vendor_knowledge_sync_worker_handler,
+    register_vendor_knowledge_sync_worker_handler,
+)
 
 __all__ = [
     "ConnectionAwareVendorResolver",
+    "DocumentStoreKnowledgeRemoteItemStateRepository",
     "DocumentStoreKnowledgeSourceBindingRepository",
+    "DocumentStoreKnowledgeSourceLeaseRepository",
+    "DocumentStoreKnowledgeSyncCheckpointRepository",
     "IntegrationProfileVendorResolver",
     "KnowledgeAdapterCapabilities",
     "KnowledgeAdapterRegistry",
@@ -111,6 +137,8 @@ __all__ = [
     "KnowledgeSyncRunStatus",
     "KnowledgeSyncSink",
     "KnowledgeVisibility",
+    "VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA",
+    "VENDOR_KNOWLEDGE_SYNC_TASK_NAME",
     "VendorIntegrationResolver",
     "VendorKnowledgeAdapter",
     "VendorKnowledgeError",
@@ -118,5 +146,15 @@ __all__ = [
     "VendorKnowledgeFacade",
     "VendorKnowledgeFacadeService",
     "VendorKnowledgeSyncCoordinator",
+    "VendorKnowledgeSyncJob",
+    "VendorKnowledgeSyncRuntime",
+    "VendorKnowledgeSyncScheduler",
+    "VendorKnowledgeSyncWorkerOutput",
+    "build_vendor_knowledge_sync_runtime",
+    "decode_vendor_knowledge_sync_job",
+    "encode_vendor_knowledge_sync_job",
+    "make_vendor_knowledge_sync_worker_handler",
+    "register_vendor_knowledge_sync_worker_handler",
     "to_source_ref",
+    "vendor_knowledge_sync_idempotency_key",
 ]
