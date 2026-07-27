@@ -545,6 +545,24 @@ no runtime provider caching is implemented in TOKEN-OPT-5E
 
 Contracts and helper live under `intergrax/runtime/token_optimization/` (`CacheAwareCompaction*` types and `decide_cache_aware_compaction_timing`). Decisions must not include raw prompt/thread content and must not treat mixed-unit estimates as measured token savings.
 
+##### Advisory recommendation layer (`TOKEN-7A`)
+
+`TOKEN-7A` adds a **recommendation-only**, policy-only advisory layer. Intergrax now has a policy-only advisory recommendation layer for Token Optimization posture. Recommendations are redaction-safe and non-auto-apply. Runtime/adaptive integration remains deferred.
+
+Key properties:
+
+```text
+recommendation-only first — no autonomous production auto-apply
+recommendations use redaction-safe scalar signals only
+may suggest conservative/balanced profile, full context, strategy enable/disable,
+  dynamic-tail reduction, cache-prefix preservation, or manual review
+must not include raw prompt/context/evidence/tool output
+must not compute token savings
+runtime/adaptive integration remains deferred
+```
+
+Contracts and helper live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisory*` types and `recommend_token_optimization_action`). Every recommendation keeps `auto_apply_allowed=False` and `raw_content_included=False`.
+
 #### In-cache compaction boundary (`TOKEN-OPT-5A`)
 
 ```text

@@ -1129,3 +1129,127 @@ class CacheAwareCompactionTimingDecision:
             self.estimated_cache_invalidation_cost_tokens,
             "estimated_cache_invalidation_cost_tokens",
         )
+
+
+def _validate_optional_unit_ratio(value: float | None, field_name: str) -> None:
+    if value is not None and not 0.0 <= value <= 1.0:
+        raise ValueError(f"{field_name} must be between 0.0 and 1.0 inclusive")
+
+
+class TokenOptimizationRecommendationAction(StrEnum):
+    """Advisory recommendation action (policy-only; no auto-apply)."""
+
+    KEEP_CURRENT = "keep_current"
+    USE_CONSERVATIVE_PROFILE = "use_conservative_profile"
+    USE_BALANCED_PROFILE = "use_balanced_profile"
+    ESCALATE_TO_FULL_CONTEXT = "escalate_to_full_context"
+    ENABLE_STRATEGY = "enable_strategy"
+    DISABLE_STRATEGY = "disable_strategy"
+    PREFER_DYNAMIC_TAIL_REDUCTION = "prefer_dynamic_tail_reduction"
+    PRESERVE_CACHEABLE_PREFIX = "preserve_cacheable_prefix"
+    REQUIRE_MANUAL_REVIEW = "require_manual_review"
+    INSUFFICIENT_DATA = "insufficient_data"
+
+
+class TokenOptimizationRecommendationReason(StrEnum):
+    """Why an advisory recommendation was chosen (no raw content)."""
+
+    QUALITY_REGRESSION_RISK = "quality_regression_risk"
+    PROTECTED_REGION_RISK = "protected_region_risk"
+    HIGH_FALLBACK_RATE = "high_fallback_rate"
+    LOW_OR_NO_SAVINGS = "low_or_no_savings"
+    MEASURED_SAFE_SAVINGS = "measured_safe_savings"
+    CACHE_PREFIX_HOT = "cache_prefix_hot"
+    CACHE_PREFIX_UNSTABLE = "cache_prefix_unstable"
+    DYNAMIC_TAIL_CAN_BE_REDUCED = "dynamic_tail_can_be_reduced"
+    REGRESSION_GATE_FAILED = "regression_gate_failed"
+    REGRESSION_GATE_PASSED = "regression_gate_passed"
+    INSUFFICIENT_SIGNALS = "insufficient_signals"
+    POLICY_REQUIRES_REVIEW = "policy_requires_review"
+
+
+class TokenOptimizationRecommendationConfidence(StrEnum):
+    """Confidence level for an advisory recommendation."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    NOT_ENOUGH_DATA = "not_enough_data"
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationAdvisorySignal:
+    """Redaction-safe scalar inputs for advisory recommendations."""
+
+    source_type: TokenOptimizationSourceType
+    strategy_kind: TokenOptimizationStrategyKind | None = None
+    current_profile: TokenOptimizationProfile | None = None
+    sample_count: int = 0
+    measured_saved_ratio: float | None = None
+    validation_pass_rate: float | None = None
+    fallback_rate: float | None = None
+    quality_regression_detected: bool = False
+    protected_region_failure_detected: bool = False
+    regression_gate_passed: bool | None = None
+    cache_prefix_stability_status: str | None = None
+    cache_hot: bool | None = None
+    dynamic_tail_reduction_available: bool = False
+    policy_review_required: bool = False
+
+    def __post_init__(self) -> None:
+        if self.sample_count < 0:
+            raise ValueError("sample_count cannot be negative")
+        _validate_optional_unit_ratio(
+            self.measured_saved_ratio, "measured_saved_ratio"
+        )
+        _validate_optional_unit_ratio(
+            self.validation_pass_rate, "validation_pass_rate"
+        )
+        _validate_optional_unit_ratio(self.fallback_rate, "fallback_rate")
+        _validate_optional_stripped_non_empty(
+            self.cache_prefix_stability_status, "cache_prefix_stability_status"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationAdvisoryRecommendation:
+    """Advisory recommendation outcome (policy-only; no auto-apply)."""
+
+    action: TokenOptimizationRecommendationAction
+    reason: TokenOptimizationRecommendationReason
+    confidence: TokenOptimizationRecommendationConfidence
+    source_type: TokenOptimizationSourceType
+    strategy_kind: TokenOptimizationStrategyKind | None = None
+    recommended_profile: TokenOptimizationProfile | None = None
+    auto_apply_allowed: bool = False
+    raw_content_included: bool = False
+
+    def __post_init__(self) -> None:
+        if self.auto_apply_allowed:
+            raise ValueError("auto_apply_allowed must remain False")
+        if self.raw_content_included:
+            raise ValueError("raw_content_included must remain False")
+        if self.action in (
+            TokenOptimizationRecommendationAction.ENABLE_STRATEGY,
+            TokenOptimizationRecommendationAction.DISABLE_STRATEGY,
+        ) and self.strategy_kind is None:
+            raise ValueError(
+                "strategy_kind must be present when action is ENABLE_STRATEGY "
+                "or DISABLE_STRATEGY"
+            )
+        if (
+            self.action is TokenOptimizationRecommendationAction.USE_CONSERVATIVE_PROFILE
+            and self.recommended_profile is not TokenOptimizationProfile.CONSERVATIVE
+        ):
+            raise ValueError(
+                "recommended_profile must be CONSERVATIVE when action is "
+                "USE_CONSERVATIVE_PROFILE"
+            )
+        if (
+            self.action is TokenOptimizationRecommendationAction.USE_BALANCED_PROFILE
+            and self.recommended_profile is not TokenOptimizationProfile.BALANCED
+        ):
+            raise ValueError(
+                "recommended_profile must be BALANCED when action is "
+                "USE_BALANCED_PROFILE"
+            )

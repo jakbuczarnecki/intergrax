@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.runtime.token_optimization.advisory import recommend_token_optimization_action
 from intergrax.runtime.token_optimization.contracts import (
     CacheAwareCompactionDecision,
     CacheAwareCompactionReason,
@@ -26,6 +27,8 @@ from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegionValidationStatus,
     StrategySafetyClass,
     TokenCategory,
+    TokenOptimizationAdvisoryRecommendation,
+    TokenOptimizationAdvisorySignal,
     TokenOptimizationAttribution,
     TokenOptimizationBypassReason,
     TokenOptimizationDecision,
@@ -34,6 +37,9 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationPluginDescriptor,
     TokenOptimizationPolicy,
     TokenOptimizationProfile,
+    TokenOptimizationRecommendationAction,
+    TokenOptimizationRecommendationConfidence,
+    TokenOptimizationRecommendationReason,
     TokenOptimizationRequest,
     TokenOptimizationResult,
     TokenOptimizationSourceType,
@@ -191,6 +197,7 @@ __all__ = [
     "get_env_protected_terms",
     "make_compression_receipt_ref",
     "parse_protected_terms",
+    "recommend_token_optimization_action",
     "resolve_output_policy",
     "resolve_protected_terms",
     "OutputPolicy",
@@ -220,6 +227,8 @@ __all__ = [
     "ProtectedRegionValidationStatus",
     "StrategySafetyClass",
     "TokenCategory",
+    "TokenOptimizationAdvisoryRecommendation",
+    "TokenOptimizationAdvisorySignal",
     "TokenOptimizationAttribution",
     "build_prefix_snapshot",
     "compute_prefix_hash",
@@ -232,6 +241,9 @@ __all__ = [
     "TokenOptimizationPluginDescriptor",
     "TokenOptimizationPolicy",
     "TokenOptimizationProfile",
+    "TokenOptimizationRecommendationAction",
+    "TokenOptimizationRecommendationConfidence",
+    "TokenOptimizationRecommendationReason",
     "TokenOptimizationRequest",
     "TokenOptimizationResult",
     "TokenOptimizationSourceType",

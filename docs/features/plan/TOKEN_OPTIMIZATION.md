@@ -676,7 +676,7 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 13 | **TOKEN-OPT-5C** | Folded into **TOKEN-OPT-5B** functional block |
 | 14 | **TOKEN-OPT-5D** | Folded into **TOKEN-OPT-5B** functional block |
 | 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Done / Closed** |
-| — | **TOKEN-7A** | Advisory recommendation contract — Deferred |
+| 16 | **TOKEN-7A** | Advisory recommendation contract and policy-only recommender — **Done / Closed** |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -1113,7 +1113,64 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no semantic compression or LLM summarization added
 - no in-cache compaction added
 - no README or public adoption documentation updated
-- next decision: choose the next functional Token Optimization block before returning to TOKEN-7A advisory recommendations
+
+#### TOKEN-7A — advisory recommendation contract and policy-only recommender
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a provider-neutral, policy-only advisory layer that recommends Token Optimization posture changes from redaction-safe scalar signals without auto-applying optimizations.
+
+**Deliverables:**
+
+- recommendation action enum
+- recommendation reason enum
+- recommendation confidence enum
+- advisory signal contract
+- advisory recommendation contract
+- deterministic recommendation helper
+- synthetic advisory recommendation corpus
+- focused advisory recommendation tests
+- architecture / feature plan / AHI plan documentation updates
+
+**Closeout:**
+
+- advisory recommendation action contract added
+- advisory recommendation reason contract added
+- advisory recommendation confidence contract added
+- safe advisory signal contract added
+- safe advisory recommendation contract added
+- deterministic policy-only recommendation helper added
+- protected-region risk escalation path covered
+- quality-regression escalation path covered
+- regression-gate failure review path covered
+- insufficient-data path covered
+- high-fallback disable-strategy path covered
+- hot stable-cache preserve-prefix path covered
+- invalidated-cache review path covered
+- dynamic-tail reduction recommendation path covered
+- measured-safe-savings enable-strategy path covered
+- low-savings keep-current path covered
+- synthetic advisory recommendation corpus added
+- recommendation reports remain raw-content-safe
+- auto_apply_allowed remains False
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adaptive runtime integration added
+- no observability/HOS emission added
+- no semantic compression or LLM summarization added
+- no README or public adoption documentation updated
+
+**Roadmap/order update:**
+
+```text
+TOKEN-OPT-5A — Done / Closed
+TOKEN-OPT-5B — Done / Closed
+TOKEN-OPT-5C — folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5D — folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5E — Done / Closed
+TOKEN-7A — Done / Closed
+TOKEN-7 — still future work; no production auto-apply
+```
 
 ### TOKEN-OPT-3A acceptance
 
@@ -1374,11 +1431,11 @@ TOKEN-OPT-5B prompt-cache contracts and cache-prefix stability proof — Done / 
 TOKEN-OPT-5C folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5D folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5E cache-aware compaction timing policy — Done / Closed
-TOKEN-7A    advisory recommendation contract — Deferred (unless explicitly re-opened later)
+TOKEN-7A    advisory recommendation contract and policy-only recommender — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
 
-Next decision: choose the next functional Token Optimization block before returning to TOKEN-7A advisory recommendations.
+TOKEN-7 remains future work; no production auto-apply. Runtime/adaptive integration remains deferred.
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 
