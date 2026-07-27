@@ -100,6 +100,7 @@ def _candidate_payload(
     description: str = "",
     source_type: str = "local_folder",
     available: bool = True,
+    omit_available: bool = False,
     path: str | None = None,
     fingerprint: str | None = None,
 ) -> dict[str, object]:
@@ -108,8 +109,9 @@ def _candidate_payload(
         "label": label,
         "description": description,
         "source_type": source_type,
-        "available": available,
     }
+    if not omit_available:
+        payload["available"] = available
     if path is not None:
         payload["path"] = path
     if fingerprint is not None:
@@ -337,9 +339,9 @@ def test_ordinary_source_questions_are_not_commands() -> None:
 
 def test_order_source_candidates_label_then_id() -> None:
     items = [
-        SlackSourceCandidateListItem(candidate_id="b", label="Zebra"),
-        SlackSourceCandidateListItem(candidate_id="a", label="Apple"),
-        SlackSourceCandidateListItem(candidate_id="c", label="apple"),
+        SlackSourceCandidateListItem(candidate_id="b", label="Zebra", available=True),
+        SlackSourceCandidateListItem(candidate_id="a", label="Apple", available=True),
+        SlackSourceCandidateListItem(candidate_id="c", label="apple", available=True),
     ]
     ordered = order_source_candidates_for_listing(items)
     assert [item.candidate_id for item in ordered] == ["a", "c", "b"]
@@ -351,11 +353,13 @@ def test_render_safe_list_and_limits() -> None:
             candidate_id="cid-secret",
             label="  Contracts\n",
             description="Current contract documents",
+            available=True,
         ),
         SlackSourceCandidateListItem(
             candidate_id="cid-2",
             label="",
             description="",
+            available=True,
         ),
     ]
     text = render_source_candidate_list(items)
@@ -374,6 +378,7 @@ def test_render_safe_list_and_limits() -> None:
                 candidate_id="x",
                 label=long_label,
                 description=long_desc,
+                available=True,
             )
         ]
     )
@@ -387,6 +392,7 @@ def test_render_safe_list_and_limits() -> None:
                 candidate_id="x",
                 label="A\x00B",
                 description="C\x01D",
+                available=True,
             )
         ]
     )
@@ -516,6 +522,61 @@ async def test_list_source_candidates_no_api_key_and_errors() -> None:
     with pytest.raises(SlackAskClientError) as parse_exc:
         await malformed.list_source_candidates(tenant_id="t", workspace_id="ws")
     assert parse_exc.value.kind == "parse_error"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "candidate",
+    [
+        _candidate_payload(candidate_id="c", label="C", omit_available=True),
+        {**_candidate_payload(candidate_id="c", label="C"), "available": None},
+        {**_candidate_payload(candidate_id="c", label="C"), "available": "true"},
+        {**_candidate_payload(candidate_id="c", label="C"), "available": "false"},
+        {**_candidate_payload(candidate_id="c", label="C"), "available": 1},
+        {**_candidate_payload(candidate_id="c", label="C"), "available": 0},
+    ],
+)
+async def test_list_source_candidates_rejects_invalid_available(
+    candidate: dict[str, object],
+) -> None:
+    client = WorkspaceAskHttpClient(
+        SlackAskClientConfig(base_url="http://lkw.test"),
+        transport=_transport(candidates=[candidate]),
+    )
+    with pytest.raises(SlackAskClientError) as exc:
+        await client.list_source_candidates(tenant_id="t", workspace_id="ws")
+    assert exc.value.kind == "parse_error"
+    assert "available" not in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_workflow_source_add_missing_available_fails_closed() -> None:
+    accept_calls: list[httpx.Request] = []
+    ask_calls: list[httpx.Request] = []
+    outbound, _, dedupe = await _run(
+        "source add 1",
+        transport=_transport(
+            candidates=[
+                _candidate_payload(
+                    candidate_id="c",
+                    label="Contracts",
+                    omit_available=True,
+                )
+            ],
+            accept_calls=accept_calls,
+            ask_calls=ask_calls,
+        ),
+        event_id="Ev-missing-available",
+    )
+    assert outbound == [SOURCE_CANDIDATE_LIST_LOAD_FAILED_TEXT]
+    assert accept_calls == []
+    assert ask_calls == []
+    assert "available" not in outbound[0].casefold()
+    record = dedupe._get(
+        build_slack_dedupe_key(team_id="T_OK", event_id="Ev-missing-available")
+    )
+    assert record is not None
+    assert record.status is SlackDedupeStatus.COMPLETED
 
 
 @pytest.mark.asyncio

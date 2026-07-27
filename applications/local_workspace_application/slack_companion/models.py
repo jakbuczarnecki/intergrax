@@ -172,7 +172,7 @@ class SlackSourceCandidateListItem(BaseModel):
     label: str = ""
     description: str = ""
     source_type: str = ""
-    available: bool = True
+    available: bool = Field(..., strict=True)
 
 
 class SlackSourceCandidateListResponse(BaseModel):

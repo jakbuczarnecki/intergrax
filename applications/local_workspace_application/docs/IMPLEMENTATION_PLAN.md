@@ -15,7 +15,7 @@ Current milestone: LKW MVP
 Current roadmap stage: Workspace Contents — Knowledge Intake source expansion
 Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-1 + corrections
 Current implementation: LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / CORRECTION REQUIRED
-Current review gate: audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1
+Current review gate: audit LKW-WORKSPACE-CONTENTS-1B-4-2-C2
 Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5 — explicit Web URL intake
 Following source expansion: 1B-6 VENDOR-KNOWLEDGE integration
 Then: 1C shared synchronization and completion lifecycle → 1D provenance inspection → 1E safe removal
@@ -98,7 +98,7 @@ Microsoft Teams in `1B-6` means Teams-hosted organizational knowledge. It does n
 | `LKW-WORKSPACE-CONTENTS-1B-4-1-C1` | Harden public safety, candidate identity and operation evidence | ACCEPTED |
 | `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | **IMPLEMENTED / CORRECTION REQUIRED** |
 
-Current review gate: audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C1` before advancing to `1B-5`.
+Current review gate: audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C2` before advancing to `1B-5`.
 
 ---
 
@@ -435,7 +435,7 @@ Slack safe numbered Source Candidate selection
 IMPLEMENTED / CORRECTION REQUIRED
 
 REVIEW GATE:
-audit LKW-WORKSPACE-CONTENTS-1B-4-2-C1
+audit LKW-WORKSPACE-CONTENTS-1B-4-2-C2
 → ACCEPTED: advance to 1B-5
 → NEEDS_CORRECTION: issue only the next bounded 1B-4-2 correction
 
