@@ -1033,3 +1033,223 @@ class PromptCacheAttribution:
             or self.content_saved_chars is not None
             or self.content_saved_tokens is not None
         )
+
+
+class CacheAwareCompactionTarget(StrEnum):
+    """Where compaction would rewrite relative to a cacheable prefix."""
+
+    STABLE_PREFIX = "stable_prefix"
+    DYNAMIC_TAIL = "dynamic_tail"
+    COLD_HISTORY = "cold_history"
+    FULL_THREAD = "full_thread"
+    UNKNOWN = "unknown"
+
+
+class CacheAwareCompactionDecision(StrEnum):
+    """Whether compaction should run, wait, skip, or require review."""
+
+    RUN = "run"
+    DEFER = "defer"
+    BYPASS = "bypass"
+    REQUIRE_MANUAL_REVIEW = "require_manual_review"
+
+
+class CacheAwareCompactionReason(StrEnum):
+    """Why a cache-aware compaction timing decision was chosen (no raw content)."""
+
+    DYNAMIC_TAIL_SAFE_TO_REDUCE = "dynamic_tail_safe_to_reduce"
+    COLD_HISTORY_SAFE_TO_COMPACT = "cold_history_safe_to_compact"
+    CACHE_INVALIDATION_COST_TOO_HIGH = "cache_invalidation_cost_too_high"
+    PREFIX_NOT_STABLE = "prefix_not_stable"
+    CACHE_NEAR_EXPIRY = "cache_near_expiry"
+    LOW_CONTENT_REDUCTION_BENEFIT = "low_content_reduction_benefit"
+    FULL_THREAD_REWRITE_RISK = "full_thread_rewrite_risk"
+    PROTECTED_OR_SEMANTIC_RISK = "protected_or_semantic_risk"
+    INSUFFICIENT_SIGNALS = "insufficient_signals"
+
+
+@dataclass(frozen=True, slots=True)
+class CacheAwareCompactionTimingInput:
+    """Signals for cache-aware compaction timing (helper/policy only)."""
+
+    target: CacheAwareCompactionTarget
+    prefix_stability_status: str | None = None
+    invalidation_reason: PromptCacheInvalidationReason = PromptCacheInvalidationReason.NONE
+    cache_hot: bool | None = None
+    ttl_seconds_remaining: int | None = None
+    near_expiry_threshold_seconds: int = 60
+    estimated_content_reduction_chars: int | None = None
+    estimated_cache_invalidation_cost_tokens: int | None = None
+    protected_or_semantic_risk: bool = False
+    dynamic_tail_reduction_available: bool = False
+
+    def __post_init__(self) -> None:
+        _validate_optional_non_negative_int(
+            self.ttl_seconds_remaining, "ttl_seconds_remaining"
+        )
+        if self.near_expiry_threshold_seconds < 0:
+            raise ValueError("near_expiry_threshold_seconds cannot be negative")
+        _validate_optional_non_negative_int(
+            self.estimated_content_reduction_chars,
+            "estimated_content_reduction_chars",
+        )
+        _validate_optional_non_negative_int(
+            self.estimated_cache_invalidation_cost_tokens,
+            "estimated_cache_invalidation_cost_tokens",
+        )
+        _validate_optional_stripped_non_empty(
+            self.prefix_stability_status, "prefix_stability_status"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CacheAwareCompactionTimingDecision:
+    """Deterministic cache-aware compaction timing outcome (no raw content)."""
+
+    decision: CacheAwareCompactionDecision
+    reason: CacheAwareCompactionReason
+    target: CacheAwareCompactionTarget
+    cache_hot: bool | None
+    ttl_seconds_remaining: int | None
+    estimated_content_reduction_chars: int | None
+    estimated_cache_invalidation_cost_tokens: int | None
+    raw_content_included: bool = False
+
+    def __post_init__(self) -> None:
+        if self.raw_content_included:
+            raise ValueError("raw_content_included must remain False")
+        _validate_optional_non_negative_int(
+            self.ttl_seconds_remaining, "ttl_seconds_remaining"
+        )
+        _validate_optional_non_negative_int(
+            self.estimated_content_reduction_chars,
+            "estimated_content_reduction_chars",
+        )
+        _validate_optional_non_negative_int(
+            self.estimated_cache_invalidation_cost_tokens,
+            "estimated_cache_invalidation_cost_tokens",
+        )
+
+
+def _validate_optional_unit_ratio(value: float | None, field_name: str) -> None:
+    if value is not None and not 0.0 <= value <= 1.0:
+        raise ValueError(f"{field_name} must be between 0.0 and 1.0 inclusive")
+
+
+class TokenOptimizationRecommendationAction(StrEnum):
+    """Advisory recommendation action (policy-only; no auto-apply)."""
+
+    KEEP_CURRENT = "keep_current"
+    USE_CONSERVATIVE_PROFILE = "use_conservative_profile"
+    USE_BALANCED_PROFILE = "use_balanced_profile"
+    ESCALATE_TO_FULL_CONTEXT = "escalate_to_full_context"
+    ENABLE_STRATEGY = "enable_strategy"
+    DISABLE_STRATEGY = "disable_strategy"
+    PREFER_DYNAMIC_TAIL_REDUCTION = "prefer_dynamic_tail_reduction"
+    PRESERVE_CACHEABLE_PREFIX = "preserve_cacheable_prefix"
+    REQUIRE_MANUAL_REVIEW = "require_manual_review"
+    INSUFFICIENT_DATA = "insufficient_data"
+
+
+class TokenOptimizationRecommendationReason(StrEnum):
+    """Why an advisory recommendation was chosen (no raw content)."""
+
+    QUALITY_REGRESSION_RISK = "quality_regression_risk"
+    PROTECTED_REGION_RISK = "protected_region_risk"
+    HIGH_FALLBACK_RATE = "high_fallback_rate"
+    LOW_OR_NO_SAVINGS = "low_or_no_savings"
+    MEASURED_SAFE_SAVINGS = "measured_safe_savings"
+    CACHE_PREFIX_HOT = "cache_prefix_hot"
+    CACHE_PREFIX_UNSTABLE = "cache_prefix_unstable"
+    DYNAMIC_TAIL_CAN_BE_REDUCED = "dynamic_tail_can_be_reduced"
+    REGRESSION_GATE_FAILED = "regression_gate_failed"
+    REGRESSION_GATE_PASSED = "regression_gate_passed"
+    INSUFFICIENT_SIGNALS = "insufficient_signals"
+    POLICY_REQUIRES_REVIEW = "policy_requires_review"
+
+
+class TokenOptimizationRecommendationConfidence(StrEnum):
+    """Confidence level for an advisory recommendation."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    NOT_ENOUGH_DATA = "not_enough_data"
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationAdvisorySignal:
+    """Redaction-safe scalar inputs for advisory recommendations."""
+
+    source_type: TokenOptimizationSourceType
+    strategy_kind: TokenOptimizationStrategyKind | None = None
+    current_profile: TokenOptimizationProfile | None = None
+    sample_count: int = 0
+    measured_saved_ratio: float | None = None
+    validation_pass_rate: float | None = None
+    fallback_rate: float | None = None
+    quality_regression_detected: bool = False
+    protected_region_failure_detected: bool = False
+    regression_gate_passed: bool | None = None
+    cache_prefix_stability_status: str | None = None
+    cache_hot: bool | None = None
+    dynamic_tail_reduction_available: bool = False
+    policy_review_required: bool = False
+
+    def __post_init__(self) -> None:
+        if self.sample_count < 0:
+            raise ValueError("sample_count cannot be negative")
+        _validate_optional_unit_ratio(
+            self.measured_saved_ratio, "measured_saved_ratio"
+        )
+        _validate_optional_unit_ratio(
+            self.validation_pass_rate, "validation_pass_rate"
+        )
+        _validate_optional_unit_ratio(self.fallback_rate, "fallback_rate")
+        _validate_optional_stripped_non_empty(
+            self.cache_prefix_stability_status, "cache_prefix_stability_status"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class TokenOptimizationAdvisoryRecommendation:
+    """Advisory recommendation outcome (policy-only; no auto-apply)."""
+
+    action: TokenOptimizationRecommendationAction
+    reason: TokenOptimizationRecommendationReason
+    confidence: TokenOptimizationRecommendationConfidence
+    source_type: TokenOptimizationSourceType
+    strategy_kind: TokenOptimizationStrategyKind | None = None
+    recommended_profile: TokenOptimizationProfile | None = None
+    auto_apply_allowed: bool = False
+    raw_content_included: bool = False
+
+    def __post_init__(self) -> None:
+        if self.auto_apply_allowed:
+            raise ValueError("auto_apply_allowed must remain False")
+        if self.raw_content_included:
+            raise ValueError("raw_content_included must remain False")
+        if self.action in (
+            TokenOptimizationRecommendationAction.ENABLE_STRATEGY,
+            TokenOptimizationRecommendationAction.DISABLE_STRATEGY,
+        ) and self.strategy_kind is None:
+            raise ValueError(
+                "strategy_kind must be present when action is ENABLE_STRATEGY "
+                "or DISABLE_STRATEGY"
+            )
+        if (
+            self.action is TokenOptimizationRecommendationAction.USE_CONSERVATIVE_PROFILE
+            and self.recommended_profile is not TokenOptimizationProfile.CONSERVATIVE
+        ):
+            raise ValueError(
+                "recommended_profile must be CONSERVATIVE when action is "
+                "USE_CONSERVATIVE_PROFILE"
+            )
+        if (
+            self.action is TokenOptimizationRecommendationAction.USE_BALANCED_PROFILE
+            and self.recommended_profile is not TokenOptimizationProfile.BALANCED
+        ):
+            raise ValueError(
+                "recommended_profile must be BALANCED when action is "
+                "USE_BALANCED_PROFILE"
+            )

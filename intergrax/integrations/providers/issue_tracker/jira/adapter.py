@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRecord, IssueSearchResult
 from intergrax.integrations.providers.issue_tracker.jira.client import JiraRestClient
+from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
+    JiraKnowledgeIssue,
+    JiraKnowledgeIssuePage,
+)
 
 
 class _JiraIssueTracker:
@@ -31,6 +35,26 @@ class _JiraIssueTracker:
 
     def search_issues(self, jql: str, *, limit: int = 50) -> IssueSearchResult:
         return self._client.search_issues(jql, limit=limit)
+
+    def search_knowledge_issues(
+        self,
+        *,
+        project_key: str,
+        next_page_token: str | None,
+        limit: int,
+    ) -> JiraKnowledgeIssuePage:
+        return self._client.search_knowledge_issues(
+            project_key=project_key,
+            next_page_token=next_page_token,
+            limit=limit,
+        )
+
+    def get_knowledge_issue(
+        self,
+        *,
+        issue_key: str,
+    ) -> JiraKnowledgeIssue:
+        return self._client.get_knowledge_issue(issue_key=issue_key)
 
     def update_issue(
         self,

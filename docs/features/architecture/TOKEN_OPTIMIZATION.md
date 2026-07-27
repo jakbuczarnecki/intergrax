@@ -525,6 +525,62 @@ repacking old thread history on every step
 changing stable tool catalog formatting per request
 ```
 
+##### Cache-aware compaction timing policy
+
+`TOKEN-OPT-5E` adds a provider-neutral helper/policy layer that decides whether compaction should **run**, **defer**, **bypass**, or **require manual review**.
+
+Intergrax now has a provider-neutral cache-aware compaction timing policy. Runtime/provider integration remains deferred. The policy helps avoid rewriting hot cacheable prefixes when estimated cache invalidation cost outweighs estimated content-reduction benefit.
+
+Key rules:
+
+```text
+compaction can destroy more cache value than it saves
+dynamic tail compaction is preferred over stable prefix rewriting
+stable prefix / full-thread compaction is conservative
+protected/semantic risk requires manual review
+near-expiry or cold-history compaction may be allowed
+policy decisions are helper-level / provider-neutral
+no runtime provider caching is implemented in TOKEN-OPT-5E
+```
+
+Contracts and helper live under `intergrax/runtime/token_optimization/` (`CacheAwareCompaction*` types and `decide_cache_aware_compaction_timing`). Decisions must not include raw prompt/thread content and must not treat mixed-unit estimates as measured token savings.
+
+##### Advisory recommendation layer (`TOKEN-7A`)
+
+`TOKEN-7A` adds a **recommendation-only**, policy-only advisory layer. Intergrax now has a policy-only advisory recommendation layer for Token Optimization posture. Recommendations are redaction-safe and non-auto-apply. Runtime/adaptive integration remains deferred.
+
+Key properties:
+
+```text
+recommendation-only first — no autonomous production auto-apply
+recommendations use redaction-safe scalar signals only
+may suggest conservative/balanced profile, full context, strategy enable/disable,
+  dynamic-tail reduction, cache-prefix preservation, or manual review
+must not include raw prompt/context/evidence/tool output
+must not compute token savings
+runtime/adaptive integration remains deferred
+```
+
+Contracts and helper live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisory*` types and `recommend_token_optimization_action`). Every recommendation keeps `auto_apply_allowed=False` and `raw_content_included=False`.
+
+##### Advisory evaluation and reporting (`TOKEN-7B`)
+
+`TOKEN-7B` adds a redaction-safe advisory evaluation and reporting layer on top of the policy-only recommender. Advisory reports evaluate recommendation outcomes, not runtime behavior. Reports use safe scalar fields only, must not include raw prompt/context/evidence/tool output, and must prove non-auto-apply status across evaluated cases. Runtime/adaptive integration remains deferred.
+
+Key properties:
+
+```text
+evaluation/reporting only — no autonomous production auto-apply
+deterministic per-case evaluation against expected action/reason/confidence
+aggregate pass/fail/manual-review/insufficient-data/non-auto-apply/raw-content-safe counts
+redaction-safe dict and text report formatters
+must not include raw signal or recommendation objects in report output
+must not include saved_tokens / optimized_tokens / baseline_tokens / compressed_tokens fields
+runtime/adaptive integration remains deferred
+```
+
+Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryEvaluation*` types, `evaluate_advisory_recommendation_case`, `evaluate_advisory_recommendation_cases`, `token_optimization_advisory_report_to_dict`, `format_token_optimization_advisory_report`).
+
 #### In-cache compaction boundary (`TOKEN-OPT-5A`)
 
 ```text

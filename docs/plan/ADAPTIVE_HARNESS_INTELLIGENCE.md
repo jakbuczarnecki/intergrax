@@ -59,7 +59,9 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-AHI-1** | Code | P3 | Frozen | AHI consumes Token Optimization telemetry to recommend compact/full profiles, budget adjustments, and escalation rules by task/step/source type | Recommendations are observable and reversible; no automatic compression or budget reduction without policy; quality-drop escalation to fuller context supported; uses existing token telemetry, no duplicate token accounting; `uv run pytest tests/unit/runtime/adaptive/ -q` |
+| **TOKEN-AHI-1** | Code | P3 | Partial / Token Optimization side Done | AHI consumes Token Optimization telemetry to recommend compact/full profiles, budget adjustments, and escalation rules by task/step/source type | Recommendations are observable and reversible; no automatic compression or budget reduction without policy; quality-drop escalation to fuller context supported; uses existing token telemetry, no duplicate token accounting; `uv run pytest tests/unit/runtime/adaptive/ -q` |
+
+**TOKEN-7A update:** TOKEN-7A now provides the Token Optimization-side advisory recommendation contract and policy-only helper (`recommend_token_optimization_action`). Production AHI adaptive consumption / auto-apply remains deferred. Recommendation-only remains the first allowed mode. No autonomous production auto-apply is introduced. TOKEN-AHI-1 remains the broader AHI integration target unless fully implemented in a future task.
 
 **Explicit exclusions:** no autonomous production auto-apply, no tenant-wide learned compression policy without governance review, no adaptive strategy before token-vs-quality regression gates exist.
 

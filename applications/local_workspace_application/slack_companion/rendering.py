@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from local_workspace_application.slack_companion.models import (
     SlackAskHttpResponse,
     SlackManagedFileBatchResponse,
+    SlackSourceCandidateListItem,
     SlackSourceListItem,
     SlackWorkspaceListItem,
 )
@@ -73,6 +74,41 @@ SOURCE_WORKSPACE_UNAVAILABLE_TEXT = (
 )
 SOURCE_LIST_TRUNCATED_FOOTER = "Additional sources are not shown."
 
+SOURCE_CANDIDATE_LIST_HEADER = "Available source candidates:"
+SOURCE_CANDIDATE_LIST_EMPTY_TEXT = (
+    "No source candidates are currently available for the active workspace."
+)
+SOURCE_CANDIDATE_LIST_LOAD_FAILED_TEXT = (
+    "The source candidate list could not be loaded. Please try again later."
+)
+SOURCE_CANDIDATE_OUT_OF_RANGE_TEXT = (
+    "Source candidate number is not available.\n"
+    "Send `source candidates` to see the current list."
+)
+SOURCE_CANDIDATE_USAGE_TEXT = (
+    "Use `source add <number>` to attach a source.\n"
+    "Send `source candidates` to see the current list."
+)
+SOURCE_CANDIDATE_ACCEPTED_PREFIX = "Source accepted: "
+SOURCE_CANDIDATE_ACCEPTED_FOOTER = "Processing continues asynchronously."
+SOURCE_CANDIDATE_ALREADY_ATTACHED_TEXT = (
+    "That source is already attached to the active workspace."
+)
+SOURCE_CANDIDATE_UNAVAILABLE_TEXT = (
+    "That source candidate is not available right now."
+)
+SOURCE_CANDIDATE_SELECTION_CONFLICT_TEXT = (
+    "The source selection could not be applied.\n"
+    "Send `source candidates` and choose again."
+)
+SOURCE_CANDIDATE_ACCEPT_FAILED_TEXT = (
+    "The source candidate could not be attached. Please try again later."
+)
+SOURCE_CANDIDATE_SERVICE_UNAVAILABLE_TEXT = (
+    "Source candidates are temporarily unavailable. Please try again later."
+)
+SOURCE_CANDIDATE_LIST_FOOTER = "Use `source add <number>` to attach a source."
+
 ATTACHMENT_FETCH_UNAVAILABLE_TEXT = (
     "File attachments are not available from this Slack connection right now."
 )
@@ -95,10 +131,14 @@ MAX_SOURCE_LABELS = 5
 MAX_WORKSPACE_NAME_CHARS = 100
 MAX_SOURCE_LIST_ITEMS = 25
 MAX_SOURCE_LIST_LABEL_CHARS = 80
+MAX_SOURCE_CANDIDATE_ITEMS = 25
+MAX_SOURCE_CANDIDATE_LABEL_CHARS = 80
+MAX_SOURCE_CANDIDATE_DESCRIPTION_CHARS = 180
 MAX_ATTACHMENT_DISPLAY_ITEMS = 10
 MAX_ATTACHMENT_FILE_NAME_CHARS = 80
 _CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 _WHITESPACE_RE = re.compile(r"\s+")
+_SAFE_SOURCE_CANDIDATE_LABEL_FALLBACK = "Source"
 
 _MANAGED_FILE_ERROR_MESSAGES: dict[str, str] = {
     "managed_file_name_required": "File name is missing.",
@@ -256,6 +296,100 @@ def render_source_list(sources: list[SlackSourceListItem]) -> str:
         lines.append(f"   Last sync: {_format_last_sync(item.last_sync_at)}")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_source_candidate_list(
+    candidates: list[SlackSourceCandidateListItem],
+) -> str:
+    """Render a safe numbered Source Candidate list; never includes IDs or paths."""
+    if not candidates:
+        return SOURCE_CANDIDATE_LIST_EMPTY_TEXT
+
+    lines = [SOURCE_CANDIDATE_LIST_HEADER, ""]
+    for index, item in enumerate(candidates):
+        if index >= MAX_SOURCE_CANDIDATE_ITEMS:
+            break
+        label = _safe_source_candidate_label(item.label)
+        shown = index + 1
+        lines.append(f"{shown}. {label}")
+        description = _safe_source_candidate_description(item.description)
+        if description:
+            lines.append(f"   {description}")
+        lines.append("")
+    lines.append(SOURCE_CANDIDATE_LIST_FOOTER)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_source_candidate_list_empty() -> str:
+    return SOURCE_CANDIDATE_LIST_EMPTY_TEXT
+
+
+def render_source_candidate_list_load_failed() -> str:
+    return SOURCE_CANDIDATE_LIST_LOAD_FAILED_TEXT
+
+
+def render_source_candidate_workspace_unavailable() -> str:
+    return SELECTED_WORKSPACE_UNAVAILABLE_TEXT
+
+
+def render_source_candidate_out_of_range() -> str:
+    return SOURCE_CANDIDATE_OUT_OF_RANGE_TEXT
+
+
+def render_source_candidate_usage() -> str:
+    return SOURCE_CANDIDATE_USAGE_TEXT
+
+
+def render_source_candidate_accepted(label: str) -> str:
+    safe = _safe_source_candidate_label(label)
+    return (
+        f"{SOURCE_CANDIDATE_ACCEPTED_PREFIX}{safe}\n\n"
+        f"{SOURCE_CANDIDATE_ACCEPTED_FOOTER}"
+    )
+
+
+def render_source_candidate_already_attached() -> str:
+    return SOURCE_CANDIDATE_ALREADY_ATTACHED_TEXT
+
+
+def render_source_candidate_unavailable() -> str:
+    return SOURCE_CANDIDATE_UNAVAILABLE_TEXT
+
+
+def render_source_candidate_selection_conflict() -> str:
+    return SOURCE_CANDIDATE_SELECTION_CONFLICT_TEXT
+
+
+def render_source_candidate_accept_failed() -> str:
+    return SOURCE_CANDIDATE_ACCEPT_FAILED_TEXT
+
+
+def render_source_candidate_service_unavailable() -> str:
+    return SOURCE_CANDIDATE_SERVICE_UNAVAILABLE_TEXT
+
+
+def _safe_source_candidate_label(value: str) -> str:
+    cleaned = _normalize_source_candidate_text(value)
+    if not cleaned:
+        return _SAFE_SOURCE_CANDIDATE_LABEL_FALLBACK
+    if len(cleaned) > MAX_SOURCE_CANDIDATE_LABEL_CHARS:
+        return cleaned[: MAX_SOURCE_CANDIDATE_LABEL_CHARS - 1] + "…"
+    return cleaned
+
+
+def _safe_source_candidate_description(value: str) -> str:
+    cleaned = _normalize_source_candidate_text(value)
+    if not cleaned:
+        return ""
+    if len(cleaned) > MAX_SOURCE_CANDIDATE_DESCRIPTION_CHARS:
+        return cleaned[: MAX_SOURCE_CANDIDATE_DESCRIPTION_CHARS - 1] + "…"
+    return cleaned
+
+
+def _normalize_source_candidate_text(value: str) -> str:
+    cleaned = (value or "").replace("\r", " ").replace("\n", " ").replace("\t", " ")
+    cleaned = _CONTROL_RE.sub(" ", cleaned)
+    return _WHITESPACE_RE.sub(" ", cleaned).strip()
 
 
 def _safe_source_display_label(value: str) -> str:

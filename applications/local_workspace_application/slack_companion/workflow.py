@@ -35,8 +35,10 @@ from local_workspace_application.slack_companion.dedupe_repository import (
     SlackEventDedupeRepository,
 )
 from local_workspace_application.slack_companion.models import (
+    AuthorizedSlackMessageContext,
     SlackAskClientError,
     SlackDedupeRecord,
+    SlackSourceCandidateListItem,
     SlackSourceListItem,
     SlackWorkspaceListItem,
 )
@@ -44,6 +46,7 @@ from local_workspace_application.slack_companion.pending_deletion_store import (
     InMemorySlackPendingDeletionStore,
 )
 from local_workspace_application.slack_companion.rendering import (
+    MAX_SOURCE_CANDIDATE_ITEMS,
     MAX_WORKSPACE_NAME_CHARS,
     render_acknowledgement,
     render_ask_response,
@@ -56,6 +59,17 @@ from local_workspace_application.slack_companion.rendering import (
     render_error,
     render_no_workspace_available,
     render_selected_workspace_unavailable,
+    render_source_candidate_accept_failed,
+    render_source_candidate_accepted,
+    render_source_candidate_already_attached,
+    render_source_candidate_list,
+    render_source_candidate_list_empty,
+    render_source_candidate_list_load_failed,
+    render_source_candidate_out_of_range,
+    render_source_candidate_selection_conflict,
+    render_source_candidate_service_unavailable,
+    render_source_candidate_unavailable,
+    render_source_candidate_usage,
     render_source_list,
     render_source_list_load_failed,
     render_source_workspace_unavailable,
@@ -84,9 +98,14 @@ OutboundSender = Callable[[OutboundConversationMessage], Awaitable[object]]
 
 _WORKSPACES_COMMAND = "workspaces"
 _SOURCES_COMMAND = "sources"
+_SOURCE_CANDIDATES_COMMAND = "source candidates"
 _SAFE_SOURCE_LABEL_FALLBACK = "Source"
 _WORKSPACE_SELECTION_RE = re.compile(
     r"^workspace\s+([1-9]\d*)$",
+    re.IGNORECASE,
+)
+_SOURCE_CANDIDATE_ADD_RE = re.compile(
+    r"^source\s+add\s+([1-9]\d*)$",
     re.IGNORECASE,
 )
 _WORKSPACE_CREATE_RE = re.compile(
@@ -217,6 +236,25 @@ def slack_attachment_intake_idempotency_key(
     return f"slack-attachment:v1:{digest}"
 
 
+def slack_source_candidate_intake_idempotency_key(
+    *,
+    team_id: str,
+    event_id: str,
+) -> str:
+    """Deterministic intake idempotency key for one Slack Source Candidate event."""
+    canonical = json.dumps(
+        {
+            "event_id": event_id.strip(),
+            "team_id": team_id.strip(),
+            "version": 1,
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return f"slack-source-candidate:v1:{digest}"
+
+
 def parse_help_command(text: str) -> SlackCommandMatch | None:
     if (text or "").strip().casefold() == "help":
         return SlackCommandMatch()
@@ -231,6 +269,42 @@ def parse_workspaces_list_command(text: str) -> SlackCommandMatch | None:
 
 def parse_sources_list_command(text: str) -> SlackCommandMatch | None:
     if is_sources_command(text):
+        return SlackCommandMatch()
+    return None
+
+
+def parse_source_candidates_list_command(text: str) -> SlackCommandMatch | None:
+    if (text or "").strip().casefold() == _SOURCE_CANDIDATES_COMMAND:
+        return SlackCommandMatch()
+    return None
+
+
+def parse_source_candidate_accept_command(text: str) -> SlackCommandMatch | None:
+    stripped = (text or "").strip()
+    match = _SOURCE_CANDIDATE_ADD_RE.fullmatch(stripped)
+    if match is None:
+        return None
+    return SlackCommandMatch(payload=int(match.group(1)))
+
+
+def is_source_candidate_accept_attempt(text: str) -> bool:
+    stripped = (text or "").strip()
+    if not stripped:
+        return False
+    parts = stripped.split(None, 2)
+    return (
+        len(parts) >= 2
+        and parts[0].casefold() == "source"
+        and parts[1].casefold() == "add"
+    )
+
+
+def parse_source_candidate_accept_invalid_command(
+    text: str,
+) -> SlackCommandMatch | None:
+    if is_source_candidate_accept_attempt(text) and parse_source_candidate_accept_command(
+        text
+    ) is None:
         return SlackCommandMatch()
     return None
 
@@ -329,6 +403,28 @@ def order_sources_for_listing(
             (item.source_id or "").strip(),
         ),
     )
+
+
+def order_source_candidates_for_listing(
+    candidates: list[SlackSourceCandidateListItem],
+) -> list[SlackSourceCandidateListItem]:
+    """Deterministic order: safe normalized label casefold → candidate_id."""
+    return sorted(
+        candidates,
+        key=lambda item: (
+            (item.label or "").strip().casefold(),
+            (item.candidate_id or "").strip(),
+        ),
+    )
+
+
+def available_source_candidates_for_listing(
+    candidates: list[SlackSourceCandidateListItem],
+) -> list[SlackSourceCandidateListItem]:
+    """Visible/selectable candidates: available only, ordered, capped."""
+    available = [item for item in candidates if item.available is True]
+    ordered = order_source_candidates_for_listing(available)
+    return ordered[:MAX_SOURCE_CANDIDATE_ITEMS]
 
 
 def normalize_source_list_items(
@@ -736,6 +832,79 @@ class SlackAskWorkflow:
             tenant_id=context.authorized.tenant_id,
             actor_key=context.actor_key,
             configured_workspace_id=context.authorized.workspace_id,
+        )
+
+    @slack_command(
+        command_id="source_candidates.list",
+        syntax="source candidates",
+        description="List sources that can be attached to the active workspace.",
+        example="source candidates",
+        priority=22,
+        parser=parse_source_candidates_list_command,
+    )
+    async def _command_source_candidates_list(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._handle_source_candidates_listing(
+            address=context.address,
+            claim=context.claim,
+            tenant_id=context.authorized.tenant_id,
+            actor_key=context.actor_key,
+            configured_workspace_id=context.authorized.workspace_id,
+        )
+
+    @slack_command(
+        command_id="source_candidates.accept",
+        syntax="source add <number>",
+        description="Attach a source from the current candidate list.",
+        example="source add 2",
+        priority=23,
+        parser=parse_source_candidate_accept_command,
+    )
+    async def _command_source_candidates_accept(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        index = match.payload
+        if not isinstance(index, int):
+            raise TypeError("source_candidates.accept payload must be int")
+        await self._handle_source_candidate_accept(
+            address=context.address,
+            claim=context.claim,
+            authorized=context.authorized,
+            actor_key=context.actor_key,
+            index=index,
+        )
+
+    @slack_command(
+        command_id="source_candidates.accept.invalid",
+        syntax="source add",
+        description="Invalid source add usage.",
+        example="",
+        priority=24,
+        parser=parse_source_candidate_accept_invalid_command,
+        visible_in_help=False,
+    )
+    async def _command_source_candidates_accept_invalid(
+        self,
+        context: SlackCommandContext,
+        match: SlackCommandMatch,
+    ) -> None:
+        del match
+        await self._send(
+            OutboundConversationMessage(
+                address=context.address,
+                text=render_source_candidate_usage(),
+            )
+        )
+        self._dedupe.mark_completed(
+            dedupe_key=context.claim.dedupe_key,
+            claim_token=context.claim.claim_token,
+            ask_run_id=None,
         )
 
     @slack_command(
@@ -1289,6 +1458,325 @@ class SlackAskWorkflow:
                 dedupe_key=claim.dedupe_key,
                 claim_token=claim.claim_token,
                 ask_run_id=None,
+            )
+
+    async def _handle_source_candidates_listing(
+        self,
+        *,
+        address: ConversationAddress,
+        claim: SlackDedupeRecord,
+        tenant_id: str,
+        actor_key: str,
+        configured_workspace_id: str,
+    ) -> None:
+        selection = self._selections.get(actor_key)
+        used_in_memory_selection = (
+            selection is not None and bool((selection.workspace_id or "").strip())
+        )
+        try:
+            workspace_id = self._resolve_effective_workspace(
+                actor_key, configured_workspace_id
+            )
+            if not workspace_id:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_no_workspace_available(),
+                    )
+                )
+                self._dedupe.mark_completed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                    ask_run_id=None,
+                )
+                return
+
+            items = await self._ask.list_source_candidates(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            visible = available_source_candidates_for_listing(items)
+            if not visible:
+                final_text = render_source_candidate_list_empty()
+            else:
+                final_text = render_source_candidate_list(visible)
+            await self._send(
+                OutboundConversationMessage(address=address, text=final_text)
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+        except SlackAskClientError as exc:
+            if used_in_memory_selection and exc.kind == "http_404":
+                self._selections.clear(actor_key)
+                text = render_selected_workspace_unavailable()
+            elif exc.kind in {
+                "timeout",
+                "transport_error",
+                "parse_error",
+            } or exc.kind.startswith("http_5") or exc.kind == "http_503":
+                text = render_source_candidate_list_load_failed()
+            elif exc.kind == "http_404":
+                text = render_source_candidate_list_load_failed()
+            else:
+                text = render_source_candidate_list_load_failed()
+            try:
+                await self._send(
+                    OutboundConversationMessage(address=address, text=text)
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion source_candidates_listing_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion source_candidates_listing_failed kind=%s",
+                type(exc).__name__,
+            )
+            try:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_source_candidate_list_load_failed(),
+                    )
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion source_candidates_listing_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+
+    async def _handle_source_candidate_accept(
+        self,
+        *,
+        address: ConversationAddress,
+        claim: SlackDedupeRecord,
+        authorized: AuthorizedSlackMessageContext,
+        actor_key: str,
+        index: int,
+    ) -> None:
+        selection = self._selections.get(actor_key)
+        used_in_memory_selection = (
+            selection is not None and bool((selection.workspace_id or "").strip())
+        )
+        workspace_id = self._resolve_effective_workspace(
+            actor_key, authorized.workspace_id
+        )
+        if not workspace_id:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_no_workspace_available(),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        try:
+            items = await self._ask.list_source_candidates(
+                tenant_id=authorized.tenant_id,
+                workspace_id=workspace_id,
+            )
+        except SlackAskClientError as exc:
+            if used_in_memory_selection and exc.kind == "http_404":
+                self._selections.clear(actor_key)
+                try:
+                    await self._send(
+                        OutboundConversationMessage(
+                            address=address,
+                            text=render_selected_workspace_unavailable(),
+                        )
+                    )
+                except Exception as send_exc:  # noqa: BLE001
+                    logger.warning(
+                        "slack_companion source_candidate_accept_error_delivery_failed kind=%s",
+                        type(send_exc).__name__,
+                    )
+                self._dedupe.mark_completed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                    ask_run_id=None,
+                )
+                return
+            try:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_source_candidate_list_load_failed(),
+                    )
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion source_candidate_accept_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        visible = available_source_candidates_for_listing(items)
+        if not visible:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_source_candidate_list_empty(),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        if index < 1 or index > len(visible):
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_source_candidate_out_of_range(),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        chosen = visible[index - 1]
+        candidate_id = (chosen.candidate_id or "").strip()
+        if not candidate_id:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_source_candidate_unavailable(),
+                )
+            )
+            self._dedupe.mark_completed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+                ask_run_id=None,
+            )
+            return
+
+        idempotency_key = slack_source_candidate_intake_idempotency_key(
+            team_id=authorized.team_id,
+            event_id=authorized.event_id,
+        )
+        try:
+            accepted = await self._ask.accept_source_candidate(
+                tenant_id=authorized.tenant_id,
+                workspace_id=workspace_id,
+                candidate_id=candidate_id,
+                idempotency_key=idempotency_key,
+            )
+        except SlackAskClientError as exc:
+            if (
+                exc.kind == "http_404"
+                or exc.kind == "source_candidate_unavailable"
+            ):
+                text = render_source_candidate_unavailable()
+                complete = True
+            elif exc.kind == "source_candidate_already_registered":
+                text = render_source_candidate_already_attached()
+                complete = True
+            elif exc.kind == "source_candidate_idempotency_conflict":
+                text = render_source_candidate_selection_conflict()
+                complete = True
+            elif exc.kind == "http_409":
+                text = render_source_candidate_accept_failed()
+                complete = True
+            elif exc.kind == "http_503":
+                text = render_source_candidate_service_unavailable()
+                complete = True
+            elif exc.kind in {"timeout", "transport_error", "parse_error"} or (
+                exc.kind.startswith("http_5")
+            ):
+                text = render_source_candidate_accept_failed()
+                complete = False
+            else:
+                text = render_source_candidate_accept_failed()
+                complete = False
+            try:
+                await self._send(
+                    OutboundConversationMessage(address=address, text=text)
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion source_candidate_accept_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            if complete:
+                self._dedupe.mark_completed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                    ask_run_id=None,
+                )
+            else:
+                self._dedupe.mark_failed(
+                    dedupe_key=claim.dedupe_key,
+                    claim_token=claim.claim_token,
+                )
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion source_candidate_accept_failed kind=%s",
+                type(exc).__name__,
+            )
+            try:
+                await self._send(
+                    OutboundConversationMessage(
+                        address=address,
+                        text=render_source_candidate_accept_failed(),
+                    )
+                )
+            except Exception as send_exc:  # noqa: BLE001
+                logger.warning(
+                    "slack_companion source_candidate_accept_error_delivery_failed kind=%s",
+                    type(send_exc).__name__,
+                )
+            self._dedupe.mark_failed(
+                dedupe_key=claim.dedupe_key,
+                claim_token=claim.claim_token,
+            )
+            return
+
+        self._dedupe.mark_completed(
+            dedupe_key=claim.dedupe_key,
+            claim_token=claim.claim_token,
+            ask_run_id=None,
+        )
+        try:
+            await self._send(
+                OutboundConversationMessage(
+                    address=address,
+                    text=render_source_candidate_accepted(accepted.label),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion source_candidate_accept_summary_delivery_failed kind=%s",
+                type(exc).__name__,
             )
 
     async def _handle_workspace_selection(

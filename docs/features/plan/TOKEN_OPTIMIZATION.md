@@ -675,8 +675,9 @@ where each algorithm/strategy is introduced as a separate measurable step.
 | 12 | **TOKEN-OPT-5B** | Prompt-cache contracts and cache-prefix stability proof — **Done / Closed** (folds former **TOKEN-OPT-5C** / **TOKEN-OPT-5D**) |
 | 13 | **TOKEN-OPT-5C** | Folded into **TOKEN-OPT-5B** functional block |
 | 14 | **TOKEN-OPT-5D** | Folded into **TOKEN-OPT-5B** functional block |
-| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Next / Planned** |
-| — | **TOKEN-7A** | Advisory recommendation contract — Deferred |
+| 15 | **TOKEN-OPT-5E** | Cache-aware compaction timing policy — **Done / Closed** |
+| 16 | **TOKEN-7A** | Advisory recommendation contract and policy-only recommender — **Done / Closed** |
+| 17 | **TOKEN-7B** | Advisory recommendation evaluation and report pack — **Done / Closed** |
 
 Each algorithm ships as its own task, followed by measurement/review, before the next algorithm is layered in.
 
@@ -695,7 +696,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
 | Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | **TOKEN-OPT-4A** | **Implemented** |
-| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** → **TOKEN-OPT-5B** (contracts + synthetic proof) → **TOKEN-OPT-5E+** | Architecture + contracts/helpers **Done / Closed**; runtime/provider integration deferred |
+| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** → **TOKEN-OPT-5B** (contracts + synthetic proof) → **TOKEN-OPT-5E** | Architecture + contracts/helpers + compaction timing policy **Done / Closed**; runtime/provider integration deferred |
 | Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Retrieval-on-demand | `rag_context_pack`, `retrieved_evidence` | `reversible` / `lossy` (partial) | `balanced` | Yes | Yes | Yes | RAG integration slice | Deferred |
 | Safe lossy summarization | `memory`, `rag_context_pack` | `lossy` | `aggressive` (explicit `allow_lossy`) | Yes | Yes | Yes | Post-3D eval | **Excluded** from next slice |
@@ -1071,6 +1072,161 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - no README or public adoption documentation updated
 - next step: TOKEN-OPT-5E — cache-aware compaction timing policy
 
+#### TOKEN-OPT-5E — cache-aware compaction timing policy
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a provider-neutral policy/helper layer deciding when compaction should run, defer, bypass, or require manual review based on cache prefix stability, cache hotness, TTL proximity, expected content-reduction benefit, expected cache invalidation cost, and safety risk.
+
+**Deliverables:**
+
+- cache-aware compaction target enum
+- cache-aware compaction decision enum
+- cache-aware compaction reason enum
+- timing input and decision contracts
+- deterministic compaction timing decision helper
+- synthetic cache-aware compaction corpus
+- focused policy tests
+- architecture/addendum/plan documentation updates
+
+**Closeout:**
+
+- cache-aware compaction target contract added
+- cache-aware compaction decision contract added
+- cache-aware compaction reason contract added
+- timing input and decision contracts added
+- deterministic compaction timing helper added
+- dynamic-tail-safe reduction path covered
+- cold-history compaction path covered
+- hot stable-prefix defer path covered
+- near-expiry stable-prefix run path covered
+- unstable-prefix defer path covered
+- low-benefit bypass path covered
+- full-thread rewrite review path covered
+- protected/semantic risk review path covered
+- synthetic compaction timing corpus added
+- decision reports remain raw-content-safe
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adapter wiring added
+- no observability emission added
+- no benchmark runner added
+- no semantic compression or LLM summarization added
+- no in-cache compaction added
+- no README or public adoption documentation updated
+
+#### TOKEN-7A — advisory recommendation contract and policy-only recommender
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a provider-neutral, policy-only advisory layer that recommends Token Optimization posture changes from redaction-safe scalar signals without auto-applying optimizations.
+
+**Deliverables:**
+
+- recommendation action enum
+- recommendation reason enum
+- recommendation confidence enum
+- advisory signal contract
+- advisory recommendation contract
+- deterministic recommendation helper
+- synthetic advisory recommendation corpus
+- focused advisory recommendation tests
+- architecture / feature plan / AHI plan documentation updates
+
+**Closeout:**
+
+- advisory recommendation action contract added
+- advisory recommendation reason contract added
+- advisory recommendation confidence contract added
+- safe advisory signal contract added
+- safe advisory recommendation contract added
+- deterministic policy-only recommendation helper added
+- protected-region risk escalation path covered
+- quality-regression escalation path covered
+- regression-gate failure review path covered
+- insufficient-data path covered
+- high-fallback disable-strategy path covered
+- hot stable-cache preserve-prefix path covered
+- invalidated-cache review path covered
+- dynamic-tail reduction recommendation path covered
+- measured-safe-savings enable-strategy path covered
+- low-savings keep-current path covered
+- synthetic advisory recommendation corpus added
+- recommendation reports remain raw-content-safe
+- auto_apply_allowed remains False
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adaptive runtime integration added
+- no observability/HOS emission added
+- no semantic compression or LLM summarization added
+- no README or public adoption documentation updated
+
+**Roadmap/order update:**
+
+```text
+TOKEN-OPT-5A — Done / Closed
+TOKEN-OPT-5B — Done / Closed
+TOKEN-OPT-5C — folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5D — folded into TOKEN-OPT-5B functional block
+TOKEN-OPT-5E — Done / Closed
+TOKEN-7A — Done / Closed
+TOKEN-7B — Done / Closed
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+```
+
+**Next decision:** choose whether to proceed to policy-gated integration surface or return to LKW proof measurement.
+
+#### TOKEN-7B — advisory recommendation evaluation and report pack
+
+**Status:** **Done / Closed**.
+
+**Purpose:** Add a redaction-safe evaluation runner and report pack for the policy-only advisory recommender, proving deterministic recommendations, expected safety behavior, non-auto-apply status, and raw-content-safe reporting.
+
+**Deliverables:**
+
+- advisory evaluation case contract
+- advisory evaluation result contract
+- advisory evaluation summary contract
+- advisory evaluation report contract
+- deterministic advisory evaluation runner
+- redaction-safe report dict formatter
+- deterministic text report formatter
+- synthetic advisory evaluation corpus
+- focused advisory evaluation tests
+- architecture / feature plan documentation updates
+
+**Closeout:**
+
+- advisory evaluation case contract added
+- advisory evaluation result contract added
+- advisory evaluation summary contract added
+- advisory evaluation report contract added
+- deterministic single-case evaluation helper added
+- deterministic multi-case evaluation helper added
+- redaction-safe advisory report dict helper added
+- deterministic advisory report text formatter added
+- synthetic advisory evaluation corpus added
+- all expected advisory scenarios covered
+- summary counts pass/fail/manual-review/insufficient-data/non-auto-apply/raw-content-safe results
+- advisory reports remain raw-content-safe
+- auto_apply_allowed remains False across evaluated recommendations
+- no raw signal or recommendation objects emitted in reports
+- no provider API calls added
+- no runtime prompt assembly changes
+- no adaptive runtime integration added
+- no observability/HOS emission added
+- no benchmark CLI runner added
+- no semantic compression or LLM summarization added
+- no README or public adoption documentation updated
+
+**Roadmap/order update:**
+
+```text
+TOKEN-7A — Done / Closed
+TOKEN-7B — Done / Closed
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+```
+
 ### TOKEN-OPT-3A acceptance
 
 Done / Closed when:
@@ -1329,10 +1485,13 @@ TOKEN-OPT-5A cache-prefix stabilization architecture / contract — Done / Close
 TOKEN-OPT-5B prompt-cache contracts and cache-prefix stability proof — Done / Closed
 TOKEN-OPT-5C folded into TOKEN-OPT-5B functional block
 TOKEN-OPT-5D folded into TOKEN-OPT-5B functional block
-TOKEN-OPT-5E cache-aware compaction timing policy — Next / Planned
-TOKEN-7A    advisory recommendation contract — Deferred
+TOKEN-OPT-5E cache-aware compaction timing policy — Done / Closed
+TOKEN-7A    advisory recommendation contract and policy-only recommender — Done / Closed
+TOKEN-7B    advisory recommendation evaluation and report pack — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 ```
+
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply. Runtime/adaptive integration remains deferred.
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 
