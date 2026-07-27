@@ -28,6 +28,8 @@ class WebContentCaptureErrorCode(str, Enum):
     WEB_URL_HTTP_ERROR = "web_url_http_error"
     WEB_URL_CONTENT_TYPE_UNSUPPORTED = "web_url_content_type_unsupported"
     WEB_URL_CONTENT_TOO_LARGE = "web_url_content_too_large"
+    WEB_URL_CONTENT_ENCODING_UNSUPPORTED = "web_url_content_encoding_unsupported"
+    WEB_URL_RESPONSE_FRAMING_INVALID = "web_url_response_framing_invalid"
     WEB_URL_DECODE_FAILED = "web_url_decode_failed"
     WEB_URL_EMPTY_CONTENT = "web_url_empty_content"
     WEB_URL_EXTRACTION_FAILED = "web_url_extraction_failed"

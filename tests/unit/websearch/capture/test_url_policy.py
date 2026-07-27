@@ -35,6 +35,14 @@ async def _failing_resolver(_hostname: str) -> tuple[str, ...]:
     raise OSError("resolution failed")
 
 
+async def _duplicate_resolver(_hostname: str) -> tuple[str, ...]:
+    return (
+        "93.184.216.34",
+        "2606:2800:220:1:248:1893:25c8:1946",
+        "93.184.216.34",
+    )
+
+
 def test_valid_https_url() -> None:
     policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
     canonical = policy.canonicalize("https://example.com/page")
@@ -70,6 +78,17 @@ def test_default_port_removed() -> None:
     assert canonical.port == 443
 
 
+def test_non_default_allowed_port_preserved() -> None:
+    policy = WebUrlAccessPolicy(
+        dns_resolver=_public_resolver,
+        allowed_ports=frozenset({8443}),
+    )
+    canonical = policy.canonicalize("https://example.com:8443/docs")
+    assert canonical.port == 8443
+    assert ":8443" in canonical.canonical_private_url
+    assert canonical.safe_display_url == "https://example.com:8443/docs"
+
+
 def test_fragment_removed() -> None:
     policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
     canonical = policy.canonicalize("https://example.com/docs#section")
@@ -99,6 +118,20 @@ def test_userinfo_rejected() -> None:
     assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_CREDENTIALS_NOT_ALLOWED
 
 
+def test_empty_userinfo_rejected() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize("https://@example.com/")
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_CREDENTIALS_NOT_ALLOWED
+
+
+def test_userinfo_with_password_rejected() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize("https://user:pass@example.com/")
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_CREDENTIALS_NOT_ALLOWED
+
+
 def test_http_rejected() -> None:
     policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
     with pytest.raises(WebContentCaptureError) as exc:
@@ -120,6 +153,23 @@ def test_custom_port_rejected() -> None:
     assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_PORT_NOT_ALLOWED
 
 
+def test_invalid_textual_port_rejected() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize("https://example.com:abc/")
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_INVALID
+
+
+def test_out_of_range_port_rejected() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize("https://example.com:99999/")
+    assert exc.value.code in {
+        WebContentCaptureErrorCode.WEB_URL_INVALID,
+        WebContentCaptureErrorCode.WEB_URL_PORT_NOT_ALLOWED,
+    }
+
+
 def test_missing_hostname_rejected() -> None:
     policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
     with pytest.raises(WebContentCaptureError) as exc:
@@ -131,6 +181,23 @@ def test_control_characters_rejected() -> None:
     policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
     with pytest.raises(WebContentCaptureError) as exc:
         policy.canonicalize("https://example.com/\x07bad")
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_INVALID
+
+
+@pytest.mark.parametrize(
+    "raw_url",
+    [
+        "https://example.com/\tbad",
+        "https://example.com/\nbad",
+        "https://example.com/\rbad",
+        "\nhttps://example.com/",
+        "https://example.com/\t",
+    ],
+)
+def test_whitespace_control_chars_rejected(raw_url: str) -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize(raw_url)
     assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_INVALID
 
 
@@ -169,6 +236,65 @@ def test_internal_tld_rejected() -> None:
     assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_HOST_NOT_ALLOWED
 
 
+def test_unicode_path_percent_encoded() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize("https://example.com/café")
+    assert canonical.request_target == "/caf%C3%A9"
+    canonical.request_target.encode("ascii")
+
+
+def test_unicode_query_percent_encoded() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize("https://example.com/?q=café")
+    assert canonical.request_target == "/?q=caf%C3%A9"
+    canonical.request_target.encode("ascii")
+
+
+def test_space_in_path_encoded() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize("https://example.com/a b")
+    assert canonical.request_target == "/a%20b"
+
+
+def test_space_in_query_encoded() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize("https://example.com/?a=b c")
+    assert canonical.request_target == "/?a=b%20c"
+
+
+def test_invalid_percent_escape_rejected() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize("https://example.com/%ZZ")
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_INVALID
+
+
+def test_request_target_always_ascii() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
+    canonical = policy.canonicalize("https://example.com/über?q=naïve")
+    canonical.request_target.encode("ascii")
+    assert "%" in canonical.request_target
+
+
+def test_host_allowlist_normalized() -> None:
+    policy = WebUrlAccessPolicy(
+        dns_resolver=_public_resolver,
+        host_allowlist=frozenset({" EXAMPLE.COM. "}),
+    )
+    canonical = policy.canonicalize("https://example.com/page")
+    assert canonical.hostname == "example.com"
+
+
+def test_host_allowlist_rejects_non_member() -> None:
+    policy = WebUrlAccessPolicy(
+        dns_resolver=_public_resolver,
+        host_allowlist=frozenset({"allowed.example.com"}),
+    )
+    with pytest.raises(WebContentCaptureError) as exc:
+        policy.canonicalize("https://example.com/page")
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_HOST_NOT_ALLOWED
+
+
 @pytest.mark.asyncio
 async def test_single_public_ipv4_accepted() -> None:
     policy = WebUrlAccessPolicy(dns_resolver=_public_resolver)
@@ -186,6 +312,17 @@ async def test_single_public_ipv6_accepted() -> None:
     canonical = policy.canonicalize("https://example.com/")
     approved = await policy.approve_target(canonical)
     assert approved.approved_ips == ("2606:2800:220:1:248:1893:25c8:1946",)
+
+
+@pytest.mark.asyncio
+async def test_resolver_output_deduplicated_and_sorted() -> None:
+    policy = WebUrlAccessPolicy(dns_resolver=_duplicate_resolver)
+    canonical = policy.canonicalize("https://example.com/")
+    approved = await policy.approve_target(canonical)
+    assert approved.approved_ips == (
+        "2606:2800:220:1:248:1893:25c8:1946",
+        "93.184.216.34",
+    )
 
 
 @pytest.mark.asyncio

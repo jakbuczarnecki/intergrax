@@ -18,10 +18,14 @@ from intergrax.websearch.capture.contracts import (
     WebContentCaptureErrorCode,
 )
 
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_RAW_CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
+_REQUEST_TARGET_CONTROL_RE = re.compile(r"[\r\n\t]")
+_HEX_DIGITS = frozenset("0123456789ABCDEFabcdef")
 _DNS_LABEL_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", re.IGNORECASE)
 _SAFE_DISPLAY_MAX_LEN = 300
 _DEFAULT_MAX_URL_LENGTH = 2048
+_PATH_SAFE_CHARS = frozenset("-._~/")
+_QUERY_SAFE_CHARS = frozenset("-._~&=")
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,8 +56,19 @@ def _url_fingerprint(canonical_private_url: str) -> str:
     return f"sha256:{digest}"
 
 
-def _build_safe_display_url(scheme: str, hostname: str, path: str) -> str:
-    base = f"{scheme}://{hostname}"
+def _default_port_for_scheme(scheme: str) -> int:
+    return 443 if scheme == "https" else 80
+
+
+def _format_authority(hostname: str, port: int, scheme: str) -> str:
+    if port == _default_port_for_scheme(scheme):
+        return hostname
+    return f"{hostname}:{port}"
+
+
+def _build_safe_display_url(scheme: str, hostname: str, port: int, path: str) -> str:
+    authority = _format_authority(hostname, port, scheme)
+    base = f"{scheme}://{authority}"
     if not path or path == "/":
         display = base
     else:
@@ -79,6 +94,13 @@ def _normalize_hostname(raw_host: str) -> str:
     return host
 
 
+def _normalize_allowlist_host(raw_host: str) -> str:
+    host = _normalize_hostname(raw_host)
+    if _is_blocked_hostname(host) or not _is_valid_dns_hostname(host):
+        raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
+    return host
+
+
 def _is_blocked_hostname(hostname: str) -> bool:
     if hostname == "localhost":
         return True
@@ -100,11 +122,7 @@ def _is_valid_dns_hostname(hostname: str) -> bool:
     return all(_DNS_LABEL_RE.match(label) for label in labels)
 
 
-def _is_global_ip(ip_str: str) -> bool:
-    try:
-        addr = ipaddress.ip_address(ip_str)
-    except ValueError:
-        return False
+def _is_global_address(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped is not None:
         addr = addr.ipv4_mapped
     return (
@@ -115,6 +133,97 @@ def _is_global_ip(ip_str: str) -> bool:
         and not addr.is_multicast
         and not addr.is_reserved
     )
+
+
+def _is_global_ip(ip_str: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+    return _is_global_address(addr)
+
+
+def _percent_encode_component(component: str, *, safe: frozenset[str]) -> str:
+    if _REQUEST_TARGET_CONTROL_RE.search(component):
+        raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
+
+    result: list[str] = []
+    index = 0
+    while index < len(component):
+        char = component[index]
+        if char == "%":
+            if index + 2 >= len(component):
+                raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
+            hi = component[index + 1]
+            lo = component[index + 2]
+            if hi not in _HEX_DIGITS or lo not in _HEX_DIGITS:
+                raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
+            result.append(f"%{hi.upper()}{lo.upper()}")
+            index += 3
+            continue
+        if char == " ":
+            result.append("%20")
+        elif char.isascii() and (char.isalnum() or char in safe):
+            result.append(char)
+        else:
+            for byte in char.encode("utf-8"):
+                result.append(f"%{byte:02X}")
+        index += 1
+
+    encoded = "".join(result)
+    encoded.encode("ascii")
+    return encoded
+
+
+def _normalize_path(path: str) -> str:
+    if not path:
+        return "/"
+    if not path.startswith("/"):
+        path = f"/{path}"
+    return _percent_encode_component(path, safe=_PATH_SAFE_CHARS)
+
+
+def _normalize_query(query: str) -> str:
+    if not query:
+        return ""
+    return _percent_encode_component(query, safe=_QUERY_SAFE_CHARS)
+
+
+def _normalize_request_target(path: str, query: str) -> str:
+    normalized_path = _normalize_path(path)
+    normalized_query = _normalize_query(query)
+    if normalized_query:
+        request_target = f"{normalized_path}?{normalized_query}"
+    else:
+        request_target = normalized_path
+    request_target.encode("ascii")
+    return request_target
+
+
+def _normalize_resolver_ips(
+    resolved_ips: tuple[str, ...],
+    *,
+    is_redirect: bool,
+) -> tuple[str, ...]:
+    normalized: set[str] = set()
+    for ip_str in resolved_ips:
+        try:
+            addr = ipaddress.ip_address(ip_str)
+        except ValueError:
+            raise WebContentCaptureError(
+                WebContentCaptureErrorCode.WEB_URL_RESOLUTION_FAILED,
+            )
+        if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped is not None:
+            addr = addr.ipv4_mapped
+        if not _is_global_address(addr):
+            code = (
+                WebContentCaptureErrorCode.WEB_URL_REDIRECT_TARGET_BLOCKED
+                if is_redirect
+                else WebContentCaptureErrorCode.WEB_URL_NON_GLOBAL_ADDRESS_BLOCKED
+            )
+            raise WebContentCaptureError(code)
+        normalized.add(str(addr))
+    return tuple(sorted(normalized))
 
 
 async def _default_dns_resolver(hostname: str) -> tuple[str, ...]:
@@ -155,15 +264,18 @@ class WebUrlAccessPolicy:
         self._allowed_schemes = allowed_schemes
         self._allowed_ports = allowed_ports
         self._max_url_length = max_url_length
-        self._host_allowlist = host_allowlist
+        self._host_allowlist = frozenset(
+            _normalize_allowlist_host(host) for host in host_allowlist
+        )
         self._dns_resolver = dns_resolver or _default_dns_resolver
         self._is_redirect = is_redirect
 
     def canonicalize(self, raw_url: str) -> CanonicalUrl:
+        if _RAW_CONTROL_CHAR_RE.search(raw_url):
+            raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
+
         trimmed = raw_url.strip()
         if not trimmed or len(trimmed) > self._max_url_length:
-            raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
-        if _CONTROL_CHAR_RE.search(trimmed):
             raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
 
         try:
@@ -183,7 +295,7 @@ class WebUrlAccessPolicy:
             )
             raise WebContentCaptureError(code)
 
-        if parts.username or parts.password:
+        if "@" in parts.netloc:
             raise WebContentCaptureError(
                 WebContentCaptureErrorCode.WEB_URL_CREDENTIALS_NOT_ALLOWED,
             )
@@ -215,9 +327,13 @@ class WebUrlAccessPolicy:
             )
             raise WebContentCaptureError(code)
 
-        port = parts.port
+        try:
+            port = parts.port
+        except ValueError:
+            raise WebContentCaptureError(WebContentCaptureErrorCode.WEB_URL_INVALID)
+
         if port is None:
-            port = 443 if scheme == "https" else 80
+            port = _default_port_for_scheme(scheme)
         if port not in self._allowed_ports:
             code = (
                 WebContentCaptureErrorCode.WEB_URL_REDIRECT_TARGET_BLOCKED
@@ -227,16 +343,14 @@ class WebUrlAccessPolicy:
             raise WebContentCaptureError(code)
 
         path = parts.path or "/"
-        if not path.startswith("/"):
-            path = f"/{path}"
-
-        query = parts.query
-        canonical_private_url = urlunsplit((scheme, hostname, path, query, ""))
-        request_target = path
-        if query:
-            request_target = f"{path}?{query}"
-
-        safe_display_url = _build_safe_display_url(scheme, hostname, path)
+        request_target = _normalize_request_target(path, parts.query)
+        authority = _format_authority(hostname, port, scheme)
+        normalized_path = request_target.split("?", 1)[0]
+        normalized_query = request_target.split("?", 1)[1] if "?" in request_target else ""
+        canonical_private_url = urlunsplit(
+            (scheme, authority, normalized_path, normalized_query, ""),
+        )
+        safe_display_url = _build_safe_display_url(scheme, hostname, port, normalized_path)
         fingerprint = _url_fingerprint(canonical_private_url)
 
         return CanonicalUrl(
@@ -264,20 +378,16 @@ class WebUrlAccessPolicy:
                 WebContentCaptureErrorCode.WEB_URL_RESOLUTION_FAILED,
             )
 
-        for ip in resolved_ips:
-            if not _is_global_ip(ip):
-                code = (
-                    WebContentCaptureErrorCode.WEB_URL_REDIRECT_TARGET_BLOCKED
-                    if self._is_redirect
-                    else WebContentCaptureErrorCode.WEB_URL_NON_GLOBAL_ADDRESS_BLOCKED
-                )
-                raise WebContentCaptureError(code)
+        approved_ips = _normalize_resolver_ips(
+            resolved_ips,
+            is_redirect=self._is_redirect,
+        )
 
         return ApprovedTarget(
             hostname=canonical.hostname,
             port=canonical.port,
             request_target=canonical.request_target,
-            approved_ips=resolved_ips,
+            approved_ips=approved_ips,
             canonical=canonical,
         )
 

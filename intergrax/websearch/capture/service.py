@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 import time
@@ -35,6 +36,9 @@ _ALLOWED_MIME_TYPES = frozenset(
     {"text/html", "application/xhtml+xml", "text/plain"},
 )
 _WHITESPACE_RE = re.compile(r"\s+")
+_TITLE_CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\r\n\t]")
+_TEXT_CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\r\t]")
+MonotonicClock = Callable[[], float]
 
 
 def _content_hash(text: str) -> str:
@@ -67,13 +71,15 @@ def _decode_body(body: bytes, content_type: str | None) -> str:
 
 
 def _normalize_text(text: str) -> str:
-    lines = [line.strip() for line in text.splitlines()]
+    cleaned = _TEXT_CONTROL_RE.sub("", text)
+    lines = [line.strip() for line in cleaned.splitlines()]
     non_empty = [line for line in lines if line]
     return "\n".join(non_empty)
 
 
 def _normalize_plain_text(text: str) -> str:
     normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    normalized = _TEXT_CONTROL_RE.sub("", normalized)
     lines = [line.strip() for line in normalized.split("\n")]
     collapsed: list[str] = []
     for line in lines:
@@ -96,7 +102,8 @@ def _truncate_text(text: str, max_chars: int) -> str:
 def _safe_title(title: str | None) -> str:
     if not title:
         return ""
-    cleaned = _WHITESPACE_RE.sub(" ", title.strip())
+    cleaned = _TITLE_CONTROL_RE.sub(" ", title.strip())
+    cleaned = _WHITESPACE_RE.sub(" ", cleaned).strip()
     return cleaned[:500]
 
 
@@ -105,6 +112,17 @@ def _single_location(headers: Mapping[str, str]) -> str | None:
     if not location or not location.strip():
         return None
     return location.strip()
+
+
+def _validate_content_encoding(headers: Mapping[str, str]) -> None:
+    encoding = headers.get("content-encoding")
+    if encoding is None:
+        return
+    normalized = encoding.strip().lower()
+    if normalized and normalized != "identity":
+        raise WebContentCaptureError(
+            WebContentCaptureErrorCode.WEB_URL_CONTENT_ENCODING_UNSUPPORTED,
+        )
 
 
 def _extraction_method_from_page(page: PageContent, mode: str) -> str:
@@ -126,7 +144,8 @@ class SecureHttpWebContentCapture:
         transport: HttpsTransport | None = None,
         dns_resolver: DnsResolver | None = None,
         clock: Callable[[], datetime] | None = None,
-        transport_fetch_count: list[int] | None = None,
+        monotonic: MonotonicClock | None = None,
+        transport_fetch_count: list[str] | None = None,
     ) -> None:
         if policy is not None:
             self._policy = policy
@@ -135,12 +154,26 @@ class SecureHttpWebContentCapture:
         else:
             self._policy = WebUrlAccessPolicy()
         self._redirect_policy = self._policy.redirect_policy()
-        self._transport = transport or PinnedHttpsTransport(fetch_count=transport_fetch_count)
+        self._monotonic = monotonic or time.monotonic
+        self._transport = transport or PinnedHttpsTransport(
+            fetch_count=transport_fetch_count,
+            monotonic=self._monotonic,
+        )
         self._clock = clock or (lambda: datetime.now(UTC))
         self._transport_fetch_count = transport_fetch_count
 
     async def capture(self, request: WebContentCaptureRequest) -> CapturedWebContent:
-        deadline = time.monotonic() + request.timeout_seconds
+        try:
+            return await self._capture_impl(request)
+        except WebContentCaptureError:
+            raise
+        except Exception:
+            raise WebContentCaptureError(
+                WebContentCaptureErrorCode.WEB_URL_FETCH_FAILED,
+            ) from None
+
+    async def _capture_impl(self, request: WebContentCaptureRequest) -> CapturedWebContent:
+        deadline = self._monotonic() + request.timeout_seconds
         requested = self._policy.canonicalize(request.url)
         current = requested
         redirect_count = 0
@@ -148,7 +181,7 @@ class SecureHttpWebContentCapture:
         raw: RawHttpsResponse | None = None
 
         while True:
-            remaining = deadline - time.monotonic()
+            remaining = deadline - self._monotonic()
             if remaining <= 0:
                 raise WebContentCaptureError(
                     WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
@@ -156,7 +189,16 @@ class SecureHttpWebContentCapture:
                 )
 
             active_policy = self._policy if redirect_count == 0 else self._redirect_policy
-            approved = await active_policy.approve_target(current)
+            try:
+                approved = await asyncio.wait_for(
+                    active_policy.approve_target(current),
+                    timeout=remaining,
+                )
+            except asyncio.TimeoutError:
+                raise WebContentCaptureError(
+                    WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                    retryable=True,
+                )
             current = approved.canonical
 
             raw = await self._transport.fetch(
@@ -165,7 +207,7 @@ class SecureHttpWebContentCapture:
                     port=approved.port,
                     request_target=approved.request_target,
                     approved_ips=approved.approved_ips,
-                    timeout_seconds=remaining,
+                    deadline=deadline,
                     max_response_bytes=request.max_response_bytes,
                 )
             )
@@ -201,6 +243,8 @@ class SecureHttpWebContentCapture:
                 status_code=raw.status_code,
             )
 
+        _validate_content_encoding(raw.headers)
+
         mime = _normalize_mime(raw.headers.get("content-type"))
         if mime is None:
             raise WebContentCaptureError(
@@ -234,10 +278,33 @@ class SecureHttpWebContentCapture:
                 description=None,
                 lang=None,
             )
+            remaining = deadline - self._monotonic()
+            if remaining <= 0:
+                raise WebContentCaptureError(
+                    WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                    retryable=True,
+                )
             try:
-                page = extract_basic(page)
+                page = await asyncio.wait_for(
+                    asyncio.to_thread(extract_basic, page),
+                    timeout=remaining,
+                )
                 if request.extraction_mode == "advanced":
-                    page = extract_advanced(page)
+                    remaining = deadline - self._monotonic()
+                    if remaining <= 0:
+                        raise WebContentCaptureError(
+                            WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                            retryable=True,
+                        )
+                    page = await asyncio.wait_for(
+                        asyncio.to_thread(extract_advanced, page),
+                        timeout=remaining,
+                    )
+            except asyncio.TimeoutError:
+                raise WebContentCaptureError(
+                    WebContentCaptureErrorCode.WEB_URL_TIMEOUT,
+                    retryable=True,
+                )
             except Exception:
                 raise WebContentCaptureError(
                     WebContentCaptureErrorCode.WEB_URL_EXTRACTION_FAILED,
@@ -268,7 +335,7 @@ class SecureHttpWebContentCapture:
             content_hash=_content_hash(text),
             status_code=raw.status_code,
             redirect_count=redirect_count,
-            content_bytes=raw.content_bytes,
+            content_bytes=len(raw.body),
             text_chars=len(text),
             capture_mode="http",
             extraction_method=extraction_method,

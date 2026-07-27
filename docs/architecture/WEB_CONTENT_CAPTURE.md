@@ -1,6 +1,6 @@
 # Web Content Capture
 
-**Status:** platform capability — `LKW-WORKSPACE-CONTENTS-1B-5-1` (`IMPLEMENTED / REVIEW REQUIRED`)
+**Status:** platform capability — `LKW-WORKSPACE-CONTENTS-1B-5-1` (`IMPLEMENTED / CORRECTION REQUIRED`; review gate: audit `LKW-WORKSPACE-CONTENTS-1B-5-1-C1`)
 
 ## Purpose
 
@@ -116,10 +116,54 @@ The socket connects to the approved IP. For HTTPS:
 
 - TLS SNI = original hostname
 - certificate validation = original hostname
-- `Host` header = original hostname
+- `Host` header = original hostname (with non-default port when configured)
 - `Accept-Encoding: identity`
 
-Body is read in bounded chunks. `Content-Length` larger than the limit is rejected before body consumption.
+### HTTP/1.1 response framing
+
+Supported body framing modes:
+
+- `Content-Length` — exact byte count; read stops immediately after declared length
+- `Transfer-Encoding: chunked` — hex chunk sizes, optional chunk extensions, CRLF boundaries, zero chunk, bounded trailer block
+- close-delimited — when neither `Content-Length` nor `Transfer-Encoding` is present, read until connection close under the global size limit
+
+Rejected framing:
+
+- conflicting duplicate `Content-Length` values
+- `Transfer-Encoding` combined with `Content-Length`
+- multiple `Location` headers
+- malformed header lines / obs-fold
+- unsupported `Transfer-Encoding` codings (for example `gzip`)
+- premature EOF before complete `Content-Length` body
+
+Body is read in bounded chunks under the global response size limit.
+
+### Global deadline
+
+One monotonic deadline covers the entire capture operation:
+
+- URL canonicalization
+- DNS resolution (`approve_target`)
+- connect attempts across approved IPs
+- TLS handshake
+- header and body reads (including slowloris protection — partial reads do not reset the full timeout)
+- redirects (same deadline, not a fresh timeout window)
+- decode, extraction and normalization
+
+DNS or extraction exceeding remaining time → `web_url_timeout` (`retryable=true`); transport call count remains `0` when DNS times out before any connect.
+
+### Content-Encoding
+
+Accepted final response encodings:
+
+- absent `Content-Encoding`
+- `Content-Encoding: identity`
+
+Rejected (no decompression in v1):
+
+- `gzip`, `br`, `deflate`, multiple encodings, or any other value → `web_url_content_encoding_unsupported`
+
+Compressed bytes must not be indexed as text.
 
 ## Redirects
 

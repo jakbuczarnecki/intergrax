@@ -648,3 +648,250 @@ async def test_captured_result_has_no_html_headers_ip() -> None:
     assert "header-value" not in str(dumped)
     assert "93.184" not in str(dumped)
     assert isinstance(result, CapturedWebContent)
+
+
+async def test_invalid_port_never_leaks_value_error() -> None:
+    service = _service(RecordingTransport([]))
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(
+            WebContentCaptureRequest(url="https://example.com:abc/page"),
+        )
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_INVALID
+    assert "ValueError" not in str(exc.value)
+
+
+async def test_unicode_path_never_leaks_unicode_encode_error() -> None:
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/plain"},
+                body=b"unicode path ok",
+                content_bytes=0,
+            )
+        ]
+    )
+    service = _service(transport)
+    result = await service.capture(
+        WebContentCaptureRequest(url="https://example.com/café"),
+    )
+    assert "unicode path ok" in result.text
+    assert "UnicodeEncodeError" not in str(result.model_dump())
+
+
+async def test_unexpected_transport_exception_maps_to_safe_error() -> None:
+    class ExplodingTransport:
+        async def fetch(self, request: ApprovedHttpsRequest) -> RawHttpsResponse:
+            raise RuntimeError("secret transport detail")
+
+    service = SecureHttpWebContentCapture(
+        policy=WebUrlAccessPolicy(dns_resolver=_public_resolver),
+        transport=ExplodingTransport(),
+    )
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(WebContentCaptureRequest(url="https://example.com/page"))
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_FETCH_FAILED
+    assert "secret" not in str(exc.value)
+
+
+async def test_title_controls_removed() -> None:
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/html"},
+                body=_html("Ti\x07tle\nwith\ttab", "Body"),
+                content_bytes=0,
+            )
+        ]
+    )
+    service = _service(transport)
+    result = await service.capture(
+        WebContentCaptureRequest(url="https://example.com/page"),
+    )
+    assert "\x07" not in result.title
+    assert "\n" not in result.title
+    assert "\t" not in result.title
+    assert "Title with tab" in result.title
+
+
+async def test_text_controls_removed() -> None:
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/plain"},
+                body=b"line\x07one\nline\ttwo",
+                content_bytes=0,
+            )
+        ]
+    )
+    service = _service(transport)
+    result = await service.capture(
+        WebContentCaptureRequest(url="https://example.com/page"),
+    )
+    assert "\x07" not in result.text
+    assert "\t" not in result.text
+    dumped = str(result.model_dump())
+    assert "\x07" not in dumped
+
+
+async def test_content_bytes_matches_body_length() -> None:
+    body = b"1234567890"
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/plain"},
+                body=body,
+                content_bytes=999,
+            )
+        ]
+    )
+    service = _service(transport)
+    result = await service.capture(
+        WebContentCaptureRequest(url="https://example.com/page"),
+    )
+    assert result.content_bytes == len(body)
+
+
+async def test_content_encoding_gzip_rejected_at_service() -> None:
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={
+                    "content-type": "text/plain",
+                    "content-encoding": "gzip",
+                },
+                body=b"ok",
+                content_bytes=2,
+            )
+        ]
+    )
+    service = _service(transport)
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(WebContentCaptureRequest(url="https://example.com/page"))
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_CONTENT_ENCODING_UNSUPPORTED
+
+
+async def test_content_encoding_absent_accepted() -> None:
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/plain"},
+                body=b"plain",
+                content_bytes=5,
+            )
+        ]
+    )
+    service = _service(transport)
+    result = await service.capture(WebContentCaptureRequest(url="https://example.com/page"))
+    assert "plain" in result.text
+
+
+class FakeMonotonic:
+    def __init__(self, start: float = 0.0) -> None:
+        self.value = start
+
+    def __call__(self) -> float:
+        return self.value
+
+    def advance(self, delta: float) -> None:
+        self.value += delta
+
+
+async def test_dns_exceeds_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def resolver(_hostname: str) -> tuple[str, ...]:
+        return ("93.184.216.34",)
+
+    async def instant_timeout(coro: object, timeout: float) -> object:
+        if hasattr(coro, "close"):
+            coro.close()  # type: ignore[union-attr]
+        raise asyncio.TimeoutError
+
+    import asyncio
+
+    monkeypatch.setattr(asyncio, "wait_for", instant_timeout)
+    transport = RecordingTransport([])
+    service = SecureHttpWebContentCapture(
+        policy=WebUrlAccessPolicy(dns_resolver=resolver),
+        transport=transport,
+    )
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(
+            WebContentCaptureRequest(url="https://example.com/page", timeout_seconds=5),
+        )
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_TIMEOUT
+    assert transport.fetch_count == 0
+
+
+async def test_redirect_chain_shares_one_deadline() -> None:
+    clock = FakeMonotonic(0.0)
+    deadlines: list[float] = []
+
+    class DeadlineTransport:
+        async def fetch(self, request: ApprovedHttpsRequest) -> RawHttpsResponse:
+            deadlines.append(request.deadline)
+            if len(deadlines) == 1:
+                return RawHttpsResponse(
+                    status_code=302,
+                    headers={"location": "/two"},
+                    body=b"",
+                    content_bytes=0,
+                )
+            return RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/plain"},
+                body=b"done",
+                content_bytes=4,
+            )
+
+    service = SecureHttpWebContentCapture(
+        policy=WebUrlAccessPolicy(dns_resolver=_public_resolver),
+        transport=DeadlineTransport(),
+        monotonic=clock,
+    )
+    result = await service.capture(
+        WebContentCaptureRequest(url="https://example.com/one", timeout_seconds=20),
+    )
+    assert result.redirect_count == 1
+    assert len(deadlines) == 2
+    assert deadlines[0] == deadlines[1] == 20.0
+
+
+async def test_extraction_exceeds_remaining_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    call_count = 0
+
+    async def timeout_on_extraction(coro: object, timeout: float) -> object:
+        nonlocal call_count
+        call_count += 1
+        if call_count >= 2:
+            if hasattr(coro, "close"):
+                coro.close()  # type: ignore[union-attr]
+            raise asyncio.TimeoutError
+        return await asyncio.wait_for(coro, timeout=timeout)
+
+    monkeypatch.setattr(asyncio, "wait_for", timeout_on_extraction)
+    transport = RecordingTransport(
+        [
+            RawHttpsResponse(
+                status_code=200,
+                headers={"content-type": "text/html"},
+                body=_html("T", "Body"),
+                content_bytes=0,
+            )
+        ]
+    )
+    service = SecureHttpWebContentCapture(
+        policy=WebUrlAccessPolicy(dns_resolver=_public_resolver),
+        transport=transport,
+    )
+    with pytest.raises(WebContentCaptureError) as exc:
+        await service.capture(
+            WebContentCaptureRequest(url="https://example.com/page", timeout_seconds=5),
+        )
+    assert exc.value.code == WebContentCaptureErrorCode.WEB_URL_TIMEOUT
