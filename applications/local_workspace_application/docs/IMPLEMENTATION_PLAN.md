@@ -13,10 +13,11 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
 Current roadmap stage: Workspace Contents — Knowledge Intake source expansion
-Current implementation task: LKW-WORKSPACE-CONTENTS-1B-4-1-C1 — CURSOR IN PROGRESS
-Current review gate: audit the 1B-4-1-C1 commit before advancing the roadmap
-Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-4-2 — Slack safe numbered Source Candidate selection
-Following source expansion: 1B-5 Web URL intake → 1B-6 VENDOR-KNOWLEDGE integration
+Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-1 + corrections
+Current implementation: LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / READY_FOR_REVIEW
+Current review gate: audit actual 1B-4-2 commit before advancing
+Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5 — explicit Web URL intake
+Following source expansion: 1B-6 VENDOR-KNOWLEDGE integration
 Then: 1C shared synchronization and completion lifecycle → 1D provenance inspection → 1E safe removal
 ```
 
@@ -93,20 +94,19 @@ Microsoft Teams in `1B-6` means Teams-hosted organizational knowledge. It does n
 
 | Task | Result | Status |
 |---|---|---|
-| `LKW-WORKSPACE-CONTENTS-1B-4-1` | HTTP listing and acceptance of opaque preconfigured `LOCAL_FOLDER` Source Candidates | IMPLEMENTED / CORRECTION REQUIRED |
-| `LKW-WORKSPACE-CONTENTS-1B-4-1-C1` | Harden public safety, candidate identity and operation evidence | **CURRENT / CURSOR IN PROGRESS** |
-| `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | **NEXT AFTER C1 ACCEPTANCE** |
+| `LKW-WORKSPACE-CONTENTS-1B-4-1` | HTTP listing and acceptance of opaque preconfigured `LOCAL_FOLDER` Source Candidates | ACCEPTED (with corrections) |
+| `LKW-WORKSPACE-CONTENTS-1B-4-1-C1` | Harden public safety, candidate identity and operation evidence | ACCEPTED |
+| `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | **IMPLEMENTED / READY_FOR_REVIEW** |
 
-The roadmap must not advance to `1B-4-2` until the actual `1B-4-1-C1` commit is audited and accepted.
+Current review gate: audit the actual `1B-4-2` commit before advancing to `1B-5`.
 
 ---
 
 ## 4. Active Workspace Contents execution order
 
 ```text
-LKW-WORKSPACE-CONTENTS-1B-4-1-C1
+LKW-WORKSPACE-CONTENTS-1B-4-2
 → audit and acceptance
-→ LKW-WORKSPACE-CONTENTS-1B-4-2
 → LKW-WORKSPACE-CONTENTS-1B-5
 → LKW-WORKSPACE-CONTENTS-1B-6-0
 → LKW-WORKSPACE-CONTENTS-1B-6-1
@@ -119,8 +119,7 @@ LKW-WORKSPACE-CONTENTS-1B-4-1-C1
 
 | Task | User/product outcome | Status |
 |---|---|---|
-| `1B-4-1-C1` | Source Candidates are safe, identity-stable and expose correct durable operation evidence | CURRENT |
-| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | NEXT |
+| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | IMPLEMENTED / READY_FOR_REVIEW |
 | `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | PLANNED |
 | `1B-6-0` | LKW and VENDOR-KNOWLEDGE have a frozen ownership and integration contract | PLANNED |
 | `1B-6-1` | A user can discover safe opaque vendor connections and resources | PLANNED |
@@ -431,22 +430,21 @@ A second conversational adapter and broad provider matrix do not delay the curre
 
 ```text
 CURRENT:
-LKW-WORKSPACE-CONTENTS-1B-4-1-C1
-Source Candidate identity, public-safety and operation-evidence hardening
-CURSOR IN PROGRESS
-
-REVIEW GATE:
-audit the actual C1 commit
-→ ACCEPTED: advance to 1B-4-2
-→ NEEDS_CORRECTION: issue only the next bounded C1 correction
-
-NEXT:
 LKW-WORKSPACE-CONTENTS-1B-4-2
 Slack safe numbered Source Candidate selection
+IMPLEMENTED / READY_FOR_REVIEW
+
+REVIEW GATE:
+audit the actual 1B-4-2 commit
+→ ACCEPTED: advance to 1B-5
+→ NEEDS_CORRECTION: issue only the next bounded 1B-4-2 correction
+
+NEXT:
+LKW-WORKSPACE-CONTENTS-1B-5
+explicit Web URL intake
 
 THEN:
-1B-5 Web URL intake
-→ 1B-6-0 VENDOR-KNOWLEDGE contract
+1B-6-0 VENDOR-KNOWLEDGE contract
 → 1B-6-1 safe discovery
 → 1B-6-2 one end-to-end vendor proof
 → 1B-6-3 provider-neutral verification

@@ -512,11 +512,13 @@ async def test_invalid_workspace_command_is_usage_not_ask() -> None:
 
 @pytest.mark.asyncio
 async def test_no_formal_command_routed_outside_registry() -> None:
-    _, workflow = await _run("help")
+    outbound, workflow = await _run("help")
     public_ids = {
         "help",
         "workspaces.list",
         "sources.list",
+        "source_candidates.list",
+        "source_candidates.accept",
         "workspace.select",
         "workspace.create",
         "workspace.delete.request",
@@ -529,7 +531,17 @@ async def test_no_formal_command_routed_outside_registry() -> None:
         assert any(
             d.metadata.command_id == command_id for d in workflow._commands.definitions
         )
-
+    assert "source_candidates.accept.invalid" in registered
+    visible_ids = {d.metadata.command_id for d in workflow._commands.visible_commands()}
+    assert "source_candidates.accept.invalid" not in visible_ids
+    help_text = outbound[0]
+    assert "`source candidates`" in help_text
+    assert "`source add <number>`" in help_text
+    assert "`sources`" in help_text
+    assert help_text.index("`source candidates`") < help_text.index("`sources`")
+    assert help_text.index("`source add <number>`") < help_text.index("`sources`")
+    assert "source_candidates.list" not in help_text
+    assert len(registered) == len(workflow._commands.definitions)
 
 # --- Dynamic help ---
 

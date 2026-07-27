@@ -163,6 +163,40 @@ class SlackSourceListResponse(BaseModel):
     sources: list[SlackSourceListItem] = Field(default_factory=list)
 
 
+class SlackSourceCandidateListItem(BaseModel):
+    """Safe subset of public Source Candidate list items (no path/fingerprint)."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    candidate_id: str = ""
+    label: str = ""
+    description: str = ""
+    source_type: str = ""
+    available: bool = True
+
+
+class SlackSourceCandidateListResponse(BaseModel):
+    """Typed GET .../source-candidates response used by the companion."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    workspace_id: str = ""
+    candidates: list[SlackSourceCandidateListItem] = Field(default_factory=list)
+
+
+class SlackSourceCandidateAcceptResponse(BaseModel):
+    """Safe subset of Source Candidate acceptance response for Slack."""
+
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    workspace_id: str = ""
+    candidate_id: str = ""
+    source_id: str = ""
+    operation_id: str = ""
+    status: str = ""
+    label: str = ""
+
+
 class SlackAskClientError(Exception):
     """Controlled Ask/list HTTP failure (no internal diagnostics for Slack rendering)."""
 

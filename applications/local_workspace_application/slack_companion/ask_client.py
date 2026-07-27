@@ -19,6 +19,9 @@ from local_workspace_application.slack_companion.models import (
     SlackAskClientError,
     SlackAskHttpResponse,
     SlackManagedFileBatchResponse,
+    SlackSourceCandidateAcceptResponse,
+    SlackSourceCandidateListItem,
+    SlackSourceCandidateListResponse,
     SlackSourceListItem,
     SlackSourceListResponse,
     SlackWorkspaceCreateResponse,
@@ -64,6 +67,19 @@ class WorkspaceAskHttpClient:
 
     def build_sources_url(self, workspace_id: str) -> str:
         path = f"v1/local_workspace/workspaces/{workspace_id}/sources"
+        return urljoin(self._base_url, path)
+
+    def build_source_candidates_url(self, workspace_id: str) -> str:
+        path = f"v1/local_workspace/workspaces/{workspace_id}/source-candidates"
+        return urljoin(self._base_url, path)
+
+    def build_accept_source_candidate_url(
+        self, workspace_id: str, candidate_id: str
+    ) -> str:
+        path = (
+            f"v1/local_workspace/workspaces/{workspace_id}"
+            f"/knowledge/source-candidates/{candidate_id}"
+        )
         return urljoin(self._base_url, path)
 
     def build_managed_files_url(self, workspace_id: str) -> str:
@@ -254,6 +270,131 @@ class WorkspaceAskHttpClient:
             raise SlackAskClientError(kind="parse_error") from exc
 
         return list(parsed.sources)
+
+    async def list_source_candidates(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[SlackSourceCandidateListItem]:
+        tenant = tenant_id.strip()
+        workspace = workspace_id.strip()
+        if not tenant or not workspace:
+            raise SlackAskClientError(kind="parse_error")
+
+        url = self.build_source_candidates_url(workspace)
+        headers: dict[str, str] = {
+            "Accept": "application/json",
+            "X-Tenant-Id": tenant,
+        }
+        if self._api_key is not None:
+            headers["X-API-Key"] = self._api_key
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout,
+                transport=self._transport,
+            ) as client:
+                response = await client.get(url, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "slack_companion list_source_candidates timeout kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="timeout") from exc
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "slack_companion list_source_candidates transport_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="transport_error") from exc
+
+        if response.status_code < 200 or response.status_code >= 300:
+            logger.warning(
+                "slack_companion list_source_candidates http_error status=%s",
+                response.status_code,
+            )
+            raise SlackAskClientError(kind=f"http_{response.status_code}")
+
+        try:
+            payload = response.json()
+            parsed = SlackSourceCandidateListResponse.model_validate(payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion list_source_candidates parse_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="parse_error") from exc
+
+        if (parsed.workspace_id or "").strip() != workspace:
+            raise SlackAskClientError(kind="parse_error")
+        return list(parsed.candidates)
+
+    async def accept_source_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        candidate_id: str,
+        idempotency_key: str,
+    ) -> SlackSourceCandidateAcceptResponse:
+        tenant = tenant_id.strip()
+        workspace = workspace_id.strip()
+        candidate = candidate_id.strip()
+        idem = idempotency_key.strip()
+        if not tenant or not workspace or not candidate or not idem:
+            raise SlackAskClientError(kind="parse_error")
+
+        url = self.build_accept_source_candidate_url(workspace, candidate)
+        headers: dict[str, str] = {
+            "Accept": "application/json",
+            "X-Tenant-Id": tenant,
+            "Idempotency-Key": idem,
+        }
+        if self._api_key is not None:
+            headers["X-API-Key"] = self._api_key
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=self._timeout,
+                transport=self._transport,
+            ) as client:
+                response = await client.post(url, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "slack_companion accept_source_candidate timeout kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="timeout") from exc
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "slack_companion accept_source_candidate transport_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="transport_error") from exc
+
+        if response.status_code < 200 or response.status_code >= 300:
+            logger.warning(
+                "slack_companion accept_source_candidate http_error status=%s",
+                response.status_code,
+            )
+            raise SlackAskClientError(kind=f"http_{response.status_code}")
+
+        try:
+            payload = response.json()
+            parsed = SlackSourceCandidateAcceptResponse.model_validate(payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "slack_companion accept_source_candidate parse_error kind=%s",
+                type(exc).__name__,
+            )
+            raise SlackAskClientError(kind="parse_error") from exc
+
+        if (parsed.workspace_id or "").strip() != workspace:
+            raise SlackAskClientError(kind="parse_error")
+        if (parsed.candidate_id or "").strip() != candidate:
+            raise SlackAskClientError(kind="parse_error")
+        return parsed
 
     async def create_workspace(
         self,
