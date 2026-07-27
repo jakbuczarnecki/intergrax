@@ -5,12 +5,15 @@
 
 from __future__ import annotations
 
+import traceback
+
 import pytest
 from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBinding,
+    KnowledgeSourceBindingRepository,
     KnowledgeSourceBindingService,
     KnowledgeSourceBindingStatus,
     to_source_ref,
@@ -35,6 +38,11 @@ from tests.unit.runtime.vendor_knowledge._fakes import (
     InMemoryDocumentStore,
     RecordingResolver,
     make_source,
+)
+
+_LEAK_TEXT = (
+    "Authorization: Bearer secret-token "
+    "https://user:password@example.test?access_token=leak"
 )
 
 
@@ -86,9 +94,12 @@ def _service(
     store: InMemoryDocumentStore | None = None,
     resolver: RecordingResolver | None = None,
     registry: KnowledgeAdapterRegistry | None = None,
+    repository: KnowledgeSourceBindingRepository | None = None,
 ) -> tuple[KnowledgeSourceBindingService, InMemoryDocumentStore, RecordingResolver]:
     document_store = store or InMemoryDocumentStore()
-    repository = DocumentStoreKnowledgeSourceBindingRepository(document_store)
+    resolved_repository = repository or DocumentStoreKnowledgeSourceBindingRepository(
+        document_store
+    )
     integration = FakeIntegration()
     resolved = resolver or RecordingResolver(integration=integration)
     adapter_registry = registry or KnowledgeAdapterRegistry()
@@ -96,11 +107,115 @@ def _service(
         adapter_registry.register(FakeAdapter())
     service = KnowledgeSourceBindingService(
         tenant_id=tenant_id,
-        repository=repository,
+        repository=resolved_repository,
         integration_resolver=resolved,
         adapter_registry=adapter_registry,
     )
     return service, document_store, resolved
+
+
+class _LeakingRepository:
+    """Repository that raises a secret-bearing unexpected persistence error."""
+
+    def create(self, binding: KnowledgeSourceBinding) -> None:
+        raise RuntimeError(_LEAK_TEXT)
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSourceBinding | None:
+        raise RuntimeError(_LEAK_TEXT)
+
+    def update(
+        self,
+        binding: KnowledgeSourceBinding,
+        *,
+        expected_configuration_version: int,
+    ) -> None:
+        raise RuntimeError(_LEAK_TEXT)
+
+    def list(
+        self,
+        *,
+        tenant_id: str,
+        limit: int = 100,
+        status: KnowledgeSourceBindingStatus | None = None,
+    ) -> tuple[KnowledgeSourceBinding, ...]:
+        raise RuntimeError(_LEAK_TEXT)
+
+
+class _ForeignTenantListRepository:
+    def create(self, binding: KnowledgeSourceBinding) -> None:
+        raise NotImplementedError
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSourceBinding | None:
+        raise NotImplementedError
+
+    def update(
+        self,
+        binding: KnowledgeSourceBinding,
+        *,
+        expected_configuration_version: int,
+    ) -> None:
+        raise NotImplementedError
+
+    def list(
+        self,
+        *,
+        tenant_id: str,
+        limit: int = 100,
+        status: KnowledgeSourceBindingStatus | None = None,
+    ) -> tuple[KnowledgeSourceBinding, ...]:
+        return (_binding(tenant_id="tenant-other"),)
+
+
+class _StatusMismatchListRepository:
+    def create(self, binding: KnowledgeSourceBinding) -> None:
+        raise NotImplementedError
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSourceBinding | None:
+        raise NotImplementedError
+
+    def update(
+        self,
+        binding: KnowledgeSourceBinding,
+        *,
+        expected_configuration_version: int,
+    ) -> None:
+        raise NotImplementedError
+
+    def list(
+        self,
+        *,
+        tenant_id: str,
+        limit: int = 100,
+        status: KnowledgeSourceBindingStatus | None = None,
+    ) -> tuple[KnowledgeSourceBinding, ...]:
+        return (_binding(status=KnowledgeSourceBindingStatus.DISABLED),)
+
+
+def _assert_safe_persistence_error(exc: VendorKnowledgeError) -> None:
+    assert exc.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc.__cause__ is None
+    assert "secret-token" not in exc.safe_message
+    assert "example.test" not in exc.safe_message
+    assert "access_token" not in exc.safe_message
+    public_tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    assert "secret-token" not in public_tb
+    assert "example.test" not in public_tb
+    assert _LEAK_TEXT not in public_tb
 
 
 @pytest.mark.unit
@@ -367,6 +482,54 @@ def test_one_connection_ref_can_have_many_source_bindings() -> None:
     listed = service.list()
     assert len(listed) == 2
     assert {item.connection_ref for item in listed} == {"shared"}
+
+
+@pytest.mark.unit
+def test_service_persistence_errors_are_safe_for_create_get_list_update() -> None:
+    service, _store, _resolver = _service(repository=_LeakingRepository())
+    with pytest.raises(VendorKnowledgeError) as create_exc:
+        service.create(_binding())
+    _assert_safe_persistence_error(create_exc.value)
+
+    with pytest.raises(VendorKnowledgeError) as get_exc:
+        service.get("bind-1")
+    _assert_safe_persistence_error(get_exc.value)
+
+    with pytest.raises(VendorKnowledgeError) as list_exc:
+        service.list()
+    _assert_safe_persistence_error(list_exc.value)
+
+    with pytest.raises(VendorKnowledgeError) as update_exc:
+        service.update(_binding(configuration_version=2), expected_configuration_version=1)
+    _assert_safe_persistence_error(update_exc.value)
+
+
+@pytest.mark.unit
+def test_service_list_rejects_foreign_tenant_binding() -> None:
+    service, _store, _resolver = _service(repository=_ForeignTenantListRepository())
+    with pytest.raises(VendorKnowledgeError) as exc:
+        service.list()
+    assert exc.value.code is VendorKnowledgeErrorCode.TENANT_MISMATCH
+
+
+@pytest.mark.unit
+def test_service_list_rejects_status_filter_mismatch() -> None:
+    service, _store, _resolver = _service(repository=_StatusMismatchListRepository())
+    with pytest.raises(VendorKnowledgeError) as exc:
+        service.list(status=KnowledgeSourceBindingStatus.ACTIVE)
+    assert exc.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+
+
+@pytest.mark.unit
+def test_service_list_remains_tenant_scoped() -> None:
+    store = InMemoryDocumentStore()
+    service_a, _store_a, _resolver_a = _service(tenant_id="tenant-a", store=store)
+    service_b, _store_b, _resolver_b = _service(tenant_id="tenant-b", store=store)
+    service_a.create(_binding(binding_id="a1", tenant_id="tenant-a"))
+    service_b.create(_binding(binding_id="b1", tenant_id="tenant-b"))
+    listed = service_a.list()
+    assert [item.binding_id for item in listed] == ["a1"]
+    assert all(item.tenant_id == "tenant-a" for item in listed)
 
 
 @pytest.mark.unit

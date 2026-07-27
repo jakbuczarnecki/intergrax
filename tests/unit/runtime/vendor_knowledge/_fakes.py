@@ -297,10 +297,11 @@ class FakeConnectionIntegration:
 class InMemoryDocumentStore:
     """Minimal DocumentStore fake for binding repository tests."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, reverse_query: bool = False) -> None:
         self._rows: dict[tuple[str, str], DocumentRecord] = {}
         self.closed = False
         self.close_calls = 0
+        self.reverse_query = reverse_query
 
     def get(self, partition_key: str, row_key: str) -> Optional[DocumentRecord]:
         return self._rows.get((partition_key, row_key))
@@ -319,15 +320,16 @@ class InMemoryDocumentStore:
         row_key_prefix: Optional[str] = None,
     ) -> DocumentQueryResult:
         matches: list[DocumentRecord] = []
-        for (pk, rk), document in sorted(self._rows.items(), key=lambda item: item[0][1]):
+        ordered = sorted(self._rows.items(), key=lambda item: item[0][1])
+        if self.reverse_query:
+            ordered = list(reversed(ordered))
+        for (pk, rk), document in ordered:
             if pk != partition_key:
                 continue
             if row_key_prefix is not None and not rk.startswith(row_key_prefix):
                 continue
             matches.append(document)
-            if len(matches) >= limit:
-                break
-        return DocumentQueryResult(documents=matches, total=len(matches))
+        return DocumentQueryResult(documents=matches[:limit], total=len(matches))
 
     def close(self) -> None:
         self.closed = True

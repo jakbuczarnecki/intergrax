@@ -267,3 +267,181 @@ def test_resolver_satisfies_vendor_integration_resolver_protocol() -> None:
         fallback_resolver=RecordingResolver(integration=FakeIntegration()),
     )
     assert isinstance(resolver, VendorIntegrationResolver)
+
+
+@pytest.mark.unit
+def test_register_rejects_provider_id_mismatch() -> None:
+    registry = KnowledgeConnectionRegistry()
+    with pytest.raises(ValueError, match="provider_id") as exc:
+        registry.register(
+            tenant_id="tenant-1",
+            connection_ref="conn-secret-ref",
+            provider_id="other-provider",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            integration=FakeConnectionIntegration(),
+        )
+    assert "conn-secret-ref" not in str(exc.value)
+    with pytest.raises(VendorKnowledgeError):
+        registry.resolve(
+            tenant_id="tenant-1",
+            connection_ref="conn-secret-ref",
+            provider_id="other-provider",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+
+
+@pytest.mark.unit
+def test_register_rejects_category_mismatch() -> None:
+    registry = KnowledgeConnectionRegistry()
+    with pytest.raises(ValueError, match="category") as exc:
+        registry.register(
+            tenant_id="tenant-1",
+            connection_ref="conn-secret-ref",
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            integration=FakeConnectionIntegration(),
+        )
+    assert "conn-secret-ref" not in str(exc.value)
+
+
+@pytest.mark.unit
+def test_register_rejects_missing_identity_attributes() -> None:
+    registry = KnowledgeConnectionRegistry()
+    with pytest.raises(ValueError, match="identity") as exc:
+        registry.register(
+            tenant_id="tenant-1",
+            connection_ref="conn-secret-ref",
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            integration=object(),
+        )
+    assert "conn-secret-ref" not in str(exc.value)
+
+
+@pytest.mark.unit
+def test_failed_register_does_not_create_entry() -> None:
+    registry = KnowledgeConnectionRegistry()
+    with pytest.raises(ValueError):
+        registry.register(
+            tenant_id="tenant-1",
+            connection_ref="conn-1",
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            integration=FakeConnectionIntegration(provider_id="wrong"),
+        )
+    with pytest.raises(VendorKnowledgeError) as exc:
+        registry.resolve(
+            tenant_id="tenant-1",
+            connection_ref="conn-1",
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+    assert exc.value.code is VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND
+
+
+@pytest.mark.unit
+def test_resolve_detects_provider_id_mutation() -> None:
+    registry = KnowledgeConnectionRegistry()
+    integration = FakeConnectionIntegration()
+    registry.register(
+        tenant_id="tenant-1",
+        connection_ref="conn-1",
+        provider_id="ms365_graph",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        integration=integration,
+    )
+    integration.provider_id = "mutated-provider"
+    with pytest.raises(VendorKnowledgeError) as exc:
+        registry.resolve(
+            tenant_id="tenant-1",
+            connection_ref="conn-1",
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+    assert exc.value.code is VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND
+    assert "conn-1" not in exc.value.safe_message
+
+
+@pytest.mark.unit
+def test_resolve_detects_category_mutation() -> None:
+    registry = KnowledgeConnectionRegistry()
+    integration = FakeConnectionIntegration()
+    registry.register(
+        tenant_id="tenant-1",
+        connection_ref="conn-1",
+        provider_id="ms365_graph",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        integration=integration,
+    )
+    integration.integration_kind = IntegrationCategory.ISSUE_TRACKER.value
+    with pytest.raises(VendorKnowledgeError) as exc:
+        registry.resolve(
+            tenant_id="tenant-1",
+            connection_ref="conn-1",
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+    assert exc.value.code is VendorKnowledgeErrorCode.INTEGRATION_CATEGORY_MISMATCH
+    assert "conn-1" not in exc.value.safe_message
+
+
+@pytest.mark.unit
+def test_resolve_returns_same_valid_instance() -> None:
+    registry = KnowledgeConnectionRegistry()
+    integration = FakeConnectionIntegration()
+    registry.register(
+        tenant_id="tenant-1",
+        connection_ref="conn-1",
+        provider_id="ms365_graph",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        integration=integration,
+    )
+    resolved = registry.resolve(
+        tenant_id="tenant-1",
+        connection_ref="conn-1",
+        provider_id="ms365_graph",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+    )
+    assert resolved is integration
+
+
+@pytest.mark.unit
+def test_error_messages_never_include_connection_ref() -> None:
+    registry = KnowledgeConnectionRegistry()
+    marker = "conn-must-not-leak"
+    cases: list[Exception] = []
+    try:
+        registry.register(
+            tenant_id="tenant-1",
+            connection_ref=marker,
+            provider_id="wrong",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            integration=FakeConnectionIntegration(),
+        )
+    except ValueError as exc:
+        cases.append(exc)
+    try:
+        registry.register(
+            tenant_id="tenant-1",
+            connection_ref=marker,
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            integration=FakeConnectionIntegration(),
+        )
+    except ValueError as exc:
+        cases.append(exc)
+    try:
+        registry.resolve(
+            tenant_id="tenant-1",
+            connection_ref=marker,
+            provider_id="ms365_graph",
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+    except VendorKnowledgeError as exc:
+        cases.append(exc)
+    assert cases
+    for err in cases:
+        assert marker not in str(err)
+        if isinstance(err, VendorKnowledgeError):
+            assert marker not in err.safe_message
+            assert marker not in repr(err)

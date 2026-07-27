@@ -21,6 +21,7 @@ from intergrax.runtime.vendor_knowledge.bindings import (
 
 _PARTITION_PREFIX = "vendor_knowledge_bindings"
 _ROW_PREFIX = "binding"
+_MAX_BINDING_LIST_SCAN = 10_000
 _FORBIDDEN_SECRET_FIELDS: frozenset[str] = frozenset(
     {
         "access_token",
@@ -32,6 +33,8 @@ _FORBIDDEN_SECRET_FIELDS: frozenset[str] = frozenset(
         "signed_download_url",
     }
 )
+
+
 def binding_partition_key(tenant_id: str) -> str:
     cleaned = tenant_id.strip()
     if not cleaned:
@@ -183,12 +186,20 @@ class DocumentStoreKnowledgeSourceBindingRepository:
         if limit <= 0:
             raise ValueError("limit must be greater than zero")
 
-        fetch_limit = limit if status is None else max(limit * 20, limit)
         result = self._document_store.query(
             binding_partition_key(cleaned_tenant),
-            limit=fetch_limit,
+            limit=_MAX_BINDING_LIST_SCAN + 1,
             row_key_prefix=f"{_ROW_PREFIX}:",
         )
+        if len(result.documents) > _MAX_BINDING_LIST_SCAN:
+            raise KnowledgeSourceBindingCorruptRecord(
+                "binding list exceeds scan limit"
+            )
+        if result.total > _MAX_BINDING_LIST_SCAN:
+            raise KnowledgeSourceBindingCorruptRecord(
+                "binding list exceeds scan limit"
+            )
+
         bindings: list[KnowledgeSourceBinding] = []
         for document in result.documents:
             binding = binding_from_document(document)

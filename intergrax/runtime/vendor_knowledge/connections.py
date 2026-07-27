@@ -14,6 +14,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeErrorCode,
 )
 from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef
+from intergrax.utils import attribute_access
 
 type ConnectionRegistryKey = tuple[str, str]
 
@@ -25,6 +26,28 @@ class _ConnectionEntry:
     provider_id: str
     integration_kind: IntegrationCategory
     integration: object
+
+
+def _normalize_integration_kind(raw: object) -> str | None:
+    if isinstance(raw, IntegrationCategory):
+        return raw.value
+    if isinstance(raw, str):
+        cleaned = raw.strip()
+        return cleaned if cleaned else None
+    return None
+
+
+def _read_integration_identity(integration: object) -> tuple[str | None, str | None]:
+    provider_raw = attribute_access.optional(integration, "provider_id", None)
+    kind_raw = attribute_access.optional(integration, "integration_kind", None)
+
+    provider_id: str | None = None
+    if provider_raw is not None:
+        cleaned_provider = str(provider_raw).strip()
+        if cleaned_provider:
+            provider_id = cleaned_provider
+
+    return provider_id, _normalize_integration_kind(kind_raw)
 
 
 class KnowledgeConnectionRegistry:
@@ -57,6 +80,14 @@ class KnowledgeConnectionRegistry:
             raise ValueError("provider_id must be a non-empty string")
         if not isinstance(integration_kind, IntegrationCategory):
             raise ValueError("integration_kind must be an IntegrationCategory")
+
+        actual_provider, actual_kind = _read_integration_identity(integration)
+        if actual_provider is None or actual_kind is None:
+            raise ValueError("integration instance identity is invalid")
+        if actual_provider != cleaned_provider:
+            raise ValueError("integration provider_id does not match registration")
+        if actual_kind != integration_kind.value:
+            raise ValueError("integration category does not match registration")
 
         key: ConnectionRegistryKey = (cleaned_tenant, cleaned_ref)
         if key in self._entries:
@@ -110,6 +141,29 @@ class KnowledgeConnectionRegistry:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INTEGRATION_CATEGORY_MISMATCH,
                 safe_message="Registered connection category does not match the request",
+                provider_id=cleaned_provider,
+                retryable=False,
+            )
+
+        actual_provider, actual_kind = _read_integration_identity(entry.integration)
+        if actual_provider is None or actual_kind is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Registered integration instance identity is invalid",
+                provider_id=cleaned_provider,
+                retryable=False,
+            )
+        if actual_provider != cleaned_provider:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND,
+                safe_message="Registered integration provider does not match the request",
+                provider_id=cleaned_provider,
+                retryable=False,
+            )
+        if actual_kind != integration_kind.value:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INTEGRATION_CATEGORY_MISMATCH,
+                safe_message="Registered integration category does not match the request",
                 provider_id=cleaned_provider,
                 retryable=False,
             )

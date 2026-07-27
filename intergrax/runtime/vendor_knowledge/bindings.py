@@ -177,32 +177,32 @@ class KnowledgeSourceBindingService:
         self._assert_resolvable(binding)
         try:
             self._repository.create(binding)
-        except KnowledgeSourceBindingAlreadyExists as exc:
+        except KnowledgeSourceBindingAlreadyExists:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
                 safe_message="Knowledge source binding already exists",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
-        except KnowledgeSourceBindingCorruptRecord as exc:
+            ) from None
+        except KnowledgeSourceBindingCorruptRecord:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding record is invalid",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
+            ) from None
         except VendorKnowledgeError:
             raise
-        except Exception as exc:
+        except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding persistence failed",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
+            ) from None
         return binding
 
     def update(
@@ -219,40 +219,40 @@ class KnowledgeSourceBindingService:
                 binding,
                 expected_configuration_version=expected_configuration_version,
             )
-        except KnowledgeSourceBindingNotFound as exc:
+        except KnowledgeSourceBindingNotFound:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND,
                 safe_message="Knowledge source binding was not found",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
-        except KnowledgeSourceBindingVersionConflict as exc:
+            ) from None
+        except KnowledgeSourceBindingVersionConflict:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
                 safe_message="Knowledge source binding configuration version conflict",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
-        except KnowledgeSourceBindingCorruptRecord as exc:
+            ) from None
+        except KnowledgeSourceBindingCorruptRecord:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding record is invalid",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
+            ) from None
         except VendorKnowledgeError:
             raise
-        except Exception as exc:
+        except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding persistence failed",
                 provider_id=binding.provider_id,
                 source_kind=binding.source_kind,
                 retryable=False,
-            ) from exc
+            ) from None
         return binding
 
     def get(self, binding_id: str) -> KnowledgeSourceBinding:
@@ -262,20 +262,20 @@ class KnowledgeSourceBindingService:
                 tenant_id=self._tenant_id,
                 binding_id=cleaned_id,
             )
-        except KnowledgeSourceBindingCorruptRecord as exc:
+        except KnowledgeSourceBindingCorruptRecord:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding record is invalid",
                 retryable=False,
-            ) from exc
+            ) from None
         except VendorKnowledgeError:
             raise
-        except Exception as exc:
+        except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding persistence failed",
                 retryable=False,
-            ) from exc
+            ) from None
         if binding is None:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND,
@@ -292,25 +292,37 @@ class KnowledgeSourceBindingService:
         status: KnowledgeSourceBindingStatus | None = None,
     ) -> tuple[KnowledgeSourceBinding, ...]:
         try:
-            return self._repository.list(
+            bindings = self._repository.list(
                 tenant_id=self._tenant_id,
                 limit=limit,
                 status=status,
             )
-        except KnowledgeSourceBindingCorruptRecord as exc:
+        except KnowledgeSourceBindingCorruptRecord:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding record is invalid",
                 retryable=False,
-            ) from exc
+            ) from None
         except VendorKnowledgeError:
             raise
-        except Exception as exc:
+        except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge source binding persistence failed",
                 retryable=False,
-            ) from exc
+            ) from None
+
+        for binding in bindings:
+            self._assert_service_tenant(binding.tenant_id, provider_id=binding.provider_id)
+            if status is not None and binding.status is not status:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message="Knowledge source binding list status filter mismatch",
+                    provider_id=binding.provider_id,
+                    source_kind=binding.source_kind,
+                    retryable=False,
+                )
+        return bindings
 
     def resolve_source(self, binding_id: str) -> KnowledgeSourceRef:
         binding = self.get(binding_id)

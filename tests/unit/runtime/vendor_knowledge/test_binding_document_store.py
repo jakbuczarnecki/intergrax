@@ -11,6 +11,7 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.runtime.vendor_knowledge.binding_document_store import (
     DocumentStoreKnowledgeSourceBindingRepository,
+    _MAX_BINDING_LIST_SCAN,
     binding_from_document,
     binding_partition_key,
     binding_row_key,
@@ -274,3 +275,98 @@ def test_update_missing_binding_not_found() -> None:
             _binding(configuration_version=2),
             expected_configuration_version=1,
         )
+
+
+@pytest.mark.unit
+def test_status_filter_finds_match_after_many_other_status_rows() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeSourceBindingRepository(store)
+    for index in range(25):
+        repo.create(
+            _binding(
+                binding_id=f"disabled-{index:02d}",
+                connection_ref=f"conn-d-{index}",
+                status=KnowledgeSourceBindingStatus.DISABLED,
+            )
+        )
+    repo.create(
+        _binding(
+            binding_id="active-match",
+            connection_ref="conn-active",
+            status=KnowledgeSourceBindingStatus.ACTIVE,
+        )
+    )
+    listed = repo.list(
+        tenant_id="tenant-1",
+        limit=1,
+        status=KnowledgeSourceBindingStatus.ACTIVE,
+    )
+    assert len(listed) == 1
+    assert listed[0].binding_id == "active-match"
+
+
+@pytest.mark.unit
+def test_list_sorts_by_binding_id_regardless_of_provider_order() -> None:
+    store = InMemoryDocumentStore(reverse_query=True)
+    repo = DocumentStoreKnowledgeSourceBindingRepository(store)
+    repo.create(_binding(binding_id="bind-c", connection_ref="conn-c"))
+    repo.create(_binding(binding_id="bind-a", connection_ref="conn-a"))
+    repo.create(_binding(binding_id="bind-b", connection_ref="conn-b"))
+    listed = repo.list(tenant_id="tenant-1")
+    assert [item.binding_id for item in listed] == ["bind-a", "bind-b", "bind-c"]
+
+
+@pytest.mark.unit
+def test_list_applies_limit_after_filter_and_sort() -> None:
+    store = InMemoryDocumentStore(reverse_query=True)
+    repo = DocumentStoreKnowledgeSourceBindingRepository(store)
+    for index, binding_id in enumerate(("z-active", "a-active", "m-disabled", "b-active")):
+        status = (
+            KnowledgeSourceBindingStatus.DISABLED
+            if "disabled" in binding_id
+            else KnowledgeSourceBindingStatus.ACTIVE
+        )
+        repo.create(
+            _binding(
+                binding_id=binding_id,
+                connection_ref=f"conn-{index}",
+                status=status,
+            )
+        )
+    listed = repo.list(
+        tenant_id="tenant-1",
+        limit=2,
+        status=KnowledgeSourceBindingStatus.ACTIVE,
+    )
+    assert [item.binding_id for item in listed] == ["a-active", "b-active"]
+
+
+@pytest.mark.unit
+def test_list_exceeding_scan_cap_fail_closed() -> None:
+    class _OverCapStore:
+        def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
+            return None
+
+        def put(self, document: DocumentRecord) -> None:
+            return None
+
+        def delete(self, partition_key: str, row_key: str) -> None:
+            return None
+
+        def query(
+            self,
+            partition_key: str,
+            *,
+            limit: int = 100,
+            row_key_prefix: str | None = None,
+        ):
+            from intergrax.integrations.contracts.document_store import DocumentQueryResult
+
+            return DocumentQueryResult(documents=(), total=_MAX_BINDING_LIST_SCAN + 1)
+
+        def close(self) -> None:
+            return None
+
+    repo = DocumentStoreKnowledgeSourceBindingRepository(_OverCapStore())
+    with pytest.raises(KnowledgeSourceBindingCorruptRecord, match="scan limit"):
+        repo.list(tenant_id="tenant-1")
