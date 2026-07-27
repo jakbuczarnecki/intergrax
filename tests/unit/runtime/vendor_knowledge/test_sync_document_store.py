@@ -142,14 +142,16 @@ def test_lease_acquire_missing_and_active_busy() -> None:
 
 
 @pytest.mark.unit
-def test_lease_expired_takeover_via_delete_if_match() -> None:
+def test_lease_expired_takeover_via_replace_if_match() -> None:
     store = InMemoryDocumentStore()
     clock = {"now": 10.0}
-    tokens = iter(["token-old", "token-probe", "token-new"])
+    tokens = iter(["token-old", "token-new"])
+    versions = iter(["rv-old", "rv-new"])
     repo = DocumentStoreKnowledgeSourceLeaseRepository(
         store,
         clock=lambda: clock["now"],
         token_factory=lambda: next(tokens),
+        version_factory=lambda: next(versions),
     )
     first = repo.acquire(
         tenant_id="tenant-1",
@@ -168,6 +170,7 @@ def test_lease_expired_takeover_via_delete_if_match() -> None:
         "token",
         "acquired_at_epoch",
         "expires_at_epoch",
+        "record_version",
     }
     clock["now"] = 20.0
     winner = repo.acquire(
@@ -179,6 +182,9 @@ def test_lease_expired_takeover_via_delete_if_match() -> None:
     assert winner is not None
     assert winner.owner_id == "owner-2"
     assert winner.token == "token-new"
+    taken = store.get("vendor_knowledge.source_lease.v1:tenant-1", "binding:binding-1")
+    assert taken is not None
+    assert taken.data["record_version"] == "rv-new"
 
 
 @pytest.mark.unit
@@ -211,7 +217,7 @@ def test_lease_concurrent_acquire_single_winner() -> None:
 def test_lease_stale_release_cannot_delete_new_lease() -> None:
     store = InMemoryDocumentStore()
     clock = {"now": 1.0}
-    tokens = iter(["token-1", "token-probe", "token-2"])
+    tokens = iter(["token-1", "token-2"])
     repo = DocumentStoreKnowledgeSourceLeaseRepository(
         store,
         clock=lambda: clock["now"],
@@ -352,8 +358,13 @@ def test_checkpoint_corrupt_hides_cursor() -> None:
                 "schema_version": "vendor_knowledge.sync_checkpoint.v1",
                 "tenant_id": "tenant-1",
                 "binding_id": "binding-1",
-                "binding_configuration_version": "not-an-int",
-                "cursor": {"value": "SECRET-CURSOR", "version": "v1"},
+                "record_version": "rv-1",
+                "checkpoint": {
+                    "tenant_id": "tenant-1",
+                    "binding_id": "binding-1",
+                    "binding_configuration_version": "not-an-int",
+                    "cursor": {"value": "SECRET-CURSOR", "version": "v1"},
+                },
             },
         )
     )
@@ -415,6 +426,7 @@ def test_remote_item_replay_partial_and_marker_after_states() -> None:
                 "schema_version": "vendor_knowledge.remote_item_state.v1",
                 "tenant_id": "tenant-1",
                 "binding_id": "binding-1",
+                "record_version": "rv-partial",
                 "state": first.model_dump(mode="json"),
             },
         )
@@ -636,3 +648,61 @@ def test_batch_fingerprint_uses_sha256_not_python_hash() -> None:
     ).hexdigest()
     assert fingerprint == expected
     assert fingerprint != format(hash(json.dumps(ordered)), "x")
+
+
+@pytest.mark.unit
+def test_delivery_marker_applying_resume_then_completed_noop() -> None:
+    store = InMemoryDocumentStore()
+    versions = iter([f"rv-{idx}" for idx in range(1, 20)])
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(
+        store,
+        version_factory=lambda: next(versions),
+    )
+    delivery = _sha("resume-delivery")
+    states = (_state(remote_id="item-1", delivery_id=delivery),)
+    partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
+    fingerprint = hashlib.sha256(
+        json.dumps(
+            [states[0].model_dump(mode="json")],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key=f"delivery:{delivery}",
+            data={
+                "schema_version": "vendor_knowledge.delivery_marker.v1",
+                "tenant_id": "tenant-1",
+                "binding_id": "binding-1",
+                "delivery_id": delivery,
+                "batch_fingerprint": fingerprint,
+                "status": "applying",
+                "record_version": "rv-applying",
+            },
+        )
+    )
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=states,
+    )
+    assert (
+        repo.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="item-1")
+        == states[0]
+    )
+    marker = store.get(partition, f"delivery:{delivery}")
+    assert marker is not None
+    assert marker.data["status"] == "completed"
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=states,
+    )
+    marker_again = store.get(partition, f"delivery:{delivery}")
+    assert marker_again is not None
+    assert marker_again.data["status"] == "completed"
+    assert marker_again.data["record_version"] == marker.data["record_version"]

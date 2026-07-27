@@ -27,6 +27,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 )
 from intergrax.tools.execution_models import ToolExecutionResult
 
+CoordinatorResolver = Callable[[str, str], VendorKnowledgeSyncCoordinator]
 MainLoopProvider = Callable[[], asyncio.AbstractEventLoop | None]
 Sleeper = Callable[[float], None]
 
@@ -60,7 +61,7 @@ def _default_sleeper(delay_seconds: float) -> None:
 
 def make_vendor_knowledge_sync_worker_handler(
     *,
-    coordinator: VendorKnowledgeSyncCoordinator,
+    coordinator_resolver: CoordinatorResolver,
     scheduler: VendorKnowledgeSyncScheduler,
     main_loop_provider: MainLoopProvider | None = None,
     retry_delays_seconds: tuple[float, ...] = _DEFAULT_RETRY_DELAYS,
@@ -94,6 +95,13 @@ def make_vendor_knowledge_sync_worker_handler(
         while True:
             attempt += 1
             try:
+                try:
+                    coordinator = coordinator_resolver(tenant_id, run_id)
+                except Exception:
+                    return ToolExecutionResult.fail(
+                        "vendor_knowledge_sync_failed",
+                        "vendor knowledge sync failed",
+                    )
                 result = _run_coordinator(
                     coordinator=coordinator,
                     job=job,
@@ -198,7 +206,7 @@ def _run_coordinator(
 def register_vendor_knowledge_sync_worker_handler(
     registry: TaskExecutionRegistry,
     *,
-    coordinator: VendorKnowledgeSyncCoordinator,
+    coordinator_resolver: CoordinatorResolver,
     scheduler: VendorKnowledgeSyncScheduler,
     logical_task_name: str = VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
     main_loop_provider: MainLoopProvider | None = None,
@@ -208,7 +216,7 @@ def register_vendor_knowledge_sync_worker_handler(
     registry.register(
         logical_task_name,
         make_vendor_knowledge_sync_worker_handler(
-            coordinator=coordinator,
+            coordinator_resolver=coordinator_resolver,
             scheduler=scheduler,
             main_loop_provider=main_loop_provider,
             retry_delays_seconds=retry_delays_seconds,

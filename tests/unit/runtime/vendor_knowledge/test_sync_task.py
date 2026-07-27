@@ -1,16 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Unit tests for Vendor Knowledge sync queue payload and worker wiring."""
+"""Unit tests for Vendor Knowledge sync application-composition adapter."""
 
 from __future__ import annotations
 
 import base64
 import hashlib
 import json
-import logging
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 from pydantic import ValidationError
@@ -25,6 +23,10 @@ from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
+)
+from intergrax.runtime.vendor_knowledge.sync_jobs import (
+    VENDOR_KNOWLEDGE_SYNC_TASK_NAME as JOBS_TASK_NAME,
+    VendorKnowledgeSyncJob as JobsVendorKnowledgeSyncJob,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncMode,
@@ -43,6 +45,9 @@ from intergrax.runtime.vendor_knowledge.sync_task import (
     register_vendor_knowledge_sync_handler,
     vendor_knowledge_sync_idempotency_key,
 )
+from intergrax.runtime.vendor_knowledge.sync_worker import (
+    VendorKnowledgeSyncWorkerOutput as WorkerOutput,
+)
 
 
 def _sha(value: str) -> str:
@@ -52,19 +57,23 @@ def _sha(value: str) -> str:
 def _job(
     *,
     tenant_id: str = "tenant-1",
-    run_id: str = "run-1",
     binding_id: str = "binding-1",
+    operation_id: str = "op-1",
     mode: KnowledgeSyncMode = KnowledgeSyncMode.INCREMENTAL,
     page_size: int = 50,
     restart: bool = False,
+    trigger_delivery_id: str | None = None,
+    recovery_attempt: int = 0,
 ) -> VendorKnowledgeSyncJob:
     return VendorKnowledgeSyncJob(
         tenant_id=tenant_id,
-        run_id=run_id,
         binding_id=binding_id,
+        operation_id=operation_id,
         mode=mode,
         page_size=page_size,
         restart=restart,
+        trigger_delivery_id=trigger_delivery_id,
+        recovery_attempt=recovery_attempt,
     )
 
 
@@ -73,13 +82,14 @@ def _completed_result(
     binding_id: str = "binding-1",
     mode: KnowledgeSyncMode = KnowledgeSyncMode.INCREMENTAL,
     has_more: bool = False,
+    delivery: str | None = None,
 ) -> KnowledgeSyncRunResult:
     return KnowledgeSyncRunResult(
         status=KnowledgeSyncRunStatus.COMPLETED,
         mode=mode,
         tenant_id="tenant-1",
         binding_id=binding_id,
-        delivery_id=_sha("delivery-1"),
+        delivery_id=delivery or _sha("delivery-1"),
         changes_count=1,
         active_count=1,
         tombstone_count=0,
@@ -96,6 +106,13 @@ def _job_from_handle(queue: DocumentStoreTaskQueue, handle: TaskHandle) -> Vendo
 
 
 @pytest.mark.unit
+def test_adapter_reexports_canonical_job_and_output_identity() -> None:
+    assert VendorKnowledgeSyncJob is JobsVendorKnowledgeSyncJob
+    assert VendorKnowledgeSyncWorkerOutput is WorkerOutput
+    assert VENDOR_KNOWLEDGE_SYNC_TASK_NAME == JOBS_TASK_NAME
+
+
+@pytest.mark.unit
 def test_job_encode_decode_round_trip_and_extra_fields_rejected() -> None:
     job = _job()
     payload = encode_vendor_knowledge_sync_job(job)
@@ -104,27 +121,27 @@ def test_job_encode_decode_round_trip_and_extra_fields_rejected() -> None:
     assert set(raw) == {
         "schema_version",
         "tenant_id",
-        "run_id",
         "binding_id",
+        "operation_id",
         "mode",
         "page_size",
         "restart",
+        "trigger_delivery_id",
+        "recovery_attempt",
     }
+    assert "run_id" not in raw
     assert "cursor" not in raw
-    assert "token" not in raw
-    assert "credential_ref" not in raw
-    assert "content" not in raw
     with pytest.raises(ValidationError):
         VendorKnowledgeSyncJob.model_validate({**raw, "cursor": "secret"})
     with pytest.raises(ValidationError):
-        VendorKnowledgeSyncJob(
-            tenant_id="t",
-            run_id="r",
-            binding_id="b",
-            mode=KnowledgeSyncMode.INCREMENTAL,
-            page_size=0,
-            restart=False,
-        )
+        VendorKnowledgeSyncJob.model_validate({**raw, "run_id": "run-1"})
+
+
+@pytest.mark.unit
+def test_owner_id_hashes_run_id() -> None:
+    owner = owner_id_for_sync_run("run-1")
+    assert owner == f"vendor_knowledge.sync:{_sha('run-1')}"
+    assert "run-1" not in owner
 
 
 @pytest.mark.unit
@@ -133,9 +150,8 @@ def test_deterministic_idempotency_key() -> None:
     key_a = vendor_knowledge_sync_idempotency_key(job)
     key_b = vendor_knowledge_sync_idempotency_key(_job())
     assert key_a == key_b
-    assert key_a.startswith("vendor-knowledge-sync:v1:")
-    assert len(key_a.split(":")[-1]) == 64
-    other = vendor_knowledge_sync_idempotency_key(_job(run_id="run-2"))
+    assert key_a.startswith(f"{VENDOR_KNOWLEDGE_SYNC_TASK_NAME}:")
+    other = vendor_knowledge_sync_idempotency_key(_job(operation_id="op-2"))
     assert other != key_a
 
 
@@ -144,17 +160,25 @@ def test_dispatcher_duplicate_enqueue_returns_same_task() -> None:
     queue = DocumentStoreTaskQueue(InMemoryDocumentStore())
     dispatcher = VendorKnowledgeSyncDispatcher(queue)
     job = _job()
-    first = dispatcher.enqueue(job)
-    second = dispatcher.enqueue(job)
+    first = dispatcher.enqueue(job=job, run_id="run-1")
+    second = dispatcher.enqueue(job=job, run_id="run-1")
     assert first.task_id == second.task_id
     stored = _job_from_handle(queue, first)
     assert stored == job
+    assert "run_id" not in json.loads(encode_vendor_knowledge_sync_job(stored).decode("utf-8"))
 
 
 @pytest.mark.unit
-def test_handler_rejects_tenant_and_run_mismatch() -> None:
-    coordinator = AsyncMock()
-    handler = make_vendor_knowledge_sync_handler(lambda tenant, owner: coordinator)
+def test_handler_rejects_tenant_mismatch() -> None:
+    coordinator = type("C", (), {})()
+    queue = DocumentStoreTaskQueue(InMemoryDocumentStore())
+    dispatcher = VendorKnowledgeSyncDispatcher(queue)
+    handler = make_vendor_knowledge_sync_handler(
+        lambda tenant, owner: coordinator,  # type: ignore[arg-type, return-value]
+        dispatcher,
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
+    )
     payload = encode_vendor_knowledge_sync_job(_job())
     tenant_mismatch = handler(
         tenant_id="other-tenant",
@@ -164,42 +188,53 @@ def test_handler_rejects_tenant_and_run_mismatch() -> None:
     assert tenant_mismatch.success is False
     assert tenant_mismatch.error is not None
     assert tenant_mismatch.error.error_code == "vendor_knowledge_sync_tenant_mismatch"
-    run_mismatch = handler(
-        tenant_id="tenant-1",
-        run_id="other-run",
-        payload=payload,
-    )
-    assert run_mismatch.success is False
-    assert run_mismatch.error is not None
-    assert run_mismatch.error.error_code == "vendor_knowledge_sync_run_mismatch"
-    coordinator.sync_once.assert_not_called()
-    coordinator.reconcile_once.assert_not_called()
 
 
 @pytest.mark.unit
 def test_handler_incremental_and_reconciliation_dispatch() -> None:
-    coordinator = AsyncMock()
-    coordinator.sync_once = AsyncMock(return_value=_completed_result())
-    coordinator.reconcile_once = AsyncMock(
-        return_value=_completed_result(mode=KnowledgeSyncMode.RECONCILIATION)
-    )
+    class _Coordinator:
+        def __init__(self) -> None:
+            self.sync_calls: list[dict[str, Any]] = []
+            self.reconcile_calls: list[dict[str, Any]] = []
+
+        async def sync_once(self, *, binding_id: str, page_size: int) -> KnowledgeSyncRunResult:
+            self.sync_calls.append({"binding_id": binding_id, "page_size": page_size})
+            return _completed_result()
+
+        async def reconcile_once(
+            self,
+            *,
+            binding_id: str,
+            page_size: int,
+            restart: bool,
+        ) -> KnowledgeSyncRunResult:
+            self.reconcile_calls.append(
+                {"binding_id": binding_id, "page_size": page_size, "restart": restart}
+            )
+            return _completed_result(mode=KnowledgeSyncMode.RECONCILIATION)
+
+    coordinator = _Coordinator()
     captured: list[tuple[str, str]] = []
 
     def _factory(tenant_id: str, owner_id: str) -> Any:
         captured.append((tenant_id, owner_id))
         return coordinator
 
-    handler = make_vendor_knowledge_sync_handler(_factory)
+    queue = DocumentStoreTaskQueue(InMemoryDocumentStore())
+    dispatcher = VendorKnowledgeSyncDispatcher(queue)
+    handler = make_vendor_knowledge_sync_handler(
+        _factory,
+        dispatcher,
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
+    )
     incremental = handler(
         tenant_id="tenant-1",
         run_id="run-1",
         payload=encode_vendor_knowledge_sync_job(_job(page_size=25)),
     )
     assert incremental.success is True
-    assert incremental.output is not None
-    assert incremental.output.has_more is False
-    coordinator.sync_once.assert_awaited_once_with(binding_id="binding-1", page_size=25)
-    coordinator.reconcile_once.assert_not_called()
+    assert coordinator.sync_calls == [{"binding_id": "binding-1", "page_size": 25}]
     assert captured[0] == ("tenant-1", owner_id_for_sync_run("run-1"))
 
     reconciliation = handler(
@@ -207,7 +242,6 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
         run_id="run-2",
         payload=encode_vendor_knowledge_sync_job(
             _job(
-                run_id="run-2",
                 mode=KnowledgeSyncMode.RECONCILIATION,
                 restart=True,
                 page_size=10,
@@ -215,49 +249,42 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
         ),
     )
     assert reconciliation.success is True
-    coordinator.reconcile_once.assert_awaited_once_with(
-        binding_id="binding-1",
-        page_size=10,
-        restart=True,
-    )
+    assert coordinator.reconcile_calls == [
+        {"binding_id": "binding-1", "page_size": 10, "restart": True}
+    ]
 
 
 @pytest.mark.unit
-def test_handler_lease_busy_and_error_normalization(caplog: pytest.LogCaptureFixture) -> None:
-    coordinator = AsyncMock()
-    coordinator.sync_once = AsyncMock(
-        return_value=KnowledgeSyncRunResult(
-            status=KnowledgeSyncRunStatus.LEASE_BUSY,
-            mode=KnowledgeSyncMode.INCREMENTAL,
-            tenant_id="tenant-1",
-            binding_id="binding-1",
-            delivery_id=None,
-            changes_count=0,
-            active_count=0,
-            tombstone_count=0,
-            checkpoint_advanced=False,
-            has_more=False,
-            retryable=True,
-        )
-    )
-    handler = make_vendor_knowledge_sync_handler(lambda tenant, owner: coordinator)
-    busy = handler(
-        tenant_id="tenant-1",
-        run_id="run-1",
-        payload=encode_vendor_knowledge_sync_job(_job()),
-    )
-    assert busy.success is True
-    assert busy.output is not None
-    assert busy.output.status is KnowledgeSyncRunStatus.LEASE_BUSY
-    assert busy.output.retryable is True
-    assert busy.output.delivery_id is None
+def test_handler_error_normalization() -> None:
+    class _Coordinator:
+        def __init__(self, error: Exception) -> None:
+            self._error = error
 
-    coordinator.sync_once = AsyncMock(
-        side_effect=VendorKnowledgeError(
-            code=VendorKnowledgeErrorCode.RATE_LIMITED,
-            safe_message="provider temporarily unavailable",
-            retryable=True,
-        )
+        async def sync_once(self, *, binding_id: str, page_size: int) -> KnowledgeSyncRunResult:
+            raise self._error
+
+        async def reconcile_once(
+            self,
+            *,
+            binding_id: str,
+            page_size: int,
+            restart: bool,
+        ) -> KnowledgeSyncRunResult:
+            raise AssertionError("unused")
+
+    queue = DocumentStoreTaskQueue(InMemoryDocumentStore())
+    dispatcher = VendorKnowledgeSyncDispatcher(queue)
+    handler = make_vendor_knowledge_sync_handler(
+        lambda tenant, owner: _Coordinator(  # type: ignore[arg-type, return-value]
+            VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.RATE_LIMITED,
+                safe_message="provider temporarily unavailable",
+                retryable=False,
+            )
+        ),
+        dispatcher,
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
     )
     failed = handler(
         tenant_id="tenant-1",
@@ -269,34 +296,38 @@ def test_handler_lease_busy_and_error_normalization(caplog: pytest.LogCaptureFix
     assert failed.error.error_code == "vendor_knowledge_sync_rate_limited"
     assert "provider temporarily unavailable" in failed.error.error_message
 
-    coordinator.sync_once = AsyncMock(side_effect=RuntimeError("raw provider boom SECRET"))
-    with caplog.at_level(logging.ERROR):
-        unknown = handler(
-            tenant_id="tenant-1",
-            run_id="run-1",
-            payload=encode_vendor_knowledge_sync_job(_job()),
-        )
+    boom_handler = make_vendor_knowledge_sync_handler(
+        lambda tenant, owner: _Coordinator(  # type: ignore[arg-type, return-value]
+            RuntimeError("raw provider boom SECRET")
+        ),
+        dispatcher,
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
+    )
+    unknown = boom_handler(
+        tenant_id="tenant-1",
+        run_id="run-1",
+        payload=encode_vendor_knowledge_sync_job(_job()),
+    )
     assert unknown.success is False
     assert unknown.error is not None
-    assert unknown.error.error_code == "vendor_knowledge_sync_failed"
+    assert unknown.error.error_code == "vendor_knowledge_sync_retry_exhausted"
     assert "SECRET" not in unknown.error.error_message
-    assert "raw provider boom" not in unknown.error.error_message
-    assert "SECRET" not in caplog.text
-    assert "RuntimeError" in caplog.text
-    assert VENDOR_KNOWLEDGE_SYNC_TASK_NAME in caplog.text
 
 
 @pytest.mark.unit
-def test_registry_and_worker_drain_one_page() -> None:
+def test_registry_and_worker_schedules_continuation() -> None:
     store = InMemoryDocumentStore()
     queue = DocumentStoreTaskQueue(store)
     registry = TaskExecutionRegistry()
     calls: list[dict[str, Any]] = []
+    deliveries = [_sha("page-1"), _sha("page-2")]
 
     class _Coordinator:
         async def sync_once(self, *, binding_id: str, page_size: int) -> KnowledgeSyncRunResult:
             calls.append({"binding_id": binding_id, "page_size": page_size})
-            return _completed_result(has_more=True)
+            delivery = deliveries[len(calls) - 1]
+            return _completed_result(has_more=len(calls) == 1, delivery=delivery)
 
         async def reconcile_once(
             self,
@@ -307,21 +338,26 @@ def test_registry_and_worker_drain_one_page() -> None:
         ) -> KnowledgeSyncRunResult:
             raise AssertionError("reconcile must not run")
 
+    dispatcher = VendorKnowledgeSyncDispatcher(queue)
     register_vendor_knowledge_sync_handler(
         registry,
         lambda tenant_id, owner_id: _Coordinator(),
+        dispatcher,
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
     )
     with pytest.raises(ValueError, match="already registered"):
         register_vendor_knowledge_sync_handler(
             registry,
             lambda tenant_id, owner_id: _Coordinator(),
+            dispatcher,
+            retry_delays_seconds=(),
+            sleeper=lambda _: None,
         )
 
-    dispatcher = VendorKnowledgeSyncDispatcher(queue)
-    handle = dispatcher.enqueue(_job(page_size=7))
+    handle = dispatcher.enqueue(job=_job(page_size=7), run_id="run-1")
     worker = DocumentStoreTaskWorker(queue, registry, claim_limit=4)
-    processed = worker.drain_once()
-    assert processed == 1
+    assert worker.drain_once() == 1
     assert calls == [{"binding_id": "binding-1", "page_size": 7}]
     result = queue.get_result(handle)
     assert result is not None
@@ -331,6 +367,6 @@ def test_registry_and_worker_drain_one_page() -> None:
         json.loads(result.output.decode("utf-8"))
     )
     assert output.has_more is True
-    assert output.run_id == "run-1"
-    # has_more must not auto-enqueue another page
-    assert worker.drain_once() == 0
+    assert output.continuation_task_id is not None
+    assert worker.drain_once() == 1
+    assert len(calls) == 2

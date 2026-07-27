@@ -155,7 +155,7 @@ def test_worker_invalid_payload_and_tenant_mismatch() -> None:
     coordinator = _FakeCoordinator()
     scheduler = VendorKnowledgeSyncScheduler(task_queue=DocumentStoreTaskQueue(InMemoryDocumentStore()))
     handler = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         sleeper=lambda _: None,
     )
@@ -176,7 +176,7 @@ def test_worker_incremental_and_reconciliation_paths() -> None:
     coordinator = _FakeCoordinator()
     scheduler = VendorKnowledgeSyncScheduler(task_queue=DocumentStoreTaskQueue(InMemoryDocumentStore()))
     handler = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         sleeper=lambda _: None,
     )
@@ -223,7 +223,7 @@ def test_worker_schedules_continuation_when_has_more() -> None:
     queue = DocumentStoreTaskQueue(InMemoryDocumentStore())
     scheduler = VendorKnowledgeSyncScheduler(task_queue=queue)
     handler = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         sleeper=lambda _: None,
     )
@@ -270,7 +270,7 @@ def test_worker_retries_lease_busy_and_retryable_errors() -> None:
     )
     scheduler = VendorKnowledgeSyncScheduler(task_queue=DocumentStoreTaskQueue(InMemoryDocumentStore()))
     handler = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         retry_delays_seconds=(0.1, 0.2),
         sleeper=delays.append,
@@ -317,7 +317,7 @@ def test_worker_non_retryable_and_exhausted_and_safe_errors() -> None:
     scheduler = VendorKnowledgeSyncScheduler(task_queue=DocumentStoreTaskQueue(InMemoryDocumentStore()))
     delays: list[float] = []
     handler = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         retry_delays_seconds=(0.1,),
         sleeper=delays.append,
@@ -384,7 +384,7 @@ def test_worker_retries_continuation_enqueue_and_new_delivery() -> None:
     queue = DocumentStoreTaskQueue(InMemoryDocumentStore())
     scheduler = _FailingContinuationScheduler(task_queue=queue, fail_times=1)
     handler = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         retry_delays_seconds=(0.05,),
         sleeper=delays.append,
@@ -410,7 +410,7 @@ def test_worker_main_loop_and_asyncio_run_fallback() -> None:
     thread.start()
     try:
         handler = make_vendor_knowledge_sync_worker_handler(
-            coordinator=coordinator,  # type: ignore[arg-type]
+            coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
             scheduler=scheduler,
             main_loop_provider=lambda: loop,
             sleeper=lambda _: None,
@@ -428,7 +428,7 @@ def test_worker_main_loop_and_asyncio_run_fallback() -> None:
 
     coordinator2 = _FakeCoordinator()
     handler2 = make_vendor_knowledge_sync_worker_handler(
-        coordinator=coordinator2,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator2,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         main_loop_provider=lambda: None,
         sleeper=lambda _: None,
@@ -448,14 +448,14 @@ def test_register_duplicate_handler_fails() -> None:
     scheduler = VendorKnowledgeSyncScheduler(task_queue=DocumentStoreTaskQueue(InMemoryDocumentStore()))
     register_vendor_knowledge_sync_worker_handler(
         registry,
-        coordinator=coordinator,  # type: ignore[arg-type]
+        coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
         scheduler=scheduler,
         sleeper=lambda _: None,
     )
     with pytest.raises(ValueError, match=VENDOR_KNOWLEDGE_SYNC_TASK_NAME):
         register_vendor_knowledge_sync_worker_handler(
             registry,
-            coordinator=coordinator,  # type: ignore[arg-type]
+            coordinator_resolver=lambda _tenant, _run: coordinator,  # type: ignore[arg-type, return-value]
             scheduler=scheduler,
             sleeper=lambda _: None,
         )

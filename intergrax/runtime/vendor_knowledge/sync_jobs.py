@@ -164,7 +164,7 @@ class VendorKnowledgeSyncScheduler:
             trigger_delivery_id=None,
             recovery_attempt=0,
         )
-        return self._enqueue(job=job, run_id=run_id)
+        return self.enqueue_job(job=job, run_id=run_id)
 
     def enqueue_reconciliation(
         self,
@@ -185,7 +185,7 @@ class VendorKnowledgeSyncScheduler:
             trigger_delivery_id=None,
             recovery_attempt=0,
         )
-        return self._enqueue(job=job, run_id=run_id)
+        return self.enqueue_job(job=job, run_id=run_id)
 
     def enqueue_continuation(
         self,
@@ -204,7 +204,7 @@ class VendorKnowledgeSyncScheduler:
             trigger_delivery_id=trigger_delivery_id,
             recovery_attempt=0,
         )
-        return self._enqueue(job=job, run_id=run_id)
+        return self.enqueue_job(job=job, run_id=run_id)
 
     def enqueue_recovery(
         self,
@@ -222,9 +222,14 @@ class VendorKnowledgeSyncScheduler:
             trigger_delivery_id=interrupted_job.trigger_delivery_id,
             recovery_attempt=interrupted_job.recovery_attempt + 1,
         )
-        return self._enqueue(job=job, run_id=run_id)
+        return self.enqueue_job(job=job, run_id=run_id)
 
-    def _enqueue(self, *, job: VendorKnowledgeSyncJob, run_id: str) -> TaskHandle:
+    def enqueue_job(
+        self,
+        *,
+        job: VendorKnowledgeSyncJob,
+        run_id: str,
+    ) -> TaskHandle:
         cleaned_run = _require_non_empty(run_id, field_name="run_id")
         return self._task_queue.enqueue(
             TaskRequest(

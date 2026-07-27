@@ -203,9 +203,18 @@ def build_vendor_knowledge_sync_runtime(
             return None
         return runtime.main_loop()
 
+    def _coordinator_resolver(
+        resolved_tenant_id: str,
+        run_id: str,
+    ) -> VendorKnowledgeSyncCoordinator:
+        _ = run_id
+        if resolved_tenant_id != tenant_id:
+            raise ValueError("vendor knowledge sync tenant mismatch")
+        return coordinator
+
     register_vendor_knowledge_sync_worker_handler(
         registry,
-        coordinator=coordinator,
+        coordinator_resolver=_coordinator_resolver,
         scheduler=scheduler,
         main_loop_provider=_main_loop_provider,
         retry_delays_seconds=retry_delays_seconds,

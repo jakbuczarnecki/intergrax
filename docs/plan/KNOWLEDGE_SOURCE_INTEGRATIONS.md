@@ -385,6 +385,25 @@ Conditional write requirements (from `PLATFORM-DOCUMENT-STORE-CONDITIONAL-1`):
 
 Retry/backoff is a bounded Vendor Knowledge handler policy only — not a generic delayed queue scheduler. The sync sink remains an injected port; LKW intake remains separate.
 
+#### Composition modes
+
+```text
+Platform owns:
+- durable job schema;
+- scheduler and canonical worker handler;
+- checkpoint/lease/item-state repositories;
+- optional standalone tenant-scoped runtime.
+
+Applications own:
+- application operation lifecycle;
+- queue/worker composition;
+- user-facing recovery and status.
+
+LKW must use the application-composition adapter from sync_task
+inside its existing runtime and must not start a second
+VendorKnowledgeSyncRuntime.
+```
+
 ---
 
 ### Phase 5 — Vendor proofs
