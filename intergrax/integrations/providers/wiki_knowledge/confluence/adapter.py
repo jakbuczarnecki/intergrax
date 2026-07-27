@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.wiki_knowledge import WikiPageRecord, WikiSearchResult
 from intergrax.integrations.providers.wiki_knowledge.confluence.client import ConfluenceRestClient
+from intergrax.integrations.providers.wiki_knowledge.confluence.knowledge_read import (
+    ConfluenceKnowledgePage,
+    ConfluenceKnowledgePagePage,
+)
 
 
 class _ConfluenceWikiKnowledge:
@@ -28,3 +32,27 @@ class _ConfluenceWikiKnowledge:
 
     def search_pages(self, query: str, *, limit: int = 25) -> WikiSearchResult:
         return self._client.search_pages(query, limit=limit)
+
+    def list_knowledge_pages(
+        self,
+        *,
+        space_id: str,
+        cursor: str | None,
+        limit: int,
+    ) -> ConfluenceKnowledgePagePage:
+        return self._client.list_knowledge_pages(
+            space_id=space_id,
+            cursor=cursor,
+            limit=limit,
+        )
+
+    def get_knowledge_page(
+        self,
+        *,
+        page_id: str,
+        version_number: int,
+    ) -> ConfluenceKnowledgePage:
+        return self._client.get_knowledge_page(
+            page_id=page_id,
+            version_number=version_number,
+        )
