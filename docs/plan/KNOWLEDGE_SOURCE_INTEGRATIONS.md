@@ -44,8 +44,8 @@ DONE:     VENDOR-KNOWLEDGE-CONNECTION-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1A
 DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1B
-NEXT:     JIRA-KNOWLEDGE-ADAPTER-1
-PLANNED:  CONFLUENCE-KNOWLEDGE-ADAPTER-1
+DONE:     JIRA-KNOWLEDGE-ADAPTER-1
+NEXT:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
 PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
@@ -70,7 +70,9 @@ DocumentStoreTaskQueue/Worker wiring implemented
 Delivery-ID continuation scheduling implemented
 Interrupted-task recovery implemented
 Bounded sync-handler retry/backoff implemented
-Vendor adapters not implemented
+Jira issues knowledge adapter implemented
+First real vendor facade/coordinator proof implemented
+Vendor adapters beyond Jira not implemented
 LKW connected-source bridge not implemented
 ```
 
@@ -410,11 +412,37 @@ VendorKnowledgeSyncRuntime.
 
 #### `JIRA-KNOWLEDGE-ADAPTER-1`
 
-**Status:** `PLANNED`
+**Status:** `DONE`
 
 Content mode: `STRUCTURED_RECORD`.
 
 Extend the existing Jira integration only where required, then map bounded issue data through a Jira source adapter.
+
+Capability matrix (Jira `issues`):
+
+```text
+source_kind: issues
+scope: one Jira project
+content: STRUCTURED_RECORD
+full_inventory: yes
+reconciliation: yes
+incremental_changes: no
+permissions: no
+tombstones: no
+remote_versions: yes
+```
+
+Deferred / not implemented for Jira issues adapter:
+
+```text
+comments deferred
+attachments deferred
+custom-field projection deferred
+end-user ACL projection deferred
+deletion/revocation projection deferred
+incremental change-feed deferred
+general IssueTracker.search_issues endpoint migration deferred
+```
 
 #### `CONFLUENCE-KNOWLEDGE-ADAPTER-1`
 

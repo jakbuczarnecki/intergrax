@@ -10,10 +10,14 @@ from typing import Sequence
 from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.issue_tracker import IssueRecord, IssueSearchResult, IssueTracker
-from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
+from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
+    JiraKnowledgeIssue,
+    JiraKnowledgeIssuePage,
+    JiraKnowledgeReadClient,
+)
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.categories.collaboration import IssueTrackerIntegrationContract
 
 JIRA_ISSUE_TRACKER_PROVIDER_ID = "jira"
 
@@ -50,6 +54,34 @@ class JiraIssueTrackerIntegration(IssueTrackerIntegrationContract):
 
     def add_comment(self, issue_key, body):
         return self._require_client().add_comment(issue_key, body)
+
+    def search_knowledge_issues(
+        self,
+        *,
+        project_key: str,
+        next_page_token: str | None,
+        limit: int,
+    ) -> JiraKnowledgeIssuePage:
+        return self._require_knowledge_client().search_knowledge_issues(
+            project_key=project_key,
+            next_page_token=next_page_token,
+            limit=limit,
+        )
+
+    def get_knowledge_issue(
+        self,
+        *,
+        issue_key: str,
+    ) -> JiraKnowledgeIssue:
+        return self._require_knowledge_client().get_knowledge_issue(issue_key=issue_key)
+
+    def _require_knowledge_client(self) -> JiraKnowledgeReadClient:
+        client = self._require_client()
+        if not isinstance(client, JiraKnowledgeReadClient):
+            raise IntegrationConfigurationError(
+                "Jira integration does not expose knowledge read capability",
+            )
+        return client
 
     def _require_client(self) -> IssueTracker:
         if self._client is None:
