@@ -961,6 +961,36 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 **Next step:** **TOKEN-OPT-4B** — extractive filtering evaluation cases / regression pack.
 
+#### TOKEN-OPT-4B — extractive filtering evaluation cases / regression pack
+
+**Purpose:** Add a synthetic, raw-content-safe evaluation / regression pack proving that `ExtractiveFilteringLayer` safely filters noisy tool/terminal/log output while preserving failures, warnings, tracebacks, and protected regions with char-level attribution only.
+
+**Deliverables:**
+
+- `tests/fixtures/token_optimization/extractive_filtering_corpus.py`
+- `tests/unit/runtime/token_optimization/test_extractive_filtering_evaluation_pack.py`
+
+**Closeout:**
+
+- synthetic evaluation corpus added for ExtractiveFilteringLayer
+- direct evaluation of the real ExtractiveFilteringLayer added
+- tool_output / terminal_output / log_output cases covered
+- verbose progress noise case covered
+- pytest failure evidence preservation covered
+- traceback preservation covered
+- repeated warning collapse coverage added
+- protected-region fallback case covered
+- short clean output bypass/no-op case covered
+- safe report builder emits char-level metadata only
+- strategy attribution remains extractive_filtering / fallback / no_op only
+- reports are raw-content-safe
+- no token-accurate claims added
+- no runtime pipeline engine added
+- no README or public adoption documentation updated
+- next step: TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
+
+**Status:** **Done / Closed**.
+
 ### TOKEN-OPT-3A acceptance
 
 Done / Closed when:
