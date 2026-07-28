@@ -21,7 +21,10 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionPage,
     MsGraphDrivePermissionsReadClient,
     MsGraphKnowledgeContinuation,
+    MsGraphMailFolderPage,
+    MsGraphMailFoldersReadClient,
     validate_msgraph_drive_permission_page,
+    validate_msgraph_mail_folder_page,
 )
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -72,6 +75,22 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             continuation=continuation,
         )
         return validate_msgraph_drive_permission_page(result)
+
+    def read_mail_folders_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        parent_folder_id: str | None = None,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailFolderPage:
+        result = self._require_mail_folders_client().read_mail_folders_page(
+            mailbox_user_id=mailbox_user_id,
+            parent_folder_id=parent_folder_id,
+            continuation=continuation,
+            limit=limit,
+        )
+        return validate_msgraph_mail_folder_page(result)
 
     def read_drive_file_content(
         self,
@@ -177,6 +196,13 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             )
         return client
 
+    def _require_mail_folders_client(self) -> MsGraphMailFoldersReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphMailFoldersReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Mail folders knowledge capability",
+            )
+        return client
 
     @classmethod
     def from_client(

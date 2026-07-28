@@ -28,6 +28,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionsReader,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeTransport,
+    MsGraphMailFolderPage,
+    MsGraphMailFoldersReader,
 )
 
 _MESSAGE_SELECT = "id,subject,bodyPreview,from,receivedDateTime"
@@ -122,6 +124,10 @@ class GraphRestClient:
             config=config,
             transport=self._knowledge_transport,
         )
+        self._mail_folders_reader = MsGraphMailFoldersReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
         self._drive_content_reader: MsGraphDriveContentReader | None = None
         if download_http_client is not None:
             self._drive_content_reader = MsGraphDriveContentReader(
@@ -157,6 +163,21 @@ class GraphRestClient:
         return self._drive_permissions_reader.read_permissions_page(
             item=item,
             continuation=continuation,
+        )
+
+    def read_mail_folders_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        parent_folder_id: str | None = None,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailFolderPage:
+        return self._mail_folders_reader.read_folders_page(
+            mailbox_user_id=mailbox_user_id,
+            parent_folder_id=parent_folder_id,
+            continuation=continuation,
+            limit=limit,
         )
 
     def read_drive_file_content(

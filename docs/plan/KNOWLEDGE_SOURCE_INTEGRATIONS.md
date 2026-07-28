@@ -51,8 +51,10 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1A
   shared transport, paging and delta foundation
-  IN_PROGRESS:
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE
+  IN_PROGRESS:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-DELTA
   drive inventory, delta and tombstones
@@ -62,8 +64,11 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
   caller-visible sharing permissions read
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-FOLDERS
+  mailbox root and child folder paging
   NEXT:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-MESSAGES-DELTA
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
@@ -513,8 +518,13 @@ end-user ACL.
 Sharing URLs, share IDs and invitation email addresses are not retained.
 Download URLs are never persisted.
 File conversion is not implemented yet.
+Microsoft Graph Drive low-level read support is complete.
+Mailbox root and child folder paging is implemented for one known mailbox
+user ID, including hidden folders.
+Messages, message delta, message bodies and attachments are not implemented
+yet.
 No Microsoft Vendor Knowledge adapter is exposed yet.
-Mail is the next low-level surface after Drive permissions.
+Mail messages delta is the next low-level Mail surface after folder paging.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 
