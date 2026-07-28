@@ -17,6 +17,7 @@ from intergrax.runtime.token_optimization.layers import (
     ExtractiveFilteringLayerConfig,
 )
 from intergrax.runtime.token_optimization.registry import TokenOptimizationLayerRegistry
+from intergrax.utils import attribute_access
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,26 +170,37 @@ def _validate_constructed_layer(
     layer: object,
     spec: BuiltInTokenOptimizationLayerSpec,
 ) -> TokenOptimizationLayer:
-    descriptor = getattr(layer, "descriptor", None)
+    descriptor = attribute_access.optional(layer, "descriptor", None)
     if descriptor is None:
         raise TypeError(
             f"factory for layer_id {spec.layer_id!r} returned object without descriptor"
         )
 
-    optimize = getattr(layer, "optimize", None)
-    if not callable(optimize):
+    if not attribute_access.is_callable_attr(layer, "optimize"):
         raise TypeError(
             f"factory for layer_id {spec.layer_id!r} returned object without callable optimize"
         )
 
-    if descriptor.layer_id != spec.layer_id:
+    descriptor_layer_id = attribute_access.optional(descriptor, "layer_id", None)
+    if descriptor_layer_id is None:
+        raise TypeError(
+            f"factory for layer_id {spec.layer_id!r} returned descriptor without layer_id"
+        )
+
+    descriptor_built_in = attribute_access.optional(descriptor, "built_in", None)
+    if descriptor_built_in is None:
+        raise TypeError(
+            f"factory for layer_id {spec.layer_id!r} returned descriptor without built_in"
+        )
+
+    if descriptor_layer_id != spec.layer_id:
         raise ValueError(
             f"factory invariant failed for layer_id {spec.layer_id!r}: "
             f"descriptor.layer_id mismatch (expected {spec.layer_id!r}, "
-            f"got {descriptor.layer_id!r})"
+            f"got {descriptor_layer_id!r})"
         )
 
-    if not descriptor.built_in:
+    if descriptor_built_in is not True:
         raise ValueError(
             f"factory invariant failed for layer_id {spec.layer_id!r}: "
             f"descriptor.built_in must be True"

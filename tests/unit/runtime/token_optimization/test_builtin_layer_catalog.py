@@ -397,6 +397,18 @@ def test_catalog_rejects_descriptor_layer_id_mismatch() -> None:
         catalog.create("builtin.expected")
 
 
+def test_catalog_rejects_factory_result_without_descriptor() -> None:
+    class _NoDescriptor:
+        optimize = lambda self, request: None  # noqa: ARG005, E731
+
+    catalog = _catalog_with_fake_spec(
+        layer_id="builtin.expected",
+        factory=lambda _config: _NoDescriptor(),
+    )
+    with pytest.raises(TypeError, match="without descriptor"):
+        catalog.create("builtin.expected")
+
+
 def test_catalog_rejects_built_in_false() -> None:
     catalog = _catalog_with_fake_spec(
         layer_id="builtin.expected",
@@ -415,6 +427,119 @@ def test_catalog_rejects_factory_result_without_callable_optimize() -> None:
         factory=lambda _config: _NoOptimize(),
     )
     with pytest.raises(TypeError, match="without callable optimize"):
+        catalog.create("builtin.expected")
+
+
+def test_catalog_rejects_factory_result_with_non_callable_optimize() -> None:
+    class _NonCallableOptimize:
+        descriptor = _FakeDescriptor(layer_id="builtin.expected", built_in=True)
+        optimize = None
+
+    catalog = _catalog_with_fake_spec(
+        layer_id="builtin.expected",
+        factory=lambda _config: _NonCallableOptimize(),
+    )
+    with pytest.raises(TypeError, match="without callable optimize"):
+        catalog.create("builtin.expected")
+
+
+def test_catalog_rejects_descriptor_without_layer_id() -> None:
+    class _DescriptorWithoutLayerId:
+        built_in = True
+
+    class _LayerWithoutDescriptorLayerId:
+        descriptor = _DescriptorWithoutLayerId()
+
+        def optimize(
+            self,
+            request: TokenOptimizationLayerRequest,
+        ) -> TokenOptimizationLayerResult:
+            return TokenOptimizationLayerResult(
+                layer_id="builtin.expected",
+                output_content=request.current_content,
+                decision=TokenOptimizationLayerDecision.BYPASS,
+            )
+
+    catalog = _catalog_with_fake_spec(
+        layer_id="builtin.expected",
+        factory=lambda _config: _LayerWithoutDescriptorLayerId(),
+    )
+    with pytest.raises(TypeError, match="descriptor without layer_id"):
+        catalog.create("builtin.expected")
+
+
+def test_catalog_rejects_descriptor_without_built_in() -> None:
+    class _DescriptorWithoutBuiltIn:
+        layer_id = "builtin.expected"
+
+    class _LayerWithoutDescriptorBuiltIn:
+        descriptor = _DescriptorWithoutBuiltIn()
+
+        def optimize(
+            self,
+            request: TokenOptimizationLayerRequest,
+        ) -> TokenOptimizationLayerResult:
+            return TokenOptimizationLayerResult(
+                layer_id="builtin.expected",
+                output_content=request.current_content,
+                decision=TokenOptimizationLayerDecision.BYPASS,
+            )
+
+    catalog = _catalog_with_fake_spec(
+        layer_id="builtin.expected",
+        factory=lambda _config: _LayerWithoutDescriptorBuiltIn(),
+    )
+    with pytest.raises(TypeError, match="descriptor without built_in"):
+        catalog.create("builtin.expected")
+
+
+@pytest.mark.parametrize(
+    ("built_in_value", "expected_exception"),
+    [
+        (False, ValueError),
+        (0, ValueError),
+        (1, ValueError),
+        ("yes", ValueError),
+        (None, TypeError),
+    ],
+)
+def test_catalog_rejects_non_true_built_in_values(
+    built_in_value: object,
+    expected_exception: type[Exception],
+) -> None:
+    class _DescriptorWithBuiltIn:
+        def __init__(self, built_in: object) -> None:
+            self.layer_id = "builtin.expected"
+            self.built_in = built_in
+
+    class _LayerWithBuiltIn:
+        def __init__(self, built_in: object) -> None:
+            self.descriptor = _DescriptorWithBuiltIn(built_in)
+
+        def optimize(
+            self,
+            request: TokenOptimizationLayerRequest,
+        ) -> TokenOptimizationLayerResult:
+            return TokenOptimizationLayerResult(
+                layer_id="builtin.expected",
+                output_content=request.current_content,
+                decision=TokenOptimizationLayerDecision.BYPASS,
+            )
+
+    catalog = _catalog_with_fake_spec(
+        layer_id="builtin.expected",
+        factory=lambda _config, value=built_in_value: _LayerWithBuiltIn(value),
+    )
+    with pytest.raises(expected_exception):
+        catalog.create("builtin.expected")
+
+
+def test_catalog_rejects_built_in_integer_one() -> None:
+    catalog = _catalog_with_fake_spec(
+        layer_id="builtin.expected",
+        factory=lambda _config: _FakeLayer(layer_id="builtin.expected", built_in=1),  # type: ignore[arg-type]
+    )
+    with pytest.raises(ValueError, match="descriptor.built_in must be True"):
         catalog.create("builtin.expected")
 
 
