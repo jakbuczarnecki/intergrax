@@ -1224,17 +1224,226 @@ TOKEN-7 — broader runtime/adaptive integration remains future work; no product
 - no semantic compression or LLM summarization added
 - no README or public adoption documentation updated
 
-**Roadmap/order update:**
+**TOKEN-7D-R refinement:**
+
+- removed dynamic `getattr` from advisory policy override validation
+- preserved preset and override behavior
+- no runtime/adaptive integration added
+- no auto-apply behavior added
+
+**Current position after TOKEN-7D-R:**
+
+The Token Optimization track has completed the foundation/advisory phase:
 
 ```text
 TOKEN-7A — Done / Closed
 TOKEN-7B — Done / Closed
 TOKEN-7C — Done / Closed
 TOKEN-7D — Done / Closed
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply
+TOKEN-7D-R — Done / Closed
 ```
 
-**Next decision:** choose the next Token Optimization-only block; production auto-apply remains forbidden until explicitly designed and reviewed.
+Foundation/advisory work delivered contracts, safety pieces, receipts, telemetry shapes, helper layers, prompt-cache contracts, and advisory control.
+
+The next gap is not another isolated optimization algorithm. The next gap is the execution core that can register, configure, and run optimization layers:
+
+```text
+Layer Registry + Pipeline Runner + Plugin Boundary + Configurable Engine
+```
+
+New algorithms such as trim, near-deduplication, schema minimization, and other future mechanisms should be added as pipeline layers after the registry/pipeline runner exists.
+
+**Updated next roadmap:**
+
+```text
+TOKEN-8A — Layer Registry and Pipeline Runner
+TOKEN-8B — Built-in Layer Catalog Wiring
+TOKEN-8C — Pipeline Configuration Evals
+TOKEN-8D — Third-party Plugin Adapter Contract Proof
+TOKEN-9A — LLM Optimization Router Contract
+TOKEN-9B — LLM Router Evals
+TOKEN-9C — Safe Router → Engine Integration
+```
+
+#### TOKEN-8A — Layer Registry and Pipeline Runner
+
+**Status:** **Done / Closed**.
+
+Build the first executable core of Token Optimization.
+
+Target capability:
+
+- register layers
+- resolve pipeline config
+- run selected layers in order
+- collect layer results
+- return final pipeline result
+- support DEFAULT and REPLACE pipeline modes
+- skip disabled layers
+- define required-layer failure behavior
+
+**Closeout:**
+
+- layer registry added
+- deterministic pipeline config resolution added
+- DEFAULT and REPLACE modes supported
+- disabled layers skipped and recorded
+- sequential original/current content flow added
+- required-layer failure fallback added
+- central protected-region validation enforced
+- safe exception handling added
+- pipeline result aggregation added
+- manual existing-layer execution proof added
+- no built-in catalog auto-wiring
+- no dynamic package loading
+- no runtime/application integration
+- no provider calls
+- no observability emission
+- no new optimization algorithm
+
+**Next step:** TOKEN-8B — Built-in Layer Catalog Wiring
+
+Out of scope for TOKEN-8A:
+
+- dynamic package loading
+- LLM router
+- production runtime integration
+- provider calls
+- observability emission
+- new optimization algorithm
+
+#### TOKEN-8B — Built-in Layer Catalog Wiring
+
+Make built-in layers discoverable and runnable by the pipeline runner.
+
+Initial and future catalog candidates include extractive filtering, trim, dedup / near-dedup, and schema minimization. New algorithm design should remain minimal unless needed for catalog proof.
+
+#### TOKEN-8C — Pipeline Configuration Evals
+
+Run the same cases through different engine configurations and compare results.
+
+Example configurations:
+
+```text
+disabled
+measure_only
+only_trim
+only_extractive_filtering
+trim_plus_extractive_filtering
+plugin_only_fake
+```
+
+Reports should show original size / optimized size where measured, applied layers, bypassed layers, failed layers, fallback status, validation status, and raw-content-safe metadata only.
+
+#### TOKEN-8D — Third-party Plugin Adapter Contract Proof
+
+Prove that an external developer can implement a custom optimization layer and run it through the standard engine path.
+
+Expected proof shape:
+
+```text
+fake third-party layer
+→ registry
+→ pipeline mode REPLACE
+→ only that layer runs
+→ standard validation/fallback/reporting remains enforced
+```
+
+Out of scope:
+
+- package manager integration
+- marketplace/distribution model
+- remote plugin execution
+- unsafe plugin sandboxing claims
+
+#### TOKEN-9A — LLM Optimization Router Contract
+
+Define the future router that decides how to configure the deterministic engine for a specific input.
+
+The LLM router must not optimize content directly. The LLM router chooses the engine configuration.
+
+Example router output:
+
+```text
+optimize: true
+pipeline_mode: REPLACE
+layers:
+  - builtin.trim
+reason: short terminal output only needs trimming
+risk: low
+review_required: false
+```
+
+Out of scope:
+
+- free-form LLM compression
+- bypassing deterministic validation
+- production auto-apply
+
+#### TOKEN-9B — LLM Router Evals
+
+Test whether the future router chooses safe engine configurations for representative cases.
+
+Example expectations:
+
+- short clean text → no optimization
+- long noisy log → trim / extractive filtering
+- code-heavy content → preserve / no mutation / measure only
+- repeated context → dedup candidate
+- high-risk evidence → review or bypass
+
+Reports must evaluate routing quality and remain redaction-safe.
+
+#### TOKEN-9C — Safe Router → Engine Integration
+
+Connect the future LLM router to the deterministic engine under strict policy gates.
+
+Flow:
+
+```text
+input
+→ router recommends pipeline config
+→ policy gate validates allowed config
+→ engine runs deterministic layers
+→ validation / receipts / fallback
+→ final result
+```
+
+Out of scope until explicitly reviewed:
+
+- production auto-apply
+- silent lossy compression
+- router bypassing policy
+- router bypassing validation
+
+**Plugin engine safety boundaries:**
+
+The plugin engine must not allow built-in layers, external plugins, or the later LLM router to bypass platform safety.
+
+- no auto-apply outside explicit reviewed runtime integration
+- no plugin bypass of platform policy
+- no plugin bypass of protected-region validation
+- no private telemetry bus
+- no raw prompt / raw document / secret export in reports
+- no mutation of canonical tool contracts
+- no provider-specific tokenizer replacement
+- no semantic compression enabled by default
+- fallback to original content when validation fails
+
+**Deferred algorithm work:**
+
+Near-deduplication, trim, schema minimization, and other algorithms remain important, but should now be introduced as engine layers after the registry/pipeline runner exists.
+
+Recommended order:
+
+```text
+TOKEN-8A — engine core first
+TOKEN-8B — built-in catalog wiring
+TOKEN-8C — config evals
+then add/expand algorithms as layer-specific tasks
+```
+
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.
 
 #### TOKEN-7C — policy-gated advisory integration surface
 

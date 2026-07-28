@@ -356,6 +356,90 @@ def test_space_and_page_id_validators() -> None:
         validate_confluence_space_id("ENG")
     with pytest.raises(ValueError):
         validate_confluence_page_id("0")
+    with pytest.raises(ValueError):
+        validate_confluence_space_id(10000)
+    with pytest.raises(ValueError):
+        validate_confluence_page_id(20001)
+    with pytest.raises(ValueError):
+        validate_confluence_page_id(True)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("id", 20001),
+        ("spaceId", 10000),
+        ("parentId", 20000),
+    ],
+)
+def test_inventory_malformed_numeric_identity_rejected(field: str, value: object) -> None:
+    payload = _page_payload()
+    payload[field] = value
+    with pytest.raises(ValueError):
+        parse_confluence_knowledge_page_page(
+            _list_payload(pages=[payload]),
+            requested_space_id=_SPACE_ID,
+            page_url_builder=lambda page_id: f"https://example/pages/{page_id}",
+        )
+
+
+@pytest.mark.parametrize("parent_id", ["", "   ", "abc"])
+def test_inventory_malformed_parent_id_rejected(parent_id: str) -> None:
+    payload = _page_payload(parent_id=parent_id)
+    with pytest.raises(ValueError):
+        parse_confluence_knowledge_page_page(
+            _list_payload(pages=[payload]),
+            requested_space_id=_SPACE_ID,
+            page_url_builder=lambda page_id: f"https://example/pages/{page_id}",
+        )
+
+
+def test_inventory_version_number_true_rejected() -> None:
+    payload = _page_payload()
+    payload["version"]["number"] = True
+    with pytest.raises(ValueError):
+        parse_confluence_knowledge_page_page(
+            _list_payload(pages=[payload]),
+            requested_space_id=_SPACE_ID,
+            page_url_builder=lambda page_id: f"https://example/pages/{page_id}",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("id", 20001),
+        ("spaceId", 10000),
+        ("parentId", 20000),
+    ],
+)
+def test_full_fetch_malformed_numeric_identity_rejected(field: str, value: object) -> None:
+    from intergrax.integrations.providers.wiki_knowledge.confluence.knowledge_read import (
+        parse_confluence_knowledge_page,
+    )
+
+    payload = _page_payload(storage_value="<p>x</p>")
+    payload[field] = value
+    with pytest.raises(ValueError):
+        parse_confluence_knowledge_page(
+            payload,
+            page_id=_PAGE_ID,
+            version_number=3,
+            page_url_builder=lambda page_id: f"https://example/pages/{page_id}",
+        )
+
+
+def test_parser_errors_do_not_expose_raw_payload() -> None:
+    payload = _page_payload()
+    payload["id"] = 20001
+    with pytest.raises(ValueError) as exc_info:
+        parse_confluence_knowledge_page_page(
+            _list_payload(pages=[payload]),
+            requested_space_id=_SPACE_ID,
+            page_url_builder=lambda page_id: f"https://example/pages/{page_id}",
+        )
+    message = str(exc_info.value)
+    assert "20001" not in message
 
 
 def test_existing_get_page_and_search_pages_still_work() -> None:

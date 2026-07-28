@@ -12,11 +12,11 @@
 ```text
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP
-Current roadmap stage: Workspace Contents — Knowledge Intake source expansion
-Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-1 + corrections
-Current implementation: LKW-WORKSPACE-CONTENTS-1B-4-2 — IMPLEMENTED / CORRECTION REQUIRED
-Current review gate: audit LKW-WORKSPACE-CONTENTS-1B-4-2-C2
-Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5 — explicit Web URL intake
+Current roadmap stage: Workspace Contents — Knowledge Intake source expansion + Conversational Interaction
+Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-2 — ACCEPTED
+Last accepted: LKW-WORKSPACE-CONTENTS-1B-5-1 — ACCEPTED
+Current implementation: LKW-CONVERSATIONAL-INTERACTION-1A — structured interaction plan contract and LLM planner
+Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5-2 — WEB_URL intake capability
 Following source expansion: 1B-6 VENDOR-KNOWLEDGE integration
 Then: 1C shared synchronization and completion lifecycle → 1D provenance inspection → 1E safe removal
 ```
@@ -96,18 +96,26 @@ Microsoft Teams in `1B-6` means Teams-hosted organizational knowledge. It does n
 |---|---|---|
 | `LKW-WORKSPACE-CONTENTS-1B-4-1` | HTTP listing and acceptance of opaque preconfigured `LOCAL_FOLDER` Source Candidates | ACCEPTED (with corrections) |
 | `LKW-WORKSPACE-CONTENTS-1B-4-1-C1` | Harden public safety, candidate identity and operation evidence | ACCEPTED |
-| `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | **IMPLEMENTED / CORRECTION REQUIRED** |
+| `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | ACCEPTED |
+| `LKW-WORKSPACE-CONTENTS-1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
 
-Current review gate: audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C2` before advancing to `1B-5`.
+Current implementation: `LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (execution not wired).
 
 ---
 
 ## 4. Active Workspace Contents execution order
 
 ```text
-LKW-WORKSPACE-CONTENTS-1B-4-2
-→ audit and acceptance
-→ LKW-WORKSPACE-CONTENTS-1B-5
+LKW-CONVERSATIONAL-INTERACTION-1A
+→ structured interaction plan contract and LLM planner
+→ LKW-WORKSPACE-CONTENTS-1B-5-2
+→ WEB_URL intake capability
+→ LKW-WORKSPACE-CONTENTS-1B-5-3
+→ Web URL ingestion and Ask proof
+→ LKW-CONVERSATIONAL-INTERACTION-1B
+→ deterministic reference resolver and validated action executor
+→ LKW-CONVERSATIONAL-INTERACTION-1C
+→ Slack mixed-message cutover and natural-language UX
 → LKW-WORKSPACE-CONTENTS-1B-6-0
 → LKW-WORKSPACE-CONTENTS-1B-6-1
 → LKW-WORKSPACE-CONTENTS-1B-6-2
@@ -119,8 +127,14 @@ LKW-WORKSPACE-CONTENTS-1B-4-2
 
 | Task | User/product outcome | Status |
 |---|---|---|
-| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | IMPLEMENTED / CORRECTION REQUIRED |
-| `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | PLANNED |
+| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | ACCEPTED |
+| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
+| `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED — **next after 1A** |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
+| `CONV-1A` | Channel-neutral structured interaction plan contract and LLM planner | **CURRENT** |
+| `CONV-1B` | Deterministic reference resolver and validated action executor | PLANNED |
+| `CONV-1C` | Slack mixed-message cutover and natural-language UX | PLANNED |
+| `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | PLANNED (via `1B-5-2` / `1B-5-3`) |
 | `1B-6-0` | LKW and VENDOR-KNOWLEDGE have a frozen ownership and integration contract | PLANNED |
 | `1B-6-1` | A user can discover safe opaque vendor connections and resources | PLANNED |
 | `1B-6-2` | One real vendor resource is attached end to end through LKW Knowledge Intake | PLANNED |
@@ -177,14 +191,14 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 
 | Task | Outcome | Status |
 |------|---------|--------|
-| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | IMPLEMENTED / CORRECTION REQUIRED |
+| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
 | `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED |
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
-| `1B-5-4` | Slack explicit Web URL intake | PLANNED |
+| `1B-5-4` | Slack explicit Web URL intake | **SUPERSEDED** by `LKW-CONVERSATIONAL-INTERACTION-1C` |
 
-Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../docs/architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` review gate: audit `LKW-WORKSPACE-CONTENTS-1B-5-1-C2`; LKW intake (`1B-5-2` onward) must not start until review accepts the capture contract.
+**Why `1B-5-4` was superseded:** the target frontend will not use a separate strict URL command; one natural message can contain multiple source types and actions (attachments, URLs, local references, workspace targets). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
 
-Current review gate for `1B-4-2` remains unchanged — audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C2` before advancing the Slack Source Candidate slice; `1B-5-1` does not replace that gate.
+Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../docs/architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` is accepted; `LKW-CONVERSATIONAL-INTERACTION-1A` (planner contract) precedes `1B-5-2` so URL intake is designed as a planner action, not another terminal command.
 
 ---
 
@@ -443,18 +457,20 @@ A second conversational adapter and broad provider matrix do not delay the curre
 
 ```text
 CURRENT:
-LKW-WORKSPACE-CONTENTS-1B-4-2
-Slack safe numbered Source Candidate selection
-IMPLEMENTED / CORRECTION REQUIRED
+LKW-CONVERSATIONAL-INTERACTION-1A
+Channel-neutral structured interaction plan contract and provider-neutral LLM planner
 
-REVIEW GATE:
-audit LKW-WORKSPACE-CONTENTS-1B-4-2-C2
-→ ACCEPTED: advance to 1B-5
-→ NEEDS_CORRECTION: issue only the next bounded 1B-4-2 correction
+LAST ACCEPTED:
+LKW-WORKSPACE-CONTENTS-1B-4-2 — Slack Source Candidate selection
+LKW-WORKSPACE-CONTENTS-1B-5-1 — Web Content Capture contract
 
-NEXT:
-LKW-WORKSPACE-CONTENTS-1B-5
-explicit Web URL intake
+NEXT (after 1A acceptance):
+LKW-WORKSPACE-CONTENTS-1B-5-2
+WEB_URL intake capability
+
+THEN (conversational track):
+LKW-CONVERSATIONAL-INTERACTION-1B → resolver + executor
+LKW-CONVERSATIONAL-INTERACTION-1C → Slack mixed-message cutover
 
 THEN:
 1B-6-0 VENDOR-KNOWLEDGE contract

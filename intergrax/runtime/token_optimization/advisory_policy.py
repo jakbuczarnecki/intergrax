@@ -46,8 +46,15 @@ class TokenOptimizationAdvisoryPolicyOverrides:
     require_review_for_risky_recommendations: bool | None = None
 
     def __post_init__(self) -> None:
-        for field_name in _OVERRIDE_FIELD_ORDER:
-            value = getattr(self, field_name)
+        override_values = (
+            ("allow_strategy_enable", self.allow_strategy_enable),
+            ("allow_strategy_disable", self.allow_strategy_disable),
+            (
+                "require_review_for_risky_recommendations",
+                self.require_review_for_risky_recommendations,
+            ),
+        )
+        for field_name, value in override_values:
             if value is not None and not isinstance(value, bool):
                 raise ValueError(f"{field_name} override must be bool or None")
 

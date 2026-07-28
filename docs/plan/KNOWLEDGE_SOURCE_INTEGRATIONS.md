@@ -46,7 +46,27 @@ DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1B
 DONE:     JIRA-KNOWLEDGE-ADAPTER-1
 DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
-NEXT:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
+IN_PROGRESS:
+MSGRAPH-KNOWLEDGE-READ-SURFACE-1
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1A
+  shared transport, paging and delta foundation
+  IN_PROGRESS:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-DELTA
+  drive inventory, delta and tombstones
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-CONTENT
+  bounded binary content download
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
+  caller-visible sharing permissions read
+  NEXT:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
@@ -483,7 +503,18 @@ legacy WikiKnowledge search migration deferred
 
 #### `MSGRAPH-KNOWLEDGE-READ-SURFACE-1`
 
-**Status:** `PLANNED`
+**Status:** `IN_PROGRESS`
+
+The shared Microsoft Graph foundation is implemented.
+Drive metadata, delta, tombstones, bounded binary content and caller-visible
+sharing-permission reads are implemented.
+The permission response is explicitly not treated as a proven complete
+end-user ACL.
+Sharing URLs, share IDs and invitation email addresses are not retained.
+Download URLs are never persisted.
+File conversion is not implemented yet.
+No Microsoft Vendor Knowledge adapter is exposed yet.
+Mail is the next low-level surface after Drive permissions.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 

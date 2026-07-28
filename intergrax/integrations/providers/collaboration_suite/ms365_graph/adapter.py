@@ -15,6 +15,14 @@ from intergrax.integrations.contracts.collaboration_suite import (
     UserRecord,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    MsGraphDriveDeltaPage,
+    MsGraphDriveFileContent,
+    MsGraphDriveItem,
+    MsGraphDrivePermissionPage,
+    MsGraphKnowledgeContinuation,
+)
 
 
 class _Ms365GraphCollaborationSuite:
@@ -30,6 +38,35 @@ class _Ms365GraphCollaborationSuite:
     @property
     def rest_client(self) -> GraphRestClient:
         return self._client
+
+    def read_drive_delta_page(
+        self,
+        *,
+        drive_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphDriveDeltaPage:
+        return self._client.read_drive_delta_page(
+            drive_id=drive_id,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_drive_permissions_page(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphDrivePermissionPage:
+        return self._client.read_drive_permissions_page(item=item, continuation=continuation)
+
+    def read_drive_file_content(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        max_bytes: int = DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    ) -> MsGraphDriveFileContent:
+        return self._client.read_drive_file_content(item=item, max_bytes=max_bytes)
 
     def get_message(self, user_id: str, message_id: str) -> MailMessage:
         return self._client.get_message(user_id, message_id)

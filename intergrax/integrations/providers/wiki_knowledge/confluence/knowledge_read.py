@@ -20,18 +20,21 @@ _CONFLUENCE_NUMERIC_ID_RE = re.compile(r"^[1-9][0-9]*$")
 _STRICT_MODEL_CONFIG = ConfigDict(extra="forbid", frozen=True, strict=True)
 
 
-def validate_confluence_space_id(space_id: str) -> str:
-    cleaned = str(space_id).strip()
+def _validate_positive_numeric_id(value: object, *, error_message: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(error_message)
+    cleaned = value.strip()
     if not _CONFLUENCE_NUMERIC_ID_RE.fullmatch(cleaned):
-        raise ValueError("invalid Confluence space id")
+        raise ValueError(error_message)
     return cleaned
 
 
-def validate_confluence_page_id(page_id: str) -> str:
-    cleaned = str(page_id).strip()
-    if not _CONFLUENCE_NUMERIC_ID_RE.fullmatch(cleaned):
-        raise ValueError("invalid Confluence page id")
-    return cleaned
+def validate_confluence_space_id(space_id: object) -> str:
+    return _validate_positive_numeric_id(space_id, error_message="invalid Confluence space id")
+
+
+def validate_confluence_page_id(page_id: object) -> str:
+    return _validate_positive_numeric_id(page_id, error_message="invalid Confluence page id")
 
 
 class ConfluenceKnowledgePage(BaseModel):
@@ -68,7 +71,9 @@ class ConfluenceKnowledgePage(BaseModel):
     @field_validator("title", "web_url")
     @classmethod
     def _validate_required_text(cls, value: str) -> str:
-        cleaned = str(value).strip()
+        if not isinstance(value, str):
+            raise ValueError("field must be a non-empty string")
+        cleaned = value.strip()
         if not cleaned:
             raise ValueError("field must be a non-empty string")
         return cleaned
@@ -76,8 +81,19 @@ class ConfluenceKnowledgePage(BaseModel):
     @field_validator("version_number")
     @classmethod
     def _validate_version_number(cls, value: int) -> int:
+        if type(value) is not int:
+            raise ValueError("version_number must be an int")
         if value < 1:
             raise ValueError("version_number must be >= 1")
+        return value
+
+    @field_validator("storage_value")
+    @classmethod
+    def _validate_storage_value(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("storage_value must be a string or null")
         return value
 
     @field_validator("created_at", "version_created_at")
@@ -147,6 +163,34 @@ class ConfluenceKnowledgeReadClient(Protocol):
         ...
 
 
+def _parse_positive_numeric_id_field(raw: object, *, field_name: str) -> str:
+    if not isinstance(raw, str):
+        raise ValueError(f"{field_name} is required")
+    cleaned = raw.strip()
+    if not _CONFLUENCE_NUMERIC_ID_RE.fullmatch(cleaned):
+        raise ValueError(f"{field_name} is required")
+    return cleaned
+
+
+def _parse_optional_parent_id(raw: object) -> str | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, str):
+        raise ValueError("parentId must be a string or null")
+    cleaned = raw.strip()
+    if not _CONFLUENCE_NUMERIC_ID_RE.fullmatch(cleaned):
+        raise ValueError("parentId must be a positive numeric id or null")
+    return cleaned
+
+
+def _parse_version_number_raw(raw: object) -> int:
+    if type(raw) is not int:
+        raise ValueError("page version number is required")
+    if raw < 1:
+        raise ValueError("page version number is required")
+    return raw
+
+
 def _parse_timestamp(raw: object, *, field_name: str) -> datetime:
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError(f"{field_name} is required")
@@ -195,8 +239,9 @@ def _parse_inventory_page(
     if not isinstance(payload, dict):
         raise ValueError("page payload must be an object")
     remote_id_raw = payload.get("id")
-    if remote_id_raw is None or not str(remote_id_raw).strip():
+    if remote_id_raw is None:
         raise ValueError("page id is required")
+    remote_id = _parse_positive_numeric_id_field(remote_id_raw, field_name="page id")
     status_raw = payload.get("status")
     if status_raw != "current":
         raise ValueError("page status must be current")
@@ -204,9 +249,9 @@ def _parse_inventory_page(
     if not isinstance(title_raw, str) or not title_raw.strip():
         raise ValueError("page title is required")
     space_id_raw = payload.get("spaceId")
-    if space_id_raw is None or not str(space_id_raw).strip():
+    if space_id_raw is None:
         raise ValueError("page spaceId is required")
-    space_id = str(space_id_raw).strip()
+    space_id = _parse_positive_numeric_id_field(space_id_raw, field_name="page spaceId")
     if space_id != requested_space_id:
         raise ValueError("page spaceId does not match requested space")
     created_at = _parse_timestamp(payload.get("createdAt"), field_name="createdAt")
@@ -214,21 +259,12 @@ def _parse_inventory_page(
     if not isinstance(version_obj, dict):
         raise ValueError("page version is required")
     version_number_raw = version_obj.get("number")
-    if not isinstance(version_number_raw, int) or version_number_raw < 1:
-        raise ValueError("page version number is required")
+    version_number = _parse_version_number_raw(version_number_raw)
     version_created_at = _parse_timestamp(
         version_obj.get("createdAt"),
         field_name="version.createdAt",
     )
-    parent_id_raw = payload.get("parentId")
-    parent_id: str | None
-    if parent_id_raw is None:
-        parent_id = None
-    elif not str(parent_id_raw).strip():
-        parent_id = None
-    else:
-        parent_id = str(parent_id_raw).strip()
-    remote_id = str(remote_id_raw).strip()
+    parent_id = _parse_optional_parent_id(payload.get("parentId"))
     return ConfluenceKnowledgePage(
         remote_id=remote_id,
         space_id=space_id,
@@ -236,7 +272,7 @@ def _parse_inventory_page(
         status="current",
         title=title_raw.strip(),
         created_at=created_at,
-        version_number=version_number_raw,
+        version_number=version_number,
         version_created_at=version_created_at,
         storage_value=None,
         web_url=page_url_builder(remote_id),
@@ -299,7 +335,10 @@ def parse_confluence_knowledge_page(
     if version_number < 1:
         raise ValueError("version_number must be >= 1")
     remote_id_raw = payload.get("id")
-    if remote_id_raw is None or str(remote_id_raw).strip() != validated_page_id:
+    if remote_id_raw is None:
+        raise ValueError("page id does not match requested page")
+    remote_id = _parse_positive_numeric_id_field(remote_id_raw, field_name="page id")
+    if remote_id != validated_page_id:
         raise ValueError("page id does not match requested page")
     status_raw = payload.get("status")
     if status_raw != "current":
@@ -308,27 +347,22 @@ def parse_confluence_knowledge_page(
     if not isinstance(title_raw, str) or not title_raw.strip():
         raise ValueError("page title is required")
     space_id_raw = payload.get("spaceId")
-    if space_id_raw is None or not str(space_id_raw).strip():
+    if space_id_raw is None:
         raise ValueError("page spaceId is required")
+    space_id = _parse_positive_numeric_id_field(space_id_raw, field_name="page spaceId")
     created_at = _parse_timestamp(payload.get("createdAt"), field_name="createdAt")
     version_obj = payload.get("version")
     if not isinstance(version_obj, dict):
         raise ValueError("page version is required")
     version_number_raw = version_obj.get("number")
-    if not isinstance(version_number_raw, int) or version_number_raw != version_number:
+    parsed_version_number = _parse_version_number_raw(version_number_raw)
+    if parsed_version_number != version_number:
         raise ValueError("page version number does not match requested version")
     version_created_at = _parse_timestamp(
         version_obj.get("createdAt"),
         field_name="version.createdAt",
     )
-    parent_id_raw = payload.get("parentId")
-    parent_id: str | None
-    if parent_id_raw is None:
-        parent_id = None
-    elif not str(parent_id_raw).strip():
-        parent_id = None
-    else:
-        parent_id = str(parent_id_raw).strip()
+    parent_id = _parse_optional_parent_id(payload.get("parentId"))
     body_obj = payload.get("body")
     if not isinstance(body_obj, dict):
         raise ValueError("page body is required")
@@ -340,12 +374,12 @@ def parse_confluence_knowledge_page(
         raise ValueError("page body.storage.value must be a string")
     return ConfluenceKnowledgePage(
         remote_id=validated_page_id,
-        space_id=str(space_id_raw).strip(),
+        space_id=space_id,
         parent_id=parent_id,
         status="current",
         title=title_raw.strip(),
         created_at=created_at,
-        version_number=version_number_raw,
+        version_number=parsed_version_number,
         version_created_at=version_created_at,
         storage_value=storage_value_raw,
         web_url=page_url_builder(validated_page_id),
