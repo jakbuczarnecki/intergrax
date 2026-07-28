@@ -31,6 +31,17 @@ class ConfluenceIntegrationConfig(BaseIntegrationConfig):
     def api_base_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/rest/api"
 
+    @property
+    def v2_api_base_url(self) -> str:
+        return f"{self.base_url.rstrip('/')}/api/v2"
+
+    def v2_api_url(self, path: str) -> str:
+        if not path.startswith("/"):
+            raise ValueError("path must start with /")
+        if "://" in path or "@" in path:
+            raise ValueError("path must not contain scheme, host or credentials")
+        return f"{self.v2_api_base_url}{path}"
+
     def page_url(self, page_id: str) -> str:
         return f"{self.base_url.rstrip('/')}/pages/viewpage.action?pageId={page_id}"
 

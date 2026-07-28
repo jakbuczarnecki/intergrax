@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
+from pydantic import ValidationError
+
 from intergrax.integrations.contracts.base import (
     IntegrationConfigurationError,
     IntegrationDependencyError,
@@ -238,11 +240,14 @@ class JiraRestClient:
         )
         _raise_for_knowledge_response(response, operation="search_knowledge_issues")
         payload = _decode_knowledge_json(response)
-        page = parse_jira_knowledge_issue_page(
-            payload,
-            issue_url_builder=self._config.issue_url,
-            plain_description=_plain_description,
-        )
+        try:
+            page = parse_jira_knowledge_issue_page(
+                payload,
+                issue_url_builder=self._config.issue_url,
+                plain_description=_plain_description,
+            )
+        except (ValueError, TypeError, ValidationError):
+            raise ValueError("unexpected Jira knowledge response") from None
         _validate_knowledge_page_scope(page, project_key=validated_project_key)
         return page
 
@@ -262,11 +267,15 @@ class JiraRestClient:
         )
         _raise_for_knowledge_response(response, operation="get_knowledge_issue")
         payload = _decode_knowledge_json(response)
-        return parse_jira_knowledge_issue(
-            payload,
-            issue_url=self._config.issue_url(validated_issue_key),
-            plain_description=_plain_description,
-        )
+        try:
+            issue = parse_jira_knowledge_issue(
+                payload,
+                issue_url=self._config.issue_url(validated_issue_key),
+                plain_description=_plain_description,
+            )
+        except (ValueError, TypeError, ValidationError):
+            raise ValueError("unexpected Jira knowledge response") from None
+        return issue
 
     def update_issue(
         self,

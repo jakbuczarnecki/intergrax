@@ -64,7 +64,9 @@ class JiraKnowledgeUser(BaseModel):
     def _validate_optional_identity(cls, value: object) -> str | None:
         if value is None:
             return None
-        cleaned = str(value).strip()
+        if not isinstance(value, str):
+            raise ValueError("identity field must be a string when provided")
+        cleaned = value.strip()
         if not cleaned:
             raise ValueError("identity field must not be empty when provided")
         return cleaned
@@ -144,6 +146,18 @@ class JiraKnowledgeIssuePage(BaseModel):
     next_page_token: str | None = Field(default=None, repr=False)
     is_last: bool
 
+    @field_validator("next_page_token", mode="before")
+    @classmethod
+    def _validate_next_page_token(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("next_page_token must be a string when provided")
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("next_page_token must not be empty when provided")
+        return cleaned
+
     @model_validator(mode="after")
     def _token_rules(self) -> JiraKnowledgeIssuePage:
         if not self.is_last and not self.next_page_token:
@@ -185,7 +199,10 @@ def _parse_timestamp(raw: object, *, field_name: str) -> datetime:
         text = f"{text[:-1]}+00:00"
     if len(text) >= 5 and text[-5] in "+-" and text[-3] != ":":
         text = f"{text[:-2]}:{text[-2:]}"
-    parsed = datetime.fromisoformat(text)
+    try:
+        parsed = datetime.fromisoformat(text)
+    except (TypeError, ValueError):
+        raise ValueError(f"{field_name} timestamp is invalid") from None
     if parsed.tzinfo is None:
         raise ValueError(f"{field_name} must be timezone-aware")
     return parsed.astimezone(timezone.utc)
@@ -202,15 +219,19 @@ def _parse_user(raw: object) -> JiraKnowledgeUser | None:
     account_id: str | None
     if account_id_raw is None:
         account_id = None
+    elif not isinstance(account_id_raw, str):
+        raise ValueError("user account id must be a string when provided")
     else:
-        account_id = str(account_id_raw).strip()
+        account_id = account_id_raw.strip()
         if not account_id:
             raise ValueError("user account id must not be empty when provided")
     display_name: str | None
     if display_name_raw is None:
         display_name = None
+    elif not isinstance(display_name_raw, str):
+        raise ValueError("user display name must be a string when provided")
     else:
-        display_name = str(display_name_raw).strip()
+        display_name = display_name_raw.strip()
         if not display_name:
             raise ValueError("user display name must not be empty when provided")
     active = bool(active_raw) if isinstance(active_raw, bool) else None

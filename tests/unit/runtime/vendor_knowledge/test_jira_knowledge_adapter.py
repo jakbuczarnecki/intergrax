@@ -8,7 +8,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timezone, tzinfo
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -760,3 +761,164 @@ async def test_cursor_missing_version_rejected_before_search() -> None:
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
     assert "secret-page-token" not in str(exc_info.value)
     assert tracker.search_calls == []
+
+
+class _NullUtcOffsetTzinfo(tzinfo):
+    def utcoffset(self, dt):  # type: ignore[override]
+        return None
+
+    def dst(self, dt):  # type: ignore[override]
+        return None
+
+    def tzname(self, dt):  # type: ignore[override]
+        return "NullOffset"
+
+
+def _constructed_issue(**overrides: object) -> JiraKnowledgeIssue:
+    base = {
+        "remote_id": "10001",
+        "key": "PROJ-1",
+        "summary": "Summary",
+        "description": "Description",
+        "status_name": "In Progress",
+        "issue_type_name": "Task",
+        "project_id": "10000",
+        "project_key": "PROJ",
+        "project_name": "Project",
+        "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        "updated_at": datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+        "web_url": "https://example.atlassian.net/browse/PROJ-1",
+    }
+    base.update(overrides)
+    return JiraKnowledgeIssue.model_construct(**base)  # type: ignore[arg-type]
+
+
+async def _assert_read_page_invalid_provider_response(
+    *,
+    page: JiraKnowledgeIssuePage,
+) -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    tracker = _FakeKnowledgeTracker(pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+
+
+@pytest.mark.parametrize("remote_id", ["abc", "0"])
+async def test_read_page_rejects_non_numeric_remote_id(remote_id: str) -> None:
+    await _assert_read_page_invalid_provider_response(
+        page=JiraKnowledgeIssuePage.model_construct(
+            issues=(_constructed_issue(remote_id=remote_id),),
+            next_page_token=None,
+            is_last=True,
+        ),
+    )
+
+
+async def test_read_page_rejects_naive_created_at() -> None:
+    await _assert_read_page_invalid_provider_response(
+        page=JiraKnowledgeIssuePage.model_construct(
+            issues=(
+                _constructed_issue(
+                    created_at=datetime(2024, 1, 1, 10, 0),
+                ),
+            ),
+            next_page_token=None,
+            is_last=True,
+        ),
+    )
+
+
+async def test_read_page_rejects_naive_updated_at() -> None:
+    await _assert_read_page_invalid_provider_response(
+        page=JiraKnowledgeIssuePage.model_construct(
+            issues=(
+                _constructed_issue(
+                    updated_at=datetime(2024, 1, 2, 11, 0),
+                ),
+            ),
+            next_page_token=None,
+            is_last=True,
+        ),
+    )
+
+
+async def test_read_page_rejects_undefined_utc_offset() -> None:
+    null_offset = _NullUtcOffsetTzinfo()
+    await _assert_read_page_invalid_provider_response(
+        page=JiraKnowledgeIssuePage.model_construct(
+            issues=(
+                _constructed_issue(
+                    created_at=datetime(2024, 1, 1, 10, 0, tzinfo=null_offset),
+                ),
+            ),
+            next_page_token=None,
+            is_last=True,
+        ),
+    )
+
+
+async def test_read_page_rejects_non_issue_element() -> None:
+    await _assert_read_page_invalid_provider_response(
+        page=JiraKnowledgeIssuePage.model_construct(
+            issues=(object(),),  # type: ignore[arg-type]
+            next_page_token=None,
+            is_last=True,
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("is_last", "next_page_token"),
+    [
+        (False, None),
+        (False, ""),
+        (False, "   "),
+        (True, "leftover"),
+        ("false", None),  # type: ignore[list-item]
+    ],
+)
+async def test_read_page_rejects_invalid_page_invariants(
+    is_last: object,
+    next_page_token: str | None,
+) -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    page = JiraKnowledgeIssuePage.model_construct(
+        issues=(_constructed_issue(),),
+        next_page_token=next_page_token,
+        is_last=is_last,
+    )
+    tracker = _FakeKnowledgeTracker(pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_tracker(tracker),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    if next_page_token:
+        assert next_page_token not in str(exc_info.value)
+
+
+async def test_read_page_persists_numeric_remote_ids() -> None:
+    adapter = JiraIssuesKnowledgeAdapter()
+    integration = _integration_with_tracker(_FakeKnowledgeTracker())
+    page = await adapter.read_page(
+        integration=integration,
+        source=_source(),
+        cursor=None,
+        limit=10,
+    )
+    numeric_re = re.compile(r"^[1-9][0-9]*$")
+    for change in page.changes:
+        assert numeric_re.fullmatch(change.remote_id)
+        assert change.descriptor is not None
+        assert numeric_re.fullmatch(change.descriptor.identity.remote_id)

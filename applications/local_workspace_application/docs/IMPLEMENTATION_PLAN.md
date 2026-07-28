@@ -173,6 +173,19 @@ The slice must reuse:
 
 It must not create a second URL-specific queue, worker or document pipeline. URL access policy, redirects, private-network protection, size limits and safe error behavior must be frozen before implementation.
 
+### 6.1 Bounded decomposition (`1B-5`)
+
+| Task | Outcome | Status |
+|------|---------|--------|
+| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | IMPLEMENTED / CORRECTION REQUIRED |
+| `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
+| `1B-5-4` | Slack explicit Web URL intake | PLANNED |
+
+Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../docs/architecture/WEB_CONTENT_CAPTURE.md). `1B-5-1` review gate: audit `LKW-WORKSPACE-CONTENTS-1B-5-1-C2`; LKW intake (`1B-5-2` onward) must not start until review accepts the capture contract.
+
+Current review gate for `1B-4-2` remains unchanged — audit `LKW-WORKSPACE-CONTENTS-1B-4-2-C2` before advancing the Slack Source Candidate slice; `1B-5-1` does not replace that gate.
+
 ---
 
 ## 7. `LKW-WORKSPACE-CONTENTS-1B-6` — VENDOR-KNOWLEDGE integration

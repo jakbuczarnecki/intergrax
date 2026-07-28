@@ -581,6 +581,54 @@ runtime/adaptive integration remains deferred
 
 Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryEvaluation*` types, `evaluate_advisory_recommendation_case`, `evaluate_advisory_recommendation_cases`, `token_optimization_advisory_report_to_dict`, `format_token_optimization_advisory_report`).
 
+##### Advisory policy-gated integration surface (`TOKEN-7C`)
+
+`TOKEN-7C` adds a deterministic policy gate around the advisory recommender. Policy is explicitly passed in the request; no global config resolver, env resolver, or YAML config is added in this task.
+
+Supported modes: `disabled`, `report_only`, `dry_run`, `review_only`, `advisory_allowed`. Recommendations may be blocked, returned as report-only, returned as dry-run, escalated to review, or marked recommendation-ready. Recommendation-ready still does not mean auto-apply; `auto_apply_allowed` remains `False`. Result serialization is redaction-safe.
+
+Key properties:
+
+```text
+policy-gated integration only — no autonomous production auto-apply
+policy is explicitly passed per request (no global/env/YAML resolver)
+deterministic gate over recommend_token_optimization_action(...)
+modes: disabled, report_only, dry_run, review_only, advisory_allowed
+recommendations may be blocked, report-only, dry-run, review-required, or recommendation-ready
+recommendation-ready remains non-auto-apply
+redaction-safe dict and text result formatters
+must not include raw signal or recommendation objects in serialized output
+no runtime prompt assembly changes
+no provider calls
+no adaptive runtime integration
+no observability/HOS emission
+```
+
+Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryIntegration*` types, `evaluate_policy_gated_advisory_request`, `token_optimization_advisory_integration_result_to_dict`, `format_token_optimization_advisory_integration_result`).
+
+##### Advisory policy presets and resolver (`TOKEN-7D`)
+
+`TOKEN-7D` adds named advisory policy presets. Presets resolve deterministically to explicit `TokenOptimizationAdvisoryIntegrationPolicy` objects. Policy remains explicit and helper-level; no global config resolver, env resolver, or YAML config is added.
+
+Supported presets: `disabled`, `report_only`, `dry_run_safe`, `review_first`, `advisory_allowed_safe`. Safe overrides may adjust only `allow_strategy_enable`, `allow_strategy_disable`, and `require_review_for_risky_recommendations`. Overrides cannot change `enabled`/`mode` or enable auto-apply. `auto_apply_allowed` remains `False`. Resolved policy serialization is redaction-safe.
+
+Key properties:
+
+```text
+named advisory policy presets — deterministic resolver only
+presets resolve to explicit TokenOptimizationAdvisoryIntegrationPolicy objects
+policy is explicitly passed per request (no global/env/YAML resolver)
+safe overrides adjust safety switches only (not enabled/mode/auto-apply)
+auto_apply_allowed remains False
+resolved policy serialization is redaction-safe
+no runtime prompt assembly changes
+no provider calls
+no adaptive runtime integration
+no observability/HOS emission
+```
+
+Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
+
 #### In-cache compaction boundary (`TOKEN-OPT-5A`)
 
 ```text

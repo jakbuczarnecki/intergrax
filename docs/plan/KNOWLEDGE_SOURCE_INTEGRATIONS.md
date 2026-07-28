@@ -45,8 +45,8 @@ DONE:     VENDOR-KNOWLEDGE-SYNC-1A
 DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1B
 DONE:     JIRA-KNOWLEDGE-ADAPTER-1
-NEXT:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1
+DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
+NEXT:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
@@ -71,8 +71,9 @@ Delivery-ID continuation scheduling implemented
 Interrupted-task recovery implemented
 Bounded sync-handler retry/backoff implemented
 Jira issues knowledge adapter implemented
+Confluence pages knowledge adapter implemented
 First real vendor facade/coordinator proof implemented
-Vendor adapters beyond Jira not implemented
+Vendor adapters beyond Jira and Confluence not implemented
 LKW connected-source bridge not implemented
 ```
 
@@ -446,11 +447,39 @@ general IssueTracker.search_issues endpoint migration deferred
 
 #### `CONFLUENCE-KNOWLEDGE-ADAPTER-1`
 
-**Status:** `PLANNED`
+**Status:** `DONE`
 
 Content mode: `RICH_TEXT`.
 
 Extend the existing Confluence integration only where required, then map pages, versions and visibility through a Confluence adapter.
+
+Capability matrix (Confluence `pages`):
+
+```text
+source_kind: pages
+scope: one Confluence space ID
+content: RICH_TEXT / Confluence Storage Format
+full_inventory: yes
+reconciliation: yes
+incremental_changes: no
+permissions: no
+tombstones: no
+remote_versions: yes
+```
+
+Deferred / not implemented for Confluence pages adapter:
+
+```text
+blog posts deferred
+attachments deferred
+comments deferred
+labels deferred
+custom content deferred
+end-user ACL projection deferred
+deletion/revocation projection deferred
+incremental change-feed deferred
+legacy WikiKnowledge search migration deferred
+```
 
 #### `MSGRAPH-KNOWLEDGE-READ-SURFACE-1`
 

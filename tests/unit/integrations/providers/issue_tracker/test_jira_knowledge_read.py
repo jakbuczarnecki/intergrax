@@ -25,6 +25,7 @@ from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
     JiraKnowledgeIssue,
     JiraKnowledgeIssuePage,
     JiraKnowledgeUser,
+    parse_jira_knowledge_issue,
     validate_jira_issue_key,
     validate_jira_project_key,
 )
@@ -162,7 +163,7 @@ def test_continuation_passes_next_page_token() -> None:
 def test_is_last_false_requires_token() -> None:
     http = _mock_http(post_payload={"issues": [], "isLast": False})
     client = JiraRestClient(_config(), http_client=http)
-    with pytest.raises(ValueError, match="next_page_token"):
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response"):
         client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
 
 
@@ -171,7 +172,7 @@ def test_is_last_true_rejects_token() -> None:
         post_payload={"issues": [], "isLast": True, "nextPageToken": "leftover"}
     )
     client = JiraRestClient(_config(), http_client=http)
-    with pytest.raises(ValueError, match="next_page_token"):
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response"):
         client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
 
 
@@ -179,7 +180,7 @@ def test_duplicate_issue_id_rejected() -> None:
     issue = _issue_fields()
     http = _mock_http(post_payload={"issues": [issue, issue], "isLast": True})
     client = JiraRestClient(_config(), http_client=http)
-    with pytest.raises(ValueError, match="duplicate issue id"):
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response"):
         client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
 
 
@@ -188,7 +189,7 @@ def test_missing_issue_id_rejected() -> None:
     del payload["id"]
     http = _mock_http(post_payload={"issues": [payload], "isLast": True})
     client = JiraRestClient(_config(), http_client=http)
-    with pytest.raises(ValueError, match="issue id is required"):
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response"):
         client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
 
 
@@ -415,6 +416,111 @@ def test_jira_knowledge_user_rejects_empty_optional_identity() -> None:
         JiraKnowledgeUser(account_id="   ")
     with pytest.raises(ValueError):
         JiraKnowledgeUser(display_name="")
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("account_id", 123),
+        ("display_name", True),
+    ],
+)
+def test_jira_knowledge_user_rejects_non_string_identity(field: str, value: object) -> None:
+    with pytest.raises(ValueError):
+        JiraKnowledgeUser(**{field: value})
+
+
+def test_jira_knowledge_user_trims_valid_string() -> None:
+    user = JiraKnowledgeUser(account_id="  acc-1  ", display_name="  Alex  ")
+    assert user.account_id == "acc-1"
+    assert user.display_name == "Alex"
+
+
+def test_parser_rejects_integer_account_id() -> None:
+    payload = _issue_fields()
+    payload["fields"]["assignee"] = {
+        "accountId": 123,
+        "displayName": "Alex",
+        "active": True,
+    }
+    http = _mock_http(post_payload={"issues": [payload], "isLast": True})
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response") as exc_info:
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+    assert exc_info.value.__cause__ is None
+    assert "123" not in str(exc_info.value)
+
+
+def test_parser_rejects_list_display_name() -> None:
+    payload = _issue_fields()
+    payload["fields"]["assignee"] = {
+        "accountId": "acc-1",
+        "displayName": ["secret-name"],
+        "active": True,
+    }
+    http = _mock_http(post_payload={"issues": [payload], "isLast": True})
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response") as exc_info:
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+    assert exc_info.value.__cause__ is None
+    assert "secret-name" not in str(exc_info.value)
+
+
+def test_parser_rejects_malformed_timestamps_without_leaking_values() -> None:
+    payload = _issue_fields()
+    payload["fields"]["created"] = "secret-created-value"
+    payload["fields"]["updated"] = "secret-updated-value"
+    http = _mock_http(post_payload={"issues": [payload], "isLast": True})
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response") as exc_info:
+        client.search_knowledge_issues(project_key="PROJ", next_page_token=None, limit=10)
+    assert exc_info.value.__cause__ is None
+    message = str(exc_info.value)
+    assert "secret-created-value" not in message
+    assert "secret-updated-value" not in message
+
+
+def test_get_knowledge_issue_parser_rejects_malformed_timestamps_without_leaking_values() -> None:
+    payload = _issue_fields()
+    payload["fields"]["created"] = "secret-created-value"
+    payload["fields"]["updated"] = "secret-updated-value"
+    http = _mock_http(get_payload=payload)
+    client = JiraRestClient(_config(), http_client=http)
+    with pytest.raises(ValueError, match="unexpected Jira knowledge response") as exc_info:
+        client.get_knowledge_issue(issue_key="PROJ-1")
+    assert exc_info.value.__cause__ is None
+    message = str(exc_info.value)
+    assert "secret-created-value" not in message
+    assert "secret-updated-value" not in message
+
+
+def test_parse_jira_knowledge_issue_trims_user_strings() -> None:
+    payload = _issue_fields()
+    payload["fields"]["assignee"] = {
+        "accountId": "  acc-1  ",
+        "displayName": "  Alex  ",
+        "active": True,
+    }
+    issue = parse_jira_knowledge_issue(
+        payload,
+        issue_url="https://example.atlassian.net/browse/PROJ-1",
+        plain_description=lambda raw: str(raw or ""),
+    )
+    assert issue.assignee is not None
+    assert issue.assignee.account_id == "acc-1"
+    assert issue.assignee.display_name == "Alex"
+
+
+def test_jira_knowledge_issue_page_rejects_empty_next_page_token() -> None:
+    with pytest.raises(ValueError, match="next_page_token"):
+        JiraKnowledgeIssuePage(issues=(), next_page_token="", is_last=False)
+    with pytest.raises(ValueError, match="next_page_token"):
+        JiraKnowledgeIssuePage(issues=(), next_page_token="   ", is_last=False)
+
+
+def test_jira_knowledge_issue_page_rejects_non_string_next_page_token() -> None:
+    with pytest.raises(ValueError, match="next_page_token"):
+        JiraKnowledgeIssuePage(issues=(), next_page_token=123, is_last=False)  # type: ignore[arg-type]
 
 
 def test_jira_knowledge_models_are_frozen_and_extra_forbid() -> None:

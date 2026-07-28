@@ -10,9 +10,10 @@ import base64
 import hashlib
 import json
 import re
+from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.issue_tracker.jira.integration import JiraIssueTrackerIntegration
@@ -21,6 +22,7 @@ from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
     JIRA_KNOWLEDGE_CURSOR_VERSION,
     JIRA_PROJECT_SCOPE_TYPE,
     JiraKnowledgeIssue,
+    JiraKnowledgeIssuePage,
     JiraKnowledgeUser,
     issue_key_project_part,
     validate_jira_issue_key,
@@ -159,16 +161,14 @@ class JiraIssuesKnowledgeAdapter:
             limit=limit,
         )
         try:
-            seen_remote_ids: set[str] = set()
-            for issue in page.issues:
-                if issue.remote_id in seen_remote_ids:
-                    raise ValueError("duplicate issue id on page")
-                seen_remote_ids.add(issue.remote_id)
-                self._validate_issue_for_source(issue, project_key=project_key)
-        except ValueError:
+            validated_next_page_token = self._validate_page_for_source(
+                page,
+                project_key=project_key,
+            )
+        except (ValueError, TypeError, ValidationError):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message="Jira knowledge page contains an issue outside the requested project",
+                safe_message="Jira knowledge provider response is invalid",
                 provider_id=self.provider_id,
                 source_kind=self.source_kind,
                 retryable=False,
@@ -179,7 +179,7 @@ class JiraIssuesKnowledgeAdapter:
                 _JiraIssuesReconciliationCursor(
                     schema_version=JIRA_KNOWLEDGE_CURSOR_VERSION,
                     project_key=project_key,
-                    next_page_token=page.next_page_token,
+                    next_page_token=validated_next_page_token,
                     complete=False,
                 )
             )
@@ -434,13 +434,70 @@ class JiraIssuesKnowledgeAdapter:
 
     def _validate_issue_for_source(
         self,
-        issue: JiraKnowledgeIssue,
+        issue: object,
         *,
         project_key: str,
     ) -> None:
-        validate_jira_knowledge_issue_project_scope(issue, project_key=project_key)
-        if issue.created_at.tzinfo is None or issue.updated_at.tzinfo is None:
-            raise ValueError("Jira issue timestamps must be timezone-aware")
+        if not isinstance(issue, JiraKnowledgeIssue):
+            raise ValueError("issue must be a JiraKnowledgeIssue")
+        if not isinstance(issue.remote_id, str):
+            raise ValueError("remote_id must be a string")
+        remote_id = issue.remote_id.strip()
+        if not _JIRA_REMOTE_ID_RE.fullmatch(remote_id):
+            raise ValueError("remote_id must be a positive numeric Jira ID")
+        validated_project_key = validate_jira_project_key(project_key)
+        validated_issue_key = validate_jira_issue_key(issue.key)
+        validated_issue_project_key = validate_jira_project_key(issue.project_key)
+        if validated_issue_project_key != validated_project_key:
+            raise ValueError("issue project key does not match source")
+        if issue_key_project_part(validated_issue_key) != validated_project_key:
+            raise ValueError("issue key project part does not match source")
+        if not isinstance(issue.created_at, datetime):
+            raise ValueError("created_at must be a datetime")
+        if issue.created_at.tzinfo is None:
+            raise ValueError("created_at must be timezone-aware")
+        if issue.created_at.utcoffset() is None:
+            raise ValueError("created_at must have a defined UTC offset")
+        if not isinstance(issue.updated_at, datetime):
+            raise ValueError("updated_at must be a datetime")
+        if issue.updated_at.tzinfo is None:
+            raise ValueError("updated_at must be timezone-aware")
+        if issue.updated_at.utcoffset() is None:
+            raise ValueError("updated_at must have a defined UTC offset")
+        validate_jira_knowledge_issue_project_scope(issue, project_key=validated_project_key)
+
+    def _validate_page_for_source(
+        self,
+        page: object,
+        *,
+        project_key: str,
+    ) -> str | None:
+        if not isinstance(page, JiraKnowledgeIssuePage):
+            raise ValueError("page must be a JiraKnowledgeIssuePage")
+        if not isinstance(page.is_last, bool):
+            raise ValueError("is_last must be a boolean")
+        validated_next_page_token: str | None
+        if page.is_last:
+            if page.next_page_token is not None:
+                raise ValueError("next_page_token must be None when is_last is True")
+            validated_next_page_token = None
+        else:
+            if not isinstance(page.next_page_token, str):
+                raise ValueError("next_page_token must be a string when is_last is False")
+            validated_next_page_token = page.next_page_token.strip()
+            if not validated_next_page_token:
+                raise ValueError("next_page_token must not be empty when is_last is False")
+        if not isinstance(page.issues, tuple):
+            raise ValueError("issues must be a tuple")
+        seen_remote_ids: set[str] = set()
+        for issue in page.issues:
+            if not isinstance(issue, JiraKnowledgeIssue):
+                raise ValueError("issue must be a JiraKnowledgeIssue")
+            if issue.remote_id in seen_remote_ids:
+                raise ValueError("duplicate issue id on page")
+            seen_remote_ids.add(issue.remote_id)
+            self._validate_issue_for_source(issue, project_key=project_key)
+        return validated_next_page_token
 
     def _validate_fetched_issue_identity(
         self,
