@@ -25,12 +25,19 @@ from local_workspace_application.conversation.interaction_models import (
     collect_user_text_context,
     request_attachment_ids,
 )
+
 from local_workspace_application.conversation.interaction_prompt import build_planning_messages
 
 logger = logging.getLogger(__name__)
 
 _STRUCTURED_MAX_TOKENS = 8_192
-_TRAILING_PUNCTUATION = ".,;:!?)\"']"
+_TRAILING_SENTENCE_PUNCTUATION = ".,;!?"
+_URL_SCHEME_PATTERN = re.compile(r"https?://", re.IGNORECASE)
+_PATH_START_BOUNDARY_CHARS = frozenset(" \t\n\r\"'(:[")
+_PATH_END_BOUNDARY_CHARS = frozenset(" \t\n\r\"',;)")
+_PATH_CONTINUATION_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\\/-_.:"
+)
 
 
 class ConversationPlanningErrorCode(str, Enum):
@@ -66,6 +73,7 @@ def validate_plan_against_request(
     """Fail-closed validation of planner output against the safe planning request."""
     allowed_attachments = request_attachment_ids(request)
     user_contexts = collect_user_text_context(request)
+    allowed_urls = extract_user_url_candidates(user_contexts)
 
     for action in plan.actions:
         for attachment_id in action.evidence_attachment_ids:
@@ -83,7 +91,7 @@ def validate_plan_against_request(
 
         if isinstance(action, KnowledgeAddWebUrlsPlannedAction):
             for url in action.urls:
-                if not _url_in_context(url, user_contexts):
+                if url not in allowed_urls:
                     raise PlanRequestValidationError("URL not found in user context")
 
         if isinstance(action, KnowledgeAddLocalReferencesPlannedAction):
@@ -94,11 +102,34 @@ def validate_plan_against_request(
         workspace = getattr(action, "workspace", None)
         if workspace is not None and workspace.kind == WorkspaceReferenceKind.name:
             if workspace.value and not _evidence_quote_in_context(workspace.value, user_contexts):
-                # Name references should reflect user wording; allow fuzzy via substring check.
                 if not any(
                     workspace.value.lower() in context.lower() for context in user_contexts
                 ):
                     raise PlanRequestValidationError("workspace name reference not in user context")
+
+
+def extract_user_url_candidates(contexts: Sequence[str]) -> frozenset[str]:
+    """Build a deterministic set of exact user-provided URLs from planning context."""
+    candidates: set[str] = set()
+    for context in contexts:
+        for match in _URL_SCHEME_PATTERN.finditer(context):
+            end = match.end()
+            while end < len(context) and context[end] not in " \t\n\r<>\"'":
+                end += 1
+            cleaned = _strip_trailing_url_punctuation(context[match.start() : end])
+            if cleaned:
+                candidates.add(cleaned)
+    return frozenset(candidates)
+
+
+def _strip_trailing_url_punctuation(url: str) -> str:
+    result = url
+    while result and result[-1] in _TRAILING_SENTENCE_PUNCTUATION:
+        result = result[:-1]
+    for close, open_char in ((")", "("), ("]", "["), ("}", "{")):
+        while result.endswith(close) and result.count(open_char) < result.count(close):
+            result = result[:-1]
+    return result
 
 
 def _evidence_quote_in_context(quote: str, contexts: Sequence[str]) -> bool:
@@ -111,35 +142,61 @@ def _evidence_quote_in_context(quote: str, contexts: Sequence[str]) -> bool:
     return False
 
 
-def _url_in_context(url: str, contexts: Sequence[str]) -> bool:
-    if not url:
-        return False
-    for context in contexts:
-        if url in context:
-            return True
-        pattern = re.escape(url) + rf"[{_re_escape_punctuation_class()}]?"
-        if re.search(pattern, context):
-            return True
-    return False
-
-
-def _re_escape_punctuation_class() -> str:
-    return re.escape(_TRAILING_PUNCTUATION)
-
-
 def _looks_like_windows_path(value: str) -> bool:
-    return bool(re.match(r"^[A-Za-z]:\\", value)) or "\\" in value
+    return bool(re.match(r"^[A-Za-z]:\\", value)) or value.startswith("\\\\")
 
 
 def _local_reference_in_context(reference: str, contexts: Sequence[str]) -> bool:
     if not reference:
         return False
     for context in contexts:
-        if reference in context:
-            return True
-        if _looks_like_windows_path(reference) and reference.lower() in context.lower():
+        if _bounded_local_reference_match(reference, context):
             return True
     return False
+
+
+def _bounded_local_reference_match(reference: str, context: str) -> bool:
+    windows_insensitive = _looks_like_windows_path(reference)
+    search_reference = reference.lower() if windows_insensitive else reference
+    search_context = context.lower() if windows_insensitive else context
+    start = 0
+    while True:
+        index = search_context.find(search_reference, start)
+        if index == -1:
+            return False
+        end = index + len(reference)
+        if _has_valid_path_start_boundary(context, index) and _has_valid_path_end_boundary(
+            context, end, reference
+        ):
+            return True
+        start = index + 1
+
+
+def _has_valid_path_start_boundary(context: str, start: int) -> bool:
+    if start == 0:
+        return True
+    return context[start - 1] in _PATH_START_BOUNDARY_CHARS
+
+
+def _has_valid_path_end_boundary(context: str, end: int, reference: str) -> bool:
+    if end >= len(context):
+        return True
+    next_char = context[end]
+    if next_char in _PATH_END_BOUNDARY_CHARS:
+        return True
+    if next_char == ".":
+        return _is_sentence_ending_period(context, end, reference)
+    if next_char in _PATH_CONTINUATION_CHARS:
+        return False
+    return False
+
+
+def _is_sentence_ending_period(context: str, period_index: int, reference: str) -> bool:
+    if period_index + 1 < len(context) and context[period_index + 1] in _PATH_CONTINUATION_CHARS:
+        return False
+    if reference.endswith("."):
+        return False
+    return True
 
 
 class ConversationInteractionPlanner:

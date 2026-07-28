@@ -30,6 +30,9 @@ from local_workspace_application.conversation.interaction_planner import (
     ConversationInteractionPlanner,
     ConversationPlanningError,
     ConversationPlanningErrorCode,
+    PlanRequestValidationError,
+    extract_user_url_candidates,
+    validate_plan_against_request,
 )
 from local_workspace_application.conversation.interaction_prompt import (
     build_planning_messages,
@@ -131,7 +134,8 @@ def _mixed_polish_request() -> ConversationPlanningRequest:
         message_text=(
             "dołącz informacje o cennikach ze strony https://www.cenniki.pl\n"
             "oraz dorzuć moją kopię lokalną cenników z\n"
-            r"c:\moje dokumenty\cenniki.xls\n"
+            r"c:\moje dokumenty\cenniki.xls"
+            "\n"
             "a to wszystko do workspace 'magazyn'"
         ),
         available_workspaces=(
@@ -477,3 +481,108 @@ def test_prompt_safety() -> None:
     )
     for token in forbidden:
         assert token not in combined
+
+
+def _url_plan(url: str) -> ConversationInteractionPlan:
+    return ConversationInteractionPlan(
+        plan_version="1",
+        response_mode="aggregate",
+        actions=(
+            KnowledgeAddWebUrlsPlannedAction(
+                action_id="url-1",
+                action_type="knowledge.add_web_urls",
+                workspace=_magazyn_target(),
+                urls=(url,),
+            ),
+        ),
+    )
+
+
+def _local_plan(path: str) -> ConversationInteractionPlan:
+    return ConversationInteractionPlan(
+        plan_version="1",
+        response_mode="aggregate",
+        actions=(
+            KnowledgeAddLocalReferencesPlannedAction(
+                action_id="local-1",
+                action_type="knowledge.add_local_references",
+                workspace=_magazyn_target(),
+                references=(LocalReference(kind="file", value=path),),
+            ),
+        ),
+    )
+
+
+@pytest.mark.unit
+def test_url_grounding_rejects_shortened_url() -> None:
+    request = ConversationPlanningRequest(
+        message_text="dodaj https://example.com/cennik?region=pl do magazyn",
+    )
+    with pytest.raises(PlanRequestValidationError):
+        validate_plan_against_request(_url_plan("https://example.com"), request)
+
+
+@pytest.mark.unit
+def test_url_grounding_rejects_changed_host() -> None:
+    request = ConversationPlanningRequest(
+        message_text="dodaj https://safe.example.evil.com/page do magazyn",
+    )
+    with pytest.raises(PlanRequestValidationError):
+        validate_plan_against_request(_url_plan("https://safe.example"), request)
+
+
+@pytest.mark.unit
+def test_url_grounding_accepts_trailing_sentence_period() -> None:
+    request = ConversationPlanningRequest(
+        message_text="dodaj https://example.com/path. do magazyn",
+    )
+    validate_plan_against_request(_url_plan("https://example.com/path"), request)
+
+
+@pytest.mark.unit
+def test_url_grounding_accepts_full_query_url() -> None:
+    url = "https://example.com/path?x=1&y=2"
+    request = ConversationPlanningRequest(message_text=f"dodaj {url} do magazyn")
+    validate_plan_against_request(_url_plan(url), request)
+
+
+@pytest.mark.unit
+def test_extract_user_url_candidates_strips_sentence_punctuation() -> None:
+    candidates = extract_user_url_candidates(
+        ("Zobacz https://example.com/path.", "oraz https://docs.test/a?b=1).")
+    )
+    assert "https://example.com/path" in candidates
+    assert "https://docs.test/a?b=1" in candidates
+
+
+@pytest.mark.unit
+def test_local_reference_rejects_shortened_directory() -> None:
+    full_path = r"C:\dokumenty\cenniki\cennik-2026.xlsx"
+    request = ConversationPlanningRequest(message_text=f"dodaj {full_path} do magazyn")
+    with pytest.raises(PlanRequestValidationError):
+        validate_plan_against_request(_local_plan(r"C:\dokumenty\cenniki"), request)
+
+
+@pytest.mark.unit
+def test_local_reference_rejects_shortened_filename_without_extension() -> None:
+    full_path = r"C:\dokumenty\cenniki\cennik-2026.xlsx"
+    request = ConversationPlanningRequest(message_text=f"dodaj {full_path} do magazyn")
+    with pytest.raises(PlanRequestValidationError):
+        validate_plan_against_request(_local_plan(r"C:\dokumenty\cenniki\cennik-2026"), request)
+
+
+@pytest.mark.unit
+def test_local_reference_accepts_windows_case_insensitive_match() -> None:
+    full_path = r"C:\dokumenty\cenniki\cennik-2026.xlsx"
+    request = ConversationPlanningRequest(message_text=f"dodaj {full_path} do magazyn")
+    validate_plan_against_request(
+        _local_plan(r"c:\DOKUMENTY\CENNIKI\CENNIK-2026.XLSX"),
+        request,
+    )
+
+
+@pytest.mark.unit
+def test_local_reference_accepts_unc_path() -> None:
+    unc_path = r"\\server\share\folder\cennik.xlsx"
+    request = ConversationPlanningRequest(message_text=f"dodaj {unc_path} do magazyn")
+    validate_plan_against_request(_local_plan(unc_path), request)

@@ -12,6 +12,8 @@ from local_workspace_application.conversation.interaction_models import (
     ConversationInteractionPlan,
     ConversationPlanningAttachment,
     ConversationPlanningRequest,
+    ConversationPlanningSourceCandidate,
+    ConversationPlanningWorkspace,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddLocalReferencesPlannedAction,
     KnowledgeAddWebUrlsPlannedAction,
@@ -320,3 +322,125 @@ def test_valid_plan_with_clarification_only() -> None:
         ),
     )
     assert plan.clarifications[0].clarification_id == "c1"
+
+
+@pytest.mark.unit
+def test_rejects_whitespace_only_attachment_id() -> None:
+    with pytest.raises(ValidationError):
+        ConversationPlanningAttachment(attachment_id=" ", file_name="doc.pdf")
+
+
+@pytest.mark.unit
+def test_rejects_tab_workspace_id() -> None:
+    with pytest.raises(ValidationError):
+        ConversationPlanningWorkspace(workspace_id="\t", name="default", is_active=True)
+
+
+@pytest.mark.unit
+def test_rejects_nul_candidate_id() -> None:
+    with pytest.raises(ValidationError):
+        ConversationPlanningSourceCandidate(
+            candidate_id="\x00candidate",
+            label="Contracts",
+            source_type="local_folder",
+            available=True,
+        )
+
+
+@pytest.mark.unit
+def test_rejects_newline_action_id() -> None:
+    with pytest.raises(ValidationError):
+        KnowledgeAddWebUrlsPlannedAction(
+            action_id="\n",
+            action_type="knowledge.add_web_urls",
+            workspace=_magazyn_target(),
+            urls=("https://example.com",),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_bool_size_bytes() -> None:
+    with pytest.raises(ValidationError):
+        ConversationPlanningAttachment(attachment_id="att-1", size_bytes=True)  # type: ignore[arg-type]
+
+
+@pytest.mark.unit
+def test_rejects_duplicate_clarification_id() -> None:
+    clarification = ConversationClarification(
+        clarification_id="c-dup",
+        question="Which workspace?",
+    )
+    with pytest.raises(ValidationError, match="duplicate clarification_id"):
+        ConversationInteractionPlan(
+            plan_version="1",
+            response_mode="aggregate",
+            clarifications=(clarification, clarification),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_duplicate_attachment_ids_in_action() -> None:
+    with pytest.raises(ValidationError, match="duplicate attachment_id"):
+        KnowledgeAddAttachmentsPlannedAction(
+            action_id="att-action",
+            action_type="knowledge.add_attachments",
+            workspace=_magazyn_target(),
+            attachment_ids=("att-1", "att-1"),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_duplicate_urls_in_action() -> None:
+    with pytest.raises(ValidationError, match="duplicate url"):
+        KnowledgeAddWebUrlsPlannedAction(
+            action_id="url-action",
+            action_type="knowledge.add_web_urls",
+            workspace=_magazyn_target(),
+            urls=("https://example.com", "https://example.com"),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_duplicate_dependency() -> None:
+    with pytest.raises(ValidationError, match="duplicate depends_on entry"):
+        KnowledgeAddWebUrlsPlannedAction(
+            action_id="a2",
+            action_type="knowledge.add_web_urls",
+            workspace=_magazyn_target(),
+            urls=("https://example.com",),
+            depends_on=("a1", "a1"),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_invalid_candidate_ordinal_reference() -> None:
+    from local_workspace_application.conversation.interaction_models import (
+        SourceCandidateAttachPlannedAction,
+    )
+
+    for invalid in ("0", "-1", "abc", "1.5"):
+        with pytest.raises(ValidationError):
+            SourceCandidateAttachPlannedAction(
+                action_id="cand-1",
+                action_type="source_candidate.attach",
+                workspace=_magazyn_target(),
+                candidate_reference_kind="ordinal",
+                candidate_reference=invalid,
+            )
+
+
+@pytest.mark.unit
+def test_accepts_valid_candidate_ordinal_reference() -> None:
+    from local_workspace_application.conversation.interaction_models import (
+        SourceCandidateAttachPlannedAction,
+    )
+
+    for valid in ("1", "12"):
+        action = SourceCandidateAttachPlannedAction(
+            action_id=f"cand-{valid}",
+            action_type="source_candidate.attach",
+            workspace=_magazyn_target(),
+            candidate_reference_kind="ordinal",
+            candidate_reference=valid,
+        )
+        assert action.candidate_reference == valid

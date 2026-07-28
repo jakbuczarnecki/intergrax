@@ -191,7 +191,7 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 
 | Task | Outcome | Status |
 |------|---------|--------|
-| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | IMPLEMENTED / CORRECTION REQUIRED |
+| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
 | `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED |
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
 | `1B-5-4` | Slack explicit Web URL intake | **SUPERSEDED** by `LKW-CONVERSATIONAL-INTERACTION-1C` |

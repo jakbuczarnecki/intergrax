@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
 
 _MAX_MESSAGE_TEXT_LEN = 16_000
 _MAX_ATTACHMENTS = 50
@@ -23,30 +24,116 @@ _MAX_URLS_PER_ACTION = 50
 _MAX_LOCAL_REFS_PER_ACTION = 50
 _MAX_ATTACHMENT_IDS_PER_ACTION = 50
 
+_ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _validate_opaque_id(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError("opaque identifier must be str")
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError("opaque identifier must be non-empty after trim")
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError("opaque identifier must not contain control characters")
+    return trimmed
+
+
+def _validate_required_safe_text(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError("safe text must be str")
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError("safe text must be non-empty after trim")
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError("safe text must not contain control characters")
+    return trimmed
+
+
+def _validate_optional_safe_text(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("safe text must be str")
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError("safe text must not contain control characters")
+    return trimmed
+
+
+def _reject_nul_in_user_text(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError("text must be str")
+    if "\x00" in value:
+        raise ValueError("text must not contain NUL")
+    return value
+
+
+def _validate_exact_int(value: object) -> object:
+    if value is None:
+        return value
+    if type(value) is not int:
+        raise ValueError("size_bytes must be int")
+    return value
+
+
+def _reject_duplicate_strings(values: tuple[str, ...], *, label: str) -> None:
+    if len(values) != len(set(values)):
+        raise ValueError(f"duplicate {label}")
+
+
+OpaqueId = Annotated[
+    str,
+    BeforeValidator(_validate_opaque_id),
+    Field(min_length=1, max_length=_MAX_ACTION_ID_LEN),
+]
+RequiredSafeText = Annotated[
+    str,
+    BeforeValidator(_validate_required_safe_text),
+    Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN),
+]
+OptionalSafeText = Annotated[
+    str | None,
+    BeforeValidator(_validate_optional_safe_text),
+]
+UserText = Annotated[str, BeforeValidator(_reject_nul_in_user_text)]
+
 
 class ConversationPlanningAttachment(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    attachment_id: str = Field(min_length=1, max_length=_MAX_ACTION_ID_LEN)
-    file_name: str | None = Field(default=None, max_length=512)
-    content_type: str | None = Field(default=None, max_length=256)
+    attachment_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    file_name: OptionalSafeText = Field(default=None, max_length=512)
+    content_type: Annotated[
+        str | None,
+        BeforeValidator(_validate_optional_safe_text),
+        Field(default=None, max_length=256),
+    ] = None
     size_bytes: int | None = Field(default=None, ge=0)
+
+    @field_validator("size_bytes", mode="before")
+    @classmethod
+    def _validate_size_bytes(cls, value: object) -> object:
+        return _validate_exact_int(value)
 
 
 class ConversationPlanningWorkspace(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    workspace_id: str = Field(min_length=1, max_length=_MAX_ACTION_ID_LEN)
-    name: str = Field(min_length=1, max_length=256)
+    workspace_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    name: Annotated[str, BeforeValidator(_validate_required_safe_text), Field(min_length=1, max_length=256)]
     is_active: bool
 
 
 class ConversationPlanningSourceCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    candidate_id: str = Field(min_length=1, max_length=_MAX_ACTION_ID_LEN)
-    label: str = Field(min_length=1, max_length=256)
-    source_type: str = Field(min_length=1, max_length=128)
+    candidate_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    label: Annotated[str, BeforeValidator(_validate_required_safe_text), Field(min_length=1, max_length=256)]
+    source_type: Annotated[
+        str, BeforeValidator(_validate_required_safe_text), Field(min_length=1, max_length=128)
+    ]
     available: bool
 
 
@@ -54,16 +141,16 @@ class ConversationPlanningTurn(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     role: Literal["user", "assistant"]
-    text: str = Field(max_length=_MAX_MESSAGE_TEXT_LEN)
+    text: Annotated[str, BeforeValidator(_reject_nul_in_user_text), Field(max_length=_MAX_MESSAGE_TEXT_LEN)]
 
 
 class ConversationPlanningRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    message_text: str = Field(default="", max_length=_MAX_MESSAGE_TEXT_LEN)
+    message_text: UserText = Field(default="", max_length=_MAX_MESSAGE_TEXT_LEN)
     attachments: tuple[ConversationPlanningAttachment, ...] = ()
     available_workspaces: tuple[ConversationPlanningWorkspace, ...] = ()
-    active_workspace_id: str | None = Field(default=None, max_length=_MAX_ACTION_ID_LEN)
+    active_workspace_id: OpaqueId | None = Field(default=None, max_length=_MAX_ACTION_ID_LEN)
     available_source_candidates: tuple[ConversationPlanningSourceCandidate, ...] = ()
     recent_turns: tuple[ConversationPlanningTurn, ...] = ()
 
@@ -130,10 +217,16 @@ class WorkspaceReference(BaseModel):
 class _PlannedActionBase(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    action_id: str = Field(min_length=1, max_length=_MAX_ACTION_ID_LEN)
-    depends_on: tuple[str, ...] = ()
+    action_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    depends_on: tuple[OpaqueId, ...] = ()
     evidence_quotes: tuple[str, ...] = Field(default=(), max_length=_MAX_EVIDENCE_QUOTES)
-    evidence_attachment_ids: tuple[str, ...] = ()
+    evidence_attachment_ids: tuple[OpaqueId, ...] = ()
+
+    @model_validator(mode="after")
+    def _validate_unique_technical_ids(self) -> Self:
+        _reject_duplicate_strings(self.depends_on, label="depends_on entry")
+        _reject_duplicate_strings(self.evidence_attachment_ids, label="evidence_attachment_id")
+        return self
 
 
 class WorkspaceListPlannedAction(_PlannedActionBase):
@@ -142,7 +235,7 @@ class WorkspaceListPlannedAction(_PlannedActionBase):
 
 class WorkspaceCreatePlannedAction(_PlannedActionBase):
     action_type: Literal["workspace.create"]
-    name: str = Field(min_length=1, max_length=256)
+    name: Annotated[str, BeforeValidator(_validate_required_safe_text), Field(min_length=1, max_length=256)]
 
 
 class WorkspaceActivatePlannedAction(_PlannedActionBase):
@@ -169,19 +262,38 @@ class SourceCandidateAttachPlannedAction(_PlannedActionBase):
     action_type: Literal["source_candidate.attach"]
     workspace: WorkspaceReference
     candidate_reference_kind: Literal["name", "ordinal"]
-    candidate_reference: str = Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN)
+    candidate_reference: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+
+    @model_validator(mode="after")
+    def _validate_candidate_reference(self) -> Self:
+        if self.candidate_reference_kind == "ordinal":
+            if not self.candidate_reference.isdigit() or int(self.candidate_reference) < 1:
+                raise ValueError("ordinal candidate_reference must be a positive integer string")
+        return self
 
 
 class KnowledgeAddAttachmentsPlannedAction(_PlannedActionBase):
     action_type: Literal["knowledge.add_attachments"]
     workspace: WorkspaceReference
-    attachment_ids: tuple[str, ...] = Field(min_length=1, max_length=_MAX_ATTACHMENT_IDS_PER_ACTION)
+    attachment_ids: tuple[OpaqueId, ...] = Field(
+        min_length=1, max_length=_MAX_ATTACHMENT_IDS_PER_ACTION
+    )
+
+    @model_validator(mode="after")
+    def _validate_unique_attachment_ids(self) -> Self:
+        _reject_duplicate_strings(self.attachment_ids, label="attachment_id")
+        return self
 
 
 class KnowledgeAddWebUrlsPlannedAction(_PlannedActionBase):
     action_type: Literal["knowledge.add_web_urls"]
     workspace: WorkspaceReference
     urls: tuple[str, ...] = Field(min_length=1, max_length=_MAX_URLS_PER_ACTION)
+
+    @model_validator(mode="after")
+    def _validate_unique_urls(self) -> Self:
+        _reject_duplicate_strings(self.urls, label="url")
+        return self
 
 
 class LocalReference(BaseModel):
@@ -197,6 +309,16 @@ class KnowledgeAddLocalReferencesPlannedAction(_PlannedActionBase):
     references: tuple[LocalReference, ...] = Field(
         min_length=1, max_length=_MAX_LOCAL_REFS_PER_ACTION
     )
+
+    @model_validator(mode="after")
+    def _validate_unique_references(self) -> Self:
+        seen: set[tuple[str, str]] = set()
+        for reference in self.references:
+            key = (reference.kind, reference.value)
+            if key in seen:
+                raise ValueError("duplicate local reference")
+            seen.add(key)
+        return self
 
 
 class WorkspaceAskPlannedAction(_PlannedActionBase):
@@ -224,9 +346,14 @@ PlannedAction = Annotated[
 class ConversationClarification(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    clarification_id: str = Field(min_length=1, max_length=_MAX_ACTION_ID_LEN)
-    question: str = Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN)
-    blocks_action_ids: tuple[str, ...] = ()
+    clarification_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    question: RequiredSafeText = Field(max_length=_MAX_STRING_FIELD_LEN)
+    blocks_action_ids: tuple[OpaqueId, ...] = ()
+
+    @model_validator(mode="after")
+    def _validate_unique_blocks(self) -> Self:
+        _reject_duplicate_strings(self.blocks_action_ids, label="blocks_action_id")
+        return self
 
 
 class ConversationInteractionPlan(BaseModel):
@@ -250,6 +377,10 @@ class ConversationInteractionPlan(BaseModel):
         action_ids = [action.action_id for action in self.actions]
         if len(action_ids) != len(set(action_ids)):
             raise ValueError("duplicate action_id")
+
+        clarification_ids = [item.clarification_id for item in self.clarifications]
+        if len(clarification_ids) != len(set(clarification_ids)):
+            raise ValueError("duplicate clarification_id")
 
         action_id_set = set(action_ids)
         for action in self.actions:

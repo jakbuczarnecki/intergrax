@@ -111,10 +111,18 @@ Workspace będący celem ingestion lub Ask **nie zmienia** aktywnego workspace u
 2. Wynik to `ConversationInteractionPlan` (Pydantic v2, `extra="forbid"`).
 3. Deterministyczna walidacja `validate_plan_against_request()` sprawdza m.in.:
    - attachment IDs tylko z requestu;
-   - URL-e i ścieżki literalnie obecne w wiadomości / ostatnich turach użytkownika;
+   - URL-e i ścieżki jako **dokładne** zasoby użytkownika — nie wystarczy substring wiadomości;
    - `evidence_quotes` jako fragmenty rzeczywistej wypowiedzi;
    - graf `depends_on` acykliczny i spójny.
 4. Przy błędnym JSON / schemacie / walidacji — **jedna** kontrolowana próba naprawy; brak trzeciej próby lokalnie.
+
+### Dokładne dopasowanie URL-i i ścieżek
+
+Walidacja **nie** sprawdza jedynie, czy wartość jest substringiem wiadomości. Wymaga dokładnej tożsamości URL-a lub odgraniczonej pełnej ścieżki lokalnej.
+
+Przykład: jeśli użytkownik podał `https://example.com/private?token=abc`, plan nie może zaakceptować skróconego `https://example.com` — krótszy fragment większego URL-a jest odrzucany. Końcowa interpunkcja zdania (np. kropka po URL-u) może zostać bezpiecznie pominięta przy ekstrakcji kandydatów z wiadomości.
+
+Dla ścieżek Windows porównanie jest case-insensitive, ale nadal wymaga pełnej, odgraniczonej ścieżki — skrócony katalog lub nazwa pliku bez rozszerzenia są odrzucane.
 
 ---
 
