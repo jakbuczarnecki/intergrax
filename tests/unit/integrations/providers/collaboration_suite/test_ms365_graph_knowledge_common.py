@@ -253,7 +253,7 @@ def test_parse_rejects_non_dict_item() -> None:
 
 
 def test_parse_rejects_malformed_link() -> None:
-    with pytest.raises(ValueError, match="invalid Microsoft Graph continuation URL") as exc:
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response") as exc:
         parse_msgraph_collection_page(
             _page_payload(next_link="https://evil.example/v1.0/users"),
             graph_base_url=_GRAPH_BASE,
@@ -400,3 +400,224 @@ def test_transport_does_not_call_raise_for_status() -> None:
     transport = MsGraphKnowledgeTransport(_config(), http_client=http)
     transport.get_initial_json(path="/users/user-1/messages")
     http.get.return_value.raise_for_status.assert_not_called()
+
+
+# --- malformed odata link rejection ---
+
+
+@pytest.mark.parametrize(
+    "next_link_value",
+    [None, "", "   ", 42, {"url": _NEXT_LINK}, True],
+    ids=["none", "empty", "whitespace", "integer", "dict", "bool"],
+)
+def test_parse_regular_page_rejects_malformed_next_link(next_link_value: object) -> None:
+    payload = _page_payload()
+    payload["@odata.nextLink"] = next_link_value
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response") as exc:
+        parse_msgraph_collection_page(
+            payload,
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=False,
+        )
+    assert _SECRET_TOKEN not in str(exc.value)
+    assert exc.value.__cause__ is None
+
+
+def test_parse_regular_page_rejects_malformed_delta_link() -> None:
+    payload = _page_payload()
+    payload["@odata.deltaLink"] = "https://evil.example/v1.0/users"
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response"):
+        parse_msgraph_collection_page(
+            payload,
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=False,
+        )
+
+
+def test_parse_regular_page_rejects_valid_next_and_malformed_delta() -> None:
+    payload = _page_payload(next_link=_NEXT_LINK)
+    payload["@odata.deltaLink"] = 123
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response"):
+        parse_msgraph_collection_page(
+            payload,
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=False,
+        )
+
+
+def test_parse_delta_page_rejects_malformed_next_link() -> None:
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response"):
+        parse_msgraph_collection_page(
+            _page_payload(next_link="https://evil.example/v1.0/users"),
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=True,
+        )
+
+
+def test_parse_delta_page_rejects_malformed_delta_link() -> None:
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response"):
+        parse_msgraph_collection_page(
+            _page_payload(delta_link="https://evil.example/v1.0/users"),
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=True,
+        )
+
+
+def test_parse_malformed_link_error_does_not_leak_url_or_token() -> None:
+    token = "leaked-skiptoken-value"
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response") as exc:
+        parse_msgraph_collection_page(
+            _page_payload(next_link=f"https://evil.example/v1.0/users?token={token}"),
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=False,
+        )
+    assert token not in str(exc.value)
+    assert "evil.example" not in str(exc.value)
+    assert exc.value.__cause__ is None
+
+
+def test_parse_rejects_non_bool_delta_mode() -> None:
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response"):
+        parse_msgraph_collection_page(
+            _page_payload(),
+            graph_base_url=_GRAPH_BASE,
+            delta_mode=1,  # type: ignore[arg-type]
+        )
+
+
+# --- collection page model validation ---
+
+
+def test_collection_page_accepts_valid_tuple_of_dicts() -> None:
+    page = MsGraphKnowledgeCollectionPage(items=({"id": "1"}, {"id": "2"}))
+    assert page.items == ({"id": "1"}, {"id": "2"})
+    assert page.continuation is None
+
+
+def test_collection_page_rejects_list_items() -> None:
+    with pytest.raises(TypeError):
+        MsGraphKnowledgeCollectionPage(items=[{"id": "1"}])  # type: ignore[arg-type]
+
+
+def test_collection_page_rejects_string_item() -> None:
+    with pytest.raises(TypeError):
+        MsGraphKnowledgeCollectionPage(items=("invalid",))  # type: ignore[arg-type]
+
+
+def test_collection_page_rejects_list_inside_tuple() -> None:
+    with pytest.raises(TypeError):
+        MsGraphKnowledgeCollectionPage(items=([{"id": "1"}],))  # type: ignore[arg-type]
+
+
+def test_collection_page_rejects_invalid_continuation_type() -> None:
+    with pytest.raises(TypeError):
+        MsGraphKnowledgeCollectionPage(
+            items=(),
+            continuation="invalid",  # type: ignore[arg-type]
+        )
+
+
+def test_collection_page_hides_continuation_in_repr() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_NEXT_LINK,
+    )
+    page = MsGraphKnowledgeCollectionPage(items=({"id": "1"},), continuation=continuation)
+    rendered = repr(page)
+    assert _SECRET_TOKEN not in rendered
+    assert "continuation" not in rendered
+
+
+# --- initial path validation ---
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        None,
+        123,
+        "",
+        "/",
+        "//evil.example/path",
+        "/users/1/messages?$top=10",
+        "/users/1#fragment",
+        "/users/../admin",
+        "/users/./messages",
+        "/users\\other",
+        "/users/\nmessages",
+    ],
+)
+def test_initial_path_rejects_invalid_values(path: object) -> None:
+    http = _mock_http(json_payload={"value": []})
+    transport = MsGraphKnowledgeTransport(_config(), http_client=http)
+    with pytest.raises(IntegrationConfigurationError, match="invalid Microsoft Graph knowledge request path") as exc:
+        transport.get_initial_json(path=path)  # type: ignore[arg-type]
+    assert exc.value.__cause__ is None
+    http.get.assert_not_called()
+    if isinstance(path, str) and path:
+        assert path not in str(exc.value)
+
+
+# --- malformed HTTP response handling ---
+
+
+class _ResponseWithStatus:
+    def __init__(self, status_code: object, *, json_method: object | None = None) -> None:
+        self.status_code = status_code
+        if json_method is not None:
+            self.json = json_method
+
+
+def test_transport_rejects_response_without_status_code() -> None:
+    class _ResponseWithoutStatus:
+        pass
+
+    http = MagicMock()
+    http.get.return_value = _ResponseWithoutStatus()
+    transport = MsGraphKnowledgeTransport(_config(), http_client=http)
+    with pytest.raises(IntegrationDependencyError, match="invalid response") as exc:
+        transport.get_initial_json(path="/users/user-1/messages")
+    assert exc.value.__cause__ is None
+
+
+@pytest.mark.parametrize(
+    "status_code",
+    [None, True, "200", 700],
+    ids=["none", "true", "string", "out_of_range"],
+)
+def test_transport_rejects_malformed_status_code(status_code: object) -> None:
+    json_mock = MagicMock(return_value={"value": []})
+    http = MagicMock()
+    http.get.return_value = _ResponseWithStatus(status_code, json_method=json_mock)
+    transport = MsGraphKnowledgeTransport(_config(), http_client=http)
+    with pytest.raises(IntegrationDependencyError, match="invalid response") as exc:
+        transport.get_initial_json(path="/users/user-1/messages")
+    assert exc.value.__cause__ is None
+    json_mock.assert_not_called()
+
+
+def test_status_302_maps_to_unexpected_redirect() -> None:
+    http = _mock_http(status_code=302)
+    transport = MsGraphKnowledgeTransport(_config(), http_client=http)
+    with pytest.raises(IntegrationDependencyError, match="unexpected redirect") as exc:
+        transport.get_initial_json(path="/users/user-1/messages")
+    assert exc.value.__cause__ is None
+    assert "Location" not in str(exc.value)
+    http.get.return_value.json.assert_not_called()
+
+
+def test_transport_rejects_response_without_callable_json() -> None:
+    http = MagicMock()
+    http.get.return_value = _ResponseWithStatus(200, json_method="not-callable")
+    transport = MsGraphKnowledgeTransport(_config(), http_client=http)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph knowledge response") as exc:
+        transport.get_initial_json(path="/users/user-1/messages")
+    assert exc.value.__cause__ is None
+
+
+def test_continuation_rejects_invalid_continuation_type() -> None:
+    http = _mock_http(json_payload={"value": []})
+    transport = MsGraphKnowledgeTransport(_config(), http_client=http)
+    with pytest.raises(IntegrationConfigurationError, match="invalid Microsoft Graph knowledge continuation"):
+        transport.get_continuation_json(continuation="not-a-model")  # type: ignore[arg-type]
+    http.get.assert_not_called()

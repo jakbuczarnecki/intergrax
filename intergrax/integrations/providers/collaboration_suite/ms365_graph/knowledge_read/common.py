@@ -24,6 +24,9 @@ _STRICT_MODEL_CONFIG = ConfigDict(extra="forbid", frozen=True, strict=True)
 _MALFORMED_RESPONSE = "unexpected Microsoft Graph knowledge response"
 _INVALID_CONTINUATION_URL = "invalid Microsoft Graph continuation URL"
 _INVALID_INITIAL_PATH = "invalid Microsoft Graph knowledge request path"
+_INVALID_HTTP_RESPONSE = "Microsoft Graph knowledge dependency returned an invalid response"
+_UNEXPECTED_REDIRECT = "Microsoft Graph knowledge dependency returned an unexpected redirect"
+_INVALID_CONTINUATION = "invalid Microsoft Graph knowledge continuation"
 
 
 class MsGraphKnowledgeContinuationKind(StrEnum):
@@ -56,6 +59,17 @@ class MsGraphKnowledgeCollectionPage:
     items: tuple[dict[str, Any], ...]
     continuation: MsGraphKnowledgeContinuation | None = field(default=None, repr=False)
 
+    def __post_init__(self) -> None:
+        if type(self.items) is not tuple:
+            raise TypeError("items must be a tuple")
+        for item in self.items:
+            if not isinstance(item, dict):
+                raise TypeError("each item must be a dict")
+        if self.continuation is not None and not isinstance(
+            self.continuation, MsGraphKnowledgeContinuation
+        ):
+            raise TypeError("continuation must be MsGraphKnowledgeContinuation or None")
+
 
 class MsGraphKnowledgeSyncResetRequired(IntegrationDependencyError):
     """Delta token is no longer valid; full synchronization must restart."""
@@ -70,10 +84,27 @@ def _default_port(scheme: str, explicit_port: int | None) -> int:
     return 443 if scheme == "https" else 80
 
 
-def _parsed_graph_base(graph_base_url: str) -> tuple[str, str, int, str]:
-    parsed = urlparse(graph_base_url.strip().rstrip("/"))
+def _parsed_graph_base(graph_base_url: object) -> tuple[str, str, int, str]:
+    if not isinstance(graph_base_url, str):
+        raise ValueError(_INVALID_CONTINUATION_URL)
+    cleaned = graph_base_url.strip()
+    if not cleaned:
+        raise ValueError(_INVALID_CONTINUATION_URL)
+    if any(ord(ch) < 32 for ch in cleaned):
+        raise ValueError(_INVALID_CONTINUATION_URL)
+
+    parsed = urlparse(cleaned.rstrip("/"))
     if parsed.scheme != "https" or not parsed.hostname:
         raise ValueError(_INVALID_CONTINUATION_URL)
+    if parsed.username or parsed.password:
+        raise ValueError(_INVALID_CONTINUATION_URL)
+    if parsed.query:
+        raise ValueError(_INVALID_CONTINUATION_URL)
+    if parsed.fragment:
+        raise ValueError(_INVALID_CONTINUATION_URL)
+    if parsed.port is not None and not (1 <= parsed.port <= 65535):
+        raise ValueError(_INVALID_CONTINUATION_URL)
+
     base_path = parsed.path.rstrip("/") or "/"
     if base_path == "/":
         raise ValueError(_INVALID_CONTINUATION_URL)
@@ -112,7 +143,11 @@ def validate_msgraph_continuation_url(
     if not parsed.path or parsed.path == "/":
         raise ValueError(_INVALID_CONTINUATION_URL)
 
-    base_scheme, base_host, base_port, base_path = _parsed_graph_base(graph_base_url)
+    try:
+        base_scheme, base_host, base_port, base_path = _parsed_graph_base(graph_base_url)
+    except ValueError:
+        raise ValueError(_INVALID_CONTINUATION_URL) from None
+
     if parsed.hostname != base_host:
         raise ValueError(_INVALID_CONTINUATION_URL)
     if _default_port(parsed.scheme, parsed.port) != base_port:
@@ -125,12 +160,36 @@ def validate_msgraph_continuation_url(
     return cleaned
 
 
+def _validate_odata_link(
+    payload: dict[str, Any],
+    key: str,
+    *,
+    graph_base_url: str,
+) -> str | None:
+    """Return validated URL when key is present; None when key is absent."""
+    if key not in payload:
+        return None
+    raw_value = payload[key]
+    if not isinstance(raw_value, str):
+        raise ValueError(_MALFORMED_RESPONSE)
+    trimmed = raw_value.strip()
+    if not trimmed:
+        raise ValueError(_MALFORMED_RESPONSE)
+    try:
+        return validate_msgraph_continuation_url(trimmed, graph_base_url=graph_base_url)
+    except ValueError:
+        raise ValueError(_MALFORMED_RESPONSE) from None
+
+
 def parse_msgraph_collection_page(
     payload: object,
     *,
     graph_base_url: str,
     delta_mode: bool,
 ) -> MsGraphKnowledgeCollectionPage:
+    if type(delta_mode) is not bool:
+        raise ValueError(_MALFORMED_RESPONSE)
+
     if not isinstance(payload, dict):
         raise ValueError(_MALFORMED_RESPONSE)
 
@@ -144,52 +203,88 @@ def parse_msgraph_collection_page(
             raise ValueError(_MALFORMED_RESPONSE)
         items.append(item)
 
-    next_link = payload.get("@odata.nextLink")
-    delta_link = payload.get("@odata.deltaLink")
-    has_next = isinstance(next_link, str) and bool(next_link.strip())
-    has_delta = isinstance(delta_link, str) and bool(delta_link.strip())
+    has_next_key = "@odata.nextLink" in payload
+    has_delta_key = "@odata.deltaLink" in payload
 
-    if has_next and has_delta:
+    if has_next_key and has_delta_key:
         raise ValueError(_MALFORMED_RESPONSE)
 
+    next_link: str | None = None
+    delta_link: str | None = None
+
+    if has_next_key:
+        next_link = _validate_odata_link(
+            payload, "@odata.nextLink", graph_base_url=graph_base_url
+        )
+    if has_delta_key:
+        delta_link = _validate_odata_link(
+            payload, "@odata.deltaLink", graph_base_url=graph_base_url
+        )
+
     if delta_mode:
-        if not has_next and not has_delta:
+        if not has_next_key and not has_delta_key:
+            raise ValueError(_MALFORMED_RESPONSE)
+        if has_next_key and has_delta_key:
             raise ValueError(_MALFORMED_RESPONSE)
     else:
-        if has_delta:
+        if has_delta_key:
             raise ValueError(_MALFORMED_RESPONSE)
 
     continuation: MsGraphKnowledgeContinuation | None = None
-    if has_next:
-        validated_url = validate_msgraph_continuation_url(next_link, graph_base_url=graph_base_url)
+    if next_link is not None:
         continuation = MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
-            url=validated_url,
+            url=next_link,
         )
-    elif has_delta:
-        validated_url = validate_msgraph_continuation_url(delta_link, graph_base_url=graph_base_url)
+    elif delta_link is not None:
         continuation = MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.DELTA,
-            url=validated_url,
+            url=delta_link,
         )
 
     return MsGraphKnowledgeCollectionPage(items=tuple(items), continuation=continuation)
 
 
-def _validate_initial_path(path: str) -> str:
+def _validate_initial_path(path: object) -> str:
+    if not isinstance(path, str):
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
     cleaned = path.strip()
+    if not cleaned:
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    if any(ord(ch) < 32 for ch in cleaned):
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    if cleaned == "/":
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
     if not cleaned.startswith("/"):
         raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
-    if "://" in cleaned or "@" in cleaned or "#" in cleaned:
+    if cleaned.startswith("//"):
         raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
-    if ".." in cleaned.split("/"):
+    if "://" in cleaned:
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    if "@" in cleaned:
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    if "?" in cleaned:
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    if "#" in cleaned:
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    if "\\" in cleaned:
+        raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
+    segments = cleaned.split("/")
+    if "." in segments or ".." in segments:
         raise IntegrationConfigurationError(_INVALID_INITIAL_PATH)
     return cleaned
 
 
-def _response_status_code(response: object) -> int | None:
-    status_code = response.status_code  # type: ignore[attr-defined]
-    return int(status_code) if isinstance(status_code, int) else None
+def _response_status_code(response: object) -> int:
+    try:
+        status_code = response.status_code  # type: ignore[attr-defined]
+    except AttributeError:
+        raise IntegrationDependencyError(_INVALID_HTTP_RESPONSE) from None
+    if type(status_code) is not int:
+        raise IntegrationDependencyError(_INVALID_HTTP_RESPONSE) from None
+    if status_code < 100 or status_code > 599:
+        raise IntegrationDependencyError(_INVALID_HTTP_RESPONSE) from None
+    return status_code
 
 
 def _raise_for_knowledge_response(
@@ -198,8 +293,10 @@ def _raise_for_knowledge_response(
     not_found_is_dependency: bool,
 ) -> None:
     status_code = _response_status_code(response)
-    if status_code is None or status_code < 400:
+    if 200 <= status_code <= 299:
         return
+    if 300 <= status_code <= 399:
+        raise IntegrationDependencyError(_UNEXPECTED_REDIRECT) from None
     if status_code in {408, 429} or status_code >= 500:
         raise IntegrationDependencyError("Microsoft Graph knowledge dependency failure")
     if status_code == 410:
@@ -216,6 +313,11 @@ def _raise_for_knowledge_response(
 def _decode_knowledge_json(response: object) -> dict[str, Any]:
     try:
         json_method = response.json  # type: ignore[attr-defined]
+    except AttributeError:
+        raise ValueError(_MALFORMED_RESPONSE) from None
+    if not callable(json_method):
+        raise ValueError(_MALFORMED_RESPONSE) from None
+    try:
         payload = json_method()
     except Exception:
         raise ValueError(_MALFORMED_RESPONSE) from None
@@ -272,6 +374,8 @@ class MsGraphKnowledgeTransport:
         headers: Mapping[str, str] | None = None,
         not_found_is_dependency: bool = False,
     ) -> dict[str, Any]:
+        if not isinstance(continuation, MsGraphKnowledgeContinuation):
+            raise IntegrationConfigurationError(_INVALID_CONTINUATION)
         validated_url = validate_msgraph_continuation_url(
             continuation.url,
             graph_base_url=self._config.graph_base_url,
