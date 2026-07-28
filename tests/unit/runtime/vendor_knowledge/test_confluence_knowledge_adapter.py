@@ -119,6 +119,7 @@ class _FakeKnowledgeWiki:
         self._pages = list(pages or [])
         self._page = page or _page(storage_value="<p>Body</p>")
         self.list_calls: list[dict[str, Any]] = []
+        self.get_calls: list[dict[str, Any]] = []
 
     def get_page(self, page_id: str) -> WikiPageRecord:
         return WikiPageRecord(id=page_id, title="ok", space_key="OPS", body="", url="")
@@ -144,6 +145,7 @@ class _FakeKnowledgeWiki:
         page_id: str,
         version_number: int,
     ) -> ConfluenceKnowledgePage:
+        self.get_calls.append({"page_id": page_id, "version_number": version_number})
         return self._page
 
 
@@ -679,3 +681,239 @@ async def test_duplicate_registration_raises() -> None:
     register_confluence_pages_knowledge_adapter(registry)
     with pytest.raises(ValueError, match="already registered"):
         register_confluence_pages_knowledge_adapter(registry)
+
+
+def _valid_item(**overrides: object) -> KnowledgeItemDescriptor:
+    defaults: dict[str, object] = {
+        "identity": KnowledgeItemIdentity(remote_id="20001", parent_remote_id=None),
+        "revision": KnowledgeItemRevision(version="3"),
+        "title": "Runbook",
+        "item_type": "confluence_page",
+        "content_mode": KnowledgeContentMode.RICH_TEXT,
+        "content_available": True,
+        "provenance": KnowledgeItemProvenance(
+            provider_id="confluence",
+            source_kind=CONFLUENCE_PAGES_SOURCE_KIND,
+            remote_id="20001",
+        ),
+    }
+    defaults.update(overrides)
+    return KnowledgeItemDescriptor.model_construct(**defaults)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "page_kwargs",
+    [
+        {"version_number": 0},
+        {"version_number": True},
+        {"version_number": "3"},
+        {"parent_id": ""},
+        {"parent_id": "abc"},
+        {"parent_id": 123},
+        {"space_id": 10000},
+        {"title": ""},
+        {"title": 123},
+        {"web_url": ""},
+    ],
+    ids=[
+        "version_zero",
+        "version_true",
+        "version_string",
+        "parent_empty",
+        "parent_abc",
+        "parent_int",
+        "space_id_int",
+        "title_empty",
+        "title_int",
+        "web_url_empty",
+    ],
+)
+async def test_custom_client_inventory_boundary_rejected(
+    page_kwargs: dict[str, object],
+) -> None:
+    adapter = ConfluencePagesKnowledgeAdapter()
+    base = {
+        "remote_id": "20001",
+        "space_id": "10000",
+        "status": "current",
+        "title": "Title",
+        "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        "version_number": 1,
+        "version_created_at": datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+        "web_url": "https://example/pages/20001",
+    }
+    base.update(page_kwargs)
+    wiki = _FakeKnowledgeWiki(
+        pages=[
+            ConfluenceKnowledgePagePage(
+                pages=(ConfluenceKnowledgePage.model_construct(**base),),  # type: ignore[arg-type]
+                is_last=True,
+            )
+        ]
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration_with_wiki(wiki),
+            source=_source(),
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+
+
+@pytest.mark.parametrize(
+    ("item_overrides", "case_id"),
+    [
+        ({"identity": KnowledgeItemIdentity.model_construct(remote_id=20001)}, "remote_id_int"),
+        ({"identity": KnowledgeItemIdentity.model_construct(remote_id="20001", logical_key="unexpected")}, "logical_key"),
+        ({"identity": KnowledgeItemIdentity.model_construct(remote_id="20001", parent_remote_id="abc")}, "parent_abc"),
+        ({"revision": KnowledgeItemRevision.model_construct(version=3)}, "version_int"),
+        ({"revision": KnowledgeItemRevision.model_construct(version="0")}, "version_zero"),
+        (
+            {
+                "provenance": KnowledgeItemProvenance.model_construct(
+                    provider_id="confluence",
+                    source_kind=CONFLUENCE_PAGES_SOURCE_KIND,
+                    remote_id="29999",
+                )
+            },
+            "provenance_mismatch",
+        ),
+    ],
+)
+async def test_descriptor_boundary_rejected_before_fetch(
+    item_overrides: dict[str, object],
+    case_id: str,
+) -> None:
+    adapter = ConfluencePagesKnowledgeAdapter()
+    wiki = _FakeKnowledgeWiki()
+    item = _valid_item(**item_overrides)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration_with_wiki(wiki),
+            source=_source(),
+            item=item,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert exc_info.value.retryable is False
+    assert wiki.get_calls == []
+
+
+@pytest.mark.parametrize(
+    ("page_factory", "case_id"),
+    [
+        (lambda: object(), "not_a_page"),
+        (lambda: _page(storage_value=None), "storage_none"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            status="current",
+            title="Title",
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=3,
+            version_created_at=datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+            storage_value={},
+            web_url="https://example/pages/20001",
+        ), "storage_dict"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            status="archived",
+            title="Title",
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=3,
+            version_created_at=datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+            storage_value="<p>x</p>",
+            web_url="https://example/pages/20001",
+        ), "status_archived"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            status="current",
+            title="Title",
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=True,
+            version_created_at=datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+            storage_value="<p>x</p>",
+            web_url="https://example/pages/20001",
+        ), "version_true"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            status="current",
+            title="Title",
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=3,
+            version_created_at=datetime(2024, 1, 1, 10, 0),
+            storage_value="<p>x</p>",
+            web_url="https://example/pages/20001",
+        ), "naive_version_created_at"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            parent_id="abc",
+            status="current",
+            title="Title",
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=3,
+            version_created_at=datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+            storage_value="<p>x</p>",
+            web_url="https://example/pages/20001",
+        ), "parent_non_numeric"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            status="current",
+            title=123,
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=3,
+            version_created_at=datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+            storage_value="<p>x</p>",
+            web_url="https://example/pages/20001",
+        ), "title_not_string"),
+        (lambda: ConfluenceKnowledgePage.model_construct(
+            remote_id="20001",
+            space_id="10000",
+            status="current",
+            title="",
+            created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+            version_number=3,
+            version_created_at=datetime(2024, 1, 2, 11, 0, tzinfo=timezone.utc),
+            storage_value="<p>x</p>",
+            web_url="https://example/pages/20001",
+        ), "title_empty"),
+    ],
+)
+async def test_fetched_page_boundary_rejected(
+    page_factory: object,
+    case_id: str,
+) -> None:
+    adapter = ConfluencePagesKnowledgeAdapter()
+    fetched_page = page_factory() if callable(page_factory) else page_factory
+    wiki = _FakeKnowledgeWiki(page=fetched_page)  # type: ignore[arg-type]
+    item = KnowledgeItemDescriptor(
+        identity=KnowledgeItemIdentity(remote_id="20001", parent_remote_id=None),
+        revision=KnowledgeItemRevision(version="3"),
+        title="Runbook",
+        item_type="confluence_page",
+        content_mode=KnowledgeContentMode.RICH_TEXT,
+        content_available=True,
+        provenance=KnowledgeItemProvenance(
+            provider_id="confluence",
+            source_kind=CONFLUENCE_PAGES_SOURCE_KIND,
+            remote_id="20001",
+        ),
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration_with_wiki(wiki),
+            source=_source(),
+            item=item,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    message = str(exc_info.value)
+    assert "20001" not in message
+    assert "10000" not in message
+    assert "<p>" not in message

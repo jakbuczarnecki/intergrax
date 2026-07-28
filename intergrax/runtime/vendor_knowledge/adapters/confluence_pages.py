@@ -165,7 +165,8 @@ class ConfluencePagesKnowledgeAdapter:
                 page,
                 space_id=space_id,
             )
-        except (ValueError, TypeError, ValidationError):
+            changes = tuple(self._page_to_change(item) for item in page.pages)
+        except (ValueError, TypeError, AttributeError, ValidationError):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Confluence knowledge provider response is invalid",
@@ -173,7 +174,6 @@ class ConfluencePagesKnowledgeAdapter:
                 source_kind=self.source_kind,
                 retryable=False,
             ) from None
-        changes = tuple(self._page_to_change(item) for item in page.pages)
         if not page.is_last:
             checkpoint = self._encode_cursor(
                 _ConfluencePagesReconciliationCursor(
@@ -219,36 +219,38 @@ class ConfluencePagesKnowledgeAdapter:
         space_id = self._validate_source(source)
         self._validate_item(item, source=source)
         version_number = self._parse_version_number(item.revision.version)
-        page_id = str(item.identity.remote_id).strip()
+        page_id = item.identity.remote_id
         page = await asyncio.to_thread(
             confluence_integration.get_knowledge_page,
             page_id=page_id,
             version_number=version_number,
         )
         try:
-            self._validate_fetched_page_identity(
+            validated_storage_value = self._validate_fetched_page_for_item(
                 page,
                 item=item,
                 space_id=space_id,
+                version_number=version_number,
             )
-        except ValueError:
+            canonical_storage = (
+                f"<h1>{html.escape(page.title)}</h1>{validated_storage_value}"
+            )
+            content_hash = hashlib.sha256(canonical_storage.encode("utf-8")).hexdigest()
+            return KnowledgeContent(
+                mode=KnowledgeContentMode.RICH_TEXT,
+                rich_text=canonical_storage,
+                mime_type=_RICH_TEXT_MIME,
+                encoding="utf-8",
+                content_hash=content_hash,
+            )
+        except (ValueError, TypeError, AttributeError, ValidationError):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message="Confluence page response identity does not match requested item",
+                safe_message="Confluence page response is invalid",
                 provider_id=self.provider_id,
                 source_kind=self.source_kind,
                 retryable=False,
             ) from None
-        storage_value = page.storage_value if page.storage_value is not None else ""
-        canonical_storage = f"<h1>{html.escape(page.title)}</h1>{storage_value}"
-        content_hash = hashlib.sha256(canonical_storage.encode("utf-8")).hexdigest()
-        return KnowledgeContent(
-            mode=KnowledgeContentMode.RICH_TEXT,
-            rich_text=canonical_storage,
-            mime_type=_RICH_TEXT_MIME,
-            encoding="utf-8",
-            content_hash=content_hash,
-        )
 
     async def fetch_permissions(
         self,
@@ -368,7 +370,7 @@ class ConfluencePagesKnowledgeAdapter:
                 retryable=False,
             )
         remote_id = item.identity.remote_id
-        if not _CONFLUENCE_REMOTE_ID_RE.fullmatch(str(remote_id).strip()):
+        if not isinstance(remote_id, str):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_SCOPE,
                 safe_message="Confluence page remote id is invalid",
@@ -376,19 +378,69 @@ class ConfluencePagesKnowledgeAdapter:
                 source_kind=source.source_kind,
                 retryable=False,
             )
-        self._parse_version_number(item.revision.version)
-        parent_remote_id = item.identity.parent_remote_id
-        if parent_remote_id is not None and not str(parent_remote_id).strip():
+        if not _CONFLUENCE_REMOTE_ID_RE.fullmatch(remote_id.strip()):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message="Confluence page parent remote id is invalid",
+                safe_message="Confluence page remote id is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        if item.identity.logical_key is not None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Confluence page logical key is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        self._parse_version_number(item.revision.version)
+        parent_remote_id = item.identity.parent_remote_id
+        if parent_remote_id is not None:
+            if not isinstance(parent_remote_id, str):
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                    safe_message="Confluence page parent remote id is invalid",
+                    provider_id=source.provider_id,
+                    source_kind=source.source_kind,
+                    retryable=False,
+                )
+            if not _CONFLUENCE_REMOTE_ID_RE.fullmatch(parent_remote_id.strip()):
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                    safe_message="Confluence page parent remote id is invalid",
+                    provider_id=source.provider_id,
+                    source_kind=source.source_kind,
+                    retryable=False,
+                )
+        provenance_remote_id = provenance.remote_id
+        if not isinstance(provenance_remote_id, str):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Item provenance remote id is invalid",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        if provenance_remote_id != remote_id:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Item provenance remote id does not match item identity",
                 provider_id=source.provider_id,
                 source_kind=source.source_kind,
                 retryable=False,
             )
 
-    def _parse_version_number(self, version: str) -> int:
-        cleaned = str(version).strip()
+    def _parse_version_number(self, version: object) -> int:
+        if not isinstance(version, str):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Confluence page revision version is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            )
+        cleaned = version.strip()
         if not _CONFLUENCE_REMOTE_ID_RE.fullmatch(cleaned):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_SCOPE,
@@ -438,16 +490,35 @@ class ConfluencePagesKnowledgeAdapter:
         *,
         space_id: str,
     ) -> None:
+        if not isinstance(page, ConfluenceKnowledgePage):
+            raise ValueError("page must be a ConfluenceKnowledgePage")
         if not isinstance(page.remote_id, str):
             raise ValueError("remote_id must be a string")
         remote_id = page.remote_id.strip()
         if not _CONFLUENCE_REMOTE_ID_RE.fullmatch(remote_id):
             raise ValueError("remote_id must be a positive numeric Confluence page ID")
         validated_space_id = validate_confluence_space_id(space_id)
+        if not isinstance(page.space_id, str):
+            raise ValueError("space_id must be a string")
         if page.space_id != validated_space_id:
             raise ValueError("page space id does not match source")
+        parent_id = page.parent_id
+        if parent_id is not None:
+            if not isinstance(parent_id, str):
+                raise ValueError("parent_id must be a string or null")
+            if not _CONFLUENCE_REMOTE_ID_RE.fullmatch(parent_id.strip()):
+                raise ValueError("parent_id must be a positive numeric Confluence page ID")
         if page.status != "current":
             raise ValueError("page status must be current")
+        if not isinstance(page.title, str):
+            raise ValueError("title must be a string")
+        if not page.title.strip():
+            raise ValueError("title must be a non-empty string")
+        version_number = page.version_number
+        if type(version_number) is not int:
+            raise ValueError("version_number must be an int")
+        if version_number < 1:
+            raise ValueError("version_number must be >= 1")
         if not isinstance(page.created_at, datetime):
             raise ValueError("created_at must be a datetime")
         if page.created_at.tzinfo is None:
@@ -460,25 +531,35 @@ class ConfluencePagesKnowledgeAdapter:
             raise ValueError("version_created_at must be timezone-aware")
         if page.version_created_at.utcoffset() is None:
             raise ValueError("version_created_at must have a defined UTC offset")
+        if not isinstance(page.web_url, str):
+            raise ValueError("web_url must be a string")
+        if not page.web_url.strip():
+            raise ValueError("web_url must be a non-empty string")
 
-    def _validate_fetched_page_identity(
+    def _validate_fetched_page_for_item(
         self,
-        page: ConfluenceKnowledgePage,
+        page: object,
         *,
         item: KnowledgeItemDescriptor,
         space_id: str,
-    ) -> None:
-        if page.remote_id != str(item.identity.remote_id).strip():
-            raise ValueError("Confluence page response identity does not match requested item")
-        if page.space_id != space_id:
-            raise ValueError("Confluence page response identity does not match requested item")
-        if str(page.version_number) != str(item.revision.version).strip():
-            raise ValueError("Confluence page response identity does not match requested item")
-        parent_remote_id = item.identity.parent_remote_id
-        if parent_remote_id is not None and page.parent_id != str(parent_remote_id).strip():
-            raise ValueError("Confluence page response identity does not match requested item")
-        if parent_remote_id is None and page.parent_id is not None:
-            raise ValueError("Confluence page response identity does not match requested item")
+        version_number: int,
+    ) -> str:
+        if not isinstance(page, ConfluenceKnowledgePage):
+            raise ValueError("page must be a ConfluenceKnowledgePage")
+        self._validate_inventory_page_for_source(page, space_id=space_id)
+        remote_id = item.identity.remote_id
+        if not isinstance(remote_id, str):
+            raise ValueError("item remote id must be a string")
+        if page.remote_id != remote_id:
+            raise ValueError("page remote id does not match requested item")
+        if page.version_number != version_number:
+            raise ValueError("page version number does not match requested version")
+        if page.parent_id != item.identity.parent_remote_id:
+            raise ValueError("page parent id does not match requested item")
+        storage_value = page.storage_value
+        if not isinstance(storage_value, str):
+            raise ValueError("page storage value must be a string")
+        return storage_value
 
     def _page_to_change(self, page: ConfluenceKnowledgePage) -> KnowledgeChange:
         descriptor = KnowledgeItemDescriptor(

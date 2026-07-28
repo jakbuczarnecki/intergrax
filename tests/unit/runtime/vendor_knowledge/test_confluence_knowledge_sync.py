@@ -247,10 +247,20 @@ async def test_confluence_facade_coordinator_reconciliation_proof() -> None:
         assert envelope.content.mode is KnowledgeContentMode.RICH_TEXT
         assert envelope.content.rich_text is not None
         assert envelope.content.mime_type == "application/vnd.atlassian.confluence.storage+xml"
+        assert envelope.content.rich_text.startswith("<h1>")
+        assert "<p>Page " in envelope.content.rich_text
         descriptor = envelope.descriptor
         assert descriptor is not None
         assert descriptor.metadata is not None
         assert descriptor.metadata["space_id"] == _SPACE_ID
+        assert descriptor.revision is not None
+        page_id = descriptor.identity.remote_id
+        if page_id == "20001":
+            assert descriptor.revision.version == "3"
+            assert "<p>Page one</p>" in envelope.content.rich_text
+        elif page_id == "20002":
+            assert descriptor.revision.version == "7"
+            assert "<p>Page two</p>" in envelope.content.rich_text
         assert re.fullmatch(r"^[1-9][0-9]*$", descriptor.identity.remote_id)
         _assert_envelope_safe(envelope)
 
