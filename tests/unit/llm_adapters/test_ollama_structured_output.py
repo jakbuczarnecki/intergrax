@@ -64,11 +64,14 @@ def test_native_json_schema_method_selected(
 
     adapter.generate_structured(messages, SampleStructuredOutput, temperature=0, max_tokens=128)
 
-    fake_chat.with_structured_output.assert_called_once_with(
-        SampleStructuredOutput,
-        method="json_schema",
-        include_raw=True,
-    )
+    fake_chat.with_structured_output.assert_called_once()
+    args, kwargs = fake_chat.with_structured_output.call_args
+    assert kwargs["method"] == "json_schema"
+    assert kwargs["include_raw"] is True
+    generation_schema = args[0]
+    assert isinstance(generation_schema, dict)
+    assert generation_schema["type"] == "object"
+    assert "status" in generation_schema["properties"]
 
 
 def test_original_messages_only_no_synthetic_schema(
@@ -224,6 +227,41 @@ def test_no_legacy_json_extraction(
 
     assert result.parsed == parsed
     assert result.response.content == 'noise {bad json} trailing'
+
+
+def test_adapter_passes_projected_dictionary_schema(
+    adapter: LangChainOllamaAdapter,
+    fake_chat: MagicMock,
+    structured_runnable: MagicMock,
+    messages: list[ChatMessage],
+) -> None:
+    parsed = SampleStructuredOutput(status="ok", count=2)
+    structured_runnable.invoke.return_value = {
+        "raw": AIMessage(content='{"status":"ok","count":2}'),
+        "parsed": parsed,
+        "parsing_error": None,
+    }
+
+    adapter.generate_structured(messages, SampleStructuredOutput)
+
+    generation_schema = fake_chat.with_structured_output.call_args[0][0]
+    assert isinstance(generation_schema, dict)
+    assert generation_schema["type"] == "object"
+
+
+def test_broader_generation_schema_payload_still_fails_model_validation(
+    adapter: LangChainOllamaAdapter,
+    structured_runnable: MagicMock,
+    messages: list[ChatMessage],
+) -> None:
+    structured_runnable.invoke.return_value = {
+        "raw": AIMessage(content='{"status":"ok"}'),
+        "parsed": {"status": "ok"},
+        "parsing_error": None,
+    }
+
+    with pytest.raises(ValidationError):
+        adapter.generate_structured(messages, SampleStructuredOutput)
 
 
 def test_failure_usage_lifecycle(

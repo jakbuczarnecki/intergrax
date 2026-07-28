@@ -85,6 +85,8 @@ All adapter completion methods return typed envelopes — **not** bare `str` or 
 
 `generate_structured(..., output_model: type[T])` returns `LLMStructuredResult[T]`. Adapters parse provider JSON and validate with Pydantic via `_validate_with_model()` (see `openai_responses_adapter.py`, OpenAI-compat delegate). Reference agents and certified paths MUST use this method — not manual `json.loads` on bare strings. Gate: `check_agents_llm_adapter_response.py` + conformance tests under `tests/unit/llm_adapters/`.
 
+**Ollama generation schema projection:** the canonical Pydantic `model_json_schema()` remains the final validation contract. `LangChainOllamaAdapter` passes a provider-compatible generation projection to `with_structured_output(..., method="json_schema")` (see `intergrax/llm_adapters/providers/_ollama_schema.py`). The projection is generic, provider-specific, and may relax generation-only constraints (for example `maxLength` values Ollama cannot compile). Returned payloads are always revalidated with the original `output_model`; no field rewriting or aliasing occurs. The projection does not guarantee semantic correctness — only grammar-safe constrained generation.
+
 Example:
 
 ```python

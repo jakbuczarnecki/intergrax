@@ -20,6 +20,7 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.providers._ollama_schema import prepare_ollama_generation_schema
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
@@ -352,8 +353,9 @@ class LangChainOllamaAdapter(LLMAdapter):
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
             lc_msgs = self._to_lc_messages(messages)
 
+            generation_schema = prepare_ollama_generation_schema(output_model)
             structured_chat = self.chat.with_structured_output(
-                output_model,
+                generation_schema,
                 method="json_schema",
                 include_raw=True,
             )
