@@ -933,3 +933,241 @@ def test_manual_exact_deduplication_layer_through_runner() -> None:
     assert result.applied_layer_ids == ("builtin.exact_deduplication",)
     assert result.final_content == "line\nunique"
     assert result.original_content == content
+
+
+def _apply_layer(layer_id: str) -> _RecordingFakeLayer:
+    return _RecordingFakeLayer(
+        layer_id=layer_id,
+        result_factory=lambda request: TokenOptimizationLayerResult(
+            layer_id=layer_id,
+            output_content=f"{request.current_content}-applied",
+            decision=TokenOptimizationLayerDecision.APPLY,
+        ),
+    )
+
+
+def _assert_required_rollback_after_apply(
+    result: object,
+    *,
+    original: str,
+    failing_layer_id: str,
+    applied_layer_id: str,
+) -> None:
+    assert result.original_content == original  # type: ignore[attr-defined]
+    assert result.final_content == original  # type: ignore[attr-defined]
+    assert result.applied_layer_ids == ()  # type: ignore[attr-defined]
+    assert result.fallback_used is True  # type: ignore[attr-defined]
+    assert result.receipt_metadata["completed"] is False  # type: ignore[attr-defined]
+    assert result.receipt_metadata["required_failure_layer_id"] == failing_layer_id  # type: ignore[attr-defined]
+    layer_ids = [item.layer_id for item in result.layer_results]  # type: ignore[attr-defined]
+    assert applied_layer_id in layer_ids
+    assert failing_layer_id in layer_ids
+
+
+@pytest.mark.parametrize(
+    ("failing_layer", "failing_ref", "request_kwargs"),
+    [
+        pytest.param(
+            None,
+            _ref("builtin.missing", required=True),
+            {},
+            id="missing_required_layer",
+        ),
+        pytest.param(
+            _RecordingFakeLayer(
+                layer_id="builtin.fail",
+                raise_error=RuntimeError("sensitive failure text"),
+            ),
+            _ref("builtin.fail", required=True),
+            {},
+            id="required_exception",
+        ),
+        pytest.param(
+            _RecordingFakeLayer(
+                layer_id="builtin.fail",
+                result_factory=lambda request: TokenOptimizationLayerResult(
+                    layer_id="builtin.fail",
+                    output_content="ignored",
+                    decision=TokenOptimizationLayerDecision.FAILED,
+                ),
+            ),
+            _ref("builtin.fail", required=True),
+            {},
+            id="required_failed_decision",
+        ),
+        pytest.param(
+            _RecordingFakeLayer(
+                layer_id="builtin.fail",
+                return_value={"not": "a result"},
+            ),
+            _ref("builtin.fail", required=True),
+            {},
+            id="required_malformed_result",
+        ),
+        pytest.param(
+            _RecordingFakeLayer(
+                layer_id="builtin.prompt-only",
+                supported_source_types=(TokenOptimizationSourceType.PROMPT,),
+            ),
+            _ref("builtin.prompt-only", required=True),
+            {"source_type": TokenOptimizationSourceType.TOOL_OUTPUT},
+            id="required_unsupported_source",
+        ),
+    ],
+)
+def test_required_failure_after_apply_clears_applied_state(
+    failing_layer: _RecordingFakeLayer | None,
+    failing_ref: TokenOptimizationLayerRef,
+    request_kwargs: dict[str, object],
+) -> None:
+    apply_layer = _apply_layer("builtin.apply")
+    layers = [apply_layer]
+    if failing_layer is not None:
+        layers.append(failing_layer)
+    runner = _runner(*layers)
+    config = TokenOptimizationPipelineConfig(
+        pipeline_id="rollback",
+        mode=TokenOptimizationPipelineMode.REPLACE,
+        layers=(_ref("builtin.apply"), failing_ref),
+    )
+
+    result = runner.run(request=_request("original", **request_kwargs), config=config)
+
+    _assert_required_rollback_after_apply(
+        result,
+        original="original",
+        failing_layer_id=failing_ref.layer_id,
+        applied_layer_id="builtin.apply",
+    )
+
+
+def test_unsafe_content_changing_fallback_rejected_by_validation() -> None:
+    layer = _RecordingFakeLayer(
+        layer_id="builtin.fallback",
+        requires_validation=True,
+        result_factory=lambda request: TokenOptimizationLayerResult(
+            layer_id="builtin.fallback",
+            output_content="removed",
+            decision=TokenOptimizationLayerDecision.FALLBACK,
+            fallback_used=True,
+        ),
+    )
+    runner = _runner(layer)
+    config = TokenOptimizationPipelineConfig(
+        pipeline_id="fallback-validate",
+        mode=TokenOptimizationPipelineMode.REPLACE,
+        layers=(_ref("builtin.fallback"),),
+    )
+    protected = (ProtectedRegion(kind=ProtectedRegionKind.IDENTIFIER, value="SECRET"),)
+
+    result = runner.run(
+        request=_request("keep SECRET", protected_regions=protected),
+        config=config,
+    )
+
+    assert result.final_content == "keep SECRET"
+    assert result.fallback_used is True
+    assert result.bypassed_layer_ids == ("builtin.fallback",)
+    assert result.layer_results[0].decision is TokenOptimizationLayerDecision.FALLBACK
+    assert result.layer_results[0].bypass_reason is TokenOptimizationBypassReason.VALIDATION_FAILED
+    assert result.layer_results[0].validation is not None
+
+
+def test_safe_content_changing_fallback_accepted_and_passed_to_next_layer() -> None:
+    fallback_layer = _RecordingFakeLayer(
+        layer_id="builtin.fallback",
+        requires_validation=True,
+        result_factory=lambda request: TokenOptimizationLayerResult(
+            layer_id="builtin.fallback",
+            output_content="trimmed safe",
+            decision=TokenOptimizationLayerDecision.FALLBACK,
+            fallback_used=True,
+        ),
+    )
+    second = _RecordingFakeLayer(layer_id="builtin.second")
+    runner = _runner(fallback_layer, second)
+    config = TokenOptimizationPipelineConfig(
+        pipeline_id="fallback-safe",
+        mode=TokenOptimizationPipelineMode.REPLACE,
+        layers=(_ref("builtin.fallback"), _ref("builtin.second")),
+    )
+
+    result = runner.run(request=_request("trimmed safe content"), config=config)
+
+    assert result.final_content == "trimmed safe"
+    assert result.fallback_used is True
+    assert len(second.calls) == 1
+    assert second.calls[0].current_content == "trimmed safe"
+
+
+def test_required_exception_recorded_as_executed_without_sensitive_message() -> None:
+    failing = _RecordingFakeLayer(
+        layer_id="builtin.fail",
+        raise_error=RuntimeError("sensitive failure text"),
+    )
+    runner = _runner(failing)
+    config = TokenOptimizationPipelineConfig(
+        pipeline_id="req-exec",
+        mode=TokenOptimizationPipelineMode.REPLACE,
+        layers=(_ref("builtin.fail", required=True),),
+    )
+
+    result = runner.run(request=_request("original"), config=config)
+
+    assert result.receipt_metadata["executed_layer_ids"] == ["builtin.fail"]
+    assert "sensitive failure text" not in str(result.layer_results)
+    assert "sensitive failure text" not in str(result.receipt_metadata)
+    assert "sensitive failure text" not in str(result.metadata)
+
+
+def test_pre_execution_bypasses_not_in_executed_layer_ids() -> None:
+    disabled = _RecordingFakeLayer(layer_id="builtin.disabled")
+    policy_blocked = _RecordingFakeLayer(
+        layer_id="builtin.lossy",
+        safety_class=StrategySafetyClass.LOSSY,
+    )
+    unsupported = _RecordingFakeLayer(
+        layer_id="builtin.prompt-only",
+        supported_source_types=(TokenOptimizationSourceType.PROMPT,),
+    )
+    runner = _runner(disabled, policy_blocked, unsupported)
+    config = TokenOptimizationPipelineConfig(
+        pipeline_id="pre-exec",
+        mode=TokenOptimizationPipelineMode.REPLACE,
+        layers=(
+            _ref("builtin.disabled", enabled=False),
+            _ref("builtin.lossy"),
+            _ref("builtin.prompt-only"),
+            _ref("builtin.missing"),
+        ),
+    )
+
+    result = runner.run(
+        request=_request(
+            "content",
+            source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+            policy=_enabled_policy(allow_lossy=False),
+        ),
+        config=config,
+    )
+
+    executed = result.receipt_metadata["executed_layer_ids"]
+    assert "builtin.disabled" not in executed
+    assert "builtin.lossy" not in executed
+    assert "builtin.prompt-only" not in executed
+    assert "builtin.missing" not in executed
+
+
+def test_optional_exception_recorded_exactly_once_in_executed_layer_ids() -> None:
+    failing = _RecordingFakeLayer(layer_id="builtin.fail", raise_error=RuntimeError("boom"))
+    second = _RecordingFakeLayer(layer_id="builtin.second")
+    runner = _runner(failing, second)
+    config = TokenOptimizationPipelineConfig(
+        pipeline_id="opt-exec",
+        mode=TokenOptimizationPipelineMode.REPLACE,
+        layers=(_ref("builtin.fail"), _ref("builtin.second")),
+    )
+
+    result = runner.run(request=_request("before"), config=config)
+
+    assert result.receipt_metadata["executed_layer_ids"].count("builtin.fail") == 1

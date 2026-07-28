@@ -35,10 +35,11 @@ _MEASURE_ONLY_SAFETY_CLASSES = frozenset(
     }
 )
 
-_MUTATING_DECISIONS = frozenset(
+_CONTENT_CHANGING_VALIDATED_DECISIONS = frozenset(
     {
         TokenOptimizationLayerDecision.APPLY,
         TokenOptimizationLayerDecision.OVERRIDE_PREVIOUS,
+        TokenOptimizationLayerDecision.FALLBACK,
     }
 )
 
@@ -201,21 +202,26 @@ class TokenOptimizationPipelineRunner:
             layer = self._registry.resolve(layer_ref)
             if layer is None:
                 if layer_ref.required:
-                    layer_results.append(
-                        _synthetic_layer_result(
+                    (
+                        current_content,
+                        fallback_used,
+                        completed,
+                        required_failure_layer_id,
+                    ) = _abort_required_pipeline(
+                        layer_ref=layer_ref,
+                        layer_result=_synthetic_layer_result(
                             layer_id=layer_ref.layer_id,
                             output_content=layer_input_content,
                             decision=TokenOptimizationLayerDecision.FAILED,
                             bypass_reason=TokenOptimizationBypassReason.PLUGIN_UNAVAILABLE,
                             fallback_used=True,
-                        )
+                        ),
+                        layer_results=layer_results,
+                        failed_layer_ids=failed_layer_ids,
+                        applied_layer_ids=applied_layer_ids,
+                        previous_processed_ids=previous_processed_ids,
+                        original_content=original_content,
                     )
-                    failed_layer_ids.append(layer_ref.layer_id)
-                    required_failure_layer_id = layer_ref.layer_id
-                    fallback_used = True
-                    completed = False
-                    current_content = original_content
-                    previous_processed_ids.append(layer_ref.layer_id)
                     break
 
                 layer_results.append(
@@ -256,21 +262,26 @@ class TokenOptimizationPipelineRunner:
                 and request.source_type not in descriptor.supported_source_types
             ):
                 if layer_ref.required:
-                    layer_results.append(
-                        _synthetic_layer_result(
+                    (
+                        current_content,
+                        fallback_used,
+                        completed,
+                        required_failure_layer_id,
+                    ) = _abort_required_pipeline(
+                        layer_ref=layer_ref,
+                        layer_result=_synthetic_layer_result(
                             layer_id=layer_ref.layer_id,
                             output_content=layer_input_content,
                             decision=TokenOptimizationLayerDecision.FAILED,
                             bypass_reason=TokenOptimizationBypassReason.UNSUPPORTED_SOURCE_TYPE,
                             fallback_used=True,
-                        )
+                        ),
+                        layer_results=layer_results,
+                        failed_layer_ids=failed_layer_ids,
+                        applied_layer_ids=applied_layer_ids,
+                        previous_processed_ids=previous_processed_ids,
+                        original_content=original_content,
                     )
-                    failed_layer_ids.append(layer_ref.layer_id)
-                    required_failure_layer_id = layer_ref.layer_id
-                    fallback_used = True
-                    completed = False
-                    current_content = original_content
-                    previous_processed_ids.append(layer_ref.layer_id)
                     break
 
                 layer_results.append(
@@ -305,6 +316,8 @@ class TokenOptimizationPipelineRunner:
                 ),
             )
 
+            executed_layer_ids.append(layer_ref.layer_id)
+
             try:
                 raw_result = layer.optimize(layer_request)
             except Exception as exc:
@@ -313,21 +326,26 @@ class TokenOptimizationPipelineRunner:
                     "exception_type": type(exc).__name__,
                 }
                 if layer_ref.required:
-                    layer_results.append(
-                        _synthetic_layer_result(
+                    (
+                        current_content,
+                        fallback_used,
+                        completed,
+                        required_failure_layer_id,
+                    ) = _abort_required_pipeline(
+                        layer_ref=layer_ref,
+                        layer_result=_synthetic_layer_result(
                             layer_id=layer_ref.layer_id,
                             output_content=layer_input_content,
                             decision=TokenOptimizationLayerDecision.FAILED,
                             fallback_used=True,
                             metadata=failure_metadata,
-                        )
+                        ),
+                        layer_results=layer_results,
+                        failed_layer_ids=failed_layer_ids,
+                        applied_layer_ids=applied_layer_ids,
+                        previous_processed_ids=previous_processed_ids,
+                        original_content=original_content,
                     )
-                    failed_layer_ids.append(layer_ref.layer_id)
-                    required_failure_layer_id = layer_ref.layer_id
-                    fallback_used = True
-                    completed = False
-                    current_content = original_content
-                    previous_processed_ids.append(layer_ref.layer_id)
                     break
 
                 layer_results.append(
@@ -339,11 +357,8 @@ class TokenOptimizationPipelineRunner:
                     )
                 )
                 failed_layer_ids.append(layer_ref.layer_id)
-                executed_layer_ids.append(layer_ref.layer_id)
                 previous_processed_ids.append(layer_ref.layer_id)
                 continue
-
-            executed_layer_ids.append(layer_ref.layer_id)
 
             malformed = _malformed_layer_result(
                 raw_result=raw_result,
@@ -351,13 +366,20 @@ class TokenOptimizationPipelineRunner:
             )
             if malformed is not None:
                 if layer_ref.required:
-                    layer_results.append(malformed)
-                    failed_layer_ids.append(layer_ref.layer_id)
-                    required_failure_layer_id = layer_ref.layer_id
-                    fallback_used = True
-                    completed = False
-                    current_content = original_content
-                    previous_processed_ids.append(layer_ref.layer_id)
+                    (
+                        current_content,
+                        fallback_used,
+                        completed,
+                        required_failure_layer_id,
+                    ) = _abort_required_pipeline(
+                        layer_ref=layer_ref,
+                        layer_result=malformed,
+                        layer_results=layer_results,
+                        failed_layer_ids=failed_layer_ids,
+                        applied_layer_ids=applied_layer_ids,
+                        previous_processed_ids=previous_processed_ids,
+                        original_content=original_content,
+                    )
                     break
 
                 layer_results.append(malformed)
@@ -368,20 +390,35 @@ class TokenOptimizationPipelineRunner:
             result = raw_result
 
             if result.decision is TokenOptimizationLayerDecision.FAILED:
+                if layer_ref.required:
+                    (
+                        current_content,
+                        fallback_used,
+                        completed,
+                        required_failure_layer_id,
+                    ) = _abort_required_pipeline(
+                        layer_ref=layer_ref,
+                        layer_result=result,
+                        layer_results=layer_results,
+                        failed_layer_ids=failed_layer_ids,
+                        applied_layer_ids=applied_layer_ids,
+                        previous_processed_ids=previous_processed_ids,
+                        original_content=original_content,
+                    )
+                    break
+
                 failed_layer_ids.append(layer_ref.layer_id)
                 layer_results.append(result)
                 previous_processed_ids.append(layer_ref.layer_id)
-                if layer_ref.required:
-                    fallback_used = True
-                    completed = False
-                    current_content = original_content
-                    required_failure_layer_id = layer_ref.layer_id
-                    break
                 continue
 
-            if result.decision in _MUTATING_DECISIONS and _requires_validation(
-                policy=request.policy,
-                descriptor=descriptor,
+            if (
+                result.decision in _CONTENT_CHANGING_VALIDATED_DECISIONS
+                and result.output_content != layer_input_content
+                and _requires_validation(
+                    policy=request.policy,
+                    descriptor=descriptor,
+                )
             ):
                 validation = validate_protected_regions(
                     original_content,
@@ -413,13 +450,20 @@ class TokenOptimizationPipelineRunner:
             )
             if outcome.malformed is not None:
                 if layer_ref.required:
-                    layer_results.append(outcome.malformed)
-                    failed_layer_ids.append(layer_ref.layer_id)
-                    required_failure_layer_id = layer_ref.layer_id
-                    fallback_used = True
-                    completed = False
-                    current_content = original_content
-                    previous_processed_ids.append(layer_ref.layer_id)
+                    (
+                        current_content,
+                        fallback_used,
+                        completed,
+                        required_failure_layer_id,
+                    ) = _abort_required_pipeline(
+                        layer_ref=layer_ref,
+                        layer_result=outcome.malformed,
+                        layer_results=layer_results,
+                        failed_layer_ids=failed_layer_ids,
+                        applied_layer_ids=applied_layer_ids,
+                        previous_processed_ids=previous_processed_ids,
+                        original_content=original_content,
+                    )
                     break
 
                 layer_results.append(outcome.malformed)
@@ -489,6 +533,24 @@ def _policy_gate_bypass_reason(
 
 def _requires_validation(*, policy: TokenOptimizationPolicy, descriptor) -> bool:
     return policy.require_validation or descriptor.requires_validation
+
+
+def _abort_required_pipeline(
+    *,
+    layer_ref: TokenOptimizationLayerRef,
+    layer_result: TokenOptimizationLayerResult,
+    layer_results: list[TokenOptimizationLayerResult],
+    failed_layer_ids: list[str],
+    applied_layer_ids: list[str],
+    previous_processed_ids: list[str],
+    original_content: str,
+) -> tuple[str, bool, bool, str]:
+    """Complete net-effect rollback when a required layer aborts the pipeline."""
+    layer_results.append(layer_result)
+    failed_layer_ids.append(layer_ref.layer_id)
+    previous_processed_ids.append(layer_ref.layer_id)
+    applied_layer_ids.clear()
+    return original_content, True, False, layer_ref.layer_id
 
 
 def _malformed_layer_result(
