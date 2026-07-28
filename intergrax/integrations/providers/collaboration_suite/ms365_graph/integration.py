@@ -11,6 +11,11 @@ from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MsGraphDriveDeltaPage,
+    MsGraphDriveKnowledgeReadClient,
+    MsGraphKnowledgeContinuation,
+)
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
@@ -35,6 +40,19 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
     config: Ms365GraphCollaborationSuiteIntegrationConfig = Ms365GraphCollaborationSuiteIntegrationConfig()
     _client: Ms365GraphCollaborationSuiteClient | None = PrivateAttr(default=None)
     
+
+    def read_drive_delta_page(
+        self,
+        *,
+        drive_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphDriveDeltaPage:
+        return self._require_drive_client().read_drive_delta_page(
+            drive_id=drive_id,
+            continuation=continuation,
+            limit=limit,
+        )
 
     def create_event(
         self,
@@ -104,6 +122,14 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
                 f"{type(self).__name__} requires a catalog client for operations",
             )
         return self._client
+
+    def _require_drive_client(self) -> MsGraphDriveKnowledgeReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphDriveKnowledgeReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Drive knowledge capability",
+            )
+        return client
 
 
     @classmethod

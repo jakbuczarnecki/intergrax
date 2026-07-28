@@ -18,6 +18,9 @@ from intergrax.integrations.contracts.collaboration_suite import (
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MsGraphDriveDeltaPage,
+    MsGraphDriveKnowledgeReader,
+    MsGraphKnowledgeContinuation,
     MsGraphKnowledgeTransport,
 )
 
@@ -103,10 +106,27 @@ class GraphRestClient:
             config=config,
             http_client=http_client,
         )
+        self._drive_knowledge_reader = MsGraphDriveKnowledgeReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
 
     @property
     def config(self) -> Ms365GraphIntegrationConfig:
         return self._config
+
+    def read_drive_delta_page(
+        self,
+        *,
+        drive_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphDriveDeltaPage:
+        return self._drive_knowledge_reader.read_delta_page(
+            drive_id=drive_id,
+            continuation=continuation,
+            limit=limit,
+        )
 
     def get_message(self, user_id: str, message_id: str) -> MailMessage:
         path = f"/users/{quote(user_id, safe='')}/messages/{quote(message_id, safe='')}"

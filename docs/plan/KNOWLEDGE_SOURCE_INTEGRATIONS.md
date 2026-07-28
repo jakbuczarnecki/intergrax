@@ -51,9 +51,15 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1A
   shared transport, paging and delta foundation
-  NEXT:
+  IN_PROGRESS:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-DELTA
+  drive inventory, delta and tombstones
+  NEXT:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-CONTENT
   PLANNED:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
@@ -497,8 +503,10 @@ legacy WikiKnowledge search migration deferred
 **Status:** `IN_PROGRESS`
 
 The shared Microsoft Graph foundation is implemented.
-No Microsoft knowledge source is exposed yet.
-Drive is the next low-level surface.
+Drive inventory and delta are implemented for one known drive ID.
+File content and permissions are not implemented yet.
+No Microsoft Vendor Knowledge adapter is exposed yet.
+Mail is the next low-level surface after Drive content.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 
