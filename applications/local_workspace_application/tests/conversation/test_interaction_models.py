@@ -169,46 +169,46 @@ def test_rejects_invalid_object_type() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("invalid_value", ["1", 1.0, True])
-def test_evidence_start_rejects_non_exact_int(invalid_value: object) -> None:
-    with pytest.raises(ValidationError, match="evidence start must be int"):
-        MessageTextEvidenceSpan.model_validate(
-            {
-                "source": "message_text",
-                "start": invalid_value,
-                "end": 2,
-                "text": "ab",
-            }
-        )
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    [
+        ("start", True),
+        ("start", False),
+        ("start", "1"),
+        ("start", 1.0),
+        ("end", True),
+        ("end", False),
+        ("end", "10"),
+        ("end", 10.0),
+    ],
+)
+def test_evidence_offsets_require_exact_int(
+    field_name: str,
+    invalid_value: object,
+) -> None:
+    payload = {
+        "source": "message_text",
+        "start": 1,
+        "end": 10,
+        "text": "123456789",
+    }
+    payload[field_name] = invalid_value
 
-
-@pytest.mark.unit
-@pytest.mark.parametrize("invalid_value", ["2", 2.0, True])
-def test_evidence_end_rejects_non_exact_int(invalid_value: object) -> None:
-    with pytest.raises(ValidationError, match="evidence end must be int"):
-        MessageTextEvidenceSpan.model_validate(
-            {
-                "source": "message_text",
-                "start": 0,
-                "end": invalid_value,
-                "text": "ab",
-            }
-        )
+    with pytest.raises(ValidationError, match="evidence offset must be int"):
+        MessageTextEvidenceSpan.model_validate(payload)
 
 
 @pytest.mark.unit
 def test_evidence_offsets_accept_exact_ints() -> None:
     span = MessageTextEvidenceSpan(
         source="message_text",
-        start=0,
-        end=1,
-        text="a",
+        start=1,
+        end=10,
+        text="123456789",
     )
 
     assert type(span.start) is int
     assert type(span.end) is int
-    assert span.start == 0
-    assert span.end == 1
 
 
 @pytest.mark.unit

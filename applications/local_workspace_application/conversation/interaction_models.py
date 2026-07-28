@@ -88,9 +88,9 @@ def _validate_exact_int(value: object) -> object:
     return value
 
 
-def _validate_exact_integer(value: object, *, field_name: str) -> int:
+def _validate_exact_offset_int(value: object) -> int:
     if type(value) is not int:
-        raise ValueError(f"{field_name} must be int")
+        raise ValueError("evidence offset must be int")
     return value
 
 
@@ -118,6 +118,10 @@ ExtractedTextValue = Annotated[
     str,
     BeforeValidator(_validate_extracted_text_value),
     Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN),
+]
+EvidenceOffset = Annotated[
+    int,
+    BeforeValidator(_validate_exact_offset_int),
 ]
 
 
@@ -310,19 +314,9 @@ class MessageTextEvidenceSpan(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     source: Literal["message_text"]
-    start: int
-    end: int
+    start: EvidenceOffset
+    end: EvidenceOffset
     text: ExtractedTextValue
-
-    @field_validator("start", mode="before")
-    @classmethod
-    def _validate_start_type(cls, value: object) -> int:
-        return _validate_exact_integer(value, field_name="evidence start")
-
-    @field_validator("end", mode="before")
-    @classmethod
-    def _validate_end_type(cls, value: object) -> int:
-        return _validate_exact_integer(value, field_name="evidence end")
 
     @model_validator(mode="after")
     def _validate_span_bounds(self) -> Self:
