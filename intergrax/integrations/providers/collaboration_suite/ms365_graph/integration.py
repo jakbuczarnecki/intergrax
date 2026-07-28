@@ -11,6 +11,10 @@ from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import (
+    _Ms365GraphCollaborationSuite,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
     MsGraphDriveContentReadClient,
@@ -23,8 +27,11 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphKnowledgeContinuation,
     MsGraphMailFolderPage,
     MsGraphMailFoldersReadClient,
+    MsGraphMailMessageDeltaPage,
+    MsGraphMailMessagesReadClient,
     validate_msgraph_drive_permission_page,
     validate_msgraph_mail_folder_page,
+    validate_msgraph_mail_message_delta_page,
 )
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -91,6 +98,28 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             limit=limit,
         )
         return validate_msgraph_mail_folder_page(result)
+
+    def read_mail_messages_delta_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        folder_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailMessageDeltaPage:
+        result = self._require_mail_messages_client().read_mail_messages_delta_page(
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+            continuation=continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_mail_messages_validation()
+        return validate_msgraph_mail_message_delta_page(
+            result,
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+            graph_base_url=graph_base_url,
+        )
 
     def read_drive_file_content(
         self,
@@ -203,6 +232,24 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
                 "Microsoft Graph integration does not expose Mail folders knowledge capability",
             )
         return client
+
+    def _require_mail_messages_client(self) -> MsGraphMailMessagesReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphMailMessagesReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Mail messages delta capability",
+            )
+        return client
+
+    def _graph_base_url_for_mail_messages_validation(self) -> str:
+        client = self._require_client()
+        if isinstance(client, GraphRestClient):
+            return client.config.graph_base_url
+        if isinstance(client, _Ms365GraphCollaborationSuite):
+            return client.rest_client.config.graph_base_url
+        raise IntegrationConfigurationError(
+            "Microsoft Graph Mail messages delta validation is not configured",
+        )
 
     @classmethod
     def from_client(

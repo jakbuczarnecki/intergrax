@@ -67,11 +67,15 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-FOLDERS
   mailbox root and child folder paging
-  NEXT:
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-MESSAGES-DELTA
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
+  per-folder message metadata delta with immutable IDs
+  NEXT:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-CONTENT
+PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-ATTACHMENTS
+PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
+PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
+PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
@@ -519,12 +523,13 @@ Sharing URLs, share IDs and invitation email addresses are not retained.
 Download URLs are never persisted.
 File conversion is not implemented yet.
 Microsoft Graph Drive low-level read support is complete.
-Mailbox root and child folder paging is implemented for one known mailbox
-user ID, including hidden folders.
-Messages, message delta, message bodies and attachments are not implemented
-yet.
+Mailbox root and child folder paging is implemented.
+Mail folder paging and per-folder message metadata delta are implemented.
+Message IDs are requested in ImmutableId format on every delta request.
+A removed delta entry means removed from the synchronized folder and is not
+treated as proof of global mailbox deletion.
+Message bodies, participants and attachments are not implemented yet.
 No Microsoft Vendor Knowledge adapter is exposed yet.
-Mail messages delta is the next low-level Mail surface after folder paging.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 

@@ -61,6 +61,19 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_mail_folder_id,
     validate_msgraph_mailbox_user_id,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.mail_messages import (
+    MsGraphMailImportance,
+    MsGraphMailMessageChange,
+    MsGraphMailMessageChangeKind,
+    MsGraphMailMessageDeltaPage,
+    MsGraphMailMessagesReadClient,
+    MsGraphMailMessagesReader,
+    parse_msgraph_mail_message_change,
+    validate_msgraph_mail_message_change,
+    validate_msgraph_mail_message_delta_page,
+    validate_msgraph_mail_message_id,
+    validate_msgraph_mail_messages_delta_continuation,
+)
 
 __all__ = [
     "ABSOLUTE_DRIVE_CONTENT_MAX_BYTES",
@@ -90,6 +103,12 @@ __all__ = [
     "MsGraphMailFolderPage",
     "MsGraphMailFoldersReadClient",
     "MsGraphMailFoldersReader",
+    "MsGraphMailImportance",
+    "MsGraphMailMessageChange",
+    "MsGraphMailMessageChangeKind",
+    "MsGraphMailMessageDeltaPage",
+    "MsGraphMailMessagesReadClient",
+    "MsGraphMailMessagesReader",
     "MsGraphKnowledgeCollectionPage",
     "MsGraphKnowledgeContinuation",
     "MsGraphKnowledgeContinuationKind",
@@ -99,6 +118,7 @@ __all__ = [
     "parse_msgraph_drive_item",
     "parse_msgraph_drive_permission",
     "parse_msgraph_mail_folder",
+    "parse_msgraph_mail_message_change",
     "validate_msgraph_continuation_url",
     "validate_msgraph_drive_delta_continuation",
     "validate_msgraph_drive_download_url",
@@ -110,5 +130,9 @@ __all__ = [
     "validate_msgraph_mail_folder_id",
     "validate_msgraph_mail_folder_page",
     "validate_msgraph_mail_folders_continuation",
+    "validate_msgraph_mail_message_change",
+    "validate_msgraph_mail_message_delta_page",
+    "validate_msgraph_mail_message_id",
+    "validate_msgraph_mail_messages_delta_continuation",
     "validate_msgraph_mailbox_user_id",
 ]
