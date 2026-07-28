@@ -1224,6 +1224,13 @@ TOKEN-7 — broader runtime/adaptive integration remains future work; no product
 - no semantic compression or LLM summarization added
 - no README or public adoption documentation updated
 
+**TOKEN-7D-R refinement:**
+
+- removed dynamic `getattr` from advisory policy override validation
+- preserved preset and override behavior
+- no runtime/adaptive integration added
+- no auto-apply behavior added
+
 **Roadmap/order update:**
 
 ```text
