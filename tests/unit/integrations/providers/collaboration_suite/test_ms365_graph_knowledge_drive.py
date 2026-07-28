@@ -27,6 +27,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
     MsGraphDriveDeltaPage,
+    MsGraphDriveItem,
     MsGraphDriveItemKind,
     MsGraphDriveKnowledgeReader,
     MsGraphKnowledgeContinuation,
@@ -312,6 +313,192 @@ def test_drive_item_repr_hides_sensitive_fields() -> None:
     assert "sharepoint.com" not in rendered
 
 
+def _valid_active_item_kwargs() -> dict[str, object]:
+    return {
+        "remote_id": "item-1",
+        "drive_id": _DRIVE_ID,
+        "kind": MsGraphDriveItemKind.FILE,
+        "name": "report.pdf",
+        "last_modified_at": datetime(2026, 5, 29, 10, 15, 30, tzinfo=timezone.utc),
+    }
+
+
+def _valid_deleted_item_kwargs() -> dict[str, object]:
+    return {
+        "remote_id": "deleted-1",
+        "drive_id": _DRIVE_ID,
+        "kind": MsGraphDriveItemKind.DELETED,
+    }
+
+
+# --- direct model construction ---
+
+
+def test_drive_item_model_rejects_empty_remote_id() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["remote_id"] = "   "
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_empty_drive_id() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["drive_id"] = ""
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_parent_id_with_control_char() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["parent_remote_id"] = "parent\x00id"
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_negative_size() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["size_bytes"] = -1
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_bool_size() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["size_bytes"] = True
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_naive_created_at() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["created_at"] = datetime(2026, 5, 29, 10, 15, 30)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_naive_last_modified_at() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["last_modified_at"] = datetime(2026, 5, 29, 10, 15, 30)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_deleted_with_invalid_id() -> None:
+    kwargs = _valid_deleted_item_kwargs()
+    kwargs["remote_id"] = ""
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_deleted_with_negative_size() -> None:
+    kwargs = _valid_deleted_item_kwargs()
+    kwargs["size_bytes"] = -5
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_rejects_optional_string_as_integer() -> None:
+    kwargs = _valid_active_item_kwargs()
+    kwargs["e_tag"] = 123
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveItem(**kwargs)
+
+
+def test_drive_item_model_accepts_valid_deleted_item() -> None:
+    item = MsGraphDriveItem(**_valid_deleted_item_kwargs())
+    assert item.kind == MsGraphDriveItemKind.DELETED
+    assert item.name is None
+
+
+def test_drive_item_model_accepts_valid_active_item() -> None:
+    item = MsGraphDriveItem(**_valid_active_item_kwargs())
+    assert item.kind == MsGraphDriveItemKind.FILE
+    assert item.name == "report.pdf"
+
+
+# --- malformed facets ---
+
+
+@pytest.mark.parametrize(
+    "facet_patch",
+    [
+        {"file": None},
+        {"file": "bad"},
+        {"folder": True},
+        {"package": []},
+        {"deleted": "bad"},
+        {"root": False},
+    ],
+)
+def test_parse_rejects_malformed_facet_value(facet_patch: dict[str, object]) -> None:
+    payload = _active_item_payload(kind="file")
+    payload.update(facet_patch)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+@pytest.mark.parametrize(
+    "facet_patch",
+    [
+        {"file": {"mimeType": "text/plain"}, "package": {"type": "oneNote"}},
+        {"folder": {"childCount": 1}, "package": {"type": "oneNote"}},
+        {"deleted": {"state": "deleted"}, "file": {"mimeType": "text/plain"}},
+        {"deleted": {"state": "deleted"}, "folder": {"childCount": 1}},
+    ],
+)
+def test_parse_rejects_conflicting_type_facets(facet_patch: dict[str, object]) -> None:
+    payload = _active_item_payload()
+    payload.update(facet_patch)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+# --- optional provider fields ---
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"eTag": 123},
+        {"cTag": {}},
+        {"webUrl": []},
+        {"deleted": {"state": 42}},
+        {"file": {"mimeType": True, "hashes": {}}},
+    ],
+)
+def test_parse_rejects_malformed_optional_provider_fields(patch: dict[str, object]) -> None:
+    payload = _active_item_payload(kind="file")
+    if "deleted" in patch:
+        del payload["file"]
+        payload["deleted"] = patch["deleted"]
+        payload.pop("name", None)
+        payload.pop("lastModifiedDateTime", None)
+    elif "file" in patch:
+        payload["file"] = patch["file"]
+    else:
+        payload.update(patch)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+def test_parse_optional_field_absent_yields_none() -> None:
+    payload = _active_item_payload(kind="file")
+    del payload["eTag"]
+    del payload["cTag"]
+    del payload["webUrl"]
+    item = parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+    assert item.e_tag is None
+    assert item.c_tag is None
+    assert item.web_url is None
+
+
+def test_parse_optional_field_wrong_type_not_treated_as_absent() -> None:
+    payload = _active_item_payload(kind="file")
+    payload["eTag"] = 999
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
 # --- delta page ---
 
 
@@ -415,6 +602,53 @@ def test_delta_page_error_does_not_leak_token() -> None:
     with pytest.raises(ValueError) as exc:
         _reader(http).read_delta_page(drive_id=_DRIVE_ID, continuation=None, limit=50)
     assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_delta_page_model_rejects_list_items() -> None:
+    item = MsGraphDriveItem(**_valid_active_item_kwargs())
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.DELTA,
+        url=_DELTA_LINK,
+    )
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveDeltaPage(items=[item], continuation=continuation)
+
+
+def test_delta_page_model_rejects_non_drive_item_element() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.DELTA,
+        url=_DELTA_LINK,
+    )
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveDeltaPage(items=("not-an-item",), continuation=continuation)  # type: ignore[arg-type]
+
+
+def test_delta_page_model_rejects_invalid_continuation_type() -> None:
+    item = MsGraphDriveItem(**_valid_active_item_kwargs())
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveDeltaPage(items=(item,), continuation="bad")  # type: ignore[arg-type]
+
+
+def test_delta_page_model_rejects_duplicate_remote_ids() -> None:
+    item = MsGraphDriveItem(**_valid_active_item_kwargs())
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.DELTA,
+        url=_DELTA_LINK,
+    )
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        MsGraphDriveDeltaPage(items=(item, item), continuation=continuation)
+
+
+def test_delta_page_model_hides_token_in_repr() -> None:
+    item = MsGraphDriveItem(**_valid_active_item_kwargs())
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_NEXT_LINK,
+    )
+    page = MsGraphDriveDeltaPage(items=(item,), continuation=continuation)
+    rendered = repr(page)
+    assert _SECRET_TOKEN not in rendered
+    assert "skiptoken" not in rendered
 
 
 # --- requests ---
@@ -529,6 +763,81 @@ def test_validate_drive_delta_continuation_accepts_delta() -> None:
         graph_base_url=_GRAPH_BASE,
     )
     assert validated.kind == MsGraphKnowledgeContinuationKind.DELTA
+
+
+_EXTRA_SEGMENT_NEXT = (
+    f"https://graph.microsoft.com/v1.0/unexpected/drives/{_QUOTED_DRIVE_ID}/root/delta?"
+    f"$skiptoken={_SECRET_TOKEN}"
+)
+_SITES_PATH_NEXT = (
+    f"https://graph.microsoft.com/v1.0/sites/site-1/drives/{_QUOTED_DRIVE_ID}/root/delta?"
+    f"$skiptoken={_SECRET_TOKEN}"
+)
+_CHILDREN_PATH = (
+    f"https://graph.microsoft.com/v1.0/drives/{_QUOTED_DRIVE_ID}/children?"
+    f"$skiptoken={_SECRET_TOKEN}"
+)
+_ITEMS_DELTA_PATH = (
+    f"https://graph.microsoft.com/v1.0/drives/{_QUOTED_DRIVE_ID}/items/item-1/delta?"
+    f"$skiptoken={_SECRET_TOKEN}"
+)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [_NEXT_LINK, _DELTA_LINK],
+)
+def test_validate_drive_delta_continuation_accepts_exact_delta_path(url: str) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE
+        if "$skiptoken=" in url
+        else MsGraphKnowledgeContinuationKind.DELTA,
+        url=url,
+    )
+    validated = validate_msgraph_drive_delta_continuation(
+        continuation,
+        drive_id=_DRIVE_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated.url == url
+
+
+@pytest.mark.parametrize(
+    "url",
+    [_EXTRA_SEGMENT_NEXT, _SITES_PATH_NEXT, _CHILDREN_PATH, _ITEMS_DELTA_PATH, _OTHER_DRIVE_NEXT],
+)
+def test_validate_drive_delta_continuation_rejects_non_exact_paths(url: str) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=url,
+    )
+    with pytest.raises(
+        IntegrationConfigurationError,
+        match="invalid Microsoft Graph drive continuation",
+    ) as exc:
+        validate_msgraph_drive_delta_continuation(
+            continuation,
+            drive_id=_DRIVE_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert _SECRET_TOKEN not in str(exc.value)
+    assert _DRIVE_ID not in str(exc.value)
+    assert "graph.microsoft.com" not in str(exc.value)
+
+
+def test_rejects_invalid_continuation_path_before_http() -> None:
+    http = _mock_http()
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_SITES_PATH_NEXT,
+    )
+    with pytest.raises(
+        IntegrationConfigurationError,
+        match="invalid Microsoft Graph drive continuation",
+    ) as exc:
+        _reader(http).read_delta_page(drive_id=_DRIVE_ID, continuation=continuation, limit=25)
+    assert _SECRET_TOKEN not in str(exc.value)
+    http.get.assert_not_called()
 
 
 # --- integration delegation ---

@@ -11,7 +11,7 @@ from enum import StrEnum
 from typing import Protocol, runtime_checkable
 from urllib.parse import quote, unquote, urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import (
@@ -40,7 +40,6 @@ _DRIVE_SELECT = (
     "id,name,parentReference,webUrl,eTag,cTag,size,file,folder,package,deleted,root,"
     "createdDateTime,lastModifiedDateTime"
 )
-
 
 class MsGraphDriveItemKind(StrEnum):
     FILE = "file"
@@ -100,6 +99,70 @@ def _parse_size_bytes(value: object) -> int | None:
     return value
 
 
+def _normalize_model_datetime(value: object) -> datetime | None:
+    if value is None:
+        return None
+    if not isinstance(value, datetime):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    return value.astimezone(timezone.utc)
+
+
+def _parse_optional_provider_string(mapping: dict[str, object], key: str) -> str | None:
+    if key not in mapping:
+        return None
+    value = mapping[key]
+    if not isinstance(value, str):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    return trimmed
+
+
+def _parse_required_provider_string(mapping: dict[str, object], key: str) -> str:
+    if key not in mapping:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    parsed = _parse_optional_provider_string(mapping, key)
+    if parsed is None:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    return parsed
+
+
+def _facet_is_present(payload: dict[str, object], key: str) -> bool:
+    if key not in payload:
+        return False
+    value = payload[key]
+    if not isinstance(value, dict):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    return True
+
+
+def _parse_parent_reference(payload: dict[str, object], validated_drive_id: str) -> str | None:
+    parent_reference = payload.get("parentReference")
+    if parent_reference is None:
+        return None
+    if not isinstance(parent_reference, dict):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+
+    if "driveId" in parent_reference:
+        try:
+            parent_drive_id = validate_msgraph_drive_id(parent_reference["driveId"])
+        except ValueError:
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+        if parent_drive_id != validated_drive_id:
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+
+    if "id" not in parent_reference:
+        return None
+
+    try:
+        return validate_msgraph_drive_item_id(parent_reference["id"])
+    except ValueError:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+
+
 class MsGraphDriveItem(BaseModel):
     model_config = _STRICT_MODEL_CONFIG
 
@@ -124,6 +187,48 @@ class MsGraphDriveItem(BaseModel):
 
     deleted_state: str | None = None
 
+    @field_validator("remote_id", "drive_id", mode="before")
+    @classmethod
+    def _validate_required_ids(cls, value: object) -> str:
+        return validate_msgraph_drive_id(value)
+
+    @field_validator("parent_remote_id", mode="before")
+    @classmethod
+    def _validate_parent_id(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        return validate_msgraph_drive_item_id(value)
+
+    @field_validator(
+        "name",
+        "e_tag",
+        "c_tag",
+        "mime_type",
+        "web_url",
+        "deleted_state",
+        mode="before",
+    )
+    @classmethod
+    def _validate_optional_string_fields(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        return trimmed
+
+    @field_validator("size_bytes", mode="before")
+    @classmethod
+    def _validate_size(cls, value: object) -> int | None:
+        return _parse_size_bytes(value)
+
+    @field_validator("created_at", "last_modified_at", mode="before")
+    @classmethod
+    def _validate_datetime_fields(cls, value: object) -> datetime | None:
+        return _normalize_model_datetime(value)
+
     @model_validator(mode="after")
     def _validate_item_shape(self) -> MsGraphDriveItem:
         if self.kind == MsGraphDriveItemKind.DELETED:
@@ -136,11 +241,9 @@ class MsGraphDriveItem(BaseModel):
             MsGraphDriveItemKind.OTHER,
         }:
             raise ValueError(_MALFORMED_DRIVE_RESPONSE)
-        if not isinstance(self.name, str) or not self.name.strip():
+        if self.name is None:
             raise ValueError(_MALFORMED_DRIVE_RESPONSE)
         if self.last_modified_at is None:
-            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
-        if self.last_modified_at.tzinfo is None or self.last_modified_at.utcoffset() is None:
             raise ValueError(_MALFORMED_DRIVE_RESPONSE)
         return self
 
@@ -151,8 +254,30 @@ class MsGraphDriveDeltaPage(BaseModel):
     items: tuple[MsGraphDriveItem, ...]
     continuation: MsGraphKnowledgeContinuation = Field(repr=False)
 
+    @field_validator("items", mode="before")
+    @classmethod
+    def _validate_items_input(cls, value: object) -> object:
+        if not isinstance(value, tuple):
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        for item in value:
+            if not isinstance(item, MsGraphDriveItem):
+                raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        return value
+
+    @field_validator("continuation", mode="before")
+    @classmethod
+    def _validate_continuation_input(cls, value: object) -> object:
+        if not isinstance(value, MsGraphKnowledgeContinuation):
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        if value.kind not in {
+            MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            MsGraphKnowledgeContinuationKind.DELTA,
+        }:
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        return value
+
     @model_validator(mode="after")
-    def _validate_unique_remote_ids(self) -> MsGraphDriveDeltaPage:
+    def _validate_page_shape(self) -> MsGraphDriveDeltaPage:
         remote_ids = [item.remote_id for item in self.items]
         if len(remote_ids) != len(set(remote_ids)):
             raise ValueError(_MALFORMED_DRIVE_RESPONSE)
@@ -167,6 +292,20 @@ class MsGraphDriveDeltaPage(BaseModel):
         return self.continuation.kind == MsGraphKnowledgeContinuationKind.DELTA
 
 
+def _safe_construct_drive_item(**kwargs: object) -> MsGraphDriveItem:
+    try:
+        return MsGraphDriveItem(**kwargs)
+    except (ValueError, TypeError, ValidationError):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+
+
+def _safe_construct_drive_delta_page(**kwargs: object) -> MsGraphDriveDeltaPage:
+    try:
+        return MsGraphDriveDeltaPage(**kwargs)
+    except (ValueError, TypeError, ValidationError):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+
+
 @runtime_checkable
 class MsGraphDriveKnowledgeReadClient(Protocol):
     def read_drive_delta_page(
@@ -179,18 +318,23 @@ class MsGraphDriveKnowledgeReadClient(Protocol):
         ...
 
 
-def _extract_drive_id_from_delta_path(path: str) -> str | None:
+def _graph_base_path(graph_base_url: str) -> str:
+    parsed_base = urlparse(graph_base_url)
+    return parsed_base.path.rstrip("/") or "/"
+
+
+def _extract_drive_id_from_delta_path(path: str, *, graph_base_path: str) -> str | None:
     normalized = path.rstrip("/") or "/"
-    marker = "/drives/"
-    marker_index = normalized.find(marker)
-    if marker_index == -1:
+    expected_prefix = f"{graph_base_path.rstrip('/')}/drives/"
+    expected_suffix = "/root/delta"
+
+    if not normalized.startswith(expected_prefix):
         return None
-    remainder = normalized[marker_index + len(marker) :]
-    suffix = "/root/delta"
-    if not remainder.endswith(suffix):
+    if not normalized.endswith(expected_suffix):
         return None
-    drive_segment = remainder[: -len(suffix)]
-    if not drive_segment:
+
+    drive_segment = normalized[len(expected_prefix) : -len(expected_suffix)]
+    if not drive_segment or "/" in drive_segment:
         return None
     return unquote(drive_segment)
 
@@ -218,8 +362,20 @@ def validate_msgraph_drive_delta_continuation(
         raise IntegrationConfigurationError(_INVALID_DRIVE_CONTINUATION) from None
 
     parsed = urlparse(validated_url)
-    extracted_drive_id = _extract_drive_id_from_delta_path(parsed.path)
-    if extracted_drive_id is None or extracted_drive_id != drive_id:
+    extracted_drive_id = _extract_drive_id_from_delta_path(
+        parsed.path,
+        graph_base_path=_graph_base_path(graph_base_url),
+    )
+    if extracted_drive_id is None:
+        raise IntegrationConfigurationError(_INVALID_DRIVE_CONTINUATION) from None
+
+    try:
+        validated_drive_id = validate_msgraph_drive_id(drive_id)
+        validated_extracted_drive_id = validate_msgraph_drive_id(extracted_drive_id)
+    except ValueError:
+        raise IntegrationConfigurationError(_INVALID_DRIVE_CONTINUATION) from None
+
+    if validated_extracted_drive_id != validated_drive_id:
         raise IntegrationConfigurationError(_INVALID_DRIVE_CONTINUATION) from None
 
     return continuation
@@ -234,34 +390,31 @@ def parse_msgraph_drive_item(
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
 
     try:
+        validated_drive_id = validate_msgraph_drive_id(expected_drive_id)
+    except ValueError:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+
+    try:
         remote_id = validate_msgraph_drive_item_id(payload.get("id"))
     except ValueError:
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
 
-    drive_id = expected_drive_id
-    parent_remote_id: str | None = None
-    parent_reference = payload.get("parentReference")
-    if parent_reference is not None:
-        if not isinstance(parent_reference, dict):
-            raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-        parent_drive_id = parent_reference.get("driveId")
-        if parent_drive_id is not None:
-            if not isinstance(parent_drive_id, str):
-                raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-            if parent_drive_id != expected_drive_id:
-                raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-        parent_id = parent_reference.get("id")
-        if parent_id is not None:
-            if not isinstance(parent_id, str):
-                raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-            parent_remote_id = validate_msgraph_drive_item_id(parent_id)
+    try:
+        parent_remote_id = _parse_parent_reference(payload, validated_drive_id)
+    except ValueError:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
 
-    has_deleted = isinstance(payload.get("deleted"), dict)
-    has_folder = isinstance(payload.get("folder"), dict)
-    has_package = isinstance(payload.get("package"), dict)
-    has_file = isinstance(payload.get("file"), dict)
+    try:
+        has_file = _facet_is_present(payload, "file")
+        has_folder = _facet_is_present(payload, "folder")
+        has_package = _facet_is_present(payload, "package")
+        has_deleted = _facet_is_present(payload, "deleted")
+        is_root = _facet_is_present(payload, "root")
+    except ValueError:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
 
-    if has_folder and has_file:
+    type_facet_count = sum((has_file, has_folder, has_package, has_deleted))
+    if type_facet_count > 1:
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
 
     if has_deleted:
@@ -275,78 +428,80 @@ def parse_msgraph_drive_item(
     else:
         kind = MsGraphDriveItemKind.OTHER
 
-    deleted_state: str | None = None
-    if kind == MsGraphDriveItemKind.DELETED:
-        deleted_obj = payload.get("deleted")
-        if not isinstance(deleted_obj, dict):
-            raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-        state = deleted_obj.get("state")
-        if state is not None:
-            if not isinstance(state, str) or not state.strip():
-                raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-            deleted_state = state.strip()
-        return MsGraphDriveItem(
-            remote_id=remote_id,
-            drive_id=drive_id,
-            kind=kind,
-            deleted_state=deleted_state,
-        )
-
-    name_raw = payload.get("name")
-    if not isinstance(name_raw, str) or not name_raw.strip():
-        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-    name = name_raw.strip()
-
-    e_tag_raw = payload.get("eTag")
-    e_tag = e_tag_raw.strip() if isinstance(e_tag_raw, str) and e_tag_raw.strip() else None
-    c_tag_raw = payload.get("cTag")
-    c_tag = c_tag_raw.strip() if isinstance(c_tag_raw, str) and c_tag_raw.strip() else None
-
     try:
-        size_bytes = _parse_size_bytes(payload.get("size"))
-    except ValueError:
-        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+        if kind == MsGraphDriveItemKind.DELETED:
+            deleted_obj = payload["deleted"]
+            if not isinstance(deleted_obj, dict):
+                raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+            deleted_state = _parse_optional_provider_string(deleted_obj, "state")
+            name = _parse_optional_provider_string(payload, "name")
+            e_tag = _parse_optional_provider_string(payload, "eTag")
+            c_tag = _parse_optional_provider_string(payload, "cTag")
+            web_url = _parse_optional_provider_string(payload, "webUrl")
+            size_bytes = _parse_size_bytes(payload.get("size")) if "size" in payload else None
+            created_at = (
+                _parse_timezone_aware_datetime(payload.get("createdDateTime"))
+                if "createdDateTime" in payload
+                else None
+            )
+            last_modified_at = (
+                _parse_timezone_aware_datetime(payload.get("lastModifiedDateTime"))
+                if "lastModifiedDateTime" in payload
+                else None
+            )
+            mime_type = None
+            return _safe_construct_drive_item(
+                remote_id=remote_id,
+                drive_id=validated_drive_id,
+                parent_remote_id=parent_remote_id,
+                kind=kind,
+                name=name,
+                e_tag=e_tag,
+                c_tag=c_tag,
+                size_bytes=size_bytes,
+                mime_type=mime_type,
+                created_at=created_at,
+                last_modified_at=last_modified_at,
+                web_url=web_url,
+                is_root=is_root,
+                deleted_state=deleted_state,
+            )
 
-    mime_type: str | None = None
-    if kind == MsGraphDriveItemKind.FILE:
-        file_obj = payload.get("file")
-        if not isinstance(file_obj, dict):
-            raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-        mime_raw = file_obj.get("mimeType")
-        if mime_raw is not None:
-            if not isinstance(mime_raw, str) or not mime_raw.strip():
-                raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-            mime_type = mime_raw.strip()
+        name = _parse_required_provider_string(payload, "name")
+        e_tag = _parse_optional_provider_string(payload, "eTag")
+        c_tag = _parse_optional_provider_string(payload, "cTag")
+        web_url = _parse_optional_provider_string(payload, "webUrl")
+        size_bytes = _parse_size_bytes(payload.get("size")) if "size" in payload else None
 
-    try:
+        mime_type: str | None = None
+        if kind == MsGraphDriveItemKind.FILE:
+            file_obj = payload["file"]
+            if not isinstance(file_obj, dict):
+                raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+            mime_type = _parse_optional_provider_string(file_obj, "mimeType")
+
         created_at = _parse_timezone_aware_datetime(payload.get("createdDateTime"))
         last_modified_at = _parse_timezone_aware_datetime(payload.get("lastModifiedDateTime"))
+        if last_modified_at is None:
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+
+        return _safe_construct_drive_item(
+            remote_id=remote_id,
+            drive_id=validated_drive_id,
+            parent_remote_id=parent_remote_id,
+            kind=kind,
+            name=name,
+            e_tag=e_tag,
+            c_tag=c_tag,
+            size_bytes=size_bytes,
+            mime_type=mime_type,
+            created_at=created_at,
+            last_modified_at=last_modified_at,
+            web_url=web_url,
+            is_root=is_root,
+        )
     except ValueError:
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-
-    if last_modified_at is None:
-        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-
-    web_url_raw = payload.get("webUrl")
-    web_url = web_url_raw.strip() if isinstance(web_url_raw, str) and web_url_raw.strip() else None
-
-    is_root = isinstance(payload.get("root"), dict)
-
-    return MsGraphDriveItem(
-        remote_id=remote_id,
-        drive_id=drive_id,
-        parent_remote_id=parent_remote_id,
-        kind=kind,
-        name=name,
-        e_tag=e_tag,
-        c_tag=c_tag,
-        size_bytes=size_bytes,
-        mime_type=mime_type,
-        created_at=created_at,
-        last_modified_at=last_modified_at,
-        web_url=web_url,
-        is_root=is_root,
-    )
 
 
 def _deduplicate_drive_items(items: tuple[MsGraphDriveItem, ...]) -> tuple[MsGraphDriveItem, ...]:
@@ -380,7 +535,7 @@ def _build_drive_delta_page(
         parse_msgraph_drive_item(item, expected_drive_id=expected_drive_id) for item in raw_items
     )
     deduplicated = _deduplicate_drive_items(parsed_items)
-    return MsGraphDriveDeltaPage(items=deduplicated, continuation=continuation)
+    return _safe_construct_drive_delta_page(items=deduplicated, continuation=continuation)
 
 
 class MsGraphDriveKnowledgeReader:
