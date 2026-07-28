@@ -20,8 +20,8 @@ _MAX_CLARIFICATIONS = 20
 _MAX_STRING_FIELD_LEN = 2_000
 _MAX_ACTION_ID_LEN = 128
 _MAX_EVIDENCE_QUOTES = 20
-_MAX_URLS_PER_ACTION = 50
-_MAX_LOCAL_REFS_PER_ACTION = 50
+_MAX_OBJECTS = 50
+_MAX_SOURCE_OBJECT_IDS_PER_ACTION = 50
 _MAX_ATTACHMENT_IDS_PER_ACTION = 50
 
 _ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
@@ -70,6 +70,16 @@ def _reject_nul_in_user_text(value: object) -> str:
     return value
 
 
+def _validate_extracted_text_value(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError("extracted text value must be str")
+    if not value:
+        raise ValueError("extracted text value must be non-empty")
+    if "\x00" in value:
+        raise ValueError("extracted text value must not contain NUL")
+    return value
+
+
 def _validate_exact_int(value: object) -> object:
     if value is None:
         return value
@@ -98,6 +108,11 @@ OptionalSafeText = Annotated[
     BeforeValidator(_validate_optional_safe_text),
 ]
 UserText = Annotated[str, BeforeValidator(_reject_nul_in_user_text)]
+ExtractedTextValue = Annotated[
+    str,
+    BeforeValidator(_validate_extracted_text_value),
+    Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN),
+]
 
 
 class ConversationPlanningAttachment(BaseModel):
@@ -285,39 +300,58 @@ class KnowledgeAddAttachmentsPlannedAction(_PlannedActionBase):
         return self
 
 
-class KnowledgeAddWebUrlsPlannedAction(_PlannedActionBase):
-    action_type: Literal["knowledge.add_web_urls"]
-    workspace: WorkspaceReference
-    urls: tuple[str, ...] = Field(min_length=1, max_length=_MAX_URLS_PER_ACTION)
+class MessageTextEvidenceSpan(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source: Literal["message_text"]
+    start: int
+    end: int
+    text: ExtractedTextValue
 
     @model_validator(mode="after")
-    def _validate_unique_urls(self) -> Self:
-        _reject_duplicate_strings(self.urls, label="url")
+    def _validate_span_bounds(self) -> Self:
+        if self.start < 0:
+            raise ValueError("evidence start must be >= 0")
+        if self.end <= self.start:
+            raise ValueError("evidence end must be > start")
         return self
 
 
-class LocalReference(BaseModel):
+class WebUrlExtractedObject(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    kind: Literal["file", "folder", "unknown"]
-    value: str = Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN)
+    object_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    object_type: Literal["web_url"]
+    value: ExtractedTextValue
+    evidence: MessageTextEvidenceSpan
 
 
-class KnowledgeAddLocalReferencesPlannedAction(_PlannedActionBase):
-    action_type: Literal["knowledge.add_local_references"]
+class LocalFileReferenceExtractedObject(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    object_id: OpaqueId = Field(max_length=_MAX_ACTION_ID_LEN)
+    object_type: Literal["local_file_reference"]
+    reference_kind: Literal["file", "folder", "unknown"]
+    value: ExtractedTextValue
+    evidence: MessageTextEvidenceSpan
+
+
+ExtractedObject = Annotated[
+    WebUrlExtractedObject | LocalFileReferenceExtractedObject,
+    Field(discriminator="object_type"),
+]
+
+
+class KnowledgeAddSourcesPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.add_sources"]
     workspace: WorkspaceReference
-    references: tuple[LocalReference, ...] = Field(
-        min_length=1, max_length=_MAX_LOCAL_REFS_PER_ACTION
+    source_object_ids: tuple[OpaqueId, ...] = Field(
+        min_length=1, max_length=_MAX_SOURCE_OBJECT_IDS_PER_ACTION
     )
 
     @model_validator(mode="after")
-    def _validate_unique_references(self) -> Self:
-        seen: set[tuple[str, str]] = set()
-        for reference in self.references:
-            key = (reference.kind, reference.value)
-            if key in seen:
-                raise ValueError("duplicate local reference")
-            seen.add(key)
+    def _validate_unique_source_object_ids(self) -> Self:
+        _reject_duplicate_strings(self.source_object_ids, label="source_object_id")
         return self
 
 
@@ -336,8 +370,7 @@ PlannedAction = Annotated[
     | SourceCandidateListPlannedAction
     | SourceCandidateAttachPlannedAction
     | KnowledgeAddAttachmentsPlannedAction
-    | KnowledgeAddWebUrlsPlannedAction
-    | KnowledgeAddLocalReferencesPlannedAction
+    | KnowledgeAddSourcesPlannedAction
     | WorkspaceAskPlannedAction,
     Field(discriminator="action_type"),
 ]
@@ -359,7 +392,8 @@ class ConversationClarification(BaseModel):
 class ConversationInteractionPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    plan_version: Literal["1"]
+    plan_version: Literal["2"]
+    objects: tuple[ExtractedObject, ...] = ()
     actions: tuple[PlannedAction, ...] = ()
     clarifications: tuple[ConversationClarification, ...] = ()
     response_mode: Literal["aggregate"]
@@ -369,10 +403,16 @@ class ConversationInteractionPlan(BaseModel):
         if not self.actions and not self.clarifications:
             raise ValueError("plan must contain at least one action or clarification")
 
+        if len(self.objects) > _MAX_OBJECTS:
+            raise ValueError("too many objects")
         if len(self.actions) > _MAX_ACTIONS:
             raise ValueError("too many actions")
         if len(self.clarifications) > _MAX_CLARIFICATIONS:
             raise ValueError("too many clarifications")
+
+        object_ids = [obj.object_id for obj in self.objects]
+        if len(object_ids) != len(set(object_ids)):
+            raise ValueError("duplicate object_id")
 
         action_ids = [action.action_id for action in self.actions]
         if len(action_ids) != len(set(action_ids)):
@@ -382,7 +422,14 @@ class ConversationInteractionPlan(BaseModel):
         if len(clarification_ids) != len(set(clarification_ids)):
             raise ValueError("duplicate clarification_id")
 
+        object_id_set = set(object_ids)
         action_id_set = set(action_ids)
+        for action in self.actions:
+            if action.action_type != "knowledge.add_sources":
+                continue
+            for source_id in action.source_object_ids:
+                if source_id not in object_id_set:
+                    raise ValueError(f"unknown source object: {source_id}")
         for action in self.actions:
             for dep in action.depends_on:
                 if dep not in action_id_set:

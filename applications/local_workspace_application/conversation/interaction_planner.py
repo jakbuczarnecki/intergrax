@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from enum import Enum
 from typing import Sequence
 
@@ -18,9 +17,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from local_workspace_application.conversation.interaction_models import (
     ConversationInteractionPlan,
     ConversationPlanningRequest,
+    ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
-    KnowledgeAddLocalReferencesPlannedAction,
-    KnowledgeAddWebUrlsPlannedAction,
+    KnowledgeAddSourcesPlannedAction,
     WorkspaceReferenceKind,
     collect_user_text_context,
     request_attachment_ids,
@@ -31,13 +30,7 @@ from local_workspace_application.conversation.interaction_prompt import build_pl
 logger = logging.getLogger(__name__)
 
 _STRUCTURED_MAX_TOKENS = 8_192
-_TRAILING_SENTENCE_PUNCTUATION = ".,;!?"
-_URL_SCHEME_PATTERN = re.compile(r"https?://", re.IGNORECASE)
-_PATH_START_BOUNDARY_CHARS = frozenset(" \t\n\r\"'(:[")
-_PATH_END_BOUNDARY_CHARS = frozenset(" \t\n\r\"',;)")
-_PATH_CONTINUATION_CHARS = frozenset(
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\\/-_.:"
-)
+_ALLOWED_SOURCE_OBJECT_TYPES = frozenset({"web_url", "local_file_reference"})
 
 
 class ConversationPlanningErrorCode(str, Enum):
@@ -73,8 +66,13 @@ def validate_plan_against_request(
     """Fail-closed validation of planner output against the safe planning request."""
     allowed_attachments = request_attachment_ids(request)
     user_contexts = collect_user_text_context(request)
-    allowed_urls = extract_user_url_candidates(user_contexts)
+    message_text = request.message_text
+    object_map = {obj.object_id: obj for obj in plan.objects}
 
+    for obj in plan.objects:
+        _validate_extracted_object_evidence(obj, message_text)
+
+    referenced_object_ids: set[str] = set()
     for action in plan.actions:
         for attachment_id in action.evidence_attachment_ids:
             if attachment_id not in allowed_attachments:
@@ -89,15 +87,14 @@ def validate_plan_against_request(
                 if attachment_id not in allowed_attachments:
                     raise PlanRequestValidationError("unknown attachment ID in action")
 
-        if isinstance(action, KnowledgeAddWebUrlsPlannedAction):
-            for url in action.urls:
-                if url not in allowed_urls:
-                    raise PlanRequestValidationError("URL not found in user context")
-
-        if isinstance(action, KnowledgeAddLocalReferencesPlannedAction):
-            for reference in action.references:
-                if not _local_reference_in_context(reference.value, user_contexts):
-                    raise PlanRequestValidationError("local reference not found in user context")
+        if isinstance(action, KnowledgeAddSourcesPlannedAction):
+            for source_id in action.source_object_ids:
+                if source_id not in object_map:
+                    raise PlanRequestValidationError("unknown source object ID in action")
+                obj = object_map[source_id]
+                if obj.object_type not in _ALLOWED_SOURCE_OBJECT_TYPES:
+                    raise PlanRequestValidationError("invalid object type for knowledge.add_sources")
+                referenced_object_ids.add(source_id)
 
         workspace = getattr(action, "workspace", None)
         if workspace is not None and workspace.kind == WorkspaceReferenceKind.name:
@@ -107,29 +104,25 @@ def validate_plan_against_request(
                 ):
                     raise PlanRequestValidationError("workspace name reference not in user context")
 
-
-def extract_user_url_candidates(contexts: Sequence[str]) -> frozenset[str]:
-    """Build a deterministic set of exact user-provided URLs from planning context."""
-    candidates: set[str] = set()
-    for context in contexts:
-        for match in _URL_SCHEME_PATTERN.finditer(context):
-            end = match.end()
-            while end < len(context) and context[end] not in " \t\n\r<>\"'":
-                end += 1
-            cleaned = _strip_trailing_url_punctuation(context[match.start() : end])
-            if cleaned:
-                candidates.add(cleaned)
-    return frozenset(candidates)
+    for obj in plan.objects:
+        if obj.object_id not in referenced_object_ids:
+            raise PlanRequestValidationError("unused extracted object")
 
 
-def _strip_trailing_url_punctuation(url: str) -> str:
-    result = url
-    while result and result[-1] in _TRAILING_SENTENCE_PUNCTUATION:
-        result = result[:-1]
-    for close, open_char in ((")", "("), ("]", "["), ("}", "{")):
-        while result.endswith(close) and result.count(open_char) < result.count(close):
-            result = result[:-1]
-    return result
+def _validate_extracted_object_evidence(obj: ExtractedObject, message_text: str) -> None:
+    evidence = obj.evidence
+    if evidence.source != "message_text":
+        raise PlanRequestValidationError("evidence source must be message_text")
+    if evidence.start < 0:
+        raise PlanRequestValidationError("evidence start must be >= 0")
+    if evidence.end <= evidence.start:
+        raise PlanRequestValidationError("evidence end must be > start")
+    if evidence.end > len(message_text):
+        raise PlanRequestValidationError("evidence span out of range")
+    if message_text[evidence.start : evidence.end] != evidence.text:
+        raise PlanRequestValidationError("evidence text does not match message slice")
+    if obj.value != evidence.text:
+        raise PlanRequestValidationError("object value does not match evidence text")
 
 
 def _evidence_quote_in_context(quote: str, contexts: Sequence[str]) -> bool:
@@ -140,63 +133,6 @@ def _evidence_quote_in_context(quote: str, contexts: Sequence[str]) -> bool:
         if normalized_quote in context:
             return True
     return False
-
-
-def _looks_like_windows_path(value: str) -> bool:
-    return bool(re.match(r"^[A-Za-z]:\\", value)) or value.startswith("\\\\")
-
-
-def _local_reference_in_context(reference: str, contexts: Sequence[str]) -> bool:
-    if not reference:
-        return False
-    for context in contexts:
-        if _bounded_local_reference_match(reference, context):
-            return True
-    return False
-
-
-def _bounded_local_reference_match(reference: str, context: str) -> bool:
-    windows_insensitive = _looks_like_windows_path(reference)
-    search_reference = reference.lower() if windows_insensitive else reference
-    search_context = context.lower() if windows_insensitive else context
-    start = 0
-    while True:
-        index = search_context.find(search_reference, start)
-        if index == -1:
-            return False
-        end = index + len(reference)
-        if _has_valid_path_start_boundary(context, index) and _has_valid_path_end_boundary(
-            context, end, reference
-        ):
-            return True
-        start = index + 1
-
-
-def _has_valid_path_start_boundary(context: str, start: int) -> bool:
-    if start == 0:
-        return True
-    return context[start - 1] in _PATH_START_BOUNDARY_CHARS
-
-
-def _has_valid_path_end_boundary(context: str, end: int, reference: str) -> bool:
-    if end >= len(context):
-        return True
-    next_char = context[end]
-    if next_char in _PATH_END_BOUNDARY_CHARS:
-        return True
-    if next_char == ".":
-        return _is_sentence_ending_period(context, end, reference)
-    if next_char in _PATH_CONTINUATION_CHARS:
-        return False
-    return False
-
-
-def _is_sentence_ending_period(context: str, period_index: int, reference: str) -> bool:
-    if period_index + 1 < len(context) and context[period_index + 1] in _PATH_CONTINUATION_CHARS:
-        return False
-    if reference.endswith("."):
-        return False
-    return True
 
 
 class ConversationInteractionPlanner:

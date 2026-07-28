@@ -15,9 +15,10 @@ from local_workspace_application.conversation.interaction_models import (
     ConversationPlanningSourceCandidate,
     ConversationPlanningWorkspace,
     KnowledgeAddAttachmentsPlannedAction,
-    KnowledgeAddLocalReferencesPlannedAction,
-    KnowledgeAddWebUrlsPlannedAction,
-    LocalReference,
+    KnowledgeAddSourcesPlannedAction,
+    LocalFileReferenceExtractedObject,
+    MessageTextEvidenceSpan,
+    WebUrlExtractedObject,
     WorkspaceActivatePlannedAction,
     WorkspaceCreatePlannedAction,
     WorkspaceReference,
@@ -29,31 +30,246 @@ def _magazyn_target() -> WorkspaceReference:
     return WorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn")
 
 
+def _span(message: str, substring: str) -> MessageTextEvidenceSpan:
+    start = message.index(substring)
+    return MessageTextEvidenceSpan(
+        source="message_text",
+        start=start,
+        end=start + len(substring),
+        text=substring,
+    )
+
+
+def _web_object(
+    object_id: str,
+    message: str,
+    url: str,
+) -> WebUrlExtractedObject:
+    return WebUrlExtractedObject(
+        object_id=object_id,
+        object_type="web_url",
+        value=url,
+        evidence=_span(message, url),
+    )
+
+
+def _local_object(
+    object_id: str,
+    message: str,
+    path: str,
+    *,
+    reference_kind: str = "file",
+) -> LocalFileReferenceExtractedObject:
+    return LocalFileReferenceExtractedObject(
+        object_id=object_id,
+        object_type="local_file_reference",
+        reference_kind=reference_kind,  # type: ignore[arg-type]
+        value=path,
+        evidence=_span(message, path),
+    )
+
+
 @pytest.mark.unit
-def test_valid_plan_with_multiple_actions() -> None:
+def test_valid_plan_with_objects_and_knowledge_add_sources() -> None:
+    message = (
+        "dołącz https://www.cenniki.pl oraz "
+        r"c:\moje dokumenty\cenniki.xls do workspace magazyn"
+    )
     plan = ConversationInteractionPlan(
-        plan_version="1",
+        plan_version="2",
         response_mode="aggregate",
+        objects=(
+            _web_object("url-1", message, "https://www.cenniki.pl"),
+            _local_object("local-1", message, r"c:\moje dokumenty\cenniki.xls"),
+        ),
         actions=(
-            KnowledgeAddWebUrlsPlannedAction(
+            KnowledgeAddSourcesPlannedAction(
                 action_id="a1",
-                action_type="knowledge.add_web_urls",
+                action_type="knowledge.add_sources",
                 workspace=_magazyn_target(),
-                urls=("https://www.cenniki.pl",),
-                evidence_quotes=("cenniki.pl",),
+                source_object_ids=("url-1", "local-1"),
             ),
-            KnowledgeAddLocalReferencesPlannedAction(
+        ),
+    )
+    assert len(plan.objects) == 2
+    assert plan.actions[0].action_type == "knowledge.add_sources"
+
+
+@pytest.mark.unit
+def test_rejects_duplicate_object_id() -> None:
+    message = "dodaj https://example.com do magazyn"
+    obj = _web_object("dup", message, "https://example.com")
+    with pytest.raises(ValidationError, match="duplicate object_id"):
+        ConversationInteractionPlan(
+            plan_version="2",
+            response_mode="aggregate",
+            objects=(obj, obj),
+            actions=(
+                KnowledgeAddSourcesPlannedAction(
+                    action_id="a1",
+                    action_type="knowledge.add_sources",
+                    workspace=_magazyn_target(),
+                    source_object_ids=("dup",),
+                ),
+            ),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_duplicate_source_object_ids() -> None:
+    with pytest.raises(ValidationError, match="duplicate source_object_id"):
+        KnowledgeAddSourcesPlannedAction(
+            action_id="a1",
+            action_type="knowledge.add_sources",
+            workspace=_magazyn_target(),
+            source_object_ids=("obj-1", "obj-1"),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_empty_source_object_ids() -> None:
+    with pytest.raises(ValidationError):
+        KnowledgeAddSourcesPlannedAction(
+            action_id="a1",
+            action_type="knowledge.add_sources",
+            workspace=_magazyn_target(),
+            source_object_ids=(),
+        )
+
+
+@pytest.mark.unit
+def test_rejects_invalid_object_type() -> None:
+    with pytest.raises(ValidationError):
+        ConversationInteractionPlan.model_validate(
+            {
+                "plan_version": "2",
+                "response_mode": "aggregate",
+                "objects": [
+                    {
+                        "object_id": "x1",
+                        "object_type": "attachment",
+                        "value": "https://example.com",
+                        "evidence": {
+                            "source": "message_text",
+                            "start": 0,
+                            "end": 19,
+                            "text": "https://example.com",
+                        },
+                    }
+                ],
+                "actions": [],
+                "clarifications": [
+                    {
+                        "clarification_id": "c1",
+                        "question": "Which workspace?",
+                    }
+                ],
+            }
+        )
+
+
+@pytest.mark.unit
+def test_rejects_end_lte_start() -> None:
+    with pytest.raises(ValidationError, match="evidence end must be > start"):
+        MessageTextEvidenceSpan(
+            source="message_text",
+            start=5,
+            end=5,
+            text="x",
+        )
+
+
+@pytest.mark.unit
+def test_rejects_negative_start() -> None:
+    with pytest.raises(ValidationError, match="evidence start must be >= 0"):
+        MessageTextEvidenceSpan(
+            source="message_text",
+            start=-1,
+            end=3,
+            text="abc",
+        )
+
+
+@pytest.mark.unit
+def test_rejects_value_with_nul() -> None:
+    with pytest.raises(ValidationError):
+        WebUrlExtractedObject(
+            object_id="url-1",
+            object_type="web_url",
+            value="https://exa\x00mple.com",
+            evidence=MessageTextEvidenceSpan(
+                source="message_text",
+                start=0,
+                end=5,
+                text="https",
+            ),
+        )
+
+
+@pytest.mark.unit
+def test_preserves_spaces_slashes_and_case_without_normalization() -> None:
+    path = r"C:\Folder With Spaces\File.XLSX"
+    message = f"dodaj {path} do magazyn"
+    obj = _local_object("local-1", message, path)
+    assert obj.value == path
+    assert obj.evidence.text == path
+    assert obj.value == obj.evidence.text
+
+
+@pytest.mark.unit
+def test_valid_plan_with_multiple_actions_and_different_object_groups() -> None:
+    message = (
+        "ten adres https://cenniki.pl wrzuć do workspace numer 1, "
+        r"a pliki C:\cenniki\hurt.xlsx i C:\cenniki\detal.xlsx dodaj do workspace numer 2"
+    )
+    plan = ConversationInteractionPlan(
+        plan_version="2",
+        response_mode="aggregate",
+        objects=(
+            _web_object("url-1", message, "https://cenniki.pl"),
+            _local_object("local-1", message, r"C:\cenniki\hurt.xlsx"),
+            _local_object("local-2", message, r"C:\cenniki\detal.xlsx"),
+        ),
+        actions=(
+            KnowledgeAddSourcesPlannedAction(
+                action_id="a1",
+                action_type="knowledge.add_sources",
+                workspace=WorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                source_object_ids=("url-1",),
+            ),
+            KnowledgeAddSourcesPlannedAction(
                 action_id="a2",
-                action_type="knowledge.add_local_references",
-                workspace=_magazyn_target(),
-                references=(LocalReference(kind="file", value=r"c:\moje dokumenty\cenniki.xls"),),
-                evidence_quotes=("cenniki.xls",),
+                action_type="knowledge.add_sources",
+                workspace=WorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
+                source_object_ids=("local-1", "local-2"),
             ),
         ),
     )
     assert len(plan.actions) == 2
-    assert plan.actions[0].action_type == "knowledge.add_web_urls"
-    assert plan.actions[1].action_type == "knowledge.add_local_references"
+    assert plan.plan_version == "2"
+
+
+@pytest.mark.unit
+def test_v2_plan_structured_output_roundtrip() -> None:
+    message = "dodaj https://example.com do magazyn"
+    plan = ConversationInteractionPlan(
+        plan_version="2",
+        response_mode="aggregate",
+        objects=(_web_object("url-1", message, "https://example.com"),),
+        actions=(
+            KnowledgeAddSourcesPlannedAction(
+                action_id="a1",
+                action_type="knowledge.add_sources",
+                workspace=_magazyn_target(),
+                source_object_ids=("url-1",),
+            ),
+        ),
+    )
+    payload = plan.model_dump(mode="json")
+    restored = ConversationInteractionPlan.model_validate(payload)
+    assert restored.plan_version == "2"
+    assert restored.objects[0].object_type == "web_url"
+    assert restored.actions[0].action_type == "knowledge.add_sources"
 
 
 @pytest.mark.unit
@@ -61,7 +277,7 @@ def test_rejects_unknown_action_type() -> None:
     with pytest.raises(ValidationError):
         ConversationInteractionPlan.model_validate(
             {
-                "plan_version": "1",
+                "plan_version": "2",
                 "response_mode": "aggregate",
                 "actions": [
                     {
@@ -90,32 +306,36 @@ def test_rejects_extra_fields() -> None:
 
 @pytest.mark.unit
 def test_rejects_duplicate_action_id() -> None:
-    action = KnowledgeAddWebUrlsPlannedAction(
+    message = "dodaj https://example.com do magazyn"
+    action = KnowledgeAddSourcesPlannedAction(
         action_id="dup",
-        action_type="knowledge.add_web_urls",
+        action_type="knowledge.add_sources",
         workspace=_magazyn_target(),
-        urls=("https://example.com",),
+        source_object_ids=("url-1",),
     )
     with pytest.raises(ValidationError, match="duplicate action_id"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
+            objects=(_web_object("url-1", message, "https://example.com"),),
             actions=(action, action),
         )
 
 
 @pytest.mark.unit
 def test_rejects_dependency_to_missing_action() -> None:
+    message = "dodaj https://example.com do magazyn"
     with pytest.raises(ValidationError, match="unknown dependency"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
+            objects=(_web_object("url-1", message, "https://example.com"),),
             actions=(
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="a1",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=_magazyn_target(),
-                    urls=("https://example.com",),
+                    source_object_ids=("url-1",),
                     depends_on=("missing",),
                 ),
             ),
@@ -124,16 +344,18 @@ def test_rejects_dependency_to_missing_action() -> None:
 
 @pytest.mark.unit
 def test_rejects_self_dependency() -> None:
+    message = "dodaj https://example.com do magazyn"
     with pytest.raises(ValidationError, match="self dependency"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
+            objects=(_web_object("url-1", message, "https://example.com"),),
             actions=(
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="a1",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=_magazyn_target(),
-                    urls=("https://example.com",),
+                    source_object_ids=("url-1",),
                     depends_on=("a1",),
                 ),
             ),
@@ -142,23 +364,28 @@ def test_rejects_self_dependency() -> None:
 
 @pytest.mark.unit
 def test_rejects_dependency_cycle() -> None:
+    message = "dodaj https://a.example i https://b.example do magazyn"
     with pytest.raises(ValidationError, match="dependency cycle"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
+            objects=(
+                _web_object("url-1", message, "https://a.example"),
+                _web_object("url-2", message, "https://b.example"),
+            ),
             actions=(
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="a1",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=_magazyn_target(),
-                    urls=("https://a.example",),
+                    source_object_ids=("url-1",),
                     depends_on=("a2",),
                 ),
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="a2",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=_magazyn_target(),
-                    urls=("https://b.example",),
+                    source_object_ids=("url-2",),
                     depends_on=("a1",),
                 ),
             ),
@@ -167,25 +394,27 @@ def test_rejects_dependency_cycle() -> None:
 
 @pytest.mark.unit
 def test_created_by_action_must_reference_workspace_create() -> None:
+    message = "dodaj https://example.com do magazyn"
     with pytest.raises(ValidationError, match="created_by_action must reference workspace.create"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
+            objects=(_web_object("url-1", message, "https://example.com"),),
             actions=(
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="not-create",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=_magazyn_target(),
-                    urls=("https://example.com",),
+                    source_object_ids=("url-1",),
                 ),
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="a1",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=WorkspaceReference(
                         kind=WorkspaceReferenceKind.created_by_action,
                         value="not-create",
                     ),
-                    urls=("https://example.org",),
+                    source_object_ids=("url-1",),
                     depends_on=("not-create",),
                 ),
             ),
@@ -194,24 +423,26 @@ def test_created_by_action_must_reference_workspace_create() -> None:
 
 @pytest.mark.unit
 def test_rejects_created_by_action_without_required_dependency() -> None:
+    message = "dodaj https://example.com do magazyn"
     with pytest.raises(ValidationError, match="must depend on the workspace.create action"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
+            objects=(_web_object("url-1", message, "https://example.com"),),
             actions=(
                 WorkspaceCreatePlannedAction(
                     action_id="create-1",
                     action_type="workspace.create",
                     name="Nowy",
                 ),
-                KnowledgeAddWebUrlsPlannedAction(
+                KnowledgeAddSourcesPlannedAction(
                     action_id="a1",
-                    action_type="knowledge.add_web_urls",
+                    action_type="knowledge.add_sources",
                     workspace=WorkspaceReference(
                         kind=WorkspaceReferenceKind.created_by_action,
                         value="create-1",
                     ),
-                    urls=("https://example.com",),
+                    source_object_ids=("url-1",),
                 ),
             ),
         )
@@ -221,39 +452,38 @@ def test_rejects_created_by_action_without_required_dependency() -> None:
 def test_rejects_empty_plan_without_clarification() -> None:
     with pytest.raises(ValidationError, match="at least one action or clarification"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
         )
 
 
 @pytest.mark.unit
 def test_valid_mixed_source_plan_with_shared_workspace_target() -> None:
+    message = (
+        "dołącz informacje o cennikach ze strony https://www.cenniki.pl "
+        "oraz dorzuć moją kopię lokalną cenników z "
+        r"c:\moje dokumenty\cenniki.xls "
+        'a to wszystko do workspace "magazyn"'
+    )
     request = ConversationPlanningRequest(
-        message_text=(
-            "dołącz informacje o cennikach ze strony https://www.cenniki.pl "
-            "oraz dorzuć moją kopię lokalną cenników z "
-            r"c:\moje dokumenty\cenniki.xls "
-            'a to wszystko do workspace "magazyn"'
-        ),
+        message_text=message,
         attachments=(
             ConversationPlanningAttachment(attachment_id="att-1", file_name="extra.pdf"),
         ),
     )
     plan = ConversationInteractionPlan(
-        plan_version="1",
+        plan_version="2",
         response_mode="aggregate",
+        objects=(
+            _web_object("url-1", message, "https://www.cenniki.pl"),
+            _local_object("local-1", message, r"c:\moje dokumenty\cenniki.xls"),
+        ),
         actions=(
-            KnowledgeAddWebUrlsPlannedAction(
-                action_id="url-1",
-                action_type="knowledge.add_web_urls",
+            KnowledgeAddSourcesPlannedAction(
+                action_id="sources-1",
+                action_type="knowledge.add_sources",
                 workspace=_magazyn_target(),
-                urls=("https://www.cenniki.pl",),
-            ),
-            KnowledgeAddLocalReferencesPlannedAction(
-                action_id="local-1",
-                action_type="knowledge.add_local_references",
-                workspace=_magazyn_target(),
-                references=(LocalReference(kind="file", value=r"c:\moje dokumenty\cenniki.xls"),),
+                source_object_ids=("url-1", "local-1"),
             ),
             KnowledgeAddAttachmentsPlannedAction(
                 action_id="att-action",
@@ -269,9 +499,7 @@ def test_valid_mixed_source_plan_with_shared_workspace_target() -> None:
 
     validate_plan_against_request(plan, request)
     workspace_refs = [
-        action.workspace
-        for action in plan.actions
-        if hasattr(action, "workspace")
+        action.workspace for action in plan.actions if hasattr(action, "workspace")
     ]
     assert all(ref.kind == WorkspaceReferenceKind.name and ref.value == "magazyn" for ref in workspace_refs)
     assert not any(action.action_type == "workspace.activate" for action in plan.actions)
@@ -279,22 +507,24 @@ def test_valid_mixed_source_plan_with_shared_workspace_target() -> None:
 
 @pytest.mark.unit
 def test_workspace_target_does_not_imply_activate_action() -> None:
+    message = "dodaj https://example.com do workspace magazyn"
     plan = ConversationInteractionPlan(
-        plan_version="1",
+        plan_version="2",
         response_mode="aggregate",
+        objects=(_web_object("url-1", message, "https://example.com"),),
         actions=(
-            KnowledgeAddWebUrlsPlannedAction(
+            KnowledgeAddSourcesPlannedAction(
                 action_id="a1",
-                action_type="knowledge.add_web_urls",
+                action_type="knowledge.add_sources",
                 workspace=_magazyn_target(),
-                urls=("https://example.com",),
+                source_object_ids=("url-1",),
             ),
         ),
     )
     assert all(action.action_type != "workspace.activate" for action in plan.actions)
 
     activate_plan = ConversationInteractionPlan(
-        plan_version="1",
+        plan_version="2",
         response_mode="aggregate",
         actions=(
             WorkspaceActivatePlannedAction(
@@ -311,7 +541,7 @@ def test_workspace_target_does_not_imply_activate_action() -> None:
 @pytest.mark.unit
 def test_valid_plan_with_clarification_only() -> None:
     plan = ConversationInteractionPlan(
-        plan_version="1",
+        plan_version="2",
         response_mode="aggregate",
         clarifications=(
             ConversationClarification(
@@ -350,11 +580,11 @@ def test_rejects_nul_candidate_id() -> None:
 @pytest.mark.unit
 def test_rejects_newline_action_id() -> None:
     with pytest.raises(ValidationError):
-        KnowledgeAddWebUrlsPlannedAction(
+        KnowledgeAddSourcesPlannedAction(
             action_id="\n",
-            action_type="knowledge.add_web_urls",
+            action_type="knowledge.add_sources",
             workspace=_magazyn_target(),
-            urls=("https://example.com",),
+            source_object_ids=("url-1",),
         )
 
 
@@ -372,7 +602,7 @@ def test_rejects_duplicate_clarification_id() -> None:
     )
     with pytest.raises(ValidationError, match="duplicate clarification_id"):
         ConversationInteractionPlan(
-            plan_version="1",
+            plan_version="2",
             response_mode="aggregate",
             clarifications=(clarification, clarification),
         )
@@ -390,24 +620,13 @@ def test_rejects_duplicate_attachment_ids_in_action() -> None:
 
 
 @pytest.mark.unit
-def test_rejects_duplicate_urls_in_action() -> None:
-    with pytest.raises(ValidationError, match="duplicate url"):
-        KnowledgeAddWebUrlsPlannedAction(
-            action_id="url-action",
-            action_type="knowledge.add_web_urls",
-            workspace=_magazyn_target(),
-            urls=("https://example.com", "https://example.com"),
-        )
-
-
-@pytest.mark.unit
 def test_rejects_duplicate_dependency() -> None:
     with pytest.raises(ValidationError, match="duplicate depends_on entry"):
-        KnowledgeAddWebUrlsPlannedAction(
+        KnowledgeAddSourcesPlannedAction(
             action_id="a2",
-            action_type="knowledge.add_web_urls",
+            action_type="knowledge.add_sources",
             workspace=_magazyn_target(),
-            urls=("https://example.com",),
+            source_object_ids=("url-1",),
             depends_on=("a1", "a1"),
         )
 

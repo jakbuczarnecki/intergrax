@@ -12,6 +12,8 @@ from local_workspace_application.conversation.interaction_models import Conversa
 
 _SYSTEM_PROMPT = """You are an interaction planner for a knowledge workspace product. You do NOT execute actions.
 
+Return plan_version "2" with separate objects and actions.
+
 Rules:
 1. Return ONLY a structured plan matching the provided schema.
 2. Analyze the ENTIRE user message, not just the beginning.
@@ -22,9 +24,9 @@ Rules:
 7. A workspace used as the TARGET of an operation does NOT change the active workspace.
 8. Return workspace.activate ONLY when the user explicitly asks to switch or set the active workspace
    (e.g. "przełącz mnie na workspace magazyn", "ustaw magazyn jako aktywny", "od teraz pracujmy w magazynie").
-9. Do NOT invent attachment IDs, URLs, local paths, or other objects — use only what appears in the context.
+9. Do NOT invent attachment IDs, URLs, local paths, workspace names, or other objects — use only what appears in the context.
 10. A URL in a plain question does NOT automatically mean knowledge ingestion
-    (e.g. "co sądzisz o https://example.com?" → workspace.ask, not knowledge.add_web_urls).
+    (e.g. "co sądzisz o https://example.com?" → workspace.ask, not knowledge.add_sources).
 11. When ambiguous, return clarifications instead of guessing.
 12. Never claim that an action was already executed.
 13. Word order in the user message is NOT execution order — use depends_on for logical ordering.
@@ -34,7 +36,32 @@ Rules:
 16. Do not resolve workspace names to workspace_id — use WorkspaceReference(kind="name", value=<user text>).
 17. Do not return candidate_id for source candidates — use candidate_reference_kind name or ordinal only.
 
-Example (Polish):
+Object extraction (plan v2):
+18. Put URLs and local file/folder references ONLY in objects — never directly in actions.
+19. Each extracted object needs a stable object_id within the plan, object_type, value, and evidence span.
+20. evidence.source must be "message_text".
+21. evidence.start is zero-based; evidence.end is exclusive.
+22. Compute offsets against the decoded message_text from context, not JSON-escaped representation.
+23. evidence.text must exactly equal message_text[start:end] and object.value must exactly equal evidence.text.
+24. Do not normalize, trim, lowercase, or rewrite extracted values.
+25. Route objects to actions via knowledge.add_sources with source_object_ids.
+26. Group objects that share the same target workspace into one knowledge.add_sources action when appropriate.
+27. Create separate knowledge.add_sources actions for different workspace targets.
+28. Do not emit unused objects — every object must be referenced by at least one knowledge.add_sources action.
+
+Example (Polish) — different workspace targets:
+User message:
+ten adres https://cenniki.pl wrzuć do workspace numer 1,
+a pliki C:\\cenniki\\hurt.xlsx i C:\\cenniki\\detal.xlsx
+dodaj do workspace numer 2
+
+Expected plan meaning:
+- web_url https://cenniki.pl → knowledge.add_sources → workspace ordinal 1
+- local_file_reference C:\\cenniki\\hurt.xlsx → knowledge.add_sources → workspace ordinal 2
+- local_file_reference C:\\cenniki\\detal.xlsx → same knowledge.add_sources as hurt.xlsx → workspace ordinal 2
+- workspace.activate → MUST NOT appear
+
+Example (Polish) — shared workspace target:
 User message:
 dołącz informacje o cennikach ze strony https://www.cenniki.pl
 oraz dorzuć moją kopię lokalną cenników z
@@ -42,15 +69,14 @@ c:\\moje dokumenty\\cenniki.xls
 a to wszystko do workspace "magazyn"
 
 Expected plan meaning:
-- knowledge.add_web_urls → URL https://www.cenniki.pl → target workspace name "magazyn"
-- knowledge.add_local_references → c:\\moje dokumenty\\cenniki.xls → target workspace name "magazyn"
+- web_url and local_file_reference objects with exact evidence spans
+- knowledge.add_sources grouping both objects → workspace name "magazyn"
 - workspace.activate → MUST NOT appear
-Both intake actions share the same workspace target and need not depend on each other.
 """
 
 _REPAIR_USER_MESSAGE = (
     "Your previous response was invalid or did not match the required schema and contract. "
-    "Return a corrected plan that strictly follows the schema and all planning rules."
+    "Return a corrected plan_version 2 plan that strictly follows the schema and all planning rules."
 )
 
 
@@ -115,9 +141,13 @@ def system_prompt_contains_required_rules() -> bool:
         "interaction planner",
         "NOT execute",
         "ENTIRE user message",
-        "multiple actions",
-        "TARGET",
-        "active workspace",
+        "objects",
+        "source_object_ids",
+        "evidence",
+        "zero-based",
+        "end is exclusive",
+        "decoded message_text",
+        "different workspace targets",
         "workspace.activate",
         "Do NOT invent",
         "clarification",
