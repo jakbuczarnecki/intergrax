@@ -44,6 +44,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionsReadClient,
     MsGraphDrivePermissionsReader,
     parse_msgraph_drive_permission,
+    validate_msgraph_drive_permission,
+    validate_msgraph_drive_permission_page,
     validate_msgraph_drive_permissions_continuation,
 )
 
@@ -81,6 +83,8 @@ __all__ = [
     "validate_msgraph_continuation_url",
     "validate_msgraph_drive_delta_continuation",
     "validate_msgraph_drive_download_url",
+    "validate_msgraph_drive_permission",
+    "validate_msgraph_drive_permission_page",
     "validate_msgraph_drive_permissions_continuation",
     "validate_msgraph_drive_id",
 ]

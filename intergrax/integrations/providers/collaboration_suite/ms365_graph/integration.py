@@ -21,6 +21,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionPage,
     MsGraphDrivePermissionsReadClient,
     MsGraphKnowledgeContinuation,
+    validate_msgraph_drive_permission_page,
 )
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -66,10 +67,11 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         item: MsGraphDriveItem,
         continuation: MsGraphKnowledgeContinuation | None = None,
     ) -> MsGraphDrivePermissionPage:
-        return self._require_drive_permissions_client().read_drive_permissions_page(
+        result = self._require_drive_permissions_client().read_drive_permissions_page(
             item=item,
             continuation=continuation,
         )
+        return validate_msgraph_drive_permission_page(result)
 
     def read_drive_file_content(
         self,

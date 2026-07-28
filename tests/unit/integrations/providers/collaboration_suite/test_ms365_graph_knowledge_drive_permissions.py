@@ -29,14 +29,18 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDriveItem,
     MsGraphDriveItemKind,
     MsGraphDriveLinkScope,
+    MsGraphDrivePermission,
     MsGraphDrivePermissionKind,
     MsGraphDrivePermissionPage,
+    MsGraphDrivePermissionPrincipal,
     MsGraphDrivePermissionPrincipalKind,
     MsGraphDrivePermissionsReader,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeContinuationKind,
     MsGraphKnowledgeTransport,
     parse_msgraph_drive_permission,
+    validate_msgraph_drive_permission,
+    validate_msgraph_drive_permission_page,
     validate_msgraph_drive_permissions_continuation,
 )
 
@@ -152,7 +156,38 @@ def _assert_safe_provider_error(exc: BaseException) -> None:
         assert forbidden not in message
 
 
-# --- parser happy paths ---
+def _valid_principal() -> MsGraphDrivePermissionPrincipal:
+    return MsGraphDrivePermissionPrincipal(
+        kind=MsGraphDrivePermissionPrincipalKind.USER,
+        principal_id=_USER_ID,
+    )
+
+
+def _valid_direct_permission(**overrides: object) -> MsGraphDrivePermission:
+    defaults: dict[str, object] = {
+        "permission_id": "perm-direct",
+        "roles": ("read",),
+        "kind": MsGraphDrivePermissionKind.DIRECT,
+        "principals": (_valid_principal(),),
+        "projection_complete": True,
+    }
+    defaults.update(overrides)
+    return MsGraphDrivePermission(**defaults)  # type: ignore[arg-type]
+
+
+def _valid_link_permission(**overrides: object) -> MsGraphDrivePermission:
+    defaults: dict[str, object] = {
+        "permission_id": "perm-link",
+        "roles": ("read",),
+        "kind": MsGraphDrivePermissionKind.LINK,
+        "link_scope": MsGraphDriveLinkScope.ANONYMOUS,
+        "projection_complete": True,
+    }
+    defaults.update(overrides)
+    return MsGraphDrivePermission(**defaults)  # type: ignore[arg-type]
+
+
+# --- model shape invariants ---
 
 
 def test_parse_direct_user_permission() -> None:
@@ -820,3 +855,419 @@ def test_models_repr_and_errors_exclude_secrets() -> None:
         _SECRET_TOKEN,
     ):
         assert forbidden not in text
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {
+            "kind": MsGraphDrivePermissionKind.DIRECT,
+            "principals": (),
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.DIRECT,
+            "link_scope": MsGraphDriveLinkScope.ANONYMOUS,
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.DIRECT,
+            "link_type": "view",
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.LINK,
+            "link_scope": None,
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.LINK,
+            "link_scope": MsGraphDriveLinkScope.USERS,
+            "principals": (),
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.LINK,
+            "link_scope": MsGraphDriveLinkScope.EXISTING_ACCESS,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.LINK,
+            "link_scope": MsGraphDriveLinkScope.UNKNOWN,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.INVITATION,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.INVITATION,
+            "link_scope": MsGraphDriveLinkScope.ANONYMOUS,
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.INVITATION,
+            "link_type": "view",
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.UNKNOWN,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.UNKNOWN,
+            "link_scope": MsGraphDriveLinkScope.ANONYMOUS,
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.UNKNOWN,
+            "link_type": "view",
+            "projection_complete": False,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.DIRECT,
+            "roles": ("customRole",),
+            "projection_complete": True,
+        },
+    ],
+)
+def test_permission_shape_invariants_rejected(kwargs: dict[str, object]) -> None:
+    base = {
+        "permission_id": "perm-shape",
+        "roles": ("read",),
+        "kind": MsGraphDrivePermissionKind.DIRECT,
+        "principals": (_valid_principal(),),
+        "projection_complete": False,
+    }
+    base.update(kwargs)
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        MsGraphDrivePermission(**base)  # type: ignore[arg-type]
+
+
+def test_conservative_direct_permission_allowed() -> None:
+    perm = MsGraphDrivePermission(
+        permission_id="perm-conservative-direct",
+        roles=("read",),
+        kind=MsGraphDrivePermissionKind.DIRECT,
+        principals=(),
+        projection_complete=False,
+    )
+    assert perm.projection_complete is False
+
+
+def test_conservative_anonymous_link_allowed() -> None:
+    perm = MsGraphDrivePermission(
+        permission_id="perm-conservative-anon",
+        roles=("read",),
+        kind=MsGraphDrivePermissionKind.LINK,
+        link_scope=MsGraphDriveLinkScope.ANONYMOUS,
+        projection_complete=False,
+    )
+    assert perm.projection_complete is False
+
+
+def test_conservative_users_link_with_principals_allowed() -> None:
+    perm = MsGraphDrivePermission(
+        permission_id="perm-conservative-users",
+        roles=("read",),
+        kind=MsGraphDrivePermissionKind.LINK,
+        link_scope=MsGraphDriveLinkScope.USERS,
+        principals=(_valid_principal(),),
+        projection_complete=False,
+    )
+    assert perm.projection_complete is False
+
+
+# --- principal model_construct boundary ---
+
+
+@pytest.mark.parametrize(
+    "principal_kwargs",
+    [
+        {"principal_id": 123},  # type: ignore[dict-item]
+        {"principal_id": ""},
+        {"principal_id": "bad\x00id"},
+        {"kind": "user"},  # type: ignore[dict-item]
+        {"kind": None, "principal_id": _USER_ID},  # type: ignore[dict-item]
+    ],
+)
+def test_malformed_principal_model_construct_rejected(
+    principal_kwargs: dict[str, object],
+) -> None:
+    defaults: dict[str, object] = {
+        "kind": MsGraphDrivePermissionPrincipalKind.USER,
+        "principal_id": _USER_ID,
+    }
+    defaults.update(principal_kwargs)
+    malformed = MsGraphDrivePermissionPrincipal.model_construct(**defaults)  # type: ignore[arg-type]
+    permission = MsGraphDrivePermission.model_construct(
+        permission_id="perm-bad-principal",
+        roles=("read",),
+        kind=MsGraphDrivePermissionKind.DIRECT,
+        principals=(malformed,),
+        projection_complete=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_drive_permission(permission)
+    _assert_safe_provider_error(exc)
+
+
+def test_malformed_principal_missing_principal_id_rejected() -> None:
+    malformed = MsGraphDrivePermissionPrincipal.model_construct(
+        kind=MsGraphDrivePermissionPrincipalKind.USER,
+    )
+    permission = MsGraphDrivePermission.model_construct(
+        permission_id="perm-bad-principal",
+        roles=("read",),
+        kind=MsGraphDrivePermissionKind.DIRECT,
+        principals=(malformed,),
+        projection_complete=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_drive_permission(permission)
+    _assert_safe_provider_error(exc)
+
+
+# --- permission model_construct boundary ---
+
+
+@pytest.mark.parametrize(
+    "permission_kwargs",
+    [
+        {"permission_id": 123},  # type: ignore[dict-item]
+        {"roles": ["read"]},  # type: ignore[dict-item]
+        {"roles": (123,)},  # type: ignore[dict-item]
+        {"kind": "direct"},  # type: ignore[dict-item]
+        {"projection_complete": "true"},  # type: ignore[dict-item]
+        {
+            "kind": MsGraphDrivePermissionKind.DIRECT,
+            "principals": (
+                MsGraphDrivePermissionPrincipal.model_construct(
+                    kind=MsGraphDrivePermissionPrincipalKind.USER,
+                    principal_id="",
+                ),
+            ),
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.INVITATION,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.UNKNOWN,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.LINK,
+            "link_scope": MsGraphDriveLinkScope.EXISTING_ACCESS,
+            "projection_complete": True,
+        },
+        {
+            "kind": MsGraphDrivePermissionKind.LINK,
+            "link_scope": MsGraphDriveLinkScope.USERS,
+            "principals": (),
+            "projection_complete": True,
+        },
+    ],
+)
+def test_malformed_permission_model_construct_rejected(
+    permission_kwargs: dict[str, object],
+) -> None:
+    defaults: dict[str, object] = {
+        "permission_id": "perm-bad",
+        "roles": ("read",),
+        "kind": MsGraphDrivePermissionKind.DIRECT,
+        "principals": (_valid_principal(),),
+        "projection_complete": True,
+    }
+    defaults.update(permission_kwargs)
+    malformed = MsGraphDrivePermission.model_construct(**defaults)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_drive_permission(malformed)
+    _assert_safe_provider_error(exc)
+
+
+# --- page model_construct boundary ---
+
+
+def _valid_permission_page_item() -> MsGraphDrivePermission:
+    return _valid_direct_permission(permission_id="perm-page-1")
+
+
+@pytest.mark.parametrize(
+    ("items", "page_overrides"),
+    [
+        ([], {}),  # type: ignore[list-item]
+        (("not-a-permission",), {}),  # type: ignore[list-item]
+        (
+            (
+                MsGraphDrivePermission.model_construct(
+                    permission_id="perm-malformed",
+                    roles=("read",),
+                    kind=MsGraphDrivePermissionKind.INVITATION,
+                    projection_complete=True,
+                ),
+            ),
+            {},
+        ),
+        ((_valid_permission_page_item(), _valid_permission_page_item()), {}),
+        ((), {"continuation": "bad"}),  # type: ignore[dict-item]
+        (
+            (),
+            {
+                "continuation": MsGraphKnowledgeContinuation(
+                    kind=MsGraphKnowledgeContinuationKind.DELTA,
+                    url=_permissions_next_link(),
+                )
+            },
+        ),
+        ((), {"acl_complete": True}),  # type: ignore[dict-item]
+        ((), {"inheritance_complete": True}),  # type: ignore[dict-item]
+        ((), {"acl_complete": 0}),  # type: ignore[dict-item]
+        ((), {"inheritance_complete": None}),  # type: ignore[dict-item]
+    ],
+)
+def test_malformed_permission_page_model_construct_rejected(
+    items: tuple[object, ...] | list[object],
+    page_overrides: dict[str, object],
+) -> None:
+    defaults: dict[str, object] = {
+        "items": items,
+        "continuation": None,
+        "acl_complete": False,
+        "inheritance_complete": False,
+    }
+    defaults.update(page_overrides)
+    malformed = MsGraphDrivePermissionPage.model_construct(**defaults)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_drive_permission_page(malformed)
+    _assert_safe_provider_error(exc)
+
+
+def test_validate_permission_returns_new_instance() -> None:
+    original = _valid_direct_permission()
+    validated = validate_msgraph_drive_permission(original)
+    assert validated == original
+    assert validated is not original
+
+
+def test_validate_permission_page_returns_new_instance() -> None:
+    original = MsGraphDrivePermissionPage(items=(_valid_permission_page_item(),))
+    validated = validate_msgraph_drive_permission_page(original)
+    assert validated == original
+    assert validated is not original
+    assert validated.items[0] is not original.items[0]
+
+
+# --- custom-client integration boundary ---
+
+
+class _CustomPermissionsSuite(CollaborationSuite):
+    def __init__(self, *, page: MsGraphDrivePermissionPage) -> None:
+        self._page = page
+
+    def read_drive_permissions_page(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphDrivePermissionPage:
+        return self._page
+
+    def get_message(self, user_id: str, message_id: str):
+        raise NotImplementedError
+
+    def list_messages(self, user_id: str, *, folder: str = "inbox", limit: int = 25):
+        raise NotImplementedError
+
+    def send_mail(self, user_id: str, *, subject: str, body: str, to):
+        raise NotImplementedError
+
+    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+        raise NotImplementedError
+
+    def get_user(self, user_id: str):
+        raise NotImplementedError
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        raise NotImplementedError
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees=(),
+    ):
+        raise NotImplementedError
+
+
+def test_custom_client_valid_page_revalidated() -> None:
+    supplied = MsGraphDrivePermissionPage(items=(_valid_permission_page_item(),))
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _CustomPermissionsSuite(page=supplied),
+        enabled=True,
+    )
+    returned = integration.read_drive_permissions_page(item=_drive_item())
+    assert returned == supplied
+    assert returned is not supplied
+    assert returned.items[0] is not supplied.items[0]
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        MsGraphDrivePermissionPage.model_construct(
+            items=(_valid_permission_page_item(),),
+            acl_complete=True,  # type: ignore[arg-type]
+            inheritance_complete=False,
+        ),
+        MsGraphDrivePermissionPage.model_construct(
+            items=(
+                MsGraphDrivePermission.model_construct(
+                    permission_id="perm-false-complete-unknown",
+                    roles=("read",),
+                    kind=MsGraphDrivePermissionKind.UNKNOWN,
+                    projection_complete=True,
+                ),
+            )
+        ),
+        MsGraphDrivePermissionPage.model_construct(
+            items=(
+                MsGraphDrivePermission.model_construct(
+                    permission_id="perm-false-complete-invite",
+                    roles=("read",),
+                    kind=MsGraphDrivePermissionKind.INVITATION,
+                    projection_complete=True,
+                ),
+            )
+        ),
+        MsGraphDrivePermissionPage.model_construct(
+            items=(
+                MsGraphDrivePermission.model_construct(
+                    permission_id="perm-bad-nested",
+                    roles=("read",),
+                    kind=MsGraphDrivePermissionKind.DIRECT,
+                    principals=(
+                        MsGraphDrivePermissionPrincipal.model_construct(
+                            kind=MsGraphDrivePermissionPrincipalKind.USER,
+                            principal_id="",
+                        ),
+                    ),
+                    projection_complete=True,
+                ),
+            )
+        ),
+    ],
+)
+def test_custom_client_malformed_page_rejected(page: MsGraphDrivePermissionPage) -> None:
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _CustomPermissionsSuite(page=page),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        integration.read_drive_permissions_page(item=_drive_item())
+    _assert_safe_provider_error(exc)

@@ -169,10 +169,21 @@ class MsGraphDrivePermission(BaseModel):
     def _validate_principals(cls, value: object) -> tuple[MsGraphDrivePermissionPrincipal, ...]:
         if type(value) is not tuple:
             raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+        validated: list[MsGraphDrivePermissionPrincipal] = []
         for principal in value:
-            if not isinstance(principal, MsGraphDrivePermissionPrincipal):
-                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
-        return value
+            try:
+                if isinstance(principal, MsGraphDrivePermissionPrincipal):
+                    revalidated = MsGraphDrivePermissionPrincipal.model_validate(
+                        principal.model_dump(mode="python")
+                    )
+                elif isinstance(principal, dict):
+                    revalidated = MsGraphDrivePermissionPrincipal.model_validate(principal)
+                else:
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+            except (ValueError, TypeError, AttributeError, ValidationError):
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+            validated.append(revalidated)
+        return tuple(validated)
 
     @field_validator("link_type", mode="before")
     @classmethod
@@ -202,7 +213,12 @@ class MsGraphDrivePermission(BaseModel):
             raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
         if value.tzinfo is None:
             raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
-        return value.astimezone(timezone.utc)
+        try:
+            if value.utcoffset() is None:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+            return value.astimezone(timezone.utc)
+        except (ValueError, TypeError, OverflowError):
+            raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
 
     @field_validator("has_password", mode="before")
     @classmethod
@@ -228,8 +244,45 @@ class MsGraphDrivePermission(BaseModel):
                 continue
             seen_principals.add(key)
             deduped.append(principal)
-        if tuple(deduped) != self.principals:
-            return self.model_copy(update={"principals": tuple(deduped)})
+        principals = tuple(deduped)
+        needs_copy = principals != self.principals
+
+        if not _roles_are_known(self.roles) and self.projection_complete:
+            raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+
+        if self.kind is MsGraphDrivePermissionKind.DIRECT:
+            if self.link_scope is not None or self.link_type is not None:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+            if self.projection_complete:
+                if not principals:
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+                if not _roles_are_known(self.roles):
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+        elif self.kind is MsGraphDrivePermissionKind.LINK:
+            if self.link_scope is None:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+            if self.projection_complete:
+                if not _roles_are_known(self.roles):
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+                if self.link_scope is MsGraphDriveLinkScope.EXISTING_ACCESS:
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+                if self.link_scope is MsGraphDriveLinkScope.UNKNOWN:
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+                if self.link_scope is MsGraphDriveLinkScope.USERS and not principals:
+                    raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+        elif self.kind is MsGraphDrivePermissionKind.INVITATION:
+            if self.projection_complete:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+            if self.link_scope is not None or self.link_type is not None:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+        elif self.kind is MsGraphDrivePermissionKind.UNKNOWN:
+            if self.projection_complete:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+            if self.link_scope is not None or self.link_type is not None:
+                raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE)
+
+        if needs_copy:
+            return self.model_copy(update={"principals": principals})
         return self
 
     @property
@@ -693,6 +746,65 @@ def _safe_construct_permission_page(**kwargs: object) -> MsGraphDrivePermissionP
         raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
 
 
+def validate_msgraph_drive_permission(value: object) -> MsGraphDrivePermission:
+    """Deep-revalidate a Drive permission instance against the full model contract."""
+    if not isinstance(value, MsGraphDrivePermission):
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+    try:
+        return MsGraphDrivePermission.model_validate(value.model_dump(mode="python"))
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+
+def validate_msgraph_drive_permission_page(value: object) -> MsGraphDrivePermissionPage:
+    """Deep-revalidate a Drive permissions page and every nested permission."""
+    if not isinstance(value, MsGraphDrivePermissionPage):
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+    if type(value.items) is not tuple:
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+    validated_items: list[MsGraphDrivePermission] = []
+    for item in value.items:
+        if not isinstance(item, MsGraphDrivePermission):
+            raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+        validated_items.append(validate_msgraph_drive_permission(item))
+
+    permission_ids = [item.permission_id for item in validated_items]
+    if len(permission_ids) != len(set(permission_ids)):
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+    continuation: MsGraphKnowledgeContinuation | None = None
+    raw_continuation = value.continuation
+    if raw_continuation is not None:
+        if not isinstance(raw_continuation, MsGraphKnowledgeContinuation):
+            raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+        try:
+            revalidated_continuation = MsGraphKnowledgeContinuation.model_validate(
+                raw_continuation.model_dump(mode="python")
+            )
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+        if revalidated_continuation.kind is not MsGraphKnowledgeContinuationKind.NEXT_PAGE:
+            raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+        continuation = revalidated_continuation
+
+    if value.acl_complete is not False:
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+    if value.inheritance_complete is not False:
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+    try:
+        return MsGraphDrivePermissionPage(
+            items=tuple(validated_items),
+            continuation=continuation,
+            acl_complete=False,
+            inheritance_complete=False,
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+
 def _graph_base_path(graph_base_url: str) -> str:
     parsed_base = urlparse(graph_base_url)
     return parsed_base.path.rstrip("/") or "/"
@@ -843,7 +955,9 @@ class MsGraphDrivePermissionsReader:
             )
             for raw_item in collection_page.items
         )
-        return _safe_construct_permission_page(
-            items=parsed_items,
-            continuation=collection_page.continuation,
+        return validate_msgraph_drive_permission_page(
+            _safe_construct_permission_page(
+                items=parsed_items,
+                continuation=collection_page.continuation,
+            )
         )
