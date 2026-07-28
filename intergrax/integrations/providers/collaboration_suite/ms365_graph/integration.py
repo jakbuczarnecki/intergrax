@@ -12,7 +12,11 @@ from pydantic import PrivateAttr
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    MsGraphDriveContentReadClient,
     MsGraphDriveDeltaPage,
+    MsGraphDriveFileContent,
+    MsGraphDriveItem,
     MsGraphDriveKnowledgeReadClient,
     MsGraphKnowledgeContinuation,
 )
@@ -52,6 +56,17 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             drive_id=drive_id,
             continuation=continuation,
             limit=limit,
+        )
+
+    def read_drive_file_content(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        max_bytes: int = DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    ) -> MsGraphDriveFileContent:
+        return self._require_drive_content_client().read_drive_file_content(
+            item=item,
+            max_bytes=max_bytes,
         )
 
     def create_event(
@@ -128,6 +143,14 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphDriveKnowledgeReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph integration does not expose Drive knowledge capability",
+            )
+        return client
+
+    def _require_drive_content_client(self) -> MsGraphDriveContentReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphDriveContentReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph Drive download client is not configured",
             )
         return client
 

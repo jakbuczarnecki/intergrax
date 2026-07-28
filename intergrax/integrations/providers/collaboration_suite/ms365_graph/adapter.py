@@ -16,7 +16,10 @@ from intergrax.integrations.contracts.collaboration_suite import (
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_DRIVE_CONTENT_MAX_BYTES,
     MsGraphDriveDeltaPage,
+    MsGraphDriveFileContent,
+    MsGraphDriveItem,
     MsGraphKnowledgeContinuation,
 )
 
@@ -47,6 +50,14 @@ class _Ms365GraphCollaborationSuite:
             continuation=continuation,
             limit=limit,
         )
+
+    def read_drive_file_content(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        max_bytes: int = DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    ) -> MsGraphDriveFileContent:
+        return self._client.read_drive_file_content(item=item, max_bytes=max_bytes)
 
     def get_message(self, user_id: str, message_id: str) -> MailMessage:
         return self._client.get_message(user_id, message_id)

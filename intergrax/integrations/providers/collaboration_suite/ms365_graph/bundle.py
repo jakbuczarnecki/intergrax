@@ -14,10 +14,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import _Ms365GraphCollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+    Ms365GraphCollaborationSuiteClient,
+    Ms365GraphCollaborationSuiteIntegration,
+    Ms365GraphCollaborationSuiteIntegrationConfig,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.opens import (
     open_graph_rest_client,
     open_ms365_graph_collaboration_suite,
@@ -42,6 +48,8 @@ def create_ms365_graph_integration(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
+    download_http_client: Optional[Any] = None,
+    download_http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> Ms365GraphIntegrationBundle:
     config = resolve_ms365_graph_config(**config_overrides)
@@ -57,6 +65,8 @@ def create_ms365_graph_integration(
             http_client=http_client,
             http_client_factory=http_client_factory,
             access_token=access_token,
+            download_http_client=download_http_client,
+            download_http_client_factory=download_http_client_factory,
         )
         suite = open_ms365_graph_collaboration_suite(
             config,
@@ -77,6 +87,8 @@ def create_ms365_graph_collaboration_suite(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
+    download_http_client: Optional[Any] = None,
+    download_http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     **config_overrides: object,
 ) -> Ms365GraphCollaborationSuiteIntegration:
     """Catalog factory for ``"ms365_graph"`` / ``COLLABORATION_SUITE``."""
@@ -86,16 +98,10 @@ def create_ms365_graph_collaboration_suite(
         http_client=http_client,
         http_client_factory=http_client_factory,
         access_token=access_token,
+        download_http_client=download_http_client,
+        download_http_client_factory=download_http_client_factory,
         **config_overrides,
     ).collaboration_suite
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
-    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
-    Ms365GraphCollaborationSuiteIntegration,
-    Ms365GraphCollaborationSuiteIntegrationConfig,
-    Ms365GraphCollaborationSuiteClient,
-)
 
 
 def create_ms365_graph_collaboration_suite_integration(

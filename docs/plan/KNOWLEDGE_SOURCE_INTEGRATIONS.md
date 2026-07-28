@@ -56,9 +56,10 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-DELTA
   drive inventory, delta and tombstones
-  NEXT:
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-CONTENT
-  PLANNED:
+  bounded binary content download
+  NEXT:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
@@ -503,10 +504,11 @@ legacy WikiKnowledge search migration deferred
 **Status:** `IN_PROGRESS`
 
 The shared Microsoft Graph foundation is implemented.
-Drive inventory and delta are implemented for one known drive ID.
-File content and permissions are not implemented yet.
+Drive inventory, delta and bounded binary content download are implemented for one known drive ID.
+Download URLs are never persisted.
+File conversion and permission projection are not implemented yet.
 No Microsoft Vendor Knowledge adapter is exposed yet.
-Mail is the next low-level surface after Drive content.
+Mail is the next low-level surface after Drive permissions.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 

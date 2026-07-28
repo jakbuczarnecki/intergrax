@@ -18,8 +18,12 @@ from intergrax.integrations.contracts.collaboration_suite import (
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_DRIVE_CONTENT_MAX_BYTES,
     MsGraphDriveDeltaPage,
+    MsGraphDriveFileContent,
+    MsGraphDriveItem,
     MsGraphDriveKnowledgeReader,
+    MsGraphDriveContentReader,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeTransport,
 )
@@ -90,6 +94,7 @@ class GraphRestClient:
         config: Ms365GraphIntegrationConfig,
         *,
         http_client: Any,
+        download_http_client: Any = None,
     ) -> None:
         if not config.tenant_id:
             raise IntegrationConfigurationError(
@@ -102,6 +107,7 @@ class GraphRestClient:
             )
         self._config = config
         self._http_client = http_client
+        self._download_http_client = download_http_client
         self._knowledge_transport = MsGraphKnowledgeTransport(
             config=config,
             http_client=http_client,
@@ -110,6 +116,14 @@ class GraphRestClient:
             config=config,
             transport=self._knowledge_transport,
         )
+        self._drive_content_reader: MsGraphDriveContentReader | None = None
+        if download_http_client is not None:
+            self._drive_content_reader = MsGraphDriveContentReader(
+                config=config,
+                graph_transport=self._knowledge_transport,
+                graph_http_client=http_client,
+                download_http_client=download_http_client,
+            )
 
     @property
     def config(self) -> Ms365GraphIntegrationConfig:
@@ -127,6 +141,18 @@ class GraphRestClient:
             continuation=continuation,
             limit=limit,
         )
+
+    def read_drive_file_content(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        max_bytes: int = DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    ) -> MsGraphDriveFileContent:
+        if self._drive_content_reader is None:
+            raise IntegrationConfigurationError(
+                "Microsoft Graph Drive download client is not configured"
+            )
+        return self._drive_content_reader.read_file_content(item=item, max_bytes=max_bytes)
 
     def get_message(self, user_id: str, message_id: str) -> MailMessage:
         path = f"/users/{quote(user_id, safe='')}/messages/{quote(message_id, safe='')}"

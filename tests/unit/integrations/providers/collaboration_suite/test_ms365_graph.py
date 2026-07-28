@@ -336,7 +336,8 @@ def test_opens_accepts_access_token_without_token_fetch() -> None:
 
         client = open_graph_rest_client(config, access_token="test-token")
 
-    client_cls.assert_called_once()
-    headers = client_cls.call_args.kwargs["headers"]
-    assert headers["Authorization"] == "Bearer test-token"
+    assert client_cls.call_count == 2
+    graph_kwargs = client_cls.call_args_list[0].kwargs
+    assert graph_kwargs["follow_redirects"] is False
+    assert graph_kwargs["headers"]["Authorization"] == "Bearer test-token"
     assert client.config is config

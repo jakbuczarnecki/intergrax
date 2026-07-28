@@ -56,9 +56,23 @@ def _create_http_client(config: Ms365GraphIntegrationConfig) -> Any:
     return httpx.Client(
         base_url=config.graph_base_url.rstrip("/"),
         timeout=timeout,
+        follow_redirects=False,
         headers={
             "Accept": "application/json",
             "Authorization": f"Bearer {token}",
+        },
+    )
+
+
+def _create_download_http_client(config: Ms365GraphIntegrationConfig) -> Any:
+    import httpx
+
+    timeout = float(config.timeout_seconds or DEFAULT_TIMEOUT_SECONDS)
+    return httpx.Client(
+        timeout=timeout,
+        follow_redirects=False,
+        headers={
+            "Accept": "application/octet-stream",
         },
     )
 
@@ -69,8 +83,12 @@ def open_graph_rest_client(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
+    download_http_client: Optional[Any] = None,
+    download_http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
 ) -> GraphRestClient:
+    created_graph_client = False
     if http_client is None:
+        created_graph_client = True
         if access_token is not None:
             import httpx
 
@@ -78,6 +96,7 @@ def open_graph_rest_client(
             http_client = httpx.Client(
                 base_url=config.graph_base_url.rstrip("/"),
                 timeout=timeout,
+                follow_redirects=False,
                 headers={
                     "Accept": "application/json",
                     "Authorization": f"Bearer {access_token}",
@@ -86,7 +105,14 @@ def open_graph_rest_client(
         else:
             factory = http_client_factory or _create_http_client
             http_client = factory(config)
-    return GraphRestClient(config, http_client=http_client)
+    if created_graph_client and download_http_client is None:
+        download_factory = download_http_client_factory or _create_download_http_client
+        download_http_client = download_factory(config)
+    return GraphRestClient(
+        config,
+        http_client=http_client,
+        download_http_client=download_http_client,
+    )
 
 
 def open_ms365_graph_collaboration_suite(
@@ -97,6 +123,8 @@ def open_ms365_graph_collaboration_suite(
     http_client: Optional[Any] = None,
     http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
     access_token: Optional[str] = None,
+    download_http_client: Optional[Any] = None,
+    download_http_client_factory: Optional[Callable[[Ms365GraphIntegrationConfig], Any]] = None,
 ) -> Ms365GraphCollaborationSuiteIntegration:
     if implementation is not None:
         if isinstance(implementation, Ms365GraphCollaborationSuiteIntegration):
@@ -107,5 +135,7 @@ def open_ms365_graph_collaboration_suite(
         http_client=http_client,
         http_client_factory=http_client_factory,
         access_token=access_token,
+        download_http_client=download_http_client,
+        download_http_client_factory=download_http_client_factory,
     )
     return Ms365GraphCollaborationSuiteIntegration.from_client(_Ms365GraphCollaborationSuite(rest_client))
