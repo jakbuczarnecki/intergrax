@@ -17,6 +17,9 @@ from intergrax.integrations.contracts.collaboration_suite import (
     UserRecord,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MsGraphKnowledgeTransport,
+)
 
 _MESSAGE_SELECT = "id,subject,bodyPreview,from,receivedDateTime"
 _EVENT_SELECT = "id,subject,start,end,location,organizer"
@@ -96,6 +99,10 @@ class GraphRestClient:
             )
         self._config = config
         self._http_client = http_client
+        self._knowledge_transport = MsGraphKnowledgeTransport(
+            config=config,
+            http_client=http_client,
+        )
 
     @property
     def config(self) -> Ms365GraphIntegrationConfig:
