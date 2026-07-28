@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
+from local_workspace_application.conversation.interaction_draft_models import ConversationInteractionDraft
 from local_workspace_application.conversation.interaction_models import (
     ConversationInteractionPlan,
     ConversationPlanningRequest,
@@ -24,8 +25,15 @@ from local_workspace_application.conversation.interaction_models import (
     collect_user_text_context,
     request_attachment_ids,
 )
-
-from local_workspace_application.conversation.interaction_prompt import build_planning_messages
+from local_workspace_application.conversation.interaction_plan_compiler import (
+    ConversationDraftCompilationError,
+    ConversationDraftCompilationErrorCode,
+    compile_interaction_draft,
+)
+from local_workspace_application.conversation.interaction_prompt import (
+    RepairCategory,
+    build_planning_messages,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +65,45 @@ class ConversationPlanningError(Exception):
 
 class PlanRequestValidationError(ValueError):
     """Deterministic validation failure when a plan does not match the request."""
+
+
+def _repair_category_for_error(exc: Exception) -> RepairCategory:
+    if isinstance(exc, ValidationError):
+        return RepairCategory.draft_contract
+
+    if isinstance(exc, ConversationDraftCompilationError):
+        mapping = {
+            ConversationDraftCompilationErrorCode.source_value_not_found: (
+                RepairCategory.source_value_not_grounded
+            ),
+            ConversationDraftCompilationErrorCode.source_occurrence_required: (
+                RepairCategory.source_occurrence_required
+            ),
+            ConversationDraftCompilationErrorCode.source_occurrence_out_of_range: (
+                RepairCategory.source_occurrence_required
+            ),
+            ConversationDraftCompilationErrorCode.invalid_action_reference: (
+                RepairCategory.invalid_action_reference
+            ),
+            ConversationDraftCompilationErrorCode.self_action_reference: (
+                RepairCategory.invalid_action_reference
+            ),
+            ConversationDraftCompilationErrorCode.invalid_created_workspace_reference: (
+                RepairCategory.invalid_created_workspace_reference
+            ),
+            ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference: (
+                RepairCategory.invalid_created_workspace_reference
+            ),
+            ConversationDraftCompilationErrorCode.conflicting_source_declaration: (
+                RepairCategory.draft_contract
+            ),
+        }
+        return mapping.get(exc.code, RepairCategory.draft_contract)
+
+    if isinstance(exc, PlanRequestValidationError):
+        return RepairCategory.canonical_request_grounding
+
+    return RepairCategory.draft_contract
 
 
 def validate_plan_against_request(
@@ -185,13 +232,19 @@ class ConversationInteractionPlanner:
 
         for attempt in range(2):
             try:
-                plan = await self._generate_structured(current_messages, run_id=run_id)
+                draft = await self._generate_draft(current_messages, run_id=run_id)
+                plan = _compile_draft(draft, request)
                 validate_plan_against_request(plan, request)
                 return plan
-            except (ValidationError, PlanRequestValidationError, TypeError, ValueError) as exc:
+            except (ValidationError, ConversationDraftCompilationError, PlanRequestValidationError, TypeError, ValueError) as exc:
                 last_validation_error = exc
                 if attempt == 0:
-                    current_messages = build_planning_messages(request, include_repair_hint=True)
+                    repair_category = _repair_category_for_error(exc)
+                    current_messages = build_planning_messages(
+                        request,
+                        include_repair_hint=True,
+                        repair_category=repair_category,
+                    )
                     continue
                 break
 
@@ -215,23 +268,23 @@ class ConversationInteractionPlanner:
             retryable=False,
         ) from None
 
-    async def _generate_structured(
+    async def _generate_draft(
         self,
         messages: list[ChatMessage],
         *,
         run_id: str | None,
-    ) -> ConversationInteractionPlan:
+    ) -> ConversationInteractionDraft:
         result = await asyncio.to_thread(
             self._llm_adapter.generate_structured,
             messages,
-            ConversationInteractionPlan,
+            ConversationInteractionDraft,
             temperature=0,
             max_tokens=_STRUCTURED_MAX_TOKENS,
             run_id=run_id,
         )
         parsed = result.parsed
-        if not isinstance(parsed, ConversationInteractionPlan):
-            raise TypeError("structured output is not ConversationInteractionPlan")
+        if not isinstance(parsed, ConversationInteractionDraft):
+            raise TypeError("structured output is not ConversationInteractionDraft")
         return parsed
 
     def _adapter_identity(self) -> tuple[str, str]:
@@ -240,3 +293,10 @@ class ConversationInteractionPlanner:
             provider = provider.value  # type: ignore[union-attr]
         model = getattr(self._llm_adapter, "model", "unknown")
         return str(provider), str(model)
+
+
+def _compile_draft(
+    draft: ConversationInteractionDraft,
+    request: ConversationPlanningRequest,
+) -> ConversationInteractionPlan:
+    return compile_interaction_draft(draft, request)
