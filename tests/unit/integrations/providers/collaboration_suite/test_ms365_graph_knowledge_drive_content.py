@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, Iterator
+from collections.abc import Iterator, Mapping
+from typing import Any
 from unittest.mock import MagicMock, patch
 from urllib.parse import quote
 
@@ -133,7 +134,7 @@ class _FakeStreamContext:
         iter_raises: Exception | None = None,
     ) -> None:
         self._status_code = status_code
-        self._headers = headers or {}
+        self._headers = {} if headers is None else headers
         self._chunks = chunks
         self._iter_raises = iter_raises
 
@@ -242,6 +243,14 @@ def test_validate_download_url_preserves_query_string() -> None:
         "https://example.com:8443/file",
         "https://example.com/\x00evil",
         "https://example.com",
+        "https://example.com:invalid/file",
+        "https://example.com:99999/file",
+        "https://[broken-ipv6/file",
+        "https://localhost./file",
+        "https://files.localhost/file",
+        "https://127.1/file",
+        "https://2130706433/file",
+        "https://singlelabel/file",
     ],
 )
 def test_validate_download_url_rejects_invalid(url: str) -> None:
@@ -251,6 +260,224 @@ def test_validate_download_url_rejects_invalid(url: str) -> None:
     ) as exc:
         validate_msgraph_drive_download_url(url)
     assert url not in str(exc.value)
+    assert exc.value.__cause__ is None
+
+
+# --- custom item boundary (model_construct) ---
+
+
+def _construct_file_item(**overrides: object) -> MsGraphDriveItem:
+    base: dict[str, object] = {
+        "remote_id": _ITEM_ID,
+        "drive_id": _DRIVE_ID,
+        "parent_remote_id": "parent-1",
+        "kind": MsGraphDriveItemKind.FILE,
+        "name": "report.pdf",
+        "e_tag": '"etag-1"',
+        "c_tag": _CTAG,
+        "size_bytes": 11,
+        "mime_type": "application/pdf",
+        "created_at": datetime(2026, 5, 29, 10, 15, 30, tzinfo=timezone.utc),
+        "last_modified_at": datetime(2026, 5, 29, 10, 15, 30, tzinfo=timezone.utc),
+        "web_url": "https://contoso.sharepoint.com/file",
+    }
+    base.update(overrides)
+    return MsGraphDriveItem.model_construct(**base)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"c_tag": 123},
+        {"size_bytes": "100"},
+        {"size_bytes": True},
+        {"size_bytes": -1},
+        {"kind": "file"},
+        {"remote_id": 123},
+        {"drive_id": ""},
+        {"mime_type": 123},
+    ],
+)
+def test_model_construct_malformed_item_field_rejected(overrides: dict[str, object]) -> None:
+    graph_http = MagicMock()
+    download_http = MagicMock()
+    reader = _content_reader(graph_http, download_http)
+    item = _construct_file_item(**overrides)
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response") as exc:
+        reader.read_file_content(item=item, max_bytes=1024)
+    assert exc.value.__cause__ is None
+    graph_http.get.assert_not_called()
+    download_http.stream.assert_not_called()
+
+
+def test_model_construct_missing_kind_rejected() -> None:
+    graph_http = MagicMock()
+    download_http = MagicMock()
+    reader = _content_reader(graph_http, download_http)
+    item = MsGraphDriveItem.model_construct(
+        remote_id=_ITEM_ID,
+        drive_id=_DRIVE_ID,
+        c_tag=_CTAG,
+        last_modified_at=datetime(2026, 5, 29, 10, 15, 30, tzinfo=timezone.utc),
+    )
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response") as exc:
+        reader.read_file_content(item=item, max_bytes=1024)
+    assert exc.value.__cause__ is None
+    graph_http.get.assert_not_called()
+    download_http.stream.assert_not_called()
+
+
+def test_model_construct_missing_remote_id_rejected() -> None:
+    graph_http = MagicMock()
+    download_http = MagicMock()
+    reader = _content_reader(graph_http, download_http)
+    item = MsGraphDriveItem.model_construct(
+        drive_id=_DRIVE_ID,
+        kind=MsGraphDriveItemKind.FILE,
+        c_tag=_CTAG,
+        last_modified_at=datetime(2026, 5, 29, 10, 15, 30, tzinfo=timezone.utc),
+    )
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response") as exc:
+        reader.read_file_content(item=item, max_bytes=1024)
+    assert exc.value.__cause__ is None
+    graph_http.get.assert_not_called()
+    download_http.stream.assert_not_called()
+
+
+# --- malformed redirect headers ---
+
+
+class _BrokenHeaderMapping(Mapping[str, str]):
+    def __getitem__(self, key: str) -> str:
+        raise KeyError(key)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(())
+
+    def __len__(self) -> int:
+        return 0
+
+    def items(self) -> Iterator[tuple[str, str]]:
+        raise RuntimeError("broken headers")
+
+
+def test_content_redirect_integer_header_key_rejected() -> None:
+    graph_http = MagicMock()
+    graph_http.get.side_effect = [
+        _json_response(payload=_file_payload()),
+        MagicMock(status_code=302, headers={1: "x"}),
+    ]
+    reader = _content_reader(graph_http, MagicMock())
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive content redirect response is invalid",
+    ) as exc:
+        reader.read_file_content(item=_drive_item(), max_bytes=1024)
+    assert exc.value.__cause__ is None
+    assert "Location" not in str(exc.value)
+
+
+def test_content_redirect_bytes_header_key_rejected() -> None:
+    graph_http = MagicMock()
+    graph_http.get.side_effect = [
+        _json_response(payload=_file_payload()),
+        MagicMock(status_code=302, headers={b"Location": _DOWNLOAD_URL}),
+    ]
+    reader = _content_reader(graph_http, MagicMock())
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive content redirect response is invalid",
+    ) as exc:
+        reader.read_file_content(item=_drive_item(), max_bytes=1024)
+    assert exc.value.__cause__ is None
+
+
+def test_content_redirect_duplicate_location_different_case_rejected() -> None:
+    graph_http = MagicMock()
+    graph_http.get.side_effect = [
+        _json_response(payload=_file_payload()),
+        MagicMock(
+            status_code=302,
+            headers={"Location": _DOWNLOAD_URL, "location": _SECRET_LOCATION},
+        ),
+    ]
+    reader = _content_reader(graph_http, MagicMock())
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive content redirect response is invalid",
+    ) as exc:
+        reader.read_file_content(item=_drive_item(), max_bytes=1024)
+    assert exc.value.__cause__ is None
+    assert _SECRET_LOCATION not in str(exc.value)
+
+
+def test_content_redirect_headers_items_raises_rejected() -> None:
+    graph_http = MagicMock()
+    graph_http.get.side_effect = [
+        _json_response(payload=_file_payload()),
+        MagicMock(status_code=302, headers=_BrokenHeaderMapping()),
+    ]
+    reader = _content_reader(graph_http, MagicMock())
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive content redirect response is invalid",
+    ) as exc:
+        reader.read_file_content(item=_drive_item(), max_bytes=1024)
+    assert exc.value.__cause__ is None
+
+
+# --- malformed download headers ---
+
+
+def test_download_content_length_integer_header_key_rejected() -> None:
+    graph_http, download_http, _ = _setup_happy_path()
+    download_http.stream.return_value = _FakeStreamContext(
+        headers={1: "5"},
+        chunks=(b"hello",),
+    )
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive download response is invalid",
+    ) as exc:
+        _content_reader(graph_http, download_http).read_file_content(
+            item=_drive_item(),
+            max_bytes=1024,
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_download_duplicate_content_length_different_case_rejected() -> None:
+    graph_http, download_http, _ = _setup_happy_path()
+    download_http.stream.return_value = _FakeStreamContext(
+        headers={"Content-Length": "5", "content-length": "5"},
+        chunks=(b"hello",),
+    )
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive download response is invalid",
+    ) as exc:
+        _content_reader(graph_http, download_http).read_file_content(
+            item=_drive_item(),
+            max_bytes=1024,
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_download_headers_items_raises_rejected() -> None:
+    graph_http, download_http, _ = _setup_happy_path(file_bytes=b"hello")
+    download_http.stream.return_value = _FakeStreamContext(
+        headers=_BrokenHeaderMapping(),
+        chunks=(b"hello",),
+    )
+    with pytest.raises(
+        IntegrationDependencyError,
+        match="Microsoft Graph Drive download response is invalid",
+    ) as exc:
+        _content_reader(graph_http, download_http).read_file_content(
+            item=_drive_item(size=5),
+            max_bytes=1024,
+        )
+    assert exc.value.__cause__ is None
 
 
 # --- HTTP clients (opens) ---

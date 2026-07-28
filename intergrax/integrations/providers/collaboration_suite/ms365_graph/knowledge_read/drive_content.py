@@ -11,7 +11,7 @@ import re
 from typing import Any, Mapping, Protocol, runtime_checkable
 from urllib.parse import quote, urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import (
     IntegrationConfigurationError,
@@ -63,36 +63,16 @@ class MsGraphDriveContentTooLarge(IntegrationConfigurationError):
         super().__init__("Microsoft Graph Drive file exceeds the configured content limit")
 
 
-def validate_msgraph_drive_download_url(value: object) -> str:
-    if not isinstance(value, str):
+def _reject_unsafe_download_hostname(hostname: str) -> None:
+    if hostname.endswith("."):
         raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    cleaned = value.strip()
-    if not cleaned:
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    if _ASCII_CONTROL.search(cleaned):
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-
-    parsed = urlparse(cleaned)
-    if not parsed.scheme or not parsed.netloc:
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    if parsed.scheme != "https":
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    if parsed.username or parsed.password:
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    if parsed.fragment:
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    if not parsed.hostname:
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-    if not parsed.path or parsed.path == "/":
-        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-
-    hostname = parsed.hostname.lower()
-    if hostname == "localhost":
+    if hostname == "localhost" or hostname.endswith(".localhost"):
         raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
     if hostname.endswith(".local") or hostname.endswith(".internal"):
         raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
-
-    if parsed.port is not None and parsed.port != 443:
+    if all(character in "0123456789." for character in hostname):
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    if "." not in hostname:
         raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
 
     host_for_ip = hostname
@@ -104,6 +84,47 @@ def validate_msgraph_drive_download_url(value: object) -> str:
     except ValueError:
         pass
     else:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+
+
+def validate_msgraph_drive_download_url(value: object) -> str:
+    if not isinstance(value, str):
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    cleaned = value.strip()
+    if not cleaned:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    if _ASCII_CONTROL.search(cleaned):
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+
+    try:
+        parsed = urlparse(cleaned)
+    except (ValueError, UnicodeError):
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+
+    if not parsed.scheme or not parsed.netloc:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    if parsed.scheme != "https":
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    if parsed.username or parsed.password:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    if parsed.fragment:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+
+    try:
+        hostname_raw = parsed.hostname
+        port = parsed.port
+    except (ValueError, UnicodeError):
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+
+    if not hostname_raw:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+    if not parsed.path or parsed.path == "/":
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
+
+    hostname = hostname_raw.lower()
+    _reject_unsafe_download_hostname(hostname)
+
+    if port is not None and port != 443:
         raise IntegrationDependencyError(_INVALID_DOWNLOAD_URL) from None
 
     return cleaned
@@ -206,11 +227,25 @@ def _validate_max_bytes(max_bytes: object) -> int:
 def _validate_content_item(item: object) -> MsGraphDriveItem:
     if not isinstance(item, MsGraphDriveItem):
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-    if item.kind != MsGraphDriveItemKind.FILE:
+    try:
+        validated = MsGraphDriveItem.model_validate(item.model_dump(mode="python"))
+    except (ValueError, TypeError, AttributeError, ValidationError):
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-    if item.c_tag is None or not item.c_tag.strip():
+    if validated.kind is not MsGraphDriveItemKind.FILE:
         raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
-    return item
+    if not isinstance(validated.c_tag, str) or not validated.c_tag.strip():
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+    if validated.size_bytes is not None:
+        if type(validated.size_bytes) is not int or validated.size_bytes < 0:
+            raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
+    return validated
+
+
+def _safe_construct_drive_file_content(**kwargs: object) -> MsGraphDriveFileContent:
+    try:
+        return MsGraphDriveFileContent(**kwargs)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE) from None
 
 
 def _response_status_code(response: object) -> int:
@@ -238,12 +273,23 @@ def _response_headers(response: object) -> Mapping[str, str]:
 def _extract_location_header(response: object) -> str:
     headers = _response_headers(response)
     location_values: list[str] = []
-    for key, value in headers.items():
-        if key.lower() == "location":
-            if isinstance(value, str):
-                location_values.append(value)
-            else:
+    try:
+        header_items = headers.items()
+    except Exception:
+        raise IntegrationDependencyError(_INVALID_REDIRECT) from None
+    try:
+        for key, value in header_items:
+            if not isinstance(key, str):
                 raise IntegrationDependencyError(_INVALID_REDIRECT) from None
+            if key.lower() == "location":
+                if isinstance(value, str):
+                    location_values.append(value)
+                else:
+                    raise IntegrationDependencyError(_INVALID_REDIRECT) from None
+    except IntegrationDependencyError:
+        raise
+    except Exception:
+        raise IntegrationDependencyError(_INVALID_REDIRECT) from None
     if len(location_values) != 1:
         raise IntegrationDependencyError(_INVALID_REDIRECT) from None
     trimmed = location_values[0].strip()
@@ -271,13 +317,24 @@ def _raise_for_content_redirect_response(response: object) -> None:
 
 def _parse_content_length(headers: Mapping[str, str]) -> int | None:
     raw_value: str | None = None
-    for key, value in headers.items():
-        if key.lower() == "content-length":
-            if raw_value is not None:
+    try:
+        header_items = headers.items()
+    except Exception:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_RESPONSE) from None
+    try:
+        for key, value in header_items:
+            if not isinstance(key, str):
                 raise IntegrationDependencyError(_INVALID_DOWNLOAD_RESPONSE) from None
-            if not isinstance(value, str):
-                raise IntegrationDependencyError(_INVALID_DOWNLOAD_RESPONSE) from None
-            raw_value = value
+            if key.lower() == "content-length":
+                if raw_value is not None:
+                    raise IntegrationDependencyError(_INVALID_DOWNLOAD_RESPONSE) from None
+                if not isinstance(value, str):
+                    raise IntegrationDependencyError(_INVALID_DOWNLOAD_RESPONSE) from None
+                raw_value = value
+    except IntegrationDependencyError:
+        raise
+    except Exception:
+        raise IntegrationDependencyError(_INVALID_DOWNLOAD_RESPONSE) from None
     if raw_value is None:
         return None
     trimmed = raw_value.strip()
@@ -390,10 +447,11 @@ class MsGraphDriveContentReader:
         )
 
         content_hash = hashlib.sha256(data).hexdigest()
-        return MsGraphDriveFileContent(
+        content_revision: str = validated_item.c_tag
+        return _safe_construct_drive_file_content(
             drive_id=validated_item.drive_id,
             remote_id=validated_item.remote_id,
-            content_revision=validated_item.c_tag or "",
+            content_revision=content_revision,
             data=data,
             size_bytes=len(data),
             mime_type=validated_item.mime_type,
