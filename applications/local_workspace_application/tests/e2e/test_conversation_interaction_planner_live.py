@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable
 from pathlib import Path
 
 import pytest
@@ -95,18 +94,6 @@ def _objects_for_action(
     return tuple(mapping[oid] for oid in action.source_object_ids)
 
 
-def _find_object_by_type_and_value(
-    plan: ConversationInteractionPlan,
-    *,
-    object_type: str,
-    value: str,
-) -> ExtractedObject:
-    for obj in plan.objects:
-        if obj.object_type == object_type and obj.value == value:
-            return obj
-    raise AssertionError(f"object not found: type={object_type} value={value!r}")
-
-
 def _workspace_ref_matches(
     ref: WorkspaceReference,
     *,
@@ -131,10 +118,8 @@ def _plan_failure_summary(
     *,
     provider: str,
     model: str,
-    error: str | None = None,
 ) -> str:
     object_types = [obj.object_type for obj in plan.objects]
-    object_values = [obj.value for obj in plan.objects]
     action_types = [action.action_type for action in plan.actions]
     workspace_refs = [
         f"{getattr(action, 'workspace', None).kind}:{getattr(action, 'workspace', None).value}"  # type: ignore[union-attr]
@@ -145,13 +130,13 @@ def _plan_failure_summary(
         f"provider={provider}",
         f"model={model}",
         f"plan_version={plan.plan_version}",
+        f"object_count={len(plan.objects)}",
         f"object_types={object_types}",
-        f"object_values={object_values}",
+        f"action_count={len(plan.actions)}",
         f"action_types={action_types}",
+        f"clarification_count={len(plan.clarifications)}",
         f"workspace_refs={workspace_refs}",
     ]
-    if error:
-        parts.append(f"validation_error={error}")
     return "; ".join(parts)
 
 
@@ -190,6 +175,10 @@ async def test_e2e_mixed_source_routing(live_planner_adapter) -> None:
 
     try:
         assert not plan.clarifications, _plan_failure_summary(plan, provider=provider, model=model)
+        assert len(plan.actions) == 2, _plan_failure_summary(plan, provider=provider, model=model)
+        assert _action_types(plan) == {"knowledge.add_sources"}, _plan_failure_summary(
+            plan, provider=provider, model=model
+        )
         assert len(plan.objects) == 3, _plan_failure_summary(plan, provider=provider, model=model)
         web_urls = [o for o in plan.objects if o.object_type == "web_url"]
         local_refs = [o for o in plan.objects if o.object_type == "local_file_reference"]
@@ -263,7 +252,16 @@ async def test_e2e_workspace_target_without_activation(live_planner_adapter) -> 
     request = ConversationPlanningRequest(
         message_text=message,
         available_workspaces=(
-            ConversationPlanningWorkspace(workspace_id="ws-1", name="magazyn", is_active=True),
+            ConversationPlanningWorkspace(
+                workspace_id="ws-1",
+                name="finanse",
+                is_active=True,
+            ),
+            ConversationPlanningWorkspace(
+                workspace_id="ws-2",
+                name="magazyn",
+                is_active=False,
+            ),
         ),
         active_workspace_id="ws-1",
     )
@@ -271,6 +269,13 @@ async def test_e2e_workspace_target_without_activation(live_planner_adapter) -> 
     plan = await planner.plan(request, run_id="lkw-planner-e2e-target-workspace")
 
     try:
+        assert plan.plan_version == "2", _plan_failure_summary(plan, provider=provider, model=model)
+        assert not plan.clarifications, _plan_failure_summary(plan, provider=provider, model=model)
+        assert len(plan.actions) == 1, _plan_failure_summary(plan, provider=provider, model=model)
+        assert _action_types(plan) == {"knowledge.add_sources"}, _plan_failure_summary(
+            plan, provider=provider, model=model
+        )
+
         web_urls = [o for o in plan.objects if o.object_type == "web_url"]
         assert len(web_urls) == 1, _plan_failure_summary(plan, provider=provider, model=model)
         assert web_urls[0].value == "https://example.com/docs"
@@ -283,7 +288,13 @@ async def test_e2e_workspace_target_without_activation(live_planner_adapter) -> 
             kind=WorkspaceReferenceKind.name,
             value="magazyn",
         )
+        assert set(add_sources[0].source_object_ids) == {web_urls[0].object_id}
         assert "workspace.activate" not in _action_types(plan)
+        assert request.active_workspace_id == "ws-1"
+        assert any(
+            workspace.workspace_id == "ws-2" and not workspace.is_active
+            for workspace in request.available_workspaces
+        )
         validate_plan_against_request(plan, request)
     except AssertionError as exc:
         raise AssertionError(
@@ -305,6 +316,12 @@ async def test_e2e_explicit_workspace_activation(live_planner_adapter) -> None:
     plan = await planner.plan(request, run_id="lkw-planner-e2e-explicit-activation")
 
     try:
+        assert not plan.clarifications, _plan_failure_summary(plan, provider=provider, model=model)
+        assert len(plan.actions) == 1, _plan_failure_summary(plan, provider=provider, model=model)
+        assert _action_types(plan) == {"workspace.activate"}, _plan_failure_summary(
+            plan, provider=provider, model=model
+        )
+
         activate_actions = [
             action
             for action in plan.actions

@@ -88,6 +88,12 @@ def _validate_exact_int(value: object) -> object:
     return value
 
 
+def _validate_exact_integer(value: object, *, field_name: str) -> int:
+    if type(value) is not int:
+        raise ValueError(f"{field_name} must be int")
+    return value
+
+
 def _reject_duplicate_strings(values: tuple[str, ...], *, label: str) -> None:
     if len(values) != len(set(values)):
         raise ValueError(f"duplicate {label}")
@@ -307,6 +313,16 @@ class MessageTextEvidenceSpan(BaseModel):
     start: int
     end: int
     text: ExtractedTextValue
+
+    @field_validator("start", mode="before")
+    @classmethod
+    def _validate_start_type(cls, value: object) -> int:
+        return _validate_exact_integer(value, field_name="evidence start")
+
+    @field_validator("end", mode="before")
+    @classmethod
+    def _validate_end_type(cls, value: object) -> int:
+        return _validate_exact_integer(value, field_name="evidence end")
 
     @model_validator(mode="after")
     def _validate_span_bounds(self) -> Self:

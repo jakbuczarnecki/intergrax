@@ -169,6 +169,49 @@ def test_rejects_invalid_object_type() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("invalid_value", ["1", 1.0, True])
+def test_evidence_start_rejects_non_exact_int(invalid_value: object) -> None:
+    with pytest.raises(ValidationError, match="evidence start must be int"):
+        MessageTextEvidenceSpan.model_validate(
+            {
+                "source": "message_text",
+                "start": invalid_value,
+                "end": 2,
+                "text": "ab",
+            }
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("invalid_value", ["2", 2.0, True])
+def test_evidence_end_rejects_non_exact_int(invalid_value: object) -> None:
+    with pytest.raises(ValidationError, match="evidence end must be int"):
+        MessageTextEvidenceSpan.model_validate(
+            {
+                "source": "message_text",
+                "start": 0,
+                "end": invalid_value,
+                "text": "ab",
+            }
+        )
+
+
+@pytest.mark.unit
+def test_evidence_offsets_accept_exact_ints() -> None:
+    span = MessageTextEvidenceSpan(
+        source="message_text",
+        start=0,
+        end=1,
+        text="a",
+    )
+
+    assert type(span.start) is int
+    assert type(span.end) is int
+    assert span.start == 0
+    assert span.end == 1
+
+
+@pytest.mark.unit
 def test_rejects_end_lte_start() -> None:
     with pytest.raises(ValidationError, match="evidence end must be > start"):
         MessageTextEvidenceSpan(
