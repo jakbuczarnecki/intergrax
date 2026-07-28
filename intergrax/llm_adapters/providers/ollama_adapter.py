@@ -3,7 +3,6 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-import json
 import os
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 from langchain_ollama import ChatOllama
@@ -315,7 +314,24 @@ class LangChainOllamaAdapter(LLMAdapter):
         return True
 
 
-    # --- Structured output via prompt + validation ---
+    @staticmethod
+    def _coerce_parsed_structured_output(output_model: type, parsed: Any) -> Any:
+        if isinstance(parsed, output_model):
+            return parsed
+        if hasattr(output_model, "model_validate"):
+            return output_model.model_validate(parsed)  # type: ignore[attr-defined]
+        raise TypeError(f"Cannot validate structured output with {output_model}")
+
+    @staticmethod
+    def _structured_raw_text(raw: Any, validated: Any) -> str:
+        content = getattr(raw, "content", None)
+        if isinstance(content, str) and content:
+            return content
+        if hasattr(validated, "model_dump_json"):
+            return validated.model_dump_json()  # type: ignore[attr-defined]
+        return str(validated)
+
+    # --- Structured output via native Ollama JSON Schema ---
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
@@ -334,31 +350,32 @@ class LangChainOllamaAdapter(LLMAdapter):
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-            schema = self._model_json_schema(output_model)
-
-            from langchain_core.messages import SystemMessage, HumanMessage
-
             lc_msgs = self._to_lc_messages(messages)
-            strict = SystemMessage(
-                content=(
-                    "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
-                    "Do not add any commentary, markdown, or backticks. "
-                    "If a field is optional and unknown, omit it."
-                )
+
+            structured_chat = self.chat.with_structured_output(
+                output_model,
+                method="json_schema",
+                include_raw=True,
             )
-            schema_msg = HumanMessage(content=f"JSON_SCHEMA:\n{json.dumps(schema, ensure_ascii=False)}")
-            lc_msgs = [strict, schema_msg] + lc_msgs
 
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-            res = self.chat.invoke(lc_msgs, **kwargs)
-            txt = res.content or str(res)
+            result = structured_chat.invoke(lc_msgs, **kwargs)
+
+            if not isinstance(result, dict):
+                raise ValueError("Ollama structured output returned unexpected result type")
+
+            parsing_error = result.get("parsing_error")
+            if parsing_error is not None:
+                raise parsing_error
+
+            parsed = result.get("parsed")
+            if parsed is None:
+                raise ValueError("Ollama structured output returned no parsed result")
+
+            validated = self._coerce_parsed_structured_output(output_model, parsed)
+            txt = self._structured_raw_text(result.get("raw"), validated)
             out_tok = int(self.estimate_tokens_for_text(txt, model_hint=self.model_name_for_token_estimation))
 
-            json_str = self._extract_json_object(txt) or txt.strip()
-            if not json_str:
-                raise ValueError("Model did not return JSON content for structured output (Ollama).")
-
-            parsed = self._validate_with_model(output_model, json_str)
             response = build_adapter_response(
                 content=txt,
                 usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
@@ -367,7 +384,7 @@ class LangChainOllamaAdapter(LLMAdapter):
                 provider_extensions=LLMProviderExtensions(usage_source="estimate"),
             )
             success = True
-            return LLMStructuredResult(parsed=parsed, response=response)
+            return LLMStructuredResult(parsed=validated, response=response)
 
         except Exception as e:
             err_type = type(e).__name__
