@@ -1094,6 +1094,18 @@ def _valid_permission_page_item() -> MsGraphDrivePermission:
     return _valid_direct_permission(permission_id="perm-page-1")
 
 
+def test_permission_page_missing_items_rejected_safely() -> None:
+    malformed = MsGraphDrivePermissionPage.model_construct()
+
+    with pytest.raises(
+        ValueError,
+        match="unexpected Microsoft Graph Drive permissions response",
+    ) as exc:
+        validate_msgraph_drive_permission_page(malformed)
+
+    assert exc.value.__cause__ is None
+
+
 @pytest.mark.parametrize(
     ("items", "page_overrides"),
     [
@@ -1203,6 +1215,16 @@ class _CustomPermissionsSuite(CollaborationSuite):
         attendees=(),
     ):
         raise NotImplementedError
+
+
+def test_custom_client_missing_items_page_rejected() -> None:
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _CustomPermissionsSuite(page=MsGraphDrivePermissionPage.model_construct()),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        integration.read_drive_permissions_page(item=_drive_item())
+    assert exc.value.__cause__ is None
 
 
 def test_custom_client_valid_page_revalidated() -> None:

@@ -13,6 +13,16 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 
+from local_workspace_application.conversation.interaction_draft_models import (
+    ConversationInteractionDraft,
+    DraftLocalFileReferenceSource,
+    DraftWebUrlSource,
+    DraftWorkspaceReference,
+    KnowledgeAddAttachmentsDraftAction,
+    KnowledgeAddSourcesDraftAction,
+    WorkspaceActivateDraftAction,
+    WorkspaceAskDraftAction,
+)
 from local_workspace_application.conversation.interaction_models import (
     ConversationInteractionPlan,
     ConversationPlanningAttachment,
@@ -28,13 +38,16 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceReference,
     WorkspaceReferenceKind,
 )
+from local_workspace_application.conversation.interaction_plan_compiler import compile_interaction_draft
 from local_workspace_application.conversation.interaction_planner import (
     ConversationInteractionPlanner,
     ConversationPlanningError,
     ConversationPlanningErrorCode,
     PlanRequestValidationError,
+    _repair_category_for_error,
     validate_plan_against_request,
 )
+from local_workspace_application.conversation.interaction_prompt import RepairCategory
 from local_workspace_application.conversation.interaction_prompt import (
     build_planning_messages,
     system_prompt_contains_required_rules,
@@ -81,31 +94,36 @@ MIXED_ROUTING_MESSAGE = (
 )
 
 
-def _mixed_routing_plan() -> ConversationInteractionPlan:
-    message = MIXED_ROUTING_MESSAGE
-    return ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
-        objects=(
-            _web_object("url-1", message, "https://cenniki.pl"),
-            _local_object("local-1", message, r"C:\cenniki\hurt.xlsx"),
-            _local_object("local-2", message, r"C:\cenniki\detal.xlsx"),
-        ),
+def _mixed_routing_draft() -> ConversationInteractionDraft:
+    return ConversationInteractionDraft(
         actions=(
-            KnowledgeAddSourcesPlannedAction(
-                action_id="a1",
+            KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=WorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
-                source_object_ids=("url-1",),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://cenniki.pl"),),
             ),
-            KnowledgeAddSourcesPlannedAction(
-                action_id="a2",
+            KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=WorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
-                source_object_ids=("local-1", "local-2"),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
+                sources=(
+                    DraftLocalFileReferenceSource(
+                        object_type="local_file_reference",
+                        reference_kind="file",
+                        value=r"C:\cenniki\hurt.xlsx",
+                    ),
+                    DraftLocalFileReferenceSource(
+                        object_type="local_file_reference",
+                        reference_kind="file",
+                        value=r"C:\cenniki\detal.xlsx",
+                    ),
+                ),
             ),
         ),
     )
+
+
+def _mixed_routing_plan() -> ConversationInteractionPlan:
+    return compile_interaction_draft(_mixed_routing_draft(), _mixed_routing_request())
 
 
 def _mixed_routing_request() -> ConversationPlanningRequest:
@@ -184,7 +202,7 @@ class RecordingPlannerAdapter(LLMAdapter):
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_mixed_routing_plan() -> None:
-    adapter = RecordingPlannerAdapter(structured_outputs=[_mixed_routing_plan()])
+    adapter = RecordingPlannerAdapter(structured_outputs=[_mixed_routing_draft()])
     planner = ConversationInteractionPlanner(adapter)
     plan = await planner.plan(_mixed_routing_request())
     assert len(plan.objects) == 3
@@ -193,27 +211,24 @@ async def test_mixed_routing_plan() -> None:
     assert len(add_sources) == 2
     url_action = next(a for a in add_sources if a.workspace.value == "1")
     local_action = next(a for a in add_sources if a.workspace.value == "2")
-    assert url_action.source_object_ids == ("url-1",)
-    assert set(local_action.source_object_ids) == {"local-1", "local-2"}
+    assert url_action.source_object_ids == ("object-1",)
+    assert set(local_action.source_object_ids) == {"object-2", "object-3"}
     assert all(action.action_type != "workspace.activate" for action in plan.actions)
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_explicit_workspace_activation() -> None:
-    activate_plan = ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
+    activate_draft = ConversationInteractionDraft(
         actions=(
-            WorkspaceActivatePlannedAction(
-                action_id="act-1",
+            WorkspaceActivateDraftAction(
                 action_type="workspace.activate",
-                workspace=_magazyn_target(),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 evidence_quotes=("przełącz mnie na workspace magazyn",),
             ),
         ),
     )
-    adapter = RecordingPlannerAdapter(structured_outputs=[activate_plan])
+    adapter = RecordingPlannerAdapter(structured_outputs=[activate_draft])
     planner = ConversationInteractionPlanner(adapter)
     request = ConversationPlanningRequest(
         message_text="przełącz mnie na workspace magazyn",
@@ -232,25 +247,24 @@ async def test_mixed_attachments_and_text_single_plan() -> None:
         "załącz pliki i https://docs.example.com/page "
         r"oraz c:\data\report.docx do workspace magazyn"
     )
-    plan = ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
-        objects=(
-            _web_object("url-1", message, "https://docs.example.com/page"),
-            _local_object("local-1", message, r"c:\data\report.docx"),
-        ),
+    plan = ConversationInteractionDraft(
         actions=(
-            KnowledgeAddAttachmentsPlannedAction(
-                action_id="att-1",
+            KnowledgeAddAttachmentsDraftAction(
                 action_type="knowledge.add_attachments",
-                workspace=_magazyn_target(),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 attachment_ids=("file-a", "file-b"),
             ),
-            KnowledgeAddSourcesPlannedAction(
-                action_id="sources-1",
+            KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=_magazyn_target(),
-                source_object_ids=("url-1", "local-1"),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                sources=(
+                    DraftWebUrlSource(object_type="web_url", value="https://docs.example.com/page"),
+                    DraftLocalFileReferenceSource(
+                        object_type="local_file_reference",
+                        reference_kind="file",
+                        value=r"c:\data\report.docx",
+                    ),
+                ),
             ),
         ),
     )
@@ -271,19 +285,16 @@ async def test_mixed_attachments_and_text_single_plan() -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_hallucination_protection_unknown_attachment() -> None:
-    bad_plan = ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
+    bad_draft = ConversationInteractionDraft(
         actions=(
-            KnowledgeAddAttachmentsPlannedAction(
-                action_id="att-1",
+            KnowledgeAddAttachmentsDraftAction(
                 action_type="knowledge.add_attachments",
-                workspace=_magazyn_target(),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 attachment_ids=("unknown-att",),
             ),
         ),
     )
-    adapter = RecordingPlannerAdapter(structured_outputs=[bad_plan, bad_plan])
+    adapter = RecordingPlannerAdapter(structured_outputs=[bad_draft, bad_draft])
     planner = ConversationInteractionPlanner(adapter)
     request = ConversationPlanningRequest(
         message_text="dodaj plik do magazyn",
@@ -297,36 +308,20 @@ async def test_hallucination_protection_unknown_attachment() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_unknown_source_object_id_rejected() -> None:
-    message = "dodaj https://www.cenniki.pl do magazyn"
-    bad_payload = {
-        "plan_version": "2",
-        "response_mode": "aggregate",
-        "objects": [
-            {
-                "object_id": "url-1",
-                "object_type": "web_url",
-                "value": "https://www.cenniki.pl",
-                "evidence": {
-                    "source": "message_text",
-                    "start": 6,
-                    "end": 27,
-                    "text": "https://www.cenniki.pl",
-                },
-            }
-        ],
-        "actions": [
-            {
-                "action_id": "a1",
-                "action_type": "knowledge.add_sources",
-                "workspace": {"kind": "name", "value": "magazyn"},
-                "source_object_ids": ["missing-obj"],
-            }
-        ],
-    }
-    adapter = RecordingPlannerAdapter(structured_outputs=[bad_payload, bad_payload])
+async def test_invalid_draft_action_reference_rejected() -> None:
+    bad_draft = ConversationInteractionDraft(
+        actions=(
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://www.cenniki.pl"),),
+                depends_on_action_numbers=(2,),
+            ),
+        ),
+    )
+    adapter = RecordingPlannerAdapter(structured_outputs=[bad_draft, bad_draft])
     planner = ConversationInteractionPlanner(adapter)
-    request = ConversationPlanningRequest(message_text=message)
+    request = ConversationPlanningRequest(message_text="dodaj https://www.cenniki.pl do magazyn")
     with pytest.raises(ConversationPlanningError) as exc_info:
         await planner.plan(request)
     assert exc_info.value.code == ConversationPlanningErrorCode.conversation_planner_invalid_output
@@ -486,20 +481,16 @@ def test_same_object_in_two_actions_allowed() -> None:
 @pytest.mark.asyncio
 async def test_target_workspace_without_activation() -> None:
     message = "dodaj https://example.com do workspace magazyn"
-    plan = ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
-        objects=(_web_object("url-1", message, "https://example.com"),),
+    draft = ConversationInteractionDraft(
         actions=(
-            KnowledgeAddSourcesPlannedAction(
-                action_id="a1",
+            KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=_magazyn_target(),
-                source_object_ids=("url-1",),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://example.com"),),
             ),
         ),
     )
-    adapter = RecordingPlannerAdapter(structured_outputs=[plan])
+    adapter = RecordingPlannerAdapter(structured_outputs=[draft])
     planner = ConversationInteractionPlanner(adapter)
     request = ConversationPlanningRequest(message_text=message)
     result = await planner.plan(request)
@@ -511,19 +502,16 @@ async def test_target_workspace_without_activation() -> None:
 @pytest.mark.asyncio
 async def test_url_in_question_routes_to_workspace_ask() -> None:
     message = "co sądzisz o https://example.com?"
-    plan = ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
+    draft = ConversationInteractionDraft(
         actions=(
-            WorkspaceAskPlannedAction(
-                action_id="ask-1",
+            WorkspaceAskDraftAction(
                 action_type="workspace.ask",
-                workspace=WorkspaceReference(kind=WorkspaceReferenceKind.active),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.active),
                 question=message,
             ),
         ),
     )
-    adapter = RecordingPlannerAdapter(structured_outputs=[plan])
+    adapter = RecordingPlannerAdapter(structured_outputs=[draft])
     planner = ConversationInteractionPlanner(adapter)
     request = ConversationPlanningRequest(message_text=message)
     result = await planner.plan(request)
@@ -536,21 +524,17 @@ async def test_url_in_question_routes_to_workspace_ask() -> None:
 @pytest.mark.asyncio
 async def test_hallucination_protection_unknown_evidence_quote() -> None:
     message = "dodaj https://www.cenniki.pl do magazyn"
-    bad_plan = ConversationInteractionPlan(
-        plan_version="2",
-        response_mode="aggregate",
-        objects=(_web_object("url-1", message, "https://www.cenniki.pl"),),
+    bad_draft = ConversationInteractionDraft(
         actions=(
-            KnowledgeAddSourcesPlannedAction(
-                action_id="a1",
+            KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=_magazyn_target(),
-                source_object_ids=("url-1",),
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://www.cenniki.pl"),),
                 evidence_quotes=("user never said this",),
             ),
         ),
     )
-    adapter = RecordingPlannerAdapter(structured_outputs=[bad_plan, bad_plan])
+    adapter = RecordingPlannerAdapter(structured_outputs=[bad_draft, bad_draft])
     planner = ConversationInteractionPlanner(adapter)
     request = ConversationPlanningRequest(message_text=message)
     with pytest.raises(ConversationPlanningError) as exc_info:
@@ -562,61 +546,18 @@ async def test_hallucination_protection_unknown_evidence_quote() -> None:
 @pytest.mark.asyncio
 async def test_hallucination_protection_invalid_dependency() -> None:
     message = "dodaj https://www.cenniki.pl do magazyn"
+    invalid_dependency_draft = ConversationInteractionDraft(
+        actions=(
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://www.cenniki.pl"),),
+                depends_on_action_numbers=(9,),
+            ),
+        ),
+    )
     adapter = RecordingPlannerAdapter(
-        structured_outputs=[
-            {
-                "plan_version": "2",
-                "response_mode": "aggregate",
-                "objects": [
-                    {
-                        "object_id": "url-1",
-                        "object_type": "web_url",
-                        "value": "https://www.cenniki.pl",
-                        "evidence": {
-                            "source": "message_text",
-                            "start": 6,
-                            "end": 27,
-                            "text": "https://www.cenniki.pl",
-                        },
-                    }
-                ],
-                "actions": [
-                    {
-                        "action_id": "a1",
-                        "action_type": "knowledge.add_sources",
-                        "workspace": {"kind": "name", "value": "magazyn"},
-                        "source_object_ids": ["url-1"],
-                        "depends_on": ["missing"],
-                    }
-                ],
-            },
-            {
-                "plan_version": "2",
-                "response_mode": "aggregate",
-                "objects": [
-                    {
-                        "object_id": "url-1",
-                        "object_type": "web_url",
-                        "value": "https://www.cenniki.pl",
-                        "evidence": {
-                            "source": "message_text",
-                            "start": 6,
-                            "end": 27,
-                            "text": "https://www.cenniki.pl",
-                        },
-                    }
-                ],
-                "actions": [
-                    {
-                        "action_id": "a1",
-                        "action_type": "knowledge.add_sources",
-                        "workspace": {"kind": "name", "value": "magazyn"},
-                        "source_object_ids": ["url-1"],
-                        "depends_on": ["missing"],
-                    }
-                ],
-            },
-        ]
+        structured_outputs=[invalid_dependency_draft, invalid_dependency_draft]
     )
     planner = ConversationInteractionPlanner(adapter)
     request = ConversationPlanningRequest(message_text=message)
@@ -644,70 +585,37 @@ async def test_structured_output_unsupported() -> None:
 @pytest.mark.asyncio
 async def test_repair_attempt_success() -> None:
     message = MIXED_ROUTING_MESSAGE
-    invalid = {
-        "plan_version": "2",
-        "response_mode": "aggregate",
-        "objects": [
-            {
-                "object_id": "url-1",
-                "object_type": "web_url",
-                "value": "https://cenniki.pl",
-                "evidence": {
-                    "source": "message_text",
-                    "start": 0,
-                    "end": 5,
-                    "text": "wrong",
-                },
-            }
-        ],
-        "actions": [
-            {
-                "action_id": "a1",
-                "action_type": "knowledge.add_sources",
-                "workspace": {"kind": "ordinal", "value": "1"},
-                "source_object_ids": ["url-1"],
-            }
-        ],
-    }
-    adapter = RecordingPlannerAdapter(structured_outputs=[invalid, _mixed_routing_plan()])
+    invalid = ConversationInteractionDraft(
+        actions=(
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://not-in-message.example"),),
+            ),
+        ),
+    )
+    adapter = RecordingPlannerAdapter(structured_outputs=[invalid, _mixed_routing_draft()])
     planner = ConversationInteractionPlanner(adapter)
     plan = await planner.plan(_mixed_routing_request())
     assert len(plan.objects) == 3
     assert adapter.call_count == 2
     repair_content = adapter.recorded_messages[1][1].content.lower()
-    assert "previous response was invalid" in repair_content
-    assert "plan_version 2" in repair_content or "plan_version" in repair_content
+    assert "source value" in repair_content or "semantic draft" in repair_content
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_repair_attempt_failure() -> None:
     message = MIXED_ROUTING_MESSAGE
-    invalid = {
-        "plan_version": "2",
-        "response_mode": "aggregate",
-        "objects": [
-            {
-                "object_id": "url-1",
-                "object_type": "web_url",
-                "value": "https://cenniki.pl",
-                "evidence": {
-                    "source": "message_text",
-                    "start": 0,
-                    "end": 5,
-                    "text": "wrong",
-                },
-            }
-        ],
-        "actions": [
-            {
-                "action_id": "a1",
-                "action_type": "knowledge.add_sources",
-                "workspace": {"kind": "ordinal", "value": "1"},
-                "source_object_ids": ["url-1"],
-            }
-        ],
-    }
+    invalid = ConversationInteractionDraft(
+        actions=(
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://not-in-message.example"),),
+            ),
+        ),
+    )
     adapter = RecordingPlannerAdapter(structured_outputs=[invalid, invalid])
     planner = ConversationInteractionPlanner(adapter)
     with pytest.raises(ConversationPlanningError) as exc_info:
@@ -744,9 +652,11 @@ def test_prompt_safety() -> None:
     assert "załącz https://safe.example do magazyn" in combined
     assert "att-safe" in combined
     assert "magazyn" in combined
-    assert "objects" in combined
-    assert "source_object_ids" in combined
-    assert "evidence" in combined
+    assert "message_text_segments" not in combined
+    assert "action_id" not in combined
+    assert "object_id" not in combined
+    assert "semantic intent" in combined
+    assert "occurrence" in combined
     forbidden = (
         "xoxb-slack-token",
         "https://files.slack.com/",
@@ -756,3 +666,74 @@ def test_prompt_safety() -> None:
     )
     for token in forbidden:
         assert token not in combined
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_planner_uses_conversation_interaction_draft_as_output_model() -> None:
+    captured: list[type] = []
+
+    class CapturingAdapter(RecordingPlannerAdapter):
+        def generate_structured(self, messages, output_model, *, temperature=None, max_tokens=None, run_id=None):
+            captured.append(output_model)
+            return super().generate_structured(
+                messages,
+                output_model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                run_id=run_id,
+            )
+
+    adapter = CapturingAdapter(structured_outputs=[_mixed_routing_draft()])
+    planner = ConversationInteractionPlanner(adapter)
+    result = await planner.plan(_mixed_routing_request())
+    assert captured == [ConversationInteractionDraft]
+    assert isinstance(result, ConversationInteractionPlan)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_compiler_failure_triggers_safe_repair_category() -> None:
+    invalid = ConversationInteractionDraft(
+        actions=(
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://missing.example"),),
+            ),
+        ),
+    )
+    adapter = RecordingPlannerAdapter(structured_outputs=[invalid, _mixed_routing_draft()])
+    planner = ConversationInteractionPlanner(adapter)
+    await planner.plan(_mixed_routing_request())
+    repair_content = adapter.recorded_messages[1][1].content
+    assert "https://missing.example" not in repair_content
+    assert "Traceback" not in repair_content
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_valid_first_draft_single_adapter_call() -> None:
+    adapter = RecordingPlannerAdapter(structured_outputs=[_mixed_routing_draft()])
+    planner = ConversationInteractionPlanner(adapter)
+    await planner.plan(_mixed_routing_request())
+    assert adapter.call_count == 1
+
+
+@pytest.mark.unit
+def test_repair_category_compiler_source_not_found() -> None:
+    from local_workspace_application.conversation.interaction_plan_compiler import (
+        ConversationDraftCompilationError,
+        ConversationDraftCompilationErrorCode,
+    )
+
+    exc = ConversationDraftCompilationError(
+        ConversationDraftCompilationErrorCode.source_value_not_found
+    )
+    assert _repair_category_for_error(exc) == RepairCategory.source_value_not_grounded
+
+
+@pytest.mark.unit
+def test_repair_category_request_validation() -> None:
+    exc = PlanRequestValidationError("evidence quote not found in user context")
+    assert _repair_category_for_error(exc) == RepairCategory.canonical_request_grounding

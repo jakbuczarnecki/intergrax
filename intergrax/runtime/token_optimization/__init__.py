@@ -92,6 +92,12 @@ from intergrax.runtime.token_optimization.pipeline import (
     TokenOptimizationPipelineRunner,
     resolve_token_optimization_pipeline_layers,
 )
+from intergrax.runtime.token_optimization.builtin_catalog import (
+    BuiltInTokenOptimizationLayerCatalog,
+    BuiltInTokenOptimizationLayerSelection,
+    BuiltInTokenOptimizationLayerSpec,
+    create_builtin_token_optimization_layer_catalog,
+)
 from intergrax.runtime.token_optimization.registry import TokenOptimizationLayerRegistry
 from intergrax.runtime.token_optimization.prompt_cache import (
     PREFIX_STABILITY_INITIAL,
@@ -212,6 +218,9 @@ from intergrax.runtime.token_optimization.protected_regions import (
 __all__ = [
     "build_compression_receipt",
     "BUILT_IN_PROTECTED_TERMS",
+    "BuiltInTokenOptimizationLayerCatalog",
+    "BuiltInTokenOptimizationLayerSelection",
+    "BuiltInTokenOptimizationLayerSpec",
     "DEFAULT_CONTEXT_PACK_STRATEGY",
     "DEFAULT_CONTEXT_PACK_TOKEN_POLICY",
     "DEFAULT_TOOL_CATALOG_STRATEGY",
@@ -232,6 +241,7 @@ __all__ = [
     "CompressionReceiptRef",
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
+    "create_builtin_token_optimization_layer_catalog",
     "decide_cache_aware_compaction_timing",
     "MAX_ENV_PROTECTED_TERMS",
     "MAX_PROTECTED_TERM_LENGTH",

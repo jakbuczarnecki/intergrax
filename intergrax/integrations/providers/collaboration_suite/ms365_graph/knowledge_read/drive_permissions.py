@@ -761,11 +761,19 @@ def validate_msgraph_drive_permission_page(value: object) -> MsGraphDrivePermiss
     if not isinstance(value, MsGraphDrivePermissionPage):
         raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
 
-    if type(value.items) is not tuple:
+    try:
+        raw_items = value.items
+        raw_continuation = value.continuation
+        raw_acl_complete = value.acl_complete
+        raw_inheritance_complete = value.inheritance_complete
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
+
+    if type(raw_items) is not tuple:
         raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
 
     validated_items: list[MsGraphDrivePermission] = []
-    for item in value.items:
+    for item in raw_items:
         if not isinstance(item, MsGraphDrivePermission):
             raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
         validated_items.append(validate_msgraph_drive_permission(item))
@@ -775,7 +783,6 @@ def validate_msgraph_drive_permission_page(value: object) -> MsGraphDrivePermiss
         raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
 
     continuation: MsGraphKnowledgeContinuation | None = None
-    raw_continuation = value.continuation
     if raw_continuation is not None:
         if not isinstance(raw_continuation, MsGraphKnowledgeContinuation):
             raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
@@ -789,9 +796,9 @@ def validate_msgraph_drive_permission_page(value: object) -> MsGraphDrivePermiss
             raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
         continuation = revalidated_continuation
 
-    if value.acl_complete is not False:
+    if raw_acl_complete is not False:
         raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
-    if value.inheritance_complete is not False:
+    if raw_inheritance_complete is not False:
         raise ValueError(_MALFORMED_PERMISSIONS_RESPONSE) from None
 
     try:

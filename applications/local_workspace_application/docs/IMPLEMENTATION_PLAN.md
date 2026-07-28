@@ -485,6 +485,13 @@ ARCHITECTURE:
 VENDOR-KNOWLEDGE owns vendor-specific access, credentials and normalization.
 LKW owns KnowledgeInput, Source, durable operations, queue/worker, Documents and indexed knowledge.
 No duplicate provider-specific LKW pipelines.
+
+Conversational planning (CONV-1A):
+- LLM produces a strict semantic draft (`ConversationInteractionDraft`).
+- The adapter automatically derives the draft JSON Schema from its Pydantic class.
+- Application code deterministically compiles technical IDs and exact evidence spans (`interaction_plan_compiler`).
+- The unchanged `ConversationInteractionPlan` remains the canonical plan contract.
+- The existing deterministic request validator remains the final grounding boundary.
 ```
 
 ## Appendix B — Status vocabulary

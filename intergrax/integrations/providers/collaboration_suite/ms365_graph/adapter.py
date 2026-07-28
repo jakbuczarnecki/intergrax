@@ -22,6 +22,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDriveItem,
     MsGraphDrivePermissionPage,
     MsGraphKnowledgeContinuation,
+    MsGraphMailFolderPage,
+    MsGraphMailMessageDeltaPage,
 )
 
 
@@ -59,6 +61,36 @@ class _Ms365GraphCollaborationSuite:
         continuation: MsGraphKnowledgeContinuation | None = None,
     ) -> MsGraphDrivePermissionPage:
         return self._client.read_drive_permissions_page(item=item, continuation=continuation)
+
+    def read_mail_folders_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        parent_folder_id: str | None = None,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailFolderPage:
+        return self._client.read_mail_folders_page(
+            mailbox_user_id=mailbox_user_id,
+            parent_folder_id=parent_folder_id,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_mail_messages_delta_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        folder_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailMessageDeltaPage:
+        return self._client.read_mail_messages_delta_page(
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+            continuation=continuation,
+            limit=limit,
+        )
 
     def read_drive_file_content(
         self,
