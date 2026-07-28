@@ -1267,6 +1267,8 @@ TOKEN-9C — Safe Router → Engine Integration
 
 #### TOKEN-8A — Layer Registry and Pipeline Runner
 
+**Status:** **Done / Closed**.
+
 Build the first executable core of Token Optimization.
 
 Target capability:
@@ -1279,6 +1281,27 @@ Target capability:
 - support DEFAULT and REPLACE pipeline modes
 - skip disabled layers
 - define required-layer failure behavior
+
+**Closeout:**
+
+- layer registry added
+- deterministic pipeline config resolution added
+- DEFAULT and REPLACE modes supported
+- disabled layers skipped and recorded
+- sequential original/current content flow added
+- required-layer failure fallback added
+- central protected-region validation enforced
+- safe exception handling added
+- pipeline result aggregation added
+- manual existing-layer execution proof added
+- no built-in catalog auto-wiring
+- no dynamic package loading
+- no runtime/application integration
+- no provider calls
+- no observability emission
+- no new optimization algorithm
+
+**Next step:** TOKEN-8B — Built-in Layer Catalog Wiring
 
 Out of scope for TOKEN-8A:
 
