@@ -429,6 +429,7 @@ def test_validate_delta_page_returns_new_instances() -> None:
     assert validated == original
     assert validated is not original
     assert validated.items[0] is not original.items[0]
+    assert validated.continuation is not original.continuation
 
 
 @pytest.mark.parametrize(
@@ -561,7 +562,10 @@ def test_validate_continuation_accepts_next_page_slash_path() -> None:
         folder_id=_FOLDER_ID,
         graph_base_url=_GRAPH_BASE,
     )
-    assert validated is continuation
+    assert validated == continuation
+    assert validated is not continuation
+    assert validated.kind is MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    assert validated.url == continuation.url
 
 
 def test_validate_continuation_accepts_delta_slash_path() -> None:
@@ -575,7 +579,10 @@ def test_validate_continuation_accepts_delta_slash_path() -> None:
         folder_id=_FOLDER_ID,
         graph_base_url=_GRAPH_BASE,
     )
+    assert validated == continuation
+    assert validated is not continuation
     assert validated.kind is MsGraphKnowledgeContinuationKind.DELTA
+    assert validated.url == continuation.url
 
 
 def test_validate_continuation_accepts_odata_key_path() -> None:
@@ -589,7 +596,10 @@ def test_validate_continuation_accepts_odata_key_path() -> None:
         folder_id=_FOLDER_ID,
         graph_base_url=_GRAPH_BASE,
     )
-    assert validated is continuation
+    assert validated == continuation
+    assert validated is not continuation
+    assert validated.kind is MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    assert validated.url == continuation.url
 
 
 def test_validate_continuation_accepts_resource_name_case_variations() -> None:
@@ -607,7 +617,10 @@ def test_validate_continuation_accepts_resource_name_case_variations() -> None:
         folder_id=_FOLDER_ID,
         graph_base_url=_GRAPH_BASE,
     )
-    assert validated is continuation
+    assert validated == continuation
+    assert validated is not continuation
+    assert validated.kind is MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    assert validated.url == continuation.url
 
 
 def test_validate_continuation_accepts_folder_literal_with_escaped_quotes() -> None:
@@ -622,7 +635,10 @@ def test_validate_continuation_accepts_folder_literal_with_escaped_quotes() -> N
         folder_id=folder_id,
         graph_base_url=_GRAPH_BASE,
     )
-    assert validated is continuation
+    assert validated == continuation
+    assert validated is not continuation
+    assert validated.kind is MsGraphKnowledgeContinuationKind.DELTA
+    assert validated.url == continuation.url
 
 
 @pytest.mark.parametrize(
@@ -670,6 +686,83 @@ def test_validate_continuation_rejects_wrong_object_type() -> None:
             folder_id=_FOLDER_ID,
             graph_base_url=_GRAPH_BASE,
         )
+
+
+def _assert_malformed_continuation_rejected(continuation: object) -> None:
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        validate_msgraph_mail_messages_delta_continuation(
+            continuation,
+            mailbox_user_id=_MAILBOX_USER_ID,
+            folder_id=_FOLDER_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert exc.value.__cause__ is None
+    assert _SECRET_TOKEN not in str(exc.value)
+    assert _SECRET_DELTA_TOKEN not in str(exc.value)
+    assert _MAILBOX_USER_ID not in str(exc.value)
+    assert _FOLDER_ID not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+        ),
+        MsGraphKnowledgeContinuation.model_construct(url=_delta_link()),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind="delta",
+            url=_delta_link(),
+        ),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=123,
+        ),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url="",
+        ),
+    ],
+)
+def test_validate_continuation_rejects_model_construct_malformed(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    _assert_malformed_continuation_rejected(continuation)
+
+
+def test_validate_delta_page_rejects_malformed_continuation_missing_url() -> None:
+    malformed = MsGraphMailMessageDeltaPage.model_construct(
+        items=(_valid_active_change(),),
+        continuation=MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+        ),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        validate_msgraph_mail_message_delta_page(
+            malformed,
+            mailbox_user_id=_MAILBOX_USER_ID,
+            folder_id=_FOLDER_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_validate_delta_page_rejects_malformed_continuation_missing_kind() -> None:
+    malformed = MsGraphMailMessageDeltaPage.model_construct(
+        items=(_valid_active_change(),),
+        continuation=MsGraphKnowledgeContinuation.model_construct(
+            url=_delta_link(),
+        ),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        validate_msgraph_mail_message_delta_page(
+            malformed,
+            mailbox_user_id=_MAILBOX_USER_ID,
+            folder_id=_FOLDER_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert exc.value.__cause__ is None
 
 
 # --- delta semantics ---
@@ -1038,6 +1131,28 @@ def test_custom_client_valid_page_revalidated() -> None:
     assert returned == supplied
     assert returned is not supplied
     assert returned.items[0] is not supplied.items[0]
+    assert returned.continuation is not supplied.continuation
+
+
+def test_integration_rejects_malformed_continuation_without_url() -> None:
+    malformed_page = MsGraphMailMessageDeltaPage(
+        items=(_valid_active_change(),),
+        continuation=MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+        ),
+    )
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(
+            _CustomGraphMailMessagesClient(page=malformed_page, http=MagicMock())
+        ),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        integration.read_mail_messages_delta_page(
+            mailbox_user_id=_MAILBOX_USER_ID,
+            folder_id=_FOLDER_ID,
+        )
+    assert exc.value.__cause__ is None
 
 
 def test_custom_client_cross_folder_continuation_rejected() -> None:

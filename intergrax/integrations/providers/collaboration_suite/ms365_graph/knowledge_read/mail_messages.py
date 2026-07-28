@@ -615,7 +615,20 @@ def validate_msgraph_mail_messages_delta_continuation(
 ) -> MsGraphKnowledgeContinuation:
     if not isinstance(continuation, MsGraphKnowledgeContinuation):
         raise IntegrationConfigurationError(_INVALID_MAIL_MESSAGES_CONTINUATION) from None
-    if continuation.kind not in {
+
+    try:
+        revalidated = MsGraphKnowledgeContinuation.model_validate(
+            continuation.model_dump(mode="python")
+        )
+    except (
+        ValueError,
+        TypeError,
+        AttributeError,
+        ValidationError,
+    ):
+        raise IntegrationConfigurationError(_INVALID_MAIL_MESSAGES_CONTINUATION) from None
+
+    if revalidated.kind not in {
         MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         MsGraphKnowledgeContinuationKind.DELTA,
     }:
@@ -623,7 +636,7 @@ def validate_msgraph_mail_messages_delta_continuation(
 
     try:
         validated_url = validate_msgraph_continuation_url(
-            continuation.url,
+            revalidated.url,
             graph_base_url=graph_base_url,
         )
     except ValueError:
@@ -654,7 +667,7 @@ def validate_msgraph_mail_messages_delta_continuation(
     ):
         raise IntegrationConfigurationError(_INVALID_MAIL_MESSAGES_CONTINUATION) from None
 
-    return continuation
+    return revalidated
 
 
 def _deduplicate_message_changes(
