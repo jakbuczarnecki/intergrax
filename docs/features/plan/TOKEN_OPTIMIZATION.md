@@ -1314,9 +1314,25 @@ Out of scope for TOKEN-8A:
 
 #### TOKEN-8B — Built-in Layer Catalog Wiring
 
-Make built-in layers discoverable and runnable by the pipeline runner.
+**Status:** **Done / Closed**.
 
-Initial and future catalog candidates include extractive filtering, trim, dedup / near-dedup, and schema minimization. New algorithm design should remain minimal unless needed for catalog proof.
+Wire the three existing built-in optimization layers into an explicit, deterministic catalog that constructs fresh typed instances and registers them for the standard TOKEN-8A pipeline path.
+
+**Closeout:**
+
+- explicit deterministic built-in catalog added
+- three existing built-in layers wired (`builtin.exact_deduplication`, `builtin.extractive_filtering`, `builtin.budget_aware_context_packing`)
+- typed config validation added
+- budget-aware config remains explicitly required (`max_chars` has no catalog default)
+- fresh instances and fresh registry creation enforced
+- standard TOKEN-8A pipeline path proven for all three layers
+- policy and source gates remain in the runner (catalog does not bypass `allow_lossy`)
+- no dynamic discovery
+- no global mutable registry
+- no new algorithm
+- no runtime/application integration
+
+**Next step:** TOKEN-8C — Pipeline Configuration Evals
 
 #### TOKEN-8C — Pipeline Configuration Evals
 
