@@ -70,14 +70,12 @@ def _validate_msgraph_opaque_id(value: object) -> str:
     return trimmed
 
 
-def _parse_timezone_aware_datetime(value: object) -> datetime | None:
-    if value is None:
-        return None
+def _parse_timezone_aware_datetime(value: object) -> datetime:
     if not isinstance(value, str):
         raise ValueError(_MALFORMED_DRIVE_RESPONSE)
     trimmed = value.strip()
     if not trimmed:
-        return None
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
     if trimmed.endswith("Z"):
         trimmed = f"{trimmed[:-1]}+00:00"
     try:
@@ -87,6 +85,24 @@ def _parse_timezone_aware_datetime(value: object) -> datetime | None:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError(_MALFORMED_DRIVE_RESPONSE)
     return parsed.astimezone(timezone.utc)
+
+
+def _parse_optional_provider_datetime(
+    mapping: dict[str, object],
+    key: str,
+) -> datetime | None:
+    if key not in mapping:
+        return None
+    return _parse_timezone_aware_datetime(mapping[key])
+
+
+def _parse_required_provider_datetime(
+    mapping: dict[str, object],
+    key: str,
+) -> datetime:
+    if key not in mapping:
+        raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+    return _parse_timezone_aware_datetime(mapping[key])
 
 
 def _parse_size_bytes(value: object) -> int | None:
@@ -140,9 +156,10 @@ def _facet_is_present(payload: dict[str, object], key: str) -> bool:
 
 
 def _parse_parent_reference(payload: dict[str, object], validated_drive_id: str) -> str | None:
-    parent_reference = payload.get("parentReference")
-    if parent_reference is None:
+    if "parentReference" not in payload:
         return None
+
+    parent_reference = payload["parentReference"]
     if not isinstance(parent_reference, dict):
         raise ValueError(_MALFORMED_DRIVE_RESPONSE)
 
@@ -439,16 +456,8 @@ def parse_msgraph_drive_item(
             c_tag = _parse_optional_provider_string(payload, "cTag")
             web_url = _parse_optional_provider_string(payload, "webUrl")
             size_bytes = _parse_size_bytes(payload.get("size")) if "size" in payload else None
-            created_at = (
-                _parse_timezone_aware_datetime(payload.get("createdDateTime"))
-                if "createdDateTime" in payload
-                else None
-            )
-            last_modified_at = (
-                _parse_timezone_aware_datetime(payload.get("lastModifiedDateTime"))
-                if "lastModifiedDateTime" in payload
-                else None
-            )
+            created_at = _parse_optional_provider_datetime(payload, "createdDateTime")
+            last_modified_at = _parse_optional_provider_datetime(payload, "lastModifiedDateTime")
             mime_type = None
             return _safe_construct_drive_item(
                 remote_id=remote_id,
@@ -480,10 +489,8 @@ def parse_msgraph_drive_item(
                 raise ValueError(_MALFORMED_DRIVE_RESPONSE)
             mime_type = _parse_optional_provider_string(file_obj, "mimeType")
 
-        created_at = _parse_timezone_aware_datetime(payload.get("createdDateTime"))
-        last_modified_at = _parse_timezone_aware_datetime(payload.get("lastModifiedDateTime"))
-        if last_modified_at is None:
-            raise ValueError(_MALFORMED_DRIVE_RESPONSE)
+        created_at = _parse_optional_provider_datetime(payload, "createdDateTime")
+        last_modified_at = _parse_required_provider_datetime(payload, "lastModifiedDateTime")
 
         return _safe_construct_drive_item(
             remote_id=remote_id,

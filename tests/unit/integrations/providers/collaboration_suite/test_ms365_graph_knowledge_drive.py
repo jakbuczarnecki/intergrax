@@ -499,6 +499,134 @@ def test_parse_optional_field_wrong_type_not_treated_as_absent() -> None:
         parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
 
 
+# --- parentReference presence semantics ---
+
+
+def test_parse_root_without_parent_reference_key() -> None:
+    payload = _active_item_payload(
+        item_id="root-1",
+        name="root",
+        kind="folder",
+        parent_id=None,
+        include_root=True,
+    )
+    item = parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+    assert item.is_root is True
+    assert item.parent_remote_id is None
+
+
+def test_parse_tombstone_without_parent_reference_key() -> None:
+    item = parse_msgraph_drive_item(
+        {"id": "deleted-1", "deleted": {}},
+        expected_drive_id=_DRIVE_ID,
+    )
+    assert item.kind == MsGraphDriveItemKind.DELETED
+    assert item.parent_remote_id is None
+
+
+@pytest.mark.parametrize(
+    "parent_reference",
+    [None, "", [], False],
+)
+def test_parse_rejects_present_but_invalid_parent_reference(parent_reference: object) -> None:
+    payload = _active_item_payload()
+    payload["parentReference"] = parent_reference
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+# --- active item timestamp presence semantics ---
+
+
+def test_parse_active_item_missing_created_datetime_yields_none() -> None:
+    payload = _active_item_payload()
+    del payload["createdDateTime"]
+    item = parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+    assert item.created_at is None
+
+
+@pytest.mark.parametrize(
+    "created_datetime",
+    [None, "", "   "],
+)
+def test_parse_active_item_rejects_invalid_created_datetime(created_datetime: object) -> None:
+    payload = _active_item_payload()
+    payload["createdDateTime"] = created_datetime
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+def test_parse_active_item_missing_last_modified_datetime_raises() -> None:
+    payload = _active_item_payload()
+    del payload["lastModifiedDateTime"]
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+@pytest.mark.parametrize(
+    "last_modified_datetime",
+    [None, "", "   "],
+)
+def test_parse_active_item_rejects_invalid_last_modified_datetime(
+    last_modified_datetime: object,
+) -> None:
+    payload = _active_item_payload()
+    payload["lastModifiedDateTime"] = last_modified_datetime
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+# --- tombstone timestamp presence semantics ---
+
+
+def test_parse_tombstone_without_timestamps() -> None:
+    item = parse_msgraph_drive_item(
+        {"id": "deleted-1", "deleted": {}},
+        expected_drive_id=_DRIVE_ID,
+    )
+    assert item.kind == MsGraphDriveItemKind.DELETED
+    assert item.created_at is None
+    assert item.last_modified_at is None
+
+
+@pytest.mark.parametrize(
+    "created_datetime",
+    [None, ""],
+)
+def test_parse_tombstone_rejects_invalid_created_datetime(created_datetime: object) -> None:
+    payload = {"id": "deleted-1", "deleted": {}, "createdDateTime": created_datetime}
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+@pytest.mark.parametrize(
+    "last_modified_datetime",
+    [None, "   "],
+)
+def test_parse_tombstone_rejects_invalid_last_modified_datetime(
+    last_modified_datetime: object,
+) -> None:
+    payload = {
+        "id": "deleted-1",
+        "deleted": {},
+        "lastModifiedDateTime": last_modified_datetime,
+    }
+    with pytest.raises(ValueError, match="unexpected Microsoft Graph drive response"):
+        parse_msgraph_drive_item(payload, expected_drive_id=_DRIVE_ID)
+
+
+def test_parse_tombstone_normalizes_timestamp_to_utc() -> None:
+    item = parse_msgraph_drive_item(
+        {
+            "id": "deleted-1",
+            "deleted": {},
+            "lastModifiedDateTime": "2026-05-29T12:15:30+02:00",
+        },
+        expected_drive_id=_DRIVE_ID,
+    )
+    assert item.last_modified_at == datetime(2026, 5, 29, 10, 15, 30, tzinfo=timezone.utc)
+
+
 # --- delta page ---
 
 
