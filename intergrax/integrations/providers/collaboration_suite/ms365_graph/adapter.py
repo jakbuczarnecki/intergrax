@@ -20,6 +20,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
     MsGraphDriveItem,
+    MsGraphDrivePermissionPage,
     MsGraphKnowledgeContinuation,
 )
 
@@ -50,6 +51,14 @@ class _Ms365GraphCollaborationSuite:
             continuation=continuation,
             limit=limit,
         )
+
+    def read_drive_permissions_page(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphDrivePermissionPage:
+        return self._client.read_drive_permissions_page(item=item, continuation=continuation)
 
     def read_drive_file_content(
         self,

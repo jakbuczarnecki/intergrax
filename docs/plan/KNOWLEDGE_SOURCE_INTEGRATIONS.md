@@ -59,8 +59,10 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-CONTENT
   bounded binary content download
-  NEXT:
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
+  caller-visible sharing permissions read
+  NEXT:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
@@ -504,9 +506,13 @@ legacy WikiKnowledge search migration deferred
 **Status:** `IN_PROGRESS`
 
 The shared Microsoft Graph foundation is implemented.
-Drive inventory, delta and bounded binary content download are implemented for one known drive ID.
+Drive metadata, delta, tombstones, bounded binary content and caller-visible
+sharing-permission reads are implemented.
+The permission response is explicitly not treated as a proven complete
+end-user ACL.
+Sharing URLs, share IDs and invitation email addresses are not retained.
 Download URLs are never persisted.
-File conversion and permission projection are not implemented yet.
+File conversion is not implemented yet.
 No Microsoft Vendor Knowledge adapter is exposed yet.
 Mail is the next low-level surface after Drive permissions.
 

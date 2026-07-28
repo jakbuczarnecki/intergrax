@@ -24,6 +24,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDriveItem,
     MsGraphDriveKnowledgeReader,
     MsGraphDriveContentReader,
+    MsGraphDrivePermissionPage,
+    MsGraphDrivePermissionsReader,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeTransport,
 )
@@ -116,6 +118,10 @@ class GraphRestClient:
             config=config,
             transport=self._knowledge_transport,
         )
+        self._drive_permissions_reader = MsGraphDrivePermissionsReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
         self._drive_content_reader: MsGraphDriveContentReader | None = None
         if download_http_client is not None:
             self._drive_content_reader = MsGraphDriveContentReader(
@@ -140,6 +146,17 @@ class GraphRestClient:
             drive_id=drive_id,
             continuation=continuation,
             limit=limit,
+        )
+
+    def read_drive_permissions_page(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphDrivePermissionPage:
+        return self._drive_permissions_reader.read_permissions_page(
+            item=item,
+            continuation=continuation,
         )
 
     def read_drive_file_content(

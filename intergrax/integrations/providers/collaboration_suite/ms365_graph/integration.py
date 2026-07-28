@@ -18,6 +18,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDriveFileContent,
     MsGraphDriveItem,
     MsGraphDriveKnowledgeReadClient,
+    MsGraphDrivePermissionPage,
+    MsGraphDrivePermissionsReadClient,
     MsGraphKnowledgeContinuation,
 )
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
@@ -56,6 +58,17 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             drive_id=drive_id,
             continuation=continuation,
             limit=limit,
+        )
+
+    def read_drive_permissions_page(
+        self,
+        *,
+        item: MsGraphDriveItem,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphDrivePermissionPage:
+        return self._require_drive_permissions_client().read_drive_permissions_page(
+            item=item,
+            continuation=continuation,
         )
 
     def read_drive_file_content(
@@ -151,6 +164,14 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphDriveContentReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph Drive download client is not configured",
+            )
+        return client
+
+    def _require_drive_permissions_client(self) -> MsGraphDrivePermissionsReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphDrivePermissionsReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Drive permissions capability",
             )
         return client
 
