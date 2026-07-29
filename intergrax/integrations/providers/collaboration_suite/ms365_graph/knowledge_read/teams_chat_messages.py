@@ -1346,13 +1346,11 @@ def validate_msgraph_teams_chat_attachment_reference(
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
         dumped["content_type"] = trimmed_type
         attachment_kind = dumped.get("attachment_kind")
-        if not isinstance(attachment_kind, MsGraphTeamsChatAttachmentKind):
-            if not isinstance(attachment_kind, str):
-                raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
-            try:
-                dumped["attachment_kind"] = MsGraphTeamsChatAttachmentKind(attachment_kind)
-            except ValueError:
-                raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        if not isinstance(
+            attachment_kind,
+            MsGraphTeamsChatAttachmentKind,
+        ):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
         if dumped.get("forwarded_message") is not None:
             dumped["forwarded_message"] = validate_msgraph_teams_forwarded_message_reference(
                 dumped["forwarded_message"]

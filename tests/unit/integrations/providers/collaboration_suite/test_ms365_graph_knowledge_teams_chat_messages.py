@@ -512,6 +512,130 @@ def test_snapshot_page_accepts_message_inside_window() -> None:
     assert len(validated.items) == 1
 
 
+def test_attachment_reference_model_construct_raw_kind_rejected() -> None:
+    malformed = MsGraphTeamsChatAttachmentReference.model_construct(
+        remote_id="att-raw-kind",
+        attachment_kind="reference",
+        content_type="reference",
+        content_url="https://contoso.example/file",
+        embedded_content=None,
+        forwarded_message=None,
+        has_thumbnail_url=False,
+    )
+    with pytest.raises(
+        ValueError,
+        match="unexpected Microsoft Graph Teams chat messages response",
+    ) as exc:
+        validate_msgraph_teams_chat_attachment_reference(malformed)
+    assert exc.value.__cause__ is None
+    assert "https://contoso.example/file" not in str(exc.value)
+    assert "att-raw-kind" not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    ("raw_kind", "attachment_kwargs"),
+    [
+        (
+            "reference",
+            {
+                "remote_id": "att-ref",
+                "content_type": "reference",
+                "content_url": "https://contoso.example/file",
+                "embedded_content": None,
+                "forwarded_message": None,
+                "has_thumbnail_url": False,
+            },
+        ),
+        (
+            "forwarded_message_reference",
+            {
+                "remote_id": "att-fwd",
+                "content_type": "forwardedMessageReference",
+                "content_url": None,
+                "embedded_content": None,
+                "forwarded_message": MsGraphTeamsForwardedMessageReference(
+                    original_message_id="orig-msg",
+                    original_chat_id=_CHAT_ID,
+                    original_sent_at=datetime(2024, 1, 1, 9, 0, tzinfo=timezone.utc),
+                    original_sender=None,
+                ),
+                "has_thumbnail_url": False,
+            },
+        ),
+        (
+            "code_snippet",
+            {
+                "remote_id": "att-code",
+                "content_type": "application/vnd.microsoft.card.codesnippet",
+                "content_url": None,
+                "embedded_content": '{"language":"python"}',
+                "forwarded_message": None,
+                "has_thumbnail_url": False,
+            },
+        ),
+        (
+            "announcement",
+            {
+                "remote_id": "att-announce",
+                "content_type": "application/vnd.microsoft.card.announcement",
+                "content_url": None,
+                "embedded_content": '{"title":"Update"}',
+                "forwarded_message": None,
+                "has_thumbnail_url": False,
+            },
+        ),
+        (
+            "card",
+            {
+                "remote_id": "att-card",
+                "content_type": "application/vnd.microsoft.card.adaptive",
+                "content_url": None,
+                "embedded_content": '{"type":"AdaptiveCard"}',
+                "forwarded_message": None,
+                "has_thumbnail_url": False,
+            },
+        ),
+        (
+            "unknown",
+            {
+                "remote_id": "att-unknown",
+                "content_type": "application/octet-stream",
+                "content_url": None,
+                "embedded_content": "opaque",
+                "forwarded_message": None,
+                "has_thumbnail_url": False,
+            },
+        ),
+    ],
+)
+def test_attachment_reference_raw_kind_string_rejected(
+    raw_kind: str,
+    attachment_kwargs: dict[str, object],
+) -> None:
+    malformed = MsGraphTeamsChatAttachmentReference.model_construct(
+        attachment_kind=raw_kind,
+        **attachment_kwargs,
+    )
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_chat_attachment_reference(malformed)
+    assert exc.value.__cause__ is None
+
+
+def test_attachment_reference_valid_enum_instance_accepted() -> None:
+    attachment = MsGraphTeamsChatAttachmentReference.model_construct(
+        remote_id="att-valid-kind",
+        attachment_kind=MsGraphTeamsChatAttachmentKind.REFERENCE,
+        content_type="reference",
+        content_url="https://contoso.example/file",
+        embedded_content=None,
+        forwarded_message=None,
+        has_thumbnail_url=False,
+    )
+    validated = validate_msgraph_teams_chat_attachment_reference(attachment)
+    assert validated is not attachment
+    assert validated.content_url == "https://contoso.example/file"
+
+
 def test_attachment_reference_valid_https() -> None:
     attachment = _reference_attachment()
     validated = validate_msgraph_teams_chat_attachment_reference(attachment)
@@ -872,6 +996,59 @@ def test_integration_valid_continuation_calls_custom_client_once() -> None:
     assert client.last_continuation is not None
     assert client.last_continuation.url == continuation.url
     assert returned.items[0] is not _valid_snapshot_page().items[0]
+
+
+def test_integration_custom_client_raw_attachment_kind_rejected() -> None:
+    message = MsGraphTeamsChatMessage.model_construct(
+        mailbox_user_id=_MAILBOX,
+        chat_remote_id=_CHAT_ID,
+        remote_id=_MESSAGE_ID,
+        revision=_ETAG,
+        state=MsGraphTeamsChatMessageState.ACTIVE,
+        message_type=MsGraphTeamsChatMessageType.MESSAGE,
+        importance=MsGraphTeamsChatImportance.NORMAL,
+        created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
+        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_content="Hello",
+        attachments=(
+            MsGraphTeamsChatAttachmentReference.model_construct(
+                remote_id="att-raw-kind",
+                attachment_kind="reference",
+                content_type="reference",
+                content_url="https://contoso.example/file",
+                embedded_content=None,
+                forwarded_message=None,
+                has_thumbnail_url=False,
+            ),
+        ),
+    )
+    page = MsGraphTeamsChatMessageSnapshotPage(
+        mailbox_user_id=_MAILBOX,
+        chat_remote_id=_CHAT_ID,
+        window=_window(),
+        items=(message,),
+    )
+    client = _CountingMessagesClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        integration.read_teams_chat_messages_snapshot_page(
+            chat=_chat(),
+            window=_window(),
+            continuation=None,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    assert client.call_count == 1
+    assert exc.value.__cause__ is None
+    error_text = str(exc.value)
+    assert "Hello" not in error_text
+    assert "https://contoso.example/file" not in error_text
+    assert "att-raw-kind" not in error_text
+    assert _CHAT_ID not in error_text
 
 
 def test_integration_custom_client_body_above_requested_limit_rejected() -> None:
