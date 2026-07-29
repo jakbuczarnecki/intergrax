@@ -395,8 +395,67 @@ def test_changing_tool_order_causes_materialization_failure() -> None:
         envelope_hash=assembly.tool_envelope.envelope_hash,
     )
     object.__setattr__(assembly, "tool_envelope", tampered_envelope)
+    with pytest.raises(CacheStablePromptIntegrityError, match="tool envelope ordering mismatch"):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_reordered_assembly_schema_causes_materialization_failure() -> None:
+    schema = _router_tool_schema()
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=schema,
+    )
+    assert assembly.tool_envelope is not None
+    reversed_schema = tuple(reversed(assembly.tool_envelope.tools_schema))
+    tampered_envelope = CacheStableToolEnvelope(
+        tools_schema=reversed_schema,
+        tool_ids=assembly.tool_envelope.tool_ids,
+        envelope_hash=assembly.tool_envelope.envelope_hash,
+    )
+    object.__setattr__(assembly, "tool_envelope", tampered_envelope)
+    with pytest.raises(CacheStablePromptIntegrityError, match="tool envelope ordering mismatch"):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_reordered_schema_with_reordered_ids_but_old_hash_fails() -> None:
+    schema = _router_tool_schema()
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=schema,
+    )
+    assert assembly.tool_envelope is not None
+    reversed_schema = tuple(reversed(assembly.tool_envelope.tools_schema))
+    tampered_envelope = CacheStableToolEnvelope(
+        tools_schema=reversed_schema,
+        tool_ids=("beta.tool", "alpha.tool"),
+        envelope_hash=assembly.tool_envelope.envelope_hash,
+    )
+    object.__setattr__(assembly, "tool_envelope", tampered_envelope)
     with pytest.raises(CacheStablePromptIntegrityError):
         materialize_cache_stable_send_payload(assembly)
+
+
+def test_canonical_initial_envelope_sorts_tools_and_hashes_ordered_sequence() -> None:
+    schema = list(reversed(_router_tool_schema()))
+    envelope = build_cache_stable_tool_envelope(schema)
+    assert envelope.tool_ids == ("alpha.tool", "beta.tool")
+    names = [entry["function"]["name"] for entry in envelope.tools_schema]
+    assert names == ["alpha.tool", "beta.tool"]
+    from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash
+
+    assert envelope.envelope_hash == compute_openai_tools_schema_hash(envelope.tools_schema)
+
+
+def test_unchanged_envelope_preserves_order_on_materialization() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=_router_tool_schema(),
+    )
+    payload = materialize_cache_stable_send_payload(assembly)
+    assert assembly.tool_envelope is not None
+    payload_names = [entry["function"]["name"] for entry in payload.tools_schema]
+    envelope_names = [entry["function"]["name"] for entry in assembly.tool_envelope.tools_schema]
+    assert payload_names == envelope_names == ["alpha.tool", "beta.tool"]
 
 
 def test_unchanged_assembly_materializes_successfully() -> None:

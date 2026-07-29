@@ -53,10 +53,23 @@ def _expected_tool_ids(
     )
 
 
+def _expected_ordered_tool_ids(
+    registry: ToolRegistry,
+    allowed_tool_ids: Sequence[str] | None,
+) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            item.contract.tool_id
+            for item in _registered_tools_for_planning(registry, allowed_tool_ids)
+        )
+    )
+
+
 def _validate_prepared_tools_schema(
     prepared_tools_schema: Sequence[Mapping[str, Any]],
     *,
     expected_tool_ids: frozenset[str],
+    expected_ordered_tool_ids: tuple[str, ...],
 ) -> List[Dict[str, Any]]:
     materialized: List[Dict[str, Any]] = [copy.deepcopy(dict(entry)) for entry in prepared_tools_schema]
     observed: list[str] = []
@@ -80,6 +93,8 @@ def _validate_prepared_tools_schema(
             raise ValueError(
                 f"prepared_tools_schema contains unexpected tools: {sorted(unexpected)}"
             )
+    if tuple(observed) != expected_ordered_tool_ids:
+        raise ValueError("prepared tools schema order mismatch")
     return materialized
 
 
@@ -299,9 +314,11 @@ class ToolPlanningService:
         allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
         if prepared_tools_schema is not None:
             expected = _expected_tool_ids(self.tools, allowed_tool_ids)
+            expected_ordered = _expected_ordered_tool_ids(self.tools, allowed_tool_ids)
             tools_schema = _validate_prepared_tools_schema(
                 prepared_tools_schema,
                 expected_tool_ids=expected,
+                expected_ordered_tool_ids=expected_ordered,
             )
             if prepared_tools_schema_hash is not None:
                 computed_schema_hash = compute_openai_tools_schema_hash(tools_schema)

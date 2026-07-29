@@ -339,6 +339,23 @@ def build_cache_stable_tool_envelope(
     )
 
 
+def _observed_tool_ids_from_schema(
+    tools_schema: Sequence[Mapping[str, Any]],
+) -> tuple[str, ...]:
+    observed: list[str] = []
+    for entry in tools_schema:
+        if not isinstance(entry, Mapping):
+            raise ValueError("tools_schema entries must be mappings")
+        function = entry.get("function")
+        if not isinstance(function, Mapping):
+            raise ValueError("function tool must include function object")
+        name = function.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("function.name must be non-empty")
+        observed.append(name)
+    return tuple(observed)
+
+
 def assemble_cache_stable_prompt(
     *,
     stable_prefix_blocks: Sequence[PromptAssemblyMessageBlock],
@@ -487,16 +504,21 @@ def materialize_cache_stable_send_payload(
     tool_ids: tuple[str, ...] = ()
     tools_schema: tuple[Mapping[str, Any], ...] = ()
     if assembly.tool_envelope is not None:
-        recomputed_envelope = build_cache_stable_tool_envelope(
+        observed_tool_ids = _observed_tool_ids_from_schema(
             assembly.tool_envelope.tools_schema
         )
-        if recomputed_envelope.envelope_hash != assembly.tool_envelope.envelope_hash:
-            raise CacheStablePromptIntegrityError("tool envelope hash mismatch")
-        if recomputed_envelope.tool_ids != assembly.tool_envelope.tool_ids:
+        if observed_tool_ids != assembly.tool_envelope.tool_ids:
             raise CacheStablePromptIntegrityError("tool envelope ordering mismatch")
+        current_exact_hash = compute_openai_tools_schema_hash(
+            assembly.tool_envelope.tools_schema
+        )
+        if current_exact_hash != assembly.tool_envelope.envelope_hash:
+            raise CacheStablePromptIntegrityError("tool envelope hash mismatch")
         tool_envelope_hash = assembly.tool_envelope.envelope_hash
         tool_ids = assembly.tool_envelope.tool_ids
-        tools_schema = tuple(copy.deepcopy(dict(entry)) for entry in recomputed_envelope.tools_schema)
+        tools_schema = tuple(
+            copy.deepcopy(dict(entry)) for entry in assembly.tool_envelope.tools_schema
+        )
     elif assembly.state.tool_envelope_hash is not None or assembly.state.tool_ids:
         raise CacheStablePromptIntegrityError("tool envelope state mismatch")
 

@@ -137,7 +137,7 @@ Native tool calling remains valid when the exposed envelope is deterministic and
 
 ---
 
-## 6. As-built runtime (TOKEN-10B / TOKEN-10B-R1)
+## 6. As-built runtime (TOKEN-10B / TOKEN-10B-R1 / TOKEN-10B-R2)
 
 Production assembler: `intergrax/runtime/token_optimization/prompt_assembly.py`.
 
@@ -146,6 +146,7 @@ Public contracts:
 - `PromptAssemblyMessageBlock`, `PromptCacheBlockFingerprint`, `CacheStablePromptState`, `CacheStableToolEnvelope`, `CacheStablePromptAssemblyReport`, `CacheStablePromptAssembly`
 - `assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, `cache_stable_prompt_assembly_to_safe_dict`
 - **TOKEN-10B-R1:** `CacheStablePromptSendPayload`, `CacheStablePromptIntegrityError`, `materialize_cache_stable_send_payload`
+- **TOKEN-10B-R2:** exact-send tool-schema hash order sensitivity; materialization and `ToolPlanningService` reject noncanonical prepared order
 
 ### TOKEN-10B-R1 send integrity (as-built correction)
 
@@ -155,6 +156,13 @@ Public contracts:
 - **Send-time validation:** `materialize_cache_stable_send_payload` recomputes and compares `messages_hash`, stable-prefix fingerprints, and tool-envelope hash/ordering before adapter invocation; returns fresh defensive copies; raises `CacheStablePromptIntegrityError` on mismatch (fail closed).
 - **Canonical hashing helpers:** `compute_model_facing_messages_hash` (`intergrax/llm/messages.py`), `compute_openai_tools_schema_hash` (`intergrax/tools/exporters/openai.py`) — shared by assembler and `ToolPlanningService` post-pruning validation.
 - **Complete tool-envelope transitions:** `None↔hash` and `hash A↔hash B` report `tool_envelope_stable=false` and `TOOL_ENVELOPE_CHANGED` when prefix is otherwise reusable; prompt-safety invalidation retains precedence.
+
+### TOKEN-10B-R2 exact schema sequence integrity (as-built correction)
+
+- **Order-sensitive exact-send schema hash:** `compute_openai_tools_schema_hash` preserves outer tool-list order; dictionary keys are canonicalized via `sort_keys=True` only.
+- **Canonical tool order established once:** `build_cache_stable_tool_envelope` sorts by `function.name` before hashing; returned envelope is the exact sequence hashed.
+- **Materialization rejects reordered envelope schema:** `materialize_cache_stable_send_payload` compares observed tool IDs and order-sensitive hash against recorded envelope state without re-canonicalizing tampered input.
+- **`ToolPlanningService` rejects noncanonical prepared order:** `plan_native_round` validates prepared schema against expected lexicographic tool-ID sequence before adapter invocation.
 
 Router integration (`TokenOptimizationLLMRouter`):
 
@@ -277,8 +285,9 @@ vLLM proves compute reuse and latency/prefill improvement — not Claude billing
 | `TOKEN-OPT-5A`–`TOKEN-OPT-5E` | **Done / Closed** (contracts + helpers + synthetic policy tests) |
 | `TOKEN-8`, `TOKEN-9` | **Accepted / Closed** (execution engine + router) |
 | `TOKEN-10A` | **Accepted / Closed** (docs-only canon) |
-| `TOKEN-10B` | **Implemented / Ready for review after R1** (`prompt_assembly.py`, router wiring) |
+| `TOKEN-10B` | **Implemented / Ready for review after R2** (`prompt_assembly.py`, router wiring) |
 | `TOKEN-10B-R1` | **Implemented / Ready for review** (send-payload integrity, envelope transitions) |
+| `TOKEN-10B-R2` | **Implemented / Ready for review** (exact tool-schema sequence integrity) |
 | `TOKEN-10C`–`TOKEN-10H` | **Planned** |
 
 See [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-10 for subtask acceptance criteria.

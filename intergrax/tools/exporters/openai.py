@@ -39,14 +39,16 @@ def to_openai_tools(
 def compute_openai_tools_schema_hash(
     tools_schema: Sequence[Mapping[str, Any]],
 ) -> str:
-    """SHA-256 over canonical OpenAI function-tool schema list (sorted by function name)."""
+    """SHA-256 over the exact ordered OpenAI tool-schema sequence.
+
+    Dictionary keys are canonicalized; tool-list order is preserved.
+    """
     if not tools_schema:
         digest = hashlib.sha256()
         digest.update(b"")
         return digest.hexdigest()
 
     canonical_entries = [copy.deepcopy(dict(entry)) for entry in tools_schema]
-    canonical_entries.sort(key=lambda item: item["function"]["name"])
     canonical_json = json.dumps(
         canonical_entries,
         ensure_ascii=False,

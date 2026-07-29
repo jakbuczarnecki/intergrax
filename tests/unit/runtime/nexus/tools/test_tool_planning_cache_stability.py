@@ -508,3 +508,95 @@ def test_adapter_not_called_after_integrity_failure() -> None:
             prepared_tools_schema_hash="deadbeef" * 8,
         )
     assert adapter.generate_with_tools_calls == 0
+
+
+def _alpha_beta_registry() -> ToolRegistry:
+    registry = ToolRegistry()
+    for tool_id, schema, description in (
+        ("alpha.tool", _AlphaInput, "SYNTH-ALPHA-DESC"),
+        ("beta.tool", _BetaInput, "SYNTH-BETA-DESC"),
+    ):
+        registry.register(
+            ToolContract(
+                tool_id=tool_id,
+                name=tool_id,
+                description=description,
+                input_schema=schema,
+                output_schema=dict,
+                error_mapping={},
+                side_effects=False,
+                risk_level=ToolRiskLevel.LOW,
+                category="test",
+                tags=(),
+            ),
+            _noop_handler,
+        )
+    return registry
+
+
+def test_canonical_prepared_order_accepted() -> None:
+    registry = _alpha_beta_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        [ChatMessage(role="user", content="SYNTH-PLAN")],
+        allowed_tool_ids=("alpha.tool", "beta.tool"),
+        prepared_tools_schema=list(envelope.tools_schema),
+        prepared_tools_schema_hash=envelope.envelope_hash,
+    )
+    assert adapter.generate_with_tools_calls == 1
+    assert adapter.received_schema is not None
+    names = [entry["function"]["name"] for entry in adapter.received_schema]
+    assert names == ["alpha.tool", "beta.tool"]
+
+
+def test_reversed_prepared_order_rejected_with_canonical_hash() -> None:
+    registry = _alpha_beta_registry()
+    canonical = build_cache_stable_tool_envelope(build_tool_planning_schema(registry))
+    reversed_schema = list(reversed(canonical.tools_schema))
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    with pytest.raises(ValueError, match="prepared tools schema order mismatch"):
+        planner.plan_native_round(
+            [ChatMessage(role="user", content="SYNTH-PLAN")],
+            allowed_tool_ids=("alpha.tool", "beta.tool"),
+            prepared_tools_schema=reversed_schema,
+            prepared_tools_schema_hash=canonical.envelope_hash,
+        )
+    assert adapter.generate_with_tools_calls == 0
+
+
+def test_reversed_prepared_order_rejected_with_reversed_hash() -> None:
+    from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash
+
+    registry = _alpha_beta_registry()
+    canonical = build_cache_stable_tool_envelope(build_tool_planning_schema(registry))
+    reversed_schema = list(reversed(canonical.tools_schema))
+    reversed_hash = compute_openai_tools_schema_hash(reversed_schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    with pytest.raises(ValueError, match="prepared tools schema order mismatch"):
+        planner.plan_native_round(
+            [ChatMessage(role="user", content="SYNTH-PLAN")],
+            allowed_tool_ids=("alpha.tool", "beta.tool"),
+            prepared_tools_schema=reversed_schema,
+            prepared_tools_schema_hash=reversed_hash,
+        )
+    assert adapter.generate_with_tools_calls == 0
+
+
+def test_exact_canonical_schema_order_forwarded_to_adapter() -> None:
+    registry = _alpha_beta_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        [ChatMessage(role="user", content="SYNTH-PLAN")],
+        allowed_tool_ids=("alpha.tool", "beta.tool"),
+        prepared_tools_schema=list(envelope.tools_schema),
+        prepared_tools_schema_hash=envelope.envelope_hash,
+    )
+    assert adapter.received_schema == list(envelope.tools_schema)

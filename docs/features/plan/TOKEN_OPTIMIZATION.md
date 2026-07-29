@@ -1490,7 +1490,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review after R1; TOKEN-10B-R1 implemented/ready for review; TOKEN-10C next).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review after R2; TOKEN-10B-R1 implemented/ready for review; TOKEN-10B-R2 implemented/ready for review; TOKEN-10C next).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1512,7 +1512,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
 
-**Status:** **Implemented / Ready for review after R1**.
+**Status:** **Implemented / Ready for review after R2**.
 
 **Scope delivered:**
 
@@ -1536,6 +1536,18 @@ Do not collapse these into one implementation commit.
 - `ToolPlanningService.plan_native_round` optional `prepared_tools_schema_hash` / `prepared_messages_hash` validation (post-pruning for messages).
 - Shared canonical hashing: `compute_model_facing_messages_hash`, `compute_openai_tools_schema_hash`.
 - Complete `None↔hash` tool-envelope transition reporting (`TOOL_ENVELOPE_CHANGED`).
+
+### TOKEN-10B-R2 — Exact Tool-Schema Order Integrity
+
+**Status:** **Implemented / Ready for review**.
+
+**Scope delivered:**
+
+- Order-sensitive exact-send schema hash: `compute_openai_tools_schema_hash` preserves outer tool-list order; dictionary keys canonicalized only.
+- Canonical tool order established once in `build_cache_stable_tool_envelope` before hashing.
+- `materialize_cache_stable_send_payload` rejects reordered envelope schema without re-canonicalizing tampered input.
+- `ToolPlanningService.plan_native_round` rejects noncanonical prepared tool order before adapter invocation.
+- Closes exact-schema sequence-integrity gap between recorded fingerprint and adapter payload.
 
 ### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
 
@@ -2044,8 +2056,9 @@ TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
 TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
 TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
-TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review after R1
+TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review after R2
 TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Implemented / Ready for review
+TOKEN-10B-R2 exact tool-schema order integrity — Implemented / Ready for review
 TOKEN-10C   vLLM prefix-cache provider integration and metrics — Next
 TOKEN-10D..10H orchestration, compaction, proof, README — Planned
 ```
