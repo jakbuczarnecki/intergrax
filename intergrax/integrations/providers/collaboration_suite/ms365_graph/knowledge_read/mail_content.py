@@ -46,7 +46,6 @@ _MAX_CONVERSATION_ID_LEN = 2048
 _MAX_INTERNET_MESSAGE_ID_LEN = 4096
 _MAX_SUBJECT_LEN = 4096
 _MAX_CHANGE_KEY_LEN = 2048
-_MAX_MESSAGE_TEXT_LEN = 16_000
 
 _IMMUTABLE_TEXT_BODY_HEADERS = {
     "Prefer": 'IdType="ImmutableId", outlook.body-content-type="text"',
@@ -143,8 +142,6 @@ def _validate_body_text(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE)
     if "\x00" in value:
-        raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE)
-    if len(value) > _MAX_MESSAGE_TEXT_LEN:
         raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE)
     return value
 
@@ -432,6 +429,8 @@ def validate_msgraph_mail_message_content(
     message: MsGraphMailMessageChange,
     max_chars: int,
 ) -> MsGraphMailMessageContent:
+    validated_max_chars = _validate_max_chars(max_chars)
+
     if not isinstance(value, MsGraphMailMessageContent):
         raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE) from None
 
@@ -443,34 +442,38 @@ def validate_msgraph_mail_message_content(
         raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE) from None
 
     try:
+        mailbox_user_id = validate_msgraph_mailbox_user_id(raw["mailbox_user_id"])
+        remote_id = validate_msgraph_mail_message_id(raw["remote_id"])
+        parent_folder_id = validate_msgraph_mail_folder_id(raw["parent_folder_id"])
+        content_revision = _validate_content_revision(raw["content_revision"])
+        body_text = _validate_body_text(raw["body_text"])
+        unique_body_text = _validate_optional_body_text(raw["unique_body_text"])
+        from_value = raw["from_participant"]
         from_participant = (
-            validate_msgraph_mail_participant(raw["from_participant"])
-            if raw.get("from_participant") is not None
-            else None
+            validate_msgraph_mail_participant(from_value) if from_value is not None else None
         )
+        sender_value = raw["sender_participant"]
         sender_participant = (
-            validate_msgraph_mail_participant(raw["sender_participant"])
-            if raw.get("sender_participant") is not None
-            else None
+            validate_msgraph_mail_participant(sender_value) if sender_value is not None else None
         )
-        reply_to = _validate_participant_tuple(raw.get("reply_to", ()))
-        to_recipients = _validate_participant_tuple(raw.get("to_recipients", ()))
-        cc_recipients = _validate_participant_tuple(raw.get("cc_recipients", ()))
-        cc_recipients_bcc = _validate_participant_tuple(raw.get("bcc_recipients", ()))
-        body_text = _validate_body_text(raw.get("body_text", ""))
-        unique_body_text = _validate_optional_body_text(raw.get("unique_body_text"))
-    except (KeyError, ValueError):
+        reply_to = _validate_participant_tuple(raw["reply_to"])
+        to_recipients = _validate_participant_tuple(raw["to_recipients"])
+        cc_recipients = _validate_participant_tuple(raw["cc_recipients"])
+        bcc_recipients = _validate_participant_tuple(raw["bcc_recipients"])
+    except KeyError:
+        raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE) from None
+    except ValueError:
         raise ValueError(_MALFORMED_MAIL_CONTENT_RESPONSE) from None
 
     if (
-        raw.get("mailbox_user_id") != validated_message.mailbox_user_id
-        or raw.get("remote_id") != validated_message.remote_id
-        or raw.get("parent_folder_id") != validated_message.parent_folder_id
-        or raw.get("content_revision") != validated_message.change_key
+        mailbox_user_id != validated_message.mailbox_user_id
+        or remote_id != validated_message.remote_id
+        or parent_folder_id != validated_message.parent_folder_id
+        or content_revision != validated_message.change_key
     ):
         raise MsGraphMailMessageChanged() from None
 
-    _enforce_content_limit(body_text, unique_body_text, max_chars=max_chars)
+    _enforce_content_limit(body_text, unique_body_text, max_chars=validated_max_chars)
 
     try:
         return _safe_construct_message_content(
@@ -488,7 +491,7 @@ def validate_msgraph_mail_message_content(
             reply_to=reply_to,
             to_recipients=to_recipients,
             cc_recipients=cc_recipients,
-            bcc_recipients=cc_recipients_bcc,
+            bcc_recipients=bcc_recipients,
         )
     except MsGraphMailContentTooLarge:
         raise

@@ -427,6 +427,22 @@ def test_parse_attachment_missing_optional_content_type_key() -> None:
     assert attachment.content_type is None
 
 
+@pytest.mark.parametrize("content_type", ["", "   "])
+def test_parse_attachment_rejects_empty_content_type(content_type: str) -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        _parse_attachment(_attachment_payload(content_type=content_type))
+    assert exc.value.__cause__ is None
+
+
+@pytest.mark.parametrize("content_id", ["", "   "])
+def test_parse_attachment_rejects_empty_content_id(content_id: str) -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        _parse_attachment(
+            _attachment_payload(include_content_id_key=True, content_id=content_id)
+        )
+    assert exc.value.__cause__ is None
+
+
 def test_parse_attachment_removed_message_rejected() -> None:
     with pytest.raises(MsGraphMailMessageChanged):
         parse_msgraph_mail_attachment(
@@ -452,7 +468,11 @@ def test_parse_attachment_removed_message_rejected() -> None:
         _attachment_payload() | {"@odata.type": ""},
         _attachment_payload() | {"@odata.type": 123},
         _attachment_payload() | {"contentType": 123},
+        _attachment_payload(include_content_type_key=True, content_type=""),
+        _attachment_payload(include_content_type_key=True, content_type="   "),
         _attachment_payload(include_content_id_key=True, content_id=123),
+        _attachment_payload(include_content_id_key=True, content_id=""),
+        _attachment_payload(include_content_id_key=True, content_id="   "),
         _attachment_payload() | {"id": "\x00bad"},
     ],
 )
@@ -595,6 +615,12 @@ def test_validate_file_content_returns_new_instance() -> None:
         ({"content_hash": "not-a-valid-sha256-hash"}, ValueError),
         ({"attachment_remote_id": _OTHER_ATTACHMENT_ID}, MsGraphMailMessageChanged),
         ({"message_revision": _OTHER_CHANGE_KEY}, MsGraphMailMessageChanged),
+        ({"data": bytearray(b"abc")}, ValueError),
+        ({"size_bytes": True}, ValueError),
+        ({"name": "other.pdf"}, MsGraphMailMessageChanged),
+        ({"content_type": "text/plain"}, MsGraphMailMessageChanged),
+        ({"is_inline": True}, MsGraphMailMessageChanged),
+        ({"content_id": "other-cid"}, MsGraphMailMessageChanged),
     ],
 )
 def test_model_construct_malformed_file_content_rejected(
@@ -615,7 +641,7 @@ def test_model_construct_malformed_file_content_rejected(
         "is_inline": False,
     }
     malformed = MsGraphMailFileAttachmentContent.model_construct(**{**base, **kwargs})
-    with pytest.raises(error_type, match=_SAFE_ERROR if error_type is ValueError else "changed") as exc:
+    with pytest.raises(error_type, match=_SAFE_ERROR if error_type is ValueError else "changed|supported") as exc:
         validate_msgraph_mail_file_attachment_content(
             malformed,
             message=_valid_active_change(),
@@ -623,6 +649,60 @@ def test_model_construct_malformed_file_content_rejected(
             max_bytes=1024,
         )
     assert exc.value.__cause__ is None
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    ["name", "is_inline", "data", "size_bytes", "content_hash"],
+)
+def test_model_construct_missing_file_content_field_rejected(missing_field: str) -> None:
+    data = b"abc"
+    base: dict[str, object] = {
+        "mailbox_user_id": _MAILBOX_USER_ID,
+        "message_remote_id": _MESSAGE_ID,
+        "scope_folder_id": _FOLDER_ID,
+        "message_revision": _CHANGE_KEY,
+        "attachment_remote_id": _ATTACHMENT_ID,
+        "name": _ATTACHMENT_NAME,
+        "data": data,
+        "size_bytes": len(data),
+        "content_hash": hashlib.sha256(data).hexdigest(),
+        "is_inline": False,
+    }
+    del base[missing_field]
+    malformed = MsGraphMailFileAttachmentContent.model_construct(**base)
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_mail_file_attachment_content(
+            malformed,
+            message=_valid_active_change(),
+            attachment=_valid_attachment(size_bytes=len(data)),
+            max_bytes=1024,
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_validate_file_content_data_length_mismatch_with_attachment_size() -> None:
+    data = b"abc"
+    content = _valid_file_content(data=data, size_bytes=len(data))
+    with pytest.raises(MsGraphMailMessageChanged):
+        validate_msgraph_mail_file_attachment_content(
+            content,
+            message=_valid_active_change(),
+            attachment=_valid_attachment(size_bytes=99),
+            max_bytes=1024,
+        )
+
+
+def test_validate_file_content_rejects_non_file_attachment() -> None:
+    data = b"abc"
+    content = _valid_file_content(data=data)
+    with pytest.raises(IntegrationConfigurationError, match=_UNSUPPORTED_ERROR):
+        validate_msgraph_mail_file_attachment_content(
+            content,
+            message=_valid_active_change(),
+            attachment=_valid_attachment(kind=MsGraphMailAttachmentKind.ITEM, size_bytes=len(data)),
+            max_bytes=1024,
+        )
 
 
 def test_validate_file_content_too_large() -> None:
@@ -711,7 +791,7 @@ def test_invalid_limit_rejected_before_http(limit: object) -> None:
     http.get.assert_not_called()
 
 
-@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_MAIL_ATTACHMENT_MAX_BYTES + 1, True, "10"])
+@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_MAIL_ATTACHMENT_MAX_BYTES + 1, True, "10", None])
 def test_invalid_max_bytes_rejected_before_http(max_bytes: object) -> None:
     http = MagicMock()
     with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
@@ -764,6 +844,44 @@ def test_validate_continuation_accepts_message_literal_with_escaped_quotes() -> 
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_odata_attachments_next_link(message_id),
+    )
+    validated = validate_msgraph_mail_attachments_continuation(
+        continuation,
+        mailbox_user_id=_MAILBOX_USER_ID,
+        message_id=message_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_continuation_accepts_uppercase_resource_names() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=(
+            f"https://graph.microsoft.com/v1.0/USERS/{_QUOTED_MAILBOX}/MESSAGES/"
+            f"{_QUOTED_MESSAGE_ID}/ATTACHMENTS?$skiptoken={_SECRET_TOKEN}"
+        ),
+    )
+    validated = validate_msgraph_mail_attachments_continuation(
+        continuation,
+        mailbox_user_id=_MAILBOX_USER_ID,
+        message_id=_MESSAGE_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_continuation_accepts_percent_encoded_message_literal() -> None:
+    message_id = "msg/special"
+    encoded = quote(message_id, safe="")
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=(
+            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
+            f"messages('{encoded}')/attachments?$skiptoken={_SECRET_TOKEN}"
+        ),
     )
     validated = validate_msgraph_mail_attachments_continuation(
         continuation,
@@ -1573,6 +1691,109 @@ def test_custom_client_validation_not_configured() -> None:
     )
     with pytest.raises(IntegrationConfigurationError, match=_VALIDATION_ERROR):
         integration._graph_base_url_for_mail_attachments_validation()
+
+
+class _CustomMailFileContentSuite(CollaborationSuite):
+    def __init__(self, attachment: MsGraphMailAttachment) -> None:
+        self._attachment = attachment
+
+    def read_mail_attachments_page(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailAttachmentPage:
+        raise NotImplementedError
+
+    def read_mail_file_attachment_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        attachment: MsGraphMailAttachment,
+        max_bytes: int = DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphMailFileAttachmentContent:
+        data = b"custom-binary"
+        return MsGraphMailFileAttachmentContent(
+            mailbox_user_id=message.mailbox_user_id,
+            message_remote_id=message.remote_id,
+            scope_folder_id=message.scope_folder_id,
+            message_revision=message.change_key or "",
+            attachment_remote_id=attachment.remote_id,
+            name=attachment.name,
+            content_type=attachment.content_type,
+            is_inline=attachment.is_inline,
+            content_id=attachment.content_id,
+            data=data,
+            size_bytes=len(data),
+            content_hash=hashlib.sha256(data).hexdigest(),
+        )
+
+    def get_message(self, user_id: str, message_id: str):
+        raise NotImplementedError
+
+    def list_messages(self, user_id: str, *, folder: str = "inbox", limit: int = 25):
+        raise NotImplementedError
+
+    def send_mail(self, user_id: str, *, subject: str, body: str, to):
+        raise NotImplementedError
+
+    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+        raise NotImplementedError
+
+    def get_user(self, user_id: str):
+        raise NotImplementedError
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        raise NotImplementedError
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees=(),
+    ):
+        raise NotImplementedError
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        MsGraphMailAttachmentKind.ITEM,
+        MsGraphMailAttachmentKind.REFERENCE,
+        MsGraphMailAttachmentKind.UNKNOWN,
+    ],
+)
+def test_custom_client_non_file_attachment_content_rejected(kind: MsGraphMailAttachmentKind) -> None:
+    attachment = _valid_attachment(kind=kind, size_bytes=13)
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _CustomMailFileContentSuite(attachment=attachment),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_UNSUPPORTED_ERROR):
+        integration.read_mail_file_attachment_content(
+            message=_valid_active_change(),
+            attachment=attachment,
+        )
+
+
+@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_MAIL_ATTACHMENT_MAX_BYTES + 1, True, "10", None])
+def test_custom_client_invalid_max_bytes_rejected(max_bytes: object) -> None:
+    attachment = _valid_attachment(size_bytes=13)
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _CustomMailFileContentSuite(attachment=attachment),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
+        integration.read_mail_file_attachment_content(
+            message=_valid_active_change(),
+            attachment=attachment,
+            max_bytes=max_bytes,  # type: ignore[arg-type]
+        )
 
 
 # --- security ---

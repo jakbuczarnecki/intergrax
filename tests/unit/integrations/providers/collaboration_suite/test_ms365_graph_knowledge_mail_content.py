@@ -82,7 +82,6 @@ _TOO_LARGE_ERROR = "Microsoft Graph Mail message exceeds the configured content 
 _CAPABILITY_ERROR = (
     "Microsoft Graph integration does not expose Mail content capability"
 )
-_MAX_MESSAGE_TEXT_LEN = 16_000
 
 
 def _config() -> Ms365GraphIntegrationConfig:
@@ -485,25 +484,56 @@ def test_read_subject_absent() -> None:
 # --- success: body at limits ---
 
 
-def test_read_body_at_max_single_field_limit() -> None:
-    body = "x" * _MAX_MESSAGE_TEXT_LEN
+def test_read_body_16001_chars_within_max_chars_succeeds() -> None:
+    body = "x" * 16_001
     _, reader = _setup_happy_path(payload=_content_payload(body_text=body))
-    result = reader.read_message_content(
-        message=_valid_active_change(),
-        max_chars=ABSOLUTE_MAIL_CONTENT_MAX_CHARS,
-    )
-    assert len(result.body_text) == _MAX_MESSAGE_TEXT_LEN
+    result = reader.read_message_content(message=_valid_active_change(), max_chars=20_000)
+    assert len(result.body_text) == 16_001
 
 
-def test_read_body_one_over_single_field_limit_rejected() -> None:
-    body = "x" * (_MAX_MESSAGE_TEXT_LEN + 1)
+def test_read_body_at_max_chars_succeeds() -> None:
+    body = "x" * 100_000
+    _, reader = _setup_happy_path(payload=_content_payload(body_text=body))
+    result = reader.read_message_content(message=_valid_active_change(), max_chars=100_000)
+    assert len(result.body_text) == 100_000
+
+
+def test_read_body_one_over_max_chars_rejected() -> None:
+    body = "x" * 100_001
     http = MagicMock()
     http.get.return_value = _json_response(payload=_content_payload(body_text=body))
-    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        _reader(http).read_message_content(
-            message=_valid_active_change(),
-            max_chars=ABSOLUTE_MAIL_CONTENT_MAX_CHARS,
-        )
+    with pytest.raises(MsGraphMailContentTooLarge, match=_TOO_LARGE_ERROR) as exc:
+        _reader(http).read_message_content(message=_valid_active_change(), max_chars=100_000)
+    assert exc.value.__cause__ is None
+
+
+def test_read_combined_body_and_unique_at_max_chars_succeeds() -> None:
+    body = "a" * 70_000
+    unique = "b" * 30_000
+    _, reader = _setup_happy_path(
+        payload=_content_payload(
+            body_text=body,
+            include_unique_body=True,
+            unique_body_text=unique,
+        ),
+    )
+    result = reader.read_message_content(message=_valid_active_change(), max_chars=100_000)
+    assert len(result.body_text) + len(result.unique_body_text or "") == 100_000
+
+
+def test_read_combined_body_and_unique_one_over_max_chars_rejected() -> None:
+    body = "a" * 70_000
+    unique = "b" * 30_001
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_content_payload(
+            body_text=body,
+            include_unique_body=True,
+            unique_body_text=unique,
+        ),
+    )
+    with pytest.raises(MsGraphMailContentTooLarge, match=_TOO_LARGE_ERROR) as exc:
+        _reader(http).read_message_content(message=_valid_active_change(), max_chars=100_000)
     assert exc.value.__cause__ is None
 
 
@@ -623,6 +653,27 @@ def test_validate_message_content_returns_new_instance() -> None:
         {"body_text": 123},
         {"unique_body_text": 123},
         {"reply_to": "bad"},
+        {"body_text": None},
+        {"remote_id": None},
+        {"parent_folder_id": None},
+        {"content_revision": None},
+        {"to_recipients": []},
+        {"from_participant": {"emailAddress": {"address": "bad"}}},
+    ],
+    ids=[
+        "remote_id_mismatch",
+        "parent_folder_mismatch",
+        "revision_mismatch",
+        "mailbox_mismatch",
+        "body_text_int",
+        "unique_body_int",
+        "reply_to_str",
+        "missing_body_text",
+        "missing_remote_id",
+        "missing_parent_folder",
+        "missing_revision",
+        "recipients_list_not_tuple",
+        "malformed_participant",
     ],
 )
 def test_model_construct_malformed_content_rejected(kwargs: dict[str, object]) -> None:
@@ -632,6 +683,12 @@ def test_model_construct_malformed_content_rejected(kwargs: dict[str, object]) -
         "parent_folder_id": _FOLDER_ID,
         "content_revision": _CHANGE_KEY,
         "body_text": "hello",
+        "from_participant": None,
+        "sender_participant": None,
+        "reply_to": (),
+        "to_recipients": (),
+        "cc_recipients": (),
+        "bcc_recipients": (),
     }
     malformed = MsGraphMailMessageContent.model_construct(**{**base, **kwargs})
     with pytest.raises((ValueError, MsGraphMailMessageChanged), match=f"{_SAFE_ERROR}|{_CHANGED_ERROR}") as exc:
@@ -642,6 +699,28 @@ def test_model_construct_malformed_content_rejected(kwargs: dict[str, object]) -
         )
     if isinstance(exc.value, ValueError):
         assert exc.value.__cause__ is None
+
+
+def test_model_construct_missing_body_text_rejected() -> None:
+    malformed = MsGraphMailMessageContent.model_construct(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        remote_id=_MESSAGE_ID,
+        parent_folder_id=_FOLDER_ID,
+        content_revision=_CHANGE_KEY,
+        from_participant=None,
+        sender_participant=None,
+        reply_to=(),
+        to_recipients=(),
+        cc_recipients=(),
+        bcc_recipients=(),
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_mail_message_content(
+            malformed,
+            message=_valid_active_change(),
+            max_chars=10_000,
+        )
+    assert exc.value.__cause__ is None
 
 
 def test_model_construct_wrong_type_rejected() -> None:
@@ -656,7 +735,7 @@ def test_model_construct_wrong_type_rejected() -> None:
 # --- limits ---
 
 
-@pytest.mark.parametrize("max_chars", [0, ABSOLUTE_MAIL_CONTENT_MAX_CHARS + 1, True, "1000"])
+@pytest.mark.parametrize("max_chars", [0, ABSOLUTE_MAIL_CONTENT_MAX_CHARS + 1, True, "1000", None])
 def test_invalid_max_chars_rejected_before_http(max_chars: object) -> None:
     http = MagicMock()
     with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
@@ -692,6 +771,17 @@ def test_validate_content_enforces_combined_limit() -> None:
             content,
             message=_valid_active_change(),
             max_chars=1000,
+        )
+
+
+@pytest.mark.parametrize("max_chars", [0, ABSOLUTE_MAIL_CONTENT_MAX_CHARS + 1, True, "1000", None])
+def test_validate_content_rejects_invalid_max_chars(max_chars: object) -> None:
+    content = _valid_message_content()
+    with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
+        validate_msgraph_mail_message_content(
+            content,
+            message=_valid_active_change(),
+            max_chars=max_chars,  # type: ignore[arg-type]
         )
 
 
@@ -838,6 +928,7 @@ def test_custom_client_malformed_content_rejected() -> None:
 def test_custom_client_valid_content_revalidated() -> None:
     supplied = _valid_message_content(
         subject=_SECRET_SUBJECT,
+        body_text="x" * 16_001,
         unique_body_text="unique portion",
         from_participant=parse_msgraph_mail_participant(
             _participant(_SECRET_ADDRESS, display_name=_SECRET_DISPLAY_NAME)
@@ -849,9 +940,30 @@ def test_custom_client_valid_content_revalidated() -> None:
         ),
         enabled=True,
     )
-    returned = integration.read_mail_message_content(message=_valid_active_change())
+    returned = integration.read_mail_message_content(
+        message=_valid_active_change(),
+        max_chars=20_000,
+    )
     assert returned == supplied
     assert returned is not supplied
+    assert returned.from_participant is not supplied.from_participant
+    assert len(returned.body_text) == 16_001
+
+
+@pytest.mark.parametrize("max_chars", [0, ABSOLUTE_MAIL_CONTENT_MAX_CHARS + 1, True, "1000", None])
+def test_custom_client_invalid_max_chars_rejected(max_chars: object) -> None:
+    supplied = _valid_message_content()
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(
+            _CustomGraphMailContentClient(content=supplied, http=MagicMock())
+        ),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
+        integration.read_mail_message_content(
+            message=_valid_active_change(),
+            max_chars=max_chars,  # type: ignore[arg-type]
+        )
 
 
 def test_custom_client_identity_mismatch_rejected() -> None:

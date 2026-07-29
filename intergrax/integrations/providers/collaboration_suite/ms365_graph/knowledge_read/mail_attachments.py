@@ -60,6 +60,7 @@ _MAX_ATTACHMENT_ID_LEN = 2048
 _MAX_ATTACHMENT_NAME_LEN = 4096
 _MAX_CONTENT_TYPE_LEN = 1024
 _MAX_CONTENT_ID_LEN = 4096
+_MAX_ODATA_TYPE_LEN = 1024
 _MIN_PAGE_LIMIT = 1
 _MAX_PAGE_LIMIT = 200
 
@@ -133,6 +134,36 @@ def _validate_optional_trimmed_string(value: object, *, max_length: int) -> str 
     return trimmed
 
 
+def _validate_present_optional_string(value: object, *, max_length: int) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    if len(trimmed) > max_length:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    return trimmed
+
+
+def _validate_model_optional_string(value: object, *, max_length: int) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    if len(trimmed) > max_length:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    return trimmed
+
+
 def _validate_content_revision(value: object) -> str:
     result = _validate_optional_trimmed_string(value, max_length=2048)
     if result is None:
@@ -165,6 +196,16 @@ def _parse_timezone_aware_datetime(value: object) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _validate_unknown_odata_type(value: str) -> None:
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+    if len(trimmed) > _MAX_ODATA_TYPE_LEN:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
+
+
 def _map_attachment_kind(odata_type: object) -> MsGraphMailAttachmentKind:
     if not isinstance(odata_type, str):
         raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
@@ -177,6 +218,7 @@ def _map_attachment_kind(odata_type: object) -> MsGraphMailAttachmentKind:
         return MsGraphMailAttachmentKind.ITEM
     if trimmed == _ODATA_REFERENCE_ATTACHMENT:
         return MsGraphMailAttachmentKind.REFERENCE
+    _validate_unknown_odata_type(trimmed)
     return MsGraphMailAttachmentKind.UNKNOWN
 
 
@@ -240,7 +282,7 @@ class MsGraphMailAttachment(BaseModel):
     @classmethod
     def _validate_optional_strings(cls, value: object, info: Any) -> str | None:
         max_length = _MAX_CONTENT_TYPE_LEN if info.field_name == "content_type" else _MAX_CONTENT_ID_LEN
-        return _validate_optional_trimmed_string(value, max_length=max_length)
+        return _validate_model_optional_string(value, max_length=max_length)
 
     @field_validator("size_bytes", mode="before")
     @classmethod
@@ -359,7 +401,7 @@ class MsGraphMailFileAttachmentContent(BaseModel):
     @classmethod
     def _validate_optional_strings(cls, value: object, info: Any) -> str | None:
         max_length = _MAX_CONTENT_TYPE_LEN if info.field_name == "content_type" else _MAX_CONTENT_ID_LEN
-        return _validate_optional_trimmed_string(value, max_length=max_length)
+        return _validate_model_optional_string(value, max_length=max_length)
 
     @field_validator("is_inline", mode="before")
     @classmethod
@@ -455,7 +497,7 @@ def parse_msgraph_mail_attachment(
         elif payload.get("contentType") is None:
             content_type = None
         else:
-            content_type = _validate_optional_trimmed_string(
+            content_type = _validate_present_optional_string(
                 payload.get("contentType"),
                 max_length=_MAX_CONTENT_TYPE_LEN,
             )
@@ -465,7 +507,7 @@ def parse_msgraph_mail_attachment(
         elif payload.get("contentId") is None:
             content_id = None
         else:
-            content_id = _validate_optional_trimmed_string(
+            content_id = _validate_present_optional_string(
                 payload.get("contentId"),
                 max_length=_MAX_CONTENT_ID_LEN,
             )
@@ -503,11 +545,13 @@ def _extract_message_attachments_path(
     graph_base_path: str,
 ) -> tuple[str, str] | None:
     normalized = path.rstrip("/") or "/"
-    expected_prefix = f"{graph_base_path.rstrip('/')}/users/"
-    if not normalized.startswith(expected_prefix):
+    base = graph_base_path.rstrip("/") or "/"
+    users_marker = "/users/"
+    expected_prefix = f"{base}{users_marker}".lower()
+    if not normalized.lower().startswith(expected_prefix):
         return None
 
-    remainder = normalized[len(expected_prefix) :]
+    remainder = normalized[len(base) + len(users_marker) :]
     slash_index = remainder.find("/")
     if slash_index <= 0:
         return None
@@ -517,7 +561,7 @@ def _extract_message_attachments_path(
 
     if "/$value" in after_mailbox.lower():
         return None
-    if "mailFolders" in after_mailbox:
+    if "mailfolders" in after_mailbox.lower():
         return None
     if "delta" in after_mailbox.lower():
         return None
@@ -536,7 +580,7 @@ def _extract_message_attachments_path(
         message_literal = odata_match.group(1)
         if not message_literal:
             return None
-        return unquote(mailbox_segment), _decode_odata_message_literal(message_literal)
+        return unquote(mailbox_segment), unquote(_decode_odata_message_literal(message_literal))
 
     return None
 
@@ -689,11 +733,16 @@ def validate_msgraph_mail_file_attachment_content(
     attachment: MsGraphMailAttachment,
     max_bytes: int,
 ) -> MsGraphMailFileAttachmentContent:
+    validated_max_bytes = _validate_max_bytes(max_bytes)
+
     if not isinstance(value, MsGraphMailFileAttachmentContent):
         raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
 
     validated_message = _require_active_message(message)
     validated_attachment = validate_msgraph_mail_attachment(attachment)
+
+    if validated_attachment.kind is not MsGraphMailAttachmentKind.FILE:
+        raise IntegrationConfigurationError(_UNSUPPORTED_ATTACHMENT_CONTENT) from None
 
     if (
         validated_attachment.mailbox_user_id != validated_message.mailbox_user_id
@@ -708,31 +757,77 @@ def validate_msgraph_mail_file_attachment_content(
     except (AttributeError, TypeError, ValueError):
         raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
 
-    if (
-        raw.get("mailbox_user_id") != validated_message.mailbox_user_id
-        or raw.get("message_remote_id") != validated_message.remote_id
-        or raw.get("scope_folder_id") != validated_message.scope_folder_id
-        or raw.get("message_revision") != validated_message.change_key
-        or raw.get("attachment_remote_id") != validated_attachment.remote_id
-    ):
-        raise MsGraphMailMessageChanged() from None
-
     try:
+        result_mailbox_user_id = validate_msgraph_mailbox_user_id(raw["mailbox_user_id"])
+        result_message_remote_id = validate_msgraph_mail_message_id(raw["message_remote_id"])
+        result_scope_folder_id = validate_msgraph_mail_folder_id(raw["scope_folder_id"])
+        result_message_revision = _validate_content_revision(raw["message_revision"])
+        result_attachment_remote_id = _validate_attachment_remote_id(raw["attachment_remote_id"])
+        result_name = _validate_attachment_name(raw["name"])
+        result_is_inline = raw["is_inline"]
+        if type(result_is_inline) is not bool:
+            raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
         data = raw["data"]
         if type(data) is not bytes:
             raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
         size_bytes = raw["size_bytes"]
-        if type(size_bytes) is not int or size_bytes != len(data):
+        if type(size_bytes) is not int:
             raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
-        if size_bytes > max_bytes:
-            raise MsGraphMailAttachmentTooLarge() from None
         content_hash = raw["content_hash"]
-        if hashlib.sha256(data).hexdigest() != content_hash:
+        if not isinstance(content_hash, str) or not _CONTENT_HASH_PATTERN.match(content_hash):
             raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE)
     except KeyError:
         raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
-    except MsGraphMailAttachmentTooLarge:
-        raise
+    except ValueError:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
+
+    if (
+        result_mailbox_user_id != validated_message.mailbox_user_id
+        or result_message_remote_id != validated_message.remote_id
+        or result_scope_folder_id != validated_message.scope_folder_id
+        or result_message_revision != validated_message.change_key
+        or result_attachment_remote_id != validated_attachment.remote_id
+    ):
+        raise MsGraphMailMessageChanged() from None
+
+    if size_bytes != len(data):
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
+
+    if size_bytes != validated_attachment.size_bytes:
+        raise MsGraphMailMessageChanged() from None
+
+    if size_bytes > validated_max_bytes:
+        raise MsGraphMailAttachmentTooLarge() from None
+
+    if hashlib.sha256(data).hexdigest() != content_hash:
+        raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
+
+    if result_name != validated_attachment.name:
+        raise MsGraphMailMessageChanged() from None
+    if result_is_inline != validated_attachment.is_inline:
+        raise MsGraphMailMessageChanged() from None
+
+    if "content_type" in raw and raw["content_type"] is not None:
+        try:
+            result_content_type = _validate_model_optional_string(
+                raw["content_type"],
+                max_length=_MAX_CONTENT_TYPE_LEN,
+            )
+        except ValueError:
+            raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
+        if result_content_type != validated_attachment.content_type:
+            raise MsGraphMailMessageChanged() from None
+
+    if "content_id" in raw and raw["content_id"] is not None:
+        try:
+            result_content_id = _validate_model_optional_string(
+                raw["content_id"],
+                max_length=_MAX_CONTENT_ID_LEN,
+            )
+        except ValueError:
+            raise ValueError(_MALFORMED_MAIL_ATTACHMENTS_RESPONSE) from None
+        if result_content_id != validated_attachment.content_id:
+            raise MsGraphMailMessageChanged() from None
 
     try:
         return _safe_construct_file_attachment_content(
@@ -741,10 +836,10 @@ def validate_msgraph_mail_file_attachment_content(
             scope_folder_id=validated_message.scope_folder_id,
             message_revision=validated_message.change_key,
             attachment_remote_id=validated_attachment.remote_id,
-            name=raw.get("name", ""),
-            content_type=raw.get("content_type"),
-            is_inline=raw.get("is_inline", False),
-            content_id=raw.get("content_id"),
+            name=validated_attachment.name,
+            content_type=validated_attachment.content_type,
+            is_inline=validated_attachment.is_inline,
+            content_id=validated_attachment.content_id,
             data=data,
             size_bytes=size_bytes,
             content_hash=content_hash,
