@@ -16,9 +16,20 @@ from intergrax.integrations.contracts.collaboration_suite import (
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES,
+    DEFAULT_CALENDAR_EVENT_CONTENT_MAX_CHARS,
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
     DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
     DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    MsGraphCalendar,
+    MsGraphCalendarAttachment,
+    MsGraphCalendarAttachmentPage,
+    MsGraphCalendarEventChange,
+    MsGraphCalendarEventContent,
+    MsGraphCalendarEventDeltaPage,
+    MsGraphCalendarFileAttachmentContent,
+    MsGraphCalendarPage,
+    MsGraphCalendarViewWindow,
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
     MsGraphDriveItem,
@@ -129,6 +140,68 @@ class _Ms365GraphCollaborationSuite:
     ) -> MsGraphMailFileAttachmentContent:
         return self._client.read_mail_file_attachment_content(
             message=message,
+            attachment=attachment,
+            max_bytes=max_bytes,
+        )
+
+    def read_calendars_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarPage:
+        return self._client.read_calendars_page(
+            mailbox_user_id=mailbox_user_id,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_events_delta_page(
+        self,
+        *,
+        calendar: MsGraphCalendar,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventDeltaPage:
+        return self._client.read_calendar_events_delta_page(
+            calendar=calendar,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_event_content(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        max_chars: int = DEFAULT_CALENDAR_EVENT_CONTENT_MAX_CHARS,
+    ) -> MsGraphCalendarEventContent:
+        return self._client.read_calendar_event_content(event=event, max_chars=max_chars)
+
+    def read_calendar_attachments_page(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarAttachmentPage:
+        return self._client.read_calendar_attachments_page(
+            event=event,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_file_attachment_content(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        attachment: MsGraphCalendarAttachment,
+        max_bytes: int = DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphCalendarFileAttachmentContent:
+        return self._client.read_calendar_file_attachment_content(
+            event=event,
             attachment=attachment,
             max_bytes=max_bytes,
         )

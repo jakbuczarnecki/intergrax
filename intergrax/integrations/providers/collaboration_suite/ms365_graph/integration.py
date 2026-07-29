@@ -16,9 +16,24 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter im
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES,
+    DEFAULT_CALENDAR_EVENT_CONTENT_MAX_CHARS,
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
     DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
     DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    MsGraphCalendar,
+    MsGraphCalendarAttachment,
+    MsGraphCalendarAttachmentPage,
+    MsGraphCalendarAttachmentsReadClient,
+    MsGraphCalendarContentReadClient,
+    MsGraphCalendarEventChange,
+    MsGraphCalendarEventContent,
+    MsGraphCalendarEventDeltaPage,
+    MsGraphCalendarEventsReadClient,
+    MsGraphCalendarFileAttachmentContent,
+    MsGraphCalendarPage,
+    MsGraphCalendarsReadClient,
+    MsGraphCalendarViewWindow,
     MsGraphDriveContentReadClient,
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
@@ -39,6 +54,11 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphMailMessageDeltaPage,
     MsGraphMailMessagesReadClient,
     validate_msgraph_drive_permission_page,
+    validate_msgraph_calendar_attachment_page,
+    validate_msgraph_calendar_event_content,
+    validate_msgraph_calendar_event_delta_page,
+    validate_msgraph_calendar_file_attachment_content,
+    validate_msgraph_calendar_page,
     validate_msgraph_mail_attachment_page,
     validate_msgraph_mail_file_attachment_content,
     validate_msgraph_mail_folder_page,
@@ -187,6 +207,101 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             max_bytes=max_bytes,
         )
 
+    def read_calendars_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarPage:
+        result = self._require_calendars_client().read_calendars_page(
+            mailbox_user_id=mailbox_user_id,
+            continuation=continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_calendar_validation()
+        return validate_msgraph_calendar_page(
+            result,
+            mailbox_user_id=mailbox_user_id,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_calendar_events_delta_page(
+        self,
+        *,
+        calendar: MsGraphCalendar,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventDeltaPage:
+        result = self._require_calendar_events_client().read_calendar_events_delta_page(
+            calendar=calendar,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_calendar_validation()
+        return validate_msgraph_calendar_event_delta_page(
+            result,
+            calendar=calendar,
+            window=window,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_calendar_event_content(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        max_chars: int = DEFAULT_CALENDAR_EVENT_CONTENT_MAX_CHARS,
+    ) -> MsGraphCalendarEventContent:
+        result = self._require_calendar_content_client().read_calendar_event_content(
+            event=event,
+            max_chars=max_chars,
+        )
+        return validate_msgraph_calendar_event_content(
+            result,
+            event=event,
+            max_chars=max_chars,
+        )
+
+    def read_calendar_attachments_page(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarAttachmentPage:
+        result = self._require_calendar_attachments_client().read_calendar_attachments_page(
+            event=event,
+            continuation=continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_calendar_validation()
+        return validate_msgraph_calendar_attachment_page(
+            result,
+            event=event,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_calendar_file_attachment_content(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        attachment: MsGraphCalendarAttachment,
+        max_bytes: int = DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphCalendarFileAttachmentContent:
+        result = self._require_calendar_attachments_client().read_calendar_file_attachment_content(
+            event=event,
+            attachment=attachment,
+            max_bytes=max_bytes,
+        )
+        return validate_msgraph_calendar_file_attachment_content(
+            result,
+            event=event,
+            attachment=attachment,
+            max_bytes=max_bytes,
+        )
+
     def read_drive_file_content(
         self,
         *,
@@ -323,6 +438,38 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             )
         return client
 
+    def _require_calendars_client(self) -> MsGraphCalendarsReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphCalendarsReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Calendar inventory capability",
+            )
+        return client
+
+    def _require_calendar_events_client(self) -> MsGraphCalendarEventsReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphCalendarEventsReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Calendar events delta capability",
+            )
+        return client
+
+    def _require_calendar_content_client(self) -> MsGraphCalendarContentReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphCalendarContentReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Calendar event content capability",
+            )
+        return client
+
+    def _require_calendar_attachments_client(self) -> MsGraphCalendarAttachmentsReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphCalendarAttachmentsReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Calendar attachments capability",
+            )
+        return client
+
     def _graph_base_url_for_mail_messages_validation(self) -> str:
         client = self._require_client()
         if isinstance(client, GraphRestClient):
@@ -341,6 +488,16 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             return client.rest_client.config.graph_base_url
         raise IntegrationConfigurationError(
             "Microsoft Graph Mail attachment validation is not configured",
+        )
+
+    def _graph_base_url_for_calendar_validation(self) -> str:
+        client = self._require_client()
+        if isinstance(client, GraphRestClient):
+            return client.config.graph_base_url
+        if isinstance(client, _Ms365GraphCollaborationSuite):
+            return client.rest_client.config.graph_base_url
+        raise IntegrationConfigurationError(
+            "Microsoft Graph Calendar validation is not configured",
         )
 
     @classmethod
