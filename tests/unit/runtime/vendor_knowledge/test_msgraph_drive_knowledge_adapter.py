@@ -265,7 +265,22 @@ def _file_descriptor(
     drive_id: str = _DRIVE_ID,
     c_tag: str = '"ctag-1"',
     metadata_drive_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    metadata_only: bool = False,
 ) -> KnowledgeItemDescriptor:
+    base_metadata = {
+        "drive_id": metadata_drive_id or drive_id,
+        "drive_item_kind": "file",
+        "size_bytes": 12,
+        "mime_type": "application/pdf",
+        "is_root": False,
+        "created_at": _TS.isoformat(),
+        "last_modified_at": _TS.isoformat(),
+    }
+    if metadata is not None:
+        resolved_metadata = metadata if metadata_only else {**base_metadata, **metadata}
+    else:
+        resolved_metadata = base_metadata
     return KnowledgeItemDescriptor(
         identity=KnowledgeItemIdentity(remote_id=remote_id, parent_remote_id="parent-1"),
         revision=KnowledgeItemRevision(version=c_tag, etag='"etag-1"', updated_at=_TS),
@@ -279,16 +294,44 @@ def _file_descriptor(
             remote_id=remote_id,
             web_url="https://contoso.sharepoint.com/file",
         ),
-        metadata={
-            "drive_id": metadata_drive_id or drive_id,
-            "drive_item_kind": "file",
-            "size_bytes": 12,
-            "mime_type": "application/pdf",
-            "is_root": False,
-            "created_at": _TS.isoformat(),
-            "last_modified_at": _TS.isoformat(),
-        },
+        metadata=resolved_metadata,
     )
+
+
+def _assert_invalid_descriptor_boundary(exc_info: pytest.ExceptionInfo[VendorKnowledgeError]) -> None:
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert err.retryable is False
+    assert err.__cause__ is None
+    rendered = f"{err!r} {err.safe_message}"
+    for secret in (
+        _DRIVE_ID,
+        "file-1",
+        "report.pdf",
+        "https://contoso.sharepoint.com/file",
+        "2026-05-29",
+        "graph.microsoft.com",
+        "Authorization",
+    ):
+        assert secret not in rendered
+
+
+async def _fetch_content_invalid_descriptor(
+    item: KnowledgeItemDescriptor,
+) -> pytest.ExceptionInfo[VendorKnowledgeError]:
+    adapter = MsGraphDriveKnowledgeAdapter()
+    fake = _FakeDriveCollaborationSuite(
+        content_by_id={"file-1": _file_content(remote_id="file-1", data=b"x")}
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(fake),
+            source=_source(),
+            item=item,
+        )
+    assert fake.content_calls == []
+    _assert_invalid_descriptor_boundary(exc_info)
+    return exc_info
 
 
 async def test_adapter_identity() -> None:
@@ -806,6 +849,159 @@ async def test_fetch_content_provider_mismatch_rejected() -> None:
             item=_file_descriptor(),
         )
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+
+
+@pytest.mark.parametrize(
+    "created_at",
+    [
+        123,
+        [],
+        {},
+        "",
+        "   ",
+        "not-a-date",
+        "2026-05-29T10:15:30",
+    ],
+)
+async def test_fetch_content_rejects_malformed_created_at(created_at: object) -> None:
+    await _fetch_content_invalid_descriptor(
+        _file_descriptor(metadata={"created_at": created_at}),
+    )
+
+
+@pytest.mark.parametrize(
+    "is_root",
+    [
+        0,
+        1,
+        "true",
+        "false",
+        [],
+        {},
+    ],
+)
+async def test_fetch_content_rejects_malformed_is_root(is_root: object) -> None:
+    await _fetch_content_invalid_descriptor(
+        _file_descriptor(metadata={"is_root": is_root}),
+    )
+
+
+async def test_fetch_content_accepts_created_at_with_timezone_offset() -> None:
+    adapter = MsGraphDriveKnowledgeAdapter()
+    fake = _FakeDriveCollaborationSuite(
+        content_by_id={"file-1": _file_content(remote_id="file-1", data=b"x")}
+    )
+    created_at = "2026-05-29T10:15:30+02:00"
+    await adapter.fetch_content(
+        integration=_integration(fake),
+        source=_source(),
+        item=_file_descriptor(metadata={"created_at": created_at}),
+    )
+    provider_item = fake.content_calls[0]["item"]
+    assert provider_item.created_at is not None
+    assert provider_item.created_at.tzinfo is not None
+    assert provider_item.created_at.utcoffset() is not None
+
+
+async def test_fetch_content_accepts_created_at_with_z_suffix() -> None:
+    adapter = MsGraphDriveKnowledgeAdapter()
+    fake = _FakeDriveCollaborationSuite(
+        content_by_id={"file-1": _file_content(remote_id="file-1", data=b"x")}
+    )
+    created_at = "2026-05-29T10:15:30Z"
+    await adapter.fetch_content(
+        integration=_integration(fake),
+        source=_source(),
+        item=_file_descriptor(metadata={"created_at": created_at}),
+    )
+    provider_item = fake.content_calls[0]["item"]
+    assert provider_item.created_at is not None
+    assert provider_item.created_at.tzinfo is not None
+    assert provider_item.created_at.utcoffset() is not None
+
+
+async def test_fetch_content_accepts_is_root_true() -> None:
+    adapter = MsGraphDriveKnowledgeAdapter()
+    fake = _FakeDriveCollaborationSuite(
+        content_by_id={"file-1": _file_content(remote_id="file-1", data=b"x")}
+    )
+    await adapter.fetch_content(
+        integration=_integration(fake),
+        source=_source(),
+        item=_file_descriptor(metadata={"is_root": True}),
+    )
+    assert fake.content_calls[0]["item"].is_root is True
+
+
+async def test_fetch_content_absent_created_at_maps_to_none() -> None:
+    adapter = MsGraphDriveKnowledgeAdapter()
+    fake = _FakeDriveCollaborationSuite(
+        content_by_id={"file-1": _file_content(remote_id="file-1", data=b"x")}
+    )
+    await adapter.fetch_content(
+        integration=_integration(fake),
+        source=_source(),
+        item=_file_descriptor(
+            metadata={
+                "drive_id": _DRIVE_ID,
+                "drive_item_kind": "file",
+                "size_bytes": 12,
+                "mime_type": "application/pdf",
+                "is_root": False,
+            },
+            metadata_only=True,
+        ),
+    )
+    assert fake.content_calls[0]["item"].created_at is None
+
+
+async def test_fetch_content_absent_is_root_maps_to_false() -> None:
+    adapter = MsGraphDriveKnowledgeAdapter()
+    fake = _FakeDriveCollaborationSuite(
+        content_by_id={"file-1": _file_content(remote_id="file-1", data=b"x")}
+    )
+    await adapter.fetch_content(
+        integration=_integration(fake),
+        source=_source(),
+        item=_file_descriptor(
+            metadata={
+                "drive_id": _DRIVE_ID,
+                "drive_item_kind": "file",
+                "size_bytes": 12,
+                "mime_type": "application/pdf",
+                "created_at": _TS.isoformat(),
+            },
+            metadata_only=True,
+        ),
+    )
+    assert fake.content_calls[0]["item"].is_root is False
+
+
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("metadata", "not-a-dict"),
+        ("revision", "not-a-revision"),
+        ("identity", "not-an-identity"),
+    ],
+)
+async def test_fetch_content_rejects_malformed_descriptor_shape(
+    field_name: str,
+    field_value: object,
+) -> None:
+    base = _file_descriptor()
+    item = KnowledgeItemDescriptor.model_construct(
+        identity=base.identity,
+        revision=base.revision,
+        title=base.title,
+        item_type=base.item_type,
+        content_mode=base.content_mode,
+        content_available=base.content_available,
+        provenance=base.provenance,
+        metadata=base.metadata,
+    )
+    object.__setattr__(item, field_name, field_value)
+    await _fetch_content_invalid_descriptor(item)
 
 
 @pytest.mark.parametrize(

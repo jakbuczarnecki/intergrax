@@ -204,8 +204,22 @@ class MsGraphDriveKnowledgeAdapter:
     ) -> KnowledgeContent:
         graph_integration = self._require_graph_integration(integration=integration, source=source)
         drive_id = self._validate_source(source)
-        self._validate_file_item(item, source=source, drive_id=drive_id)
-        provider_item = self._descriptor_to_provider_item(item, drive_id=drive_id)
+        try:
+            self._validate_file_item(item, source=source, drive_id=drive_id)
+            provider_item = self._descriptor_to_provider_item(item, drive_id=drive_id)
+        except VendorKnowledgeError:
+            raise
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message=(
+                    "Microsoft Graph Drive file descriptor "
+                    "is invalid"
+                ),
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
         result = await self._invoke_integration(
             lambda: graph_integration.read_drive_file_content(
                 item=provider_item,
@@ -576,6 +590,29 @@ class MsGraphDriveKnowledgeAdapter:
             metadata=metadata,
         )
 
+    def _parse_auxiliary_created_at(self, raw: object) -> datetime | None:
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            raise ValueError("created_at must be an ISO string")
+        cleaned = raw.strip()
+        if not cleaned:
+            raise ValueError("created_at must not be empty")
+        try:
+            parsed = datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+        except ValueError:
+            raise ValueError("created_at must be valid ISO-8601") from None
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError("created_at must be timezone-aware")
+        return parsed
+
+    def _parse_auxiliary_is_root(self, raw: object) -> bool:
+        if raw is None:
+            return False
+        if type(raw) is not bool:
+            raise ValueError("is_root must be a bool")
+        return raw
+
     def _descriptor_to_provider_item(
         self,
         item: KnowledgeItemDescriptor,
@@ -589,15 +626,8 @@ class MsGraphDriveKnowledgeAdapter:
         mime_type = metadata.get("mime_type")
         if mime_type is not None and not isinstance(mime_type, str):
             raise ValueError("mime_type must be a string")
-        created_at_raw = metadata.get("created_at")
-        created_at: datetime | None = None
-        if created_at_raw is not None:
-            if not isinstance(created_at_raw, str):
-                raise ValueError("created_at must be an ISO string")
-            created_at = datetime.fromisoformat(created_at_raw)
-        is_root = metadata.get("is_root")
-        if is_root is not None and type(is_root) is not bool:
-            raise ValueError("is_root must be a bool")
+        created_at = self._parse_auxiliary_created_at(metadata.get("created_at"))
+        is_root = self._parse_auxiliary_is_root(metadata.get("is_root"))
         return MsGraphDriveItem(
             remote_id=item.identity.remote_id,
             drive_id=drive_id,
@@ -611,7 +641,7 @@ class MsGraphDriveKnowledgeAdapter:
             created_at=created_at,
             last_modified_at=item.revision.updated_at,
             web_url=item.provenance.web_url,
-            is_root=bool(is_root),
+            is_root=is_root,
             deleted_state=None,
         )
 
