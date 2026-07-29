@@ -49,6 +49,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphCalendarShowAs,
     MsGraphKnowledgeTransport,
     parse_msgraph_calendar_attendee,
+    parse_msgraph_calendar_event_content,
     parse_msgraph_calendar_location,
     parse_msgraph_calendar_participant,
     parse_msgraph_calendar_recurrence,
@@ -656,6 +657,131 @@ def test_read_body_one_over_max_chars_rejected() -> None:
     with pytest.raises(MsGraphCalendarEventContentTooLarge, match=_TOO_LARGE_ERROR) as exc:
         _reader(http).read_calendar_event_content(event=_valid_active_change(), max_chars=100_000)
     assert exc.value.__cause__ is None
+
+
+# --- cancelledOccurrences event-type rules ---
+
+
+def test_single_instance_without_cancelled_occurrences_succeeds() -> None:
+    payload = _content_payload()
+    del payload["cancelledOccurrences"]
+    content = parse_msgraph_calendar_event_content(
+        payload,
+        expected_mailbox_user_id=_MAILBOX_USER_ID,
+        expected_calendar_id=_CALENDAR_ID,
+        max_chars=10_000,
+    )
+    assert content.cancelled_occurrence_ids == ()
+
+
+def test_occurrence_without_cancelled_occurrences_succeeds() -> None:
+    payload = _content_payload()
+    payload["type"] = "occurrence"
+    payload["originalStart"] = "2024-06-01T09:00:00Z"
+    payload["seriesMasterId"] = "series-master-id"
+    del payload["cancelledOccurrences"]
+    content = parse_msgraph_calendar_event_content(
+        payload,
+        expected_mailbox_user_id=_MAILBOX_USER_ID,
+        expected_calendar_id=_CALENDAR_ID,
+        max_chars=10_000,
+    )
+    assert content.cancelled_occurrence_ids == ()
+
+
+def test_exception_without_cancelled_occurrences_succeeds() -> None:
+    payload = _content_payload()
+    payload["type"] = "exception"
+    payload["originalStart"] = "2024-06-01T09:00:00Z"
+    payload["seriesMasterId"] = "series-master-id"
+    del payload["cancelledOccurrences"]
+    content = parse_msgraph_calendar_event_content(
+        payload,
+        expected_mailbox_user_id=_MAILBOX_USER_ID,
+        expected_calendar_id=_CALENDAR_ID,
+        max_chars=10_000,
+    )
+    assert content.cancelled_occurrence_ids == ()
+
+
+def test_series_master_with_empty_cancelled_occurrences_succeeds() -> None:
+    payload = _content_payload()
+    payload["type"] = "seriesMaster"
+    payload["cancelledOccurrences"] = []
+    content = parse_msgraph_calendar_event_content(
+        payload,
+        expected_mailbox_user_id=_MAILBOX_USER_ID,
+        expected_calendar_id=_CALENDAR_ID,
+        max_chars=10_000,
+    )
+    assert content.cancelled_occurrence_ids == ()
+
+
+def test_series_master_with_cancelled_ids_succeeds() -> None:
+    payload = _content_payload()
+    payload["type"] = "seriesMaster"
+    payload["cancelledOccurrences"] = ["occ-id-1", "occ-id-2"]
+    content = parse_msgraph_calendar_event_content(
+        payload,
+        expected_mailbox_user_id=_MAILBOX_USER_ID,
+        expected_calendar_id=_CALENDAR_ID,
+        max_chars=10_000,
+    )
+    assert content.cancelled_occurrence_ids == ("occ-id-1", "occ-id-2")
+
+
+def test_series_master_missing_cancelled_occurrences_rejected() -> None:
+    payload = _content_payload()
+    payload["type"] = "seriesMaster"
+    del payload["cancelledOccurrences"]
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        parse_msgraph_calendar_event_content(
+            payload,
+            expected_mailbox_user_id=_MAILBOX_USER_ID,
+            expected_calendar_id=_CALENDAR_ID,
+            max_chars=10_000,
+        )
+
+
+def test_present_null_cancelled_occurrences_rejected() -> None:
+    payload = _content_payload() | {"cancelledOccurrences": None}
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        parse_msgraph_calendar_event_content(
+            payload,
+            expected_mailbox_user_id=_MAILBOX_USER_ID,
+            expected_calendar_id=_CALENDAR_ID,
+            max_chars=10_000,
+        )
+
+
+def test_present_malformed_cancelled_occurrences_collection_rejected() -> None:
+    payload = _content_payload() | {"cancelledOccurrences": "not-a-list"}
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        parse_msgraph_calendar_event_content(
+            payload,
+            expected_mailbox_user_id=_MAILBOX_USER_ID,
+            expected_calendar_id=_CALENDAR_ID,
+            max_chars=10_000,
+        )
+
+
+def test_read_occurrence_with_datetimeoffset_original_start() -> None:
+    http = MagicMock()
+    payload = _content_payload()
+    payload["type"] = "occurrence"
+    payload["originalStart"] = "2024-06-01T09:00:00Z"
+    payload["seriesMasterId"] = "series-master-id"
+    del payload["cancelledOccurrences"]
+    http.get.return_value = _json_response(payload=payload)
+    content = _reader(http).read_calendar_event_content(
+        event=_valid_active_change(
+            event_type=MsGraphCalendarEventType.OCCURRENCE,
+            original_start_at=datetime(2024, 6, 1, 9, 0, tzinfo=timezone.utc),
+            series_master_id="series-master-id",
+        ),
+        max_chars=10_000,
+    )
+    assert content.original_start_at == datetime(2024, 6, 1, 9, 0, tzinfo=timezone.utc)
 
 
 # --- malformed provider responses ---

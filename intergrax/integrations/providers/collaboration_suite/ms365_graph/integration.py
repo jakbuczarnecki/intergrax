@@ -29,6 +29,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphCalendarEventChange,
     MsGraphCalendarEventContent,
     MsGraphCalendarEventDeltaPage,
+    MsGraphCalendarEventSnapshotPage,
+    MsGraphCalendarEventSnapshotsReadClient,
     MsGraphCalendarEventsReadClient,
     MsGraphCalendarFileAttachmentContent,
     MsGraphCalendarPage,
@@ -57,6 +59,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_calendar_attachment_page,
     validate_msgraph_calendar_event_content,
     validate_msgraph_calendar_event_delta_page,
+    validate_msgraph_calendar_event_snapshot_page,
     validate_msgraph_calendar_file_attachment_content,
     validate_msgraph_calendar_page,
     validate_msgraph_mail_attachment_page,
@@ -242,6 +245,28 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         )
         graph_base_url = self._graph_base_url_for_calendar_validation()
         return validate_msgraph_calendar_event_delta_page(
+            result,
+            calendar=calendar,
+            window=window,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_calendar_events_snapshot_page(
+        self,
+        *,
+        calendar: MsGraphCalendar,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventSnapshotPage:
+        result = self._require_calendar_event_snapshots_client().read_calendar_events_snapshot_page(
+            calendar=calendar,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_calendar_validation()
+        return validate_msgraph_calendar_event_snapshot_page(
             result,
             calendar=calendar,
             window=window,
@@ -451,6 +476,14 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphCalendarEventsReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph integration does not expose Calendar events delta capability",
+            )
+        return client
+
+    def _require_calendar_event_snapshots_client(self) -> MsGraphCalendarEventSnapshotsReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphCalendarEventSnapshotsReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Calendar events snapshot capability",
             )
         return client
 

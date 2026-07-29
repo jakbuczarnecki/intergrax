@@ -27,6 +27,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphCalendarEventChange,
     MsGraphCalendarEventChangeKind,
     MsGraphCalendarEventDeltaPage,
+    MsGraphCalendarEventSnapshotPage,
     MsGraphCalendarEventType,
     MsGraphCalendarEventsReader,
     MsGraphCalendarViewWindow,
@@ -34,7 +35,9 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     parse_msgraph_calendar_event_change,
     validate_msgraph_calendar_event_change,
     validate_msgraph_calendar_event_delta_page,
+    validate_msgraph_calendar_event_snapshot_page,
     validate_msgraph_calendar_events_continuation,
+    validate_msgraph_calendar_events_snapshot_continuation,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
     MsGraphCalendar,
@@ -60,8 +63,9 @@ _QUOTED_CALENDAR_ID = quote(_CALENDAR_ID, safe="")
 _QUOTED_OTHER_CALENDAR_ID = quote(_OTHER_CALENDAR_ID, safe="")
 _SECRET_TOKEN = "secret-skiptoken-value"
 _SECRET_DELTA_TOKEN = "secret-deltatoken-value"
-_DELTA_PATH = (
-    f"/users/{_QUOTED_MAILBOX}/calendars/{_QUOTED_CALENDAR_ID}/calendarView/delta"
+_DELTA_PATH = f"/users/{_QUOTED_MAILBOX}/calendarView/delta"
+_SNAPSHOT_PATH = (
+    f"/users/{_QUOTED_MAILBOX}/calendars/{_QUOTED_CALENDAR_ID}/calendarView"
 )
 _WINDOW_START = datetime(2024, 6, 1, 0, 0, tzinfo=timezone.utc)
 _WINDOW_END = datetime(2024, 6, 30, 0, 0, tzinfo=timezone.utc)
@@ -99,23 +103,38 @@ def _json_response(*, status_code: int = 200, payload: object | None = None) -> 
 
 def _next_link() -> str:
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
-        f"{_QUOTED_CALENDAR_ID}/calendarView/delta?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
+        f"calendarView/delta?$skiptoken={_SECRET_TOKEN}"
     )
 
 
 def _delta_link() -> str:
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
-        f"{_QUOTED_CALENDAR_ID}/calendarView/delta?$deltatoken={_SECRET_DELTA_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
+        f"calendarView/delta?$deltatoken={_SECRET_DELTA_TOKEN}"
     )
 
 
-def _odata_next_link(calendar_literal: str = _CALENDAR_ID) -> str:
+def _odata_next_link(mailbox_literal: str = _MAILBOX_USER_ID) -> str:
+    escaped = mailbox_literal.replace("'", "''")
+    return (
+        f"https://graph.microsoft.com/v1.0/users('{escaped}')/"
+        f"calendarView/delta?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _snapshot_next_link() -> str:
+    return (
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
+        f"{_QUOTED_CALENDAR_ID}/calendarView?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _odata_snapshot_next_link(calendar_literal: str = _CALENDAR_ID) -> str:
     escaped = calendar_literal.replace("'", "''")
     return (
         f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
-        f"calendars('{escaped}')/calendarView/delta?$skiptoken={_SECRET_TOKEN}"
+        f"calendars('{escaped}')/calendarView?$skiptoken={_SECRET_TOKEN}"
     )
 
 
@@ -168,7 +187,7 @@ def _active_event_payload(
         "isOnlineMeeting": is_online_meeting,
     }
     if original_start_at is not None:
-        payload["originalStart"] = _utc_date_time(original_start_at)
+        payload["originalStart"] = original_start_at
     if series_master_id is not None:
         payload["seriesMasterId"] = series_master_id
     if i_cal_uid is not None:
@@ -360,7 +379,7 @@ def test_reader_rejects_invalid_window_before_http() -> None:
 def test_parse_active_event_with_required_metadata() -> None:
     change = _parse_active(
         _active_event_payload(
-            original_start_at="2024-06-01T09:00:00",
+            original_start_at="2024-06-01T09:00:00Z",
             series_master_id=_SERIES_MASTER_ID,
             i_cal_uid=_ICAL_UID,
             is_online_meeting=True,
@@ -393,7 +412,11 @@ def test_parse_active_event_types(
     raw_type: str,
     expected: MsGraphCalendarEventType,
 ) -> None:
-    change = _parse_active(_active_event_payload(event_type=raw_type))
+    kwargs: dict[str, object] = {"event_type": raw_type}
+    if raw_type in ("occurrence", "exception"):
+        kwargs["original_start_at"] = "2024-06-01T09:00:00Z"
+        kwargs["series_master_id"] = _SERIES_MASTER_ID
+    change = _parse_active(_active_event_payload(**kwargs))
     assert change.event_type is expected
 
 
@@ -731,7 +754,7 @@ def test_validate_continuation_accepts_delta_slash_path() -> None:
     assert validated.url == continuation.url
 
 
-def test_validate_continuation_accepts_odata_key_path() -> None:
+def test_validate_continuation_accepts_odata_mailbox_key_path() -> None:
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_odata_next_link(),
@@ -750,8 +773,8 @@ def test_validate_continuation_accepts_odata_key_path() -> None:
 
 def test_validate_continuation_accepts_resource_name_case_variations() -> None:
     url = (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/CALENDARS/"
-        f"{_QUOTED_CALENDAR_ID}/CALENDARVIEW/DELTA?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
+        f"CALENDARVIEW/DELTA?$skiptoken={_SECRET_TOKEN}"
     )
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
@@ -767,16 +790,16 @@ def test_validate_continuation_accepts_resource_name_case_variations() -> None:
     assert validated is not continuation
 
 
-def test_validate_continuation_accepts_calendar_literal_with_escaped_quotes() -> None:
-    calendar_id = "calendar'quote'part"
+def test_validate_continuation_accepts_mailbox_literal_with_escaped_quotes() -> None:
+    mailbox_id = "user'quote'part@contoso.com"
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.DELTA,
-        url=_odata_next_link(calendar_id),
+        url=_odata_next_link(mailbox_id),
     )
     validated = validate_msgraph_calendar_events_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        calendar_id=calendar_id,
+        mailbox_user_id=mailbox_id,
+        calendar_id=_CALENDAR_ID,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -789,18 +812,20 @@ def test_validate_continuation_accepts_calendar_literal_with_escaped_quotes() ->
     "url",
     [
         f"https://graph.microsoft.com/v1.0/users/{quote(_OTHER_MAILBOX_USER_ID, safe='')}/"
-        f"calendars/{_QUOTED_CALENDAR_ID}/calendarView/delta?$skiptoken={_SECRET_TOKEN}",
+        f"calendarView/delta?$skiptoken={_SECRET_TOKEN}",
         f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
-        f"{_QUOTED_OTHER_CALENDAR_ID}/calendarView/delta?$skiptoken={_SECRET_TOKEN}",
+        f"{_QUOTED_CALENDAR_ID}/calendarView/delta?$skiptoken={_SECRET_TOKEN}",
         f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendar/events?"
         f"$skiptoken={_SECRET_TOKEN}",
         f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
         f"{_QUOTED_CALENDAR_ID}/events?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendarView?"
+        f"$skiptoken={_SECRET_TOKEN}",
         f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/mailFolders/"
         f"folder-1/messages/delta?$skiptoken={_SECRET_TOKEN}",
         "https://graph.microsoft.com/v1.0/drives/drive-1/root/delta?$skiptoken=x",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
-        f"{_QUOTED_CALENDAR_ID}/calendarView/delta/extra?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
+        f"calendarView/delta/extra?$skiptoken={_SECRET_TOKEN}",
         f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars('unterminated"
         f"?$skiptoken={_SECRET_TOKEN}",
     ],
@@ -1152,3 +1177,340 @@ def test_security_repr_and_errors_hide_sensitive_fields() -> None:
             limit=0,
         )
     assert _MAILBOX_USER_ID not in str(exc.value)
+
+
+# --- primary calendar delta restriction ---
+
+
+def test_non_default_calendar_delta_rejected_before_http() -> None:
+    http = MagicMock()
+    with pytest.raises(IntegrationConfigurationError) as exc:
+        _reader(http).read_delta_page(
+            calendar=_valid_calendar(
+                remote_id=_OTHER_CALENDAR_ID,
+                is_default_calendar=False,
+            ),
+            window=_valid_window(),
+            continuation=None,
+            limit=50,
+        )
+    assert "primary calendar" in str(exc.value)
+    assert _MAILBOX_USER_ID not in str(exc.value)
+    assert _OTHER_CALENDAR_ID not in str(exc.value)
+    http.get.assert_not_called()
+
+
+def test_shared_non_default_calendar_delta_rejected_before_http() -> None:
+    http = MagicMock()
+    with pytest.raises(IntegrationConfigurationError, match="primary calendar"):
+        _reader(http).read_delta_page(
+            calendar=_valid_calendar(
+                remote_id=_OTHER_CALENDAR_ID,
+                name="Shared",
+                is_default_calendar=False,
+            ),
+            window=_valid_window(),
+            continuation=None,
+            limit=50,
+        )
+    http.get.assert_not_called()
+
+
+def test_delta_page_validation_rejects_non_default_calendar() -> None:
+    page = _valid_delta_page()
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        validate_msgraph_calendar_event_delta_page(
+            page,
+            calendar=_valid_calendar(is_default_calendar=False),
+            window=_valid_window(),
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+# --- originalStart provider shape ---
+
+
+def test_parse_original_start_utc_iso_string() -> None:
+    change = _parse_active(
+        _active_event_payload(
+            event_type="occurrence",
+            original_start_at="2024-06-01T09:00:00Z",
+            series_master_id=_SERIES_MASTER_ID,
+        )
+    )
+    assert change.original_start_at == datetime(2024, 6, 1, 9, 0, tzinfo=timezone.utc)
+
+
+def test_parse_original_start_explicit_offset_normalized_to_utc() -> None:
+    change = _parse_active(
+        _active_event_payload(
+            event_type="exception",
+            original_start_at="2024-06-01T10:00:00+02:00",
+            series_master_id=_SERIES_MASTER_ID,
+        )
+    )
+    assert change.original_start_at == datetime(2024, 6, 1, 8, 0, tzinfo=timezone.utc)
+
+
+def test_parse_original_start_dictionary_rejected() -> None:
+    payload = _active_event_payload(
+        event_type="occurrence",
+        series_master_id=_SERIES_MASTER_ID,
+    )
+    payload["originalStart"] = _utc_date_time("2024-06-01T09:00:00")
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_active(payload)
+
+
+def test_parse_original_start_naive_string_rejected() -> None:
+    payload = _active_event_payload(
+        event_type="occurrence",
+        series_master_id=_SERIES_MASTER_ID,
+    )
+    payload["originalStart"] = "2024-06-01T09:00:00"
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_active(payload)
+
+
+def test_occurrence_without_original_start_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_active(
+            _active_event_payload(
+                event_type="occurrence",
+                series_master_id=_SERIES_MASTER_ID,
+            )
+        )
+
+
+def test_exception_without_original_start_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_active(
+            _active_event_payload(
+                event_type="exception",
+                series_master_id=_SERIES_MASTER_ID,
+            )
+        )
+
+
+def test_single_instance_without_original_start_succeeds() -> None:
+    change = _parse_active(_active_event_payload())
+    assert change.original_start_at is None
+
+
+def test_series_master_without_original_start_succeeds() -> None:
+    change = _parse_active(_active_event_payload(event_type="seriesMaster"))
+    assert change.original_start_at is None
+
+
+_SNAPSHOT_HEADERS = (
+    'IdType="ImmutableId", outlook.timezone="UTC", outlook.body-content-type="text"'
+)
+_SNAPSHOT_CONT_ERROR = "invalid Microsoft Graph Calendar events snapshot continuation"
+
+
+def _valid_snapshot_page(**overrides: object) -> MsGraphCalendarEventSnapshotPage:
+    defaults: dict[str, object] = {
+        "mailbox_user_id": _MAILBOX_USER_ID,
+        "calendar_remote_id": _CALENDAR_ID,
+        "window": _valid_window(),
+        "items": (_valid_active_change(),),
+        "continuation": None,
+    }
+    defaults.update(overrides)
+    return MsGraphCalendarEventSnapshotPage(**defaults)
+
+
+# --- snapshot reader ---
+
+
+def test_snapshot_default_calendar_initial_request() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(payload=_page_payload(value=[]))
+    window = _valid_window()
+    _reader(http).read_snapshot_page(
+        calendar=_valid_calendar(),
+        window=window,
+        continuation=None,
+        limit=25,
+    )
+    assert http.get.call_args.args[0] == _SNAPSHOT_PATH
+    params = http.get.call_args.kwargs["params"]
+    assert params["startDateTime"] == format_msgraph_calendar_window_datetime(window.start_at)
+    assert params["endDateTime"] == format_msgraph_calendar_window_datetime(window.end_at)
+    assert params["$top"] == 25
+    assert "$select" not in params
+    assert http.get.call_args.kwargs["headers"]["Prefer"] == _SNAPSHOT_HEADERS
+
+
+def test_snapshot_non_default_calendar() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(payload=_page_payload(value=[]))
+    _reader(http).read_snapshot_page(
+        calendar=_valid_calendar(
+            remote_id=_OTHER_CALENDAR_ID,
+            is_default_calendar=False,
+        ),
+        window=_valid_window(),
+        continuation=None,
+        limit=50,
+    )
+    path = (
+        f"/users/{_QUOTED_MAILBOX}/calendars/{_QUOTED_OTHER_CALENDAR_ID}/calendarView"
+    )
+    assert http.get.call_args.args[0] == path
+
+
+def test_snapshot_next_page_and_complete() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_page_payload(
+            value=[_active_event_payload()],
+            next_link=_snapshot_next_link(),
+        )
+    )
+    page = _reader(http).read_snapshot_page(
+        calendar=_valid_calendar(),
+        window=_valid_window(),
+        continuation=None,
+        limit=50,
+    )
+    assert page.has_more is True
+    assert page.is_complete is False
+
+    http.get.return_value = _json_response(payload=_page_payload(value=[]))
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_snapshot_next_link(),
+    )
+    final_page = _reader(http).read_snapshot_page(
+        calendar=_valid_calendar(),
+        window=_valid_window(),
+        continuation=continuation,
+        limit=50,
+    )
+    assert final_page.has_more is False
+    assert final_page.is_complete is True
+
+
+def test_snapshot_rejects_removed_entry() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_page_payload(
+            value=[_removed_event_payload()],
+        )
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _reader(http).read_snapshot_page(
+            calendar=_valid_calendar(),
+            window=_valid_window(),
+            continuation=None,
+            limit=50,
+        )
+
+
+def test_snapshot_last_occurrence_wins() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_page_payload(
+            value=[
+                _active_event_payload(event_id=_EVENT_ID, change_key="v1"),
+                _active_event_payload(event_id=_OTHER_EVENT_ID),
+                _active_event_payload(event_id=_EVENT_ID, change_key="v2"),
+            ],
+        )
+    )
+    page = _reader(http).read_snapshot_page(
+        calendar=_valid_calendar(),
+        window=_valid_window(),
+        continuation=None,
+        limit=50,
+    )
+    assert [item.remote_id for item in page.items] == [_OTHER_EVENT_ID, _EVENT_ID]
+    assert page.items[1].change_key == "v2"
+
+
+def test_validate_snapshot_continuation_accepts_paths() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_snapshot_next_link(),
+    )
+    validated = validate_msgraph_calendar_events_snapshot_continuation(
+        continuation,
+        mailbox_user_id=_MAILBOX_USER_ID,
+        calendar_id=_CALENDAR_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated is not continuation
+
+    odata = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_snapshot_next_link(),
+    )
+    validated_odata = validate_msgraph_calendar_events_snapshot_continuation(
+        odata,
+        mailbox_user_id=_MAILBOX_USER_ID,
+        calendar_id=_CALENDAR_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated_odata is not odata
+
+
+def test_validate_snapshot_continuation_rejects_delta_path() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=(
+            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
+            f"{_QUOTED_CALENDAR_ID}/calendarView/delta?$skiptoken={_SECRET_TOKEN}"
+        ),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_SNAPSHOT_CONT_ERROR):
+        validate_msgraph_calendar_events_snapshot_continuation(
+            continuation,
+            mailbox_user_id=_MAILBOX_USER_ID,
+            calendar_id=_CALENDAR_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+def test_validate_snapshot_continuation_rejects_delta_kind() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.DELTA,
+        url=_snapshot_next_link(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_SNAPSHOT_CONT_ERROR):
+        validate_msgraph_calendar_events_snapshot_continuation(
+            continuation,
+            mailbox_user_id=_MAILBOX_USER_ID,
+            calendar_id=_CALENDAR_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+def test_validate_snapshot_page_returns_new_instances() -> None:
+    original = _valid_snapshot_page()
+    validated = validate_msgraph_calendar_event_snapshot_page(
+        original,
+        calendar=_valid_calendar(),
+        window=_valid_window(),
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == original
+    assert validated is not original
+    assert validated.items[0] is not original.items[0]
+
+
+def test_validate_snapshot_page_rejects_wrong_context() -> None:
+    malformed = MsGraphCalendarEventSnapshotPage.model_construct(
+        mailbox_user_id=_OTHER_MAILBOX_USER_ID,
+        calendar_remote_id=_CALENDAR_ID,
+        window=_valid_window(),
+        items=(_valid_active_change(),),
+        continuation=None,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        validate_msgraph_calendar_event_snapshot_page(
+            malformed,
+            calendar=_valid_calendar(),
+            window=_valid_window(),
+            graph_base_url=_GRAPH_BASE,
+        )

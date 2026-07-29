@@ -1206,6 +1206,28 @@ def _parse_event_id_list(payload: dict[str, object], key: str) -> tuple[str, ...
     return tuple(validate_msgraph_calendar_event_id(item) for item in value)
 
 
+def _parse_cancelled_occurrences(
+    payload: dict[str, object],
+    event_type: MsGraphCalendarEventType,
+) -> tuple[str, ...]:
+    if event_type is MsGraphCalendarEventType.SERIES_MASTER:
+        if "cancelledOccurrences" not in payload:
+            raise ValueError(_MALFORMED_CALENDAR_EVENT_CONTENT_RESPONSE) from None
+        value = payload.get("cancelledOccurrences")
+        if not isinstance(value, list):
+            raise ValueError(_MALFORMED_CALENDAR_EVENT_CONTENT_RESPONSE) from None
+        return tuple(validate_msgraph_calendar_event_id(item) for item in value)
+
+    if "cancelledOccurrences" not in payload:
+        return ()
+    value = payload.get("cancelledOccurrences")
+    if value is None:
+        raise ValueError(_MALFORMED_CALENDAR_EVENT_CONTENT_RESPONSE) from None
+    if not isinstance(value, list):
+        raise ValueError(_MALFORMED_CALENDAR_EVENT_CONTENT_RESPONSE) from None
+    return tuple(validate_msgraph_calendar_event_id(item) for item in value)
+
+
 def _parse_category_list(payload: dict[str, object], key: str) -> tuple[str, ...]:
     if key not in payload:
         raise ValueError(_MALFORMED_CALENDAR_EVENT_CONTENT_RESPONSE) from None
@@ -1281,7 +1303,6 @@ def parse_msgraph_calendar_event_content(
         "location",
         "locations",
         "recurrence",
-        "cancelledOccurrences",
         "categories",
         "importance",
         "sensitivity",
@@ -1333,7 +1354,10 @@ def parse_msgraph_calendar_event_content(
         if recurrence_value is not None:
             recurrence = parse_msgraph_calendar_recurrence(recurrence_value)
 
-        cancelled_occurrence_ids = _parse_event_id_list(payload, "cancelledOccurrences")
+        cancelled_occurrence_ids = _parse_cancelled_occurrences(
+            payload,
+            canonical.event_type,
+        )
         categories = _parse_category_list(payload, "categories")
 
         importance = _map_importance(payload.get("importance"))

@@ -96,27 +96,31 @@ and recursive attached-message expansion are intentionally not implemented.
 
 No Microsoft Vendor Knowledge adapter is exposed yet.
 
-Microsoft Graph Calendar low-level knowledge-read support is complete.
+Microsoft Graph Calendar low-level knowledge-read support is complete using
+stable Graph v1.0 contracts.
 
-Caller-visible user calendars can be enumerated and each selected calendar can
-be synchronized through an explicit, fixed calendar-view time window.
+Caller-visible user calendars can be enumerated.
 
-Event synchronization uses immutable event IDs and supports initial full
-inventory, incremental changes, recurring occurrences, exceptions and
-removed-from-view entries.
+The primary calendar supports full and incremental calendar-view delta
+synchronization for an explicit fixed time window.
 
-Bounded event content, normalized participants, locations, recurrence,
-attachment inventory and ordinary file-attachment content reads are
+Every selected user calendar, including non-default and shared caller-visible
+calendars, supports a complete paged calendar-view snapshot for an explicit
+fixed time window.
+
+A later Vendor Knowledge adapter can use delta for the primary calendar and
+full-snapshot reconciliation for other calendars.
+
+Event content, recurring occurrences and exceptions, participants, locations,
+recurrence, attachment inventory and bounded ordinary file-attachment content
+reads are implemented.
+
+Removed delta entries apply only to the primary calendar view and are not
+treated as proof of global event deletion.
+
+No beta Graph endpoint, Calendar Vendor Knowledge adapter, Calendar ACL,
+group calendar, recursive item attachment or reference-attachment download is
 implemented.
-
-Removed calendar-view entries are not treated as proof of global event
-deletion.
-
-Calendar sharing ACLs, group calendars, online-meeting join URLs, recursive
-item attachments and reference-attachment downloads are intentionally not
-implemented.
-
-No Microsoft Vendor Knowledge adapter is exposed yet.
 
 Current runtime state:
 
@@ -567,12 +571,12 @@ Message IDs are requested in ImmutableId format on every delta request.
 A removed delta entry means removed from the synchronized folder and is not
 treated as proof of global mailbox deletion.
 Mail text bodies, participants and attachments are implemented.
-Microsoft Graph Calendar low-level read support is complete.
-Caller-visible user calendars, calendar-view event delta, bounded event
-content, participants, locations, recurrence and bounded file attachments are
-implemented.
-Removed calendar-view entries are not treated as proof of global event
-deletion.
+Microsoft Graph Calendar low-level read support is complete using stable
+Graph v1.0 contracts: primary-calendar incremental delta, per-calendar full
+snapshots, bounded event content, participants, locations, recurrence and
+bounded file attachments.
+Removed primary-calendar delta entries are not treated as proof of global
+event deletion.
 No Microsoft Vendor Knowledge adapter is exposed yet.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.

@@ -132,12 +132,21 @@ def _validate_exact_bool(value: object) -> bool:
     return value
 
 
-def _map_online_meeting_provider(value: object) -> MsGraphCalendarOnlineMeetingProvider:
+def _validate_online_meeting_provider_string(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
     trimmed = value.strip()
     if not trimmed:
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+    if _ASCII_CONTROL.search(trimmed):
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+    if len(trimmed) > _MAX_NAME_LEN:
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+    return trimmed
+
+
+def _map_online_meeting_provider(value: object) -> MsGraphCalendarOnlineMeetingProvider:
+    trimmed = _validate_online_meeting_provider_string(value)
     normalized = trimmed.lower().replace("_", "")
     return _PROVIDER_MAP.get(normalized, MsGraphCalendarOnlineMeetingProvider.UNKNOWN)
 
@@ -147,25 +156,27 @@ def _parse_owner(payload: object) -> MsGraphCalendarOwner | None:
         return None
     if not isinstance(payload, dict):
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
-    email_address = payload.get("emailAddress")
-    if not isinstance(email_address, dict):
+    if "emailAddress" in payload:
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
-    if "address" not in email_address:
+    if "address" not in payload:
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
     try:
-        address = _validate_owner_address(email_address.get("address"))
+        address = _validate_owner_address(payload.get("address"))
     except ValueError:
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
     display_name: str | None = None
-    if "name" in email_address:
-        name_value = email_address.get("name")
+    if "name" in payload:
+        name_value = payload.get("name")
         if name_value is not None:
             if not isinstance(name_value, str):
                 raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
             trimmed = name_value.strip()
-            if trimmed and _ASCII_CONTROL.search(trimmed):
-                raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
-            display_name = trimmed or None
+            if trimmed:
+                if _ASCII_CONTROL.search(trimmed):
+                    raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+                if len(trimmed) > _MAX_NAME_LEN:
+                    raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+                display_name = trimmed
     return _safe_construct_owner(display_name=display_name, address=address)
 
 
@@ -199,6 +210,8 @@ class MsGraphCalendarOwner(BaseModel):
         if not trimmed:
             return None
         if _ASCII_CONTROL.search(trimmed):
+            raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+        if len(trimmed) > _MAX_NAME_LEN:
             raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
         return trimmed
 
@@ -271,7 +284,7 @@ class MsGraphCalendar(BaseModel):
         for item in value:
             if not isinstance(item, MsGraphCalendarOnlineMeetingProvider):
                 raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
-        return value
+        return _deduplicate_providers(list(value))
 
 
 class MsGraphCalendarPage(BaseModel):
@@ -380,9 +393,18 @@ def validate_msgraph_calendar_page(
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
 
     try:
+        raw_mailbox_user_id = value.mailbox_user_id
         raw_items = value.items
         raw_continuation = value.continuation
     except (AttributeError, TypeError, ValueError):
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
+
+    try:
+        validated_page_mailbox_user_id = validate_msgraph_mailbox_user_id(raw_mailbox_user_id)
+    except ValueError:
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
+
+    if validated_page_mailbox_user_id != validated_mailbox_user_id:
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
 
     if type(raw_items) is not tuple:
@@ -477,10 +499,10 @@ def parse_msgraph_calendar(
     if not isinstance(raw_providers, list):
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
     try:
-        mapped_providers = [_map_online_meeting_provider(item) for item in raw_providers]
-        for item in raw_providers:
-            if not isinstance(item, str) or not item.strip():
-                raise ValueError(_MALFORMED_CALENDARS_RESPONSE)
+        mapped_providers = [
+            _map_online_meeting_provider(_validate_online_meeting_provider_string(item))
+            for item in raw_providers
+        ]
     except ValueError:
         raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
 

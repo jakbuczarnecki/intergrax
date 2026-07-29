@@ -27,6 +27,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphCalendarEventChange,
     MsGraphCalendarEventContent,
     MsGraphCalendarEventDeltaPage,
+    MsGraphCalendarEventSnapshotPage,
     MsGraphCalendarFileAttachmentContent,
     MsGraphCalendarPage,
     MsGraphCalendarViewWindow,
@@ -166,6 +167,21 @@ class _Ms365GraphCollaborationSuite:
         limit: int = 100,
     ) -> MsGraphCalendarEventDeltaPage:
         return self._client.read_calendar_events_delta_page(
+            calendar=calendar,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_events_snapshot_page(
+        self,
+        *,
+        calendar: MsGraphCalendar,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventSnapshotPage:
+        return self._client.read_calendar_events_snapshot_page(
             calendar=calendar,
             window=window,
             continuation=continuation,

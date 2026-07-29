@@ -242,12 +242,44 @@ def test_parse_capability_flags() -> None:
 def test_parse_owner_present() -> None:
     calendar = _parse_calendar(
         _calendar_payload(
-            owner={"emailAddress": {"address": _OWNER_ADDRESS, "name": _OWNER_NAME}}
+            owner={"address": _OWNER_ADDRESS, "name": _OWNER_NAME}
         )
     )
     assert calendar.owner is not None
     assert calendar.owner.address == _OWNER_ADDRESS
     assert calendar.owner.display_name == _OWNER_NAME
+
+
+def test_parse_nested_owner_email_address_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(
+            _calendar_payload(
+                owner={"emailAddress": {"address": _OWNER_ADDRESS, "name": _OWNER_NAME}}
+            )
+        )
+
+
+def test_parse_owner_missing_address_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(_calendar_payload(owner={"name": _OWNER_NAME}))
+
+
+def test_parse_owner_display_name_over_limit_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(
+            _calendar_payload(
+                owner={"address": _OWNER_ADDRESS, "name": "x" * 1025}
+            )
+        )
+
+
+def test_parse_owner_display_name_control_chars_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(
+            _calendar_payload(
+                owner={"address": _OWNER_ADDRESS, "name": "bad\x00name"}
+            )
+        )
 
 
 def test_parse_owner_absent() -> None:
@@ -343,7 +375,7 @@ def test_sensitive_fields_hidden_from_repr() -> None:
     calendar_with_owner = _parse_calendar(
         _calendar_payload(
             name=_HIDDEN_CALENDAR_NAME,
-            owner={"emailAddress": {"address": _OWNER_ADDRESS, "name": _OWNER_NAME}},
+            owner={"address": _OWNER_ADDRESS, "name": _OWNER_NAME},
         )
     )
     for item in (calendar, calendar_with_owner):
@@ -467,7 +499,7 @@ def test_raw_provider_payload_not_stored() -> None:
             "isRemovable": False,
             "allowedOnlineMeetingProviders": ["teamsForBusiness"],
             "defaultOnlineMeetingProvider": "teamsForBusiness",
-            "owner": {"emailAddress": 123},
+            "owner": {"address": ""},
         },
         {
             "id": _CALENDAR_ID,
@@ -480,20 +512,7 @@ def test_raw_provider_payload_not_stored() -> None:
             "isRemovable": False,
             "allowedOnlineMeetingProviders": ["teamsForBusiness"],
             "defaultOnlineMeetingProvider": "teamsForBusiness",
-            "owner": {"emailAddress": {"address": ""}},
-        },
-        {
-            "id": _CALENDAR_ID,
-            "name": _CALENDAR_NAME,
-            "changeKey": _CHANGE_KEY,
-            "isDefaultCalendar": True,
-            "canEdit": True,
-            "canShare": True,
-            "canViewPrivateItems": False,
-            "isRemovable": False,
-            "allowedOnlineMeetingProviders": ["teamsForBusiness"],
-            "defaultOnlineMeetingProvider": "teamsForBusiness",
-            "owner": {"emailAddress": {"address": _OWNER_ADDRESS, "name": "bad\x00name"}},
+            "owner": 123,
         },
     ],
 )
@@ -501,6 +520,72 @@ def test_malformed_provider_payload_rejected(payload: object) -> None:
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
         parse_msgraph_calendar(payload, expected_mailbox_user_id=_MAILBOX_USER_ID)
     _assert_safe_provider_error(exc)
+
+
+def test_parse_empty_unknown_provider_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(_calendar_payload(allowed_providers=[""]))
+
+
+def test_parse_control_character_provider_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(_calendar_payload(allowed_providers=["bad\x00provider"]))
+
+
+def test_parse_provider_over_1024_chars_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        _parse_calendar(_calendar_payload(allowed_providers=["x" * 1025]))
+
+
+def test_allowed_providers_deduplicated_at_model_boundary() -> None:
+    calendar = MsGraphCalendar.model_construct(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        remote_id=_CALENDAR_ID,
+        name=_CALENDAR_NAME,
+        change_key=_CHANGE_KEY,
+        is_default_calendar=True,
+        can_edit=True,
+        can_share=True,
+        can_view_private_items=False,
+        is_removable=False,
+        owner=None,
+        allowed_online_meeting_providers=(
+            MsGraphCalendarOnlineMeetingProvider.TEAMS_FOR_BUSINESS,
+            MsGraphCalendarOnlineMeetingProvider.TEAMS_FOR_BUSINESS,
+            MsGraphCalendarOnlineMeetingProvider.UNKNOWN,
+        ),
+        default_online_meeting_provider=MsGraphCalendarOnlineMeetingProvider.TEAMS_FOR_BUSINESS,
+    )
+    validated = validate_msgraph_calendar(calendar)
+    assert validated.allowed_online_meeting_providers == (
+        MsGraphCalendarOnlineMeetingProvider.TEAMS_FOR_BUSINESS,
+        MsGraphCalendarOnlineMeetingProvider.UNKNOWN,
+    )
+
+
+def test_malformed_page_model_construct_missing_mailbox_user_id() -> None:
+    malformed = MsGraphCalendarPage.model_construct(items=(_valid_calendar(),))
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        _validate_page(malformed)
+    _assert_safe_provider_error(exc)
+
+
+def test_malformed_page_model_construct_wrong_mailbox_user_id() -> None:
+    malformed = MsGraphCalendarPage.model_construct(
+        mailbox_user_id=_OTHER_MAILBOX_USER_ID,
+        items=(_valid_calendar(),),
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        _validate_page(malformed)
+    _assert_safe_provider_error(exc)
+
+
+def test_validate_page_returns_new_instance() -> None:
+    page = MsGraphCalendarPage(mailbox_user_id=_MAILBOX_USER_ID, items=(_valid_calendar(),))
+    validated = _validate_page(page)
+    assert validated == page
+    assert validated is not page
+    assert validated.items[0] is not page.items[0]
 
 
 # --- page model ---

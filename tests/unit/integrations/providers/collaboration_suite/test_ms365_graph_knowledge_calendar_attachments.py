@@ -1787,3 +1787,35 @@ def test_security_repr_and_errors_hide_sensitive_fields() -> None:
 def test_default_max_bytes_constants() -> None:
     assert DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES == 10 * 1024 * 1024
     assert ABSOLUTE_CALENDAR_ATTACHMENT_MAX_BYTES == 25 * 1024 * 1024
+
+
+def test_occurrence_with_datetimeoffset_original_start_observation_flow() -> None:
+    http = MagicMock()
+    occurrence_observation = {
+        "id": _EVENT_ID,
+        "changeKey": _CHANGE_KEY,
+        "type": "occurrence",
+        "start": {"dateTime": "2024-06-01T10:00:00", "timeZone": "UTC"},
+        "end": {"dateTime": "2024-06-01T11:00:00", "timeZone": "UTC"},
+        "originalStart": "2024-06-01T09:00:00Z",
+        "seriesMasterId": "series-master-id",
+        "lastModifiedDateTime": "2024-06-01T12:00:00Z",
+        "isAllDay": False,
+        "isCancelled": False,
+        "isDraft": False,
+        "hasAttachments": True,
+        "isOnlineMeeting": False,
+    }
+    http.get.side_effect = [
+        _json_response(payload=occurrence_observation),
+        _json_response(payload=_page_payload(value=[_attachment_payload()])),
+        _json_response(payload=occurrence_observation),
+    ]
+    event = _valid_active_change(
+        event_type=MsGraphCalendarEventType.OCCURRENCE,
+        original_start_at=datetime(2024, 6, 1, 9, 0, tzinfo=timezone.utc),
+        series_master_id="series-master-id",
+    )
+    page = _reader(http).read_attachments_page(event=event, continuation=None, limit=50)
+    assert len(page.items) == 1
+    assert http.get.call_count == 3
