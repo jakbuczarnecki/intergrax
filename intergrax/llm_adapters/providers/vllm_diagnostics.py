@@ -180,10 +180,14 @@ def fetch_vllm_version(
     )
     if status_code != 200:
         raise VllmDiagnosticsError("vLLM /version request failed")
+    invalid_json = False
     try:
         payload = json.loads(body)
     except json.JSONDecodeError:
-        raise VllmDiagnosticsError("vLLM /version returned invalid JSON") from None
+        invalid_json = True
+        payload = {}
+    if invalid_json:
+        raise VllmDiagnosticsError("vLLM /version returned invalid JSON")
     version = payload.get("version")
     if not isinstance(version, str) or not version.strip():
         raise VllmDiagnosticsError("vLLM /version missing version field")

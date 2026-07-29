@@ -187,9 +187,16 @@ def test_fetch_vllm_version_malformed_json_does_not_leak_body() -> None:
 
     error = exc_info.value
     assert error.__cause__ is None
+    assert error.__context__ is None
     assert secret not in str(error)
     assert secret not in repr(error)
-    rendered = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+    rendered = "".join(
+        traceback.format_exception(
+            type(error),
+            error,
+            error.__traceback__,
+        )
+    )
     assert secret not in rendered
 
 
