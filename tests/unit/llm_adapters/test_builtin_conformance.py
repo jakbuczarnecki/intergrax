@@ -134,6 +134,13 @@ def _build_adapter(provider: LLMProvider) -> LLMAdapter:
 
         chat = MagicMock()
         chat.invoke.return_value = MagicMock(content="ok")
+        bound_chat = MagicMock()
+        bound_chat.invoke.return_value = MagicMock(
+            content="ok",
+            tool_calls=[],
+            invalid_tool_calls=[],
+        )
+        chat.bind_tools.return_value = bound_chat
         return LangChainOllamaAdapter(chat=chat, model="llama3.1:latest")
 
     if provider == LLMProvider.COHERE_NATIVE:

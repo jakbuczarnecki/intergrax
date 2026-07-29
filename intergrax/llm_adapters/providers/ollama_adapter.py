@@ -3,8 +3,9 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 from langchain_ollama import ChatOllama
 
 from intergrax.llm.messages import ChatMessage
@@ -14,22 +15,33 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
     partial_stream_event,
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import (
+    LLMToolCall,
+    tool_calls_from_langchain_message,
+)
 from intergrax.llm_adapters.providers._ollama_schema import prepare_ollama_generation_schema
+from intergrax.llm_adapters.providers.ollama_capabilities import (
+    OllamaModelCapabilities,
+    OllamaModelCapabilityResolver,
+)
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+from intergrax.utils import attribute_access
 
 
 class LangChainOllamaAdapter(LLMAdapter):
     """
-    Adapter for Ollama models used via LangChain's ChatModel interface.
+    Adapter for Ollama models used via LangChain's ChatOllama interface.
 
-    There is no native tools API here, so the agent typically uses a
-    "planner" pattern (tool calls are reasoned about in JSON).
+    Native non-streaming tool calling is supported through ``ChatOllama.bind_tools()``.
+    Structured output remains supported separately via ``with_structured_output()``.
+    Tool streaming is not implemented. Model-level tool capability may vary by model.
     """
 
 
@@ -97,14 +109,25 @@ class LangChainOllamaAdapter(LLMAdapter):
         chat: Optional[ChatOllama] = None,
         model: Optional[str] = None,
         context_window_tokens: Optional[int] = None,
+        *,
+        capability_resolver: OllamaModelCapabilityResolver | None = None,
+        base_url: Optional[str] = None,
         **defaults,
     ):
         super().__init__()
         self._apply_defaults_call_config(defaults)
 
         resolved_model = model or os.getenv(self.ENV_MODEL) or self.DEFAULT_MODEL
-        self.chat = chat or ChatOllama(model=resolved_model)
+        chat_kwargs: Dict[str, Any] = {"model": resolved_model}
+        if base_url is not None:
+            chat_kwargs["base_url"] = base_url
+        self.chat = chat or ChatOllama(**chat_kwargs)
         self.defaults = defaults
+        self._base_url = base_url
+        self._capability_resolver = capability_resolver or OllamaModelCapabilityResolver(
+            base_url=base_url,
+        )
+        self._model_capabilities: OllamaModelCapabilities | None = None
 
         if context_window_tokens is not None and int(context_window_tokens) > 0:
             defaults["context_window_tokens"] = int(context_window_tokens)
@@ -135,11 +158,92 @@ class LangChainOllamaAdapter(LLMAdapter):
     # Internal helpers
     # --------------------------------------------------------
 
+    @staticmethod
+    def _internal_tool_call_to_langchain(tool_call: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(tool_call, dict):
+            raise ValueError("tool call must be a dictionary")
+
+        if "name" in tool_call and "args" in tool_call:
+            name = tool_call.get("name")
+            if not name or not str(name).strip():
+                raise ValueError("tool call requires name")
+            args = tool_call.get("args")
+            if not isinstance(args, dict):
+                raise ValueError("tool call args must be a dictionary")
+            return {
+                "name": str(name),
+                "args": args,
+                "id": str(tool_call.get("id") or ""),
+                "type": "tool_call",
+            }
+
+        fn = tool_call.get("function")
+        if isinstance(fn, dict):
+            name = fn.get("name")
+            if not name or not str(name).strip():
+                raise ValueError("tool call requires name")
+            raw_args = fn.get("arguments")
+            if isinstance(raw_args, str):
+                try:
+                    parsed = json.loads(raw_args or "{}")
+                except json.JSONDecodeError:
+                    raise ValueError("tool call arguments must be valid JSON") from None
+                if not isinstance(parsed, dict):
+                    raise ValueError("tool call arguments must decode to an object")
+                args = parsed
+            elif isinstance(raw_args, dict):
+                args = raw_args
+            else:
+                args = {}
+            return {
+                "name": str(name),
+                "args": args,
+                "id": str(tool_call.get("id") or ""),
+                "type": "tool_call",
+            }
+
+        raise ValueError("tool call requires name")
+
+    @staticmethod
+    def _coerce_ai_message_content(message: Any) -> str:
+        content = attribute_access.optional(message, "content", "")
+        if isinstance(content, str):
+            return content
+        if not content:
+            return ""
+        if isinstance(content, list):
+            parts: list[str] = []
+            for block in content:
+                if isinstance(block, str):
+                    parts.append(block)
+                elif isinstance(block, dict) and block.get("type") == "text":
+                    text = block.get("text")
+                    if isinstance(text, str):
+                        parts.append(text)
+            return "".join(parts)
+        return ""
+
+    @staticmethod
+    def _validate_ollama_tool_choice(
+        tool_choice: Optional[Union[str, Dict[str, Any]]],
+    ) -> None:
+        if tool_choice is None or tool_choice == "auto":
+            return
+        raise ValueError("Ollama native tool calling supports only tool_choice=None or 'auto'")
+
+    @staticmethod
+    def _estimate_tool_output_text(content: str, tool_calls: tuple[LLMToolCall, ...]) -> str:
+        parts = [content]
+        for tool_call in tool_calls:
+            parts.append(tool_call.name)
+            parts.append(tool_call.arguments_json)
+        return "".join(parts)
+
     def _to_lc_messages(self, messages: Sequence[ChatMessage]):
         """
         Convert internal ChatMessage list into LangChain message objects.
         """
-        from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
         out = []
         for m in messages:
@@ -148,10 +252,19 @@ class LangChainOllamaAdapter(LLMAdapter):
             elif m.role == "user":
                 out.append(HumanMessage(content=m.content))
             elif m.role == "assistant":
-                out.append(AIMessage(content=m.content))
+                if m.tool_calls:
+                    lc_tool_calls = [
+                        self._internal_tool_call_to_langchain(tc) for tc in m.tool_calls
+                    ]
+                    out.append(AIMessage(content=m.content, tool_calls=lc_tool_calls))
+                else:
+                    out.append(AIMessage(content=m.content))
             elif m.role == "tool":
-                # No native tools: inject tool result as contextual system message
-                out.append(SystemMessage(content=f"[TOOL RESULT]\n{m.content}"))
+                if not m.tool_call_id or not str(m.tool_call_id).strip():
+                    raise ValueError("tool message requires tool_call_id")
+                out.append(
+                    ToolMessage(content=m.content, tool_call_id=str(m.tool_call_id))
+                )
             else:
                 out.append(SystemMessage(content=f"[{m.role.upper()}]\n{m.content}"))
         return out
@@ -307,12 +420,105 @@ class LangChainOllamaAdapter(LLMAdapter):
 
 
 
+    @property
+    def model_capabilities(self) -> OllamaModelCapabilities:
+        if self._model_capabilities is None:
+            self._model_capabilities = self._capability_resolver.resolve(self.model)
+        return self._model_capabilities
+
+    def refresh_model_capabilities(self) -> OllamaModelCapabilities:
+        self._model_capabilities = self._capability_resolver.resolve(self.model)
+        return self._model_capabilities
+
     def supports_tools(self) -> bool:
-        """Ollama uses JSON planner pattern in ToolsAgent, not native tool API."""
-        return False
+        """Native non-streaming tool calling when the installed model declares tools."""
+        return self.model_capabilities.supports_tools
 
     def supports_structured_output(self) -> bool:
         return True
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> LLMAdapterResponse:
+        if not self.supports_tools():
+            raise ValueError(
+                f"Ollama model does not declare native tool support: {self.model}"
+            )
+        self._validate_ollama_tool_choice(tool_choice)
+        call = self.usage.begin_call(run_id=run_id, adapter=self)
+        response: LLMAdapterResponse | None = None
+        success = False
+        err_type = None
+        in_tok = 0
+        out_tok = 0
+
+        try:
+            in_tok = int(
+                self.estimate_tokens_for_messages(
+                    messages,
+                    model_hint=self.model_name_for_token_estimation,
+                )
+            )
+            lc_msgs = self._to_lc_messages(messages)
+            kwargs = self._with_ollama_options(
+                self.defaults,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            bind_kwargs: Dict[str, Any] = {}
+            if tool_choice is not None:
+                bind_kwargs["tool_choice"] = tool_choice
+            bound_chat = self.chat.bind_tools(tools_schema, **bind_kwargs)
+            result = self._execute(lambda: bound_chat.invoke(lc_msgs, **kwargs))
+
+            invalid_tool_calls = attribute_access.optional(result, "invalid_tool_calls", None) or []
+            if invalid_tool_calls:
+                raise ValueError("Ollama returned invalid native tool calls")
+
+            tool_calls = tool_calls_from_langchain_message(result)
+            content = self._coerce_ai_message_content(result)
+            finish = (
+                LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            )
+            out_text = self._estimate_tool_output_text(content, tool_calls)
+            out_tok = int(
+                self.estimate_tokens_for_text(
+                    out_text,
+                    model_hint=self.model_name_for_token_estimation,
+                )
+            )
+            response = build_adapter_response(
+                content=content,
+                finish_reason=finish,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                tool_calls=tool_calls,
+                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            )
+            success = True
+            return response
+
+        except Exception as e:
+            err_type = type(e).__name__
+            raise
+
+        finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
 
     @staticmethod
@@ -325,7 +531,7 @@ class LangChainOllamaAdapter(LLMAdapter):
 
     @staticmethod
     def _structured_raw_text(raw: Any, validated: Any) -> str:
-        content = getattr(raw, "content", None)
+        content = attribute_access.optional(raw, "content", None)
         if isinstance(content, str) and content:
             return content
         if hasattr(validated, "model_dump_json"):
