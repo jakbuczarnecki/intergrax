@@ -1,10 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Deterministic tests for Ollama native tool calling."""
+"""Deterministic tests for Ollama native tool calling and capability detection (TOKEN-9)."""
 
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -15,6 +16,11 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.providers.ollama_capabilities import (
+    OllamaCapabilityResolutionSource,
+    OllamaModelCapabilities,
+    OllamaModelCapabilityResolver,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -28,6 +34,25 @@ TOOLS_SCHEMA = [
         },
     }
 ]
+
+
+def _capabilities_response(*, capabilities: list[str]) -> SimpleNamespace:
+    return SimpleNamespace(capabilities=capabilities)
+
+
+def _resolver_with_capabilities(
+    capabilities: list[str],
+) -> OllamaModelCapabilityResolver:
+    return OllamaModelCapabilityResolver(
+        show_model=lambda _model: _capabilities_response(capabilities=capabilities),
+    )
+
+
+def _resolver_with_exception() -> OllamaModelCapabilityResolver:
+    def _raise(_model: str) -> object:
+        raise RuntimeError("sensitive server payload")
+
+    return OllamaModelCapabilityResolver(show_model=_raise)
 
 
 @pytest.fixture()
@@ -46,21 +71,143 @@ def bound_chat(fake_chat: MagicMock) -> MagicMock:
 
 @pytest.fixture()
 def adapter(fake_chat: MagicMock) -> LangChainOllamaAdapter:
-    return LangChainOllamaAdapter(chat=fake_chat, model="qwen2.5:14b")
+    return LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="qwen2.5:14b",
+        capability_resolver=_resolver_with_capabilities(["tools", "completion"]),
+    )
 
 
 def _tool_call_result(
-  bound_chat: MagicMock,
-  *,
-  content: str = "",
-  tool_calls: list[dict] | None = None,
-  invalid_tool_calls: list | None = None,
+    bound_chat: MagicMock,
+    *,
+    content: str = "",
+    tool_calls: list[dict] | None = None,
+    invalid_tool_calls: list | None = None,
 ) -> None:
     bound_chat.invoke.return_value = MagicMock(
         content=content,
         tool_calls=tool_calls or [],
         invalid_tool_calls=invalid_tool_calls or [],
     )
+
+
+def test_capabilities_with_tools_enable_support(fake_chat: MagicMock) -> None:
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="qwen2.5:14b",
+        capability_resolver=_resolver_with_capabilities(["tools"]),
+    )
+    assert adapter.supports_tools() is True
+
+
+def test_capabilities_without_tools_disable_support(fake_chat: MagicMock) -> None:
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="qwen2.5:14b",
+        capability_resolver=_resolver_with_capabilities(["completion"]),
+    )
+    assert adapter.supports_tools() is False
+
+
+def test_capability_names_normalized() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: _capabilities_response(
+            capabilities=["  TOOLS ", "", "Completion"]
+        ),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.capabilities == frozenset({"tools", "completion"})
+
+
+def test_missing_capability_field_fails_closed() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: SimpleNamespace(),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is True
+    assert caps.supports_tools is False
+
+
+def test_malformed_capability_field_fails_closed() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: SimpleNamespace(capabilities="tools"),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.capabilities == frozenset()
+
+
+def test_resolver_exception_exposes_only_type() -> None:
+    resolver = _resolver_with_exception()
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is False
+    assert caps.error_type == "RuntimeError"
+    assert caps.capabilities == frozenset()
+
+
+def test_capability_resolution_cached(fake_chat: MagicMock) -> None:
+    show_calls = 0
+
+    def show(_model: str) -> object:
+        nonlocal show_calls
+        show_calls += 1
+        return _capabilities_response(capabilities=["tools"])
+
+    resolver = OllamaModelCapabilityResolver(show_model=show)
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="qwen2.5:14b",
+        capability_resolver=resolver,
+    )
+    assert adapter.supports_tools() is True
+    assert adapter.supports_tools() is True
+    assert show_calls == 1
+
+
+def test_refresh_performs_new_resolution(fake_chat: MagicMock) -> None:
+    show_calls = 0
+
+    def show(_model: str) -> object:
+        nonlocal show_calls
+        show_calls += 1
+        return _capabilities_response(capabilities=["tools"])
+
+    resolver = OllamaModelCapabilityResolver(show_model=show)
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="qwen2.5:14b",
+        capability_resolver=resolver,
+    )
+    adapter.supports_tools()
+    adapter.refresh_model_capabilities()
+    assert show_calls == 2
+
+
+def test_injected_resolver_avoids_network(fake_chat: MagicMock) -> None:
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="qwen2.5:14b",
+        capability_resolver=_resolver_with_capabilities(["tools"]),
+    )
+    assert adapter.model_capabilities.source is OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE
+
+
+def test_generate_with_tools_rejects_unsupported_model(
+    fake_chat: MagicMock,
+    bound_chat: MagicMock,
+) -> None:
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="legacy:7b",
+        capability_resolver=_resolver_with_capabilities(["completion"]),
+    )
+    with pytest.raises(ValueError, match="does not declare native tool support"):
+        adapter.generate_with_tools(
+            [ChatMessage(role="user", content="search")],
+            TOOLS_SCHEMA,
+        )
+    fake_chat.bind_tools.assert_not_called()
+    bound_chat.invoke.assert_not_called()
 
 
 def test_supports_tools_and_structured_output(adapter: LangChainOllamaAdapter) -> None:
@@ -177,6 +324,30 @@ def test_no_tool_call_returns_completed(
     assert result.content == "plain answer"
 
 
+def test_empty_content_with_tool_calls_valid(
+    adapter: LangChainOllamaAdapter,
+    bound_chat: MagicMock,
+) -> None:
+    _tool_call_result(
+        bound_chat,
+        content="",
+        tool_calls=[
+            {
+                "name": "lookup",
+                "args": {"query": "x"},
+                "id": "call-empty",
+                "type": "tool_call",
+            }
+        ],
+    )
+    result = adapter.generate_with_tools(
+        [ChatMessage(role="user", content="search")],
+        TOOLS_SCHEMA,
+    )
+    assert result.content == ""
+    assert len(result.tool_calls) == 1
+
+
 def test_invalid_tool_calls_raise_stable_error(
     adapter: LangChainOllamaAdapter,
     bound_chat: MagicMock,
@@ -199,7 +370,6 @@ def test_invalid_tool_calls_raise_stable_error(
 @pytest.mark.parametrize(
     "tool_choice",
     [
-        "required",
         "none",
         {"type": "function", "function": {"name": "lookup"}},
         "lookup",
@@ -213,7 +383,7 @@ def test_unsupported_tool_choice_rejects_before_provider(
 ) -> None:
     with pytest.raises(
         ValueError,
-        match="Ollama native tool calling supports only tool_choice=None or 'auto'",
+        match="Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'",
     ):
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="search")],
@@ -224,7 +394,7 @@ def test_unsupported_tool_choice_rejects_before_provider(
     bound_chat.invoke.assert_not_called()
 
 
-@pytest.mark.parametrize("tool_choice", [None, "auto"])
+@pytest.mark.parametrize("tool_choice", [None, "auto", "required"])
 def test_accepted_tool_choice_reaches_native_binding(
     adapter: LangChainOllamaAdapter,
     fake_chat: MagicMock,
@@ -237,7 +407,10 @@ def test_accepted_tool_choice_reaches_native_binding(
         TOOLS_SCHEMA,
         tool_choice=tool_choice,
     )
-    fake_chat.bind_tools.assert_called_once_with(TOOLS_SCHEMA)
+    if tool_choice is None:
+        fake_chat.bind_tools.assert_called_once_with(TOOLS_SCHEMA)
+    else:
+        fake_chat.bind_tools.assert_called_once_with(TOOLS_SCHEMA, tool_choice=tool_choice)
     bound_chat.invoke.assert_called_once()
 
 
@@ -373,3 +546,48 @@ def test_usage_tracking_registers_run_id(
     stats = adapter.usage.get_run_stats("tool-usage-run")
     assert stats.calls == 1
     assert stats.errors == 0
+
+
+def test_provider_and_model_populated(
+    adapter: LangChainOllamaAdapter,
+    bound_chat: MagicMock,
+) -> None:
+    _tool_call_result(bound_chat, content="ok")
+    result = adapter.generate_with_tools(
+        [ChatMessage(role="user", content="search")],
+        TOOLS_SCHEMA,
+    )
+    assert result.model == "qwen2.5:14b"
+    assert result.provider == "ollama"
+
+
+def test_generate_structured_not_called_from_tools_method(
+    adapter: LangChainOllamaAdapter,
+    bound_chat: MagicMock,
+) -> None:
+    _tool_call_result(bound_chat, content="ok")
+    with patch.object(adapter, "generate_structured") as structured:
+        adapter.generate_with_tools(
+            [ChatMessage(role="user", content="search")],
+            TOOLS_SCHEMA,
+        )
+        structured.assert_not_called()
+
+
+def test_unresolved_capabilities_fail_closed(fake_chat: MagicMock) -> None:
+    caps = OllamaModelCapabilities(
+        model="legacy:7b",
+        capabilities=frozenset(),
+        resolved=False,
+        source=OllamaCapabilityResolutionSource.UNAVAILABLE,
+        error_type="ConnectionError",
+    )
+    adapter = LangChainOllamaAdapter(
+        chat=fake_chat,
+        model="legacy:7b",
+        capability_resolver=OllamaModelCapabilityResolver(
+            show_model=lambda _model: (_ for _ in ()).throw(RuntimeError("x")),
+        ),
+    )
+    adapter._model_capabilities = caps
+    assert adapter.supports_tools() is False

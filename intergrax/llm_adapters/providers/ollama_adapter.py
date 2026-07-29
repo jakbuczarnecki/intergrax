@@ -227,9 +227,13 @@ class LangChainOllamaAdapter(LLMAdapter):
     def _validate_ollama_tool_choice(
         tool_choice: Optional[Union[str, Dict[str, Any]]],
     ) -> None:
-        if tool_choice is None or tool_choice == "auto":
+        if tool_choice is None:
             return
-        raise ValueError("Ollama native tool calling supports only tool_choice=None or 'auto'")
+        if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
+            return
+        raise ValueError(
+            "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+        )
 
     @staticmethod
     def _estimate_tool_output_text(content: str, tool_calls: tuple[LLMToolCall, ...]) -> str:

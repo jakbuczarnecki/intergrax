@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.utils import attribute_access
 
 pytestmark = pytest.mark.unit
 
@@ -94,7 +95,7 @@ def test_original_messages_only_no_synthetic_schema(
     assert isinstance(lc_msgs[0], HumanMessage)
     assert lc_msgs[0].content == messages[0].content
     for msg in lc_msgs:
-        content = getattr(msg, "content", "")
+        content = attribute_access.optional(msg, "content", "") or ""
         assert "JSON_SCHEMA" not in content
         assert "Return ONLY a single JSON object" not in content
         assert not (isinstance(msg, SystemMessage) and "JSON" in content)

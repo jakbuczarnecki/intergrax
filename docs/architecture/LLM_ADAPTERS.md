@@ -87,6 +87,8 @@ All adapter completion methods return typed envelopes — **not** bare `str` or 
 
 **Ollama generation schema projection:** the canonical Pydantic `model_json_schema()` remains the final validation contract. `LangChainOllamaAdapter` passes a provider-compatible generation projection to `with_structured_output(..., method="json_schema")` (see `intergrax/llm_adapters/providers/_ollama_schema.py`). The projection is generic, provider-specific, and may relax generation-only constraints (for example `maxLength` values Ollama cannot compile). Returned payloads are always revalidated with the original `output_model`; no field rewriting or aliasing occurs. The projection does not guarantee semantic correctness — only grammar-safe constrained generation.
 
+**Ollama model-aware tool capabilities (TOKEN-9):** `LangChainOllamaAdapter.supports_tools()` reflects the installed model's `/api/show` capability list via `intergrax/llm_adapters/providers/ollama_capabilities.py`. There is no static model-name allowlist. Capability resolution is lazy, cached per adapter instance, and fail-closed. `generate_with_tools()` uses `ChatOllama.bind_tools()` and maps LangChain `AIMessage.tool_calls` to `LLMToolCall`. Native tool calling is preferred by the Token Optimization router; structured output is fallback only when tools are unavailable. Ollama does not enforce `tool_choice`; the router still requires exactly one valid tool call. Not every Ollama model declares `tools`.
+
 Example:
 
 ```python

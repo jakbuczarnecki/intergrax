@@ -991,6 +991,10 @@ Savings must be attributable by:
 ## 13. First-class implementation invariants
 
 1. Do not build a second LLM token counter. Use `LLMAdapter.count_messages_tokens()` when an adapter is in scope.
+
+### LLM tool-calling router (TOKEN-9)
+
+`TokenOptimizationLLMRouter` (`intergrax/runtime/token_optimization/llm_router.py`) selects one approved configuration ID through native tool calling (`token_optimization.select_configuration`) or structured-output fallback when tools are unavailable. The model never chooses layer settings, plugins, or policy. A closed catalog compiles selections into `TokenOptimizationPipelineConfig(mode=REPLACE)` and `TokenOptimizationPipelineRunner` executes built-in layers. Invocation is explicit; no global auto-apply. Reports use `token_optimization_router_result_to_safe_dict()` and exclude raw content, prompts, and tool arguments.
 2. Do not build a second context compiler. Extend the existing Context Engineering pipeline.
 3. Do not mutate canonical tool contracts for compact schema presentation.
 4. Do not compress tool call payloads by default.

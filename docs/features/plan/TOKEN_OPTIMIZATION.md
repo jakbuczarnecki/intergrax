@@ -1260,9 +1260,7 @@ TOKEN-8A — Layer Registry and Pipeline Runner
 TOKEN-8B — Built-in Layer Catalog Wiring
 TOKEN-8C — Pipeline Configuration Evals
 TOKEN-8D — Third-party Plugin Adapter Contract Proof
-TOKEN-9A — LLM Optimization Router Contract
-TOKEN-9B — LLM Router Evals
-TOKEN-9C — Safe Router → Engine Integration
+TOKEN-9 — LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
 ```
 
 #### TOKEN-8A — Layer Registry and Pipeline Runner
@@ -1438,9 +1436,19 @@ test-only third-party plugin descriptor
 
 **Not proven:** safe execution of untrusted Python, process isolation, sandboxing, package authenticity, dependency safety.
 
-**Next step:** TOKEN-9A — LLM Optimization Router Contract
+**Next step:** TOKEN-9 — LLM Tool-Calling Router (done — see below)
 
-#### TOKEN-9A — LLM Optimization Router Contract
+#### TOKEN-9 — LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
+
+**Status:** **Done / Closed** (live native Ollama E2E verified on `qwen2.5:7b`).
+
+Canonical transport is native tool calling via `token_optimization.select_configuration`. Structured output is fallback only when the adapter lacks native tools and router policy allows it. Native tool failure never silently switches transport.
+
+The model selects only approved configuration IDs from a closed catalog (`no_optimization`, `exact_only`, `extractive_only`, `packing_only`, `exact_then_packing`, `exact_then_extractive`, `extractive_then_exact`). Layer settings, policy, and pipeline mode are compiled deterministically by the platform. Caller policy and central validation remain authoritative. Route invocation is explicit — no global auto-apply.
+
+Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1`. Tested model: `qwen2.5:7b` (native `tools` capability). Ollama tool-choice forcing is not claimed.
+
+#### TOKEN-9A — LLM Optimization Router Contract (superseded by TOKEN-9)
 
 Define the future router that decides how to configure the deterministic engine for a specific input.
 
