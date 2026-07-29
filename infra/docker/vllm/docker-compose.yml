@@ -2,10 +2,13 @@
 # Requires NVIDIA GPU + nvidia-container-toolkit. For CPU-only dev use Ollama (infra/docker/ollama).
 # Host port 8100 avoids conflict with Chroma (8000) in the rag profile.
 # Wire Intergrax: INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+#
+# TOKEN-10C canonical proof uses vLLM v0.23.0 V1 metrics/cache path with automatic prefix caching.
+# Do not force VLLM_USE_V1=0 for prefix-cache proof; the legacy V0 workaround is obsolete for v0.23.0.
 
 services:
   vllm:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.23.0
     container_name: intergrax-vllm
     ports:
       - "8100:8000"
@@ -13,16 +16,26 @@ services:
       - vllm_cache:/root/.cache/huggingface
     environment:
       HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
-      # WSL2: v1 engine can fail to start; v0 is more reliable for local dev.
-      VLLM_USE_V1: ${VLLM_USE_V1:-0}
     shm_size: "2gb"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     command:
-      - ${VLLM_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      - ${VLLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
       - --host
       - "0.0.0.0"
       - --port
       - "8000"
-      - --enforce-eager
+      - --enable-prefix-caching
+      - --prefix-caching-hash-algo
+      - sha256
+      - --enable-prompt-tokens-details
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - hermes
       - --gpu-memory-utilization
       - "0.85"
     deploy:

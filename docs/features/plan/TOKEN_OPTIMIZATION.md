@@ -209,7 +209,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next implementation step:** `TOKEN-10C` — vLLM Prefix-Cache Provider Integration and Metrics, after TOKEN-10B acceptance.
+**Current next implementation step:** `TOKEN-10D` — Cache-Aware Router and Pipeline Orchestration, after TOKEN-10C review.
 
 ### LKW proof phase map (post-design)
 
@@ -1277,7 +1277,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10C**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10D**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1490,7 +1490,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review after R2; TOKEN-10B-R1 implemented/ready for review; TOKEN-10B-R2 implemented/ready for review; TOKEN-10C next).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review after R2; TOKEN-10B-R1 implemented/ready for review; TOKEN-10B-R2 implemented/ready for review; TOKEN-10C implemented/ready for review; TOKEN-10D next).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1551,9 +1551,9 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
 
-**Status:** Planned.
+**Status:** **Implemented / Ready for review**.
 
-**Owner:** `LLM_ADAPTERS` (`TOKEN-LLM-3`). Pin vLLM image/version; enable automatic prefix caching; expose health, readiness, cache metrics, and `cached_input_tokens` through existing adapter usage envelope. Distinguish cold, warm, and changed-prefix controls.
+**Owner:** `LLM_ADAPTERS` (`TOKEN-LLM-2`, `TOKEN-LLM-3`). Pin vLLM image/version; enable automatic prefix caching; expose health, readiness, cache metrics, and `cached_input_tokens` through existing adapter usage envelope. Distinguish cold, warm, and changed-prefix controls.
 
 ### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
 
@@ -2059,7 +2059,7 @@ TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
 TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review after R2
 TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Implemented / Ready for review
 TOKEN-10B-R2 exact tool-schema order integrity — Implemented / Ready for review
-TOKEN-10C   vLLM prefix-cache provider integration and metrics — Next
+TOKEN-10C   vLLM prefix-cache provider integration and metrics — Implemented / Ready for review
 TOKEN-10D..10H orchestration, compaction, proof, README — Planned
 ```
 

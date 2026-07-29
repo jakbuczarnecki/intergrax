@@ -493,7 +493,7 @@ For requests expected to share a cache prefix:
 9. Prefix invalidation must produce an explicit reason.
 10. Cache stability is a runtime property, not only a test helper.
 
-Existing helper-level contracts (`build_prefix_snapshot`, `evaluate_prefix_stability`, `preserves_append_only_prefix`) are extended by the production assembler in **`intergrax/runtime/token_optimization/prompt_assembly.py`** (**TOKEN-10B** — implemented / ready for review). Provider cache integration remains **TOKEN-10C+**.
+Existing helper-level contracts (`build_prefix_snapshot`, `evaluate_prefix_stability`, `preserves_append_only_prefix`) are extended by the production assembler in **`intergrax/runtime/token_optimization/prompt_assembly.py`** (**TOKEN-10B** — implemented / ready for review). Provider cache integration is **TOKEN-10C** (implemented / ready for review).
 
 #### Append-only prompt/thread invariant
 
@@ -972,6 +972,8 @@ LKW proof workflows **LKW-TOK-W1**–**W4** (see [`../plan/TOKEN_OPTIMIZATION.md
 
 ### 8.8 vLLM universal prefix-cache proof runtime (**TOKEN-10C**)
 
+**Status:** **Implemented / Ready for review**.
+
 vLLM is the first canonical self-hosted runtime for the universal prefix-cache proof. Reuse existing platform assets:
 
 ```text
@@ -979,23 +981,22 @@ LLMProvider.VLLM
 VllmChatAdapter
 OpenAI-compatible adapter path
 infra/docker/vllm/docker-compose.yml
+intergrax/llm_adapters/providers/vllm_diagnostics.py
+intergrax/runtime/token_optimization/vllm_prefix_cache_proof.py
 LLMAdapterResponse.usage
 LLMTokenUsage.cached_input_tokens
+VllmProviderExtensions.prompt_tokens_details_reported
 ```
 
-Later implementation must:
+As-built behavior:
 
-- pin the vLLM image/version used by the proof;
-- enable automatic prefix caching explicitly;
-- expose health/readiness;
-- expose cache metrics required by the proof;
-- support the selected model's native tool-calling path;
-- keep model selection configurable (TOML — no permanently canonical model);
-- avoid downloading or switching models silently during the proof;
-- distinguish cold, warm, and intentionally invalidated prefix calls;
-- capture request-level usage when supported;
-- capture server metrics required to prove cache reuse;
-- fail or mark the cache proof unsupported when evidence is unavailable.
+- pin `vllm/vllm-openai:v0.23.0` with automatic prefix caching, SHA-256 hash algorithm, and `prompt_tokens_details`;
+- expose provider-owned `/health`, `/version`, and `/metrics` diagnostics with fail-closed required-metric parsing;
+- distinguish missing `prompt_tokens_details` from a genuine zero via `VllmProviderExtensions`;
+- evaluate cold / warm / changed-prefix proof gates through cache-stable prompt assembly and `VllmChatAdapter`;
+- gate live proof behind `INTERGRAX_TOKEN_OPTIMIZATION_VLLM_E2E=1` (`tests/e2e/token_optimization/test_vllm_prefix_cache_live.py`).
+
+Later TOKEN-10F harness work must not introduce a second inference client.
 
 vLLM proof demonstrates: repeated KV-prefix reuse; lower repeated prefill work; cached-token reuse where exposed; prefix-cache hit metrics; latency or prefill improvement; stable-prefix correctness.
 

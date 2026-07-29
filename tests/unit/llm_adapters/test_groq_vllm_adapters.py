@@ -35,14 +35,21 @@ def test_groq_adapter_mocked_chat() -> None:
 def test_vllm_adapter_mocked_chat() -> None:
     client = MagicMock()
     usage = MagicMock(prompt_tokens=2, completion_tokens=1)
+    usage.prompt_tokens_details = MagicMock(cached_tokens=1)
+    usage.completion_tokens_details = None
     msg = MagicMock(content="local", tool_calls=None)
     choice = MagicMock(message=msg, finish_reason="stop")
-    res = MagicMock(usage=usage, choices=[choice])
+    res = MagicMock(usage=usage, choices=[choice], id="vllm-1", system_fingerprint=None)
     client.chat.completions.create.return_value = res
 
-    adapter = VllmChatAdapter(client=client, model="meta-llama/Llama-3.1-8B-Instruct")
+    adapter = VllmChatAdapter(client=client, model="Qwen/Qwen2.5-7B-Instruct")
     response = adapter.generate_messages([ChatMessage(role="user", content="ping")], run_id="v1")
     assert response.content == "local"
+    assert response.provider_extensions is not None
+    assert response.provider_extensions.vllm is not None
+    assert response.provider_extensions.vllm.prompt_tokens_details_reported is True
+    assert response.usage is not None
+    assert response.usage.cached_input_tokens == 1
 
 
 def test_llama_cpp_adapter_mocked_chat() -> None:
