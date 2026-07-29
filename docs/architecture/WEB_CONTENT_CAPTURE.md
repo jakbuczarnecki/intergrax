@@ -1,12 +1,12 @@
 # Web Content Capture
 
-**Status:** platform capability — `LKW-WORKSPACE-CONTENTS-1B-5-1` (`IMPLEMENTED / CORRECTION REQUIRED`; review gate: audit `LKW-WORKSPACE-CONTENTS-1B-5-1-C1`)
+**Status:** platform capability — `LKW-WORKSPACE-CONTENTS-1B-5-1` **ACCEPTED**
 
 ## Purpose
 
 `WebContentCapture` is the provider-neutral platform capability for securely fetching and extracting **public HTTPS web pages**. It is the prerequisite for:
 
-- LKW `WEB_URL` Knowledge Intake (`1B-5-2` … `1B-5-4`)
+- LKW end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`)
 - `websearch.read_url` and `websearch.fetch_batch` cutover
 - optional future browser automation backends (Playwright, Firecrawl, Browserbase, Apify)
 
@@ -244,7 +244,7 @@ Browser automation and vendor fetch providers (BrowserAutomation contract, Firec
 
 | Task | Scope |
 |------|-------|
-| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend (this document) |
-| `1B-5-2` | LKW `WEB_URL` intake and private Source locator |
-| `1B-5-3` | Web URL ingestion, indexing and Ask proof |
-| `1B-5-4` | Slack explicit Web URL intake |
+| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend (this document) — **ACCEPTED** |
+| `1B-5-2` | End-to-end LKW `WEB_URL` Knowledge Intake — **READY_FOR_REVIEW** |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof — **MERGED INTO 1B-5-2** |
+| `CONV-1C` | Slack natural-language URL execution (not a strict URL command) |

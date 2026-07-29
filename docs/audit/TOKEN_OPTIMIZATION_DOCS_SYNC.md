@@ -328,3 +328,23 @@ docs: add token optimization multi-layer feature docs
 Do not group runtime implementation with this commit.
 
 ---END PROMPT---
+
+---
+
+## TOKEN-10 documentation sync expectations (TOKEN-10A)
+
+After each TOKEN-10 subtask closeout, verify:
+
+| Document pair / file | Sync trigger |
+|---------------------|--------------|
+| features/architecture + plan TOKEN_OPTIMIZATION | lifecycle, roadmap status, proof gates |
+| TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md | runtime wiring status, in-cache compaction phase |
+| LLM_ADAPTERS architecture + plan | TOKEN-LLM-2/3 row status |
+| TOKEN_OPTIMIZATION_CLAIMS.md | allowed vs proof-gated wording |
+| LKW ARCHITECTURE, IMPLEMENTATION_PLAN, PLATFORM_PROOF_LOOP | LKW-PF6 ordering only when product proof scope changes |
+| ROADMAP.md, features/README.md | concise status pointer |
+| Satellites (architecture + plan cross-refs) | TOKEN-10 phase → owning plan mapping |
+
+Stale wording to reject: runtime/provider integration deferred indefinitely; TOKEN-9 as final phase; LKW as first proof owner; in-cache compaction as undefined future only.
+
+README main promotion: TOKEN-10H only.

@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -348,6 +348,52 @@ class IntakeBatch(BaseModel):
         if len(item_ids) != len(set(item_ids)):
             raise ValueError("intake_batch_item_ids_not_unique")
         return self
+
+
+class WebUrlSourceLocator(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    locator_version: Literal["lkw.web_url_source_locator.v1"] = "lkw.web_url_source_locator.v1"
+    tenant_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    input_id: str = Field(..., min_length=1)
+
+    canonical_private_url: str = Field(..., min_length=1, repr=False)
+    requested_url_fingerprint: str = Field(..., min_length=1)
+    safe_display_url: str = Field(..., min_length=1)
+
+    final_url_fingerprint: str | None = None
+    final_safe_display_url: str | None = None
+    final_host_changed: bool | None = None
+
+    content_hash: str | None = None
+    last_captured_at: datetime | None = None
+
+    created_at: datetime
+    updated_at: datetime
+
+    def __repr__(self) -> str:
+        return (
+            f"WebUrlSourceLocator(workspace_id={self.workspace_id!r}, "
+            f"input_id={self.input_id!r}, "
+            f"requested_url_fingerprint={self.requested_url_fingerprint!r})"
+        )
+
+    @field_validator("requested_url_fingerprint")
+    @classmethod
+    def _validate_requested_fingerprint(cls, value: str) -> str:
+        if _CONTENT_HASH_RE.fullmatch(value) is None:
+            raise ValueError("requested_url_fingerprint_invalid")
+        return value
+
+    @field_validator("final_url_fingerprint", "content_hash")
+    @classmethod
+    def _validate_optional_fingerprint(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if _CONTENT_HASH_RE.fullmatch(value) is None:
+            raise ValueError("fingerprint_invalid")
+        return value
 
 
 class ActiveKnowledgeIngestionLocator(BaseModel):

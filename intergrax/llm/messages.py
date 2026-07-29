@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 import uuid
@@ -78,6 +81,20 @@ class ChatMessage:
             extras.append(f"tool_calls={len(self.tool_calls)}")
         extras_str = ", ".join(extras)
         return f"<ChatMessage role={self.role} {extras_str}>"
+
+
+def compute_model_facing_messages_hash(messages: Sequence[ChatMessage]) -> str:
+    """SHA-256 over canonical model-facing message sequence (``to_dict()`` payloads)."""
+    payload = [message.to_dict() for message in messages]
+    canonical_json = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256()
+    digest.update(canonical_json.encode("utf-8"))
+    return digest.hexdigest()
 
 
 def append_chat_messages(

@@ -6,13 +6,13 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Cache-prefix Stabilization Architecture and Contract Addendum
 
-**Status:** Done / Closed architecture / contract addendum (`TOKEN-OPT-5A`)
+**Status:** Helper-level contracts and policy **Done / Closed** (`TOKEN-OPT-5A`–`TOKEN-OPT-5E`); runtime wiring and universal proof planned under **TOKEN-10**
 
 **Parent feature architecture:** [`TOKEN_OPTIMIZATION.md`](TOKEN_OPTIMIZATION.md) (§8.3.1 Cache-prefix stabilization)
 
-**Parent feature plan:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
+**Parent feature plan:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) (§TOKEN-10)
 
-**Scope:** cache-aware prompt/thread architecture, provider cache attribution, and cache-safe optimization sequencing.
+**Scope:** cache-aware prompt/thread architecture, provider cache attribution, cache-safe optimization sequencing, and TOKEN-10 implementation canon.
 
 ---
 
@@ -26,6 +26,8 @@ This addendum captures the Token Optimization implications from cache-heavy agen
 https://viktor.com/research/how-we-built-viktor-around-prompt-caching
 ```
 
+Use as **architectural inspiration only** — not an external dependency or copied implementation. Do not call the Intergrax implementation “VIKTOR algorithm/cache/runtime.”
+
 The key architectural conclusion for Intergrax:
 
 ```text
@@ -33,7 +35,7 @@ Cache-prefix stabilization is a first-class Token Optimization surface.
 It must be measured separately from content-reduction strategies.
 ```
 
-`TOKEN-OPT-5A` closes the architecture/contract slice for cache-prefix stabilization. The canonical feature architecture now cross-references this addendum as the detailed supporting contract. This addendum does not implement runtime behavior.
+`TOKEN-OPT-5A`–`TOKEN-OPT-5E` closed helper-level architecture/contracts. **TOKEN-10** wires them into runtime assembly, provider integration, orchestration, and universal proof.
 
 ---
 
@@ -41,78 +43,62 @@ It must be measured separately from content-reduction strategies.
 
 Prompt caching is a **cost and latency optimization**. It is not the same thing as source-content reduction.
 
-The following must not be mixed in receipts, telemetry, benchmark summaries, or public claims:
+| Category | Examples |
+|----------|----------|
+| Content reduction | deduplication, budget-aware packing, extractive filtering, structural compaction, output policy |
+| Provider prefix-cache reuse | cached_input_tokens, prefix-cache hits, lower prefill work, latency improvement |
+| Managed-provider billing (Claude-style) | explicit cache breakpoints, billing discounts where offered — **not** identical to vLLM self-hosted semantics |
 
-```text
-content removed by deduplication
-content removed by budget-aware packing
-content omitted by extractive filtering
-content shortened by structural compaction
-completion reduction from output policy
-provider cached-input reuse
-cache-hit cost discount
-cache-hit latency reduction
-```
-
-Cache-related savings must have their own attribution bucket and confidence model.
-
-Allowed cache attribution terms:
-
-```text
-cache_read_tokens
-cache_creation_tokens
-cached_input_tokens
-uncached_input_tokens
-cache_hit_ratio
-prefix_stability_status
-prefix_hash
-cache_discount_estimate
-cache_latency_delta_estimate
-cache_invalidation_reason
-```
-
-Do not report cache reuse as `saved_tokens` unless a provider-specific measurement path supports a clear baseline/optimized comparison and the claim is explicitly marked as provider-cache attribution.
+Do not mix these families in receipts, telemetry, benchmark summaries, or public claims. Do not add cached tokens to content-saved tokens.
 
 ---
 
-## 3. Stable prefix as a protected optimization surface
+## 3. Stable prefix and dynamic tail
 
-A provider-cacheable prompt prefix should be treated as a protected optimization surface.
-
-The stable prefix may include, depending on provider and adapter shape:
+### Stable prefix may contain
 
 ```text
 system policy
-agent role and stable instructions
-stable tool envelope / tool catalog view
-stable safety policy
-stable product/runtime conventions
-long-lived workspace or thread context that is intentionally cacheable
+stable agent role
+stable runtime conventions
+stable safety instructions
+stable model-facing tool envelope
+stable product rules
+intentionally cacheable long-lived thread context
 ```
 
-The stable prefix must not include volatile values such as:
+### Dynamic tail contains
 
 ```text
-wall-clock timestamps
-random IDs
-run IDs
-trace IDs
-request IDs
-ephemeral tool lists
-provider-generated metadata
-per-step diagnostic counters
-per-request user text
-fresh retrieved evidence
-dynamic source payloads
+current user request
+current tool results
+fresh RAG evidence
+new attachments or source payloads
+current run and step metadata
+timestamps, trace IDs, request IDs
+transient diagnostics
+dynamic tool availability data
+current optimization request data
 ```
 
-Dynamic content belongs in the prompt tail, not in the stable prefix.
+### Hard invariants (runtime — TOKEN-10B)
+
+1. Stable prefix must be byte/token stable for shared-prefix requests.
+2. Stable block order must remain deterministic.
+3. Stable block content must not be rewritten during the active cache window.
+4. Dynamic data must not appear in the stable prefix.
+5. New conversation content must be appended after the stable prefix.
+6. Existing historical messages must not be silently reordered or rewritten.
+7. Tool schemas must remain stable for the same effective tool set.
+8. Prefix and tool-envelope fingerprints must be measurable.
+9. Prefix invalidation must produce an explicit reason.
+10. Cache stability is a runtime property, not only a test helper.
+
+Helper-level contracts are extended by the production assembler at `intergrax/runtime/token_optimization/prompt_assembly.py` (**TOKEN-10B** — implemented / ready for review).
 
 ---
 
 ## 4. Append-only thread invariant
-
-When provider cache reuse is active, the prompt/thread shape should prefer an append-only model:
 
 ```text
 stable prefix
@@ -120,371 +106,200 @@ stable prefix
   + dynamic tail for the current step
 ```
 
-Cache-safe behavior:
+Cache-safe: append new information; preserve byte-stable prefix; preserve block order; keep dynamic data after prefix.
 
-```text
-append new information
-preserve byte-stable already-sent prefix
-preserve ordering of cacheable blocks
-keep dynamic per-step data after the cacheable prefix
-```
-
-Cache-hostile behavior:
-
-```text
-rewriting old thread messages
-reordering historical blocks
-inserting new metadata into the prefix
-regenerating tool catalog text differently per step
-compacting the hot prefix while the cache is still valuable
-adding timestamps or run IDs near the beginning of the prompt
-```
-
-This invariant is especially important before adding lossy summarization, semantic compression, adaptive rewriting, or runtime prompt assembly rewrites.
+Cache-hostile: rewriting old messages; reordering history; inserting metadata into prefix; regenerating tool catalog per step; compacting hot prefix while cache is valuable.
 
 ---
 
-## 5. Tool surface implications
+## 5. Stable tool-envelope architecture
 
-Tool optimization has two independent goals:
+Two independent objectives:
 
 ```text
-1. reduce LLM-facing tool catalog size
-2. keep the LLM-facing tool envelope cache-stable
+reduce the model-facing tool catalog size
+preserve a deterministic cache-stable tool envelope
 ```
 
-A shorter tool catalog that changes frequently can be worse than a slightly longer stable tool catalog that gets high cache reuse.
+Canonical rules:
 
-Rules:
+- canonical `ToolContract` objects remain immutable;
+- model-facing exported schemas are deterministic;
+- identical effective tool sets → identical ordered tool envelopes;
+- tool order cannot depend on non-deterministic registry iteration;
+- descriptions/schemas cannot contain per-request metadata;
+- dynamic availability reasons do not belong in the stable prefix;
+- effective tool-set fingerprint must be reported;
+- changed effective tool set invalidates cache identity;
+- smaller unstable catalog may be worse than slightly larger stable catalog.
 
-- `ToolSchemaOptimizer` must not mutate canonical `ToolContract` definitions.
-- Future compact catalog views should be deterministic and cache-stable for the same effective tool set.
-- Dynamic tool availability should not be injected into the stable prefix unless the effective set is intentionally part of the cache key.
-- Per-request tool metadata, availability reasons, runtime IDs, and diagnostic annotations belong outside the stable prefix.
-- Provider adapters may expose cache-safe tool-envelope capabilities, but policy and observability remain platform-owned.
+Native tool calling remains valid when the exposed envelope is deterministic and cache stable.
 
 ---
 
-## 6. Provider ownership boundary
+## 6. As-built runtime (TOKEN-10B / TOKEN-10B-R1 / TOKEN-10B-R2)
 
-Provider-specific prompt-cache behavior belongs to `LLM_ADAPTERS` and must not be reimplemented inside Token Optimization as a parallel provider abstraction.
+Production assembler: `intergrax/runtime/token_optimization/prompt_assembly.py`.
 
-Token Optimization may define shared contracts and attribution vocabulary. Provider adapters own provider-specific behavior such as:
+Public contracts:
 
-```text
-explicit cache breakpoints
-implicit/automatic prompt caching
-cache key support
-cache retention / TTL support
-cache read/write usage fields
-cached-token accounting
-session affinity requirements for edge/self-hosted providers
-provider-specific price multipliers
-```
+- `PromptAssemblyMessageBlock`, `PromptCacheBlockFingerprint`, `CacheStablePromptState`, `CacheStableToolEnvelope`, `CacheStablePromptAssemblyReport`, `CacheStablePromptAssembly`
+- `assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, `cache_stable_prompt_assembly_to_safe_dict`
+- **TOKEN-10B-R1:** `CacheStablePromptSendPayload`, `CacheStablePromptIntegrityError`, `materialize_cache_stable_send_payload`
+- **TOKEN-10B-R2:** exact-send tool-schema hash order sensitivity; materialization and `ToolPlanningService` reject noncanonical prepared order
 
-Token Optimization consumes those signals through approved adapter usage/telemetry paths.
+### TOKEN-10B-R1 send integrity (as-built correction)
 
-It must not create:
+- **Defensive model-facing snapshots:** assembly deep-copies only `to_dict()` fields (`role`, `content`, `name`, `tool_call_id`, `tool_calls`); caller-owned messages and nested structures are not retained.
+- **Defensive tool-schema snapshots:** `build_cache_stable_tool_envelope` deep-copies, canonicalizes, and fingerprints copied entries only.
+- **Full message integrity hash:** `CacheStablePromptAssembly.messages_hash` — SHA-256 over canonical `to_dict()` sequence; separate from `prefix_hash` (cacheable prefix identity only).
+- **Send-time validation:** `materialize_cache_stable_send_payload` recomputes and compares `messages_hash`, stable-prefix fingerprints, and tool-envelope hash/ordering before adapter invocation; returns fresh defensive copies; raises `CacheStablePromptIntegrityError` on mismatch (fail closed).
+- **Canonical hashing helpers:** `compute_model_facing_messages_hash` (`intergrax/llm/messages.py`), `compute_openai_tools_schema_hash` (`intergrax/tools/exporters/openai.py`) — shared by assembler and `ToolPlanningService` post-pruning validation.
+- **Complete tool-envelope transitions:** `None↔hash` and `hash A↔hash B` report `tool_envelope_stable=false` and `TOOL_ENVELOPE_CHANGED` when prefix is otherwise reusable; prompt-safety invalidation retains precedence.
 
-```text
-a second tokenizer
-a private provider-cache telemetry bus
-a provider-specific prompt cache client outside LLM_ADAPTERS
-hidden prompt-cache configuration
-```
+### TOKEN-10B-R2 exact schema sequence integrity (as-built correction)
 
----
+- **Order-sensitive exact-send schema hash:** `compute_openai_tools_schema_hash` preserves outer tool-list order; dictionary keys are canonicalized via `sort_keys=True` only.
+- **Canonical tool order established once:** `build_cache_stable_tool_envelope` sorts by `function.name` before hashing; returned envelope is the exact sequence hashed.
+- **Materialization rejects reordered envelope schema:** `materialize_cache_stable_send_payload` compares observed tool IDs and order-sensitive hash against recorded envelope state without re-canonicalizing tampered input.
+- **`ToolPlanningService` rejects noncanonical prepared order:** `plan_native_round` validates prepared schema against expected lexicographic tool-ID sequence before adapter invocation.
 
-## 7. Cache-aware compaction timing
+Router integration (`TokenOptimizationLLMRouter`):
 
-Content compaction is not always beneficial when prompt caching is active.
+- stable prefix block: `token_optimization.router.system`
+- dynamic tail: request facts + untrusted analyzed content
+- caller-owned continuity: `previous_prompt_cache_state` on `TokenOptimizationLLMRouterRequest`; `prompt_cache_state` + `prompt_assembly_report` on `TokenOptimizationLLMRouterResult`
 
-A compaction step that rewrites a hot cached prefix may destroy more value than it saves. Therefore future compaction policy must consider both:
+Tool envelope:
 
-```text
-estimated content-reduction benefit
-estimated cache invalidation cost
-```
+- deterministic export: `build_tool_planning_schema` in `intergrax/runtime/nexus/tools/tool_planning_service.py`
+- exact schema forwarding: `prepared_tools_schema` on `plan_native_round`
 
-Cache-aware compaction should prefer:
-
-```text
-filtering dynamic tool/log output before it becomes stable prefix
-packing/reducing dynamic tail content
-compacting cold or idle thread history
-compacting before cache expiry only when beneficial
-preserving hot cacheable prefix until cache value decays
-```
-
-It should avoid:
-
-```text
-rewriting stable prefix during active multi-step runs
-semantic summarization of hot cacheable history
-repacking old thread history on every step
-changing stable tool catalog formatting per request
-```
-
-### Cache-aware compaction timing policy (`TOKEN-OPT-5E`)
-
-`TOKEN-OPT-5E` is **Done / Closed**. Cache-aware compaction timing policy is now documented and covered by synthetic policy tests.
-
-Intergrax now has a provider-neutral cache-aware compaction timing policy. Runtime/provider integration remains deferred. The policy helps avoid rewriting hot cacheable prefixes when estimated cache invalidation cost outweighs estimated content-reduction benefit.
-
-```text
-dynamic tail reduction preferred over stable-prefix rewrite
-stable-prefix / full-thread compaction remains conservative
-protected/semantic risk → require manual review
-near-expiry or cold-history may allow RUN
-helper-level / provider-neutral only
-no runtime provider caching in TOKEN-OPT-5E
-in-cache compaction remains future work
-```
+Invalidation reasons include `append_only_violation` and `tool_envelope_changed` alongside existing helper-level reasons.
 
 ---
 
-## 8. In-cache compaction is future work
+## 8. Provider ownership boundary
 
-In-cache compaction means asking a model to compact a long history while the long history itself is read from provider cache.
+### `LLM_ADAPTERS` owns
 
-This can be useful, but it is intentionally out of scope for `TOKEN-OPT-5A` because Intergrax has not yet enabled semantic compression, LLM summarization, or adaptive rewriting in the optimization path.
+- provider-specific prompt-cache capabilities;
+- automatic prefix caching support;
+- explicit cache breakpoints where applicable;
+- provider cache keys;
+- provider retention or TTL data where available;
+- session or replica affinity requirements;
+- provider request parameters;
+- provider cache usage mapping;
+- cached-token accounting;
+- provider-specific latency and cost interpretation;
+- provider health and capability discovery.
 
-```text
-No in-cache compaction in TOKEN-OPT-5A.
-No LLM summarization in TOKEN-OPT-5A.
-No semantic compression in TOKEN-OPT-5A.
-No adaptive rewriting in TOKEN-OPT-5A.
-```
+### `TOKEN_OPTIMIZATION` owns
 
-Future work must require:
+- cache-stable prompt strategy;
+- stable prefix and dynamic tail contracts;
+- append-only policy;
+- tool-envelope stability requirements;
+- cache-aware execution policy;
+- separation of cache reuse and content reduction;
+- orchestration of provider signals with the deterministic pipeline;
+- proof configuration and proof evaluation;
+- receipts and safe reports;
+- application-neutral integration contract.
 
-```text
-explicit lossy/semantic opt-in
-protected-region validation
-quality/regression gates
-receipts and rollback metadata where persistent
-provider-cache attribution separated from content-reduction attribution
-operator-visible fallback behavior
-```
+### `OBSERVABILITY` owns
 
----
+- approved domain-signal/HOS emission;
+- cache hit/miss/invalidation metrics;
+- content-reduction metrics;
+- proof/run attribution;
+- no private Token Optimization telemetry bus.
 
-## 9. Observability and attribution
+Token Optimization must not create: a second tokenizer; a private vLLM HTTP client outside `LLM_ADAPTERS`; a parallel provider abstraction; hidden provider-cache configuration; a private cache metrics exporter; provider-specific logic inside LKW.
 
-Cache-aware optimization requires distinct observability fields.
-
-Recommended cache attribution fields:
-
-```text
-run_id
-step_id
-tenant_id
-agent_id
-provider
-model
-cache_mode
-cache_key_scope
-prefix_hash
-prefix_stability_status
-cache_read_tokens
-cache_creation_tokens
-cached_input_tokens
-uncached_input_tokens
-cache_hit_ratio
-cache_invalidation_reason
-cache_discount_estimate
-cache_latency_delta_estimate
-content_reduction_strategy
-content_saved_tokens
-content_saved_chars
-```
-
-Important rule:
-
-```text
-cache_* metrics describe provider cache behavior.
-content_saved_* metrics describe content reduction.
-They must remain separable in telemetry, receipts, benchmark summaries, and public proof claims.
-```
-
-Candidate domain signals / event kinds for later implementation:
-
-```text
-TOKEN_CACHE_PREFIX_STABLE
-TOKEN_CACHE_PREFIX_CHANGED
-TOKEN_CACHE_HIT_REPORTED
-TOKEN_CACHE_MISS_REPORTED
-TOKEN_CACHE_INVALIDATED
-TOKEN_CACHE_ATTRIBUTION_RECORDED
-```
-
-These are conceptual names only. Actual event ownership remains with the existing HOS/domain-signal architecture.
+Implementation rows: `TOKEN-LLM-2`, `TOKEN-LLM-3` in [`docs/plan/LLM_ADAPTERS.md`](../../plan/LLM_ADAPTERS.md).
 
 ---
 
-## 10. Roadmap impact
+## 7. Cache-aware execution gate (TOKEN-10D)
 
-`TOKEN-OPT-4B` is **Done / Closed**. `TOKEN-OPT-5A` is **Done / Closed**. `TOKEN-OPT-5B` is **Done / Closed** as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. `TOKEN-OPT-5E` is **Done / Closed** — cache-aware compaction timing policy is documented and covered by synthetic policy tests. Runtime/provider integration remains deferred. In-cache compaction remains future work. Cache attribution remains separate from content-reduction savings. Next decision: choose the next functional Token Optimization block before returning to `TOKEN-7A` advisory recommendations.
-
-Recommended order:
-
-| Order | Task | Scope | Status | Runtime behavior |
-|-------|------|-------|--------|------------------|
-| 1 | `TOKEN-OPT-4B` | Extractive filtering evaluation cases / regression pack | **Done / Closed** | No new runtime algorithm |
-| 2 | `TOKEN-OPT-5A` | Cache-prefix stabilization architecture / contract | **Done / Closed** | Docs/contracts only |
-| 3 | `TOKEN-OPT-5B` | Prompt-cache contracts and cache-prefix stability proof | **Done / Closed** | Contracts + helpers + synthetic eval |
-| 4 | `TOKEN-OPT-5C` | Folded into `TOKEN-OPT-5B` | Folded | — |
-| 5 | `TOKEN-OPT-5D` | Folded into `TOKEN-OPT-5B` | Folded | — |
-| 6 | `TOKEN-OPT-5E` | Cache-aware compaction timing policy | **Done / Closed** | Contracts + helper + synthetic policy tests |
-| 7 | `TOKEN-7A` | Advisory recommendation contract | Deferred | Still deferred |
-
-### TOKEN-OPT-5A — cache-prefix stabilization architecture / contract
-
-**Status:** **Done / Closed**.
-
-**Purpose:** Define prompt-cache-aware optimization boundaries, provider responsibilities, cache attribution, and cache-safe prompt/thread assembly invariants.
-
-**Scope:**
+`TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D** places it in the orchestration path:
 
 ```text
-stable prefix definition
-append-only prompt/thread invariant
-provider-cache attribution vocabulary
-cache-safe tool envelope rules
-cache invalidation reasons
-cache-vs-content-reduction attribution split
+router-selected configuration
+  → identify optimization target
+  → inspect cache and prefix state
+  → evaluate content benefit vs cache invalidation cost
+  → RUN / DEFER / BYPASS / REQUIRE_MANUAL_REVIEW
+  → pipeline execution only when allowed
 ```
 
-**Out of scope:**
-
-```text
-runtime prompt assembly changes
-provider API calls
-adapter wiring
-semantic compression
-LLM summarization
-in-cache compaction
-auto-apply
-public marketing claims
-```
-
-**Closeout criteria:**
-
-```text
-prompt caching classified as cost/latency optimization, not content reduction
-cache-prefix stability added as first-class optimization surface
-append-only prompt/thread invariant documented
-provider-specific cache behavior assigned to LLM_ADAPTERS
-cache metrics separated from token/char savings
-dynamic tool/schema injection risk documented
-compaction timing must account for cache invalidation cost
-no runtime behavior added
-```
-
-### TOKEN-OPT-5B — prompt-cache contracts and cache-prefix stability proof
-
-**Status:** **Done / Closed**.
-
-`TOKEN-OPT-5B` is Done / Closed as a combined functional block covering provider cache contracts, append-only prefix invariant helpers, and synthetic prefix-stability evaluation. `TOKEN-OPT-5C` and `TOKEN-OPT-5D` are folded into `TOKEN-OPT-5B`. `TOKEN-OPT-5E` is Done / Closed.
-
-Delivered contracts and helpers (no provider API calls, no runtime prompt assembly):
-
-```text
-PromptCacheMode
-PromptCacheInvalidationReason
-PromptCachePolicy
-PromptCacheProviderCapabilities
-PromptCacheUsageSnapshot
-PromptCacheAttribution
-PromptCacheBlock / PromptCachePrefixSnapshot / PromptCachePrefixStabilityResult
-build_prefix_snapshot / compute_prefix_hash / evaluate_prefix_stability
-preserves_append_only_prefix
-synthetic prompt_cache_prefix corpus
-```
-
-### TOKEN-OPT-5C — append-only prompt/thread invariant tests
-
-**Status:** Folded into `TOKEN-OPT-5B`.
-
-### TOKEN-OPT-5D — cache-prefix stability evaluation pack
-
-**Status:** Folded into `TOKEN-OPT-5B`.
-
-### TOKEN-OPT-5E — cache-aware compaction timing policy
-
-**Status:** **Done / Closed**.
-
-Purpose:
-
-```text
-Add a provider-neutral policy/helper layer deciding when compaction should run, defer, bypass, or require manual review based on cache prefix stability, cache hotness, TTL proximity, expected content-reduction benefit, expected cache invalidation cost, and safety risk.
-```
-
-Delivered (no provider API calls, no runtime prompt assembly):
-
-```text
-CacheAwareCompactionTarget
-CacheAwareCompactionDecision
-CacheAwareCompactionReason
-CacheAwareCompactionTimingInput / CacheAwareCompactionTimingDecision
-decide_cache_aware_compaction_timing
-synthetic cache_aware_compaction corpus
-focused policy tests
-```
-
-Runtime/provider integration remains deferred. In-cache compaction remains future work.
+Do not claim mixed character/token estimates as measured savings.
 
 ---
 
-## 11. Public claim guardrails
+## 8. In-cache compaction (TOKEN-10E — planned)
 
-Allowed claim shape:
-
-```text
-Measured provider-cache reuse reduced billed input cost on workflow X by Y%, with provider/model/cache policy Z and validation status V.
-```
-
-Forbidden claim shape:
+Promoted from future commentary to explicit planned phase.
 
 ```text
-Intergrax saves Y% tokens everywhere through prompt caching.
+existing byte-stable cached conversation
+  + appended compaction instruction
+  → model reuses cached prefix
+  → model produces compact summary
+  → summary validated
+  → new thread generation from approved compacted state
 ```
 
-Also forbidden:
+Requires: explicit policy opt-in; protected-region preservation; quality/regression evaluation; receipts with old/new hashes; cache attribution separate from content reduction; operator-visible fallback; no destructive overwrite before validation; rollback metadata; no automatic production enablement by default.
 
-```text
-mixing cache discount with content-removal savings
-mixing truncation savings with cache savings
-using projected cache behavior as measured proof
-omitting provider/model/cache policy from cache claims
-```
+For vLLM, use actual cache-state evidence — not invented Claude-style fixed TTL.
 
-Public proof must separately show:
-
-```text
-content-reduction savings
-provider-cache attribution
-quality/regression status
-fallback status
-known limitations
-```
+**Historical note:** `TOKEN-OPT-5A` excluded in-cache compaction by design. That scope boundary is superseded by **TOKEN-10E** planning.
 
 ---
 
-## 12. Current decision
+## 9. Measurement separation
 
-`TOKEN-OPT-4B` is **Done / Closed**.
+**Content reduction:** `baseline_input_tokens`, `optimized_input_tokens`, `content_saved_tokens`, `content_saved_ratio`, `content_saved_chars`, `content_reduction_strategy`, `per_layer_saved_*`.
 
-`TOKEN-OPT-5A` is **Done / Closed**.
+**Provider prefix-cache reuse:** `prompt_tokens`, `cached_input_tokens`, `uncached_input_tokens`, `prefix_cache_queries`, `prefix_cache_hits`, `cache_hit_ratio`, `prefix_hash`, `prefix_stability_status`, `cache_invalidation_reason`, `prefill_duration`, `time_to_first_token`, `total_duration`.
 
-`TOKEN-OPT-5B` is **Done / Closed**.
+---
 
-`TOKEN-OPT-5E` is **Done / Closed**.
+## 10. vLLM universal proof runtime (TOKEN-10C)
 
-Next decision:
+First canonical self-hosted prefix-cache proof runtime. Reuse: `LLMProvider.VLLM`, `VllmChatAdapter`, `infra/docker/vllm/docker-compose.yml`, `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`.
 
-```text
-Choose the next functional Token Optimization block before returning to TOKEN-7A advisory recommendations.
-```
+Proof must distinguish cold, warm, and changed-prefix negative control. Fail when cache evidence unavailable. Model configurable via TOML — no permanently canonical model.
 
-Runtime/provider integration remains deferred. In-cache compaction remains future work. Do not return to `TOKEN-7A` advisory recommendations until Intergrax has enough real optimization mechanisms, provider/cache attribution contracts, and evaluation data to make recommendations useful and safe.
+vLLM proves compute reuse and latency/prefill improvement — not Claude billing discounts or guaranteed retention.
+
+---
+
+## 11. Roadmap
+
+| Phase | Status |
+|-------|--------|
+| `TOKEN-OPT-5A`–`TOKEN-OPT-5E` | **Done / Closed** (contracts + helpers + synthetic policy tests) |
+| `TOKEN-8`, `TOKEN-9` | **Accepted / Closed** (execution engine + router) |
+| `TOKEN-10A` | **Accepted / Closed** (docs-only canon) |
+| `TOKEN-10B` | **Implemented / Ready for review after R2** (`prompt_assembly.py`, router wiring) |
+| `TOKEN-10B-R1` | **Implemented / Ready for review** (send-payload integrity, envelope transitions) |
+| `TOKEN-10B-R2` | **Implemented / Ready for review** (exact tool-schema sequence integrity) |
+| `TOKEN-10C`–`TOKEN-10H` | **Planned** |
+
+See [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-10 for subtask acceptance criteria.
+
+---
+
+## 12. Public claim guardrails
+
+See [`../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md). README promotion deferred to **TOKEN-10H**.
+
+---
+
+## 13. Current decision
+
+Next implementation: **TOKEN-10C** (vLLM prefix-cache provider integration). **TOKEN-10B** assembler is implemented at `intergrax/runtime/token_optimization/prompt_assembly.py`. Universal platform proof precedes LKW product proof (**LKW-PF6-A**–**C**).

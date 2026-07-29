@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StrictStr, field_validator, model_validator
 
 from local_workspace_application.conversation.interaction_models import WorkspaceReferenceKind
 
@@ -96,26 +96,61 @@ SourceValue = Annotated[
 ]
 
 
-class DraftWorkspaceReference(BaseModel):
+def _validate_exact_workspace_reference_text(value: object) -> str:
+    if not isinstance(value, str):
+        raise ValueError("workspace reference text must be str")
+    if not value.strip():
+        raise ValueError("workspace reference text must be non-empty")
+    if _ASCII_CONTROL.search(value):
+        raise ValueError("workspace reference text must not contain control characters")
+    return value
+
+
+ExactWorkspaceReferenceText = Annotated[
+    str,
+    BeforeValidator(_validate_exact_workspace_reference_text),
+    Field(min_length=1, max_length=_MAX_STRING_FIELD_LEN),
+]
+
+
+class DraftWorkspaceReferenceBase(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    kind: WorkspaceReferenceKind
-    value: str | None = Field(default=None, max_length=_MAX_STRING_FIELD_LEN)
 
-    @model_validator(mode="after")
-    def _validate_kind_value(self) -> Self:
-        if self.kind == WorkspaceReferenceKind.active:
-            if self.value is not None:
-                raise ValueError("active workspace reference requires value=None")
-        else:
-            if self.value is None or not self.value.strip():
-                raise ValueError(f"{self.kind.value} requires non-empty value")
-            if _ASCII_CONTROL.search(self.value):
-                raise ValueError("workspace reference value must not contain control characters")
-            if self.kind == WorkspaceReferenceKind.ordinal:
-                if not self.value.isdigit() or int(self.value) < 1:
-                    raise ValueError("ordinal must be a positive integer string")
-        return self
+class ActiveDraftWorkspaceReference(DraftWorkspaceReferenceBase):
+    kind: Literal[WorkspaceReferenceKind.active]
+    value: None = None
+
+
+class NameDraftWorkspaceReference(DraftWorkspaceReferenceBase):
+    kind: Literal[WorkspaceReferenceKind.name]
+    value: ExactWorkspaceReferenceText
+
+
+class OrdinalDraftWorkspaceReference(DraftWorkspaceReferenceBase):
+    kind: Literal[WorkspaceReferenceKind.ordinal]
+    value: Annotated[
+        StrictStr,
+        Field(
+            min_length=1,
+            max_length=_MAX_STRING_FIELD_LEN,
+            pattern=r"^0*[1-9][0-9]*$",
+        ),
+    ]
+
+
+class CreatedByActionDraftWorkspaceReference(DraftWorkspaceReferenceBase):
+    kind: Literal[WorkspaceReferenceKind.created_by_action]
+    value: ExactWorkspaceReferenceText
+
+
+DraftWorkspaceReference = Annotated[
+    ActiveDraftWorkspaceReference
+    | NameDraftWorkspaceReference
+    | OrdinalDraftWorkspaceReference
+    | CreatedByActionDraftWorkspaceReference,
+    Field(discriminator="kind"),
+]
 
 
 class DraftWebUrlSource(BaseModel):
@@ -276,33 +311,3 @@ class ConversationInteractionDraft(BaseModel):
             raise ValueError("too many clarifications")
         return self
 
-
-CANONICAL_ACTION_TYPES: frozenset[str] = frozenset(
-    {
-        "workspace.list",
-        "workspace.create",
-        "workspace.activate",
-        "workspace.delete",
-        "source.list",
-        "source_candidate.list",
-        "source_candidate.attach",
-        "knowledge.add_attachments",
-        "knowledge.add_sources",
-        "workspace.ask",
-    }
-)
-
-DRAFT_ACTION_TYPES: frozenset[str] = frozenset(
-    {
-        "workspace.list",
-        "workspace.create",
-        "workspace.activate",
-        "workspace.delete",
-        "source.list",
-        "source_candidate.list",
-        "source_candidate.attach",
-        "knowledge.add_attachments",
-        "knowledge.add_sources",
-        "workspace.ask",
-    }
-)

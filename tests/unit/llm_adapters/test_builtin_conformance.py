@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, Callable
 from unittest.mock import MagicMock, patch
 
@@ -11,6 +12,7 @@ import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.conformance import run_adapter_conformance
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
@@ -131,10 +133,30 @@ def _build_adapter(provider: LLMProvider) -> LLMAdapter:
 
     if provider == LLMProvider.OLLAMA:
         from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+        from intergrax.llm_adapters.providers.ollama_capabilities import (
+            OllamaModelCapabilityResolver,
+        )
 
         chat = MagicMock()
+        chat.model = "llama3.1:latest"
         chat.invoke.return_value = MagicMock(content="ok")
-        return LangChainOllamaAdapter(chat=chat, model="llama3.1:latest")
+        bound_chat = MagicMock()
+        bound_chat.invoke.return_value = MagicMock(
+            content="ok",
+            tool_calls=[],
+            invalid_tool_calls=[],
+        )
+        chat.bind_tools.return_value = bound_chat
+        capability_resolver = OllamaModelCapabilityResolver(
+            show_model=lambda _model: SimpleNamespace(
+                capabilities=["tools", "completion"],
+            )
+        )
+        return LangChainOllamaAdapter(
+            chat=chat,
+            model="llama3.1:latest",
+            capability_resolver=capability_resolver,
+        )
 
     if provider == LLMProvider.COHERE_NATIVE:
         client = MagicMock()
@@ -173,6 +195,33 @@ def _restore_registry_state():
         yield snapshot
     finally:
         LLMAdapterRegistry._factories = snapshot
+
+
+def test_builtin_ollama_conformance_adapter_exposes_native_tools() -> None:
+    adapter = _build_adapter(LLMProvider.OLLAMA)
+
+    assert adapter.supports_tools() is True
+
+    result = adapter.generate_with_tools(
+        [ChatMessage(role="user", content="hi")],
+        [
+            {
+                "type": "function",
+                "function": {
+                    "name": "noop",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                    },
+                },
+            }
+        ],
+        run_id="ollama-conformance-proof",
+    )
+
+    assert isinstance(result, LLMAdapterResponse)
+    assert isinstance(result.tool_calls, tuple)
 
 
 @pytest.mark.no_ci

@@ -14,12 +14,14 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 
 from local_workspace_application.conversation.interaction_draft_models import (
+    ActiveDraftWorkspaceReference,
     ConversationInteractionDraft,
     DraftLocalFileReferenceSource,
     DraftWebUrlSource,
-    DraftWorkspaceReference,
     KnowledgeAddAttachmentsDraftAction,
     KnowledgeAddSourcesDraftAction,
+    NameDraftWorkspaceReference,
+    OrdinalDraftWorkspaceReference,
     WorkspaceActivateDraftAction,
     WorkspaceAskDraftAction,
 )
@@ -99,12 +101,12 @@ def _mixed_routing_draft() -> ConversationInteractionDraft:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://cenniki.pl"),),
             ),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
                 sources=(
                     DraftLocalFileReferenceSource(
                         object_type="local_file_reference",
@@ -223,7 +225,7 @@ async def test_explicit_workspace_activation() -> None:
         actions=(
             WorkspaceActivateDraftAction(
                 action_type="workspace.activate",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 evidence_quotes=("przełącz mnie na workspace magazyn",),
             ),
         ),
@@ -251,12 +253,12 @@ async def test_mixed_attachments_and_text_single_plan() -> None:
         actions=(
             KnowledgeAddAttachmentsDraftAction(
                 action_type="knowledge.add_attachments",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 attachment_ids=("file-a", "file-b"),
             ),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(
                     DraftWebUrlSource(object_type="web_url", value="https://docs.example.com/page"),
                     DraftLocalFileReferenceSource(
@@ -289,7 +291,7 @@ async def test_hallucination_protection_unknown_attachment() -> None:
         actions=(
             KnowledgeAddAttachmentsDraftAction(
                 action_type="knowledge.add_attachments",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 attachment_ids=("unknown-att",),
             ),
         ),
@@ -313,7 +315,7 @@ async def test_invalid_draft_action_reference_rejected() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://www.cenniki.pl"),),
                 depends_on_action_numbers=(2,),
             ),
@@ -485,7 +487,7 @@ async def test_target_workspace_without_activation() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://example.com"),),
             ),
         ),
@@ -506,7 +508,7 @@ async def test_url_in_question_routes_to_workspace_ask() -> None:
         actions=(
             WorkspaceAskDraftAction(
                 action_type="workspace.ask",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.active),
+                workspace=ActiveDraftWorkspaceReference(kind=WorkspaceReferenceKind.active),
                 question=message,
             ),
         ),
@@ -528,7 +530,7 @@ async def test_hallucination_protection_unknown_evidence_quote() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://www.cenniki.pl"),),
                 evidence_quotes=("user never said this",),
             ),
@@ -550,7 +552,7 @@ async def test_hallucination_protection_invalid_dependency() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://www.cenniki.pl"),),
                 depends_on_action_numbers=(9,),
             ),
@@ -589,7 +591,7 @@ async def test_repair_attempt_success() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://not-in-message.example"),),
             ),
         ),
@@ -611,7 +613,7 @@ async def test_repair_attempt_failure() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://not-in-message.example"),),
             ),
         ),
@@ -698,7 +700,7 @@ async def test_compiler_failure_triggers_safe_repair_category() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://missing.example"),),
             ),
         ),

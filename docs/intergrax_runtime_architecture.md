@@ -207,3 +207,22 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 LKW.7 is **Closed**: LKW.7A Done; LKW.7B1 Done; LKW.7B2A Done; LKW.7B2B Done; LKW.7B Closed; LKW.7C Closed; LKW.7C1 Done; LKW.7C2 Done.
 LKW.6 closed narrowly as: unified interaction intake; Application Hosting adoption; first Windows PowerShell product interaction adapter; live reviewer proof. Product docs: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md).
+
+### LKW Hybrid Knowledge Workspace — active product roadmap
+
+Canonical execution order: [pplications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+
+| Block | Scope | Status |
+|-------|-------|--------|
+| **1B-5-2** | End-to-end WEB_URL Knowledge Intake | **READY_FOR_REVIEW** (current implementation) |
+| **LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1** | Hybrid knowledge access vocabulary and roadmap | **DOCUMENTED / READY_FOR_REVIEW** |
+| **LKW-MODEL-RUNTIME-1** | Ollama / vLLM end-to-end portability | **PLANNED** |
+| **LKW-KNOWLEDGE-ACCESS-1** | Connections, Indexed Sources, Live Access Bindings | **PLANNED** |
+| **LKW-HYBRID-ASK-1** | RAG + live with unified provenance | **PLANNED** |
+| **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language execution + Slack cutover | **PLANNED** |
+| **LKW-VENDOR-ACCESS-COLLABORATION-1** | MS365, Jira, Confluence | **PLANNED** |
+| **LKW-VENDOR-ACCESS-DATA-1** | Databricks, Power BI, Atlan | **PLANNED** |
+| **LKW-KNOWLEDGE-LIFECYCLE-1** | Sync, freshness, permissions, removal | **PLANNED** |
+| **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable Slack platform proof | **PLANNED** |
+
+Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §4.4.

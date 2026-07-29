@@ -6,19 +6,20 @@
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Slack MVP discovery:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)  
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
+**Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **External verification:** [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)  
 **Historical full plan:** [`archive/IMPLEMENTATION_PLAN_2026-07-22.md`](archive/IMPLEMENTATION_PLAN_2026-07-22.md)
 
 ```text
 Current product level: Backend Product Alpha
-Current milestone: LKW MVP
-Current roadmap stage: Workspace Contents — Knowledge Intake source expansion + Conversational Interaction
-Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-2 — ACCEPTED
+Current milestone: LKW MVP — Hybrid Knowledge Workspace
+Current roadmap stage: Workspace Contents intake completion → model runtime → knowledge configuration → Hybrid Ask → conversational frontend → vendor access → live platform proof
 Last accepted: LKW-WORKSPACE-CONTENTS-1B-5-1 — ACCEPTED
-Current implementation: LKW-CONVERSATIONAL-INTERACTION-1A — structured interaction plan contract and LLM planner
-Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5-2 — WEB_URL intake capability
-Following source expansion: 1B-6 VENDOR-KNOWLEDGE integration
-Then: 1C shared synchronization and completion lifecycle → 1D provenance inspection → 1E safe removal
+Architecture documented: LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — DOCUMENTED / READY_FOR_REVIEW
+Current implementation: LKW-WORKSPACE-CONTENTS-1B-5-2 — END-TO-END WEB_URL KNOWLEDGE INTAKE — READY_FOR_REVIEW
+LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
+Next after WEB_URL acceptance: LKW-MODEL-RUNTIME-1 → Ollama / vLLM end-to-end portability
+Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
 ```
 
 ---
@@ -50,19 +51,21 @@ Every implementation slice is preceded by a bounded architecture review. Cursor 
 
 ## 2. Product direction
 
-LKW is a **private-by-default, tenant-scoped and deployment-neutral knowledge workspace**. It lets a user attach controlled knowledge sources, process them durably, ask natural-language questions and receive grounded answers with inspectable provenance.
+LKW is a **private-by-default, tenant-scoped, deployment-neutral Hybrid Knowledge Workspace**. It lets a user attach controlled knowledge sources (indexed), authorize bounded live provider reads, process indexed knowledge durably, ask natural-language questions and receive grounded answers with inspectable provenance from indexed evidence, live evidence, or both.
+
+Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 “Local” means user-controlled deployment and configuration, including first-class self-hosted topology. It does not mean that every source must be a local folder or that all upstream data must physically live on one device.
 
-The source portfolio grows through one LKW-owned knowledge lifecycle:
+The knowledge portfolio grows through one LKW-owned lifecycle for **indexed** knowledge and a separate, governed path for **live** access:
 
 ```text
 managed files and channel attachments
 → preconfigured local folders
 → explicit Web URLs
-→ organizational vendor systems through VENDOR-KNOWLEDGE
-→ one Source / operation / queue / worker / indexing lifecycle
-→ grounded Ask with provenance
+→ organizational vendor systems (indexed and/or live)
+→ Workspace Knowledge Configuration (Indexed Sources + Live Access Bindings + Query Policy)
+→ grounded Hybrid Ask with unified provenance
 ```
 
 Target vendor-backed knowledge includes, without making all providers one implementation task:
@@ -75,11 +78,105 @@ Target vendor-backed knowledge includes, without making all providers one implem
 - Power BI reports, dashboards and semantic knowledge;
 - e-mail, chats, documents, calendars, meeting material and future organizational sources.
 
-Microsoft Teams in `1B-6` means Teams-hosted organizational knowledge. It does not automatically add Microsoft Teams as a second conversational frontend.
+Microsoft Teams in vendor-access blocks means Teams-hosted organizational knowledge. It does not automatically add Microsoft Teams as a second conversational frontend.
 
 ---
 
-## 3. Current product state
+## 4. Active product roadmap (functional blocks)
+
+Canonical execution order after current WEB_URL review gate:
+
+```text
+LKW-WORKSPACE-CONTENTS-1B-5-2
+→ END-TO-END WEB_URL KNOWLEDGE INTAKE
+→ READY_FOR_REVIEW (current)
+
+LKW-MODEL-RUNTIME-1
+→ OLLAMA / vLLM END-TO-END PORTABILITY
+
+LKW-KNOWLEDGE-ACCESS-1
+→ WORKSPACE CONNECTIONS, INDEXED SOURCES AND LIVE ACCESS CONFIGURATION
+
+LKW-HYBRID-ASK-1
+→ RAG + LIVE KNOWLEDGE QUERY WITH UNIFIED PROVENANCE
+
+LKW-CONVERSATIONAL-FRONTEND-1
+→ NATURAL-LANGUAGE EXECUTION AND LIVE SLACK CUTOVER
+    ├── internal: LKW-CONVERSATIONAL-INTERACTION-1B (resolver + executor)
+    └── internal: LKW-CONVERSATIONAL-INTERACTION-1C (Slack mixed-message cutover)
+
+LKW-VENDOR-ACCESS-COLLABORATION-1
+→ MICROSOFT 365 + JIRA + CONFLUENCE INDEXED AND LIVE ACCESS
+
+LKW-VENDOR-ACCESS-DATA-1
+→ DATABRICKS + POWER BI + ATLAN READ-ONLY ACCESS
+
+LKW-KNOWLEDGE-LIFECYCLE-1
+→ SHARED SYNCHRONIZATION, FRESHNESS, PERMISSIONS AND REMOVAL
+    ├── internal: 1C synchronization lifecycle
+    ├── internal: 1D provenance inspection
+    └── internal: 1E safe removal
+
+LKW-LIVE-PLATFORM-PROOF-1
+→ COMPLETE DEMONSTRABLE PLATFORM PROOF
+```
+
+### 4.1 Current and review gate
+
+| Task | User/product outcome | Status |
+|---|---|---|
+| `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **CURRENT / IMPLEMENTED / READY_FOR_REVIEW** |
+| `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **DOCUMENTED / READY_FOR_REVIEW** |
+
+### 4.2 Planned product blocks
+
+| Block | One-sentence outcome | Status |
+|---|---|---|
+| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **PLANNED** |
+| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **PLANNED** |
+| `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
+| `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
+| `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts | **PLANNED** |
+| `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
+| `LKW-KNOWLEDGE-LIFECYCLE-1` | Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data | **PLANNED** |
+| `LKW-LIVE-PLATFORM-PROOF-1` | A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace | **PLANNED** |
+
+### 4.3 Internal implementation slices (historical identity preserved)
+
+| Slice | Placement | Status |
+|---|---|---|
+| `CONV-1A` | Planner contract under `LKW-CONVERSATIONAL-FRONTEND-1` | **ACCEPTED** (sufficient to continue) |
+| `CONV-1B` | Resolver + executor under `LKW-CONVERSATIONAL-FRONTEND-1` | **PLANNED** |
+| `CONV-1C` | Slack natural-language cutover under `LKW-CONVERSATIONAL-FRONTEND-1` | **PLANNED** |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
+| `1B-6-0` | LKW / VENDOR-KNOWLEDGE ownership contract | **REPLANNED** → architecture in `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1`; implementation in `LKW-KNOWLEDGE-ACCESS-1` |
+| `1B-6-1` | Connection and Remote Resource discovery | **MAPPED INTO** `LKW-KNOWLEDGE-ACCESS-1` |
+| `1B-6-2` | First real provider vertical slice | **MAPPED INTO** `LKW-HYBRID-ASK-1` |
+| `1B-6-3` | Additional vendor packs | **MAPPED INTO** `LKW-VENDOR-ACCESS-COLLABORATION-1` and `LKW-VENDOR-ACCESS-DATA-1` |
+| `1C` | Shared synchronization lifecycle | **MAPPED INTO** `LKW-KNOWLEDGE-LIFECYCLE-1` |
+| `1D` | Provenance inspection | **MAPPED INTO** `LKW-KNOWLEDGE-LIFECYCLE-1` |
+| `1E` | Safe removal | **MAPPED INTO** `LKW-KNOWLEDGE-LIFECYCLE-1` |
+
+### 4.4 Old-to-new task mapping
+
+| Previous task | New roadmap placement | Mapping |
+|---|---|---|
+| `1B-5-2` + former `1B-5-3` | Expanded end-to-end `1B-5-2` | **MERGED** |
+| `CONV-1B` | Internal slice of `LKW-CONVERSATIONAL-FRONTEND-1` | **MAPPED INTO** |
+| `CONV-1C` | Internal slice of `LKW-CONVERSATIONAL-FRONTEND-1` | **MAPPED INTO** |
+| `1B-6-0` | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` + `LKW-KNOWLEDGE-ACCESS-1` | **REPLANNED** |
+| `1B-6-1` | Connection and Remote Resource discovery in `LKW-KNOWLEDGE-ACCESS-1` | **MAPPED INTO** |
+| `1B-6-2` | First real provider vertical slice in `LKW-HYBRID-ASK-1` | **MAPPED INTO** |
+| `1B-6-3` | Collaboration and Data connector packs | **MAPPED INTO** |
+| `1C` | Internal lifecycle slice of `LKW-KNOWLEDGE-LIFECYCLE-1` | **MAPPED INTO** |
+| `1D` | Internal provenance slice of `LKW-KNOWLEDGE-LIFECYCLE-1` | **MAPPED INTO** |
+| `1E` | Internal removal slice of `LKW-KNOWLEDGE-LIFECYCLE-1` | **MAPPED INTO** |
+
+---
+
+## 4A. Legacy Workspace Contents execution detail (accepted foundations)
+
+The following table preserves accepted intake foundations and the current WEB_URL gate. It does not override the functional block order in §4.
 
 ### Completed and accepted intake foundations
 
@@ -100,48 +197,6 @@ Microsoft Teams in `1B-6` means Teams-hosted organizational knowledge. It does n
 | `LKW-WORKSPACE-CONTENTS-1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
 
 Current implementation: `LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (execution not wired).
-
----
-
-## 4. Active Workspace Contents execution order
-
-```text
-LKW-CONVERSATIONAL-INTERACTION-1A
-→ structured interaction plan contract and LLM planner
-→ LKW-WORKSPACE-CONTENTS-1B-5-2
-→ WEB_URL intake capability
-→ LKW-WORKSPACE-CONTENTS-1B-5-3
-→ Web URL ingestion and Ask proof
-→ LKW-CONVERSATIONAL-INTERACTION-1B
-→ deterministic reference resolver and validated action executor
-→ LKW-CONVERSATIONAL-INTERACTION-1C
-→ Slack mixed-message cutover and natural-language UX
-→ LKW-WORKSPACE-CONTENTS-1B-6-0
-→ LKW-WORKSPACE-CONTENTS-1B-6-1
-→ LKW-WORKSPACE-CONTENTS-1B-6-2
-→ LKW-WORKSPACE-CONTENTS-1B-6-3
-→ LKW-WORKSPACE-CONTENTS-1C
-→ LKW-WORKSPACE-CONTENTS-1D
-→ LKW-WORKSPACE-CONTENTS-1E
-```
-
-| Task | User/product outcome | Status |
-|---|---|---|
-| `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | ACCEPTED |
-| `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
-| `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED — **next after 1A** |
-| `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
-| `CONV-1A` | Channel-neutral structured interaction plan contract and LLM planner | **CURRENT** |
-| `CONV-1B` | Deterministic reference resolver and validated action executor | PLANNED |
-| `CONV-1C` | Slack mixed-message cutover and natural-language UX | PLANNED |
-| `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | PLANNED (via `1B-5-2` / `1B-5-3`) |
-| `1B-6-0` | LKW and VENDOR-KNOWLEDGE have a frozen ownership and integration contract | PLANNED |
-| `1B-6-1` | A user can discover safe opaque vendor connections and resources | PLANNED |
-| `1B-6-2` | One real vendor resource is attached end to end through LKW Knowledge Intake | PLANNED |
-| `1B-6-3` | Additional vendors do not require a new LKW ingestion architecture | PLANNED |
-| `1C` | Local, URL and vendor Sources share synchronization, operation inspection and completion notification | PLANNED |
-| `1D` | A user can inspect indexed documents and safe provenance | PLANNED |
-| `1E` | A user can remove source-owned local knowledge without deleting upstream vendor data | PLANNED |
 
 ---
 
@@ -192,8 +247,8 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 | Task | Outcome | Status |
 |------|---------|--------|
 | `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
-| `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED |
-| `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
+| `1B-5-2` | End-to-end WEB_URL Knowledge Intake | **READY_FOR_REVIEW** |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
 | `1B-5-4` | Slack explicit Web URL intake | **SUPERSEDED** by `LKW-CONVERSATIONAL-INTERACTION-1C` |
 
 **Why `1B-5-4` was superseded:** the target frontend will not use a separate strict URL command; one natural message can contain multiple source types and actions (attachments, URLs, local references, workspace targets). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
@@ -202,9 +257,71 @@ Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../doc
 
 ---
 
-## 7. `LKW-WORKSPACE-CONTENTS-1B-6` — VENDOR-KNOWLEDGE integration
+## 7. Product block definitions (planned)
 
-**One-sentence outcome:** LKW can attach organizational systems through one VENDOR-KNOWLEDGE boundary, normalize their resources into provider-neutral knowledge inputs and reuse the existing LKW Source, operation, queue, worker and indexing lifecycle without provider-specific LKW pipelines.
+Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). The sections below summarize one-sentence outcomes. Detailed `1B-6` / `1C`–`1E` material is preserved in §8–§10 as implementation reference mapped into the blocks above.
+
+### 7.1 `LKW-MODEL-RUNTIME-1` — Ollama / vLLM end-to-end portability
+
+**One-sentence outcome:** The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates.
+
+**Status:** **PLANNED** (next implementation block after `1B-5-2` acceptance).
+
+Proof must cover: basic generation; structured output; Conversation Interaction Plan generation; tool calling; grounded synthesis; health check; configuration switch; same product contracts. Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex.
+
+### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Workspace Knowledge Configuration
+
+**One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials.
+
+**Status:** **PLANNED**.
+
+Expected capabilities: connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
+
+### 7.3 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
+
+**One-sentence outcome:** One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance.
+
+**Status:** **PLANNED**.
+
+First real connector proof should use Microsoft 365 unless repository evidence at implementation time shows another provider is materially more complete. Initial live access is read-only.
+
+### 7.4 `LKW-CONVERSATIONAL-FRONTEND-1` — Natural-language execution and Slack cutover
+
+**One-sentence outcome:** A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities.
+
+**Status:** **PLANNED**. Internal slices: `CONV-1B` (resolver + executor), `CONV-1C` (Slack mixed-message cutover). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
+
+### 7.5 `LKW-VENDOR-ACCESS-COLLABORATION-1`
+
+**One-sentence outcome:** LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts.
+
+**Status:** **PLANNED**. Scope: OneDrive/SharePoint files; mail; Teams-hosted organizational knowledge; Jira issue discovery/search/state and selected project sync; Confluence space/page discovery, search/read and selected space sync.
+
+### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
+
+**One-sentence outcome:** LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask.
+
+**Status:** **PLANNED**. All queries pass capability-specific validation and policy — no unrestricted user SQL/DAX.
+
+### 7.7 `LKW-KNOWLEDGE-LIFECYCLE-1`
+
+**One-sentence outcome:** Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data.
+
+**Status:** **PLANNED**. Consolidates former `1C`, `1D`, `1E` slices (§8–§10).
+
+### 7.8 `LKW-LIVE-PLATFORM-PROOF-1` — Complete demonstrable platform proof
+
+**One-sentence outcome:** A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace.
+
+**Status:** **PLANNED**.
+
+Target scenario: start with Ollama → create/select workspace → upload files → add Web URL → configure MS365, Jira, Confluence, Databricks, Power BI, Atlan → Hybrid Ask with indexed + live evidence → restart with vLLM → repeat without changing LKW domain behavior. Public claims must distinguish real provider proof, controlled integration proof and deterministic fixture proof.
+
+---
+
+## 8. `LKW-WORKSPACE-CONTENTS-1B-6` — VENDOR-KNOWLEDGE integration (historical reference)
+
+**Status:** **REPLANNED** — scope distributed across `LKW-KNOWLEDGE-ACCESS-1`, `LKW-HYBRID-ASK-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1`, `LKW-VENDOR-ACCESS-DATA-1` and `LKW-KNOWLEDGE-LIFECYCLE-1`. Retained for ownership-boundary detail.
 
 ### 7.1 Ordering rule
 
@@ -345,7 +462,9 @@ Demonstrate that materially different provider families can reuse the same LKW c
 
 ---
 
-## 8. `LKW-WORKSPACE-CONTENTS-1C` — shared synchronization and completion lifecycle
+## 9. `LKW-WORKSPACE-CONTENTS-1C` — shared synchronization and completion lifecycle
+
+**Mapped into:** `LKW-KNOWLEDGE-LIFECYCLE-1` (**PLANNED**).
 
 **One-sentence outcome:** A user can synchronize and inspect asynchronous processing for local-folder, Web URL and vendor-backed Sources through one operation model and receive channel-neutral completion information.
 
@@ -363,7 +482,9 @@ Completion notification must not be implemented as a Slack-only ingestion mechan
 
 ---
 
-## 9. `LKW-WORKSPACE-CONTENTS-1D` — document inspection and provenance
+## 10. `LKW-WORKSPACE-CONTENTS-1D` — document inspection and provenance
+
+**Mapped into:** `LKW-KNOWLEDGE-LIFECYCLE-1` (**PLANNED**).
 
 **One-sentence outcome:** A user can inspect which documents are indexed in a workspace, their Source ownership, status and safe origin without exposure of private paths, credentials or provider locators.
 
@@ -379,7 +500,9 @@ Every persisted Document remains owned by exactly one durable Source.
 
 ---
 
-## 10. `LKW-WORKSPACE-CONTENTS-1E` — safe source-owned knowledge removal
+## 11. `LKW-WORKSPACE-CONTENTS-1E` — safe source-owned knowledge removal
+
+**Mapped into:** `LKW-KNOWLEDGE-LIFECYCLE-1` (**PLANNED**).
 
 **One-sentence outcome:** A user can detach a Source and remove its LKW-owned knowledge safely and idempotently without deleting original data in the upstream system.
 
@@ -409,7 +532,7 @@ The operation means “detach from LKW and delete the local knowledge representa
 
 ---
 
-## 11. Cross-cutting acceptance rules
+## 12. Cross-cutting acceptance rules
 
 Every source-expansion slice must preserve:
 
@@ -435,7 +558,23 @@ Parallel work rules:
 
 ---
 
-## 12. Post-MVP direction to LKW 1.0
+## 14. LKW-PF6 — Token Optimization product proof (planned)
+
+**Status:** **LKW-PF6-0** Done / Closed (proof design only). **LKW-PF6-A**–**C** planned after universal platform proof.
+
+Token Optimization is a platform capability under `intergrax/runtime/token_optimization`. LKW integrates through public contracts only — no duplication of router, pipeline, cache-aware gate, or proof harness.
+
+| Phase | Depends on | Scope |
+|-------|------------|-------|
+| **LKW-PF6-A** | TOKEN-10G | Baseline measurement on product workflows |
+| **LKW-PF6-B** | LKW-PF6-A, TOKEN-10D | Integrate public runtime contract |
+| **LKW-PF6-C** | LKW-PF6-B | Baseline vs optimized product proof |
+
+Canonical: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) (Token Optimization subsection) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §11.
+
+---
+
+## 13. Post-MVP direction to LKW 1.0
 
 LKW 1.0 aims to be installable, restart-safe, auditable, daily-usable and supportable for its declared source portfolio. Broad provider breadth is not automatically required for 1.0; the bounded `1B-6` contract, one end-to-end provider proof and provider-neutral verification establish the expansion path.
 
@@ -456,35 +595,34 @@ A second conversational adapter and broad provider matrix do not delay the curre
 ## Appendix A — Current task summary
 
 ```text
-CURRENT:
-LKW-CONVERSATIONAL-INTERACTION-1A
-Channel-neutral structured interaction plan contract and provider-neutral LLM planner
+ARCHITECTURE (this task):
+LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1
+HYBRID KNOWLEDGE ACCESS AND LIVE PLATFORM PROOF ROADMAP
+→ DOCUMENTED / READY_FOR_REVIEW
 
-LAST ACCEPTED:
-LKW-WORKSPACE-CONTENTS-1B-4-2 — Slack Source Candidate selection
-LKW-WORKSPACE-CONTENTS-1B-5-1 — Web Content Capture contract
-
-NEXT (after 1A acceptance):
+CURRENT IMPLEMENTATION:
 LKW-WORKSPACE-CONTENTS-1B-5-2
-WEB_URL intake capability
+END-TO-END WEB_URL KNOWLEDGE INTAKE — READY_FOR_REVIEW
 
-THEN (conversational track):
-LKW-CONVERSATIONAL-INTERACTION-1B → resolver + executor
-LKW-CONVERSATIONAL-INTERACTION-1C → Slack mixed-message cutover
+NEXT (after WEB_URL acceptance):
+LKW-MODEL-RUNTIME-1 → Ollama / vLLM end-to-end portability
 
-THEN:
-1B-6-0 VENDOR-KNOWLEDGE contract
-→ 1B-6-1 safe discovery
-→ 1B-6-2 one end-to-end vendor proof
-→ 1B-6-3 provider-neutral verification
-→ 1C shared synchronization and completion lifecycle
-→ 1D safe provenance inspection
-→ 1E safe local knowledge removal
+THEN (functional blocks):
+LKW-KNOWLEDGE-ACCESS-1 → Connections, Indexed Sources, Live Access Bindings
+→ LKW-HYBRID-ASK-1 → RAG + live with unified provenance
+→ LKW-CONVERSATIONAL-FRONTEND-1 (CONV-1B + CONV-1C internal)
+→ LKW-VENDOR-ACCESS-COLLABORATION-1
+→ LKW-VENDOR-ACCESS-DATA-1
+→ LKW-KNOWLEDGE-LIFECYCLE-1 (1C + 1D + 1E internal)
+→ LKW-LIVE-PLATFORM-PROOF-1
 
-ARCHITECTURE:
-VENDOR-KNOWLEDGE owns vendor-specific access, credentials and normalization.
-LKW owns KnowledgeInput, Source, durable operations, queue/worker, Documents and indexed knowledge.
-No duplicate provider-specific LKW pipelines.
+FINAL TARGET:
+Live Slack platform proof — indexed + live + Hybrid Ask + Ollama/vLLM portability
+
+ARCHITECTURE DOC:
+KNOWLEDGE_ACCESS_ARCHITECTURE.md — indexed/live/hybrid, Connections,
+Live Access Bindings, Workspace Knowledge Configuration, Query Policy,
+Knowledge Query Orchestrator, Evidence Items, MCP boundary, security.
 
 Conversational planning (CONV-1A):
 - LLM produces a strict semantic draft (`ConversationInteractionDraft`).
@@ -503,4 +641,5 @@ Conversational planning (CONV-1A):
 | `CURSOR IN PROGRESS` | Implementation is being performed in the current Cursor task |
 | `NEXT` | First task after the current review gate |
 | `PLANNED` | Intentionally on the active execution path |
+| `DOCUMENTED / READY_FOR_REVIEW` | Architecture or contract documented; implementation not claimed |
 | `DEFERRED` | Outside active scope until justified by product need |

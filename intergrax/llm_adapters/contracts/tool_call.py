@@ -88,6 +88,33 @@ def merge_streaming_tool_calls(chunks: Sequence[LLMToolCall]) -> tuple[LLMToolCa
     return tuple(merged)
 
 
+def tool_calls_from_langchain_message(message: Any) -> tuple[LLMToolCall, ...]:
+    """Extract typed tool calls from a LangChain AIMessage or compatible object."""
+    raw = attribute_access.optional(message, "tool_calls", None) or []
+    out: list[LLMToolCall] = []
+    for tc in raw:
+        if isinstance(tc, dict):
+            name = tc.get("name")
+            args = tc.get("args")
+            tc_id = tc.get("id")
+        else:
+            name = attribute_access.optional(tc, "name", None)
+            args = attribute_access.optional(tc, "args", None)
+            tc_id = attribute_access.optional(tc, "id", None)
+        if not name or not str(name).strip():
+            continue
+        if args is not None and not isinstance(args, (dict, str)):
+            raise ValueError("langchain tool call args must be a dictionary or JSON string")
+        out.append(
+            LLMToolCall.from_openai_shape(
+                call_id=str(tc_id or ""),
+                name=str(name),
+                arguments=args if isinstance(args, (dict, str)) else {},
+            )
+        )
+    return tuple(out)
+
+
 def tool_calls_from_openai_dicts(items: Iterable[Any]) -> tuple[LLMToolCall, ...]:
     """Convert accumulated OpenAI-style tool call dicts to typed calls."""
     out: list[LLMToolCall] = []

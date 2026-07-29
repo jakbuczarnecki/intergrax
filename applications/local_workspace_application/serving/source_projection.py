@@ -21,6 +21,7 @@ _TYPE_DISPLAY_FALLBACKS: dict[str, str] = {
     "remote_repository": "Remote source",
     "remote_drive": "Remote source",
     "uploaded_file": "Uploaded file",
+    "web_resource": "Web page",
 }
 
 

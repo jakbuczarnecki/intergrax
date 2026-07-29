@@ -8,78 +8,98 @@ Use, modification, or distribution without written permission is prohibited.
 
 ## Purpose
 
-This document defines safe, bounded, non-marketing wording for public-facing references to Intergrax token-optimization work completed in **TOKEN-OPT-3C-B** (deterministic exact deduplication layer), **TOKEN-OPT-3D** (budget-aware context packing prototype), and **TOKEN-OBS-3E-F** (stronger optimizer evaluation pack).
+This document defines safe, bounded, non-marketing wording for public-facing references to Intergrax Token Optimization work. It is a claim-boundary control document, not a marketing brief. Use it before publishing blog posts, README excerpts, outreach copy, issue comments, or partner-facing summaries that mention token optimization.
 
-It is a claim-boundary control document, not a marketing brief. Use it before publishing blog posts, README excerpts, outreach copy, issue comments, or partner-facing summaries that mention token optimization.
+**README promotion gate:** main README Token Optimization promotion (badge, savings numbers, proof links) is allowed only after **TOKEN-10H** when a checked-in proof has passed **TOKEN-10G** hard gates and been independently audited.
 
-## What has been proven
+---
+
+## What has been proven (foundation and execution engine)
 
 The current proof is bounded to the following facts:
 
-- Intergrax has implemented **deterministic exact deduplication** as a standalone optimization layer.
-- Intergrax has implemented a **budget-aware context packing prototype** using an **estimated character budget**.
-- The packing prototype preserves **MUST_KEEP** fragments, prefers **HIGH_PRIORITY**, drops **DROPPABLE** under pressure, and only compacts **COMPRESSIBLE** fragments via whitespace normalization.
-- The **internal evaluation pack** uses a **synthetic evaluation corpus**.
-- Metrics are **char-level** and **strategy-separated**.
+- Intergrax has a **deterministic Token Optimization pipeline** (layer registry, pipeline runner, built-in layer catalog, configuration evals, third-party plugin contract proof).
+- Intergrax has **policy-governed LLM configuration routing** (`TokenOptimizationLLMRouter`, approved configuration catalog, deterministic compiler, live Ollama E2E on tested models).
+- Intergrax has **protected-region validation**, **compression receipts**, and **safe fallback** metadata.
+- Intergrax has implemented **deterministic exact deduplication**, **extractive filtering**, and a **budget-aware context packing prototype** (character-budget prototype).
+- Intergrax has **cache-prefix contracts**, **append-only prefix validation helpers**, and a **provider-neutral cache-aware compaction timing policy** (helper-level — not yet wired into runtime request assembly).
+- The **internal evaluation pack** uses a **synthetic evaluation corpus** with **char-level**, **strategy-separated** metrics.
 - Reports are designed to avoid raw-content exposure.
 
-Supporting vocabulary: char-level, synthetic evaluation corpus, internal evaluation pack, prototype, strategy-separated attribution, deterministic exact dedupe, estimated character budget.
+Supporting vocabulary: deterministic pipeline, approved configuration routing, protected regions, receipts, synthetic evaluation corpus, char-level prototype, strategy-separated attribution, helper-level cache-prefix contracts.
 
-## What has not been proven
+---
 
-The following must not be implied from the current proof:
+## What is planned (TOKEN-10 — not yet proven)
 
-- No **provider-aware tokenizer** has been introduced for this proof.
-- No **token-accurate savings claim** is made.
-- No **production pipeline engine** has been introduced by **TOKEN-OBS-3E-F**.
-- No **benchmark CLI** / **public benchmark artifact** is introduced by this step.
-- No real customer or private data is used in the synthetic evaluation pack.
-- No **semantic compression** or **LLM summarization** is included in this proof.
-- No broad claim such as “reduces token usage by X%” is allowed from this proof alone.
+Allowed to state as **planned** (not as passed proof):
 
-## Approved public wording
+- Cache-stable prompt assembly wired into the real request path.
+- vLLM prefix-cache integration and universal TOML proof harness.
+- Cache-aware router and pipeline orchestration with RUN/DEFER/BYPASS/REQUIRE_REVIEW gate.
+- Policy-governed in-cache compaction.
+- Reproducible universal platform proof separate from LKW product proof.
 
-Reusable approved statements:
+Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`, `dynamic tail`, `provider prefix-cache reuse`, `cache-aware optimization`, `in-cache compaction`, `universal Token Optimization proof`. Do not call the implementation “VIKTOR algorithm/cache/runtime.”
 
+---
+
+## Allowed public wording now
+
+- Intergrax has a deterministic Token Optimization pipeline.
+- Intergrax has policy-governed LLM configuration routing.
+- Intergrax has protected-region validation, receipts, and fallback.
+- Cache-stable prompt and vLLM proof integration are **planned under TOKEN-10**.
+- Existing character-level or synthetic results are bounded to their documented workloads.
 - Intergrax includes early token-optimization building blocks for deterministic exact deduplication and priority-aware context packing.
-- The current stronger-optimizer proof uses synthetic cases and character-level metrics to verify behavior such as duplicate removal, must-keep preservation, fallback handling, and strategy-separated attribution.
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
-- Evaluation results are intended to show mechanism behavior and attribution discipline, not general production savings claims.
 
-## Conditional wording
+---
 
-Allowed only with explicit qualifiers:
+## Allowed only after TOKEN-10G proof passes
 
-- On synthetic evaluation cases, the internal evaluation pack can show character-level reductions from exact deduplication and priority-aware packing.
-- When reporting numbers, numbers must be labeled as character-level, synthetic-corpus, case-specific, and strategy-separated.
-- Any future token-savings statement requires a provider-aware tokenizer/counting adapter and a clearly identified evaluation corpus.
+- Reproducible prefix-cache proof on the tested vLLM version/model.
+- Measured cached-prefix reuse for the tested proof corpus.
+- Measured warm-vs-cold latency or prefill difference on the tested corpus.
+- Measured content-reduction results for the tested cases.
+- Measured combined behavior with attribution kept separate (content reduction vs provider cache reuse).
 
-## Forbidden wording
+---
 
-Do not say:
+## Forbidden without additional evidence
 
-- “Intergrax reduces token usage by X%”
-- “production-proven token savings”
-- “token-accurate optimizer”
-- “model-aware token budget”
-- “automatic token reduction without tradeoffs”
-- “dedupe + packing benchmark proves general savings”
-- “real customer workload reduction”
-- “semantic compression”
-- “LLM summarization”
+- Universal percentage savings.
+- Guaranteed reduction for every model.
+- Claude-equivalent billing reduction from vLLM or self-hosted runs.
+- Global production readiness.
+- Semantic equivalence for arbitrary lossy content.
+- Guaranteed cache retention.
+- Provider-independent cache behavior.
+- Claims derived by mixing cached tokens with removed tokens.
+- “Intergrax reduces token usage by X%” (without corpus, model, provider, and attribution qualifiers).
+- “production-proven token savings” (without TOKEN-10G + LKW-PF6-C evidence as applicable).
+- “token-accurate optimizer” (without provider-aware counting path for the claimed workload).
+- “automatic token reduction without tradeoffs”.
+- “real customer workload reduction” (without real-customer proof).
+- Prompt-cache proof has passed (before TOKEN-10G).
 
-Unless a future task explicitly proves those claims.
+---
 
 ## Required qualifiers
 
-Any public mention of the stronger-optimizer proof must include or remain consistent with:
+Any public mention of optimizer evaluation must include or remain consistent with:
 
-- synthetic corpus
-- internal evaluation
-- character-level metrics
-- strategy-separated attribution
-- no provider-aware tokenizer yet
-- no public benchmark claim yet
+- synthetic corpus (when applicable)
+- internal or proof-corpus identification
+- metric unit: chars or provider tokens
+- tokenizer/provider if token-based
+- separate dedupe, packing, truncation, and cache reuse
+- exclude fallback/no-op cases or label them separately
+- verify no raw/private content in report
+- link to exact commit/report when publishing numbers
+- include limitations
+
+---
 
 ## Evidence checklist before publishing numbers
 
@@ -89,17 +109,23 @@ Before publishing any numeric claim:
 - identify whether corpus is synthetic or real
 - identify metric unit: chars or provider tokens
 - identify tokenizer/provider if token-based
+- separate content reduction from provider prefix-cache reuse
 - separate dedupe from packing from truncation
 - exclude fallback/no-op cases or label them separately
 - verify no raw/private content in report
 - link to exact commit/report
 - include limitations
+- confirm TOKEN-10G hard gates passed (for cache/prefix claims)
+
+---
 
 ## Reviewer checklist
 
-- Does the wording imply token-accurate savings?
+- Does the wording imply token-accurate savings without evidence?
 - Does it imply production readiness?
-- Does it mix dedupe, packing, and truncation?
+- Does it mix dedupe, packing, truncation, and cache reuse?
 - Does it hide that the current corpus is synthetic?
 - Does it mention character-level metrics when numbers are shown?
 - Does it avoid raw/private content?
+- Does it conflate vLLM prefix-cache reuse with Claude billing discounts?
+- Does it promote README proof links before TOKEN-10H?

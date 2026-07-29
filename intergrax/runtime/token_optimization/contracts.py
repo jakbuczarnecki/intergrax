@@ -806,6 +806,7 @@ class PromptCacheInvalidationReason(StrEnum):
     DISABLED = "disabled"
     UNSUPPORTED_PROVIDER = "unsupported_provider"
     PREFIX_CHANGED = "prefix_changed"
+    APPEND_ONLY_VIOLATION = "append_only_violation"
     TOOL_ENVELOPE_CHANGED = "tool_envelope_changed"
     DYNAMIC_DATA_IN_PREFIX = "dynamic_data_in_prefix"
     TTL_EXPIRED = "ttl_expired"

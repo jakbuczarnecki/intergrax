@@ -87,6 +87,8 @@ All adapter completion methods return typed envelopes — **not** bare `str` or 
 
 **Ollama generation schema projection:** the canonical Pydantic `model_json_schema()` remains the final validation contract. `LangChainOllamaAdapter` passes a provider-compatible generation projection to `with_structured_output(..., method="json_schema")` (see `intergrax/llm_adapters/providers/_ollama_schema.py`). The projection is generic, provider-specific, and may relax generation-only constraints (for example `maxLength` values Ollama cannot compile). Returned payloads are always revalidated with the original `output_model`; no field rewriting or aliasing occurs. The projection does not guarantee semantic correctness — only grammar-safe constrained generation.
 
+**Ollama model-aware tool capabilities (TOKEN-9 / TOKEN-9-R1):** `LangChainOllamaAdapter.supports_tools()` reflects the installed model's `/api/show` capability list via `intergrax/llm_adapters/providers/ollama_capabilities.py`. There is no static model-name allowlist. Capability resolution is lazy, cached per adapter instance, and fail-closed. Valid resolved states include `capabilities=["completion","tools"]`, `["completion"]`, or `[]`; missing or malformed capability payloads are **unresolved** (`resolved=False`) and must not be treated as ordinary no-tools models. Unresolved capability state never enters structured-output fallback — the Token Optimization router returns `CAPABILITY_RESOLUTION_FAILED`. Structured output remains fallback only for **resolved** models that genuinely lack `tools`. `generate_with_tools()` uses `ChatOllama.bind_tools()` and maps LangChain `AIMessage.tool_calls` to `LLMToolCall`. Native tool calling is preferred by the Token Optimization router. Ollama does not enforce `tool_choice`; the router still requires exactly one valid tool call. Not every Ollama model declares `tools` — there is no universal Ollama-tools claim.
+
 Example:
 
 ```python
@@ -247,6 +249,8 @@ intergrax/llm_adapters/registry/context_window.py  — resolve_context_window_to
 | `provider_hints` | `tuple[str, ...]` | no | Slugs where this id is valid |
 | `family_prefix` | `str \| None` | no | For prefix rules |
 
+`CatalogCapabilityAdapter` overlays catalog capability flags on the concrete adapter returned by `LLMAdapterRegistry.create()` but does not erase provider-specific `model_capabilities` on the inner adapter. Consumers that need concrete capability state (for example Token Optimization router preflight) call `unwrap_catalog_capability_adapter()` for inspection only and keep using the outer wrapper for generation, tool calling, structured output, and usage accounting.
+
 #### Resolution order (deterministic)
 
 ```text
@@ -347,5 +351,36 @@ llm = profile.create_adapter(secrets={"api_key": key})
 
 - Env: per-provider keys (`OPENAI_API_KEY`, …) — see §Providers
 - Vault: `llm/<provider>/api_key` via `SecretsStore` — `create_adapter_from_secrets_store()`
+
+---
+
+## Prompt-cache provider capabilities (TOKEN-10 / TOKEN-LLM-2 / TOKEN-LLM-3)
+
+**Cross-feature — Token Optimization:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). `LLM_ADAPTERS` owns provider-specific prompt-cache behavior; Token Optimization consumes signals through approved adapter paths and must not create a parallel tokenizer or private vLLM client.
+
+### Ownership
+
+| Owner | Responsibility |
+|-------|----------------|
+| `LLM_ADAPTERS` | Provider prompt-cache capabilities; automatic prefix caching; explicit cache breakpoints; cache keys; retention/TTL where available; session/replica affinity; request parameters; cache usage mapping; `cached_input_tokens` accounting; latency/cost interpretation; health and capability discovery |
+| `TOKEN_OPTIMIZATION` | Cache-stable prompt strategy; stable prefix/dynamic tail; append-only policy; tool-envelope stability; cache-aware execution policy; orchestration with deterministic pipeline; proof configuration |
+| `OBSERVABILITY` | Approved HOS/domain-signal emission for cache and content-reduction metrics |
+
+### Claude vs vLLM distinction
+
+- **Managed providers** (e.g. Anthropic Claude-style prompt caching): explicit breakpoints, billing semantics, provider TTL — adapter-owned.
+- **vLLM self-hosted** (`LLMProvider.VLLM`, `VllmChatAdapter`, `infra/docker/vllm/docker-compose.yml`): automatic prefix caching, KV reuse, prefix-cache metrics — **not** Claude billing discounts or identical TTL semantics.
+
+Do not hard-code vLLM release numbers or CLI flags in architecture; pin at implementation time per proof TOML.
+
+### Planned implementation rows
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **TOKEN-LLM-1** | Guardrail — Token Optimization consumes existing token/usage contracts | Planned |
+| **TOKEN-LLM-2** | Prompt-cache provider capability and usage contract integration | Planned |
+| **TOKEN-LLM-3** | vLLM prefix-cache request/metrics proof path | Planned |
+
+Reuse: `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`, `LLMAdapterRegistry`, OpenAI-compatible vLLM adapter path.
 
 ---

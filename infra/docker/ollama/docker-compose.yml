@@ -4,4 +4,10 @@ services:
     container_name: intergrax-ollama
     ports:
       - "11434:11434"
+    volumes:
+      - intergrax-ollama-models:/root/.ollama
     restart: unless-stopped
+
+volumes:
+  intergrax-ollama-models:
+    name: intergrax-ollama-models

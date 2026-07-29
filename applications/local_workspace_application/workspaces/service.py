@@ -119,6 +119,11 @@ class ManagedWorkspaceService:
                 workspace_id=workspace_id,
             )
 
+        self._repository.delete_web_url_locators_for_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+
         self._repository.delete_sources_for_workspace(
             tenant_id=tenant_id,
             workspace_id=workspace_id,

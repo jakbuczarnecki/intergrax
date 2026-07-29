@@ -32,6 +32,14 @@ class BedrockProviderExtensions:
 
 
 @dataclass(frozen=True, slots=True)
+class VllmProviderExtensions:
+    """Safe vLLM prefix-cache reporting metadata for proof and attribution."""
+
+    prompt_tokens_details_reported: bool
+    server_version: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class LLMProviderExtensions:
     """Optional provider-specific metadata without open dict bags."""
 
@@ -40,3 +48,4 @@ class LLMProviderExtensions:
     anthropic: AnthropicProviderExtensions | None = None
     gemini: GeminiProviderExtensions | None = None
     bedrock: BedrockProviderExtensions | None = None
+    vllm: VllmProviderExtensions | None = None

@@ -15,6 +15,7 @@ from local_workspace_application.workspaces.models import (
     IntakeBatch,
     KnowledgeInput,
     ManagedFileObject,
+    WebUrlSourceLocator,
     Workspace,
     WorkspaceDocumentReference,
     WorkspaceOperation,
@@ -38,6 +39,7 @@ _ENTITY_OPERATION = "operation"
 _ENTITY_DOCUMENT = "document"
 _ENTITY_KNOWLEDGE_INPUT = "knowledge_input"
 _ENTITY_MANAGED_FILE = "managed_file"
+_ENTITY_WEB_URL_LOCATOR = "web_url_locator"
 _ENTITY_INTAKE_BATCH = "intake_batch"
 _ACTIVE_KNOWLEDGE_INGESTION_PARTITION = "lkw.managed_workspace:active_knowledge_ingestion"
 
@@ -468,6 +470,79 @@ class ManagedWorkspaceRepository:
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 input_id=managed_file.input_id,
+            )
+            deleted += 1
+        return deleted
+
+    # --- Web URL locators ---
+
+    def put_web_url_locator(self, locator: WebUrlSourceLocator) -> WebUrlSourceLocator:
+        self._put(
+            _partition(locator.tenant_id, _ENTITY_WEB_URL_LOCATOR),
+            f"{locator.workspace_id}:{locator.requested_url_fingerprint}",
+            locator,
+        )
+        return locator
+
+    def get_web_url_locator(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        requested_url_fingerprint: str,
+    ) -> WebUrlSourceLocator | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_WEB_URL_LOCATOR),
+            f"{workspace_id}:{requested_url_fingerprint}",
+            WebUrlSourceLocator,
+        )
+
+    def list_web_url_locators(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[WebUrlSourceLocator]:
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_WEB_URL_LOCATOR),
+            limit=2000,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        items: list[WebUrlSourceLocator] = []
+        for doc in result.documents:
+            try:
+                items.append(WebUrlSourceLocator.model_validate(dict(doc.data)))
+            except Exception as exc:
+                raise ValueError("web_url_locator_malformed") from exc
+        return sorted(items, key=lambda item: item.created_at)
+
+    def delete_web_url_locator(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        requested_url_fingerprint: str,
+    ) -> None:
+        self._store.delete(
+            _partition(tenant_id, _ENTITY_WEB_URL_LOCATOR),
+            f"{workspace_id}:{requested_url_fingerprint}",
+        )
+
+    def delete_web_url_locators_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        deleted = 0
+        for locator in self.list_web_url_locators(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            self.delete_web_url_locator(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                requested_url_fingerprint=locator.requested_url_fingerprint,
             )
             deleted += 1
         return deleted

@@ -211,12 +211,27 @@ planner (v2)
 → resolver (workspace name → workspace_id, ścieżka → candidate/upload)
 → authorization
 → confirmation policy (np. delete)
-→ executor
-→ LKW capabilities (intake, Ask, workspace ops)
+→ validated executor
+→ LKW capabilities (intake, workspace ops, Ask)
+→ Knowledge Query Orchestrator (gdy akcja to workspace.ask)
+→ Hybrid Ask (indexed + live evidence)
 → aggregate response
 ```
 
-W zadaniu **1A** wykonanie **nie jest podłączone**. Nie są jeszcze zaimplementowane: resolving workspace names, resolving local references, local filesystem access, URL downloading, source creation, executor, Slack cutover ani backend execution. Obecne dokładne komendy Slack pozostają tymczasowym fallbackiem.
+### 12.1 Conversation Interaction Planner vs Knowledge Query Orchestrator
+
+| Warstwa | Odpowiedzialność |
+|---------|------------------|
+| **Conversation Interaction Planner** | Interpretacja intencji produktowej użytkownika: utworzenie workspace, dodanie źródła, połączenie zasobu, pytanie Ask, inspekcja operacji. Nie generuje Graph API, JQL, DAX, SQL ani wywołań MCP. |
+| **Knowledge Query Orchestrator** | Pozyskanie dowodów dla autoryzowanego pytania Ask: RAG, live capabilities, hybrid, clarification. Model może zaproponować plan dowodów; runtime deterministycznie waliduje każde wywołanie. |
+
+Natural-language intencje połączenia i źródeł (np. „podłącz projekt Jira i SharePoint Orion”) trafiają do planera jako akcje produktowe; wykonanie przechodzi przez resolver, autoryzację i allowlistowane capabilities — nie przez bezpośrednie wywołania providerów ze Slacka.
+
+**Hybrid Ask** łączy indexed RAG evidence z autoryzowanymi live provider results w jeden zestaw **Evidence Items** z ujednoliconą proweniencją.
+
+Slack pozostaje jednym z wielu frontendów. Większy blok produktowy: `LKW-CONVERSATIONAL-FRONTEND-1`. Wewnętrzne slice'y: **CONV-1B** (resolver + executor), **CONV-1C** (Slack mixed-message cutover). Architektura: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+
+W zadaniu **1A** wykonanie **nie jest podłączone**. Planner rozpoznaje intencję dodania źródła URL (`web_url` → `knowledge.add_sources` w kontrakcie planu). Backend LKW udostępnia już capability `WEB_URL` (`POST …/knowledge/web-urls`), ale planner nie jest jeszcze podłączony do tego API. Resolving workspace references, validated execution i Slack natural-language cutover nadal należą do **CONV-1B** / **CONV-1C** (nie do osobnej komendy URL). Obecne dokładne komendy Slack pozostają tymczasowym fallbackiem.
 
 ---
 

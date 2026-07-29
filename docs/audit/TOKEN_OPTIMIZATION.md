@@ -519,3 +519,21 @@ Accept Token Optimization as a multi-layer feature anchored in CONTEXT_ENGINEERI
 ```
 
 ---END PROMPT---
+
+---
+
+## TOKEN-10 future audit scope (TOKEN-10A canon)
+
+When implementing or auditing TOKEN-10, validate in addition to existing TOKEN-1..9 checks:
+
+1. Cache-aware lifecycle wired end-to-end (stable prefix → router → gate → pipeline).
+2. Helper-level prefix contracts connected to runtime assembly (TOKEN-10B).
+3. LLM_ADAPTERS owns provider cache signals; Token Optimization does not create private vLLM client.
+4. Content-reduction and prefix-cache metrics remain separable in receipts, proof, and public claims.
+5. Universal proof harness uses production router/pipeline — no test-only engine.
+6. vLLM proof: cold, warm, changed-prefix negative control; fail when cache evidence missing.
+7. In-cache compaction (TOKEN-10E): explicit opt-in, no default production enablement.
+8. LKW-PF6 follows TOKEN-10G; LKW does not duplicate platform mechanisms.
+9. README promotion only in TOKEN-10H.
+
+Sync checklist: docs/features/architecture/TOKEN_OPTIMIZATION.md §8.9; docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md; docs/audit/TOKEN_OPTIMIZATION_DOCS_SYNC.md.

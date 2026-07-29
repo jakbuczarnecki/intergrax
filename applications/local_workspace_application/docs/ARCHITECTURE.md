@@ -19,6 +19,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Deployment, storage, tenancy (canonical) | [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model) |
 | Platform capability audit / architecture stop gate | [Mandatory platform capability audit and architecture stop gate](#mandatory-platform-capability-audit-and-architecture-stop-gate) · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate) |
 | Knowledge Intake / async ingestion (canonical) | [Channel-neutral Knowledge Intake and asynchronous ingestion](#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) |
+| Hybrid knowledge access (indexed + live) | [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
 | What is frontend vs backend | §4 |
 | Solution + trust zones | §5 |
 | Agent roster | §6 |
@@ -37,12 +38,12 @@ This file is the **single product architecture** for LKW. From it you derive:
 
 **Local Knowledge Workspace (LKW)** is the first **business product environment** on Intergrax after harness platform maturity. Its role is dual:
 
-1. **Product:** Give a user a private-by-default, tenant-scoped, deployment-neutral knowledge workspace over sources they control — search, gather context, produce structured outputs (reports, emails, estimates).
+1. **Product:** Give a user a private-by-default, tenant-scoped, deployment-neutral **Hybrid Knowledge Workspace** — indexed RAG knowledge, controlled live access to external systems, natural-language frontends, unified evidence provenance, and structured outputs (reports, emails, estimates). Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 2. **Harness validation:** Exercise the Agent OS on a real, observable workload without external market APIs (unlike deferred K.1 Problem Radar / K.2 Vendor Discovery).
 
 **What “Local” means in the product name:** the user controls deployment and configuration; full self-hosted / fully local topology remains first-class; LKW does not force a central SaaS. It does **not** mean that all data must always reside on a single user device, nor that remote storage, private enterprise hosting, hybrid topologies, or future controlled sharing are out of scope. Canonical detail: [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model).
 
-LKW validates: RAG ingest/retrieve/index lifecycle, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, and Tier-3 composition — while surfacing platform gaps early.
+LKW validates: indexed RAG ingest/retrieve/index lifecycle, governed live knowledge access, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, provider-neutral model runtime wiring, and Tier-3 composition — while surfacing platform gaps early.
 
 **Strategic frame:** [`docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
 
@@ -50,16 +51,18 @@ LKW validates: RAG ingest/retrieve/index lifecycle, document parsing, shadow wor
 
 ## 2. Problem statement
 
-Users store project knowledge across folders (PDF, DOCX, XLSX, TXT, email exports). They need to:
+Users store and access project knowledge across local folders, uploaded files, Web URLs and organizational systems (Microsoft 365, Jira, Confluence, Databricks, Power BI, Atlan and future providers). They need to:
 
 | Need | Example |
 |------|---------|
 | **Find** | "Find documents about project X / settlement Y" |
 | **Gather** | "Gather data from folders A and B about the cost estimate" |
+| **Current state** | "What are today's Jira blockers for Project Orion?" |
+| **Hybrid** | "Are we ready to deploy — using our plan, latest client mail and current KPI?" |
 | **Synthesize** | „Przygotuj mail / sprawozdanie / kosztorys wg szablonu” |
-| **Safety** | Do not delete or overwrite user original files |
+| **Safety** | Do not delete or overwrite user original files; credentials never in chat |
 
-LKW solves this with **read-heavy indexing + semantic retrieval + isolated write artifacts**, orchestrated by Nexus.
+LKW solves this with **indexed semantic retrieval**, **authorized live provider reads**, **Hybrid Ask with unified provenance**, and **isolated write artifacts**, orchestrated by Nexus. Indexed knowledge and live access are separate, composable capabilities — see [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 ---
 
@@ -67,7 +70,7 @@ LKW solves this with **read-heavy indexing + semantic retrieval + isolated write
 
 ### 3.1 What LKW is
 
-LKW is a **deployment-neutral knowledge workspace** whose product interface, domain model, API, Slack companion, Ask workflow, and source lifecycle stay the same across topologies. A common first-class shape is a personal Agent OS instance under user control (often on the user's machine), but that shape is a deployment choice — not the definition of the product:
+LKW is a **private, governed, provider-neutral Hybrid Knowledge Workspace** whose product interface, domain model, API, Slack companion, Ask workflow, Workspace Knowledge Configuration and source lifecycle stay the same across topologies. A common first-class shape is a personal Agent OS instance under user control (often on the user's machine), but that shape is a deployment choice — not the definition of the product:
 
 - **Always-on LKW host** owns product capabilities, policy, and orchestration wiring; persistent stores are selected by configuration / provider implementations.
 - **Thin frontends** (tray, Cursor MCP, Slack, scripts) only invoke **capabilities / API** and show **results**.
@@ -81,7 +84,8 @@ LKW is a **deployment-neutral knowledge workspace** whose product interface, dom
 | Slack bot that “is” the product | Slack is an **optional client**; product logic and storage stay behind LKW capabilities/API |
 | Local-only product that forbids remote storage | Storage location is configuration; remote / private-cloud / hosted providers are in scope when wired |
 | Public-by-default multi-tenant dump | New private workspaces are not automatically visible to others; sharing is future and controlled |
-| Single monolithic “chat agent” | Three bounded agents + graph pipeline |
+| RAG-only workspace | Indexed knowledge is one mode; live access and Hybrid Ask are first-class product capabilities ([`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)) |
+| Single monolithic “chat agent” | Bounded agents + graph pipeline; Conversation Interaction Planner and Knowledge Query Orchestrator have separate responsibilities |
 | Unrestricted filesystem agent | Read allowlist + shadow-only writes for local-folder originals |
 | Replacement for Nexus / Tier-0 | Composition and wiring only — reuse platform mechanisms |
 
@@ -428,9 +432,70 @@ task delivery and worker execution
 
 Platform task state and product-domain operation state remain separate. Queue/task status must not automatically replace LKW Ingestion Operation state.
 
+#### Token Optimization — platform contract, LKW product proof
+
+Token Optimization is a **universal Tier-0/runtime platform capability**. LKW is a **later product client** — it must not own or duplicate Token Optimization mechanisms.
+
+```text
+LKW (Tier-3)
+  → public Token Optimization contracts
+  → intergrax/runtime/token_optimization
+  → LLMAdapter / provider adapter
+```
+
+Forbidden: `intergrax/runtime/token_optimization` importing or special-casing LKW.
+
+**Canonical ordering:**
+
+```text
+TOKEN-10A … TOKEN-10G → universal platform proof passes
+TOKEN-10H             → checked-in proof and public wording
+LKW-PF6-A             → LKW baseline measurement (product workflows)
+LKW-PF6-B             → LKW integrates public runtime contract
+LKW-PF6-C             → LKW baseline-vs-optimized product proof
+```
+
+| Phase | LKW supplies | LKW consumes (must not reimplement) |
+|-------|--------------|-------------------------------------|
+| **LKW-PF6-A** | Real workflows: search, evidence assembly, synthesis, tool exposure, conversational steps | Baseline measurement only |
+| **LKW-PF6-B** | Product policy/profile, source classifications, evidence, tenant/run/step identity, explicit enablement | Stable prompt contract, router, cache-aware gate, pipeline, receipts, metrics |
+| **LKW-PF6-C** | Product proof corpus and acceptance criteria | Same runtime path as universal proof |
+
+**LKW-PF6-0** (proof design) is **Done / Closed** — does not close platform or product proof.
+
+Canonical feature docs: [`docs/features/architecture/TOKEN_OPTIMIZATION.md`](../../../docs/features/architecture/TOKEN_OPTIMIZATION.md) · [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md). Public claims: [`docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../../docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md).
+
 ### Channel-neutral Knowledge Intake and asynchronous ingestion
 
-**Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Implementation status of upload endpoints, workers, URL fetch, Slack attachments, or Blob providers is **not** implied here.
+**Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Managed-file upload, Source Candidate intake and end-to-end `WEB_URL` intake are implemented and awaiting independent review; Slack natural-language URL execution remains `CONV-1C`.
+
+### End-to-end `WEB_URL` Knowledge Intake (`1B-5-2`)
+
+```text
+trusted HTTP client
+→ POST /v1/local_workspace/workspaces/{workspace_id}/knowledge/web-urls
+→ tenant and workspace authorization
+→ WebUrlAccessPolicy canonicalization + DNS/SSRF preflight
+→ private WebUrlSourceLocator (not part of public Source projection)
+→ durable KnowledgeInput (kind web_url)
+→ durable WEB_RESOURCE Source (path="", recursive=false)
+→ KNOWLEDGE_INGESTION operation
+→ existing queue and worker
+→ WebContentCapture
+→ normalized UTF-8 staging text
+→ WorkspaceDocumentIndexingService
+→ Document / Chunks / Vectors
+→ grounded Ask with safe provenance (safe_display_url only)
+```
+
+**Ownership split:**
+
+| Layer | Owns |
+|-------|------|
+| `WebContentCapture` | URL parsing/canonicalization; scheme/port/host policy; DNS; private-network/SSRF blocking; redirect validation; pinned HTTPS transport; content-type/size limits; extraction; safe capture result and stable errors |
+| LKW | Tenant/workspace authorization; idempotency; private locator persistence; `KnowledgeInput`; Source identity; operation lifecycle; queue/worker dispatch; document ownership; indexing; Ask provenance; local retention/removal |
+
+The private canonical URL lives only in `WebUrlSourceLocator`. It is never stored on `WorkspaceSource`, in `submission_metadata`, queue payloads, or public API responses.
 
 **Knowledge Intake** is a core LKW capability. LKW / Intergrax owns the complete knowledge intake and ingestion lifecycle: acceptance, durable operation state, queue dispatch, extraction/parsing/chunking/embedding, Document Store / Vector Store / managed-original persistence, retry classification, status events, idempotency, and tenant/workspace isolation.
 
@@ -455,7 +520,7 @@ Platform task state and product-domain operation state remain separate. Queue/ta
 | `managed_file` | Yes | No (unless later replaced) | Single uploaded file → managed-upload-backed Source → Document |
 | `uploaded_folder_snapshot` | Yes | No | Copied snapshot Source; **not** a live connector; many Documents |
 | `source_candidate` | Provider-dependent | Usually yes | Opaque candidate id + safe label; resolve/create connector-backed Source |
-| `web_url` | Policy-dependent | Policy-dependent | Explicit intake only; Ask text with a URL must not auto-ingest |
+| `web_url` | No (captured text indexed; private URL in locator only) | Policy-dependent | Explicit intake via `POST …/knowledge/web-urls`; Ask text with a URL must not auto-ingest |
 
 **Submission grouping (not an input kind):** multi-file / multi-item submissions use **Intake Batch** → N item-level Knowledge Inputs → N Sources → N Ingestion Operations. Aggregate `managed_file_batch` Knowledge Input kind is **REJECTED**.
 
@@ -506,6 +571,20 @@ Reuse an existing Intergrax queue/message-bus/outbox capability when verified su
 **Lifecycle alignment:** Source ownership enables coherent contents lifecycle — intake (1B) → sources (1A) → ingestion / synchronization (1C) → documents (1D) → removal of source-owned knowledge (1E).
 
 **Invariants (implementation gates):** every durable Knowledge Input, Source, Document, Ingestion Operation, batch relation and managed original is scoped by `tenant_id` + `workspace_id` (fail closed). Every persisted Document must carry Source ownership. Repeated delivery of channel events, uploads, queue messages or completion events must not create unintended duplicate sources/documents/embeddings.
+
+### Hybrid Knowledge Access (indexed + live)
+
+**Status:** architectural contract frozen by `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` (`DOCUMENTED / READY_FOR_REVIEW`). Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+
+LKW is not defined solely by RAG. The target product combines:
+
+- **Indexed Sources** — durable workspace knowledge ingested through Knowledge Intake;
+- **Live Access Bindings** — workspace-scoped, read-only, allowlisted query-time provider capabilities;
+- **Hybrid Ask** — one grounded answer from normalized indexed and live **Evidence Items** with unified provenance.
+
+**Knowledge Intake** introduces or synchronizes durable indexed knowledge. **Live Access Binding** authorizes bounded query-time reads. Live provider results do not automatically become Documents.
+
+Conversation/reasoning LLM (`LLMAdapter`, Ollama or vLLM via wiring) is separate from the embedding provider. Model runtime portability is a planned product proof (`LKW-MODEL-RUNTIME-1`), not a completed claim.
 
 ### Application and adapter boundaries
 

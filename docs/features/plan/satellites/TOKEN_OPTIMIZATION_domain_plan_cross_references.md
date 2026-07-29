@@ -115,3 +115,21 @@ uv run python scripts/audit/check_docs_domain_pairs.py
 Commit:
 docs: add token optimization domain plan cross-references
 ```
+
+---
+
+## TOKEN-10 phase mapping (added TOKEN-10A)
+
+| TOKEN phase | Owning plan file |
+|-------------|------------------|
+| TOKEN-10B cache-stable prompt/thread/tool envelope | feature plan + UER/CE as wired |
+| TOKEN-10C vLLM prefix-cache | docs/plan/LLM_ADAPTERS.md (TOKEN-LLM-2, TOKEN-LLM-3) |
+| TOKEN-10D cache-aware orchestration | feature plan + UER |
+| TOKEN-10E in-cache compaction | feature plan + MEMORY (if persistent) |
+| TOKEN-10F..10G universal proof | feature plan + OBSERVABILITY |
+| TOKEN-10H README promotion | feature plan + public-adoption claims |
+| LKW-PF6-A..C product proof | applications/local_workspace_application/docs/* (after TOKEN-10G) |
+
+Domain plan row checklist addition:
+
+| docs/plan/LLM_ADAPTERS.md | TOKEN-LLM-2, TOKEN-LLM-3 |

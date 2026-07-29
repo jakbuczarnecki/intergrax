@@ -8,13 +8,16 @@ import pytest
 from pydantic import ValidationError
 
 from local_workspace_application.conversation.interaction_draft_models import (
+    ActiveDraftWorkspaceReference,
     ConversationClarificationDraft,
     ConversationInteractionDraft,
+    CreatedByActionDraftWorkspaceReference,
     DraftLocalFileReferenceSource,
     DraftWebUrlSource,
-    DraftWorkspaceReference,
     KnowledgeAddAttachmentsDraftAction,
     KnowledgeAddSourcesDraftAction,
+    NameDraftWorkspaceReference,
+    OrdinalDraftWorkspaceReference,
     SourceCandidateAttachDraftAction,
     SourceCandidateListDraftAction,
     SourceListDraftAction,
@@ -46,7 +49,7 @@ def test_one_named_workspace_web_source() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="projekty"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="projekty"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://portal.vendor.io"),),
             ),
         ),
@@ -73,12 +76,12 @@ def test_mixed_routing() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://docs.vendor.io"),),
             ),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
                 sources=(
                     DraftLocalFileReferenceSource(
                         object_type="local_file_reference",
@@ -110,7 +113,7 @@ def test_windows_path_grounding() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(
                     DraftLocalFileReferenceSource(
                         object_type="local_file_reference",
@@ -136,7 +139,7 @@ def test_source_not_found() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://missing.example"),),
             ),
         ),
@@ -153,7 +156,7 @@ def test_repeated_value_without_occurrence() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://dup.example"),),
             ),
         ),
@@ -171,7 +174,7 @@ def test_repeated_value_with_occurrence() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
                 sources=(DraftWebUrlSource(object_type="web_url", value=value, occurrence=2),),
             ),
         ),
@@ -189,7 +192,7 @@ def test_occurrence_out_of_range() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="x"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://dup.example", occurrence=3),),
             ),
         ),
@@ -207,12 +210,12 @@ def test_same_source_reused_by_two_actions() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(source,),
             ),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
                 sources=(source,),
             ),
         ),
@@ -230,12 +233,12 @@ def test_conflicting_source_declaration() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://shared.vendor.io"),),
             ),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="2"),
                 sources=(
                     DraftLocalFileReferenceSource(
                         object_type="local_file_reference",
@@ -258,7 +261,7 @@ def test_stable_ids() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://stable.vendor.io"),),
             ),
         ),
@@ -276,7 +279,7 @@ def test_action_dependencies() -> None:
             WorkspaceCreateDraftAction(action_type="workspace.create", name="alpha"),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.created_by_action, value="alpha"),
+                workspace=CreatedByActionDraftWorkspaceReference(kind=WorkspaceReferenceKind.created_by_action, value="alpha"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://dep.vendor.io"),),
                 depends_on_action_numbers=(1,),
             ),
@@ -318,7 +321,7 @@ def test_created_workspace_reference() -> None:
             WorkspaceCreateDraftAction(action_type="workspace.create", name="research"),
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(
+                workspace=CreatedByActionDraftWorkspaceReference(
                     kind=WorkspaceReferenceKind.created_by_action,
                     value="research",
                 ),
@@ -339,7 +342,7 @@ def test_missing_created_workspace() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(
+                workspace=CreatedByActionDraftWorkspaceReference(
                     kind=WorkspaceReferenceKind.created_by_action,
                     value="missing",
                 ),
@@ -353,15 +356,39 @@ def test_missing_created_workspace() -> None:
 
 
 @pytest.mark.unit
-def test_duplicate_created_workspace_names() -> None:
+def test_duplicate_created_workspace_names_without_reference() -> None:
     draft = ConversationInteractionDraft(
         actions=(
             WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
             WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
         ),
     )
+    plan = compile_interaction_draft(draft, _request("create dup twice"))
+    assert len(plan.actions) == 2
+    assert plan.actions[0].action_id == "action-1"
+    assert plan.actions[1].action_id == "action-2"
+    assert plan.actions[0].name == "dup"  # type: ignore[attr-defined]
+    assert plan.actions[1].name == "dup"  # type: ignore[attr-defined]
+
+
+@pytest.mark.unit
+def test_duplicate_created_workspace_names_with_ambiguous_reference() -> None:
+    draft = ConversationInteractionDraft(
+        actions=(
+            WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
+            WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=CreatedByActionDraftWorkspaceReference(
+                    kind=WorkspaceReferenceKind.created_by_action,
+                    value="dup",
+                ),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://dup.example"),),
+            ),
+        ),
+    )
     with pytest.raises(ConversationDraftCompilationError) as exc_info:
-        compile_interaction_draft(draft, _request("create dup twice"))
+        compile_interaction_draft(draft, _request("create dup twice and add https://dup.example"))
     assert exc_info.value.code == ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference
 
 
@@ -390,34 +417,34 @@ def test_every_non_source_action_variant() -> None:
             WorkspaceCreateDraftAction(action_type="workspace.create", name="new-ws"),
             WorkspaceActivateDraftAction(
                 action_type="workspace.activate",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
             ),
             WorkspaceDeleteDraftAction(
                 action_type="workspace.delete",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
             ),
             SourceListDraftAction(
                 action_type="source.list",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
             ),
             SourceCandidateListDraftAction(
                 action_type="source_candidate.list",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
             ),
             SourceCandidateAttachDraftAction(
                 action_type="source_candidate.attach",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 candidate_reference_kind="name",
                 candidate_reference="jira",
             ),
             KnowledgeAddAttachmentsDraftAction(
                 action_type="knowledge.add_attachments",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="magazyn"),
                 attachment_ids=("att-1",),
             ),
             WorkspaceAskDraftAction(
                 action_type="workspace.ask",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.active),
+                workspace=ActiveDraftWorkspaceReference(kind=WorkspaceReferenceKind.active),
                 question="what is in magazyn?",
             ),
         ),
@@ -460,3 +487,71 @@ def test_no_deterministic_source_discovery() -> None:
     )
     plan = compile_interaction_draft(draft, _request(message))
     assert plan.objects == ()
+
+
+@pytest.mark.unit
+def test_active_workspace_compilation() -> None:
+    draft = ConversationInteractionDraft(
+        actions=(
+            WorkspaceAskDraftAction(
+                action_type="workspace.ask",
+                workspace=ActiveDraftWorkspaceReference(kind=WorkspaceReferenceKind.active),
+                question="what is here?",
+            ),
+        ),
+    )
+    plan = compile_interaction_draft(draft, _request("ask active workspace"))
+    workspace = plan.actions[0].workspace  # type: ignore[attr-defined]
+    assert workspace.kind == WorkspaceReferenceKind.active
+    assert workspace.value is None
+
+
+@pytest.mark.unit
+def test_name_workspace_compilation_preserves_value() -> None:
+    draft = ConversationInteractionDraft(
+        actions=(
+            SourceListDraftAction(
+                action_type="source.list",
+                workspace=NameDraftWorkspaceReference(
+                    kind=WorkspaceReferenceKind.name,
+                    value="  magazyn  ",
+                ),
+            ),
+        ),
+    )
+    plan = compile_interaction_draft(draft, _request("list sources"))
+    workspace = plan.actions[0].workspace  # type: ignore[attr-defined]
+    assert workspace.kind == WorkspaceReferenceKind.name
+    assert workspace.value == "  magazyn  "
+
+
+@pytest.mark.unit
+def test_ordinal_workspace_compilation() -> None:
+    draft = ConversationInteractionDraft(
+        actions=(
+            SourceListDraftAction(
+                action_type="source.list",
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="1"),
+            ),
+        ),
+    )
+    plan = compile_interaction_draft(draft, _request("list sources"))
+    workspace = plan.actions[0].workspace  # type: ignore[attr-defined]
+    assert workspace.kind == WorkspaceReferenceKind.ordinal
+    assert workspace.value == "1"
+
+
+@pytest.mark.unit
+def test_ordinal_workspace_compilation_preserves_leading_zeros() -> None:
+    draft = ConversationInteractionDraft(
+        actions=(
+            SourceListDraftAction(
+                action_type="source.list",
+                workspace=OrdinalDraftWorkspaceReference(kind=WorkspaceReferenceKind.ordinal, value="01"),
+            ),
+        ),
+    )
+    plan = compile_interaction_draft(draft, _request("list sources"))
+    workspace = plan.actions[0].workspace  # type: ignore[attr-defined]
+    assert workspace.kind == WorkspaceReferenceKind.ordinal
+    assert workspace.value == "01"

@@ -18,7 +18,25 @@ from intergrax.integrations.contracts.collaboration_suite import (
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES,
+    DEFAULT_CALENDAR_EVENT_CONTENT_MAX_CHARS,
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    MsGraphCalendar,
+    MsGraphCalendarAttachment,
+    MsGraphCalendarAttachmentPage,
+    MsGraphCalendarAttachmentsReader,
+    MsGraphCalendarContentReader,
+    MsGraphCalendarEventChange,
+    MsGraphCalendarEventContent,
+    MsGraphCalendarEventDeltaPage,
+    MsGraphCalendarEventSnapshotPage,
+    MsGraphCalendarEventsReader,
+    MsGraphCalendarFileAttachmentContent,
+    MsGraphCalendarPage,
+    MsGraphCalendarsReader,
+    MsGraphCalendarViewWindow,
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
     MsGraphDriveItem,
@@ -28,10 +46,47 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionsReader,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeTransport,
+    MsGraphMailAttachment,
+    MsGraphMailAttachmentPage,
+    MsGraphMailAttachmentsReader,
+    MsGraphMailContentReader,
+    MsGraphMailFileAttachmentContent,
     MsGraphMailFolderPage,
     MsGraphMailFoldersReader,
+    MsGraphMailMessageChange,
+    MsGraphMailMessageContent,
     MsGraphMailMessageDeltaPage,
     MsGraphMailMessagesReader,
+    DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
+    DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    MsGraphTeamsChat,
+    MsGraphTeamsChatHostedContent,
+    MsGraphTeamsChatHostedContentBytes,
+    MsGraphTeamsChatHostedContentPage,
+    MsGraphTeamsChatHostedContentReader,
+    MsGraphTeamsChatMemberPage,
+    MsGraphTeamsChatMembersReader,
+    MsGraphTeamsChatMessage,
+    MsGraphTeamsChatMessageSnapshotPage,
+    MsGraphTeamsChatMessageWindow,
+    MsGraphTeamsChatMessagesReader,
+    MsGraphTeamsChatPage,
+    MsGraphTeamsChatsReader,
+    DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    MsGraphTeamsChannel,
+    MsGraphTeamsChannelHostedContent,
+    MsGraphTeamsChannelHostedContentBytes,
+    MsGraphTeamsChannelHostedContentPage,
+    MsGraphTeamsChannelHostedContentReader,
+    MsGraphTeamsChannelMemberPage,
+    MsGraphTeamsChannelMembersReader,
+    MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelReplyPage,
+    MsGraphTeamsChannelRootMessagePage,
+    MsGraphTeamsChannelMessagesReader,
+    MsGraphTeamsChannelPage,
+    MsGraphTeamsChannelsReader,
 )
 
 _MESSAGE_SELECT = "id,subject,bodyPreview,from,receivedDateTime"
@@ -134,6 +189,66 @@ class GraphRestClient:
             config=config,
             transport=self._knowledge_transport,
         )
+        self._mail_content_reader = MsGraphMailContentReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._mail_attachments_reader = MsGraphMailAttachmentsReader(
+            config=config,
+            transport=self._knowledge_transport,
+            graph_http_client=http_client,
+        )
+        self._calendars_reader = MsGraphCalendarsReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._calendar_events_reader = MsGraphCalendarEventsReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._calendar_content_reader = MsGraphCalendarContentReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._calendar_attachments_reader = MsGraphCalendarAttachmentsReader(
+            config=config,
+            transport=self._knowledge_transport,
+            graph_http_client=http_client,
+        )
+        self._teams_chats_reader = MsGraphTeamsChatsReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_chat_members_reader = MsGraphTeamsChatMembersReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_chat_messages_reader = MsGraphTeamsChatMessagesReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_chat_hosted_content_reader = MsGraphTeamsChatHostedContentReader(
+            config=config,
+            transport=self._knowledge_transport,
+            graph_http_client=http_client,
+        )
+        self._teams_channels_reader = MsGraphTeamsChannelsReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_channel_members_reader = MsGraphTeamsChannelMembersReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_channel_messages_reader = MsGraphTeamsChannelMessagesReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_channel_hosted_content_reader = MsGraphTeamsChannelHostedContentReader(
+            config=config,
+            transport=self._knowledge_transport,
+            graph_http_client=http_client,
+        )
         self._drive_content_reader: MsGraphDriveContentReader | None = None
         if download_http_client is not None:
             self._drive_content_reader = MsGraphDriveContentReader(
@@ -199,6 +314,264 @@ class GraphRestClient:
             folder_id=folder_id,
             continuation=continuation,
             limit=limit,
+        )
+
+    def read_mail_message_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        max_chars: int = DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    ) -> MsGraphMailMessageContent:
+        return self._mail_content_reader.read_message_content(
+            message=message,
+            max_chars=max_chars,
+        )
+
+    def read_mail_attachments_page(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailAttachmentPage:
+        return self._mail_attachments_reader.read_attachments_page(
+            message=message,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_mail_file_attachment_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        attachment: MsGraphMailAttachment,
+        max_bytes: int = DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphMailFileAttachmentContent:
+        return self._mail_attachments_reader.read_file_attachment_content(
+            message=message,
+            attachment=attachment,
+            max_bytes=max_bytes,
+        )
+
+    def read_calendars_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarPage:
+        return self._calendars_reader.read_calendars_page(
+            mailbox_user_id=mailbox_user_id,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_events_delta_page(
+        self,
+        *,
+        calendar: MsGraphCalendar,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventDeltaPage:
+        return self._calendar_events_reader.read_delta_page(
+            calendar=calendar,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_events_snapshot_page(
+        self,
+        *,
+        calendar: MsGraphCalendar,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarEventSnapshotPage:
+        return self._calendar_events_reader.read_snapshot_page(
+            calendar=calendar,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_event_content(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        max_chars: int = DEFAULT_CALENDAR_EVENT_CONTENT_MAX_CHARS,
+    ) -> MsGraphCalendarEventContent:
+        return self._calendar_content_reader.read_calendar_event_content(
+            event=event,
+            max_chars=max_chars,
+        )
+
+    def read_calendar_attachments_page(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphCalendarAttachmentPage:
+        return self._calendar_attachments_reader.read_attachments_page(
+            event=event,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_file_attachment_content(
+        self,
+        *,
+        event: MsGraphCalendarEventChange,
+        attachment: MsGraphCalendarAttachment,
+        max_bytes: int = DEFAULT_CALENDAR_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphCalendarFileAttachmentContent:
+        return self._calendar_attachments_reader.read_file_attachment_content(
+            event=event,
+            attachment=attachment,
+            max_bytes=max_bytes,
+        )
+
+    def read_teams_chats_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+    ) -> MsGraphTeamsChatPage:
+        return self._teams_chats_reader.read_chats_page(
+            mailbox_user_id=mailbox_user_id,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_teams_chat_members_page(
+        self,
+        *,
+        chat: MsGraphTeamsChat,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChatMemberPage:
+        return self._teams_chat_members_reader.read_members_page(
+            chat=chat,
+            continuation=continuation,
+        )
+
+    def read_teams_chat_messages_snapshot_page(
+        self,
+        *,
+        chat: MsGraphTeamsChat,
+        window: MsGraphTeamsChatMessageWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        return self._teams_chat_messages_reader.read_messages_snapshot_page(
+            chat=chat,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_chat_hosted_contents_page(
+        self,
+        *,
+        message: MsGraphTeamsChatMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChatHostedContentPage:
+        return self._teams_chat_hosted_content_reader.read_hosted_contents_page(
+            message=message,
+            continuation=continuation,
+        )
+
+    def read_teams_chat_hosted_content_bytes(
+        self,
+        *,
+        message: MsGraphTeamsChatMessage,
+        hosted_content: MsGraphTeamsChatHostedContent,
+        max_bytes: int = DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
+    ) -> MsGraphTeamsChatHostedContentBytes:
+        return self._teams_chat_hosted_content_reader.read_hosted_content_bytes(
+            message=message,
+            hosted_content=hosted_content,
+            max_bytes=max_bytes,
+        )
+
+    def read_teams_channels_page(
+        self,
+        *,
+        team_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChannelPage:
+        return self._teams_channels_reader.read_teams_channels_page(
+            team_id=team_id,
+            continuation=continuation,
+        )
+
+    def read_teams_channel_members_page(
+        self,
+        *,
+        channel: MsGraphTeamsChannel,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChannelMemberPage:
+        return self._teams_channel_members_reader.read_teams_channel_members_page(
+            channel=channel,
+            continuation=continuation,
+        )
+
+    def read_teams_channel_root_messages_page(
+        self,
+        *,
+        channel: MsGraphTeamsChannel,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        return self._teams_channel_messages_reader.read_teams_channel_root_messages_page(
+            channel=channel,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_replies_page(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelReplyPage:
+        return self._teams_channel_messages_reader.read_teams_channel_replies_page(
+            root_message=root_message,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_hosted_contents_page(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChannelHostedContentPage:
+        return self._teams_channel_hosted_content_reader.read_teams_channel_hosted_contents_page(
+            message=message,
+            continuation=continuation,
+        )
+
+    def read_teams_channel_hosted_content_bytes(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessage,
+        hosted_content: MsGraphTeamsChannelHostedContent,
+        max_bytes: int = DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    ) -> MsGraphTeamsChannelHostedContentBytes:
+        return self._teams_channel_hosted_content_reader.read_teams_channel_hosted_content_bytes(
+            message=message,
+            hosted_content=hosted_content,
+            max_bytes=max_bytes,
         )
 
     def read_drive_file_content(

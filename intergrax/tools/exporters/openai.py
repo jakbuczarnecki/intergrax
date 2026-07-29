@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+import copy
+import hashlib
+import json
+from collections.abc import Mapping
 from typing import Any, Iterable, Sequence
 
 from intergrax.tools.core.contracts import ToolContract
@@ -30,6 +34,30 @@ def to_openai_tools(
 ) -> list[dict[str, Any]]:
     contracts = _iter_contracts(source)
     return [contract_to_openai_tool(c, compact_description=compact_description) for c in contracts]
+
+
+def compute_openai_tools_schema_hash(
+    tools_schema: Sequence[Mapping[str, Any]],
+) -> str:
+    """SHA-256 over the exact ordered OpenAI tool-schema sequence.
+
+    Dictionary keys are canonicalized; tool-list order is preserved.
+    """
+    if not tools_schema:
+        digest = hashlib.sha256()
+        digest.update(b"")
+        return digest.hexdigest()
+
+    canonical_entries = [copy.deepcopy(dict(entry)) for entry in tools_schema]
+    canonical_json = json.dumps(
+        canonical_entries,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256()
+    digest.update(canonical_json.encode("utf-8"))
+    return digest.hexdigest()
 
 
 def _iter_contracts(

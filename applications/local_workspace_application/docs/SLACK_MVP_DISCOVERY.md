@@ -154,7 +154,21 @@ Discovery does not implement Slack connectivity, handlers, persistence, UI or te
 ## 2. Product purpose
 
 **What is being built?**  
-A minimal Slack Socket Mode adapter (LKW optional companion) that lets one approved Slack user select a local LKW knowledge workspace, ask a question in a DM, and receive a grounded answer with verified sources in the same thread.
+A minimal Slack Socket Mode adapter (LKW optional companion) that lets one approved Slack user operate a Hybrid Knowledge Workspace: select or create a workspace, add indexed knowledge (files, URLs, configured sources), request connection setup through backend capabilities, ask Hybrid Ask questions, and receive grounded answers with citations, freshness and operation status — all through LKW HTTP capabilities only.
+
+**Target experience (planned — not all steps implemented):**
+
+```text
+Create a workspace for Project Orion.
+Add these files and this website.
+Connect the engineering Jira project and the Orion SharePoint site.
+Use the latest Jira blockers and messages from the client to tell me
+whether we are ready to deploy.
+```
+
+Slack remains a **thin client**. It must not own knowledge configuration, provider credentials, vendor clients, RAG, tool selection or operation state. Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+
+**Current implemented slice:** select workspace, Ask over indexed knowledge, inspect sources, managed-file and URL intake via HTTP (planner execution not yet wired for natural language).
 
 **Who is the first user?**  
 One approved knowledge worker who already uses Slack and needs answers from local company documents.
@@ -225,6 +239,21 @@ workspaces
 ```
 
 This posts the same Block Kit selection UI (or auto-selects if only one). Changing selection updates the persisted active workspace and does not invent an Ask answer.
+
+### 3.4 Target live platform proof scenario (`PLANNED` — `LKW-LIVE-PLATFORM-PROOF-1`)
+
+```text
+1. Start LKW with Ollama.
+2. Create or select a workspace via Slack or HTTP.
+3. Upload files and add a Web URL (indexed knowledge).
+4. Configure Microsoft 365, Jira, Confluence (collaboration pack).
+5. Configure Databricks, Power BI, Atlan (data pack) — read-only live bindings.
+6. Ask a Hybrid Ask question requiring indexed and live evidence.
+7. Receive one answer with source-specific citations and live freshness markers.
+8. Restart LKW with vLLM; repeat the same product scenario.
+```
+
+Public claims must distinguish **real provider proof**, **controlled integration proof** and **deterministic fixture proof**. See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §7.8 and [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md).
 
 ---
 

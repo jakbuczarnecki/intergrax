@@ -1,0 +1,667 @@
+# Hybrid Knowledge Access — LKW Architecture
+
+**Status:** `DOCUMENTED / READY_FOR_REVIEW`  
+**Task:** `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1`  
+**Classification:** docs-only architecture and product contract  
+**Top-level architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
+**Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
+**Knowledge Intake:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
+**Conversational interaction:** [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md)
+
+---
+
+## 1. One-sentence outcome
+
+LKW is a **private, governed and provider-neutral Hybrid Knowledge Workspace** that combines indexed RAG knowledge, controlled live access to external systems, interchangeable Ollama/vLLM conversation runtimes, natural-language frontends and unified evidence provenance in one coherent product roadmap.
+
+---
+
+## 2. Product definition
+
+### 2.1 What LKW is (target)
+
+LKW lets a user:
+
+1. upload files and folder snapshots;
+2. connect local folders;
+3. attach explicit Web URLs;
+4. connect external systems (Microsoft 365, OneDrive, SharePoint, Outlook, Teams-hosted knowledge, Jira, Confluence, Databricks, Power BI, Atlan, future native API providers, future curated MCP providers);
+5. decide which connected resources are **indexed into RAG**;
+6. decide which resources may be **queried live**;
+7. ask one natural-language question through Slack or another frontend;
+8. receive one answer assembled from indexed knowledge, live provider results, or both;
+9. inspect where each piece of evidence came from;
+10. run the same LKW application with **Ollama or vLLM** through configuration.
+
+### 2.2 Status honesty
+
+| Category | Examples |
+|----------|----------|
+| **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (awaiting review); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
+| **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; live Slack platform proof |
+| **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
+
+Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
+
+---
+
+## 3. Three knowledge-access modes
+
+### 3.1 Indexed Knowledge
+
+Knowledge already processed into LKW-owned stores.
+
+**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues.
+
+**Benefits:** cross-source semantic retrieval; lower provider API usage; consistent chunking and embeddings; offline or temporarily disconnected usage; stable workspace-owned retrieval.
+
+**Limitations:** data may be stale; synchronization is required; copying may be unsuitable for some data.
+
+**Flow:**
+
+```text
+Connection or direct input
+→ Remote Resource or managed resource
+→ LKW Indexed Source
+→ ingestion / synchronization
+→ Document
+→ Chunks
+→ Embeddings
+→ Vector Store
+→ RAG retrieval
+```
+
+### 3.2 Live Knowledge Access
+
+Read-only access executed when the user asks a question.
+
+**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state.
+
+**Benefits:** current information; no requirement to copy every dataset; appropriate for dynamic or large systems.
+
+**Limitations:** depends on provider availability; slower; subject to provider permissions, rate limits and cost; requires bounded tool execution.
+
+Live results **do not automatically become** durable Documents.
+
+### 3.3 Hybrid Knowledge (target default experience)
+
+```text
+indexed RAG evidence
++
+authorized live evidence
++
+one normalized evidence set
++
+one grounded answer
++
+unified provenance
+```
+
+**Representative example:**
+
+```text
+Question:
+“Are we ready to deploy Project Orion?”
+
+Indexed evidence:
+- deployment plan
+- meeting notes
+- architecture documents
+
+Jira live:
+- current blockers
+
+Microsoft 365 live:
+- latest client messages
+
+Power BI live:
+- current readiness KPI
+
+Result:
+- one answer
+- explicit risks
+- citations
+- visible distinction between indexed and live evidence
+```
+
+---
+
+## 4. Canonical vocabulary
+
+### 4.1 Connection
+
+A tenant-owned configured relationship with an external system.
+
+**Examples:** company Microsoft 365 tenant; engineering Jira instance; internal Confluence instance; analytics Databricks workspace; finance Power BI tenant; data-governance Atlan instance; approved MCP server.
+
+A Connection owns or references:
+
+- provider identity;
+- integration type;
+- safe display metadata;
+- opaque credential reference;
+- health or availability state;
+- supported capability descriptors;
+- tenant ownership.
+
+A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials.
+
+### 4.2 Remote Resource
+
+A provider-owned resource discoverable through a Connection.
+
+**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection.
+
+A Remote Resource is **not** automatically an LKW Source.
+
+### 4.3 Indexed Source
+
+A durable workspace-owned Source whose content is ingested or synchronized into LKW knowledge stores.
+
+**Examples:** uploaded PDF; uploaded XLSX; Slack attachment; local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
+
+Every persisted Document must remain owned by exactly one durable Source.
+
+### 4.4 Live Access Binding
+
+A workspace-scoped authorization that permits selected read-only capabilities against a Connection or Remote Resource at question time.
+
+**Example:**
+
+```text
+workspace: Project Orion
+connection: company-ms365
+resource: project mailbox
+allowed capabilities:
+- ms365.mail.search
+- ms365.mail.read
+mode: read-only
+```
+
+A Live Access Binding:
+
+- is not automatically a Source;
+- does not automatically copy provider data into RAG;
+- does not contain credentials;
+- does not expose every provider capability;
+- must define an allowlisted, read-only capability surface;
+- is tenant- and workspace-scoped.
+
+### 4.5 Workspace Knowledge Configuration
+
+The aggregate configuration that determines what knowledge one workspace can use.
+
+**Diagram A — knowledge configuration:**
+
+```text
+Workspace
+├── Indexed Sources
+├── Live Access Bindings
+├── Query Policy
+├── Allowed Capabilities
+└── Model Runtime Profile
+```
+
+Conceptual structure:
+
+```text
+WorkspaceKnowledgeConfiguration
+├── Indexed Sources
+├── Live Access Bindings
+├── Allowed Read Capabilities
+├── Query Policy
+├── Model Runtime Profile reference
+├── Evidence / retention policy
+└── limits and safety controls
+```
+
+Exact persistence model and API schemas are **not** frozen in this document.
+
+### 4.6 Query Policy
+
+Conceptual modes:
+
+| Mode | Meaning |
+|------|---------|
+| `indexed_only` | Use only persisted workspace knowledge and RAG retrieval |
+| `live_only` | Use only currently authorized live provider capabilities |
+| `hybrid` | Use both indexed and live evidence when requested or required by the plan |
+| `automatic` | Query orchestration may choose indexed, live or hybrid according to question, workspace configuration, policy and available capabilities — **not** unrestricted agent autonomy |
+
+Possible policy controls (target vocabulary — not all implemented):
+
+```text
+prefer_indexed_evidence
+allow_live_fallback
+allowed_connections
+allowed_capabilities
+max_live_calls
+max_total_query_duration
+max_result_items
+max_result_bytes
+retention mode
+freshness requirements
+```
+
+### 4.7 Model Runtime Profile
+
+Product-level runtime selection containing at least:
+
+```text
+provider          # ollama | vllm
+endpoint
+model
+context window
+structured-output capability
+tool-calling capability
+timeout
+qualification status
+health status
+```
+
+LKW receives a ready `LLMAdapter` through application wiring. The LKW domain must **not** contain provider branches such as `if provider == "ollama": … elif provider == "vllm": …`.
+
+**Conversation LLM and embedding provider are separate concerns.** Switching from Ollama to vLLM must not silently change the embedding model, vector dimensions, rebuild collections, invalidate indexed data or change LKW product contracts.
+
+### 4.8 Evidence Item
+
+One provider-neutral evidence concept for both RAG and live results.
+
+Conceptual fields:
+
+```text
+evidence_type: indexed | live
+tenant_id
+workspace_id
+provider_id
+connection_ref
+source_id
+remote_resource_id
+remote_item_id
+safe_display_name
+safe_locator
+retrieved_at
+remote_updated_at
+content_hash
+tool_invocation_id
+excerpt or structured result
+```
+
+Not every field is required for every evidence type. Exact Pydantic models are **not** frozen here.
+
+Requirements:
+
+- safe provenance;
+- source or provider identity;
+- freshness information for live evidence;
+- no credentials;
+- no secret-bearing URLs;
+- no unsafe provider payloads;
+- traceability to the operation or tool invocation.
+
+---
+
+## 5. Provider resource: indexed, live, or both
+
+```text
+provider resource
+├── may be attached as an Indexed Source
+├── may be attached through a Live Access Binding
+└── may support both
+```
+
+| Resource | Indexed | Live |
+|----------|---------|------|
+| Confluence space | synchronized into RAG | searched live |
+| Power BI semantic model | metadata may optionally be indexed | usually queried live |
+| SharePoint site | documents may be synchronized | current metadata may be read live |
+
+Do not assume every provider resource must be copied into RAG. Do not assume every indexed Source automatically permits live access.
+
+---
+
+## 6. Query execution architecture
+
+**Diagram B — Hybrid Ask:**
+
+```text
+Question
+├── RAG retrieval
+├── live provider calls
+└── normalized evidence
+        ↓
+grounded synthesis
+        ↓
+answer + citations
+```
+
+**Target flow:**
+
+```text
+Slack / Web / Mobile / MCP / HTTP
+        ↓
+Conversation Interaction Planner
+        ↓
+typed user-intent plan
+        ↓
+deterministic reference resolver
+        ↓
+tenant/workspace authorization
+        ↓
+validated capability executor
+        ↓
+workspace.ask
+        ↓
+Workspace Knowledge Configuration
+        ↓
+Knowledge Query Orchestrator
+        ↓
+Evidence Plan
+        ├── indexed RAG retrieval
+        ├── Microsoft 365 live reads
+        ├── Jira live reads
+        ├── Confluence live reads
+        ├── Databricks live reads
+        ├── Power BI live reads
+        └── Atlan live reads
+        ↓
+deterministic policy validation
+        ↓
+bounded read-only execution
+        ↓
+normalized evidence
+        ↓
+grounded synthesis
+        ↓
+answer + citations + provenance
+        ↓
+original frontend
+```
+
+### 6.1 Conversation Interaction Planner
+
+Responsible for interpreting user **product intent**:
+
+```text
+create workspace
+select workspace
+add source
+connect resource
+ask question
+inspect operation
+remove source
+```
+
+Must **not** understand or generate Graph API requests, JQL, DAX, SQL, provider credentials or arbitrary MCP calls.
+
+### 6.2 Knowledge Query Orchestrator
+
+Responsible for obtaining evidence for a concrete, authorized question.
+
+Input conceptually includes:
+
+```text
+tenant_id
+principal_id
+workspace_id
+question
+Workspace Knowledge Configuration
+authorized capability catalog
+```
+
+Decides whether the evidence plan requires RAG, live capabilities, both or clarification. The model may propose an evidence or tool plan, but the **deterministic runtime must validate every executable call**.
+
+---
+
+## 7. Controlled tool execution
+
+**Rejected architecture:**
+
+```text
+LLM → arbitrary URL → arbitrary API → arbitrary parameters → execute
+```
+
+**Accepted flow:**
+
+```text
+Workspace Knowledge Configuration
+→ authorized capability catalog
+→ model proposes bounded tool call
+→ deterministic schema validation
+→ tenant/workspace authorization
+→ policy check
+→ integration/tool execution
+→ safe result normalization
+→ evidence
+```
+
+**Example capability IDs** (target vocabulary unless verified implemented):
+
+```text
+rag.search
+ms365.mail.search
+ms365.mail.read
+ms365.drive.search
+ms365.drive.read
+jira.issues.search
+jira.issue.read
+confluence.pages.search
+confluence.page.read
+databricks.catalog.search
+databricks.sql.query
+databricks.jobs.read
+powerbi.semantic.query
+powerbi.metadata.read
+atlan.assets.search
+atlan.lineage.read
+```
+
+### 7.1 Read-only first
+
+The first live-access milestone is **strictly read-only**.
+
+**Explicit non-goals for the initial live proof:**
+
+```text
+send email
+modify Jira
+create Jira issue
+edit Confluence
+run or cancel Databricks jobs
+write Databricks tables
+modify Power BI
+modify Atlan
+execute arbitrary MCP side effects
+```
+
+Future write capabilities require separate policy, confirmation, authorization, audit, compensation and risk classification.
+
+---
+
+## 8. Integration, API and MCP boundary
+
+**Diagram C — provider boundary:**
+
+```text
+LKW
+→ provider-neutral capability
+→ Integration / Tool
+→ native API | SDK | MCP
+→ external system
+```
+
+Different technical providers may implement the same product capability boundary:
+
+```text
+native vendor API adapter
+vendor SDK adapter
+OpenAPI/HTTP adapter
+MCP client adapter
+```
+
+MCP is **not** the LKW domain model. Do not define MCP Source, MCP Workspace or MCP Query Mode.
+
+Instead:
+
+```text
+approved MCP server
+→ registered Connection
+→ curated capability descriptors
+→ workspace Live Access Binding
+→ validated tool execution
+```
+
+An MCP server must not automatically expose every tool to every workspace. Requirements: explicit server registration; credential isolation; capability discovery followed by approval; safe schemas; read-only allowlisting for the initial milestone; per-workspace binding; timeout and result limits; audit receipts.
+
+---
+
+## 9. Vendor Knowledge relationship
+
+The existing `vendor_knowledge` runtime remains useful for:
+
+```text
+connection resolution
+scope inspection
+resource enumeration
+content fetch
+permission fetch
+incremental synchronization
+reconciliation
+provider-neutral knowledge projection
+```
+
+**LKW owns:**
+
+```text
+tenant/workspace authorization
+workspace connection attachment
+Source ownership
+Live Access Binding
+query policy
+Knowledge Intake
+ingestion operations
+Documents / Chunks / Vectors
+Ask orchestration
+evidence provenance
+frontend behavior
+```
+
+Do not make `vendor_knowledge` import or depend on LKW. Do not duplicate provider integrations inside LKW.
+
+---
+
+## 10. Natural-language frontend architecture
+
+**Diagram D — frontend flow:**
+
+```text
+Slack / HTTP / MCP / Web
+→ planner
+→ resolver
+→ authorization
+→ executor
+→ LKW capabilities
+→ result
+```
+
+Slack remains a thin, replaceable frontend. Target natural-language examples:
+
+```text
+Create a workspace for Project Orion.
+
+Add these files and this website.
+
+Connect the engineering Jira project and the Orion SharePoint site.
+
+Use the latest Jira blockers and messages from the client to tell me
+whether we are ready to deploy.
+```
+
+Slack must **not:** own knowledge configuration; store provider credentials; instantiate vendor clients; call Jira, Microsoft Graph, Power BI or Databricks directly; own RAG; own tool selection; own operation state; become required for LKW operation.
+
+---
+
+## 11. Security and governance
+
+### 11.1 Credential isolation
+
+Credentials remain in integration/provider credential storage. Only opaque references (`credential_ref`, `connection_ref`) may appear in safe product state. Credentials must never enter LLM prompts, tool schemas, Slack payloads, Ask citations, workspace Source metadata, trace messages or public API responses.
+
+### 11.2 Workspace-scoped authorization
+
+```text
+principal
+→ tenant access
+→ workspace permission
+→ Live Access Binding
+→ allowed capability
+→ allowed Remote Resource
+```
+
+Unknown or unauthorized references fail closed.
+
+### 11.3 Bounded execution
+
+Target controls (not all fully implemented): maximum live calls per question; timeout per call; timeout for whole Ask; provider result count and byte limits; pagination limit; concurrency limit; rate-limit handling; retry classification; cancellation; safe partial-answer policy.
+
+### 11.4 Safe receipts
+
+Each live execution should produce a policy-safe receipt with: `tenant_id`, `workspace_id`, `principal_id`, `connection_ref`, `capability_id`, safe resource identity, `started_at`, `completed_at`, `status`, result count, freshness timestamp, `trace_id`. Receipts must not contain secrets, credentials, access tokens, raw authorization headers, unsafe URLs or full unbounded provider payloads.
+
+### 11.5 Retention
+
+Live results must not automatically become durable workspace knowledge. Policy directions: `ephemeral`; `receipt_only`; `cache_with_ttl`; `promote_to_indexed_source` through explicit workflow. The first proof should default to ephemeral evidence plus safe receipt unless a capability explicitly uses the existing ingestion lifecycle.
+
+---
+
+## 12. Model runtime portability
+
+**Task:** `LKW-MODEL-RUNTIME-1` — Ollama / vLLM end-to-end portability (**PLANNED**).
+
+**One-sentence outcome:** The same LKW product workflows run through either Ollama or vLLM selected by configuration, with no product-domain branching and with both runtimes qualified for structured planning, tool calling and grounded Ask.
+
+Planned proof covers: basic generation; structured output; Conversation Interaction Plan generation; tool calling; grounded synthesis; health check; configuration switch; same product contracts.
+
+Provider selection may require application restart in the initial proof. A model visible on Ollama or vLLM is not sufficient — it must pass a bounded LKW qualification matrix. This is a focused LKW product proof, not the deferred broad five-model benchmark.
+
+Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`ollama` default; `vllm` optional), `INTERGRAX_LLM_MODEL`, commented vLLM base URL variables in `.env.example`.
+
+---
+
+## 13. Architecture invariants
+
+1. LKW is deployment-neutral.
+2. Slack is optional and replaceable.
+3. The LKW backend owns product logic.
+4. Frontends do not access stores or vendor SDKs directly.
+5. Every durable Document belongs to exactly one Source.
+6. Live results do not automatically become durable Documents.
+7. Credentials remain outside prompts and workspace state.
+8. Every durable workspace record remains tenant- and workspace-scoped.
+9. Provider resources require explicit workspace binding.
+10. The model proposes; deterministic policy validates and executes.
+11. The initial live-access milestone is read-only.
+12. Native APIs and MCP may implement the same provider-neutral capability boundary.
+13. MCP does not automatically expose all tools.
+14. Ollama and vLLM are selected through provider-neutral wiring.
+15. Conversation LLM and embeddings remain separate concerns.
+16. LKW reuses Intergrax integrations, tools, runtime, queueing, RAG and policy mechanisms.
+17. LKW must not create vendor-specific pipelines when provider-neutral platform boundaries already exist.
+18. Target architecture is not evidence of implementation.
+19. Public proof claims require checked-in evidence.
+20. Application-first development remains the governing strategy.
+
+---
+
+## 14. References
+
+| Document | Role |
+|----------|------|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Top-level LKW product architecture |
+| [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Canonical execution order |
+| [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Indexed knowledge intake contract |
+| [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md) | Planner vs executor |
+| [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) | Slack thin-client contract |
+| [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Runtime configuration |
+| [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) | Public proof honesty |

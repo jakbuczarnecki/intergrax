@@ -46,39 +46,145 @@ DONE:     PLATFORM-DOCUMENT-STORE-CONDITIONAL-1
 DONE:     VENDOR-KNOWLEDGE-SYNC-1B
 DONE:     JIRA-KNOWLEDGE-ADAPTER-1
 DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
+DONE:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 IN_PROGRESS:
-MSGRAPH-KNOWLEDGE-READ-SURFACE-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1A
-  shared transport, paging and delta foundation
-  DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE
-  IN_PROGRESS:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
-  DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-DELTA
-  drive inventory, delta and tombstones
-  DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-CONTENT
-  bounded binary content download
-  DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
-  caller-visible sharing permissions read
-  DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-FOLDERS
-  mailbox root and child folder paging
-  DONE:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-MESSAGES-DELTA
-  per-folder message metadata delta with immutable IDs
+  MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
   NEXT:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-CONTENT
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-ATTACHMENTS
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
-PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
+  MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL
+  PLANNED:
+  MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
+  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
+  MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
+
+Microsoft Graph Mail low-level knowledge-read support is complete.
+
+Mailbox folder paging, per-folder immutable-ID message delta, text message
+content, normalized participants, attachment inventory and bounded ordinary
+file-attachment content reads are implemented.
+
+Removed delta entries remain folder-scoped and are not treated as proof of
+global mailbox deletion.
+
+Item attachments, reference-attachment downloads, MIME, raw internet headers
+and recursive attached-message expansion are intentionally not implemented.
+
+No Microsoft Vendor Knowledge adapter is exposed yet except Drive.
+
+Microsoft Graph Drive Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`)
+is implemented.
+
+Drive capability matrix:
+
+```text
+source_kind: drive
+scope: one known Microsoft Graph drive ID
+full_inventory: yes
+incremental_changes: yes
+reconciliation: yes
+binary_content: yes
+structured_content: no
+permissions: no
+tombstones: yes
+remote_versions: yes
+```
+
+Drive files map to `BINARY` content.
+
+Folders, packages and unknown non-file records are metadata-only descriptors.
+
+Graph `NEXT_PAGE` and `DELTA` continuations are wrapped in adapter-owned
+opaque `KnowledgeCursor` values.
+
+Drive permission capability remains false because the current low-level
+permission projection explicitly does not prove a complete ACL or complete
+inheritance graph.
+
+The existing permission read surface is preserved for a future ACL-contract
+task and is not represented as authoritative `KnowledgePermissions`.
+
+Microsoft Graph Calendar low-level knowledge-read support is complete using
+stable Graph v1.0 contracts.
+
+Caller-visible user calendars can be enumerated.
+
+The primary calendar supports full and incremental calendar-view delta
+synchronization for an explicit fixed time window.
+
+Every selected user calendar, including non-default and shared caller-visible
+calendars, supports a complete paged calendar-view snapshot for an explicit
+fixed time window.
+
+A later Vendor Knowledge adapter can use delta for the primary calendar and
+full-snapshot reconciliation for other calendars.
+
+Event content, recurring occurrences and exceptions, participants, locations,
+recurrence, attachment inventory and bounded ordinary file-attachment content
+reads are implemented.
+
+Removed delta entries apply only to the primary calendar view and are not
+treated as proof of global event deletion.
+
+No beta Graph endpoint, Calendar Vendor Knowledge adapter, Calendar ACL,
+group calendar, recursive item attachment or reference-attachment download is
+implemented.
+
+Microsoft Graph Teams Chat low-level knowledge-read support is complete using
+stable Graph v1.0 contracts.
+
+Caller-visible chats can be enumerated and complete member rosters can be read.
+
+Each selected chat supports complete paged message snapshots for explicit
+lastModifiedDateTime windows. Stable Graph v1.0 chat-message delta is not used.
+
+Deleted messages are recognized only when Graph explicitly returns
+deletedDateTime. Absence from a window snapshot is not treated as proof of
+global deletion.
+
+Message bodies, senders, mentions, reactions, safe attachment references,
+forwarded-message metadata and bounded Teams-hosted content reads are
+implemented.
+
+Chat messages are a flat collection. No synthetic chat-replies endpoint is
+implemented.
+
+File attachment URLs are retained only as hidden provider references and are
+not downloaded directly. A later Microsoft Vendor Knowledge adapter can resolve
+supported SharePoint and OneDrive references through the existing Drive
+surface.
+
+No beta Graph endpoint, Teams Chat Vendor Knowledge adapter, webhook,
+subscription, rich-card semantic renderer or direct external attachment
+download is implemented.
+
+Microsoft Graph Teams Channel low-level knowledge-read support is complete
+using stable Graph v1.0 contracts.
+
+Caller-visible channels can be enumerated per team and complete effective
+member rosters can be read through allMembers.
+
+Each selected channel supports complete paged root-message inventory and
+threaded reply reads for explicit root posts. Stable Graph v1.0 channel
+message delta is not used.
+
+Deleted root posts and replies are recognized only when Graph explicitly
+returns deletedDateTime. Absence from a page is not treated as proof of
+global deletion.
+
+Message bodies, senders, mentions, reactions, safe attachment references,
+forwarded-message metadata and bounded Teams-hosted content reads are
+implemented.
+
+Channel messages use the dedicated replies endpoint for threaded replies.
+File attachment URLs are retained only as hidden provider references and are
+not downloaded directly.
+
+No beta Graph endpoint, Teams Channel Vendor Knowledge adapter, webhook,
+subscription, rich-card semantic renderer or direct external attachment
+download is implemented.
 
 Current runtime state:
 
@@ -512,9 +618,7 @@ legacy WikiKnowledge search migration deferred
 
 #### `MSGRAPH-KNOWLEDGE-READ-SURFACE-1`
 
-**Status:** `IN_PROGRESS`
-
-The shared Microsoft Graph foundation is implemented.
+**Status:** `DONE`
 Drive metadata, delta, tombstones, bounded binary content and caller-visible
 sharing-permission reads are implemented.
 The permission response is explicitly not treated as a proven complete
@@ -528,8 +632,13 @@ Mail folder paging and per-folder message metadata delta are implemented.
 Message IDs are requested in ImmutableId format on every delta request.
 A removed delta entry means removed from the synchronized folder and is not
 treated as proof of global mailbox deletion.
-Message bodies, participants and attachments are not implemented yet.
-No Microsoft Vendor Knowledge adapter is exposed yet.
+Mail text bodies, participants and attachments are implemented.
+Microsoft Graph Calendar low-level read support is complete using stable
+Graph v1.0 contracts: primary-calendar incremental delta, per-calendar full
+snapshots, bounded event content, participants, locations, recurrence and
+bounded file attachments.
+Removed primary-calendar delta entries are not treated as proof of global
+event deletion.
 
 Extend the single existing Microsoft Graph collaboration-suite integration/private client boundary with the low-level read behavior required by all approved Microsoft 365 knowledge surfaces.
 
@@ -567,7 +676,19 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 #### `MSGRAPH-KNOWLEDGE-ADAPTERS-1`
 
-**Status:** `PLANNED`
+**Status:** `IN_PROGRESS`
+
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE` is **DONE**.
+
+**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`
+
+**Planned:**
+
+```text
+MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
+MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+```
 
 Add separate thin adapters over the same resolved Microsoft Graph integration:
 
@@ -618,6 +739,35 @@ Recommended implementation/proof order inside the Microsoft scope:
 
 The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
+Drive adapter capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`):
+
+```text
+source_kind: drive
+scope: one known Microsoft Graph drive ID
+full_inventory: yes
+incremental_changes: yes
+reconciliation: yes
+binary_content: yes
+structured_content: no
+permissions: no
+tombstones: yes
+remote_versions: yes
+```
+
+Drive files map to `BINARY` content.
+
+Folders, packages and unknown non-file records are metadata-only descriptors.
+
+Graph `NEXT_PAGE` and `DELTA` continuations are wrapped in adapter-owned
+opaque `KnowledgeCursor` values.
+
+Drive permission capability remains false because the current low-level
+permission projection explicitly does not prove a complete ACL or complete
+inheritance graph.
+
+The existing permission read surface is preserved for a future ACL-contract
+task and is not represented as authoritative `KnowledgePermissions`.
+
 #### `DATABRICKS-KNOWLEDGE-ADAPTER-1`
 
 **Status:** `DEFERRED`
@@ -662,15 +812,3 @@ No duplicate parsing or embedding path is allowed.
 **Status:** `DEFERRED`
 
 Add safe source discovery, selection, sync request and status through Slack. Slack remains a replaceable frontend and never receives credentials or unsafe provider locators.
-
----
-
-## 7. Immediate next action
-
-Implement only:
-
-```text
-JIRA-KNOWLEDGE-ADAPTER-1
-```
-
-Do not start Microsoft Graph, Confluence, secrets resolution, LKW bridge or unrelated vendor adapters in the same task.
