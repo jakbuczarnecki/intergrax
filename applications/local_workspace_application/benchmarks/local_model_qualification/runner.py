@@ -31,6 +31,7 @@ from local_workspace_application.benchmarks.local_model_qualification.contracts 
     BENCHMARK_ID,
     CaseExecutionStatus,
     CaseResult,
+    FailurePhase,
     HostMetadata,
     LatencyStats,
     LocalModelQualificationResult,
@@ -43,6 +44,7 @@ from local_workspace_application.benchmarks.local_model_qualification.contracts 
     ProtocolStatus,
     ProvisioningResult,
     QualificationSummary,
+    SafeErrorCode,
     SchemaProbeStatus,
     StructuralFailureCategory,
     WarmupStatus,
@@ -68,6 +70,7 @@ from local_workspace_application.benchmarks.local_model_qualification.protocols 
     PROTOCOL_STRUCTURED_OUTPUT,
     BenchmarkAdapter,
     ProtocolAttemptSuccess,
+    classify_model_preparation_error,
     run_protocol_attempt,
 )
 from local_workspace_application.benchmarks.local_model_qualification.provisioning import (
@@ -375,6 +378,155 @@ def _failed_probe_result(
         probe_error_type=probe_attempt.error_type,
         probe_safe_error_code=probe_attempt.safe_error_code,
         probe_latency_ms=probe_latency_ms,
+        warmup_failure_category=None,
+        warmup_failure_phase=None,
+        warmup_error_type=None,
+        warmup_safe_error_code=None,
+        warmup_failure_repetition=None,
+        warmup_failure_latency_ms=None,
+    )
+
+
+def build_model_failure_protocol_results(
+    *,
+    config: LocalModelQualificationConfig,
+    category: StructuralFailureCategory,
+    phase: FailurePhase,
+    error_type: str,
+    safe_error_code: SafeErrorCode,
+) -> tuple[ProtocolResult, ...]:
+    is_resource = category == StructuralFailureCategory.RESOURCE_LIMIT
+    schema_probe_status = (
+        SchemaProbeStatus.RESOURCE_LIMIT
+        if is_resource
+        else SchemaProbeStatus.PROVIDER_ERROR
+    )
+    qualification_status = (
+        ProtocolStatus.RESOURCE_LIMIT
+        if is_resource
+        else ProtocolStatus.PROVIDER_ERROR
+    )
+    provider_failure_count = 0 if is_resource else 1
+    failure_category_counts = {category.value: 1}
+    return tuple(
+        ProtocolResult(
+            protocol=protocol,
+            capability_supported=False,
+            schema_probe_status=schema_probe_status,
+            warmup_status=WarmupStatus.SKIPPED,
+            qualification_status=qualification_status,
+            case_count=0,
+            pass_count=0,
+            failure_count=0,
+            semantic_success_rate=0.0,
+            invalid_draft_count=0,
+            provider_failure_count=provider_failure_count,
+            unsafe_state_change_count=0,
+            failure_category_counts=failure_category_counts,
+            latency_ms=latency_stats([]),
+            case_results=(),
+            probe_failure_category=category.value,
+            probe_failure_phase=phase.value,
+            probe_error_type=error_type,
+            probe_safe_error_code=safe_error_code.value,
+            probe_latency_ms=None,
+            warmup_failure_category=None,
+            warmup_failure_phase=None,
+            warmup_error_type=None,
+            warmup_safe_error_code=None,
+            warmup_failure_repetition=None,
+            warmup_failure_latency_ms=None,
+        )
+        for protocol in enabled_protocols(config)
+    )
+
+
+def build_warmup_failure_result(
+    *,
+    protocol: str,
+    capability_supported: bool,
+    schema_probe_status: SchemaProbeStatus,
+    probe_latency_ms: float,
+    attempt: ProtocolAttemptSuccess,
+    warmup_repetition: int,
+    warmup_latency_ms: float,
+) -> ProtocolResult:
+    category = attempt.failure_category or StructuralFailureCategory.PROVIDER_ERROR.value
+    is_resource = category == StructuralFailureCategory.RESOURCE_LIMIT.value
+    is_provider = category == StructuralFailureCategory.PROVIDER_ERROR.value
+    if is_resource:
+        qualification_status = ProtocolStatus.RESOURCE_LIMIT
+        provider_failure_count = 0
+    elif is_provider:
+        qualification_status = ProtocolStatus.WARMUP_FAILED
+        provider_failure_count = 1
+    else:
+        qualification_status = ProtocolStatus.WARMUP_FAILED
+        provider_failure_count = 0
+    return ProtocolResult(
+        protocol=protocol,
+        capability_supported=capability_supported,
+        schema_probe_status=schema_probe_status,
+        warmup_status=WarmupStatus.FAILED,
+        qualification_status=qualification_status,
+        case_count=0,
+        pass_count=0,
+        failure_count=0,
+        semantic_success_rate=0.0,
+        invalid_draft_count=0,
+        provider_failure_count=provider_failure_count,
+        unsafe_state_change_count=0,
+        failure_category_counts={category: 1},
+        latency_ms=latency_stats([]),
+        case_results=(),
+        probe_failure_category=None,
+        probe_failure_phase=None,
+        probe_error_type=None,
+        probe_safe_error_code=None,
+        probe_latency_ms=probe_latency_ms,
+        warmup_failure_category=category,
+        warmup_failure_phase=attempt.failure_phase,
+        warmup_error_type=attempt.error_type,
+        warmup_safe_error_code=attempt.safe_error_code,
+        warmup_failure_repetition=warmup_repetition,
+        warmup_failure_latency_ms=warmup_latency_ms,
+    )
+
+
+def _model_status_from_preparation_failure(category: StructuralFailureCategory) -> ModelStatus:
+    if category == StructuralFailureCategory.RESOURCE_LIMIT:
+        return ModelStatus.RESOURCE_LIMIT
+    return ModelStatus.PROVIDER_UNAVAILABLE
+
+
+def _append_model_preparation_failure(
+    *,
+    config: LocalModelQualificationConfig,
+    model_cfg: ModelConfig,
+    metadata: ModelMetadata,
+    exc: BaseException,
+    phase: FailurePhase,
+    model_results: list[ModelResult],
+) -> None:
+    category, safe_code = classify_model_preparation_error(exc, phase=phase)
+    protocol_results = build_model_failure_protocol_results(
+        config=config,
+        category=category,
+        phase=phase,
+        error_type=type(exc).__name__,
+        safe_error_code=safe_code,
+    )
+    model_results.append(
+        ModelResult(
+            name=model_cfg.name,
+            role=model_cfg.role,
+            installed=True,
+            metadata=metadata,
+            declared_capabilities=(),
+            observed_execution_mode=ObservedExecutionMode.UNKNOWN,
+            status=_model_status_from_preparation_failure(category),
+            protocols=protocol_results,
+        )
     )
 
 
@@ -415,8 +567,12 @@ def run_protocol_benchmark(
             probe_latency_ms=probe_latency_ms,
         )
 
-    warmup_status = WarmupStatus.PASS
+    warmup_status = WarmupStatus.PASS if config.benchmark.warmup_runs > 0 else WarmupStatus.SKIPPED
+    failed_warmup_attempt: ProtocolAttemptSuccess | None = None
+    failed_warmup_repetition = 0
+    failed_warmup_latency_ms = 0.0
     for warmup_index in range(1, config.benchmark.warmup_runs + 1):
+        warmup_started = time.perf_counter()
         warmup_attempt = run_protocol_attempt(
             adapter=adapter,
             protocol=protocol,
@@ -424,32 +580,23 @@ def run_protocol_benchmark(
             benchmark=config.benchmark,
             run_id=build_run_id(model.name, protocol, _PROBE_CASE_ID, -warmup_index),
         )
+        warmup_elapsed_ms = (time.perf_counter() - warmup_started) * 1000.0
         if not warmup_attempt.ok:
             warmup_status = WarmupStatus.FAILED
+            failed_warmup_attempt = warmup_attempt
+            failed_warmup_repetition = warmup_index
+            failed_warmup_latency_ms = warmup_elapsed_ms
             break
-    if warmup_status == WarmupStatus.FAILED:
+    if warmup_status == WarmupStatus.FAILED and failed_warmup_attempt is not None:
         emit(f"model={model.name} protocol={protocol} qualification={ProtocolStatus.WARMUP_FAILED.value}")
-        return ProtocolResult(
+        return build_warmup_failure_result(
             protocol=protocol,
             capability_supported=capability_supported,
             schema_probe_status=schema_probe_status,
-            warmup_status=warmup_status,
-            qualification_status=ProtocolStatus.WARMUP_FAILED,
-            case_count=0,
-            pass_count=0,
-            failure_count=0,
-            semantic_success_rate=0.0,
-            invalid_draft_count=0,
-            provider_failure_count=0,
-            unsafe_state_change_count=0,
-            failure_category_counts={},
-            latency_ms=latency_stats([]),
-            case_results=(),
-            probe_failure_category=None,
-            probe_failure_phase=None,
-            probe_error_type=None,
-            probe_safe_error_code=None,
             probe_latency_ms=probe_latency_ms,
+            attempt=failed_warmup_attempt,
+            warmup_repetition=failed_warmup_repetition,
+            warmup_latency_ms=failed_warmup_latency_ms,
         )
 
     case_results: list[CaseResult] = []
@@ -577,6 +724,12 @@ def run_protocol_benchmark(
         probe_error_type=None,
         probe_safe_error_code=None,
         probe_latency_ms=probe_latency_ms,
+        warmup_failure_category=None,
+        warmup_failure_phase=None,
+        warmup_error_type=None,
+        warmup_safe_error_code=None,
+        warmup_failure_repetition=None,
+        warmup_failure_latency_ms=None,
     )
 
 
@@ -602,6 +755,8 @@ def run_benchmark(
     for model_cfg in config.models:
         if not model_cfg.enabled:
             continue
+        metadata = ModelMetadata()
+        inventory_record = None
         try:
             inventory_record = inventory[model_cfg.name]
             show = fetch_show_metadata(
@@ -610,67 +765,98 @@ def run_benchmark(
                 client_factory=client_factory,
             )
             metadata = build_inventory_metadata(inventory_record, show)
-            adapter = create_adapter(model_cfg.name)
-            declared = _declared_capabilities(adapter)
-            protocol_results: list[ProtocolResult] = []
-            model_had_failure = False
-            for protocol in enabled_protocols(config):
-                protocol_result = run_protocol_benchmark(
-                    config=config,
-                    model=model_cfg,
-                    protocol=protocol,
-                    adapter=adapter,
-                    progress=emit,
+        except Exception as exc:
+            if inventory_record is not None:
+                metadata = ModelMetadata(
+                    digest=inventory_record.digest,
+                    artifact_size_bytes=inventory_record.artifact_size_bytes,
                 )
-                protocol_results.append(protocol_result)
-                actual_scored_calls += protocol_result.case_count
-                if protocol_result.qualification_status not in {
-                    ProtocolStatus.QUALIFIED,
-                    ProtocolStatus.CONDITIONALLY_QUALIFIED,
-                    ProtocolStatus.NOT_QUALIFIED,
-                }:
-                    model_had_failure = True
-
-            loaded_size, size_vram = fetch_runtime_metadata(
-                config.ollama,
-                model_cfg.name,
-                client_factory=client_factory,
-            )
-            metadata = merge_runtime_metadata(metadata, loaded_size, size_vram)
-            execution_mode = derive_execution_mode(metadata)
-
-            status = (
-                ModelStatus.COMPLETED_WITH_FAILURES
-                if model_had_failure or any(result.failure_count > 0 for result in protocol_results)
-                else ModelStatus.COMPLETED
-            )
-            model_results.append(
-                ModelResult(
-                    name=model_cfg.name,
-                    role=model_cfg.role,
-                    installed=True,
-                    metadata=metadata,
-                    declared_capabilities=declared,
-                    observed_execution_mode=execution_mode,
-                    status=status,
-                    protocols=tuple(protocol_results),
-                )
-            )
-        except Exception:
-            model_results.append(
-                ModelResult(
-                    name=model_cfg.name,
-                    role=model_cfg.role,
-                    installed=True,
-                    metadata=ModelMetadata(),
-                    declared_capabilities=(),
-                    observed_execution_mode=ObservedExecutionMode.UNKNOWN,
-                    status=ModelStatus.PROVIDER_UNAVAILABLE,
-                    protocols=(),
-                )
+            _append_model_preparation_failure(
+                config=config,
+                model_cfg=model_cfg,
+                metadata=metadata,
+                exc=exc,
+                phase=FailurePhase.MODEL_METADATA,
+                model_results=model_results,
             )
             if not config.ollama.continue_on_model_error:
                 raise
+            continue
+
+        try:
+            adapter = create_adapter(model_cfg.name)
+        except Exception as exc:
+            _append_model_preparation_failure(
+                config=config,
+                model_cfg=model_cfg,
+                metadata=metadata,
+                exc=exc,
+                phase=FailurePhase.ADAPTER_CONSTRUCTION,
+                model_results=model_results,
+            )
+            if not config.ollama.continue_on_model_error:
+                raise
+            continue
+
+        try:
+            declared = _declared_capabilities(adapter)
+        except Exception as exc:
+            _append_model_preparation_failure(
+                config=config,
+                model_cfg=model_cfg,
+                metadata=metadata,
+                exc=exc,
+                phase=FailurePhase.CAPABILITY_RESOLUTION,
+                model_results=model_results,
+            )
+            if not config.ollama.continue_on_model_error:
+                raise
+            continue
+
+        protocol_results: list[ProtocolResult] = []
+        model_had_failure = False
+        for protocol in enabled_protocols(config):
+            protocol_result = run_protocol_benchmark(
+                config=config,
+                model=model_cfg,
+                protocol=protocol,
+                adapter=adapter,
+                progress=emit,
+            )
+            protocol_results.append(protocol_result)
+            actual_scored_calls += protocol_result.case_count
+            if protocol_result.qualification_status not in {
+                ProtocolStatus.QUALIFIED,
+                ProtocolStatus.CONDITIONALLY_QUALIFIED,
+                ProtocolStatus.NOT_QUALIFIED,
+            }:
+                model_had_failure = True
+
+        loaded_size, size_vram = fetch_runtime_metadata(
+            config.ollama,
+            model_cfg.name,
+            client_factory=client_factory,
+        )
+        metadata = merge_runtime_metadata(metadata, loaded_size, size_vram)
+        execution_mode = derive_execution_mode(metadata)
+
+        status = (
+            ModelStatus.COMPLETED_WITH_FAILURES
+            if model_had_failure or any(result.failure_count > 0 for result in protocol_results)
+            else ModelStatus.COMPLETED
+        )
+        model_results.append(
+            ModelResult(
+                name=model_cfg.name,
+                role=model_cfg.role,
+                installed=True,
+                metadata=metadata,
+                declared_capabilities=declared,
+                observed_execution_mode=execution_mode,
+                status=status,
+                protocols=tuple(protocol_results),
+            )
+        )
 
     models_tuple = tuple(model_results)
     summary = _build_summary(config, models_tuple, provisioning, actual_scored_calls)

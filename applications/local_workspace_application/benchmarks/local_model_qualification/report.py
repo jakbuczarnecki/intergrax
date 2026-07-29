@@ -15,6 +15,7 @@ from local_workspace_application.benchmarks.local_model_qualification.contracts 
     ProtocolResult,
     ProtocolStatus,
     ProvisioningResult,
+    WarmupStatus,
 )
 
 _GENERATED_WARNING = """<!--
@@ -133,6 +134,20 @@ def _probe_diagnostics(protocol: ProtocolResult) -> tuple[str, str, str, str]:
         protocol.probe_failure_category or "n/a",
         protocol.probe_failure_phase or "n/a",
         protocol.probe_safe_error_code or "n/a",
+    )
+
+
+def _warmup_diagnostics(protocol: ProtocolResult) -> tuple[str, str, str, str, str]:
+    if protocol.warmup_status != WarmupStatus.FAILED:
+        return "n/a", "n/a", "n/a", "n/a", "n/a"
+    return (
+        protocol.warmup_failure_category or "n/a",
+        protocol.warmup_failure_phase or "n/a",
+        protocol.warmup_safe_error_code or "n/a",
+        str(protocol.warmup_failure_repetition) if protocol.warmup_failure_repetition is not None else "n/a",
+        f"{protocol.warmup_failure_latency_ms:.1f}"
+        if protocol.warmup_failure_latency_ms is not None
+        else "n/a",
     )
 
 
@@ -265,7 +280,7 @@ def render_markdown(result: LocalModelQualificationResult) -> str:
             "## 8. Model × protocol comparison",
             "",
             "| Model | Role | Protocol | Capabilities | Schema probe | Probe failure category | "
-            "Probe phase | Safe error code | Samples | Semantic success | "
+            "Probe phase | Safe error code | Warmup status | Samples | Semantic success | "
             "Invalid drafts | Provider failures | Unsafe state changes | Median latency | p95 latency | "
             "Execution mode | Qualification |",
             "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -281,6 +296,7 @@ def render_markdown(result: LocalModelQualificationResult) -> str:
             lines.append(
                 f"| {model.name} | {model.role} | {protocol.protocol} | {capabilities} | "
                 f"{probe_status} | {failure_category} | {phase} | {safe_code} | "
+                f"{protocol.warmup_status.value} | "
                 f"{protocol.case_count} | {protocol.semantic_success_rate:.1%} | "
                 f"{protocol.invalid_draft_count} | {protocol.provider_failure_count} | "
                 f"{protocol.unsafe_state_change_count} | {protocol.latency_ms.median:.0f} | "
@@ -342,6 +358,20 @@ def render_markdown(result: LocalModelQualificationResult) -> str:
             )[:5]
             lines.append(f"#### Protocol: {protocol.protocol}")
             lines.append(f"- Qualification: {protocol.qualification_status.value}")
+            probe_status, probe_category, probe_phase, probe_safe_code = _probe_diagnostics(protocol)
+            warmup_category, warmup_phase, warmup_safe_code, warmup_repetition, warmup_latency = (
+                _warmup_diagnostics(protocol)
+            )
+            lines.append(f"- Probe status: {probe_status}")
+            lines.append(f"- Probe failure category: {probe_category}")
+            lines.append(f"- Probe failure phase: {probe_phase}")
+            lines.append(f"- Probe safe error code: {probe_safe_code}")
+            lines.append(f"- Warmup status: {protocol.warmup_status.value}")
+            lines.append(f"- Warmup failure category: {warmup_category}")
+            lines.append(f"- Warmup failure phase: {warmup_phase}")
+            lines.append(f"- Warmup safe error code: {warmup_safe_code}")
+            lines.append(f"- Warmup failure repetition: {warmup_repetition}")
+            lines.append(f"- Warmup failure latency: {warmup_latency}")
             if top_failures:
                 lines.append("- Top failure categories:")
                 for category, count in top_failures:

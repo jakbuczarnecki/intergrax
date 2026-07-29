@@ -31,6 +31,25 @@ from local_workspace_application.conversation.interaction_prompt import build_pl
 PROTOCOL_STRUCTURED_OUTPUT = "structured_output"
 PROTOCOL_SINGLE_PLAN_TOOL = "single_plan_tool"
 
+_EXPECTED_SCHEMA_INCOMPATIBILITY_CATEGORIES = frozenset(
+    {
+        StructuralFailureCategory.MISSING_PLAN_TOOL_CALL.value,
+        StructuralFailureCategory.MULTIPLE_PLAN_TOOL_CALLS.value,
+        StructuralFailureCategory.UNEXPECTED_PLAN_TOOL.value,
+        StructuralFailureCategory.INVALID_TOOL_ARGUMENTS.value,
+        StructuralFailureCategory.DRAFT_VALIDATION_FAILED.value,
+        StructuralFailureCategory.DRAFT_COMPILATION_FAILED.value,
+        StructuralFailureCategory.CANONICAL_VALIDATION_FAILED.value,
+    }
+)
+
+
+def is_expected_schema_incompatibility(category: str | None) -> bool:
+    """Return True when a failed tool attempt reflects schema/model incompatibility."""
+    if category is None:
+        return False
+    return category in _EXPECTED_SCHEMA_INCOMPATIBILITY_CATEGORIES
+
 SUBMIT_DRAFT_TOOL_NAME = "submit_conversation_interaction_draft"
 
 _TOOL_TRANSPORT_INSTRUCTION = (
@@ -126,6 +145,21 @@ def _is_resource_error(exc: BaseException) -> bool:
         token in message
         for token in ("out of memory", "cuda oom", "resource exhausted", "insufficient memory")
     )
+
+
+def classify_model_preparation_error(
+    exc: BaseException,
+    *,
+    phase: FailurePhase,
+) -> tuple[StructuralFailureCategory, SafeErrorCode]:
+    if _is_resource_error(exc):
+        return StructuralFailureCategory.RESOURCE_LIMIT, SafeErrorCode.OLLAMA_RESOURCE_LIMIT
+    safe_code_by_phase = {
+        FailurePhase.MODEL_METADATA: SafeErrorCode.OLLAMA_MODEL_METADATA_FAILED,
+        FailurePhase.ADAPTER_CONSTRUCTION: SafeErrorCode.OLLAMA_ADAPTER_CONSTRUCTION_FAILED,
+        FailurePhase.CAPABILITY_RESOLUTION: SafeErrorCode.OLLAMA_CAPABILITY_RESOLUTION_FAILED,
+    }
+    return StructuralFailureCategory.PROVIDER_ERROR, safe_code_by_phase[phase]
 
 
 def _classify_provider_error(exc: BaseException, *, protocol: str) -> tuple[str, SafeErrorCode]:

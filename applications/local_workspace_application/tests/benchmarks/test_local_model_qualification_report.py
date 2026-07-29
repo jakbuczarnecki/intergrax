@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from local_workspace_application.benchmarks.local_model_qualification.config import (
+    QualificationConfig,
+    load_config,
+)
 from local_workspace_application.benchmarks.local_model_qualification.contracts import (
     BENCHMARK_ID,
     CORPUS_VERSION,
     CaseExecutionStatus,
     CaseResult,
+    FailurePhase,
     HostMetadata,
     LatencyStats,
     LocalModelQualificationResult,
@@ -22,7 +29,9 @@ from local_workspace_application.benchmarks.local_model_qualification.contracts 
     ProvisioningResult,
     QualificationSummary,
     RESULT_SCHEMA_VERSION,
+    SafeErrorCode,
     SchemaProbeStatus,
+    StructuralFailureCategory,
     WarmupStatus,
 )
 from local_workspace_application.benchmarks.local_model_qualification.report import (
@@ -34,11 +43,11 @@ from local_workspace_application.benchmarks.local_model_qualification.report imp
 )
 from local_workspace_application.benchmarks.local_model_qualification.runner import (
     _qualification_status,
+    build_model_failure_protocol_results,
     latency_stats,
     median_deterministic,
     percentile_nearest_rank,
 )
-from local_workspace_application.benchmarks.local_model_qualification.config import QualificationConfig
 
 
 def _provisioning() -> ProvisioningResult:
@@ -251,3 +260,73 @@ def test_qualification_policy() -> None:
         unsafe_state_change_count=0,
     )
     assert qualified == ProtocolStatus.QUALIFIED
+
+
+_CONFIG = (
+    Path(__file__).resolve().parents[2]
+    / "scripts"
+    / "local-model-qualification.toml"
+)
+
+
+def test_model_preparation_failure_rows_rendered() -> None:
+    config = load_config(_CONFIG)
+    protocols = build_model_failure_protocol_results(
+        config=config,
+        category=StructuralFailureCategory.PROVIDER_ERROR,
+        phase=FailurePhase.ADAPTER_CONSTRUCTION,
+        error_type="RuntimeError",
+        safe_error_code=SafeErrorCode.OLLAMA_ADAPTER_CONSTRUCTION_FAILED,
+    )
+    result = _sample_result()
+    model = result.models[0].model_copy(update={"protocols": protocols})
+    text = render_markdown(result.model_copy(update={"models": (model,)}))
+    assert "ADAPTER_CONSTRUCTION" in text
+    assert "OLLAMA_ADAPTER_CONSTRUCTION_FAILED" in text
+    assert "SKIPPED" in text
+
+
+def test_warmup_diagnostics_rendered() -> None:
+    failed = _protocol(
+        warmup_status=WarmupStatus.FAILED,
+        qualification_status=ProtocolStatus.WARMUP_FAILED,
+        warmup_failure_category="MISSING_PLAN_TOOL_CALL",
+        warmup_failure_phase="TOOL_CALL_VALIDATION",
+        warmup_safe_error_code="n/a",
+        warmup_failure_repetition=1,
+        warmup_failure_latency_ms=42.5,
+        failure_category_counts={"MISSING_PLAN_TOOL_CALL": 1},
+    )
+    result = _sample_result()
+    model = result.models[0].model_copy(update={"protocols": (failed,)})
+    text = render_markdown(result.model_copy(update={"models": (model,)}))
+    assert "Warmup failure category: MISSING_PLAN_TOOL_CALL" in text
+    assert "Warmup failure phase: TOOL_CALL_VALIDATION" in text
+    assert "Warmup failure repetition: 1" in text
+    assert "Warmup failure latency: 42.5" in text
+    assert "| FAILED |" in text or "Warmup status: FAILED" in text
+
+
+def test_successful_warmup_renders_na_diagnostics() -> None:
+    passed = _protocol(warmup_status=WarmupStatus.PASS)
+    result = _sample_result()
+    model = result.models[0].model_copy(update={"protocols": (passed,)})
+    text = render_markdown(result.model_copy(update={"models": (model,)}))
+    assert "Warmup failure category: n/a" in text
+    assert "Warmup failure phase: n/a" in text
+    assert "Warmup safe error code: n/a" in text
+
+
+def test_raw_exception_message_absent_from_report() -> None:
+    protocols = build_model_failure_protocol_results(
+        config=load_config(_CONFIG),
+        category=StructuralFailureCategory.PROVIDER_ERROR,
+        phase=FailurePhase.ADAPTER_CONSTRUCTION,
+        error_type="RuntimeError",
+        safe_error_code=SafeErrorCode.OLLAMA_ADAPTER_CONSTRUCTION_FAILED,
+    )
+    result = _sample_result()
+    model = result.models[0].model_copy(update={"protocols": protocols})
+    text = render_markdown(result.model_copy(update={"models": (model,)}))
+    assert "adapter construction failed" not in text.lower()
+    assert "super secret" not in text.lower()

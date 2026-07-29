@@ -26,6 +26,7 @@ from local_workspace_application.benchmarks.local_model_qualification.protocols 
     PROTOCOL_SINGLE_PLAN_TOOL,
     PROTOCOL_STRUCTURED_OUTPUT,
     SUBMIT_DRAFT_TOOL_NAME,
+    is_expected_schema_incompatibility,
     run_protocol_attempt,
 )
 from local_workspace_application.conversation.interaction_draft_models import (
@@ -305,3 +306,19 @@ def test_tool_unsupported_capability_classified() -> None:
     )
     assert attempt.failure_category == StructuralFailureCategory.PROTOCOL_UNSUPPORTED.value
     assert attempt.safe_error_code == SafeErrorCode.OLLAMA_MODEL_TOOLS_UNSUPPORTED.value
+
+
+@pytest.mark.parametrize(
+    ("category", "expected"),
+    [
+        (StructuralFailureCategory.MISSING_PLAN_TOOL_CALL.value, True),
+        (StructuralFailureCategory.INVALID_TOOL_ARGUMENTS.value, True),
+        (StructuralFailureCategory.DRAFT_VALIDATION_FAILED.value, True),
+        (StructuralFailureCategory.PROVIDER_ERROR.value, False),
+        (StructuralFailureCategory.RESOURCE_LIMIT.value, False),
+        (StructuralFailureCategory.PROTOCOL_UNSUPPORTED.value, False),
+        (None, False),
+    ],
+)
+def test_is_expected_schema_incompatibility(category: str | None, expected: bool) -> None:
+    assert is_expected_schema_incompatibility(category) is expected

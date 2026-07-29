@@ -30,6 +30,9 @@ class StructuralFailureCategory(StrEnum):
 
 
 class FailurePhase(StrEnum):
+    MODEL_METADATA = "MODEL_METADATA"
+    ADAPTER_CONSTRUCTION = "ADAPTER_CONSTRUCTION"
+    CAPABILITY_RESOLUTION = "CAPABILITY_RESOLUTION"
     CAPABILITY_CHECK = "CAPABILITY_CHECK"
     SCHEMA_PREPARATION = "SCHEMA_PREPARATION"
     PROVIDER_BIND = "PROVIDER_BIND"
@@ -46,6 +49,9 @@ class SafeErrorCode(StrEnum):
     OLLAMA_MODEL_TOOLS_UNSUPPORTED = "OLLAMA_MODEL_TOOLS_UNSUPPORTED"
     OLLAMA_PROVIDER_TRANSPORT_FAILED = "OLLAMA_PROVIDER_TRANSPORT_FAILED"
     OLLAMA_PROVIDER_RESPONSE_INVALID = "OLLAMA_PROVIDER_RESPONSE_INVALID"
+    OLLAMA_MODEL_METADATA_FAILED = "OLLAMA_MODEL_METADATA_FAILED"
+    OLLAMA_ADAPTER_CONSTRUCTION_FAILED = "OLLAMA_ADAPTER_CONSTRUCTION_FAILED"
+    OLLAMA_CAPABILITY_RESOLUTION_FAILED = "OLLAMA_CAPABILITY_RESOLUTION_FAILED"
     OLLAMA_RESOURCE_LIMIT = "OLLAMA_RESOURCE_LIMIT"
     UNKNOWN_PROVIDER_FAILURE = "UNKNOWN_PROVIDER_FAILURE"
 
@@ -173,6 +179,12 @@ class ProtocolResult(_FrozenModel):
     probe_error_type: str | None = None
     probe_safe_error_code: str | None = None
     probe_latency_ms: float | None = None
+    warmup_failure_category: str | None = None
+    warmup_failure_phase: str | None = None
+    warmup_error_type: str | None = None
+    warmup_safe_error_code: str | None = None
+    warmup_failure_repetition: int | None = None
+    warmup_failure_latency_ms: float | None = None
 
 
 class ModelMetadata(_FrozenModel):
