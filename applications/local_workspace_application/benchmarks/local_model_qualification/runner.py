@@ -387,6 +387,59 @@ def _failed_probe_result(
     )
 
 
+def build_capability_failure_result(
+    *,
+    protocol: str,
+    exc: BaseException,
+    latency_ms: float,
+) -> ProtocolResult:
+    category, safe_code = classify_model_preparation_error(
+        exc,
+        phase=FailurePhase.CAPABILITY_RESOLUTION,
+    )
+    is_resource = category == StructuralFailureCategory.RESOURCE_LIMIT
+    schema_probe_status = (
+        SchemaProbeStatus.RESOURCE_LIMIT
+        if is_resource
+        else SchemaProbeStatus.PROVIDER_ERROR
+    )
+    qualification_status = (
+        ProtocolStatus.RESOURCE_LIMIT
+        if is_resource
+        else ProtocolStatus.PROVIDER_ERROR
+    )
+    provider_failure_count = 0 if is_resource else 1
+    failure_category_counts = {category.value: 1}
+    return ProtocolResult(
+        protocol=protocol,
+        capability_supported=False,
+        schema_probe_status=schema_probe_status,
+        warmup_status=WarmupStatus.SKIPPED,
+        qualification_status=qualification_status,
+        case_count=0,
+        pass_count=0,
+        failure_count=0,
+        semantic_success_rate=0.0,
+        invalid_draft_count=0,
+        provider_failure_count=provider_failure_count,
+        unsafe_state_change_count=0,
+        failure_category_counts=failure_category_counts,
+        latency_ms=latency_stats([]),
+        case_results=(),
+        probe_failure_category=category.value,
+        probe_failure_phase=FailurePhase.CAPABILITY_RESOLUTION.value,
+        probe_error_type=type(exc).__name__,
+        probe_safe_error_code=safe_code.value,
+        probe_latency_ms=latency_ms,
+        warmup_failure_category=None,
+        warmup_failure_phase=None,
+        warmup_error_type=None,
+        warmup_safe_error_code=None,
+        warmup_failure_repetition=None,
+        warmup_failure_latency_ms=None,
+    )
+
+
 def build_model_failure_protocol_results(
     *,
     config: LocalModelQualificationConfig,
@@ -539,11 +592,27 @@ def run_protocol_benchmark(
     progress: Callable[[str], None] | None = None,
 ) -> ProtocolResult:
     emit = progress or (lambda _message: None)
-    capability_supported = (
-        adapter.supports_structured_output()
-        if protocol == PROTOCOL_STRUCTURED_OUTPUT
-        else adapter.supports_tools()
-    )
+    capability_started = time.perf_counter()
+    try:
+        capability_supported = (
+            adapter.supports_structured_output()
+            if protocol == PROTOCOL_STRUCTURED_OUTPUT
+            else adapter.supports_tools()
+        )
+    except Exception as exc:
+        capability_latency_ms = (time.perf_counter() - capability_started) * 1000.0
+        result = build_capability_failure_result(
+            protocol=protocol,
+            exc=exc,
+            latency_ms=capability_latency_ms,
+        )
+        emit(
+            f"model={model.name} "
+            f"protocol={protocol} "
+            f"phase=capability "
+            f"status={result.qualification_status.value}"
+        )
+        return result
     probe_case = case_by_id(_PROBE_CASE_ID)
     probe_started = time.perf_counter()
     probe_attempt = run_protocol_attempt(

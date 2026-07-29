@@ -283,7 +283,7 @@ def render_markdown(result: LocalModelQualificationResult) -> str:
             "Probe phase | Safe error code | Warmup status | Samples | Semantic success | "
             "Invalid drafts | Provider failures | Unsafe state changes | Median latency | p95 latency | "
             "Execution mode | Qualification |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
     for model in result.models:

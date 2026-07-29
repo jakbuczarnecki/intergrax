@@ -151,6 +151,21 @@ class CapabilityFailAdapter(ScriptedAdapter):
         raise RuntimeError("capability resolution failed")
 
 
+class ToolsCapabilityFailAdapter(ScriptedAdapter):
+    def supports_tools(self) -> bool:
+        raise RuntimeError("capability resolution failed")
+
+
+class StructuredOutputCapabilityFailAdapter(ScriptedAdapter):
+    def supports_structured_output(self) -> bool:
+        raise RuntimeError("capability resolution failed")
+
+
+class ToolsCapabilityResourceFailAdapter(ScriptedAdapter):
+    def supports_tools(self) -> bool:
+        raise MemoryError("out of memory")
+
+
 @dataclass
 class CountingWarmupAdapter:
     fail_after_successes: int = 1
@@ -598,3 +613,131 @@ def test_classify_model_preparation_error_by_phase() -> None:
     )
     assert category == StructuralFailureCategory.RESOURCE_LIMIT
     assert code == SafeErrorCode.OLLAMA_RESOURCE_LIMIT
+
+
+def test_tools_capability_provider_failure_isolated() -> None:
+    config = load_config(_CONFIG)
+    model_cfg = next(model for model in config.models if model.enabled)
+    adapter = ToolsCapabilityFailAdapter(calls=[])
+    structured = run_protocol_benchmark(
+        config=config,
+        model=model_cfg,
+        protocol="structured_output",
+        adapter=adapter,
+    )
+    tools = run_protocol_benchmark(
+        config=config,
+        model=model_cfg,
+        protocol="single_plan_tool",
+        adapter=adapter,
+    )
+    assert structured.qualification_status != ProtocolStatus.PROVIDER_ERROR
+    assert structured.case_count > 0
+    assert tools.qualification_status == ProtocolStatus.PROVIDER_ERROR
+    assert tools.schema_probe_status == SchemaProbeStatus.PROVIDER_ERROR
+    assert tools.probe_failure_phase == FailurePhase.CAPABILITY_RESOLUTION.value
+    assert tools.probe_safe_error_code == SafeErrorCode.OLLAMA_CAPABILITY_RESOLUTION_FAILED.value
+    assert tools.provider_failure_count == 1
+    assert tools.failure_category_counts == {"PROVIDER_ERROR": 1}
+    assert tools.case_count == 0
+    assert tools.probe_latency_ms is not None
+    assert tools.probe_latency_ms >= 0
+
+
+def test_structured_output_capability_provider_failure_isolated() -> None:
+    config = load_config(_CONFIG)
+    model_cfg = next(model for model in config.models if model.enabled)
+    adapter = StructuredOutputCapabilityFailAdapter(calls=[])
+    structured = run_protocol_benchmark(
+        config=config,
+        model=model_cfg,
+        protocol="structured_output",
+        adapter=adapter,
+    )
+    tools = run_protocol_benchmark(
+        config=config,
+        model=model_cfg,
+        protocol="single_plan_tool",
+        adapter=adapter,
+    )
+    assert structured.qualification_status == ProtocolStatus.PROVIDER_ERROR
+    assert structured.schema_probe_status == SchemaProbeStatus.PROVIDER_ERROR
+    assert structured.probe_failure_phase == FailurePhase.CAPABILITY_RESOLUTION.value
+    assert structured.probe_safe_error_code == SafeErrorCode.OLLAMA_CAPABILITY_RESOLUTION_FAILED.value
+    assert structured.provider_failure_count == 1
+    assert structured.case_count == 0
+    assert tools.qualification_status != ProtocolStatus.PROVIDER_ERROR
+    assert tools.case_count > 0
+
+
+def test_capability_resource_failure_diagnostics() -> None:
+    config = load_config(_CONFIG)
+    model_cfg = next(model for model in config.models if model.enabled)
+    adapter = ToolsCapabilityResourceFailAdapter(calls=[])
+    result = run_protocol_benchmark(
+        config=config,
+        model=model_cfg,
+        protocol="single_plan_tool",
+        adapter=adapter,
+    )
+    assert result.qualification_status == ProtocolStatus.RESOURCE_LIMIT
+    assert result.schema_probe_status == SchemaProbeStatus.RESOURCE_LIMIT
+    assert result.provider_failure_count == 0
+    assert result.failure_category_counts == {"RESOURCE_LIMIT": 1}
+    assert result.probe_safe_error_code == SafeErrorCode.OLLAMA_RESOURCE_LIMIT.value
+    assert result.probe_failure_phase == FailurePhase.CAPABILITY_RESOLUTION.value
+    assert result.probe_latency_ms is not None
+    assert result.probe_latency_ms >= 0
+
+
+def test_tools_capability_failure_allows_later_models() -> None:
+    config = load_config(_CONFIG)
+    enabled = [model.name for model in config.models if model.enabled]
+    failed_model = enabled[0]
+
+    def adapter_factory(model_name: str) -> ScriptedAdapter:
+        if model_name == failed_model:
+            return ToolsCapabilityFailAdapter(calls=[])
+        return ScriptedAdapter(calls=[])
+
+    result = run_benchmark(
+        config,
+        _provisioning(config),
+        client_factory=_client_factory(set(enabled)),
+        adapter_factory=adapter_factory,
+        generated_at_utc="2026-01-01T00:00:00+00:00",
+        generated_from_commit="test",
+    )
+    assert len(result.models) == 5
+    assert sum(len(model.protocols) for model in result.models) == 10
+    assert result.summary.attempted_model_protocol_pairs == 10
+    failed = next(model for model in result.models if model.name == failed_model)
+    tools_protocol = next(
+        protocol for protocol in failed.protocols if protocol.protocol == "single_plan_tool"
+    )
+    structured_protocol = next(
+        protocol for protocol in failed.protocols if protocol.protocol == "structured_output"
+    )
+    assert tools_protocol.qualification_status == ProtocolStatus.PROVIDER_ERROR
+    assert structured_protocol.case_count > 0
+    assert result.models[-1].protocols[0].case_count > 0
+
+
+def test_exit_code_two_protocol_capability_provider_failure() -> None:
+    config = load_config(_CONFIG)
+    enabled = [model.name for model in config.models if model.enabled]
+
+    def adapter_factory(model_name: str) -> ScriptedAdapter:
+        if model_name == enabled[0]:
+            return ToolsCapabilityFailAdapter(calls=[])
+        return ScriptedAdapter(calls=[])
+
+    result = run_benchmark(
+        config,
+        _provisioning(config),
+        client_factory=_client_factory(set(enabled)),
+        adapter_factory=adapter_factory,
+        generated_at_utc="2026-01-01T00:00:00+00:00",
+        generated_from_commit="test",
+    )
+    assert compute_exit_code(result) == 2

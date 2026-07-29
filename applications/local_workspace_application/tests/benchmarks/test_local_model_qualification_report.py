@@ -330,3 +330,37 @@ def test_raw_exception_message_absent_from_report() -> None:
     text = render_markdown(result.model_copy(update={"models": (model,)}))
     assert "adapter construction failed" not in text.lower()
     assert "super secret" not in text.lower()
+
+
+def markdown_cell_count(row: str) -> int:
+    stripped = row.strip()
+    assert stripped.startswith("|")
+    assert stripped.endswith("|")
+    return len(stripped.split("|")) - 2
+
+
+def test_model_protocol_comparison_table_column_counts() -> None:
+    structured = _protocol(protocol="structured_output")
+    tools = _protocol(protocol="single_plan_tool")
+    result = _sample_result()
+    model = result.models[0].model_copy(update={"protocols": (structured, tools)})
+    text = render_markdown(result.model_copy(update={"models": (model,)}))
+    lines = text.splitlines()
+    section_index = next(
+        index for index, line in enumerate(lines) if line.strip() == "## 8. Model × protocol comparison"
+    )
+    header = lines[section_index + 2]
+    separator = lines[section_index + 3]
+    data_rows = [
+        line
+        for line in lines[section_index + 4 :]
+        if line.startswith("| ") and not line.startswith("| ---")
+    ]
+    assert markdown_cell_count(header) == 18
+    assert markdown_cell_count(separator) == 18
+    assert data_rows
+    for row in data_rows:
+        if row.strip() == "":
+            break
+        assert markdown_cell_count(row) == 18
+    assert all(markdown_cell_count(row) == 18 for row in data_rows if row.strip())
