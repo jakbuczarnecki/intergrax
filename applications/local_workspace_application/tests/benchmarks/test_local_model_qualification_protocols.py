@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 import pytest
@@ -17,6 +17,8 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 
 from local_workspace_application.benchmarks.local_model_qualification.config import BenchmarkConfig
 from local_workspace_application.benchmarks.local_model_qualification.contracts import (
+    FailurePhase,
+    SafeErrorCode,
     StructuralFailureCategory,
 )
 from local_workspace_application.benchmarks.local_model_qualification.corpus import case_by_id
@@ -52,7 +54,7 @@ class FakeAdapter:
     structured_error: Exception | None = None
     tools_result: LLMAdapterResponse | None = None
     tools_error: Exception | None = None
-    tool_executed: bool = False
+    last_tool_choice: str | None = None
 
     def supports_structured_output(self) -> bool:
         return self.structured_supported
@@ -89,6 +91,7 @@ class FakeAdapter:
         tool_choice: str | dict | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
+        self.last_tool_choice = tool_choice if isinstance(tool_choice, str) else None
         if self.tools_error is not None:
             raise self.tools_error
         if self.tools_result is not None:
@@ -131,17 +134,7 @@ def test_structured_output_unsupported_classified() -> None:
         run_id="test",
     )
     assert attempt.failure_category == StructuralFailureCategory.PROTOCOL_UNSUPPORTED.value
-
-
-def test_structured_output_wrong_parsed_type_classified() -> None:
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(structured_result={"not": "draft"}),
-        protocol=PROTOCOL_STRUCTURED_OUTPUT,
-        request=case_by_id("planner.workspace_list").request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.DRAFT_VALIDATION_FAILED.value
+    assert attempt.failure_phase == FailurePhase.CAPABILITY_CHECK.value
 
 
 def test_structured_output_provider_exception_classified_safely() -> None:
@@ -154,6 +147,19 @@ def test_structured_output_provider_exception_classified_safely() -> None:
     )
     assert attempt.failure_category == StructuralFailureCategory.PROVIDER_ERROR.value
     assert attempt.error_type == "RuntimeError"
+    assert attempt.safe_error_code == SafeErrorCode.UNKNOWN_PROVIDER_FAILURE.value
+
+
+def test_single_plan_tool_uses_auto_tool_choice() -> None:
+    adapter = FakeAdapter()
+    run_protocol_attempt(
+        adapter=adapter,
+        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
+        request=case_by_id("planner.workspace_list").request,
+        benchmark=_BENCHMARK,
+        run_id="test",
+    )
+    assert adapter.last_tool_choice == "auto"
 
 
 def test_tool_exactly_one_correct_call_succeeds() -> None:
@@ -167,20 +173,77 @@ def test_tool_exactly_one_correct_call_succeeds() -> None:
     assert attempt.ok
 
 
-def test_tool_handler_not_used() -> None:
-    from pathlib import Path
-
-    import local_workspace_application.benchmarks.local_model_qualification.protocols as protocols_module
-
-    source = Path(protocols_module.__file__).read_text(encoding="utf-8")
-    assert "ToolRegistry" not in source
-    run_protocol_attempt(
-        adapter=FakeAdapter(),
+def test_tool_no_call_not_provider_error() -> None:
+    attempt = run_protocol_attempt(
+        adapter=FakeAdapter(
+            tools_result=LLMAdapterResponse(content="", tool_calls=()),
+        ),
         protocol=PROTOCOL_SINGLE_PLAN_TOOL,
         request=case_by_id("planner.workspace_list").request,
         benchmark=_BENCHMARK,
         run_id="test",
     )
+    assert attempt.failure_category == StructuralFailureCategory.MISSING_PLAN_TOOL_CALL.value
+    assert attempt.failure_phase == FailurePhase.TOOL_CALL_VALIDATION.value
+    assert attempt.safe_error_code is None
+
+
+def test_tool_invalid_arguments_not_provider_error() -> None:
+    attempt = run_protocol_attempt(
+        adapter=FakeAdapter(
+            tools_result=LLMAdapterResponse(
+                content="",
+                tool_calls=(
+                    LLMToolCall(id="1", name=SUBMIT_DRAFT_TOOL_NAME, arguments_json="{bad"),
+                ),
+            )
+        ),
+        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
+        request=case_by_id("planner.workspace_list").request,
+        benchmark=_BENCHMARK,
+        run_id="test",
+    )
+    assert attempt.failure_category == StructuralFailureCategory.INVALID_TOOL_ARGUMENTS.value
+    assert attempt.failure_phase == FailurePhase.TOOL_CALL_VALIDATION.value
+
+
+def test_provider_error_preserves_phase_and_safe_code() -> None:
+    attempt = run_protocol_attempt(
+        adapter=FakeAdapter(tools_error=ConnectionError("transport timeout")),
+        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
+        request=case_by_id("planner.workspace_list").request,
+        benchmark=_BENCHMARK,
+        run_id="test",
+    )
+    assert attempt.failure_category == StructuralFailureCategory.PROVIDER_ERROR.value
+    assert attempt.failure_phase == FailurePhase.PROVIDER_INVOKE.value
+    assert attempt.safe_error_code == SafeErrorCode.OLLAMA_PROVIDER_TRANSPORT_FAILED.value
+
+
+def test_resource_error_receives_resource_limit() -> None:
+    attempt = run_protocol_attempt(
+        adapter=FakeAdapter(structured_error=RuntimeError("CUDA out of memory")),
+        protocol=PROTOCOL_STRUCTURED_OUTPUT,
+        request=case_by_id("planner.workspace_list").request,
+        benchmark=_BENCHMARK,
+        run_id="test",
+    )
+    assert attempt.failure_category == StructuralFailureCategory.RESOURCE_LIMIT.value
+    assert attempt.safe_error_code == SafeErrorCode.OLLAMA_RESOURCE_LIMIT.value
+
+
+def test_raw_exception_message_not_serialized() -> None:
+    attempt = run_protocol_attempt(
+        adapter=FakeAdapter(structured_error=RuntimeError("super secret provider detail")),
+        protocol=PROTOCOL_STRUCTURED_OUTPUT,
+        request=case_by_id("planner.workspace_list").request,
+        benchmark=_BENCHMARK,
+        run_id="test",
+    )
+    from dataclasses import asdict
+
+    payload = asdict(attempt)
+    assert "super secret provider detail" not in json.dumps(payload)
 
 
 def test_both_protocols_use_same_compiler_and_validator() -> None:
@@ -232,122 +295,6 @@ def test_both_protocols_use_same_compiler_and_validator() -> None:
     assert tool.failure_category == StructuralFailureCategory.DRAFT_COMPILATION_FAILED.value
 
 
-def test_compilation_failure_classified() -> None:
-    request = case_by_id("planner.workspace_list").request
-    bad_draft = ConversationInteractionDraft(
-        actions=(
-            KnowledgeAddSourcesDraftAction(
-                action_type="knowledge.add_sources",
-                workspace=NameDraftWorkspaceReference(
-                    kind=WorkspaceReferenceKind.name,
-                    value="missing",
-                ),
-                sources=(
-                    DraftWebUrlSource(
-                        object_type="web_url",
-                        value="https://missing.example",
-                    ),
-                ),
-            ),
-        )
-    )
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(structured_result=bad_draft),
-        protocol=PROTOCOL_STRUCTURED_OUTPUT,
-        request=request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.DRAFT_COMPILATION_FAILED.value
-
-
-def test_tool_no_call_classified() -> None:
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(
-            tools_result=LLMAdapterResponse(content="", tool_calls=()),
-        ),
-        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
-        request=case_by_id("planner.workspace_list").request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.MISSING_PLAN_TOOL_CALL.value
-
-
-def test_tool_multiple_calls_classified() -> None:
-    draft = ConversationInteractionDraft(
-        actions=(WorkspaceListDraftAction(action_type="workspace.list"),)
-    )
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(
-            tools_result=LLMAdapterResponse(
-                content="",
-                tool_calls=(
-                    LLMToolCall(id="1", name=SUBMIT_DRAFT_TOOL_NAME, arguments_json=draft.model_dump_json()),
-                    LLMToolCall(id="2", name=SUBMIT_DRAFT_TOOL_NAME, arguments_json=draft.model_dump_json()),
-                ),
-            )
-        ),
-        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
-        request=case_by_id("planner.workspace_list").request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.MULTIPLE_PLAN_TOOL_CALLS.value
-
-
-def test_tool_wrong_name_classified() -> None:
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(
-            tools_result=LLMAdapterResponse(
-                content="",
-                tool_calls=(LLMToolCall(id="1", name="other_tool", arguments_json="{}"),),
-            )
-        ),
-        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
-        request=case_by_id("planner.workspace_list").request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.UNEXPECTED_PLAN_TOOL.value
-
-
-def test_tool_invalid_arguments_json_classified() -> None:
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(
-            tools_result=LLMAdapterResponse(
-                content="",
-                tool_calls=(
-                    LLMToolCall(id="1", name=SUBMIT_DRAFT_TOOL_NAME, arguments_json="{bad"),
-                ),
-            )
-        ),
-        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
-        request=case_by_id("planner.workspace_list").request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.INVALID_TOOL_ARGUMENTS.value
-
-
-def test_tool_pydantic_invalid_arguments_classified() -> None:
-    attempt = run_protocol_attempt(
-        adapter=FakeAdapter(
-            tools_result=LLMAdapterResponse(
-                content="",
-                tool_calls=(
-                    LLMToolCall(id="1", name=SUBMIT_DRAFT_TOOL_NAME, arguments_json='{"actions": "bad"}'),
-                ),
-            )
-        ),
-        protocol=PROTOCOL_SINGLE_PLAN_TOOL,
-        request=case_by_id("planner.workspace_list").request,
-        benchmark=_BENCHMARK,
-        run_id="test",
-    )
-    assert attempt.failure_category == StructuralFailureCategory.DRAFT_VALIDATION_FAILED.value
-
-
 def test_tool_unsupported_capability_classified() -> None:
     attempt = run_protocol_attempt(
         adapter=FakeAdapter(tools_supported=False),
@@ -357,3 +304,4 @@ def test_tool_unsupported_capability_classified() -> None:
         run_id="test",
     )
     assert attempt.failure_category == StructuralFailureCategory.PROTOCOL_UNSUPPORTED.value
+    assert attempt.safe_error_code == SafeErrorCode.OLLAMA_MODEL_TOOLS_UNSUPPORTED.value

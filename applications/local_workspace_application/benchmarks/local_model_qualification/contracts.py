@@ -5,14 +5,15 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 BENCHMARK_ID = "LKW-CONVERSATIONAL-INTERACTION-1A-C2-LOCAL-MODEL-QUALIFICATION-MATRIX"
-RESULT_SCHEMA_VERSION = "lkw.local_model_qualification.result.v1"
+RESULT_SCHEMA_VERSION = "lkw.local_model_qualification.result.v2"
 CORPUS_VERSION = "lkw.local_model_qualification.corpus.v1"
 REPAIR_ATTEMPTS = 0
+PERSISTENT_MODEL_VOLUME = "intergrax-ollama-models"
 
 
 class StructuralFailureCategory(StrEnum):
@@ -26,6 +27,27 @@ class StructuralFailureCategory(StrEnum):
     CANONICAL_VALIDATION_FAILED = "CANONICAL_VALIDATION_FAILED"
     PROVIDER_ERROR = "PROVIDER_ERROR"
     RESOURCE_LIMIT = "RESOURCE_LIMIT"
+
+
+class FailurePhase(StrEnum):
+    CAPABILITY_CHECK = "CAPABILITY_CHECK"
+    SCHEMA_PREPARATION = "SCHEMA_PREPARATION"
+    PROVIDER_BIND = "PROVIDER_BIND"
+    PROVIDER_INVOKE = "PROVIDER_INVOKE"
+    TOOL_CALL_VALIDATION = "TOOL_CALL_VALIDATION"
+    DRAFT_VALIDATION = "DRAFT_VALIDATION"
+    DRAFT_COMPILATION = "DRAFT_COMPILATION"
+    CANONICAL_VALIDATION = "CANONICAL_VALIDATION"
+
+
+class SafeErrorCode(StrEnum):
+    OLLAMA_TOOL_CHOICE_REJECTED = "OLLAMA_TOOL_CHOICE_REJECTED"
+    OLLAMA_TOOL_SCHEMA_REJECTED = "OLLAMA_TOOL_SCHEMA_REJECTED"
+    OLLAMA_MODEL_TOOLS_UNSUPPORTED = "OLLAMA_MODEL_TOOLS_UNSUPPORTED"
+    OLLAMA_PROVIDER_TRANSPORT_FAILED = "OLLAMA_PROVIDER_TRANSPORT_FAILED"
+    OLLAMA_PROVIDER_RESPONSE_INVALID = "OLLAMA_PROVIDER_RESPONSE_INVALID"
+    OLLAMA_RESOURCE_LIMIT = "OLLAMA_RESOURCE_LIMIT"
+    UNKNOWN_PROVIDER_FAILURE = "UNKNOWN_PROVIDER_FAILURE"
 
 
 class SemanticFailureCategory(StrEnum):
@@ -71,6 +93,7 @@ class SchemaProbeStatus(StrEnum):
     PROTOCOL_UNSUPPORTED = "PROTOCOL_UNSUPPORTED"
     SCHEMA_INCOMPATIBLE = "SCHEMA_INCOMPATIBLE"
     PROVIDER_ERROR = "PROVIDER_ERROR"
+    RESOURCE_LIMIT = "RESOURCE_LIMIT"
 
 
 class WarmupStatus(StrEnum):
@@ -91,6 +114,11 @@ class ObservedExecutionMode(StrEnum):
     PARTIAL_GPU_OFFLOAD = "PARTIAL_GPU_OFFLOAD"
     CPU_ONLY = "CPU_ONLY"
     UNKNOWN = "UNKNOWN"
+
+
+class ModelProvisioningStatus(StrEnum):
+    ALREADY_AVAILABLE = "ALREADY_AVAILABLE"
+    PULLED = "PULLED"
 
 
 class _FrozenModel(BaseModel):
@@ -140,6 +168,11 @@ class ProtocolResult(_FrozenModel):
     failure_category_counts: dict[str, int] = Field(default_factory=dict)
     latency_ms: LatencyStats
     case_results: tuple[CaseResult, ...] = ()
+    probe_failure_category: str | None = None
+    probe_failure_phase: str | None = None
+    probe_error_type: str | None = None
+    probe_safe_error_code: str | None = None
+    probe_latency_ms: float | None = None
 
 
 class ModelMetadata(_FrozenModel):
@@ -181,11 +214,33 @@ class OllamaEnvironment(_FrozenModel):
     host: str
 
 
+class ProvisionedModel(_FrozenModel):
+    model: str
+    status: ModelProvisioningStatus
+
+
+class ProvisioningResult(_FrozenModel):
+    runtime: Literal["docker"]
+    compose_file: str
+    compose_service: str
+    container_name: str
+    persistent_model_volume: str
+    readiness_result: str
+    required_models: tuple[str, ...]
+    models: tuple[ProvisionedModel, ...]
+
+
 class QualificationSummary(_FrozenModel):
     recommended_model: str | None = None
     recommended_protocol: str | None = None
     conditional_candidates: tuple[str, ...] = ()
     message: str
+    required_model_count: int = 0
+    provisioned_model_count: int = 0
+    attempted_model_protocol_pairs: int = 0
+    expected_model_protocol_pairs: int = 0
+    expected_scored_call_count: int = 0
+    actual_scored_call_count: int = 0
 
 
 class LocalModelQualificationResult(_FrozenModel):
@@ -198,6 +253,7 @@ class LocalModelQualificationResult(_FrozenModel):
     repair_attempts: int = REPAIR_ATTEMPTS
     host: HostMetadata
     ollama: OllamaEnvironment
+    provisioning: ProvisioningResult
     models: tuple[ModelResult, ...]
     summary: QualificationSummary
 

@@ -1,10 +1,16 @@
-schema_version = 1
+schema_version = 2
 
 [ollama]
 host = "http://localhost:11434"
-pull_missing_models = false
+runtime = "docker"
+compose_file = "../../../infra/docker/ollama/docker-compose.yml"
+compose_service = "ollama"
+container_name = "intergrax-ollama"
 continue_on_model_error = true
 keep_alive = "10m"
+startup_timeout_seconds = 120
+model_pull_timeout_seconds = 7200
+readiness_poll_seconds = 1.0
 
 [benchmark]
 repetitions = 3

@@ -7,6 +7,7 @@ from __future__ import annotations
 import platform
 import subprocess
 import sys
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from local_workspace_application.benchmarks.local_model_qualification.contracts import (
@@ -16,6 +17,13 @@ from local_workspace_application.benchmarks.local_model_qualification.contracts 
     OllamaEnvironment,
 )
 from local_workspace_application.benchmarks.local_model_qualification.config import OllamaConfig
+
+
+@dataclass(frozen=True, slots=True)
+class ModelInventoryRecord:
+    name: str
+    digest: str
+    artifact_size_bytes: int
 
 
 def collect_host_metadata() -> HostMetadata:
@@ -30,7 +38,11 @@ def collect_host_metadata() -> HostMetadata:
                 text=True,
                 timeout=5,
             )
-            lines = [line.strip() for line in output.splitlines() if line.strip() and line.strip() != "Name"]
+            lines = [
+                line.strip()
+                for line in output.splitlines()
+                if line.strip() and line.strip() != "Name"
+            ]
             if lines:
                 cpu_description = lines[0]
         except (OSError, subprocess.SubprocessError):
@@ -92,10 +104,37 @@ def collect_host_metadata() -> HostMetadata:
     )
 
 
-def _client_factory(host: str) -> Any:
+def _client_factory(host: str, timeout: float | None = None) -> Any:
     from ollama import Client
 
+    if timeout is not None:
+        return Client(host=host, timeout=timeout)
     return Client(host=host)
+
+
+def _normalize_models_list(response: Any) -> list[Any]:
+    if isinstance(response, dict):
+        return list(response.get("models", []))
+    models = getattr(response, "models", [])
+    return list(models) if models is not None else []
+
+
+def _model_name(item: Any) -> str | None:
+    if isinstance(item, dict):
+        name = item.get("name") or item.get("model")
+    else:
+        name = getattr(item, "model", None) or getattr(item, "name", None)
+    return str(name) if name else None
+
+
+def _to_dict(item: Any) -> dict[str, Any]:
+    if isinstance(item, dict):
+        return item
+    if hasattr(item, "model_dump"):
+        return item.model_dump()
+    if hasattr(item, "__dict__"):
+        return {key: value for key, value in vars(item).items() if not key.startswith("_")}
+    return {}
 
 
 def collect_ollama_environment(
@@ -103,7 +142,7 @@ def collect_ollama_environment(
     *,
     client_factory: Callable[[str], Any] | None = None,
 ) -> OllamaEnvironment:
-    factory = client_factory or _client_factory
+    factory = client_factory or (lambda host: _client_factory(host))
     version: str | None = None
     try:
         client = factory(config.host)
@@ -134,19 +173,41 @@ def list_installed_models(
     *,
     client_factory: Callable[[str], Any] | None = None,
 ) -> set[str]:
-    factory = client_factory or _client_factory
+    factory = client_factory or (lambda host: _client_factory(host))
     client = factory(config.host)
     response = client.list()
-    models = response.get("models", []) if isinstance(response, dict) else getattr(response, "models", [])
     names: set[str] = set()
-    for item in models:
-        if isinstance(item, dict):
-            name = item.get("name") or item.get("model")
-        else:
-            name = getattr(item, "model", None) or getattr(item, "name", None)
+    for item in _normalize_models_list(response):
+        name = _model_name(item)
         if name:
-            names.add(str(name))
+            names.add(name)
     return names
+
+
+def fetch_model_inventory(
+    config: OllamaConfig,
+    *,
+    client_factory: Callable[[str], Any] | None = None,
+) -> dict[str, ModelInventoryRecord]:
+    factory = client_factory or (lambda host: _client_factory(host))
+    client = factory(config.host)
+    response = client.list()
+    inventory: dict[str, ModelInventoryRecord] = {}
+    for item in _normalize_models_list(response):
+        data = _to_dict(item)
+        name = data.get("name") or data.get("model")
+        if not name:
+            continue
+        name = str(name)
+        digest = data.get("digest")
+        size = data.get("size")
+        if isinstance(digest, str) and digest.strip() and isinstance(size, int) and size > 0:
+            inventory[name] = ModelInventoryRecord(
+                name=name,
+                digest=digest.strip(),
+                artifact_size_bytes=size,
+            )
+    return inventory
 
 
 def pull_model(
@@ -155,34 +216,37 @@ def pull_model(
     *,
     client_factory: Callable[[str], Any] | None = None,
 ) -> None:
-    factory = client_factory or _client_factory
+    factory = client_factory or (
+        lambda host: _client_factory(host, timeout=float(config.model_pull_timeout_seconds))
+    )
     client = factory(config.host)
     client.pull(model=model_name, stream=False)
 
 
-def fetch_model_metadata(
+def fetch_show_metadata(
     config: OllamaConfig,
     model_name: str,
     *,
     client_factory: Callable[[str], Any] | None = None,
-) -> ModelMetadata:
-    factory = client_factory or _client_factory
+) -> dict[str, Any]:
+    factory = client_factory or (lambda host: _client_factory(host))
     client = factory(config.host)
     try:
         show = client.show(model=model_name)
     except Exception:
-        return ModelMetadata()
+        return {}
     if not isinstance(show, dict):
         show = show.model_dump() if hasattr(show, "model_dump") else {}
+    return show if isinstance(show, dict) else {}
 
+
+def build_inventory_metadata(
+    inventory_record: ModelInventoryRecord,
+    show: dict[str, Any],
+) -> ModelMetadata:
     details = show.get("details", {}) if isinstance(show.get("details"), dict) else {}
     model_info = show.get("model_info", {}) if isinstance(show.get("model_info"), dict) else {}
 
-    digest = show.get("digest") or show.get("modelfile", None)
-    if isinstance(digest, str) and len(digest) > 64:
-        digest = show.get("digest")
-
-    size = show.get("size")
     parameter_size = details.get("parameter_size") or model_info.get("parameter_size")
     quantization = details.get("quantization_level") or model_info.get("quantization_level")
     family = details.get("family") or model_info.get("family")
@@ -196,30 +260,52 @@ def fetch_model_metadata(
             except (TypeError, ValueError):
                 pass
 
-    loaded_size: int | None = None
-    size_vram: int | None = None
-    try:
-        ps = client.ps()
-        models = ps.get("models", []) if isinstance(ps, dict) else getattr(ps, "models", [])
-        for item in models:
-            name = item.get("name") if isinstance(item, dict) else getattr(item, "name", None)
-            if name != model_name:
-                continue
-            loaded_size = item.get("size") if isinstance(item, dict) else getattr(item, "size", None)
-            size_vram = item.get("size_vram") if isinstance(item, dict) else getattr(item, "size_vram", None)
-            break
-    except Exception:
-        pass
-
     return ModelMetadata(
-        digest=show.get("digest"),
-        artifact_size_bytes=int(size) if isinstance(size, int) else None,
+        digest=inventory_record.digest,
+        artifact_size_bytes=inventory_record.artifact_size_bytes,
         parameter_size=str(parameter_size) if parameter_size else None,
         quantization_level=str(quantization) if quantization else None,
         model_family=str(family) if family else None,
         context_length=context_length,
-        loaded_size_bytes=int(loaded_size) if isinstance(loaded_size, int) else None,
-        size_vram_bytes=int(size_vram) if isinstance(size_vram, int) else None,
+    )
+
+
+def fetch_runtime_metadata(
+    config: OllamaConfig,
+    model_name: str,
+    *,
+    client_factory: Callable[[str], Any] | None = None,
+) -> tuple[int | None, int | None]:
+    factory = client_factory or (lambda host: _client_factory(host))
+    client = factory(config.host)
+    try:
+        ps = client.ps()
+        for item in _normalize_models_list(ps):
+            data = _to_dict(item)
+            name = data.get("name") or data.get("model")
+            if name != model_name:
+                continue
+            loaded_size = data.get("size")
+            size_vram = data.get("size_vram")
+            return (
+                int(loaded_size) if isinstance(loaded_size, int) else None,
+                int(size_vram) if isinstance(size_vram, int) else None,
+            )
+    except Exception:
+        pass
+    return None, None
+
+
+def merge_runtime_metadata(
+    metadata: ModelMetadata,
+    loaded_size: int | None,
+    size_vram: int | None,
+) -> ModelMetadata:
+    return metadata.model_copy(
+        update={
+            "loaded_size_bytes": loaded_size,
+            "size_vram_bytes": size_vram,
+        }
     )
 
 
@@ -237,3 +323,35 @@ def derive_execution_mode(metadata: ModelMetadata) -> ObservedExecutionMode:
     if 0 < vram < 0.95 * loaded:
         return ObservedExecutionMode.PARTIAL_GPU_OFFLOAD
     return ObservedExecutionMode.UNKNOWN
+
+
+def check_ollama_readiness(
+    config: OllamaConfig,
+    *,
+    client_factory: Callable[[str], Any] | None = None,
+    http_get: Callable[[str], Any] | None = None,
+) -> bool:
+    factory = client_factory or (lambda host: _client_factory(host))
+    try:
+        client = factory(config.host)
+        if hasattr(client, "version"):
+            client.version()
+            return True
+    except Exception:
+        pass
+    if http_get is not None:
+        try:
+            response = http_get(f"{config.host.rstrip('/')}/api/version")
+            if hasattr(response, "raise_for_status"):
+                response.raise_for_status()
+            return True
+        except Exception:
+            return False
+    try:
+        import httpx
+
+        response = httpx.get(f"{config.host.rstrip('/')}/api/version", timeout=5.0)
+        response.raise_for_status()
+        return True
+    except Exception:
+        return False
