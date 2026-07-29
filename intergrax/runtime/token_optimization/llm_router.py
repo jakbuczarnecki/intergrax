@@ -49,9 +49,12 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
 from intergrax.runtime.token_optimization.prompt_assembly import (
     CacheStablePromptAssembly,
     CacheStablePromptAssemblyReport,
+    CacheStablePromptIntegrityError,
+    CacheStablePromptSendPayload,
     CacheStablePromptState,
     PromptAssemblyMessageBlock,
     assemble_cache_stable_prompt,
+    materialize_cache_stable_send_payload,
 )
 from intergrax.runtime.token_optimization.pipeline import TokenOptimizationPipelineRunner
 from intergrax.tools.registry import ToolRegistry
@@ -605,7 +608,7 @@ class TokenOptimizationLLMRouter:
 
     def _obtain_decision_native(
         self,
-        assembly: CacheStablePromptAssembly,
+        send_payload: CacheStablePromptSendPayload,
         *,
         run_id: str,
     ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
@@ -614,16 +617,15 @@ class TokenOptimizationLLMRouter:
             self._tool_registry,
             config=ToolPlanningConfig(temperature=0.0, max_answer_tokens=512),
         )
-        prepared_schema = None
-        if assembly.tool_envelope is not None:
-            prepared_schema = list(assembly.tool_envelope.tools_schema)
         try:
             llm_result, tool_plan = planner.plan_native_round(
-                list(assembly.messages),
+                list(send_payload.messages),
                 allowed_tool_ids=(ROUTER_TOOL_ID,),
                 run_id=run_id,
                 tool_choice="required",
-                prepared_tools_schema=prepared_schema,
+                prepared_tools_schema=list(send_payload.tools_schema),
+                prepared_tools_schema_hash=send_payload.tool_envelope_hash,
+                prepared_messages_hash=send_payload.messages_hash,
             )
         except ValidationError:
             return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, None
@@ -710,17 +712,29 @@ class TokenOptimizationLLMRouter:
                 transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
             ),
         )
-        messages = list(assembly.messages)
+        try:
+            send_payload = materialize_cache_stable_send_payload(assembly)
+        except CacheStablePromptIntegrityError:
+            return _failure_result(
+                router_request=router_request,
+                transport=transport,
+                status=TokenOptimizationRouterStatus.INVALID_DECISION,
+                reason=TokenOptimizationRouterReason.PROMPT_ASSEMBLY_INTEGRITY_FAILED,
+                adapter=self._adapter,
+                prompt_cache_state=assembly.state,
+                prompt_assembly_report=assembly.report,
+            )
+
         run_id = router_request.request_id
 
         if transport is TokenOptimizationRouterTransport.NATIVE_TOOLS:
             decision, failure_reason, tool_call_id = self._obtain_decision_native(
-                assembly,
+                send_payload,
                 run_id=run_id,
             )
         else:
             decision, failure_reason, tool_call_id = self._obtain_decision_structured(
-                messages,
+                list(send_payload.messages),
                 run_id=run_id,
             )
 

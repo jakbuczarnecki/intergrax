@@ -15,7 +15,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
+from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash
 from intergrax.runtime.token_optimization.contracts import PromptCacheInvalidationReason
 from intergrax.runtime.token_optimization.prompt_cache import (
     PREFIX_STABILITY_INITIAL,
@@ -104,9 +105,24 @@ class CacheStablePromptAssembly:
     """Prepared model request plus safe runtime state."""
 
     messages: tuple[ChatMessage, ...]
+    messages_hash: str
     tool_envelope: CacheStableToolEnvelope | None
     state: CacheStablePromptState
     report: CacheStablePromptAssemblyReport
+
+
+@dataclass(frozen=True, slots=True)
+class CacheStablePromptSendPayload:
+    """Validated defensive copy of the exact model-facing send payload."""
+
+    messages: tuple[ChatMessage, ...]
+    tools_schema: tuple[Mapping[str, Any], ...]
+    messages_hash: str
+    tool_envelope_hash: str | None
+
+
+class CacheStablePromptIntegrityError(ValueError):
+    """Raised when assembled payload no longer matches its recorded fingerprints."""
 
 
 def _canonical_message_payload(message: ChatMessage) -> dict[str, Any]:
@@ -128,6 +144,18 @@ def message_content_hash(message: ChatMessage) -> str:
     digest = hashlib.sha256()
     digest.update(_canonical_message_json(message).encode("utf-8"))
     return digest.hexdigest()
+
+
+def _copy_model_facing_message(message: ChatMessage) -> ChatMessage:
+    """Independent snapshot of fields that reach providers through ``to_dict()``."""
+    tool_calls = copy.deepcopy(message.tool_calls) if message.tool_calls else None
+    return ChatMessage(
+        role=message.role,
+        content=message.content,
+        name=message.name,
+        tool_call_id=message.tool_call_id,
+        tool_calls=tool_calls,
+    )
 
 
 def _thread_block_id(index: int, message: ChatMessage) -> str:
@@ -251,15 +279,25 @@ def _resolve_invalidation_reason(
     if previous_state is None:
         return PromptCacheInvalidationReason.NONE
 
+    # Prompt-safety reasons (e.g. APPEND_ONLY_VIOLATION) retain precedence above;
+    # tool-envelope transitions are reported only when the prefix is otherwise reusable.
     if (
-        previous_state.tool_envelope_hash is not None
-        and tool_envelope_hash is not None
-        and previous_state.tool_envelope_hash != tool_envelope_hash
+        previous_state.tool_envelope_hash != tool_envelope_hash
         and append_only_valid
     ):
         return PromptCacheInvalidationReason.TOOL_ENVELOPE_CHANGED
 
     return PromptCacheInvalidationReason.NONE
+
+
+def _compute_tool_envelope_stable(
+    *,
+    previous_state: CacheStablePromptState | None,
+    tool_envelope_hash: str | None,
+) -> bool | None:
+    if previous_state is None:
+        return None
+    return previous_state.tool_envelope_hash == tool_envelope_hash
 
 
 def build_cache_stable_tool_envelope(
@@ -293,13 +331,7 @@ def build_cache_stable_tool_envelope(
 
     canonical_entries.sort(key=lambda item: item["function"]["name"])
     sorted_names = tuple(item["function"]["name"] for item in canonical_entries)
-    canonical_json = json.dumps(
-        canonical_entries,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    envelope_hash = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
+    envelope_hash = compute_openai_tools_schema_hash(canonical_entries)
     return CacheStableToolEnvelope(
         tools_schema=tuple(canonical_entries),
         tool_ids=sorted_names,
@@ -324,17 +356,27 @@ def assemble_cache_stable_prompt(
     prefix_blocks: list[PromptCacheBlock] = []
     fingerprint_blocks: list[PromptCacheBlockFingerprint] = []
 
-    for block in stable_prefix_blocks:
-        prefix_blocks.append(_message_to_cache_block(block.block_id, block.message, cacheable=True))
-        fingerprint_blocks.append(_fingerprint_for_block(block.block_id, block.message))
+    copied_stable_messages = tuple(
+        _copy_model_facing_message(block.message) for block in stable_prefix_blocks
+    )
+    copied_thread_messages = tuple(
+        _copy_model_facing_message(message) for message in append_only_thread
+    )
+    copied_tail_messages = tuple(
+        _copy_model_facing_message(message) for message in dynamic_tail
+    )
 
-    for index, message in enumerate(append_only_thread):
+    for block, message in zip(stable_prefix_blocks, copied_stable_messages, strict=True):
+        prefix_blocks.append(_message_to_cache_block(block.block_id, message, cacheable=True))
+        fingerprint_blocks.append(_fingerprint_for_block(block.block_id, message))
+
+    for index, message in enumerate(copied_thread_messages):
         block_id = thread_ids[index]
         prefix_blocks.append(_message_to_cache_block(block_id, message, cacheable=True))
         fingerprint_blocks.append(_fingerprint_for_block(block_id, message))
 
     dynamic_blocks: list[PromptCacheBlock] = []
-    for index, message in enumerate(dynamic_tail):
+    for index, message in enumerate(copied_tail_messages):
         block_id = tail_ids[index]
         dynamic_blocks.append(_message_to_cache_block(block_id, message, cacheable=False))
 
@@ -343,11 +385,11 @@ def assemble_cache_stable_prompt(
     prefix_hash = compute_prefix_hash(_build_current_prefix_snapshot(prefix_blocks))
 
     has_dynamic_data_in_prefix = any(
-        _stable_prefix_has_dynamic_data(block.message.content)
-        for block in stable_prefix_blocks
+        _stable_prefix_has_dynamic_data(message.content)
+        for message in copied_stable_messages
     ) or any(
         _stable_prefix_has_dynamic_data(message.content)
-        for message in append_only_thread
+        for message in copied_thread_messages
     )
 
     (
@@ -374,21 +416,16 @@ def assemble_cache_stable_prompt(
         append_only_valid=append_only_valid,
     )
 
-    tool_envelope_stable: bool | None
-    if previous_state is None or tool_envelope_hash is None:
-        tool_envelope_stable = None
-    elif previous_state.tool_envelope_hash is None:
-        tool_envelope_stable = None
-    else:
-        tool_envelope_stable = previous_state.tool_envelope_hash == tool_envelope_hash
+    tool_envelope_stable = _compute_tool_envelope_stable(
+        previous_state=previous_state,
+        tool_envelope_hash=tool_envelope_hash,
+    )
 
     cacheable_prefix_chars = sum(fp.content_chars for fp in fingerprint_blocks)
     dynamic_tail_chars = sum(len(block.content) for block in dynamic_blocks)
 
-    messages = tuple(
-        block.message
-        for block in stable_prefix_blocks
-    ) + tuple(append_only_thread) + tuple(dynamic_tail)
+    messages = copied_stable_messages + copied_thread_messages + copied_tail_messages
+    messages_hash = compute_model_facing_messages_hash(messages)
 
     state = CacheStablePromptState(
         prefix_hash=prefix_hash,
@@ -417,9 +454,61 @@ def assemble_cache_stable_prompt(
 
     return CacheStablePromptAssembly(
         messages=messages,
+        messages_hash=messages_hash,
         tool_envelope=tool_envelope,
         state=state,
         report=report,
+    )
+
+
+def materialize_cache_stable_send_payload(
+    assembly: CacheStablePromptAssembly,
+) -> CacheStablePromptSendPayload:
+    """Validate assembly integrity and return defensive copies for adapter invocation."""
+    current_messages_hash = compute_model_facing_messages_hash(assembly.messages)
+    if current_messages_hash != assembly.messages_hash:
+        raise CacheStablePromptIntegrityError("messages hash mismatch")
+
+    prefix_count = len(assembly.state.stable_block_fingerprints)
+    if prefix_count > len(assembly.messages):
+        raise CacheStablePromptIntegrityError("stable prefix fingerprint count mismatch")
+    recomputed_fingerprints = tuple(
+        _fingerprint_for_block(fp.block_id, message)
+        for fp, message in zip(
+            assembly.state.stable_block_fingerprints,
+            assembly.messages[:prefix_count],
+            strict=True,
+        )
+    )
+    if recomputed_fingerprints != assembly.state.stable_block_fingerprints:
+        raise CacheStablePromptIntegrityError("stable prefix fingerprint mismatch")
+
+    tool_envelope_hash: str | None = None
+    tool_ids: tuple[str, ...] = ()
+    tools_schema: tuple[Mapping[str, Any], ...] = ()
+    if assembly.tool_envelope is not None:
+        recomputed_envelope = build_cache_stable_tool_envelope(
+            assembly.tool_envelope.tools_schema
+        )
+        if recomputed_envelope.envelope_hash != assembly.tool_envelope.envelope_hash:
+            raise CacheStablePromptIntegrityError("tool envelope hash mismatch")
+        if recomputed_envelope.tool_ids != assembly.tool_envelope.tool_ids:
+            raise CacheStablePromptIntegrityError("tool envelope ordering mismatch")
+        tool_envelope_hash = assembly.tool_envelope.envelope_hash
+        tool_ids = assembly.tool_envelope.tool_ids
+        tools_schema = tuple(copy.deepcopy(dict(entry)) for entry in recomputed_envelope.tools_schema)
+    elif assembly.state.tool_envelope_hash is not None or assembly.state.tool_ids:
+        raise CacheStablePromptIntegrityError("tool envelope state mismatch")
+
+    if tool_ids != assembly.state.tool_ids:
+        raise CacheStablePromptIntegrityError("tool ids mismatch")
+
+    defensive_messages = tuple(_copy_model_facing_message(message) for message in assembly.messages)
+    return CacheStablePromptSendPayload(
+        messages=defensive_messages,
+        tools_schema=tools_schema,
+        messages_hash=assembly.messages_hash,
+        tool_envelope_hash=tool_envelope_hash,
     )
 
 

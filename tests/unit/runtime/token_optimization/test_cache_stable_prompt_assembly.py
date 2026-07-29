@@ -12,10 +12,14 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.token_optimization.contracts import PromptCacheInvalidationReason
 from intergrax.runtime.token_optimization.prompt_assembly import (
+    CacheStablePromptIntegrityError,
     CacheStablePromptState,
+    CacheStableToolEnvelope,
     PromptAssemblyMessageBlock,
     assemble_cache_stable_prompt,
+    build_cache_stable_tool_envelope,
     cache_stable_prompt_assembly_to_safe_dict,
+    materialize_cache_stable_send_payload,
     message_content_hash,
 )
 from intergrax.runtime.token_optimization.prompt_cache import PREFIX_STABILITY_INITIAL, PREFIX_STABILITY_STABLE
@@ -238,3 +242,299 @@ def test_previous_state_none_on_first_assembly() -> None:
         stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
     )
     assert isinstance(assembly.state, CacheStablePromptState)
+
+
+def _router_tool_schema() -> list[dict[str, object]]:
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": "alpha.tool",
+                "description": "SYNTH-ALPHA",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"value": {"type": "string"}},
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "beta.tool",
+                "description": "SYNTH-BETA",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"count": {"type": "integer"}},
+                },
+            },
+        },
+    ]
+
+
+def test_mutating_original_stable_message_does_not_change_assembly() -> None:
+    stable = ChatMessage(role="system", content="SYNTH-STABLE")
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(
+            PromptAssemblyMessageBlock(block_id="policy", message=stable),
+        ),
+        dynamic_tail=(ChatMessage(role="user", content="SYNTH-TAIL"),),
+    )
+    snapshot = (
+        assembly.messages,
+        assembly.messages_hash,
+        assembly.state,
+        assembly.report,
+    )
+    stable.content = "SYNTH-MUTATED"
+    assert (
+        assembly.messages,
+        assembly.messages_hash,
+        assembly.state,
+        assembly.report,
+    ) == snapshot
+    payload = materialize_cache_stable_send_payload(assembly)
+    assert payload.messages[0].content == "SYNTH-STABLE"
+
+
+def test_mutating_original_dynamic_tail_does_not_change_assembly() -> None:
+    tail = ChatMessage(role="user", content="SYNTH-TAIL")
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        dynamic_tail=(tail,),
+    )
+    snapshot = (assembly.messages[-1].content, assembly.messages_hash, assembly.report)
+    tail.content = "SYNTH-MUTATED-TAIL"
+    assert assembly.messages[-1].content == snapshot[0]
+    assert assembly.messages_hash == snapshot[1]
+    assert assembly.report == snapshot[2]
+
+
+def test_mutating_original_tool_schema_does_not_change_envelope() -> None:
+    schema = _router_tool_schema()
+    envelope = build_cache_stable_tool_envelope(schema)
+    snapshot = (envelope.envelope_hash, envelope.tool_ids, envelope.tools_schema)
+    schema[0]["function"]["description"] = "SYNTH-MUTATED"
+    schema[1]["function"]["parameters"]["properties"]["count"]["type"] = "string"
+    assert (
+        envelope.envelope_hash,
+        envelope.tool_ids,
+        envelope.tools_schema,
+    ) == snapshot
+
+
+def test_mutating_assembly_stable_message_causes_materialization_failure() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+    )
+    assembly.messages[0].content = "SYNTH-MUTATED"
+    with pytest.raises(CacheStablePromptIntegrityError):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_mutating_dynamic_tail_inside_assembly_causes_materialization_failure() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        dynamic_tail=(ChatMessage(role="user", content="SYNTH-TAIL"),),
+    )
+    assembly.messages[-1].content = "SYNTH-MUTATED-TAIL"
+    with pytest.raises(CacheStablePromptIntegrityError):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_mutating_nested_tool_calls_causes_materialization_failure() -> None:
+    tool_calls = [
+        {
+            "id": "call-1",
+            "type": "function",
+            "function": {"name": "alpha.tool", "arguments": "{}"},
+        }
+    ]
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        append_only_thread=(
+            ChatMessage(role="assistant", content="", tool_calls=tool_calls),
+        ),
+    )
+    assert assembly.messages[1].tool_calls is not None
+    assembly.messages[1].tool_calls[0]["function"]["arguments"] = '{"value":"x"}'
+    with pytest.raises(CacheStablePromptIntegrityError):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_mutating_nested_tool_parameters_causes_materialization_failure() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=_router_tool_schema(),
+    )
+    assert assembly.tool_envelope is not None
+    first = assembly.tool_envelope.tools_schema[0]
+    assert isinstance(first, dict)
+    function = first["function"]
+    assert isinstance(function, dict)
+    parameters = function["parameters"]
+    assert isinstance(parameters, dict)
+    properties = parameters["properties"]
+    assert isinstance(properties, dict)
+    value = properties["value"]
+    assert isinstance(value, dict)
+    value["type"] = "integer"
+    with pytest.raises(CacheStablePromptIntegrityError):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_changing_tool_order_causes_materialization_failure() -> None:
+    schema = _router_tool_schema()
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=schema,
+    )
+    assert assembly.tool_envelope is not None
+    tampered_envelope = CacheStableToolEnvelope(
+        tools_schema=assembly.tool_envelope.tools_schema,
+        tool_ids=("beta.tool", "alpha.tool"),
+        envelope_hash=assembly.tool_envelope.envelope_hash,
+    )
+    object.__setattr__(assembly, "tool_envelope", tampered_envelope)
+    with pytest.raises(CacheStablePromptIntegrityError):
+        materialize_cache_stable_send_payload(assembly)
+
+
+def test_unchanged_assembly_materializes_successfully() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        dynamic_tail=(ChatMessage(role="user", content="SYNTH-TAIL"),),
+        tools_schema=_router_tool_schema(),
+    )
+    payload = materialize_cache_stable_send_payload(assembly)
+    assert payload.messages_hash == assembly.messages_hash
+    assert payload.tool_envelope_hash == assembly.tool_envelope.envelope_hash
+
+
+def test_materialized_payload_is_defensive_copy() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=_router_tool_schema(),
+    )
+    payload = materialize_cache_stable_send_payload(assembly)
+    assert payload.messages is not assembly.messages
+    assert payload.messages[0] is not assembly.messages[0]
+    payload.messages[0].content = "SYNTH-MUTATED"
+    assert assembly.messages[0].content == "SYNTH-STABLE"
+    assert payload.tools_schema is not assembly.tool_envelope.tools_schema
+    first_payload = payload.tools_schema[0]
+    assert isinstance(first_payload, dict)
+    first_payload["function"]["description"] = "SYNTH-MUTATED"
+    first_envelope = assembly.tool_envelope.tools_schema[0]
+    assert isinstance(first_envelope, dict)
+    assert first_envelope["function"]["description"] == "SYNTH-ALPHA"
+
+
+def test_materialized_full_message_hash_matches_sent_sequence() -> None:
+    from intergrax.llm.messages import compute_model_facing_messages_hash
+
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        dynamic_tail=(ChatMessage(role="user", content="SYNTH-TAIL"),),
+    )
+    payload = materialize_cache_stable_send_payload(assembly)
+    assert compute_model_facing_messages_hash(payload.messages) == payload.messages_hash
+
+
+def test_none_to_none_envelope_transition_is_stable() -> None:
+    first = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+    )
+    second = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        previous_state=first.state,
+    )
+    assert second.report.tool_envelope_stable is True
+    assert second.report.invalidation_reason is PromptCacheInvalidationReason.NONE
+
+
+def test_none_to_hash_reports_tool_envelope_changed() -> None:
+    first = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+    )
+    second = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=_router_tool_schema(),
+        previous_state=first.state,
+    )
+    assert second.report.tool_envelope_stable is False
+    assert second.report.invalidation_reason is PromptCacheInvalidationReason.TOOL_ENVELOPE_CHANGED
+
+
+def test_hash_to_none_reports_tool_envelope_changed() -> None:
+    first = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=_router_tool_schema(),
+    )
+    second = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        previous_state=first.state,
+    )
+    assert second.report.tool_envelope_stable is False
+    assert second.report.invalidation_reason is PromptCacheInvalidationReason.TOOL_ENVELOPE_CHANGED
+
+
+def test_hash_a_to_hash_b_reports_tool_envelope_changed() -> None:
+    first = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=_router_tool_schema(),
+    )
+    mutated_schema = _router_tool_schema()
+    mutated_schema[0]["function"]["description"] = "SYNTH-CHANGED"
+    second = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=mutated_schema,
+        previous_state=first.state,
+    )
+    assert second.report.tool_envelope_stable is False
+    assert second.report.invalidation_reason is PromptCacheInvalidationReason.TOOL_ENVELOPE_CHANGED
+
+
+def test_hash_a_to_hash_a_remains_stable() -> None:
+    schema = _router_tool_schema()
+    first = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=schema,
+    )
+    second = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=schema,
+        previous_state=first.state,
+    )
+    assert second.report.tool_envelope_stable is True
+    assert second.report.invalidation_reason is PromptCacheInvalidationReason.NONE
+
+
+def test_prompt_safety_invalidation_retains_precedence_over_envelope_change() -> None:
+    schema = _router_tool_schema()
+    first = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-STABLE"),),
+        tools_schema=schema,
+    )
+    mutated_schema = _router_tool_schema()
+    mutated_schema[0]["function"]["description"] = "SYNTH-CHANGED"
+    second = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-REWRITTEN"),),
+        tools_schema=mutated_schema,
+        previous_state=first.state,
+    )
+    assert second.report.tool_envelope_stable is False
+    assert second.report.invalidation_reason is PromptCacheInvalidationReason.APPEND_ONLY_VIOLATION
+
+
+def test_safe_reports_still_contain_no_raw_content_or_schema() -> None:
+    assembly = assemble_cache_stable_prompt(
+        stable_prefix_blocks=(_stable_block("policy", "SYNTH-SECRET-PREFIX"),),
+        dynamic_tail=(ChatMessage(role="user", content="SYNTH-SECRET-TAIL"),),
+        tools_schema=_router_tool_schema(),
+    )
+    safe = cache_stable_prompt_assembly_to_safe_dict(assembly.report)
+    dumped = json.dumps(safe)
+    assert "SYNTH-SECRET-PREFIX" not in dumped
+    assert "SYNTH-SECRET-TAIL" not in dumped
+    assert "function" not in dumped
+    assert safe["raw_content_included"] is False

@@ -4,13 +4,14 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from typing import Any, Sequence
 
 import pytest
 from pydantic import BaseModel, ConfigDict
 
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -260,6 +261,7 @@ class _CapturingAdapter(LLMAdapter):
     def __init__(self) -> None:
         super().__init__()
         self.received_schema: list[dict[str, Any]] | None = None
+        self.generate_with_tools_calls = 0
 
     @property
     def context_window_tokens(self) -> int:
@@ -291,6 +293,7 @@ class _CapturingAdapter(LLMAdapter):
         tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
+        self.generate_with_tools_calls += 1
         self.received_schema = tools_schema
         return build_adapter_response(content="")
 
@@ -367,3 +370,141 @@ def test_exact_fingerprinted_schema_passed_to_adapter() -> None:
         list(envelope.tools_schema),
         sort_keys=True,
     )
+
+
+def test_nested_schema_is_deep_copied() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    nested = schema[0]["function"]["parameters"]["properties"]
+    assert isinstance(nested, dict)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        [ChatMessage(role="user", content="SYNTH-PLAN")],
+        allowed_tool_ids=("alpha.tool",),
+        prepared_tools_schema=schema,
+    )
+    assert adapter.received_schema is not None
+    adapter.received_schema[0]["function"]["description"] = "SYNTH-MUTATED"
+    assert schema[0]["function"]["description"] == "SYNTH-DESC"
+
+
+def test_matching_prepared_schema_hash_passes() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        [ChatMessage(role="user", content="SYNTH-PLAN")],
+        allowed_tool_ids=("alpha.tool",),
+        prepared_tools_schema=list(envelope.tools_schema),
+        prepared_tools_schema_hash=envelope.envelope_hash,
+    )
+    assert adapter.generate_with_tools_calls == 1
+
+
+def test_mismatching_prepared_schema_hash_fails_before_adapter_call() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    with pytest.raises(ValueError, match="prepared tools schema hash mismatch"):
+        planner.plan_native_round(
+            [ChatMessage(role="user", content="SYNTH-PLAN")],
+            allowed_tool_ids=("alpha.tool",),
+            prepared_tools_schema=list(envelope.tools_schema),
+            prepared_tools_schema_hash="0" * 64,
+        )
+    assert adapter.generate_with_tools_calls == 0
+
+
+def test_matching_prepared_messages_hash_passes() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    messages = [ChatMessage(role="user", content="SYNTH-PLAN")]
+    messages_hash = compute_model_facing_messages_hash(messages)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        messages,
+        allowed_tool_ids=("alpha.tool",),
+        prepared_tools_schema=list(envelope.tools_schema),
+        prepared_messages_hash=messages_hash,
+    )
+    assert adapter.generate_with_tools_calls == 1
+
+
+def test_mismatching_prepared_messages_hash_fails_before_adapter_call() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    with pytest.raises(ValueError, match="prepared messages hash mismatch"):
+        planner.plan_native_round(
+            [ChatMessage(role="user", content="SYNTH-PLAN")],
+            allowed_tool_ids=("alpha.tool",),
+            prepared_tools_schema=list(envelope.tools_schema),
+            prepared_messages_hash="0" * 64,
+        )
+    assert adapter.generate_with_tools_calls == 0
+
+
+def test_message_hash_calculated_after_pruning() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    messages = [
+        ChatMessage(role="system", content="SYNTH-SYSTEM"),
+        ChatMessage(role="assistant", content="SYNTH-ASSISTANT", tool_calls=[]),
+        ChatMessage(role="tool", content="SYNTH-TOOL", tool_call_id="call-1"),
+        ChatMessage(role="user", content="SYNTH-USER"),
+    ]
+    from intergrax.runtime.nexus.tools.tool_planning_service import _prune_messages_for_openai
+
+    pruned = _prune_messages_for_openai(list(messages))
+    pruned_hash = compute_model_facing_messages_hash(pruned)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        messages,
+        allowed_tool_ids=("alpha.tool",),
+        prepared_tools_schema=list(envelope.tools_schema),
+        prepared_messages_hash=pruned_hash,
+    )
+    assert adapter.generate_with_tools_calls == 1
+
+
+def test_adapter_receives_value_identical_schema() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    planner.plan_native_round(
+        [ChatMessage(role="user", content="SYNTH-PLAN")],
+        allowed_tool_ids=("alpha.tool",),
+        prepared_tools_schema=list(envelope.tools_schema),
+        prepared_tools_schema_hash=envelope.envelope_hash,
+    )
+    assert adapter.received_schema is not None
+    assert adapter.received_schema == list(envelope.tools_schema)
+
+
+def test_adapter_not_called_after_integrity_failure() -> None:
+    registry = _single_tool_registry()
+    schema = build_tool_planning_schema(registry)
+    envelope = build_cache_stable_tool_envelope(schema)
+    adapter = _CapturingAdapter()
+    planner = ToolPlanningService(adapter, registry)
+    with pytest.raises(ValueError, match="prepared tools schema hash mismatch"):
+        planner.plan_native_round(
+            [ChatMessage(role="user", content="SYNTH-PLAN")],
+            allowed_tool_ids=("alpha.tool",),
+            prepared_tools_schema=list(envelope.tools_schema),
+            prepared_tools_schema_hash="deadbeef" * 8,
+        )
+    assert adapter.generate_with_tools_calls == 0

@@ -102,6 +102,7 @@ class TokenOptimizationRouterReason(StrEnum):
     MODEL_REQUESTED_REVIEW = "model_requested_review"
     CONFIDENCE_BELOW_THRESHOLD = "confidence_below_threshold"
     LLM_ERROR = "llm_error"
+    PROMPT_ASSEMBLY_INTEGRITY_FAILED = "prompt_assembly_integrity_failed"
 
 
 @dataclass(frozen=True, slots=True)

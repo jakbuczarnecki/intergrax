@@ -5,15 +5,16 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from collections.abc import Mapping, Sequence
 from typing import Any, Dict, List, Optional, Union
 
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
-from intergrax.tools.exporters.openai import to_openai_tools
+from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash, to_openai_tools
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.runtime import RegisteredTool
@@ -57,7 +58,7 @@ def _validate_prepared_tools_schema(
     *,
     expected_tool_ids: frozenset[str],
 ) -> List[Dict[str, Any]]:
-    materialized: List[Dict[str, Any]] = [dict(entry) for entry in prepared_tools_schema]
+    materialized: List[Dict[str, Any]] = [copy.deepcopy(dict(entry)) for entry in prepared_tools_schema]
     observed: list[str] = []
     for entry in materialized:
         function = entry.get("function")
@@ -288,6 +289,8 @@ class ToolPlanningService:
         run_id: Optional[str] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
+        prepared_tools_schema_hash: str | None = None,
+        prepared_messages_hash: str | None = None,
     ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
         """One native LLM tool round — used by TOOL-ENG-6 multi-iteration loop."""
         if not self._native_tools:
@@ -300,12 +303,20 @@ class ToolPlanningService:
                 prepared_tools_schema,
                 expected_tool_ids=expected,
             )
+            if prepared_tools_schema_hash is not None:
+                computed_schema_hash = compute_openai_tools_schema_hash(tools_schema)
+                if computed_schema_hash != prepared_tools_schema_hash:
+                    raise ValueError("prepared tools schema hash mismatch")
         else:
             tools_schema = _build_openai_tools_schema(
                 self.tools,
                 allowed_tool_ids=allowed_tool_ids,
             )
         pruned = _prune_messages_for_openai(list(messages))
+        if prepared_messages_hash is not None:
+            computed_messages_hash = compute_model_facing_messages_hash(pruned)
+            if computed_messages_hash != prepared_messages_hash:
+                raise ValueError("prepared messages hash mismatch")
         effective_tool_choice = tool_choice if tool_choice is not None else "auto"
 
         _sync_routing_before_tool_planner_llm(

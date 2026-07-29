@@ -137,7 +137,7 @@ Native tool calling remains valid when the exposed envelope is deterministic and
 
 ---
 
-## 6. As-built runtime (TOKEN-10B)
+## 6. As-built runtime (TOKEN-10B / TOKEN-10B-R1)
 
 Production assembler: `intergrax/runtime/token_optimization/prompt_assembly.py`.
 
@@ -145,6 +145,16 @@ Public contracts:
 
 - `PromptAssemblyMessageBlock`, `PromptCacheBlockFingerprint`, `CacheStablePromptState`, `CacheStableToolEnvelope`, `CacheStablePromptAssemblyReport`, `CacheStablePromptAssembly`
 - `assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, `cache_stable_prompt_assembly_to_safe_dict`
+- **TOKEN-10B-R1:** `CacheStablePromptSendPayload`, `CacheStablePromptIntegrityError`, `materialize_cache_stable_send_payload`
+
+### TOKEN-10B-R1 send integrity (as-built correction)
+
+- **Defensive model-facing snapshots:** assembly deep-copies only `to_dict()` fields (`role`, `content`, `name`, `tool_call_id`, `tool_calls`); caller-owned messages and nested structures are not retained.
+- **Defensive tool-schema snapshots:** `build_cache_stable_tool_envelope` deep-copies, canonicalizes, and fingerprints copied entries only.
+- **Full message integrity hash:** `CacheStablePromptAssembly.messages_hash` — SHA-256 over canonical `to_dict()` sequence; separate from `prefix_hash` (cacheable prefix identity only).
+- **Send-time validation:** `materialize_cache_stable_send_payload` recomputes and compares `messages_hash`, stable-prefix fingerprints, and tool-envelope hash/ordering before adapter invocation; returns fresh defensive copies; raises `CacheStablePromptIntegrityError` on mismatch (fail closed).
+- **Canonical hashing helpers:** `compute_model_facing_messages_hash` (`intergrax/llm/messages.py`), `compute_openai_tools_schema_hash` (`intergrax/tools/exporters/openai.py`) — shared by assembler and `ToolPlanningService` post-pruning validation.
+- **Complete tool-envelope transitions:** `None↔hash` and `hash A↔hash B` report `tool_envelope_stable=false` and `TOOL_ENVELOPE_CHANGED` when prefix is otherwise reusable; prompt-safety invalidation retains precedence.
 
 Router integration (`TokenOptimizationLLMRouter`):
 
@@ -267,7 +277,8 @@ vLLM proves compute reuse and latency/prefill improvement — not Claude billing
 | `TOKEN-OPT-5A`–`TOKEN-OPT-5E` | **Done / Closed** (contracts + helpers + synthetic policy tests) |
 | `TOKEN-8`, `TOKEN-9` | **Accepted / Closed** (execution engine + router) |
 | `TOKEN-10A` | **Accepted / Closed** (docs-only canon) |
-| `TOKEN-10B` | **Implemented / Ready for review** (`prompt_assembly.py`, router wiring) |
+| `TOKEN-10B` | **Implemented / Ready for review after R1** (`prompt_assembly.py`, router wiring) |
+| `TOKEN-10B-R1` | **Implemented / Ready for review** (send-payload integrity, envelope transitions) |
 | `TOKEN-10C`–`TOKEN-10H` | **Planned** |
 
 See [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-10 for subtask acceptance criteria.

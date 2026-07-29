@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.llm.messages import ChatMessage, append_chat_messages
+from intergrax.llm.messages import ChatMessage, append_chat_messages, compute_model_facing_messages_hash
 
 
 pytestmark = pytest.mark.unit
@@ -133,3 +133,21 @@ def test_chat_message_to_dict_does_not_include_optional_fields_when_empty_or_non
 
     msg2 = ChatMessage(role="assistant", content="x", tool_calls=[])
     assert msg2.to_dict() == {"role": "assistant", "content": "x"}
+
+
+def test_compute_model_facing_messages_hash_is_stable_for_equivalent_messages() -> None:
+    first = [
+        ChatMessage(role="system", content="SYNTH-A", entry_id="one"),
+        ChatMessage(role="user", content="SYNTH-B", created_at="2020-01-01T00:00:00"),
+    ]
+    second = [
+        ChatMessage(role="system", content="SYNTH-A", entry_id="two"),
+        ChatMessage(role="user", content="SYNTH-B", created_at="2026-01-01T00:00:00"),
+    ]
+    assert compute_model_facing_messages_hash(first) == compute_model_facing_messages_hash(second)
+
+
+def test_compute_model_facing_messages_hash_changes_when_content_changes() -> None:
+    baseline = [ChatMessage(role="user", content="SYNTH-A")]
+    changed = [ChatMessage(role="user", content="SYNTH-B")]
+    assert compute_model_facing_messages_hash(baseline) != compute_model_facing_messages_hash(changed)

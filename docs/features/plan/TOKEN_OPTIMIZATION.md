@@ -1490,7 +1490,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review; TOKEN-10C next).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review after R1; TOKEN-10B-R1 implemented/ready for review; TOKEN-10C next).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1512,7 +1512,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Implemented / Ready for review after R1**.
 
 **Scope delivered:**
 
@@ -1522,6 +1522,20 @@ Do not collapse these into one implementation commit.
 - `TokenOptimizationLLMRouter` integration: stable system prefix block `token_optimization.router.system`, dynamic tail for request facts and untrusted content, caller-owned `previous_prompt_cache_state` on router request/result.
 
 **Out of scope (TOKEN-10C+):** provider cache capabilities, vLLM startup, cache-hit metrics, cache-aware orchestration gate, in-cache compaction, proof harness.
+
+### TOKEN-10B-R1 — Send-Payload Integrity and Tool-Envelope Transition Corrections
+
+**Status:** **Implemented / Ready for review**.
+
+**Scope delivered:**
+
+- Defensive model-facing message snapshots and deep-copied tool-schema envelopes at assembly time.
+- `messages_hash` integrity fingerprint separate from `prefix_hash`.
+- `materialize_cache_stable_send_payload` send-time validation with `CacheStablePromptIntegrityError` fail-closed semantics.
+- Router uses materialized payload only; integrity failure returns `prompt_assembly_integrity_failed` without adapter or pipeline execution.
+- `ToolPlanningService.plan_native_round` optional `prepared_tools_schema_hash` / `prepared_messages_hash` validation (post-pruning for messages).
+- Shared canonical hashing: `compute_model_facing_messages_hash`, `compute_openai_tools_schema_hash`.
+- Complete `None↔hash` tool-envelope transition reporting (`TOOL_ENVELOPE_CHANGED`).
 
 ### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
 
@@ -2030,7 +2044,8 @@ TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
 TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
 TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
-TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review
+TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review after R1
+TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Implemented / Ready for review
 TOKEN-10C   vLLM prefix-cache provider integration and metrics — Next
 TOKEN-10D..10H orchestration, compaction, proof, README — Planned
 ```
