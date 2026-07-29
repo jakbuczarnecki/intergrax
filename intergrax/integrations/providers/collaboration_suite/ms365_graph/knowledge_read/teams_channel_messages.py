@@ -1427,23 +1427,6 @@ def _extract_channel_reply_messages_path(
     return None
 
 
-def _forbidden_root_messages_path(path_lower: str) -> bool:
-    for forbidden in (
-        "/replies",
-        "/hostedcontents",
-        "/members",
-        "/allmembers",
-        "/mail",
-        "/calendar",
-        "/drive",
-        "/users/",
-        "/chats/",
-    ):
-        if forbidden in path_lower:
-            return True
-    return False
-
-
 def validate_msgraph_teams_channel_root_messages_continuation(
     continuation: object,
     *,
@@ -1473,9 +1456,6 @@ def validate_msgraph_teams_channel_root_messages_continuation(
         raise IntegrationConfigurationError(_INVALID_MESSAGES_CONTINUATION) from None
 
     parsed = urlparse(validated_url)
-    if _forbidden_root_messages_path(parsed.path.lower()):
-        raise IntegrationConfigurationError(_INVALID_MESSAGES_CONTINUATION) from None
-
     extracted = _extract_channel_root_messages_path(
         parsed.path,
         graph_base_path=_graph_base_path(graph_base_url),
@@ -1531,20 +1511,6 @@ def validate_msgraph_teams_channel_replies_continuation(
         raise IntegrationConfigurationError(_INVALID_MESSAGES_CONTINUATION) from None
 
     parsed = urlparse(validated_url)
-    path_lower = parsed.path.lower()
-    for forbidden in (
-        "/hostedcontents",
-        "/members",
-        "/allmembers",
-        "/mail",
-        "/calendar",
-        "/drive",
-        "/users/",
-        "/chats/",
-    ):
-        if forbidden in path_lower:
-            raise IntegrationConfigurationError(_INVALID_MESSAGES_CONTINUATION) from None
-
     extracted = _extract_channel_reply_messages_path(
         parsed.path,
         graph_base_path=_graph_base_path(graph_base_url),
@@ -1654,8 +1620,16 @@ def read_and_validate_current_teams_channel_message_observation(
     validated_message = validate_msgraph_teams_channel_message(message)
     quoted_team = quote(validated_message.team_remote_id, safe="")
     quoted_channel = quote(validated_message.channel_remote_id, safe="")
-    quoted_message = quote(validated_message.remote_id, safe="")
-    path = f"/teams/{quoted_team}/channels/{quoted_channel}/messages/{quoted_message}"
+    if validated_message.message_kind is MsGraphTeamsChannelMessageKind.ROOT:
+        quoted_root = quote(validated_message.remote_id, safe="")
+        path = f"/teams/{quoted_team}/channels/{quoted_channel}/messages/{quoted_root}"
+    else:
+        quoted_root = quote(validated_message.thread_root_remote_id, safe="")
+        quoted_reply = quote(validated_message.remote_id, safe="")
+        path = (
+            f"/teams/{quoted_team}/channels/{quoted_channel}/messages/{quoted_root}"
+            f"/replies/{quoted_reply}"
+        )
     payload = transport.get_initial_json(
         path=path,
         headers=_PREFER_UNKNOWN_ENUM,

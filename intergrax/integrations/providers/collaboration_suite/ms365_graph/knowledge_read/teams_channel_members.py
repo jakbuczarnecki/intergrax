@@ -126,7 +126,9 @@ def _validate_exact_bool(value: object) -> bool:
 def _validate_https_membership_url(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
-    if "\x00" in value:
+    if not value:
+        raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
+    if _ASCII_CONTROL.search(value):
         raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
     if len(value) > _MAX_MEMBERSHIP_URL_LEN:
         raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
@@ -224,7 +226,7 @@ class MsGraphTeamsChannelMember(BaseModel):
     remote_id: str
     member_kind: MsGraphTeamsChannelMemberKind
 
-    provider_user_id: str | None = None
+    provider_user_id: str | None = Field(default=None, repr=False)
     tenant_id: str | None = Field(default=None, repr=False)
 
     display_name: str | None = Field(default=None, repr=False)
@@ -232,7 +234,7 @@ class MsGraphTeamsChannelMember(BaseModel):
 
     roles: tuple[MsGraphTeamsChannelMemberRole, ...] = ()
 
-    visible_history_start_at: datetime | None = None
+    visible_history_start_at: datetime | None = Field(default=None, repr=False)
 
     is_indirect_member: bool = False
     original_source_membership_url: str | None = Field(default=None, repr=False)
@@ -302,6 +304,15 @@ class MsGraphTeamsChannelMember(BaseModel):
         if value is None:
             return None
         return _validate_https_membership_url(value)
+
+    @model_validator(mode="after")
+    def _validate_indirect_membership_consistency(self) -> MsGraphTeamsChannelMember:
+        if self.is_indirect_member:
+            if self.original_source_membership_url is None:
+                raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
+        elif self.original_source_membership_url is not None:
+            raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
+        return self
 
 
 class MsGraphTeamsChannelMemberPage(BaseModel):
@@ -391,11 +402,16 @@ def _parse_is_indirect_member(
     *,
     original_source_membership_url: str | None,
 ) -> bool:
+    derived = original_source_membership_url is not None
     if "isIndirectMember" in payload:
-        return _validate_exact_bool(payload.get("isIndirectMember"))
+        provider_bool = _validate_exact_bool(payload.get("isIndirectMember"))
+        if provider_bool != derived:
+            raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
     if _INDIRECT_MEMBER_KEY in payload:
-        return _validate_exact_bool(payload.get(_INDIRECT_MEMBER_KEY))
-    return original_source_membership_url is not None
+        provider_bool = _validate_exact_bool(payload.get(_INDIRECT_MEMBER_KEY))
+        if provider_bool != derived:
+            raise ValueError(_MALFORMED_MEMBERS_RESPONSE)
+    return derived
 
 
 def parse_msgraph_teams_channel_member(
@@ -620,11 +636,6 @@ def _extract_channel_all_members_path(
             True,
             False,
         ),
-        (
-            rf"^{re.escape(base)}/teams/([^/]+)/channels/\('((?:[^']|'')*)'\)/allMembers$",
-            False,
-            True,
-        ),
     ]
 
     for pattern, team_odata, channel_odata in patterns:
@@ -671,10 +682,6 @@ def validate_msgraph_teams_channel_members_continuation(
         raise IntegrationConfigurationError(_INVALID_MEMBERS_CONTINUATION) from None
 
     parsed = urlparse(validated_url)
-    path_lower = parsed.path.lower()
-    if "/members" in path_lower and "/allmembers" not in path_lower:
-        raise IntegrationConfigurationError(_INVALID_MEMBERS_CONTINUATION) from None
-
     extracted = _extract_channel_all_members_path(
         parsed.path,
         graph_base_path=_graph_base_path(graph_base_url),

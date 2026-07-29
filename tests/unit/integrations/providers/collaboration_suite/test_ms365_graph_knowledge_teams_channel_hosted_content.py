@@ -31,59 +31,60 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
     Ms365GraphCollaborationSuiteIntegration,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
-    ABSOLUTE_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
-    DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
+    ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeContinuationKind,
     MsGraphKnowledgeTransport,
-    MsGraphTeamsChatBodyKind,
-    MsGraphTeamsChatHostedContent,
-    MsGraphTeamsChatHostedContentBytes,
-    MsGraphTeamsChatHostedContentPage,
-    MsGraphTeamsChatHostedContentReader,
-    MsGraphTeamsChatHostedContentTooLarge,
-    MsGraphTeamsChatImportance,
-    MsGraphTeamsChatMessage,
-    MsGraphTeamsChatMessageChanged,
-    MsGraphTeamsChatMessageState,
-    MsGraphTeamsChatMessageType,
-    parse_msgraph_teams_chat_hosted_content,
-    validate_msgraph_teams_chat_hosted_content,
-    validate_msgraph_teams_chat_hosted_content_bytes,
-    validate_msgraph_teams_chat_hosted_content_page,
-    validate_msgraph_teams_chat_hosted_contents_continuation,
+    MsGraphTeamsChannelBodyKind,
+    MsGraphTeamsChannelHostedContent,
+    MsGraphTeamsChannelHostedContentBytes,
+    MsGraphTeamsChannelHostedContentPage,
+    MsGraphTeamsChannelHostedContentReader,
+    MsGraphTeamsChannelHostedContentTooLarge,
+    MsGraphTeamsChannelImportance,
+    MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelMessageChanged,
+    MsGraphTeamsChannelMessageState,
+    MsGraphTeamsChannelMessageKind,
+    MsGraphTeamsChannelMessageType,
+    parse_msgraph_teams_channel_hosted_content,
+    validate_msgraph_teams_channel_hosted_content,
+    validate_msgraph_teams_channel_hosted_content_bytes,
+    validate_msgraph_teams_channel_hosted_content_page,
+    validate_msgraph_teams_channel_hosted_contents_continuation,
 )
 
 pytestmark = pytest.mark.unit
 
 _GRAPH_BASE = DEFAULT_GRAPH_BASE_URL
-_MAILBOX_USER_ID = "user@contoso.com"
-_OTHER_MAILBOX_USER_ID = "other@contoso.com"
-_CHAT_ID = "19:chat-abc-123@thread.v2"
-_OTHER_CHAT_ID = "19:other-chat@thread.v2"
-_MESSAGE_ID = "msg-immutable-opaque-id"
-_OTHER_MESSAGE_ID = "msg-other-opaque-id"
+_TEAM_ID = "team-abc-123"
+_OTHER_TEAM_ID = "other@contoso.com"
+_CHANNEL_ID = "channel-abc-123"
+_OTHER_CHANNEL_ID = "other-channel-456"
+_MESSAGE_ID = "root-msg-001"
+_OTHER_MESSAGE_ID = "reply-msg-002"
 _REVISION = "etag-secret-value"
 _OTHER_REVISION = "other-etag-value"
 _HOSTED_CONTENT_ID = "hosted-content-001"
 _OTHER_HOSTED_CONTENT_ID = "hosted-other-002"
 _SECRET_TOKEN = "secret-skiptoken-value"
-_QUOTED_MAILBOX = quote(_MAILBOX_USER_ID, safe="")
-_QUOTED_CHAT = quote(_CHAT_ID, safe="")
-_QUOTED_OTHER_CHAT = quote(_OTHER_CHAT_ID, safe="")
+_QUOTED_TEAM = quote(_TEAM_ID, safe="")
+_QUOTED_CHANNEL = quote(_CHANNEL_ID, safe="")
+_QUOTED_OTHER_CHANNEL = quote(_OTHER_CHANNEL_ID, safe="")
 _QUOTED_MESSAGE_ID = quote(_MESSAGE_ID, safe="")
 _QUOTED_OTHER_MESSAGE_ID = quote(_OTHER_MESSAGE_ID, safe="")
 _QUOTED_HOSTED_CONTENT_ID = quote(_HOSTED_CONTENT_ID, safe="")
 _HOSTED_CONTENTS_PATH = (
-    f"/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}/messages/"
+    f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/"
     f"{_QUOTED_MESSAGE_ID}/hostedContents"
 )
 _VALUE_PATH = (
-    f"/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}"
+    f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_MESSAGE_ID}"
     f"/hostedContents/{_QUOTED_HOSTED_CONTENT_ID}/$value"
 )
 _OBSERVATION_PATH = (
-    f"/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}"
+    f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_MESSAGE_ID}"
 )
 _PREFER_HEADER = {"Prefer": "include-unknown-enum-members"}
 _SAFE_ERROR = "unexpected Microsoft Graph Teams hosted content response"
@@ -91,9 +92,9 @@ _REQUEST_ERROR = "invalid Microsoft Graph Teams hosted content request"
 _CONT_ERROR = "invalid Microsoft Graph Teams hosted content continuation"
 _INVALID_RESPONSE = "Microsoft Graph Teams hosted content response is invalid"
 _CAPABILITY_ERROR = (
-    "Microsoft Graph integration does not expose Teams hosted content capability"
+    "Microsoft Graph integration does not expose Teams channel hosted content capability"
 )
-_VALIDATION_ERROR = "Microsoft Graph Teams Chat validation is not configured"
+_VALIDATION_ERROR = "Microsoft Graph Teams Channel validation is not configured"
 
 
 def _config() -> Ms365GraphIntegrationConfig:
@@ -115,43 +116,48 @@ def _json_response(*, status_code: int = 200, payload: object | None = None) -> 
 
 def _hosted_contents_next_link() -> str:
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents?$skiptoken={_SECRET_TOKEN}"
     )
 
 
 def _odata_hosted_contents_next_link(
     message_id: str = _MESSAGE_ID,
-    chat_id: str = _CHAT_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
 ) -> str:
     escaped_message = message_id.replace("'", "''")
-    escaped_chat = chat_id.replace("'", "''")
+    escaped_channel = channel_id.replace("'", "''")
+    escaped_team = team_id.replace("'", "''")
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
-        f"chats('{escaped_chat}')/messages('{escaped_message}')/hostedContents?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams('{escaped_team}')/channels('{escaped_channel}')"
+        f"/messages('{escaped_message}')/hostedContents?$skiptoken={_SECRET_TOKEN}"
     )
 
 
-def _slash_hosted_contents_next_link(message_id: str, chat_id: str = _CHAT_ID) -> str:
+def _slash_hosted_contents_next_link(message_id: str, channel_id: str = _CHANNEL_ID) -> str:
     quoted_message = quote(message_id, safe="")
-    quoted_chat = quote(chat_id, safe="")
+    quoted_channel = quote(channel_id, safe="")
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{quoted_chat}/messages/{quoted_message}/hostedContents?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{quoted_channel}/messages/{quoted_message}/hostedContents?$skiptoken={_SECRET_TOKEN}"
     )
 
 
 def _odata_percent_encoded_hosted_contents_next_link(
     message_id: str,
-    chat_id: str = _CHAT_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
 ) -> str:
     escaped_message = message_id.replace("'", "''")
-    escaped_chat = chat_id.replace("'", "''")
+    escaped_channel = channel_id.replace("'", "''")
+    escaped_team = team_id.replace("'", "''")
     encoded_message = quote(escaped_message, safe="")
-    encoded_chat = quote(escaped_chat, safe="")
+    encoded_channel = quote(escaped_channel, safe="")
+    encoded_team = quote(escaped_team, safe="")
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
-        f"chats('{encoded_chat}')/messages('{encoded_message}')/hostedContents?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams('{encoded_team}')/channels('{encoded_channel}')"
+        f"/messages('{encoded_message}')/hostedContents?$skiptoken={_SECRET_TOKEN}"
     )
 
 
@@ -169,13 +175,13 @@ def _page_payload(
 def _observation_payload(
     *,
     message_id: str = _MESSAGE_ID,
-    chat_id: str = _CHAT_ID,
+    channel_id: str = _CHANNEL_ID,
     revision: str = _REVISION,
     deleted: bool = False,
 ) -> dict[str, Any]:
     return {
         "id": message_id,
-        "chatId": chat_id,
+        "channelIdentity": {"teamId": _TEAM_ID, "channelId": channel_id},
         "etag": revision,
         "deletedDateTime": "2024-06-01T12:00:00Z" if deleted else None,
     }
@@ -244,46 +250,52 @@ class _BrokenHeaderMapping(Mapping[str, str]):
         raise RuntimeError("broken headers")
 
 
-def _valid_active_message(**overrides: object) -> MsGraphTeamsChatMessage:
+def _valid_active_message(**overrides: object) -> MsGraphTeamsChannelMessage:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
         "remote_id": _MESSAGE_ID,
         "revision": _REVISION,
-        "state": MsGraphTeamsChatMessageState.ACTIVE,
-        "message_type": MsGraphTeamsChatMessageType.MESSAGE,
-        "importance": MsGraphTeamsChatImportance.NORMAL,
+        "state": MsGraphTeamsChannelMessageState.ACTIVE,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
         "created_at": datetime(2024, 6, 1, 10, 0, tzinfo=timezone.utc),
         "last_modified_at": datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc),
-        "body_kind": MsGraphTeamsChatBodyKind.TEXT,
+        "body_kind": MsGraphTeamsChannelBodyKind.TEXT,
         "body_content": "hello",
     }
     defaults.update(overrides)
-    return MsGraphTeamsChatMessage(**defaults)
+    return MsGraphTeamsChannelMessage(**defaults)
 
 
-def _valid_deleted_message(**overrides: object) -> MsGraphTeamsChatMessage:
+def _valid_deleted_message(**overrides: object) -> MsGraphTeamsChannelMessage:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
         "remote_id": _MESSAGE_ID,
         "revision": _REVISION,
-        "state": MsGraphTeamsChatMessageState.DELETED,
-        "message_type": MsGraphTeamsChatMessageType.MESSAGE,
-        "importance": MsGraphTeamsChatImportance.NORMAL,
+        "state": MsGraphTeamsChannelMessageState.DELETED,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
         "created_at": datetime(2024, 6, 1, 10, 0, tzinfo=timezone.utc),
         "last_modified_at": datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc),
         "deleted_at": datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc),
     }
     defaults.update(overrides)
-    return MsGraphTeamsChatMessage(**defaults)
+    return MsGraphTeamsChannelMessage(**defaults)
 
 
 def _valid_hosted_content_kwargs(**overrides: object) -> dict[str, object]:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "message_remote_id": _MESSAGE_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
         "message_revision": _REVISION,
         "remote_id": _HOSTED_CONTENT_ID,
     }
@@ -291,31 +303,35 @@ def _valid_hosted_content_kwargs(**overrides: object) -> dict[str, object]:
     return defaults
 
 
-def _valid_hosted_content(**overrides: object) -> MsGraphTeamsChatHostedContent:
-    return MsGraphTeamsChatHostedContent(**_valid_hosted_content_kwargs(**overrides))
+def _valid_hosted_content(**overrides: object) -> MsGraphTeamsChannelHostedContent:
+    return MsGraphTeamsChannelHostedContent(**_valid_hosted_content_kwargs(**overrides))
 
 
-def _valid_hosted_content_page(**overrides: object) -> MsGraphTeamsChatHostedContentPage:
+def _valid_hosted_content_page(**overrides: object) -> MsGraphTeamsChannelHostedContentPage:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "message_remote_id": _MESSAGE_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
         "message_revision": _REVISION,
         "items": (_valid_hosted_content(),),
         "continuation": None,
     }
     defaults.update(overrides)
-    return MsGraphTeamsChatHostedContentPage(**defaults)
+    return MsGraphTeamsChannelHostedContentPage(**defaults)
 
 
 def _valid_hosted_content_bytes(
     data: bytes = b"hello-world",
     **overrides: object,
-) -> MsGraphTeamsChatHostedContentBytes:
+) -> MsGraphTeamsChannelHostedContentBytes:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "message_remote_id": _MESSAGE_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
         "message_revision": _REVISION,
         "hosted_content_remote_id": _HOSTED_CONTENT_ID,
         "content_type": "application/octet-stream",
@@ -324,11 +340,11 @@ def _valid_hosted_content_bytes(
         "content_hash": hashlib.sha256(data).hexdigest(),
     }
     defaults.update(overrides)
-    return MsGraphTeamsChatHostedContentBytes(**defaults)
+    return MsGraphTeamsChannelHostedContentBytes(**defaults)
 
 
-def _reader(http: MagicMock) -> MsGraphTeamsChatHostedContentReader:
-    return MsGraphTeamsChatHostedContentReader(
+def _reader(http: MagicMock) -> MsGraphTeamsChannelHostedContentReader:
+    return MsGraphTeamsChannelHostedContentReader(
         config=_config(),
         transport=MsGraphKnowledgeTransport(config=_config(), http_client=http),
         graph_http_client=http,
@@ -339,8 +355,8 @@ def _graph_client(http: MagicMock) -> GraphRestClient:
     return GraphRestClient(_config(), http_client=http)
 
 
-def _parse_hosted_content(payload: dict[str, Any]) -> MsGraphTeamsChatHostedContent:
-    return parse_msgraph_teams_chat_hosted_content(payload, message=_valid_active_message())
+def _parse_hosted_content(payload: dict[str, Any]) -> MsGraphTeamsChannelHostedContent:
+    return parse_msgraph_teams_channel_hosted_content(payload, message=_valid_active_message())
 
 
 def _setup_hosted_contents_page(
@@ -365,9 +381,9 @@ def _setup_hosted_content_bytes(
     http: MagicMock,
     *,
     file_bytes: bytes = b"hello-world",
-    hosted_content: MsGraphTeamsChatHostedContent | None = None,
+    hosted_content: MsGraphTeamsChannelHostedContent | None = None,
     content_type: str | None = "application/octet-stream",
-) -> MsGraphTeamsChatHostedContent:
+) -> MsGraphTeamsChannelHostedContent:
     if hosted_content is None:
         hosted_content = _valid_hosted_content()
     observation = _observation_payload()
@@ -392,7 +408,7 @@ def test_parse_hosted_content_with_id_only() -> None:
     hosted = _parse_hosted_content(_hosted_content_payload())
     assert hosted.remote_id == _HOSTED_CONTENT_ID
     assert hosted.message_revision == _REVISION
-    assert hosted.chat_remote_id == _CHAT_ID
+    assert hosted.channel_remote_id == _CHANNEL_ID
     assert hosted.message_remote_id == _MESSAGE_ID
 
 
@@ -441,8 +457,8 @@ def test_parse_hosted_content_rejects_non_null_content_type(content_type: object
 
 
 def test_parse_hosted_content_deleted_message_rejected() -> None:
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
-        parse_msgraph_teams_chat_hosted_content(
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        parse_msgraph_teams_channel_hosted_content(
             _hosted_content_payload(),
             message=_valid_deleted_message(),
         )
@@ -463,7 +479,7 @@ def test_parse_hosted_content_deleted_message_rejected() -> None:
 )
 def test_parse_malformed_provider_payload(payload: object) -> None:
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        parse_msgraph_teams_chat_hosted_content(payload, message=_valid_active_message())
+        parse_msgraph_teams_channel_hosted_content(payload, message=_valid_active_message())
     assert exc.value.__cause__ is None
     assert _HOSTED_CONTENT_ID not in str(exc.value)
 
@@ -473,7 +489,7 @@ def test_parse_malformed_provider_payload(payload: object) -> None:
 
 def test_validate_hosted_content_returns_new_instance() -> None:
     original = _valid_hosted_content()
-    validated = validate_msgraph_teams_chat_hosted_content(original)
+    validated = validate_msgraph_teams_channel_hosted_content(original)
     assert validated == original
     assert validated is not original
 
@@ -487,17 +503,17 @@ def test_validate_hosted_content_returns_new_instance() -> None:
     ],
 )
 def test_model_construct_malformed_hosted_content_rejected(kwargs: dict[str, object]) -> None:
-    malformed = MsGraphTeamsChatHostedContent.model_construct(
+    malformed = MsGraphTeamsChannelHostedContent.model_construct(
         **{**_valid_hosted_content_kwargs(), **kwargs}
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_content(malformed)
+        validate_msgraph_teams_channel_hosted_content(malformed)
     assert exc.value.__cause__ is None
 
 
 def test_validate_hosted_content_page_returns_new_instances() -> None:
     original = _valid_hosted_content_page()
-    validated = validate_msgraph_teams_chat_hosted_content_page(
+    validated = validate_msgraph_teams_channel_hosted_content_page(
         original,
         message=_valid_active_message(),
         graph_base_url=_GRAPH_BASE,
@@ -517,31 +533,31 @@ def test_validate_hosted_content_page_returns_new_instances() -> None:
 )
 def test_model_construct_malformed_page_rejected(page_kwargs: dict[str, object]) -> None:
     if page_kwargs.get("items") is None:
-        malformed = MsGraphTeamsChatHostedContentPage.model_construct(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
+        malformed = MsGraphTeamsChannelHostedContentPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             message_remote_id=_MESSAGE_ID,
             message_revision=_REVISION,
         )
     elif page_kwargs.get("nested_malformed"):
-        malformed = MsGraphTeamsChatHostedContentPage.model_construct(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
+        malformed = MsGraphTeamsChannelHostedContentPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             message_remote_id=_MESSAGE_ID,
             message_revision=_REVISION,
-            items=(MsGraphTeamsChatHostedContent.model_construct(),),
+            items=(MsGraphTeamsChannelHostedContent.model_construct(),),
         )
     else:
-        malformed = MsGraphTeamsChatHostedContentPage.model_construct(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
+        malformed = MsGraphTeamsChannelHostedContentPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             message_remote_id=_MESSAGE_ID,
             message_revision=_REVISION,
             items=(_valid_hosted_content(),),
             continuation=page_kwargs["continuation"],
         )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_content_page(
+        validate_msgraph_teams_channel_hosted_content_page(
             malformed,
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
@@ -551,15 +567,17 @@ def test_model_construct_malformed_page_rejected(page_kwargs: dict[str, object])
 
 def test_hosted_content_page_model_rejects_duplicate_remote_ids() -> None:
     item = _valid_hosted_content()
-    page = MsGraphTeamsChatHostedContentPage.model_construct(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    page = MsGraphTeamsChannelHostedContentPage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
         items=(item, item),
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        validate_msgraph_teams_chat_hosted_content_page(
+        validate_msgraph_teams_channel_hosted_content_page(
             page,
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
@@ -567,15 +585,17 @@ def test_hosted_content_page_model_rejects_duplicate_remote_ids() -> None:
 
 
 def test_validate_page_rejects_stale_message_revision() -> None:
-    page = MsGraphTeamsChatHostedContentPage(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    page = MsGraphTeamsChannelHostedContentPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_OTHER_REVISION,
         items=(_valid_hosted_content(message_revision=_OTHER_REVISION),),
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        validate_msgraph_teams_chat_hosted_content_page(
+        validate_msgraph_teams_channel_hosted_content_page(
             page,
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
@@ -585,7 +605,7 @@ def test_validate_page_rejects_stale_message_revision() -> None:
 def test_validate_hosted_content_bytes_returns_new_instance() -> None:
     data = b"content-bytes"
     original = _valid_hosted_content_bytes(data=data)
-    validated = validate_msgraph_teams_chat_hosted_content_bytes(
+    validated = validate_msgraph_teams_channel_hosted_content_bytes(
         original,
         message=_valid_active_message(),
         hosted_content=_valid_hosted_content(),
@@ -614,8 +634,8 @@ def test_model_construct_malformed_hosted_content_bytes_rejected(
 ) -> None:
     data = b"abc"
     base = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "message_remote_id": _MESSAGE_ID,
         "message_revision": _REVISION,
         "hosted_content_remote_id": _HOSTED_CONTENT_ID,
@@ -623,12 +643,12 @@ def test_model_construct_malformed_hosted_content_bytes_rejected(
         "size_bytes": len(data),
         "content_hash": hashlib.sha256(data).hexdigest(),
     }
-    malformed = MsGraphTeamsChatHostedContentBytes.model_construct(**{**base, **kwargs})
+    malformed = MsGraphTeamsChannelHostedContentBytes.model_construct(**{**base, **kwargs})
     with pytest.raises(
         error_type,
         match=_SAFE_ERROR if error_type is ValueError else "changed",
     ) as exc:
-        validate_msgraph_teams_chat_hosted_content_bytes(
+        validate_msgraph_teams_channel_hosted_content_bytes(
             malformed,
             message=_valid_active_message(),
             hosted_content=_valid_hosted_content(),
@@ -644,8 +664,8 @@ def test_model_construct_malformed_hosted_content_bytes_rejected(
 def test_model_construct_missing_hosted_content_bytes_field_rejected(missing_field: str) -> None:
     data = b"abc"
     base: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "message_remote_id": _MESSAGE_ID,
         "message_revision": _REVISION,
         "hosted_content_remote_id": _HOSTED_CONTENT_ID,
@@ -654,9 +674,9 @@ def test_model_construct_missing_hosted_content_bytes_field_rejected(missing_fie
         "content_hash": hashlib.sha256(data).hexdigest(),
     }
     del base[missing_field]
-    malformed = MsGraphTeamsChatHostedContentBytes.model_construct(**base)
+    malformed = MsGraphTeamsChannelHostedContentBytes.model_construct(**base)
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_content_bytes(
+        validate_msgraph_teams_channel_hosted_content_bytes(
             malformed,
             message=_valid_active_message(),
             hosted_content=_valid_hosted_content(),
@@ -668,8 +688,8 @@ def test_model_construct_missing_hosted_content_bytes_field_rejected(missing_fie
 def test_validate_hosted_content_bytes_too_large() -> None:
     data = b"toolarge"
     content = _valid_hosted_content_bytes(data=data)
-    with pytest.raises(MsGraphTeamsChatHostedContentTooLarge):
-        validate_msgraph_teams_chat_hosted_content_bytes(
+    with pytest.raises(MsGraphTeamsChannelHostedContentTooLarge):
+        validate_msgraph_teams_channel_hosted_content_bytes(
             content,
             message=_valid_active_message(),
             hosted_content=_valid_hosted_content(),
@@ -683,7 +703,7 @@ def test_validate_hosted_content_bytes_too_large() -> None:
 def test_initial_request_path_and_headers() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
-    _reader(http).read_hosted_contents_page(
+    _reader(http).read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
         continuation=None,
     )
@@ -705,7 +725,7 @@ def test_continuation_request_uses_full_url_without_params() -> None:
         _json_response(payload=_page_payload()),
         _json_response(payload=observation),
     ]
-    _reader(http).read_hosted_contents_page(
+    _reader(http).read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
         continuation=continuation,
     )
@@ -718,7 +738,7 @@ def test_continuation_request_uses_full_url_without_params() -> None:
 def test_observation_requests_use_prefer_header() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
-    _reader(http).read_hosted_contents_page(
+    _reader(http).read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
         continuation=None,
     )
@@ -730,11 +750,11 @@ def test_observation_requests_use_prefer_header() -> None:
     assert post_observation.kwargs["headers"] == _PREFER_HEADER
 
 
-@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES + 1, True, "10", None])
+@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES + 1, True, "10", None])
 def test_invalid_max_bytes_rejected_before_http(max_bytes: object) -> None:
     http = MagicMock()
     with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=_valid_hosted_content(),
             max_bytes=max_bytes,  # type: ignore[arg-type]
@@ -751,11 +771,13 @@ def test_validate_continuation_accepts_next_page_slash_path() -> None:
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_hosted_contents_next_link(),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_MESSAGE_ID,
         message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -769,11 +791,13 @@ def test_validate_continuation_accepts_odata_key_path() -> None:
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_odata_hosted_contents_next_link(),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_MESSAGE_ID,
         message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -782,16 +806,18 @@ def test_validate_continuation_accepts_odata_key_path() -> None:
 
 def test_validate_continuation_accepts_literal_with_escaped_quotes() -> None:
     message_id = "msg'quote'part"
-    chat_id = "chat'quote'part"
+    channel_id = "channel'quote'part"
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
-        url=_odata_hosted_contents_next_link(message_id, chat_id),
+        url=_odata_hosted_contents_next_link(message_id, channel_id),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=chat_id,
+        team_id=_TEAM_ID,
+        channel_id=channel_id,
+        thread_root_id=message_id,
         message_id=message_id,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -802,15 +828,17 @@ def test_validate_continuation_accepts_uppercase_resource_names() -> None:
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/USERS/{_QUOTED_MAILBOX}/CHATS/"
-            f"{_QUOTED_CHAT}/MESSAGES/{_QUOTED_MESSAGE_ID}/HOSTEDCONTENTS?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/TEAMS/{_QUOTED_TEAM}/CHANNELS/"
+            f"{_QUOTED_CHANNEL}/MESSAGES/{_QUOTED_MESSAGE_ID}/HOSTEDCONTENTS?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_MESSAGE_ID,
         message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -823,15 +851,17 @@ def test_validate_continuation_accepts_percent_encoded_message_literal() -> None
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/messages('{encoded}')/hostedContents?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/messages('{encoded}')/hostedContents?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=message_id,
         message_id=message_id,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -854,11 +884,13 @@ def test_validate_continuation_accepts_opaque_message_id_with_reserved_substring
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_slash_hosted_contents_next_link(message_id),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=message_id,
         message_id=message_id,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -871,11 +903,13 @@ def test_validate_continuation_accepts_odata_literal_with_quote_percent_and_delt
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_odata_percent_encoded_hosted_contents_next_link(message_id),
     )
-    validated = validate_msgraph_teams_chat_hosted_contents_continuation(
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=message_id,
         message_id=message_id,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -885,23 +919,23 @@ def test_validate_continuation_accepts_odata_literal_with_quote_percent_and_delt
 @pytest.mark.parametrize(
     "url",
     [
-        f"https://graph.microsoft.com/v1.0/users/{quote(_OTHER_MAILBOX_USER_ID, safe='')}/"
-        f"chats/{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_OTHER_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents/delta?$skiptoken={_SECRET_TOKEN}",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/messages/"
+        f"https://graph.microsoft.com/v1.0/teams/{quote(_OTHER_TEAM_ID, safe='')}/"
+        f"chats/{_QUOTED_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_OTHER_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents/delta?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/messages/"
         f"{_QUOTED_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents/"
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents/"
         f"{_QUOTED_HOSTED_CONTENT_ID}/$value",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents/extra?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents/extra?$skiptoken={_SECRET_TOKEN}",
         "https://graph.microsoft.com/v1.0/drives/drive-1/root/children?$skiptoken=x",
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats('{_QUOTED_CHAT}')"
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels('{_QUOTED_CHANNEL}')"
         f"/messages('unterminated?$skiptoken={_SECRET_TOKEN}",
     ],
 )
@@ -911,15 +945,17 @@ def test_validate_continuation_rejects_invalid_urls(url: str) -> None:
         url=url,
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_contents_continuation(
+        validate_msgraph_teams_channel_hosted_contents_continuation(
             continuation,
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
-            message_id=_MESSAGE_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_MESSAGE_ID,
+        message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
             graph_base_url=_GRAPH_BASE,
         )
     assert _SECRET_TOKEN not in str(exc.value)
-    assert _MAILBOX_USER_ID not in str(exc.value)
+    assert _TEAM_ID not in str(exc.value)
 
 
 def test_validate_continuation_rejects_delta_kind() -> None:
@@ -928,38 +964,44 @@ def test_validate_continuation_rejects_delta_kind() -> None:
         url=_hosted_contents_next_link(),
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
-        validate_msgraph_teams_chat_hosted_contents_continuation(
+        validate_msgraph_teams_channel_hosted_contents_continuation(
             continuation,
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
-            message_id=_MESSAGE_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_MESSAGE_ID,
+        message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
             graph_base_url=_GRAPH_BASE,
         )
 
 
 def test_validate_continuation_rejects_wrong_object_type() -> None:
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
-        validate_msgraph_teams_chat_hosted_contents_continuation(
+        validate_msgraph_teams_channel_hosted_contents_continuation(
             "bad",
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
-            message_id=_MESSAGE_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_MESSAGE_ID,
+        message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
             graph_base_url=_GRAPH_BASE,
         )
 
 
 def _assert_malformed_continuation_rejected(continuation: object) -> None:
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_contents_continuation(
+        validate_msgraph_teams_channel_hosted_contents_continuation(
             continuation,
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
-            message_id=_MESSAGE_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_MESSAGE_ID,
+        message_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
             graph_base_url=_GRAPH_BASE,
         )
     assert exc.value.__cause__ is None
     assert _SECRET_TOKEN not in str(exc.value)
-    assert _MAILBOX_USER_ID not in str(exc.value)
+    assert _TEAM_ID not in str(exc.value)
     assert _MESSAGE_ID not in str(exc.value)
 
 
@@ -992,10 +1034,12 @@ def test_validate_continuation_rejects_model_construct_malformed(
 
 
 def test_validate_page_rejects_delta_continuation_kind() -> None:
-    malformed = MsGraphTeamsChatHostedContentPage.model_construct(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    malformed = MsGraphTeamsChannelHostedContentPage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
         items=(_valid_hosted_content(),),
         continuation=MsGraphKnowledgeContinuation(
@@ -1004,7 +1048,7 @@ def test_validate_page_rejects_delta_continuation_kind() -> None:
         ),
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        validate_msgraph_teams_chat_hosted_content_page(
+        validate_msgraph_teams_channel_hosted_content_page(
             malformed,
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
@@ -1017,7 +1061,7 @@ def test_validate_page_rejects_delta_continuation_kind() -> None:
 def test_first_page_with_next_page() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http, next_link=_hosted_contents_next_link())
-    page = _reader(http).read_hosted_contents_page(
+    page = _reader(http).read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
         continuation=None,
     )
@@ -1028,7 +1072,7 @@ def test_first_page_with_next_page() -> None:
 def test_final_page_without_continuation() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
-    page = _reader(http).read_hosted_contents_page(
+    page = _reader(http).read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
         continuation=None,
     )
@@ -1040,8 +1084,8 @@ def test_message_changed_before_list() -> None:
     http.get.return_value = _json_response(
         payload=_observation_payload(revision=_OTHER_REVISION),
     )
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
-        _reader(http).read_hosted_contents_page(
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        _reader(http).read_teams_channel_hosted_contents_page(
             message=_valid_active_message(),
             continuation=None,
         )
@@ -1057,28 +1101,28 @@ def test_message_changed_after_list() -> None:
         _json_response(payload=_page_payload(value=[_hosted_content_payload()])),
         _json_response(payload=observation_after),
     ]
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
-        _reader(http).read_hosted_contents_page(
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        _reader(http).read_teams_channel_hosted_contents_page(
             message=_valid_active_message(),
             continuation=None,
         )
 
 
-def test_read_hosted_contents_page_deleted_message_rejected() -> None:
+def test_read_teams_channel_hosted_contents_page_deleted_message_rejected() -> None:
     http = MagicMock()
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
-        _reader(http).read_hosted_contents_page(
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        _reader(http).read_teams_channel_hosted_contents_page(
             message=_valid_deleted_message(),
             continuation=None,
         )
     http.get.assert_not_called()
 
 
-def test_read_hosted_content_bytes_stale_hosted_revision() -> None:
+def test_read_teams_channel_hosted_content_bytes_stale_hosted_revision() -> None:
     http = MagicMock()
     hosted = _valid_hosted_content(message_revision=_OTHER_REVISION)
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
-        _reader(http).read_hosted_content_bytes(
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1094,12 +1138,12 @@ def test_download_small_content_with_sha256() -> None:
     data = b"small-file-content"
     http = MagicMock()
     hosted = _setup_hosted_content_bytes(http, file_bytes=data)
-    result = _reader(http).read_hosted_content_bytes(
+    result = _reader(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
     )
-    assert isinstance(result, MsGraphTeamsChatHostedContentBytes)
+    assert isinstance(result, MsGraphTeamsChannelHostedContentBytes)
     assert result.data == data
     assert result.size_bytes == len(data)
     assert result.content_hash == hashlib.sha256(data).hexdigest()
@@ -1111,7 +1155,7 @@ def test_download_small_content_with_sha256() -> None:
 def test_download_empty_content() -> None:
     http = MagicMock()
     hosted = _setup_hosted_content_bytes(http, file_bytes=b"")
-    result = _reader(http).read_hosted_content_bytes(
+    result = _reader(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
@@ -1128,7 +1172,7 @@ def test_download_multiple_chunks() -> None:
         headers={"Content-Length": str(len(data))},
         chunks=(b"hello", b"-world"),
     )
-    result = _reader(http).read_hosted_content_bytes(
+    result = _reader(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
@@ -1141,7 +1185,7 @@ def test_download_without_content_length() -> None:
     http = MagicMock()
     hosted = _setup_hosted_content_bytes(http, file_bytes=data)
     http.stream.return_value = _FakeStreamContext(chunks=(data,))
-    result = _reader(http).read_hosted_content_bytes(
+    result = _reader(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
@@ -1156,8 +1200,8 @@ def test_download_content_length_exceeds_limit() -> None:
         headers={"Content-Length": "100"},
         chunks=(b"x",),
     )
-    with pytest.raises(MsGraphTeamsChatHostedContentTooLarge):
-        _reader(http).read_hosted_content_bytes(
+    with pytest.raises(MsGraphTeamsChannelHostedContentTooLarge):
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=10,
@@ -1172,7 +1216,7 @@ def test_download_malformed_content_length() -> None:
         chunks=(b"x",),
     )
     with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1185,8 +1229,8 @@ def test_download_bytes_exceed_limit_during_stream() -> None:
     http.stream.return_value = _FakeStreamContext(
         chunks=(b"a" * 5, b"b" * 10),
     )
-    with pytest.raises(MsGraphTeamsChatHostedContentTooLarge):
-        _reader(http).read_hosted_content_bytes(
+    with pytest.raises(MsGraphTeamsChannelHostedContentTooLarge):
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=10,
@@ -1201,7 +1245,7 @@ def test_download_content_length_mismatch() -> None:
         chunks=(b"short",),
     )
     with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1220,7 +1264,7 @@ def test_download_chunk_not_bytes() -> None:
 
     http.stream.return_value = _BadChunkStream(chunks=())
     with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1233,7 +1277,7 @@ def test_download_bad_status(status_code: int) -> None:
     hosted = _setup_hosted_content_bytes(http, file_bytes=b"x")
     http.stream.return_value = _FakeStreamContext(status_code=status_code, chunks=(b"x",))
     with pytest.raises(IntegrationDependencyError):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1246,7 +1290,7 @@ def test_download_configuration_errors(status_code: int) -> None:
     hosted = _setup_hosted_content_bytes(http, file_bytes=b"x")
     http.stream.return_value = _FakeStreamContext(status_code=status_code, chunks=(b"x",))
     with pytest.raises(IntegrationConfigurationError):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1258,7 +1302,7 @@ def test_download_stream_transport_exception() -> None:
     hosted = _setup_hosted_content_bytes(http, file_bytes=b"x")
     http.stream.side_effect = RuntimeError("stream failed")
     with pytest.raises(IntegrationDependencyError) as exc:
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1270,7 +1314,7 @@ def test_download_request_path_and_headers() -> None:
     data = b"bytes"
     http = MagicMock()
     hosted = _setup_hosted_content_bytes(http, file_bytes=data)
-    _reader(http).read_hosted_content_bytes(
+    _reader(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
@@ -1290,7 +1334,7 @@ def test_download_integer_header_key_rejected() -> None:
         chunks=(b"hello",),
     )
     with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE) as exc:
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1306,7 +1350,7 @@ def test_download_duplicate_content_length_different_case_rejected() -> None:
         chunks=(b"hello",),
     )
     with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1321,7 +1365,7 @@ def test_download_headers_items_raises_rejected() -> None:
         chunks=(b"hello",),
     )
     with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE):
-        _reader(http).read_hosted_content_bytes(
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1340,8 +1384,8 @@ def test_message_changed_after_download_bytes_not_returned() -> None:
         headers={"Content-Length": str(len(data))},
         chunks=(data,),
     )
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
-        _reader(http).read_hosted_content_bytes(
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        _reader(http).read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=1024,
@@ -1352,7 +1396,7 @@ def test_observation_before_and_after_download() -> None:
     data = b"payload"
     http = MagicMock()
     hosted = _setup_hosted_content_bytes(http, file_bytes=data)
-    _reader(http).read_hosted_content_bytes(
+    _reader(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
@@ -1369,7 +1413,7 @@ def test_observation_before_and_after_download() -> None:
 def test_graph_rest_client_delegates_hosted_contents_page() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
-    page = _graph_client(http).read_teams_chat_hosted_contents_page(
+    page = _graph_client(http).read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
     )
     assert page.items[0].remote_id == _HOSTED_CONTENT_ID
@@ -1379,7 +1423,7 @@ def test_graph_rest_client_delegates_hosted_content_bytes() -> None:
     data = b"delegated"
     http = MagicMock()
     hosted = _setup_hosted_content_bytes(http, file_bytes=data)
-    result = _graph_client(http).read_teams_chat_hosted_content_bytes(
+    result = _graph_client(http).read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
     )
@@ -1390,7 +1434,7 @@ def test_collaboration_suite_delegates_hosted_contents() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
     suite = _Ms365GraphCollaborationSuite(_graph_client(http))
-    page = suite.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+    page = suite.read_teams_channel_hosted_contents_page(message=_valid_active_message())
     assert page.items[0].remote_id == _HOSTED_CONTENT_ID
 
 
@@ -1398,55 +1442,57 @@ def test_transport_and_reader_share_injected_http_client() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
     client = _graph_client(http)
-    client.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+    client.read_teams_channel_hosted_contents_page(message=_valid_active_message())
     assert client._knowledge_transport._http_client is http
-    assert client._teams_chat_hosted_content_reader._transport._http_client is http
-    assert client._teams_chat_hosted_content_reader._graph_http_client is http
+    assert client._teams_channel_hosted_content_reader._transport._http_client is http
+    assert client._teams_channel_hosted_content_reader._graph_http_client is http
 
 
 def test_no_new_http_client_created() -> None:
     http = MagicMock()
     _setup_hosted_contents_page(http)
     client = _graph_client(http)
-    client.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+    client.read_teams_channel_hosted_contents_page(message=_valid_active_message())
     assert client._http_client is http
 
 
-class _CustomGraphTeamsChatHostedContentClient(GraphRestClient):
-    def __init__(self, page: MsGraphTeamsChatHostedContentPage, http: MagicMock) -> None:
+class _CustomGraphTeamsChannelHostedContentClient(GraphRestClient):
+    def __init__(self, page: MsGraphTeamsChannelHostedContentPage, http: MagicMock) -> None:
         super().__init__(_config(), http_client=http)
         self._custom_page = page
 
-    def read_teams_chat_hosted_contents_page(
+    def read_teams_channel_hosted_contents_page(
         self,
         *,
-        message: MsGraphTeamsChatMessage,
+        message: MsGraphTeamsChannelMessage,
         continuation: MsGraphKnowledgeContinuation | None = None,
-    ) -> MsGraphTeamsChatHostedContentPage:
+    ) -> MsGraphTeamsChannelHostedContentPage:
         return self._custom_page
 
 
 class _CustomTeamsChatHostedContentReader:
-    def read_teams_chat_hosted_contents_page(
+    def read_teams_channel_hosted_contents_page(
         self,
         *,
-        message: MsGraphTeamsChatMessage,
+        message: MsGraphTeamsChannelMessage,
         continuation: MsGraphKnowledgeContinuation | None = None,
-    ) -> MsGraphTeamsChatHostedContentPage:
+    ) -> MsGraphTeamsChannelHostedContentPage:
         return _valid_hosted_content_page()
 
-    def read_teams_chat_hosted_content_bytes(
+    def read_teams_channel_hosted_content_bytes(
         self,
         *,
-        message: MsGraphTeamsChatMessage,
-        hosted_content: MsGraphTeamsChatHostedContent,
-        max_bytes: int = DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
-    ) -> MsGraphTeamsChatHostedContentBytes:
+        message: MsGraphTeamsChannelMessage,
+        hosted_content: MsGraphTeamsChannelHostedContent,
+        max_bytes: int = DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    ) -> MsGraphTeamsChannelHostedContentBytes:
         data = b"custom-binary"
-        return MsGraphTeamsChatHostedContentBytes(
-            mailbox_user_id=message.mailbox_user_id,
-            chat_remote_id=message.chat_remote_id,
+        return MsGraphTeamsChannelHostedContentBytes(
+            team_remote_id=message.team_remote_id,
+            channel_remote_id=message.channel_remote_id,
             message_remote_id=message.remote_id,
+            thread_root_remote_id=message.thread_root_remote_id,
+            message_kind=message.message_kind,
             message_revision=message.revision,
             hosted_content_remote_id=hosted_content.remote_id,
             content_type="application/octet-stream",
@@ -1457,19 +1503,21 @@ class _CustomTeamsChatHostedContentReader:
 
 
 def test_custom_client_malformed_page_rejected() -> None:
-    malformed_page = MsGraphTeamsChatHostedContentPage.model_construct(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    malformed_page = MsGraphTeamsChannelHostedContentPage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
-        items=(MsGraphTeamsChatHostedContent.model_construct(),),
+        items=(MsGraphTeamsChannelHostedContent.model_construct(),),
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_content_page(
-            _CustomGraphTeamsChatHostedContentClient(
+        validate_msgraph_teams_channel_hosted_content_page(
+            _CustomGraphTeamsChannelHostedContentClient(
                 page=malformed_page,
                 http=MagicMock(),
-            ).read_teams_chat_hosted_contents_page(message=_valid_active_message()),
+            ).read_teams_channel_hosted_contents_page(message=_valid_active_message()),
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
         )
@@ -1478,8 +1526,8 @@ def test_custom_client_malformed_page_rejected() -> None:
 
 def test_custom_client_valid_page_revalidated() -> None:
     supplied = _valid_hosted_content_page()
-    returned = validate_msgraph_teams_chat_hosted_content_page(
-        _CustomGraphTeamsChatHostedContentClient(page=supplied, http=MagicMock()).read_teams_chat_hosted_contents_page(
+    returned = validate_msgraph_teams_channel_hosted_content_page(
+        _CustomGraphTeamsChannelHostedContentClient(page=supplied, http=MagicMock()).read_teams_channel_hosted_contents_page(
             message=_valid_active_message(),
         ),
         message=_valid_active_message(),
@@ -1491,10 +1539,12 @@ def test_custom_client_valid_page_revalidated() -> None:
 
 
 def test_custom_client_rejects_malformed_continuation_without_url() -> None:
-    malformed_page = MsGraphTeamsChatHostedContentPage(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    malformed_page = MsGraphTeamsChannelHostedContentPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
         items=(_valid_hosted_content(),),
         continuation=MsGraphKnowledgeContinuation.model_construct(
@@ -1502,7 +1552,7 @@ def test_custom_client_rejects_malformed_continuation_without_url() -> None:
         ),
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        validate_msgraph_teams_chat_hosted_content_page(
+        validate_msgraph_teams_channel_hosted_content_page(
             malformed_page,
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
@@ -1514,20 +1564,22 @@ def test_custom_client_cross_message_continuation_rejected() -> None:
     wrong_continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    page = MsGraphTeamsChatHostedContentPage(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    page = MsGraphTeamsChannelHostedContentPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
         items=(_valid_hosted_content(),),
         continuation=wrong_continuation,
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        validate_msgraph_teams_chat_hosted_content_page(
+        validate_msgraph_teams_channel_hosted_content_page(
             page,
             message=_valid_active_message(),
             graph_base_url=_GRAPH_BASE,
@@ -1572,33 +1624,35 @@ def test_custom_client_without_hosted_content_capability_fails() -> None:
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_CAPABILITY_ERROR):
-        integration.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+        integration.read_teams_channel_hosted_contents_page(message=_valid_active_message())
 
 
 class _CustomTeamsChatHostedContentSuite(CollaborationSuite):
-    def __init__(self, page: MsGraphTeamsChatHostedContentPage) -> None:
+    def __init__(self, page: MsGraphTeamsChannelHostedContentPage) -> None:
         self._page = page
 
-    def read_teams_chat_hosted_contents_page(
+    def read_teams_channel_hosted_contents_page(
         self,
         *,
-        message: MsGraphTeamsChatMessage,
+        message: MsGraphTeamsChannelMessage,
         continuation: MsGraphKnowledgeContinuation | None = None,
-    ) -> MsGraphTeamsChatHostedContentPage:
+    ) -> MsGraphTeamsChannelHostedContentPage:
         return self._page
 
-    def read_teams_chat_hosted_content_bytes(
+    def read_teams_channel_hosted_content_bytes(
         self,
         *,
-        message: MsGraphTeamsChatMessage,
-        hosted_content: MsGraphTeamsChatHostedContent,
-        max_bytes: int = DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
-    ) -> MsGraphTeamsChatHostedContentBytes:
+        message: MsGraphTeamsChannelMessage,
+        hosted_content: MsGraphTeamsChannelHostedContent,
+        max_bytes: int = DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    ) -> MsGraphTeamsChannelHostedContentBytes:
         data = b"custom"
-        return MsGraphTeamsChatHostedContentBytes(
-            mailbox_user_id=message.mailbox_user_id,
-            chat_remote_id=message.chat_remote_id,
+        return MsGraphTeamsChannelHostedContentBytes(
+            team_remote_id=message.team_remote_id,
+            channel_remote_id=message.channel_remote_id,
             message_remote_id=message.remote_id,
+            thread_root_remote_id=message.thread_root_remote_id,
+            message_kind=message.message_kind,
             message_revision=message.revision,
             hosted_content_remote_id=hosted_content.remote_id,
             content_type="application/octet-stream",
@@ -1639,21 +1693,23 @@ class _CustomTeamsChatHostedContentSuite(CollaborationSuite):
 
 
 def test_integration_custom_client_malformed_page_rejected() -> None:
-    malformed_page = MsGraphTeamsChatHostedContentPage.model_construct(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    malformed_page = MsGraphTeamsChannelHostedContentPage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
-        items=(MsGraphTeamsChatHostedContent.model_construct(),),
+        items=(MsGraphTeamsChannelHostedContent.model_construct(),),
     )
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(
-            _CustomGraphTeamsChatHostedContentClient(page=malformed_page, http=MagicMock())
+            _CustomGraphTeamsChannelHostedContentClient(page=malformed_page, http=MagicMock())
         ),
         enabled=True,
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        integration.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+        integration.read_teams_channel_hosted_contents_page(message=_valid_active_message())
     assert exc.value.__cause__ is None
 
 
@@ -1661,21 +1717,23 @@ def test_integration_custom_client_valid_page_revalidated() -> None:
     supplied = _valid_hosted_content_page()
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(
-            _CustomGraphTeamsChatHostedContentClient(page=supplied, http=MagicMock())
+            _CustomGraphTeamsChannelHostedContentClient(page=supplied, http=MagicMock())
         ),
         enabled=True,
     )
-    returned = integration.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+    returned = integration.read_teams_channel_hosted_contents_page(message=_valid_active_message())
     assert returned == supplied
     assert returned is not supplied
     assert returned.items[0] is not supplied.items[0]
 
 
 def test_integration_rejects_malformed_continuation_without_url() -> None:
-    malformed_page = MsGraphTeamsChatHostedContentPage(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    malformed_page = MsGraphTeamsChannelHostedContentPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
         items=(_valid_hosted_content(),),
         continuation=MsGraphKnowledgeContinuation.model_construct(
@@ -1684,12 +1742,12 @@ def test_integration_rejects_malformed_continuation_without_url() -> None:
     )
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(
-            _CustomGraphTeamsChatHostedContentClient(page=malformed_page, http=MagicMock())
+            _CustomGraphTeamsChannelHostedContentClient(page=malformed_page, http=MagicMock())
         ),
         enabled=True,
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        integration.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+        integration.read_teams_channel_hosted_contents_page(message=_valid_active_message())
     assert exc.value.__cause__ is None
 
 
@@ -1697,41 +1755,43 @@ def test_integration_custom_client_cross_message_continuation_rejected() -> None
     wrong_continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    page = MsGraphTeamsChatHostedContentPage(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
+    page = MsGraphTeamsChannelHostedContentPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         message_remote_id=_MESSAGE_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         message_revision=_REVISION,
         items=(_valid_hosted_content(),),
         continuation=wrong_continuation,
     )
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(
-            _CustomGraphTeamsChatHostedContentClient(page=page, http=MagicMock())
+            _CustomGraphTeamsChannelHostedContentClient(page=page, http=MagicMock())
         ),
         enabled=True,
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        integration.read_teams_chat_hosted_contents_page(message=_valid_active_message())
+        integration.read_teams_channel_hosted_contents_page(message=_valid_active_message())
 
 
 class _CountingHostedContentClient(GraphRestClient):
-    def __init__(self, page: MsGraphTeamsChatHostedContentPage, http: MagicMock) -> None:
+    def __init__(self, page: MsGraphTeamsChannelHostedContentPage, http: MagicMock) -> None:
         super().__init__(_config(), http_client=http)
         self._custom_page = page
         self.call_count = 0
         self.last_continuation: MsGraphKnowledgeContinuation | None = None
 
-    def read_teams_chat_hosted_contents_page(
+    def read_teams_channel_hosted_contents_page(
         self,
         *,
-        message: MsGraphTeamsChatMessage,
+        message: MsGraphTeamsChannelMessage,
         continuation: MsGraphKnowledgeContinuation | None = None,
-    ) -> MsGraphTeamsChatHostedContentPage:
+    ) -> MsGraphTeamsChannelHostedContentPage:
         self.call_count += 1
         self.last_continuation = continuation
         return self._custom_page
@@ -1746,15 +1806,15 @@ class _CountingHostedContentClient(GraphRestClient):
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.DELTA,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-                f"{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents/delta"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+                f"{_QUOTED_CHANNEL}/messages/{quote(_MESSAGE_ID, safe='')}/hostedContents/delta"
             ),
         ),
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-                f"{_QUOTED_CHAT}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+                f"{_QUOTED_CHANNEL}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
     ],
@@ -1769,7 +1829,7 @@ def test_integration_rejects_malformed_input_continuation_before_custom_call(
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
-        integration.read_teams_chat_hosted_contents_page(
+        integration.read_teams_channel_hosted_contents_page(
             message=_valid_active_message(),
             continuation=continuation,
         )
@@ -1788,7 +1848,7 @@ def test_integration_valid_hosted_continuation_calls_custom_client_once() -> Non
         _Ms365GraphCollaborationSuite(client),
         enabled=True,
     )
-    returned = integration.read_teams_chat_hosted_contents_page(
+    returned = integration.read_teams_channel_hosted_contents_page(
         message=_valid_active_message(),
         continuation=continuation,
     )
@@ -1807,7 +1867,7 @@ def test_custom_client_validation_not_configured() -> None:
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_VALIDATION_ERROR):
-        integration._graph_base_url_for_teams_chat_validation()
+        integration._graph_base_url_for_teams_channel_validation()
 
 
 def test_integration_rejects_deleted_message() -> None:
@@ -1816,10 +1876,10 @@ def test_integration_rejects_deleted_message() -> None:
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
-        integration.read_teams_chat_hosted_contents_page(message=_valid_deleted_message())
+        integration.read_teams_channel_hosted_contents_page(message=_valid_deleted_message())
 
 
-@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES + 1, True, "10", None])
+@pytest.mark.parametrize("max_bytes", [0, ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES + 1, True, "10", None])
 def test_integration_custom_client_invalid_max_bytes_rejected(max_bytes: object) -> None:
     hosted = _valid_hosted_content()
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
@@ -1827,7 +1887,7 @@ def test_integration_custom_client_invalid_max_bytes_rejected(max_bytes: object)
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
-        integration.read_teams_chat_hosted_content_bytes(
+        integration.read_teams_channel_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
             max_bytes=max_bytes,  # type: ignore[arg-type]
@@ -1840,7 +1900,7 @@ def test_integration_custom_client_valid_bytes_revalidated() -> None:
         _CustomTeamsChatHostedContentSuite(page=_valid_hosted_content_page()),
         enabled=True,
     )
-    result = integration.read_teams_chat_hosted_content_bytes(
+    result = integration.read_teams_channel_hosted_content_bytes(
         message=_valid_active_message(),
         hosted_content=hosted,
         max_bytes=1024,
@@ -1877,5 +1937,5 @@ def test_security_repr_hides_sensitive_fields() -> None:
 
 
 def test_default_max_bytes_constants() -> None:
-    assert DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES == 10 * 1024 * 1024
-    assert ABSOLUTE_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES == 25 * 1024 * 1024
+    assert DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES == 10 * 1024 * 1024
+    assert ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES == 25 * 1024 * 1024

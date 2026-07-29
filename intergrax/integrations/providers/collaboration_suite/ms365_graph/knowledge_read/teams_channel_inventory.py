@@ -525,22 +525,6 @@ def validate_msgraph_teams_channels_continuation(
         raise IntegrationConfigurationError(_INVALID_CHANNELS_CONTINUATION) from None
 
     parsed = urlparse(validated_url)
-    path_lower = parsed.path.lower()
-    for forbidden in (
-        "/allchannels",
-        "/incomingchannels",
-        "/members",
-        "/allmembers",
-        "/messages",
-        "/replies",
-        "/hostedcontents",
-        "/mail",
-        "/calendar",
-        "/drive",
-    ):
-        if forbidden in path_lower:
-            raise IntegrationConfigurationError(_INVALID_CHANNELS_CONTINUATION) from None
-
     extracted_team = _extract_channels_path(
         parsed.path,
         graph_base_path=_graph_base_path(graph_base_url),

@@ -26,56 +26,58 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
     Ms365GraphCollaborationSuiteIntegration,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
-    ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS,
-    DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeContinuationKind,
     MsGraphKnowledgeTransport,
     MsGraphTeamsChatAttachmentKind,
-    MsGraphTeamsChatBodyKind,
-    MsGraphTeamsChatImportance,
-    MsGraphTeamsChatMessage,
-    MsGraphTeamsChatMessageType,
+    MsGraphTeamsChannelBodyKind,
+    MsGraphTeamsChannelImportance,
+    MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelMessageType,
     MsGraphTeamsIdentityKind,
 )
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
-    parse_msgraph_teams_chat,
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_inventory import (
+    MsGraphTeamsChannel,
+    parse_msgraph_teams_channel,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_messages import (
+    MsGraphTeamsChannelMessageKind,
+    MsGraphTeamsChannelMessagesReader,
+    MsGraphTeamsChannelRootMessagePage,
+    MsGraphTeamsChannelMessageState,
+    parse_msgraph_teams_channel_message,
+    validate_msgraph_teams_channel_message,
+    validate_msgraph_teams_channel_root_messages_continuation,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
     MsGraphTeamsChatAttachmentReference,
-    MsGraphTeamsChatMessageSnapshotPage,
-    MsGraphTeamsChatMessageState,
-    MsGraphTeamsChatMessageWindow,
-    MsGraphTeamsChatMessagesReader,
     MsGraphTeamsForwardedMessageReference,
     MsGraphTeamsIdentity,
-    format_msgraph_teams_chat_window_datetime,
-    parse_msgraph_teams_chat_message,
     validate_msgraph_teams_chat_attachment_reference,
-    validate_msgraph_teams_chat_message,
-    validate_msgraph_teams_chat_message_snapshot_page,
-    validate_msgraph_teams_chat_messages_continuation,
 )
 
 pytestmark = pytest.mark.unit
 
 _GRAPH_BASE = DEFAULT_GRAPH_BASE_URL
-_MAILBOX = "user@contoso.com"
-_OTHER_MAILBOX = "other@contoso.com"
-_CHAT_ID = "19:chat-abc@thread.v2"
-_OTHER_CHAT_ID = "19:other-chat@thread.v2"
-_MESSAGE_ID = "msg-001"
+_TEAM_ID = "team-abc-123"
+_OTHER_TEAM_ID = "other-team-456"
+_CHANNEL_ID = "channel-abc-123"
+_OTHER_CHANNEL_ID = "other-channel-456"
+_MESSAGE_ID = "root-msg-001"
 _SENDER_ID = "sender-secret-id"
 _ETAG = "etag-1"
 _SECRET_TOKEN = "secret-skiptoken-value"
-_QUOTED_MAILBOX = quote(_MAILBOX, safe="")
-_QUOTED_OTHER_MAILBOX = quote(_OTHER_MAILBOX, safe="")
-_QUOTED_CHAT = quote(_CHAT_ID, safe="")
+_QUOTED_TEAM_ID = quote(_TEAM_ID, safe="")
+_QUOTED_OTHER_TEAM_ID = quote(_OTHER_TEAM_ID, safe="")
+_QUOTED_CHANNEL = quote(_CHANNEL_ID, safe="")
 _PREFER = {"Prefer": "include-unknown-enum-members"}
-_SAFE = "unexpected Microsoft Graph Teams chat messages response"
-_CONT = "invalid Microsoft Graph Teams chat messages continuation"
-_REQUEST_ERROR = "invalid Microsoft Graph Teams chat messages request"
-_VALIDATION_ERROR = "Microsoft Graph Teams Chat validation is not configured"
+_SAFE = "unexpected Microsoft Graph Teams channel messages response"
+_CHAT_PRIMITIVE_SAFE = "unexpected Microsoft Graph Teams chat messages response"
+_CONT = "invalid Microsoft Graph Teams channel messages continuation"
+_REQUEST_ERROR = "invalid Microsoft Graph Teams channel messages request"
+_VALIDATION_ERROR = "Microsoft Graph Teams Channel validation is not configured"
 
 
 def _config() -> Ms365GraphIntegrationConfig:
@@ -87,23 +89,23 @@ def _config() -> Ms365GraphIntegrationConfig:
     )
 
 
-def _chat():
-    return parse_msgraph_teams_chat(
+def _channel() -> MsGraphTeamsChannel:
+    return parse_msgraph_teams_channel(
         {
-            "id": _CHAT_ID,
-            "chatType": "group",
+            "id": _CHANNEL_ID,
+            "displayName": "General",
+            "membershipType": "standard",
+            "isArchived": False,
             "createdDateTime": "2024-01-01T10:00:00Z",
-            "lastUpdatedDateTime": "2024-01-02T10:00:00Z",
-            "isHiddenForAllMembers": False,
         },
-        expected_mailbox_user_id=_MAILBOX,
+        expected_team_id=_TEAM_ID,
     )
 
 
 def _active_message_payload(**overrides: Any) -> dict[str, Any]:
     base: dict[str, Any] = {
         "id": _MESSAGE_ID,
-        "chatId": _CHAT_ID,
+        "channelIdentity": {"teamId": _TEAM_ID, "channelId": _CHANNEL_ID},
         "etag": _ETAG,
         "messageType": "message",
         "createdDateTime": "2024-01-01T10:00:00Z",
@@ -120,29 +122,25 @@ def _active_message_payload(**overrides: Any) -> dict[str, Any]:
     return base
 
 
-def _window() -> MsGraphTeamsChatMessageWindow:
-    return MsGraphTeamsChatMessageWindow(
-        start_at=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
-        end_at=datetime(2024, 1, 2, 0, 0, tzinfo=timezone.utc),
-    )
 
-
-def _valid_active_message(**overrides: object) -> MsGraphTeamsChatMessage:
+def _valid_active_message(**overrides: object) -> MsGraphTeamsChannelMessage:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX,
-        "chat_remote_id": _CHAT_ID,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
         "remote_id": _MESSAGE_ID,
         "revision": _ETAG,
-        "state": MsGraphTeamsChatMessageState.ACTIVE,
-        "message_type": MsGraphTeamsChatMessageType.MESSAGE,
-        "importance": MsGraphTeamsChatImportance.NORMAL,
+        "state": MsGraphTeamsChannelMessageState.ACTIVE,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
         "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         "last_modified_at": datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        "body_kind": MsGraphTeamsChatBodyKind.TEXT,
+        "body_kind": MsGraphTeamsChannelBodyKind.TEXT,
         "body_content": "Hello",
     }
     defaults.update(overrides)
-    return MsGraphTeamsChatMessage(**defaults)
+    return MsGraphTeamsChannelMessage(**defaults)
 
 
 def _reference_attachment(**overrides: object) -> MsGraphTeamsChatAttachmentReference:
@@ -157,37 +155,27 @@ def _reference_attachment(**overrides: object) -> MsGraphTeamsChatAttachmentRefe
     return MsGraphTeamsChatAttachmentReference(**defaults)
 
 
-def test_format_window_datetime_utc_z() -> None:
-    value = datetime(2024, 1, 1, 12, 30, 45, tzinfo=timezone.utc)
-    assert format_msgraph_teams_chat_window_datetime(value) == "2024-01-01T12:30:45Z"
-
-
-def test_window_rejects_naive_and_invalid_bounds() -> None:
-    with pytest.raises(ValueError):
-        MsGraphTeamsChatMessageWindow(
-            start_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
-            end_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        )
 
 
 def test_parse_active_text_message() -> None:
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         _active_message_payload(),
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
-    assert msg.state is MsGraphTeamsChatMessageState.ACTIVE
+    assert msg.state is MsGraphTeamsChannelMessageState.ACTIVE
     assert msg.body_content == "Hello"
     assert msg.sender is not None
     assert msg.sender.display_name == "Alice"
 
 
 def test_parse_deleted_message() -> None:
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         {
             "id": _MESSAGE_ID,
-            "chatId": _CHAT_ID,
+            "channelIdentity": {"teamId": _TEAM_ID, "channelId": _CHANNEL_ID},
             "etag": _ETAG,
             "messageType": "message",
             "createdDateTime": "2024-01-01T10:00:00Z",
@@ -195,17 +183,18 @@ def test_parse_deleted_message() -> None:
             "deletedDateTime": "2024-01-01T12:00:00Z",
             "importance": "normal",
         },
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
-    assert msg.state is MsGraphTeamsChatMessageState.DELETED
+    assert msg.state is MsGraphTeamsChannelMessageState.DELETED
     assert msg.deleted_at is not None
     assert msg.body_kind is None
 
 
 def test_parse_reference_attachment_https_only() -> None:
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         _active_message_payload(
             attachments=[
                 {
@@ -215,13 +204,14 @@ def test_parse_reference_attachment_https_only() -> None:
                 }
             ]
         ),
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert msg.attachments[0].content_url is not None
     with pytest.raises(ValueError, match=_SAFE):
-        parse_msgraph_teams_chat_message(
+        parse_msgraph_teams_channel_message(
             _active_message_payload(
                 attachments=[
                     {
@@ -231,19 +221,21 @@ def test_parse_reference_attachment_https_only() -> None:
                     }
                 ]
             ),
-            expected_mailbox_user_id=_MAILBOX,
-            expected_chat_id=_CHAT_ID,
-            max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
         )
 
 
 def test_parse_channel_identity_rejected() -> None:
     with pytest.raises(ValueError, match=_SAFE):
-        parse_msgraph_teams_chat_message(
+        parse_msgraph_teams_channel_message(
             _active_message_payload(channelIdentity={"teamId": "t"}),
-            expected_mailbox_user_id=_MAILBOX,
-            expected_chat_id=_CHAT_ID,
-            max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
         )
 
 
@@ -257,11 +249,12 @@ def test_parse_user_identity_type_from_user_identity_type_field() -> None:
             "@odata.type": "#microsoft.graph.teamworkUserIdentity",
         }
     }
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         payload,
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert msg.sender is not None
     assert msg.sender.identity_type == "aadUser"
@@ -278,11 +271,12 @@ def test_parse_application_identity_type() -> None:
             "@odata.type": "#microsoft.graph.teamworkApplicationIdentity",
         }
     }
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         payload,
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert msg.sender is not None
     assert msg.sender.identity_type == "bot"
@@ -297,11 +291,12 @@ def test_parse_unknown_identity_type_retained() -> None:
             "userIdentityType": "futureProviderValue",
         }
     }
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         payload,
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert msg.sender is not None
     assert msg.sender.identity_type == "futureProviderValue"
@@ -309,18 +304,18 @@ def test_parse_unknown_identity_type_retained() -> None:
 
 @pytest.mark.parametrize(
     "max_chars",
-    [0, ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS + 1, True, False, "100", 1.5, None],
+    [0, ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS + 1, True, False, "100", 1.5, None],
 )
 def test_validate_message_rejects_invalid_max_chars(max_chars: object) -> None:
     message = _valid_active_message()
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message, max_chars=max_chars)  # type: ignore[arg-type]
+        validate_msgraph_teams_channel_message(message, max_chars=max_chars)  # type: ignore[arg-type]
 
 
 def test_validate_message_body_at_max_chars_succeeds() -> None:
     body = "x" * 100
     message = _valid_active_message(body_content=body)
-    validated = validate_msgraph_teams_chat_message(message, max_chars=100)
+    validated = validate_msgraph_teams_channel_message(message, max_chars=100)
     assert validated.body_content == body
     assert validated is not message
 
@@ -328,93 +323,103 @@ def test_validate_message_body_at_max_chars_succeeds() -> None:
 def test_validate_message_body_one_over_max_chars_fails() -> None:
     message = _valid_active_message(body_content="x" * 101)
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message, max_chars=100)
+        validate_msgraph_teams_channel_message(message, max_chars=100)
 
 
 def test_validate_message_body_with_nul_fails() -> None:
-    message = MsGraphTeamsChatMessage.model_construct(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
+    message = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
-        state=MsGraphTeamsChatMessageState.ACTIVE,
-        message_type=MsGraphTeamsChatMessageType.MESSAGE,
-        importance=MsGraphTeamsChatImportance.NORMAL,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
         created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
         body_content="a\x00b",
     )
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message, max_chars=100)
+        validate_msgraph_teams_channel_message(message, max_chars=100)
 
 
 def test_validate_message_missing_body_content_rejected() -> None:
-    message = MsGraphTeamsChatMessage.model_construct(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
+    message = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
-        state=MsGraphTeamsChatMessageState.ACTIVE,
-        message_type=MsGraphTeamsChatMessageType.MESSAGE,
-        importance=MsGraphTeamsChatImportance.NORMAL,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
         created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
     )
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message)
+        validate_msgraph_teams_channel_message(message)
 
 
 def test_validate_message_integer_body_content_rejected() -> None:
-    message = MsGraphTeamsChatMessage.model_construct(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
+    message = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
-        state=MsGraphTeamsChatMessageState.ACTIVE,
-        message_type=MsGraphTeamsChatMessageType.MESSAGE,
-        importance=MsGraphTeamsChatImportance.NORMAL,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
         created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
         body_content=123,
     )
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message)
+        validate_msgraph_teams_channel_message(message)
 
 
 def test_validate_message_malformed_sender_rejected() -> None:
-    message = MsGraphTeamsChatMessage.model_construct(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
+    message = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
-        state=MsGraphTeamsChatMessageState.ACTIVE,
-        message_type=MsGraphTeamsChatMessageType.MESSAGE,
-        importance=MsGraphTeamsChatImportance.NORMAL,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
         created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
         body_content="hello",
         sender=MsGraphTeamsIdentity.model_construct(),
     )
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message)
+        validate_msgraph_teams_channel_message(message)
 
 
 def test_validate_message_malformed_attachment_rejected() -> None:
-    message = MsGraphTeamsChatMessage.model_construct(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
+    message = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
-        state=MsGraphTeamsChatMessageState.ACTIVE,
-        message_type=MsGraphTeamsChatMessageType.MESSAGE,
-        importance=MsGraphTeamsChatImportance.NORMAL,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
         created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
         body_content="hello",
         attachments=(
             MsGraphTeamsChatAttachmentReference.model_construct(
@@ -424,15 +429,16 @@ def test_validate_message_malformed_attachment_rejected() -> None:
         ),
     )
     with pytest.raises(ValueError, match=_SAFE):
-        validate_msgraph_teams_chat_message(message)
+        validate_msgraph_teams_channel_message(message)
 
 
 def test_parse_body_exactly_at_max_chars() -> None:
     body = "a" * 50
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         _active_message_payload(body={"contentType": "text", "content": body}),
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         max_chars=50,
     )
     assert msg.body_content == body
@@ -440,76 +446,25 @@ def test_parse_body_exactly_at_max_chars() -> None:
 
 def test_parse_body_one_over_max_chars_fails() -> None:
     with pytest.raises(ValueError, match=_SAFE):
-        parse_msgraph_teams_chat_message(
+        parse_msgraph_teams_channel_message(
             _active_message_payload(body={"contentType": "text", "content": "a" * 51}),
-            expected_mailbox_user_id=_MAILBOX,
-            expected_chat_id=_CHAT_ID,
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.ROOT,
             max_chars=50,
         )
 
 
 def test_parse_body_with_nul_fails() -> None:
     with pytest.raises(ValueError, match=_SAFE):
-        parse_msgraph_teams_chat_message(
+        parse_msgraph_teams_channel_message(
             _active_message_payload(body={"contentType": "text", "content": "a\x00b"}),
-            expected_mailbox_user_id=_MAILBOX,
-            expected_chat_id=_CHAT_ID,
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.ROOT,
             max_chars=100,
         )
 
-
-@pytest.mark.parametrize(
-    ("last_modified", "created_at"),
-    [
-        (datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc), datetime(2023, 12, 31, 12, 0, tzinfo=timezone.utc)),
-        (datetime(2023, 12, 31, 23, 59, tzinfo=timezone.utc), datetime(2023, 12, 31, 10, 0, tzinfo=timezone.utc)),
-        (datetime(2024, 1, 2, 0, 0, tzinfo=timezone.utc), datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc)),
-        (datetime(2024, 1, 3, 0, 0, tzinfo=timezone.utc), datetime(2024, 1, 2, 10, 0, tzinfo=timezone.utc)),
-    ],
-)
-def test_snapshot_page_rejects_message_outside_window(
-    last_modified: datetime,
-    created_at: datetime,
-) -> None:
-    message = _valid_active_message(
-        created_at=created_at,
-        last_modified_at=last_modified,
-    )
-    page = MsGraphTeamsChatMessageSnapshotPage(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
-        window=_window(),
-        items=(message,),
-    )
-    with pytest.raises(ValueError, match=_SAFE) as exc:
-        validate_msgraph_teams_chat_message_snapshot_page(
-            page,
-            chat=_chat(),
-            window=_window(),
-            graph_base_url=_GRAPH_BASE,
-            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
-        )
-    assert str(last_modified) not in str(exc.value)
-    assert _CHAT_ID not in str(exc.value)
-    assert "Hello" not in str(exc.value)
-
-
-def test_snapshot_page_accepts_message_inside_window() -> None:
-    message = _valid_active_message()
-    page = MsGraphTeamsChatMessageSnapshotPage(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
-        window=_window(),
-        items=(message,),
-    )
-    validated = validate_msgraph_teams_chat_message_snapshot_page(
-        page,
-        chat=_chat(),
-        window=_window(),
-        graph_base_url=_GRAPH_BASE,
-        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
-    )
-    assert len(validated.items) == 1
 
 
 def test_attachment_reference_model_construct_raw_kind_rejected() -> None:
@@ -524,7 +479,7 @@ def test_attachment_reference_model_construct_raw_kind_rejected() -> None:
     )
     with pytest.raises(
         ValueError,
-        match="unexpected Microsoft Graph Teams chat messages response",
+        match=_CHAT_PRIMITIVE_SAFE,
     ) as exc:
         validate_msgraph_teams_chat_attachment_reference(malformed)
     assert exc.value.__cause__ is None
@@ -555,7 +510,7 @@ def test_attachment_reference_model_construct_raw_kind_rejected() -> None:
                 "embedded_content": None,
                 "forwarded_message": MsGraphTeamsForwardedMessageReference(
                     original_message_id="orig-msg",
-                    original_chat_id=_CHAT_ID,
+                    original_chat_id=_CHANNEL_ID,
                     original_sent_at=datetime(2024, 1, 1, 9, 0, tzinfo=timezone.utc),
                     original_sender=None,
                 ),
@@ -616,7 +571,7 @@ def test_attachment_reference_raw_kind_string_rejected(
         attachment_kind=raw_kind,
         **attachment_kwargs,
     )
-    with pytest.raises(ValueError, match=_SAFE) as exc:
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE) as exc:
         validate_msgraph_teams_chat_attachment_reference(malformed)
     assert exc.value.__cause__ is None
 
@@ -644,28 +599,28 @@ def test_attachment_reference_valid_https() -> None:
 
 
 def test_attachment_reference_missing_url_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             _reference_attachment(content_url=None)
         )
 
 
 def test_attachment_reference_http_url_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             _reference_attachment(content_url="http://insecure.example/file")
         )
 
 
 def test_attachment_reference_userinfo_url_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             _reference_attachment(content_url="https://user:pass@contoso.example/file")
         )
 
 
 def test_attachment_reference_with_embedded_content_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             _reference_attachment(embedded_content="inline")
         )
@@ -674,7 +629,7 @@ def test_attachment_reference_with_embedded_content_rejected() -> None:
 def test_attachment_forwarded_valid() -> None:
     forwarded = MsGraphTeamsForwardedMessageReference(
         original_message_id="orig-msg",
-        original_chat_id=_CHAT_ID,
+        original_chat_id=_CHANNEL_ID,
         original_sent_at=datetime(2024, 1, 1, 9, 0, tzinfo=timezone.utc),
         original_sender=MsGraphTeamsIdentity(
             identity_kind=MsGraphTeamsIdentityKind.USER,
@@ -696,7 +651,7 @@ def test_attachment_forwarded_valid() -> None:
 
 
 def test_attachment_forwarded_missing_metadata_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             MsGraphTeamsChatAttachmentReference(
                 remote_id="att-fwd",
@@ -708,7 +663,7 @@ def test_attachment_forwarded_missing_metadata_rejected() -> None:
 
 
 def test_attachment_kind_inconsistent_with_content_type_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             _reference_attachment(
                 attachment_kind=MsGraphTeamsChatAttachmentKind.CARD,
@@ -717,7 +672,7 @@ def test_attachment_kind_inconsistent_with_content_type_rejected() -> None:
 
 
 def test_attachment_card_with_content_url_rejected() -> None:
-    with pytest.raises(ValueError, match=_SAFE):
+    with pytest.raises(ValueError, match=_CHAT_PRIMITIVE_SAFE):
         validate_msgraph_teams_chat_attachment_reference(
             MsGraphTeamsChatAttachmentReference(
                 remote_id="att-card",
@@ -731,32 +686,30 @@ def test_attachment_card_with_content_url_rejected() -> None:
 
 def test_messages_continuation_validation() -> None:
     url = (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/messages?$skiptoken=x"
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages?$skiptoken=x"
     )
     cont = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=url,
     )
-    validate_msgraph_teams_chat_messages_continuation(
-        cont, mailbox_user_id=_MAILBOX, chat_id=_CHAT_ID, graph_base_url=_GRAPH_BASE
+    validate_msgraph_teams_channel_root_messages_continuation(
+        cont, team_id=_TEAM_ID, channel_id=_CHANNEL_ID, graph_base_url=_GRAPH_BASE
     )
 
 
-def _reader(http: MagicMock) -> MsGraphTeamsChatMessagesReader:
-    return MsGraphTeamsChatMessagesReader(
+def _reader(http: MagicMock) -> MsGraphTeamsChannelMessagesReader:
+    return MsGraphTeamsChannelMessagesReader(
         config=_config(),
         transport=MsGraphKnowledgeTransport(config=_config(), http_client=http),
     )
 
 
-def test_reader_snapshot_request_params() -> None:
+def test_reader_root_request_params() -> None:
     http = MagicMock()
     http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": []})
-    window = _window()
-    _reader(http).read_messages_snapshot_page(
-        chat=_chat(),
-        window=window,
+    _reader(http).read_teams_channel_root_messages_page(
+        channel=_channel(),
         continuation=None,
         limit=25,
         max_chars_per_message=1000,
@@ -764,8 +717,9 @@ def test_reader_snapshot_request_params() -> None:
     _, kwargs = http.get.call_args
     params = kwargs["params"]
     assert params["$top"] == 25
-    assert params["$orderby"] == "lastModifiedDateTime desc"
-    assert "lastModifiedDateTime gt" in params["$filter"]
+    assert "$filter" not in params
+    assert "$orderby" not in params
+    assert "$select" not in params
     assert kwargs["headers"] == _PREFER
 
 
@@ -777,22 +731,20 @@ def test_reader_duplicate_ids_last_occurrence_wins() -> None:
         status_code=200,
         json=lambda: {"value": [first, second]},
     )
-    page = _reader(http).read_messages_snapshot_page(
-        chat=_chat(),
-        window=_window(),
+    page = _reader(http).read_teams_channel_root_messages_page(
+        channel=_channel(),
         continuation=None,
         limit=50,
-        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert len(page.items) == 1
     assert page.items[0].body_content == "second"
 
 
-def test_snapshot_page_is_complete_when_no_continuation() -> None:
-    page = MsGraphTeamsChatMessageSnapshotPage(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
-        window=_window(),
+def test_root_page_is_complete_when_no_continuation() -> None:
+    page = MsGraphTeamsChannelRootMessagePage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         items=(),
     )
     assert page.is_complete is True
@@ -803,37 +755,35 @@ def test_invalid_continuation_rejected_before_messages_request() -> None:
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/messages?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_OTHER_TEAM_ID}/channels/"
+            f"{_QUOTED_CHANNEL}/messages?$skiptoken={_SECRET_TOKEN}"
         ),
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT):
-        _reader(http).read_messages_snapshot_page(
-            chat=_chat(),
-            window=_window(),
+        _reader(http).read_teams_channel_root_messages_page(
+            channel=_channel(),
             continuation=continuation,
             limit=50,
-            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+            max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
         )
     http.get.assert_not_called()
 
 
 class _CountingMessagesClient(GraphRestClient):
-    def __init__(self, page: MsGraphTeamsChatMessageSnapshotPage, http: MagicMock) -> None:
+    def __init__(self, page: MsGraphTeamsChannelRootMessagePage, http: MagicMock) -> None:
         super().__init__(_config(), http_client=http)
         self._custom_page = page
         self.call_count = 0
         self.last_continuation: MsGraphKnowledgeContinuation | None = None
 
-    def read_teams_chat_messages_snapshot_page(
+    def read_teams_channel_root_messages_page(
         self,
         *,
-        chat: object,
-        window: object,
+        channel: MsGraphTeamsChannel,
         continuation: MsGraphKnowledgeContinuation | None,
         limit: int,
         max_chars_per_message: int,
-    ) -> MsGraphTeamsChatMessageSnapshotPage:
+    ) -> MsGraphTeamsChannelRootMessagePage:
         self.call_count += 1
         self.last_continuation = continuation
         return self._custom_page
@@ -843,18 +793,16 @@ class _CustomMessagesSuite(CollaborationSuite):
     def __init__(self, client: _CountingMessagesClient) -> None:
         self._client = client
 
-    def read_teams_chat_messages_snapshot_page(
+    def read_teams_channel_root_messages_page(
         self,
         *,
-        chat: object,
-        window: object,
+        channel: MsGraphTeamsChannel,
         continuation: MsGraphKnowledgeContinuation | None = None,
         limit: int = 50,
-        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
-    ) -> MsGraphTeamsChatMessageSnapshotPage:
-        return self._client.read_teams_chat_messages_snapshot_page(
-            chat=chat,
-            window=window,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        return self._client.read_teams_channel_root_messages_page(
+            channel=channel,
             continuation=continuation,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
@@ -891,11 +839,10 @@ class _CustomMessagesSuite(CollaborationSuite):
         raise NotImplementedError
 
 
-def _valid_snapshot_page() -> MsGraphTeamsChatMessageSnapshotPage:
-    return MsGraphTeamsChatMessageSnapshotPage(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
-        window=_window(),
+def _valid_root_page() -> MsGraphTeamsChannelRootMessagePage:
+    return MsGraphTeamsChannelRootMessagePage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         items=(_valid_active_message(),),
     )
 
@@ -909,22 +856,22 @@ def _valid_snapshot_page() -> MsGraphTeamsChatMessageSnapshotPage:
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.DELTA,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-                f"{_QUOTED_CHAT}/messages/delta?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+                f"{_QUOTED_CHANNEL}/messages/delta?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
-                f"{_QUOTED_CHAT}/messages?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_OTHER_TEAM_ID}/channels/"
+                f"{_QUOTED_CHANNEL}/messages?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-                f"{quote(_OTHER_CHAT_ID, safe='')}/messages?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+                f"{quote(_OTHER_CHANNEL_ID, safe='')}/messages?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
     ],
@@ -932,18 +879,17 @@ def _valid_snapshot_page() -> MsGraphTeamsChatMessageSnapshotPage:
 def test_integration_rejects_malformed_continuation_before_custom_call(
     continuation: MsGraphKnowledgeContinuation,
 ) -> None:
-    client = _CountingMessagesClient(page=_valid_snapshot_page(), http=MagicMock())
+    client = _CountingMessagesClient(page=_valid_root_page(), http=MagicMock())
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(client),
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT) as exc:
-        integration.read_teams_chat_messages_snapshot_page(
-            chat=_chat(),
-            window=_window(),
+        integration.read_teams_channel_root_messages_page(
+            channel=_channel(),
             continuation=continuation,
             limit=50,
-            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+            max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
         )
     assert client.call_count == 0
     assert _SECRET_TOKEN not in str(exc.value)
@@ -951,18 +897,17 @@ def test_integration_rejects_malformed_continuation_before_custom_call(
 
 @pytest.mark.parametrize(
     "max_chars",
-    [0, ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS + 1, True, False, "100", 1.5, None],
+    [0, ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS + 1, True, False, "100", 1.5, None],
 )
 def test_integration_rejects_invalid_max_chars_before_custom_call(max_chars: object) -> None:
-    client = _CountingMessagesClient(page=_valid_snapshot_page(), http=MagicMock())
+    client = _CountingMessagesClient(page=_valid_root_page(), http=MagicMock())
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(client),
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
-        integration.read_teams_chat_messages_snapshot_page(
-            chat=_chat(),
-            window=_window(),
+        integration.read_teams_channel_root_messages_page(
+            channel=_channel(),
             continuation=None,
             limit=50,
             max_chars_per_message=max_chars,  # type: ignore[arg-type]
@@ -974,42 +919,43 @@ def test_integration_valid_continuation_calls_custom_client_once() -> None:
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/messages?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+            f"{_QUOTED_CHANNEL}/messages?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    client = _CountingMessagesClient(page=_valid_snapshot_page(), http=MagicMock())
+    client = _CountingMessagesClient(page=_valid_root_page(), http=MagicMock())
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(client),
         enabled=True,
     )
-    returned = integration.read_teams_chat_messages_snapshot_page(
-        chat=_chat(),
-        window=_window(),
+    returned = integration.read_teams_channel_root_messages_page(
+        channel=_channel(),
         continuation=continuation,
         limit=50,
-        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert client.call_count == 1
     assert client.last_continuation == continuation
     assert client.last_continuation is not continuation
     assert client.last_continuation is not None
     assert client.last_continuation.url == continuation.url
-    assert returned.items[0] is not _valid_snapshot_page().items[0]
+    assert returned.items[0] is not _valid_root_page().items[0]
 
 
 def test_integration_custom_client_raw_attachment_kind_rejected() -> None:
-    message = MsGraphTeamsChatMessage.model_construct(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
+    message = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
-        state=MsGraphTeamsChatMessageState.ACTIVE,
-        message_type=MsGraphTeamsChatMessageType.MESSAGE,
-        importance=MsGraphTeamsChatImportance.NORMAL,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
         created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
         last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
-        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
         body_content="Hello",
         attachments=(
             MsGraphTeamsChatAttachmentReference.model_construct(
@@ -1023,10 +969,9 @@ def test_integration_custom_client_raw_attachment_kind_rejected() -> None:
             ),
         ),
     )
-    page = MsGraphTeamsChatMessageSnapshotPage(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
-        window=_window(),
+    page = MsGraphTeamsChannelRootMessagePage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         items=(message,),
     )
     client = _CountingMessagesClient(page=page, http=MagicMock())
@@ -1035,12 +980,11 @@ def test_integration_custom_client_raw_attachment_kind_rejected() -> None:
         enabled=True,
     )
     with pytest.raises(ValueError, match=_SAFE) as exc:
-        integration.read_teams_chat_messages_snapshot_page(
-            chat=_chat(),
-            window=_window(),
+        integration.read_teams_channel_root_messages_page(
+            channel=_channel(),
             continuation=None,
             limit=50,
-            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+            max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
         )
     assert client.call_count == 1
     assert exc.value.__cause__ is None
@@ -1048,15 +992,14 @@ def test_integration_custom_client_raw_attachment_kind_rejected() -> None:
     assert "Hello" not in error_text
     assert "https://contoso.example/file" not in error_text
     assert "att-raw-kind" not in error_text
-    assert _CHAT_ID not in error_text
+    assert _CHANNEL_ID not in error_text
 
 
 def test_integration_custom_client_body_above_requested_limit_rejected() -> None:
     oversized = _valid_active_message(body_content="x" * 200)
-    page = MsGraphTeamsChatMessageSnapshotPage(
-        mailbox_user_id=_MAILBOX,
-        chat_remote_id=_CHAT_ID,
-        window=_window(),
+    page = MsGraphTeamsChannelRootMessagePage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         items=(oversized,),
     )
     client = _CountingMessagesClient(page=page, http=MagicMock())
@@ -1065,9 +1008,8 @@ def test_integration_custom_client_body_above_requested_limit_rejected() -> None
         enabled=True,
     )
     with pytest.raises(ValueError, match=_SAFE):
-        integration.read_teams_chat_messages_snapshot_page(
-            chat=_chat(),
-            window=_window(),
+        integration.read_teams_channel_root_messages_page(
+            channel=_channel(),
             continuation=None,
             limit=50,
             max_chars_per_message=100,
@@ -1095,7 +1037,7 @@ def test_parse_forwarded_message_reference_from_provider_payload() -> None:
     forwarded_content = json.dumps(
         {
             "originalMessageId": "orig-msg",
-            "originalConversationId": _CHAT_ID,
+            "originalConversationId": _CHANNEL_ID,
             "originalSentDateTime": "2024-01-01T09:00:00Z",
             "originalMessageSender": {
                 "user": {
@@ -1106,7 +1048,7 @@ def test_parse_forwarded_message_reference_from_provider_payload() -> None:
             },
         }
     )
-    msg = parse_msgraph_teams_chat_message(
+    msg = parse_msgraph_teams_channel_message(
         _active_message_payload(
             attachments=[
                 {
@@ -1116,9 +1058,10 @@ def test_parse_forwarded_message_reference_from_provider_payload() -> None:
                 }
             ]
         ),
-        expected_mailbox_user_id=_MAILBOX,
-        expected_chat_id=_CHAT_ID,
-        max_chars=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     )
     assert msg.attachments[0].forwarded_message is not None
     assert msg.attachments[0].forwarded_message.original_sender is not None

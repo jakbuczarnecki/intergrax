@@ -557,10 +557,10 @@ def _decode_path_segment(segment: str, *, odata_literal: bool) -> str:
     return decoded
 
 
-def _segment_capture(*, odata_literal: bool) -> str:
+def _identity_in_path(resource: str, *, odata_literal: bool) -> str:
     if odata_literal:
-        return r"\('((?:[^']|'')*)'\)"
-    return r"([^/]+)"
+        return rf"{resource}\('((?:[^']|'')*)'\)"
+    return rf"{resource}/([^/]+)"
 
 
 def _extract_hosted_contents_path(
@@ -576,9 +576,10 @@ def _extract_hosted_contents_path(
         (False, True), repeat=3
     ):
         pattern = (
-            rf"^{re.escape(base)}/teams/{_segment_capture(odata_literal=team_odata)}"
-            rf"/channels/{_segment_capture(odata_literal=channel_odata)}"
-            rf"/messages/{_segment_capture(odata_literal=root_odata)}/hostedContents$"
+            rf"^{re.escape(base)}/"
+            f"{_identity_in_path('teams', odata_literal=team_odata)}/"
+            f"{_identity_in_path('channels', odata_literal=channel_odata)}/"
+            f"{_identity_in_path('messages', odata_literal=root_odata)}/hostedContents$"
         )
         root_patterns.append((pattern, team_odata, channel_odata, root_odata))
 
@@ -603,10 +604,11 @@ def _extract_hosted_contents_path(
         (False, True), repeat=4
     ):
         pattern = (
-            rf"^{re.escape(base)}/teams/{_segment_capture(odata_literal=team_odata)}"
-            rf"/channels/{_segment_capture(odata_literal=channel_odata)}"
-            rf"/messages/{_segment_capture(odata_literal=root_odata)}"
-            rf"/replies/{_segment_capture(odata_literal=reply_odata)}/hostedContents$"
+            rf"^{re.escape(base)}/"
+            f"{_identity_in_path('teams', odata_literal=team_odata)}/"
+            f"{_identity_in_path('channels', odata_literal=channel_odata)}/"
+            f"{_identity_in_path('messages', odata_literal=root_odata)}/"
+            f"{_identity_in_path('replies', odata_literal=reply_odata)}/hostedContents$"
         )
         reply_patterns.append(
             (pattern, team_odata, channel_odata, root_odata, reply_odata)

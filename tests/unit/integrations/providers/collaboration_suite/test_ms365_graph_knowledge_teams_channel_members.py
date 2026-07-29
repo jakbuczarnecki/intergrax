@@ -26,30 +26,31 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphKnowledgeContinuationKind,
     MsGraphKnowledgeTransport,
 )
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
-    MsGraphTeamsChat,
-    MsGraphTeamsChatChanged,
-    MsGraphTeamsChatType,
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_inventory import (
+    MsGraphTeamsChannel,
+    MsGraphTeamsChannelChanged,
+    MsGraphTeamsChannelMembershipType,
+    parse_msgraph_teams_channel,
 )
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_members import (
-    MsGraphTeamsChatMember,
-    MsGraphTeamsChatMemberKind,
-    MsGraphTeamsChatMemberPage,
-    MsGraphTeamsChatMemberRole,
-    MsGraphTeamsChatMembersReader,
-    parse_msgraph_teams_chat_member,
-    validate_msgraph_teams_chat_member,
-    validate_msgraph_teams_chat_member_page,
-    validate_msgraph_teams_chat_members_continuation,
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_members import (
+    MsGraphTeamsChannelMember,
+    MsGraphTeamsChannelMemberKind,
+    MsGraphTeamsChannelMemberPage,
+    MsGraphTeamsChannelMemberRole,
+    MsGraphTeamsChannelMembersReader,
+    parse_msgraph_teams_channel_member,
+    validate_msgraph_teams_channel_member,
+    validate_msgraph_teams_channel_member_page,
+    validate_msgraph_teams_channel_members_continuation,
 )
 
 pytestmark = pytest.mark.unit
 
 _GRAPH_BASE = DEFAULT_GRAPH_BASE_URL
-_MAILBOX_USER_ID = "user@contoso.com"
-_OTHER_MAILBOX_USER_ID = "other@contoso.com"
-_CHAT_ID = "19:chat-abc-123@thread.v2"
-_OTHER_CHAT_ID = "19:other-chat@thread.v2"
+_TEAM_ID = "team-abc-123"
+_OTHER_TEAM_ID = "other-team-456"
+_CHANNEL_ID = "channel-abc-123"
+_OTHER_CHANNEL_ID = "other-channel-456"
 _MEMBER_ID = "member-001"
 _OTHER_MEMBER_ID = "member-other-002"
 _PROVIDER_USER_ID = "aad-user-guid-123"
@@ -58,20 +59,20 @@ _DISPLAY_NAME = "Alice Example"
 _SECRET_DISPLAY_NAME = "secret-display-name"
 _EMAIL = "alice@contoso.com"
 _SECRET_EMAIL = "secret-email@contoso.com"
-_QUOTED_MAILBOX = quote(_MAILBOX_USER_ID, safe="")
-_QUOTED_OTHER_MAILBOX = quote(_OTHER_MAILBOX_USER_ID, safe="")
-_QUOTED_CHAT = quote(_CHAT_ID, safe="")
-_QUOTED_OTHER_CHAT = quote(_OTHER_CHAT_ID, safe="")
+_QUOTED_TEAM = quote(_TEAM_ID, safe="")
+_QUOTED_OTHER_TEAM = quote(_OTHER_TEAM_ID, safe="")
+_QUOTED_CHANNEL = quote(_CHANNEL_ID, safe="")
+_QUOTED_OTHER_CHANNEL = quote(_OTHER_CHANNEL_ID, safe="")
 _SECRET_TOKEN = "secret-skiptoken-value"
-_MEMBERS_PATH = f"/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}/members"
-_OBSERVATION_PATH = f"/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}"
-_SAFE_ERROR = "unexpected Microsoft Graph Teams chat members response"
-_CONT_ERROR = "invalid Microsoft Graph Teams chat members continuation"
-_CHANGED_ERROR = "Microsoft Graph Teams chat changed during read"
+_ALL_MEMBERS_PATH = f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/allMembers"
+_CHANNEL_OBSERVATION_PATH = f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}"
+_SAFE_ERROR = "unexpected Microsoft Graph Teams channel members response"
+_CONT_ERROR = "invalid Microsoft Graph Teams channel members continuation"
+_CHANGED_ERROR = "Microsoft Graph Teams channel changed during read"
 _PREFER_UNKNOWN_ENUM = {"Prefer": "include-unknown-enum-members"}
 _VISIBLE_HISTORY = "2024-03-15T08:30:00Z"
-_CHAT_LAST_UPDATED = datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc)
-_OTHER_CHAT_LAST_UPDATED = datetime(2024, 6, 2, 12, 0, tzinfo=timezone.utc)
+_CHANNEL_CREATED_STR = "2024-06-01T12:00:00Z"
+_OTHER_CHANNEL_CREATED_STR = "2024-06-02T12:00:00Z"
 _ODATA_AAD = "#microsoft.graph.aadUserConversationMember"
 _ODATA_ANONYMOUS = "#microsoft.graph.anonymousGuestConversationMember"
 _ODATA_MICROSOFT_ACCOUNT = "#microsoft.graph.microsoftAccountUserConversationMember"
@@ -100,29 +101,29 @@ def _json_response(*, status_code: int = 200, payload: object | None = None) -> 
 
 def _members_next_link() -> str:
     return (
-        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-        f"{_QUOTED_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
     )
 
 
 def _odata_members_next_link(
-    chat_id: str = _CHAT_ID,
-    mailbox_user_id: str = _MAILBOX_USER_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_remote_id: str = _TEAM_ID,
 ) -> str:
-    escaped_chat = chat_id.replace("'", "''")
-    quoted_mailbox = quote(mailbox_user_id, safe="")
+    escaped_chat = channel_id.replace("'", "''")
+    quoted_mailbox = quote(team_remote_id, safe="")
     return (
-        f"https://graph.microsoft.com/v1.0/users/{quoted_mailbox}/"
-        f"chats('{escaped_chat}')/members?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams/{quoted_mailbox}/"
+        f"channels('{escaped_chat}')/allMembers?$skiptoken={_SECRET_TOKEN}"
     )
 
 
-def _slash_members_next_link(chat_id: str, mailbox_user_id: str = _MAILBOX_USER_ID) -> str:
-    quoted_chat = quote(chat_id, safe="")
-    quoted_mailbox = quote(mailbox_user_id, safe="")
+def _slash_members_next_link(channel_id: str, team_remote_id: str = _TEAM_ID) -> str:
+    quoted_chat = quote(channel_id, safe="")
+    quoted_mailbox = quote(team_remote_id, safe="")
     return (
-        f"https://graph.microsoft.com/v1.0/users/{quoted_mailbox}/chats/"
-        f"{quoted_chat}/members?$skiptoken={_SECRET_TOKEN}"
+        f"https://graph.microsoft.com/v1.0/teams/{quoted_mailbox}/channels/"
+        f"{quoted_chat}/allMembers?$skiptoken={_SECRET_TOKEN}"
     )
 
 
@@ -139,17 +140,24 @@ def _page_payload(
 
 def _observation_payload(
     *,
-    chat_id: str = _CHAT_ID,
-    last_updated: str = "2024-06-01T12:00:00Z",
-    chat_type: str = "group",
+    channel_id: str = _CHANNEL_ID,
+    membership_type: str = "standard",
+    created_at: str = "2024-06-01T12:00:00Z",
 ) -> dict[str, Any]:
     return {
-        "id": chat_id,
-        "chatType": chat_type,
-        "createdDateTime": "2024-01-01T00:00:00Z",
-        "lastUpdatedDateTime": last_updated,
-        "isHiddenForAllMembers": False,
+        "id": channel_id,
+        "displayName": "General",
+        "membershipType": membership_type,
+        "isArchived": False,
+        "createdDateTime": created_at,
     }
+
+
+def _channel() -> MsGraphTeamsChannel:
+    return parse_msgraph_teams_channel(
+        _observation_payload(),
+        expected_team_id=_TEAM_ID,
+    )
 
 
 def _member_payload(
@@ -186,69 +194,68 @@ def _member_payload(
     return payload
 
 
-def _valid_chat(**overrides: object) -> MsGraphTeamsChat:
+def _valid_channel(**overrides: object) -> MsGraphTeamsChannel:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "remote_id": _CHAT_ID,
-        "chat_type": MsGraphTeamsChatType.GROUP,
-        "created_at": datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
-        "last_updated_at": _CHAT_LAST_UPDATED,
-        "is_hidden_for_all_members": False,
-        "has_online_meeting_info": False,
+        "team_remote_id": _TEAM_ID,
+        "remote_id": _CHANNEL_ID,
+        "display_name": "General",
+        "description": None,
+        "created_at": datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc),
+        "membership_type": MsGraphTeamsChannelMembershipType.STANDARD,
+        "is_archived": False,
+        "tenant_id": None,
     }
     defaults.update(overrides)
-    return MsGraphTeamsChat(**defaults)  # type: ignore[arg-type]
+    return MsGraphTeamsChannel(**defaults)  # type: ignore[arg-type]
 
 
 def _valid_member_kwargs(**overrides: object) -> dict[str, object]:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
-        "chat_revision": _CHAT_LAST_UPDATED,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "remote_id": _MEMBER_ID,
-        "member_kind": MsGraphTeamsChatMemberKind.AAD_USER,
+        "member_kind": MsGraphTeamsChannelMemberKind.AAD_USER,
         "provider_user_id": _PROVIDER_USER_ID,
         "tenant_id": None,
         "display_name": None,
         "email": None,
-        "roles": (MsGraphTeamsChatMemberRole.OWNER,),
+        "roles": (MsGraphTeamsChannelMemberRole.OWNER,),
         "visible_history_start_at": None,
     }
     defaults.update(overrides)
     return defaults
 
 
-def _valid_member(**overrides: object) -> MsGraphTeamsChatMember:
-    return MsGraphTeamsChatMember(**_valid_member_kwargs(**overrides))
+def _valid_member(**overrides: object) -> MsGraphTeamsChannelMember:
+    return MsGraphTeamsChannelMember(**_valid_member_kwargs(**overrides))
 
 
-def _valid_member_page(**overrides: object) -> MsGraphTeamsChatMemberPage:
+def _valid_member_page(**overrides: object) -> MsGraphTeamsChannelMemberPage:
     defaults: dict[str, object] = {
-        "mailbox_user_id": _MAILBOX_USER_ID,
-        "chat_remote_id": _CHAT_ID,
-        "chat_revision": _CHAT_LAST_UPDATED,
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
         "items": (_valid_member(),),
         "continuation": None,
     }
     defaults.update(overrides)
-    return MsGraphTeamsChatMemberPage(**defaults)
+    return MsGraphTeamsChannelMemberPage(**defaults)
 
 
-def _reader(http: MagicMock) -> MsGraphTeamsChatMembersReader:
-    return MsGraphTeamsChatMembersReader(
+def _reader(http: MagicMock) -> MsGraphTeamsChannelMembersReader:
+    return MsGraphTeamsChannelMembersReader(
         config=_config(),
         transport=MsGraphKnowledgeTransport(config=_config(), http_client=http),
     )
 
 
-def _parse_member(payload: dict[str, Any]) -> MsGraphTeamsChatMember:
-    return parse_msgraph_teams_chat_member(payload, chat=_valid_chat())
+def _parse_member(payload: dict[str, Any]) -> MsGraphTeamsChannelMember:
+    return parse_msgraph_teams_channel_member(payload, channel=_valid_channel())
 
 
-def _validate_page(page: MsGraphTeamsChatMemberPage) -> MsGraphTeamsChatMemberPage:
-    return validate_msgraph_teams_chat_member_page(
+def _validate_page(page: MsGraphTeamsChannelMemberPage) -> MsGraphTeamsChannelMemberPage:
+    return validate_msgraph_teams_channel_member_page(
         page,
-        chat=_valid_chat(),
+        channel=_valid_channel(),
         graph_base_url=_GRAPH_BASE,
     )
 
@@ -275,8 +282,8 @@ def _assert_safe_provider_error(exc: BaseException) -> None:
     assert str(exc) == _SAFE_ERROR
     assert exc.__cause__ is None
     for forbidden in (
-        _MAILBOX_USER_ID,
-        _CHAT_ID,
+        _TEAM_ID,
+        _CHANNEL_ID,
         _MEMBER_ID,
         _DISPLAY_NAME,
         _EMAIL,
@@ -293,16 +300,16 @@ def _assert_safe_provider_error(exc: BaseException) -> None:
 @pytest.mark.parametrize(
     ("odata_type", "kind"),
     [
-        (_ODATA_AAD, MsGraphTeamsChatMemberKind.AAD_USER),
-        (_ODATA_ANONYMOUS, MsGraphTeamsChatMemberKind.ANONYMOUS_GUEST),
-        (_ODATA_MICROSOFT_ACCOUNT, MsGraphTeamsChatMemberKind.MICROSOFT_ACCOUNT),
-        (_ODATA_SKYPE, MsGraphTeamsChatMemberKind.SKYPE_USER),
-        (_ODATA_SKYPE_FOR_BUSINESS, MsGraphTeamsChatMemberKind.SKYPE_FOR_BUSINESS_USER),
-        (_ODATA_ACS, MsGraphTeamsChatMemberKind.AZURE_COMMUNICATION_SERVICES_USER),
-        (_ODATA_UNKNOWN, MsGraphTeamsChatMemberKind.UNKNOWN),
+        (_ODATA_AAD, MsGraphTeamsChannelMemberKind.AAD_USER),
+        (_ODATA_ANONYMOUS, MsGraphTeamsChannelMemberKind.ANONYMOUS_GUEST),
+        (_ODATA_MICROSOFT_ACCOUNT, MsGraphTeamsChannelMemberKind.MICROSOFT_ACCOUNT),
+        (_ODATA_SKYPE, MsGraphTeamsChannelMemberKind.SKYPE_USER),
+        (_ODATA_SKYPE_FOR_BUSINESS, MsGraphTeamsChannelMemberKind.SKYPE_FOR_BUSINESS_USER),
+        (_ODATA_ACS, MsGraphTeamsChannelMemberKind.AZURE_COMMUNICATION_SERVICES_USER),
+        (_ODATA_UNKNOWN, MsGraphTeamsChannelMemberKind.UNKNOWN),
     ],
 )
-def test_parse_member_kinds(odata_type: str, kind: MsGraphTeamsChatMemberKind) -> None:
+def test_parse_member_kinds(odata_type: str, kind: MsGraphTeamsChannelMemberKind) -> None:
     member = _parse_member(_member_payload(odata_type=odata_type))
     assert member.member_kind is kind
 
@@ -310,17 +317,17 @@ def test_parse_member_kinds(odata_type: str, kind: MsGraphTeamsChatMemberKind) -
 def test_parse_member_roles_owner_guest_and_unknown() -> None:
     member = _parse_member(_member_payload(roles=["owner", "guest", "futureRole"]))
     assert member.roles == (
-        MsGraphTeamsChatMemberRole.OWNER,
-        MsGraphTeamsChatMemberRole.GUEST,
-        MsGraphTeamsChatMemberRole.UNKNOWN,
+        MsGraphTeamsChannelMemberRole.OWNER,
+        MsGraphTeamsChannelMemberRole.GUEST,
+        MsGraphTeamsChannelMemberRole.UNKNOWN,
     )
 
 
 def test_parse_member_roles_deduplicated() -> None:
     member = _parse_member(_member_payload(roles=["owner", "owner", "guest", "guest"]))
     assert member.roles == (
-        MsGraphTeamsChatMemberRole.OWNER,
-        MsGraphTeamsChatMemberRole.GUEST,
+        MsGraphTeamsChannelMemberRole.OWNER,
+        MsGraphTeamsChannelMemberRole.GUEST,
     )
 
 
@@ -351,8 +358,7 @@ def test_parse_member_cross_tenant_metadata() -> None:
     assert member.display_name == _DISPLAY_NAME
     assert member.email == _EMAIL
     assert member.provider_user_id == _PROVIDER_USER_ID
-    assert member.chat_remote_id == _CHAT_ID
-    assert member.chat_revision == _CHAT_LAST_UPDATED
+    assert member.channel_remote_id == _CHANNEL_ID
 
 
 def test_parse_member_null_user_id() -> None:
@@ -398,7 +404,7 @@ def test_parse_member_trimmed_display_name_and_email() -> None:
 )
 def test_parse_malformed_provider_payload(payload: object) -> None:
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        parse_msgraph_teams_chat_member(payload, chat=_valid_chat())
+        parse_msgraph_teams_channel_member(payload, channel=_valid_channel())
     _assert_safe_provider_error(exc.value)
 
 
@@ -407,7 +413,7 @@ def test_parse_malformed_provider_payload(payload: object) -> None:
 
 def test_validate_member_returns_new_instance() -> None:
     original = _valid_member(display_name=_SECRET_DISPLAY_NAME, email=_SECRET_EMAIL)
-    validated = validate_msgraph_teams_chat_member(original)
+    validated = validate_msgraph_teams_channel_member(original)
     assert validated == original
     assert validated is not original
 
@@ -417,38 +423,36 @@ def test_validate_member_returns_new_instance() -> None:
     [
         {"remote_id": None},
         {"member_kind": "aad_user"},
-        {"chat_revision": None},
-        {"roles": ("owner",)},
+                {"roles": ("owner",)},
         {"roles": ("not-a-role",)},
         {"visible_history_start_at": datetime(2024, 6, 1, 12, 0)},
     ],
 )
 def test_model_construct_malformed_member_rejected(kwargs: dict[str, object]) -> None:
-    malformed = MsGraphTeamsChatMember.model_construct(
+    malformed = MsGraphTeamsChannelMember.model_construct(
         **{**_valid_member_kwargs(), **kwargs}
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
-        validate_msgraph_teams_chat_member(malformed)
+        validate_msgraph_teams_channel_member(malformed)
     assert exc.value.__cause__ is None
 
 
 def test_roles_deduplicated_at_model_boundary() -> None:
-    member = MsGraphTeamsChatMember.model_construct(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
-        chat_revision=_CHAT_LAST_UPDATED,
+    member = MsGraphTeamsChannelMember.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         remote_id=_MEMBER_ID,
-        member_kind=MsGraphTeamsChatMemberKind.AAD_USER,
+        member_kind=MsGraphTeamsChannelMemberKind.AAD_USER,
         roles=(
-            MsGraphTeamsChatMemberRole.OWNER,
-            MsGraphTeamsChatMemberRole.OWNER,
-            MsGraphTeamsChatMemberRole.GUEST,
+            MsGraphTeamsChannelMemberRole.OWNER,
+            MsGraphTeamsChannelMemberRole.OWNER,
+            MsGraphTeamsChannelMemberRole.GUEST,
         ),
     )
-    validated = validate_msgraph_teams_chat_member(member)
+    validated = validate_msgraph_teams_channel_member(member)
     assert validated.roles == (
-        MsGraphTeamsChatMemberRole.OWNER,
-        MsGraphTeamsChatMemberRole.GUEST,
+        MsGraphTeamsChannelMemberRole.OWNER,
+        MsGraphTeamsChannelMemberRole.GUEST,
     )
 
 
@@ -463,51 +467,37 @@ def test_validate_member_page_returns_new_instances() -> None:
 def test_member_page_model_rejects_duplicate_remote_ids() -> None:
     item = _valid_member()
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        MsGraphTeamsChatMemberPage(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
+        MsGraphTeamsChannelMemberPage(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             items=(item, item),
         )
 
 
-def test_page_cross_mailbox_item_rejected() -> None:
+def test_page_cross_team_item_rejected() -> None:
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        MsGraphTeamsChatMemberPage(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
-            items=(_valid_member(mailbox_user_id=_OTHER_MAILBOX_USER_ID),),
+        MsGraphTeamsChannelMemberPage(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
+            items=(_valid_member(team_remote_id=_OTHER_TEAM_ID),),
         )
 
 
 def test_page_cross_chat_item_rejected() -> None:
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        MsGraphTeamsChatMemberPage(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
-            items=(_valid_member(chat_remote_id=_OTHER_CHAT_ID),),
+        MsGraphTeamsChannelMemberPage(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
+            items=(_valid_member(channel_remote_id=_OTHER_CHANNEL_ID),),
         )
 
-
-def test_page_stale_chat_revision_rejected() -> None:
-    page = MsGraphTeamsChatMemberPage.model_construct(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
-        chat_revision=_OTHER_CHAT_LAST_UPDATED,
-        items=(_valid_member(),),
-    )
-    with pytest.raises(ValueError, match=_SAFE_ERROR):
-        _validate_page(page)
 
 
 def test_page_items_as_list_rejected() -> None:
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        MsGraphTeamsChatMemberPage(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
+        MsGraphTeamsChannelMemberPage(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             items=[_valid_member()],  # type: ignore[arg-type]
         )
 
@@ -518,10 +508,9 @@ def test_page_delta_continuation_rejected() -> None:
         url=_members_next_link(),
     )
     with pytest.raises(ValueError, match=_SAFE_ERROR):
-        MsGraphTeamsChatMemberPage(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
+        MsGraphTeamsChannelMemberPage(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             items=(),
             continuation=delta,
         )
@@ -537,23 +526,20 @@ def test_page_delta_continuation_rejected() -> None:
 )
 def test_model_construct_malformed_page_rejected(page_kwargs: dict[str, object]) -> None:
     if page_kwargs.get("items") is None:
-        malformed = MsGraphTeamsChatMemberPage.model_construct(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
+        malformed = MsGraphTeamsChannelMemberPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
         )
     elif page_kwargs.get("nested_malformed"):
-        malformed = MsGraphTeamsChatMemberPage.model_construct(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
-            items=(MsGraphTeamsChatMember.model_construct(),),
+        malformed = MsGraphTeamsChannelMemberPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
+            items=(MsGraphTeamsChannelMember.model_construct(),),
         )
     else:
-        malformed = MsGraphTeamsChatMemberPage.model_construct(
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_remote_id=_CHAT_ID,
-            chat_revision=_CHAT_LAST_UPDATED,
+        malformed = MsGraphTeamsChannelMemberPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
             items=(_valid_member(),),
             continuation=page_kwargs["continuation"],
         )
@@ -566,14 +552,13 @@ def test_validate_page_rejects_cross_chat_continuation() -> None:
     wrong_continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_OTHER_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_OTHER_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    page = MsGraphTeamsChatMemberPage(
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_remote_id=_CHAT_ID,
-        chat_revision=_CHAT_LAST_UPDATED,
+    page = MsGraphTeamsChannelMemberPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
         items=(_valid_member(),),
         continuation=wrong_continuation,
     )
@@ -587,9 +572,9 @@ def test_validate_page_rejects_cross_chat_continuation() -> None:
 def test_initial_request_members_path_and_headers() -> None:
     http = MagicMock()
     _setup_members_page(http)
-    _reader(http).read_members_page(chat=_valid_chat(), continuation=None)
+    _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=None)
     members_call = http.get.call_args_list[1]
-    assert members_call.args[0] == _MEMBERS_PATH
+    assert members_call.args[0] == _ALL_MEMBERS_PATH
     assert members_call.kwargs.get("params") is None
     assert members_call.kwargs["headers"] == _PREFER_UNKNOWN_ENUM
 
@@ -597,12 +582,12 @@ def test_initial_request_members_path_and_headers() -> None:
 def test_observation_requests_before_and_after_members_list() -> None:
     http = MagicMock()
     _setup_members_page(http)
-    _reader(http).read_members_page(chat=_valid_chat(), continuation=None)
+    _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=None)
     pre_observation = http.get.call_args_list[0]
     post_observation = http.get.call_args_list[2]
-    assert pre_observation.args[0] == _OBSERVATION_PATH
+    assert pre_observation.args[0] == _CHANNEL_OBSERVATION_PATH
     assert pre_observation.kwargs["headers"] == _PREFER_UNKNOWN_ENUM
-    assert post_observation.args[0] == _OBSERVATION_PATH
+    assert post_observation.args[0] == _CHANNEL_OBSERVATION_PATH
 
 
 def test_continuation_request_uses_full_url_without_params() -> None:
@@ -617,7 +602,7 @@ def test_continuation_request_uses_full_url_without_params() -> None:
         _json_response(payload=_page_payload()),
         _json_response(payload=observation),
     ]
-    _reader(http).read_members_page(chat=_valid_chat(), continuation=continuation)
+    _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=continuation)
     continuation_call = http.get.call_args_list[1]
     assert continuation_call.args[0] == _members_next_link()
     assert continuation_call.kwargs.get("params") is None
@@ -627,7 +612,7 @@ def test_continuation_request_uses_full_url_without_params() -> None:
 def test_first_page_with_continuation() -> None:
     http = MagicMock()
     _setup_members_page(http, next_link=_members_next_link())
-    page = _reader(http).read_members_page(chat=_valid_chat(), continuation=None)
+    page = _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=None)
     assert page.continuation is not None
     assert page.continuation.kind is MsGraphKnowledgeContinuationKind.NEXT_PAGE
 
@@ -635,7 +620,7 @@ def test_first_page_with_continuation() -> None:
 def test_final_page_without_continuation() -> None:
     http = MagicMock()
     _setup_members_page(http)
-    page = _reader(http).read_members_page(chat=_valid_chat(), continuation=None)
+    page = _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=None)
     assert page.continuation is None
     assert len(page.items) == 1
 
@@ -643,24 +628,24 @@ def test_final_page_without_continuation() -> None:
 def test_chat_changed_before_members_list() -> None:
     http = MagicMock()
     http.get.return_value = _json_response(
-        payload=_observation_payload(last_updated="2024-06-02T12:00:00Z"),
+        payload=_observation_payload(created_at="2024-06-02T12:00:00Z"),
     )
-    with pytest.raises(MsGraphTeamsChatChanged, match=_CHANGED_ERROR):
-        _reader(http).read_members_page(chat=_valid_chat(), continuation=None)
+    with pytest.raises(MsGraphTeamsChannelChanged, match=_CHANGED_ERROR):
+        _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=None)
     http.get.assert_called_once()
 
 
 def test_chat_changed_after_members_list() -> None:
     http = MagicMock()
     observation_before = _observation_payload()
-    observation_after = _observation_payload(last_updated="2024-06-02T12:00:00Z")
+    observation_after = _observation_payload(created_at="2024-06-02T12:00:00Z")
     http.get.side_effect = [
         _json_response(payload=observation_before),
         _json_response(payload=_page_payload(value=[_member_payload()])),
         _json_response(payload=observation_after),
     ]
-    with pytest.raises(MsGraphTeamsChatChanged, match=_CHANGED_ERROR):
-        _reader(http).read_members_page(chat=_valid_chat(), continuation=None)
+    with pytest.raises(MsGraphTeamsChannelChanged, match=_CHANGED_ERROR):
+        _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=None)
     assert http.get.call_count == 3
 
 
@@ -670,14 +655,14 @@ def test_invalid_continuation_rejected_before_members_request() -> None:
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_OTHER_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
         ),
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
-        _reader(http).read_members_page(chat=_valid_chat(), continuation=continuation)
+        _reader(http).read_teams_channel_members_page(channel=_valid_channel(), continuation=continuation)
     http.get.assert_called_once()
-    assert http.get.call_args.args[0] == _OBSERVATION_PATH
+    assert http.get.call_args.args[0] == _CHANNEL_OBSERVATION_PATH
 
 
 # --- continuation validation ---
@@ -688,10 +673,10 @@ def test_validate_continuation_accepts_next_page_slash_path() -> None:
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_members_next_link(),
     )
-    validated = validate_msgraph_teams_chat_members_continuation(
+    validated = validate_msgraph_teams_channel_members_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -703,10 +688,10 @@ def test_validate_continuation_accepts_odata_key_path() -> None:
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=_odata_members_next_link(),
     )
-    validated = validate_msgraph_teams_chat_members_continuation(
+    validated = validate_msgraph_teams_channel_members_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -714,15 +699,15 @@ def test_validate_continuation_accepts_odata_key_path() -> None:
 
 
 def test_validate_continuation_accepts_chat_literal_with_escaped_quotes() -> None:
-    chat_id = "19:chat'quote'part@thread.v2"
+    channel_id = "19:chat'quote'part@thread.v2"
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
-        url=_odata_members_next_link(chat_id=chat_id),
+        url=_odata_members_next_link(channel_id=channel_id),
     )
-    validated = validate_msgraph_teams_chat_members_continuation(
+    validated = validate_msgraph_teams_channel_members_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=chat_id,
+        team_id=_TEAM_ID,
+        channel_id=channel_id,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -733,14 +718,14 @@ def test_validate_continuation_accepts_uppercase_resource_names() -> None:
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/USERS/{_QUOTED_MAILBOX}/CHATS/"
-            f"{_QUOTED_CHAT}/MEMBERS?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/TEAMS/{_QUOTED_TEAM}/CHANNELS/"
+            f"{_QUOTED_CHANNEL}/ALLMEMBERS?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    validated = validate_msgraph_teams_chat_members_continuation(
+    validated = validate_msgraph_teams_channel_members_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=_CHAT_ID,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -748,19 +733,19 @@ def test_validate_continuation_accepts_uppercase_resource_names() -> None:
 
 
 def test_validate_continuation_accepts_percent_encoded_chat_literal() -> None:
-    chat_id = "19:special/chat@thread.v2"
-    encoded = quote(chat_id, safe="")
+    channel_id = "19:special/chat@thread.v2"
+    encoded = quote(channel_id, safe="")
     continuation = MsGraphKnowledgeContinuation(
         kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
         url=(
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
-            f"chats('{encoded}')/members?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/"
+            f"channels('{encoded}')/allMembers?$skiptoken={_SECRET_TOKEN}"
         ),
     )
-    validated = validate_msgraph_teams_chat_members_continuation(
+    validated = validate_msgraph_teams_channel_members_continuation(
         continuation,
-        mailbox_user_id=_MAILBOX_USER_ID,
-        chat_id=chat_id,
+        team_id=_TEAM_ID,
+        channel_id=channel_id,
         graph_base_url=_GRAPH_BASE,
     )
     assert validated == continuation
@@ -771,33 +756,33 @@ def test_validate_continuation_accepts_percent_encoded_chat_literal() -> None:
     "url",
     [
         (
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_OTHER_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
         ),
         (
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_OTHER_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_OTHER_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
         ),
         (
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/members/delta?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/allMembers/delta?$skiptoken={_SECRET_TOKEN}"
         ),
         (
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/messages/"
-            f"{_QUOTED_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/messages/"
+            f"{_QUOTED_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
         ),
         (
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/members/{quote(_MEMBER_ID, safe='')}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/allMembers/{quote(_MEMBER_ID, safe='')}"
         ),
         (
-            f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-            f"{_QUOTED_CHAT}/members/extra?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+            f"{_QUOTED_CHANNEL}/allMembers/extra?$skiptoken={_SECRET_TOKEN}"
         ),
         "https://graph.microsoft.com/v1.0/drives/drive-1/root/children?$skiptoken=x",
         (
-            f"https://graph.microsoft.com/v1.0/users('{_QUOTED_MAILBOX}')"
-            f"/chats('unterminated?$skiptoken={_SECRET_TOKEN}"
+            f"https://graph.microsoft.com/v1.0/teams('{_QUOTED_TEAM}')"
+            f"/channels('unterminated?$skiptoken={_SECRET_TOKEN}"
         ),
     ],
 )
@@ -807,14 +792,14 @@ def test_validate_continuation_rejects_invalid_urls(url: str) -> None:
         url=url,
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
-        validate_msgraph_teams_chat_members_continuation(
+        validate_msgraph_teams_channel_members_continuation(
             continuation,
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
             graph_base_url=_GRAPH_BASE,
         )
     assert _SECRET_TOKEN not in str(exc.value)
-    assert _MAILBOX_USER_ID not in str(exc.value)
+    assert _TEAM_ID not in str(exc.value)
     assert exc.value.__cause__ is None
 
 
@@ -824,20 +809,20 @@ def test_validate_continuation_rejects_delta_kind() -> None:
         url=_members_next_link(),
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
-        validate_msgraph_teams_chat_members_continuation(
+        validate_msgraph_teams_channel_members_continuation(
             continuation,
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
             graph_base_url=_GRAPH_BASE,
         )
 
 
 def test_validate_continuation_rejects_wrong_object_type() -> None:
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
-        validate_msgraph_teams_chat_members_continuation(
+        validate_msgraph_teams_channel_members_continuation(
             "bad",
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
             graph_base_url=_GRAPH_BASE,
         )
 
@@ -868,15 +853,15 @@ def test_validate_continuation_rejects_model_construct_malformed(
     continuation: MsGraphKnowledgeContinuation,
 ) -> None:
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
-        validate_msgraph_teams_chat_members_continuation(
+        validate_msgraph_teams_channel_members_continuation(
             continuation,
-            mailbox_user_id=_MAILBOX_USER_ID,
-            chat_id=_CHAT_ID,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
             graph_base_url=_GRAPH_BASE,
         )
     assert exc.value.__cause__ is None
     assert _SECRET_TOKEN not in str(exc.value)
-    assert _MAILBOX_USER_ID not in str(exc.value)
+    assert _TEAM_ID not in str(exc.value)
 
 
 # --- security ---
@@ -904,18 +889,18 @@ def test_security_repr_hides_sensitive_member_fields() -> None:
 
 
 class _CountingMembersClient(GraphRestClient):
-    def __init__(self, page: MsGraphTeamsChatMemberPage, http: MagicMock) -> None:
+    def __init__(self, page: MsGraphTeamsChannelMemberPage, http: MagicMock) -> None:
         super().__init__(_config(), http_client=http)
         self._custom_page = page
         self.call_count = 0
         self.last_continuation: MsGraphKnowledgeContinuation | None = None
 
-    def read_teams_chat_members_page(
+    def read_teams_channel_members_page(
         self,
         *,
-        chat: MsGraphTeamsChat,
+        channel: MsGraphTeamsChannel,
         continuation: MsGraphKnowledgeContinuation | None = None,
-    ) -> MsGraphTeamsChatMemberPage:
+    ) -> MsGraphTeamsChannelMemberPage:
         self.call_count += 1
         self.last_continuation = continuation
         return self._custom_page
@@ -930,22 +915,22 @@ class _CountingMembersClient(GraphRestClient):
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.DELTA,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-                f"{_QUOTED_CHAT}/members/delta?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+                f"{_QUOTED_CHANNEL}/allMembers/delta?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
-                f"{_QUOTED_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_OTHER_TEAM}/channels/"
+                f"{_QUOTED_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
         MsGraphKnowledgeContinuation(
             kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
             url=(
-                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
-                f"{_QUOTED_OTHER_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+                f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+                f"{_QUOTED_OTHER_CHANNEL}/allMembers?$skiptoken={_SECRET_TOKEN}"
             ),
         ),
     ],
@@ -963,7 +948,7 @@ def test_integration_rejects_malformed_continuation_before_custom_call(
         enabled=True,
     )
     with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
-        integration.read_teams_chat_members_page(chat=_valid_chat(), continuation=continuation)
+        integration.read_teams_channel_members_page(channel=_valid_channel(), continuation=continuation)
     assert client.call_count == 0
     assert _SECRET_TOKEN not in str(exc.value)
 
@@ -983,8 +968,8 @@ def test_integration_valid_continuation_calls_custom_client_once() -> None:
         _Ms365GraphCollaborationSuite(client),
         enabled=True,
     )
-    returned = integration.read_teams_chat_members_page(
-        chat=_valid_chat(),
+    returned = integration.read_teams_channel_members_page(
+        channel=_valid_channel(),
         continuation=continuation,
     )
     assert client.call_count == 1
@@ -993,3 +978,106 @@ def test_integration_valid_continuation_calls_custom_client_once() -> None:
     assert client.last_continuation is not None
     assert client.last_continuation.url == continuation.url
     assert returned.items[0] is not page.items[0]
+
+
+_ORIGINAL_SOURCE_URL = "https://teams.microsoft.com/l/team/team-id/channel/channel-id"
+
+
+def test_parse_direct_member() -> None:
+    member = parse_msgraph_teams_channel_member(
+        {
+            "@odata.type": _ODATA_AAD,
+            "id": _MEMBER_ID,
+            "roles": ["owner"],
+            "userId": _PROVIDER_USER_ID,
+        },
+        channel=_channel(),
+    )
+    assert member.is_indirect_member is False
+    assert member.original_source_membership_url is None
+
+
+def test_parse_indirect_member_with_url() -> None:
+    member = parse_msgraph_teams_channel_member(
+        {
+            "@odata.type": _ODATA_AAD,
+            "id": _MEMBER_ID,
+            "roles": ["owner"],
+            "@microsoft.graph.originalSourceMembershipUrl": _ORIGINAL_SOURCE_URL,
+            "@microsoft.graph.isIndirectMember": True,
+        },
+        channel=_channel(),
+    )
+    assert member.is_indirect_member is True
+    assert member.original_source_membership_url == _ORIGINAL_SOURCE_URL
+
+
+def test_parse_contradictory_indirect_boolean_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        parse_msgraph_teams_channel_member(
+            {
+                "@odata.type": _ODATA_AAD,
+                "id": _MEMBER_ID,
+                "roles": [],
+                "@microsoft.graph.originalSourceMembershipUrl": _ORIGINAL_SOURCE_URL,
+                "isIndirectMember": False,
+            },
+            channel=_channel(),
+        )
+
+
+def test_parse_url_without_indirect_true_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        parse_msgraph_teams_channel_member(
+            {
+                "@odata.type": _ODATA_AAD,
+                "id": _MEMBER_ID,
+                "roles": [],
+                "@microsoft.graph.originalSourceMembershipUrl": _ORIGINAL_SOURCE_URL,
+                "isIndirectMember": False,
+            },
+            channel=_channel(),
+        )
+
+
+def test_parse_indirect_true_without_url_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        parse_msgraph_teams_channel_member(
+            {
+                "@odata.type": _ODATA_AAD,
+                "id": _MEMBER_ID,
+                "roles": [],
+                "isIndirectMember": True,
+            },
+            channel=_channel(),
+        )
+
+
+def test_model_construct_inconsistent_indirect_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        validate_msgraph_teams_channel_member(
+            MsGraphTeamsChannelMember.model_construct(
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                remote_id=_MEMBER_ID,
+                member_kind=MsGraphTeamsChannelMemberKind.AAD_USER,
+                is_indirect_member=True,
+                original_source_membership_url=None,
+            )
+        )
+
+
+def test_security_repr_hides_provider_user_and_visible_history() -> None:
+    member = parse_msgraph_teams_channel_member(
+        {
+            "@odata.type": _ODATA_AAD,
+            "id": _MEMBER_ID,
+            "roles": ["owner"],
+            "userId": _PROVIDER_USER_ID,
+            "visibleHistoryStartDateTime": _VISIBLE_HISTORY,
+        },
+        channel=_channel(),
+    )
+    rendered = repr(member)
+    assert _PROVIDER_USER_ID not in rendered
+    assert _VISIBLE_HISTORY not in rendered
