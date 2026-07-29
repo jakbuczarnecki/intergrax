@@ -125,3 +125,21 @@ uv run python scripts/audit/check_docs_domain_pairs.py
 Commit:
 docs: add token optimization architecture cross-references
 ```
+
+---
+
+## TOKEN-10 audit expectations (added TOKEN-10A)
+
+When auditing TOKEN-10 implementation, verify:
+
+- stable-prefix runtime wiring in real request assembly (not helper-only)
+- append-only enforcement at runtime
+- stable tool envelope fingerprinting and invalidation reasons
+- provider cache evidence from LLM_ADAPTERS (TOKEN-LLM-2, TOKEN-LLM-3)
+- vLLM proof reproducibility (cold/warm/changed-prefix controls)
+- metric-family separation (content reduction vs prefix-cache reuse)
+- universal proof ownership under intergrax/runtime/token_optimization/proof/ (not LKW)
+- no LKW duplication of router, pipeline, cache gate, or proof harness
+- README promotion gate — only TOKEN-10H after TOKEN-10G passes
+
+Cross-domain rows: TOKEN-LLM-2, TOKEN-LLM-3 in docs/plan/LLM_ADAPTERS.md; LKW-PF6-A..C in LKW docs after universal proof.

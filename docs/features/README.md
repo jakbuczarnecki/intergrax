@@ -57,7 +57,7 @@ Do **not** create `docs/features/satellites/` at the features root. Satellites b
 
 | Feature | Architecture | Plan | Status |
 |---------|--------------|------|--------|
-| `TOKEN_OPTIMIZATION` | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Planned |
+| `TOKEN_OPTIMIZATION` | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
 
 **Satellites (on demand):**
 

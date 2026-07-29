@@ -369,4 +369,36 @@ The later public-grade LKW token proof (`LKW-PF6-C`) must include:
 - [x] `TOKEN-1A` remains not started,
 - [x] no code/runtime/test/CI/dependency files are changed.
 
-**Next implementation step:** `TOKEN-1A` — shared contracts + package skeleton ([`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) Phase TOKEN-1).
+---
+
+## 11. LKW-PF6 — Token Optimization product proof (planned)
+
+**Prerequisite:** Universal platform proof **TOKEN-10G** must pass before LKW product proof begins. **LKW-PF6-0** (proof design) is **Done / Closed** — see §10.
+
+### Canonical ordering
+
+```text
+TOKEN-10A … TOKEN-10G → universal platform proof
+TOKEN-10H             → checked-in proof, README promotion
+LKW-PF6-A             → product baseline measurement
+LKW-PF6-B             → runtime integration (consume platform contracts)
+LKW-PF6-C             → baseline-vs-optimized product proof
+```
+
+### LKW-PF6-A — Product baseline
+
+Measure real LKW flows **without** optimization: workspace search; evidence/context assembly; synthesis; tool exposure; repeated conversational steps; protected evidence path.
+
+### LKW-PF6-B — Runtime integration
+
+LKW supplies product policy, classifications, evidence, identity, and explicit enablement. LKW consumes stable prompt/runtime contract, router, cache-aware gate, pipeline, receipts, and metrics. **LKW must not duplicate** Token Optimization components.
+
+### LKW-PF6-C — Product proof
+
+Compare baseline and optimized runs: input tokens, content-reduction savings, prefix-cache reuse, latency, evidence preservation, tenant isolation, protected regions, answer quality, fallbacks, receipts, observability attribution.
+
+**Maturity:** LKW-PF6-C closure is product proof — not automatic production-grade readiness. Distinction: proof design → platform proof → operational proof → production-grade readiness.
+
+Canonical detail: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) §LKW proof phase map; schedule: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §LKW-PF6.
+
+---

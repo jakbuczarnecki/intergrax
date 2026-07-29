@@ -428,6 +428,39 @@ task delivery and worker execution
 
 Platform task state and product-domain operation state remain separate. Queue/task status must not automatically replace LKW Ingestion Operation state.
 
+#### Token Optimization — platform contract, LKW product proof
+
+Token Optimization is a **universal Tier-0/runtime platform capability**. LKW is a **later product client** — it must not own or duplicate Token Optimization mechanisms.
+
+```text
+LKW (Tier-3)
+  → public Token Optimization contracts
+  → intergrax/runtime/token_optimization
+  → LLMAdapter / provider adapter
+```
+
+Forbidden: `intergrax/runtime/token_optimization` importing or special-casing LKW.
+
+**Canonical ordering:**
+
+```text
+TOKEN-10A … TOKEN-10G → universal platform proof passes
+TOKEN-10H             → checked-in proof and public wording
+LKW-PF6-A             → LKW baseline measurement (product workflows)
+LKW-PF6-B             → LKW integrates public runtime contract
+LKW-PF6-C             → LKW baseline-vs-optimized product proof
+```
+
+| Phase | LKW supplies | LKW consumes (must not reimplement) |
+|-------|--------------|-------------------------------------|
+| **LKW-PF6-A** | Real workflows: search, evidence assembly, synthesis, tool exposure, conversational steps | Baseline measurement only |
+| **LKW-PF6-B** | Product policy/profile, source classifications, evidence, tenant/run/step identity, explicit enablement | Stable prompt contract, router, cache-aware gate, pipeline, receipts, metrics |
+| **LKW-PF6-C** | Product proof corpus and acceptance criteria | Same runtime path as universal proof |
+
+**LKW-PF6-0** (proof design) is **Done / Closed** — does not close platform or product proof.
+
+Canonical feature docs: [`docs/features/architecture/TOKEN_OPTIMIZATION.md`](../../../docs/features/architecture/TOKEN_OPTIMIZATION.md) · [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md). Public claims: [`docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../../docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md).
+
 ### Channel-neutral Knowledge Intake and asynchronous ingestion
 
 **Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Implementation status of upload endpoints, workers, URL fetch, Slack attachments, or Blob providers is **not** implied here.

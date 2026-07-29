@@ -156,7 +156,7 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) — focused evaluation path for reviewers and design partners
 - [USE_CASES.md](USE_CASES.md) — use-case map for validation and partner-fit discussions
 - [PARTNERS.md](PARTNERS.md) — partner and design-partner brief
-- [COLLABORATION.md](COLLABORATION.md) — collaboration model, permitted use and contact
+- [Token Optimization feature plan](docs/features/plan/TOKEN_OPTIMIZATION.md) — **TOKEN-10** cache-aware universal runtime and proof (active); LKW-PF6 product proof follows universal platform proof
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issue map and recommended evaluation paths
 - [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active architecture, product-validation and deep technical discussion issue waves

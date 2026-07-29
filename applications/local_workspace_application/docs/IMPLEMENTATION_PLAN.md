@@ -435,6 +435,22 @@ Parallel work rules:
 
 ---
 
+## 13. LKW-PF6 — Token Optimization product proof (planned)
+
+**Status:** **LKW-PF6-0** Done / Closed (proof design only). **LKW-PF6-A**–**C** planned after universal platform proof.
+
+Token Optimization is a platform capability under `intergrax/runtime/token_optimization`. LKW integrates through public contracts only — no duplication of router, pipeline, cache-aware gate, or proof harness.
+
+| Phase | Depends on | Scope |
+|-------|------------|-------|
+| **LKW-PF6-A** | TOKEN-10G | Baseline measurement on product workflows |
+| **LKW-PF6-B** | LKW-PF6-A, TOKEN-10D | Integrate public runtime contract |
+| **LKW-PF6-C** | LKW-PF6-B | Baseline vs optimized product proof |
+
+Canonical: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/plan/TOKEN_OPTIMIZATION.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) (Token Optimization subsection) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md) §11.
+
+---
+
 ## 12. Post-MVP direction to LKW 1.0
 
 LKW 1.0 aims to be installable, restart-safe, auditable, daily-usable and supportable for its declared source portfolio. Broad provider breadth is not automatically required for 1.0; the bounded `1B-6` contract, one end-to-end provider proof and provider-neutral verification establish the expansion path.

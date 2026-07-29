@@ -353,3 +353,34 @@ llm = profile.create_adapter(secrets={"api_key": key})
 - Vault: `llm/<provider>/api_key` via `SecretsStore` — `create_adapter_from_secrets_store()`
 
 ---
+
+## Prompt-cache provider capabilities (TOKEN-10 / TOKEN-LLM-2 / TOKEN-LLM-3)
+
+**Cross-feature — Token Optimization:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). `LLM_ADAPTERS` owns provider-specific prompt-cache behavior; Token Optimization consumes signals through approved adapter paths and must not create a parallel tokenizer or private vLLM client.
+
+### Ownership
+
+| Owner | Responsibility |
+|-------|----------------|
+| `LLM_ADAPTERS` | Provider prompt-cache capabilities; automatic prefix caching; explicit cache breakpoints; cache keys; retention/TTL where available; session/replica affinity; request parameters; cache usage mapping; `cached_input_tokens` accounting; latency/cost interpretation; health and capability discovery |
+| `TOKEN_OPTIMIZATION` | Cache-stable prompt strategy; stable prefix/dynamic tail; append-only policy; tool-envelope stability; cache-aware execution policy; orchestration with deterministic pipeline; proof configuration |
+| `OBSERVABILITY` | Approved HOS/domain-signal emission for cache and content-reduction metrics |
+
+### Claude vs vLLM distinction
+
+- **Managed providers** (e.g. Anthropic Claude-style prompt caching): explicit breakpoints, billing semantics, provider TTL — adapter-owned.
+- **vLLM self-hosted** (`LLMProvider.VLLM`, `VllmChatAdapter`, `infra/docker/vllm/docker-compose.yml`): automatic prefix caching, KV reuse, prefix-cache metrics — **not** Claude billing discounts or identical TTL semantics.
+
+Do not hard-code vLLM release numbers or CLI flags in architecture; pin at implementation time per proof TOML.
+
+### Planned implementation rows
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **TOKEN-LLM-1** | Guardrail — Token Optimization consumes existing token/usage contracts | Planned |
+| **TOKEN-LLM-2** | Prompt-cache provider capability and usage contract integration | Planned |
+| **TOKEN-LLM-3** | vLLM prefix-cache request/metrics proof path | Planned |
+
+Reuse: `LLMAdapterResponse.usage`, `LLMTokenUsage.cached_input_tokens`, `LLMAdapterRegistry`, OpenAI-compatible vLLM adapter path.
+
+---

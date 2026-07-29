@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Planned  
+**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**  
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -61,7 +61,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/plan/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is the primary proof workload for Token Optimization. Token Optimization is **not** a local LKW feature — it is a cross-layer platform capability owned by runtime and domain plans. LKW proof must show measurable token savings, quality/regression safety, compression receipts, protected-region preservation, and observability attribution through the Harness Observability Spine. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed** (§TOKEN-ARCH-0 below); **TOKEN-1A** shared contracts is **Done / Closed** (§TOKEN-1A below). TOKEN implementation order remains **TOKEN-ARCH-0** → **TOKEN-1**..**TOKEN-7** below; LKW proof ordering introduces proof-design and baseline-measurement tasks around those phases (see [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) §LKW-PF — Recommended execution order).
+**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization — not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
 
 ---
 
@@ -209,11 +209,23 @@ Done / Closed when:
 
 ### LKW proof phase map (post-design)
 
+Canonical ordering:
+
+```text
+TOKEN-10A … TOKEN-10G → universal platform proof passes
+TOKEN-10H             → checked-in proof and public feature wording
+LKW-PF6-A             → LKW baseline measurement on selected product workflows
+LKW-PF6-B             → LKW integrates public Token Optimization runtime contract
+LKW-PF6-C             → LKW baseline-vs-optimized product proof
+```
+
 | Phase | Scope | Depends on |
 |-------|-------|------------|
-| **LKW-PF6-A** | Baseline token measurement for §workflows | TOKEN-1A contracts (minimal) |
-| **LKW-PF6-B** | First measurable savings proof | TOKEN-2/3 and/or TOKEN-4 light, TOKEN-1C receipts |
-| **LKW-PF6-C** | Public-grade proof artifact | LKW-PF6-B + TOKEN-6A-lite/6B attribution |
+| **LKW-PF6-A** | Product baseline — workspace search, evidence/context assembly, synthesis, tool exposure, repeated conversational steps, protected evidence path | **TOKEN-10G** universal proof passes |
+| **LKW-PF6-B** | LKW supplies product policy/profile, source classifications, evidence, tenant/run/step identity, explicit enablement; consumes stable prompt contract, router, cache-aware gate, pipeline, receipts, metrics — **must not duplicate** platform mechanisms | **LKW-PF6-A** + **TOKEN-10D** runtime contract |
+| **LKW-PF6-C** | Compare baseline vs optimized: input tokens, content-reduction savings, prefix-cache reuse, latency, evidence/citation preservation, tenant isolation, protected regions, answer quality, fallbacks, receipts, observability | **LKW-PF6-B** |
+
+LKW proof closure does not automatically mean production-grade readiness. Preserve maturity distinction: proof design → platform proof → operational proof → production-grade readiness → production hardening backlog.
 
 ---
 
@@ -698,7 +710,7 @@ Vocabulary aligns with `intergrax/runtime/token_optimization/contracts.py` (`Tok
 | Priority-tier classification | `rag_context_pack`, `retrieved_evidence` | `lossless` | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3B** (contract) | **Done / Closed** |
 | Budget-aware context packing | `rag_context_pack`, `retrieved_evidence` | `lossless` (default) | `conservative` | Yes | Yes | Yes | **TOKEN-OPT-3D** | **Implemented** (char-budget prototype) |
 | Extractive filtering (tool/log/terminal) | `tool_output`, `terminal_output`, `log_output` | `lossy` (filter drops content) | `balanced` | Yes | Yes | Yes | **TOKEN-OPT-4A** | **Implemented** |
-| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A** → **TOKEN-OPT-5B** (contracts + synthetic proof) → **TOKEN-OPT-5E** | Architecture + contracts/helpers + compaction timing policy **Done / Closed**; runtime/provider integration deferred |
+| Cache-prefix stabilization | `system_policy`, `prompt` | `lossless` | `conservative` | Yes | Light | Yes | **TOKEN-OPT-5A**–**5E** (contracts) → **TOKEN-10B**–**10D** (runtime) | Contracts/helpers **Done / Closed**; runtime wiring **TOKEN-10** |
 | Structured data compression | `structured_data` | `lossless` / `reversible` | `balanced` | Yes | Yes | Yes | TOKEN-4 extension | Deferred |
 | Retrieval-on-demand | `rag_context_pack`, `retrieved_evidence` | `reversible` / `lossy` (partial) | `balanced` | Yes | Yes | Yes | RAG integration slice | Deferred |
 | Safe lossy summarization | `memory`, `rag_context_pack` | `lossy` | `aggressive` (explicit `allow_lossy`) | Yes | Yes | Yes | Post-3D eval | **Excluded** from next slice |
@@ -733,7 +745,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 |-----------|------|
 | Engine ownership | **Token Optimization Engine** is platform-owned (`intergrax/runtime/token_optimization/`). |
 | Application role | Applications provide workload, evidence, profiles, and validation expectations. Applications **do not** own optimizer algorithms. |
-| LKW | LKW remains the **primary proof workload**, not the owner of the optimization engine. |
+| LKW | LKW is a **later product proof client** after universal platform proof (**TOKEN-10G**); not the owner of the optimization engine. |
 | Plugins | Strategies must be replaceable through platform/plugin contracts (`TokenOptimizationPluginDescriptor`, `TokenOptimizationPluginCapability`). |
 | Plugin guardrails | Plugins must **not** bypass policy, protected-region validation, receipts, fallback, or observability. |
 | Telemetry | No private telemetry bus. Emission through HOS or approved domain-signal path only. |
@@ -1026,7 +1038,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 - Token Optimization ownership limited to shared policy, attribution vocabulary, and safety boundaries
 - cache metrics separated from content-reduction savings
 - cache-aware compaction timing rule documented
-- in-cache compaction explicitly deferred
+- in-cache compaction planned under **TOKEN-10E** (not in TOKEN-OPT-5A scope)
 - no runtime prompt assembly changes
 - no provider API calls
 - no adapter wiring
@@ -1256,12 +1268,14 @@ New algorithms such as trim, near-deduplication, schema minimization, and other 
 **Updated next roadmap:**
 
 ```text
-TOKEN-8A — Layer Registry and Pipeline Runner
-TOKEN-8B — Built-in Layer Catalog Wiring
-TOKEN-8C — Pipeline Configuration Evals
-TOKEN-8D — Third-party Plugin Adapter Contract Proof
-TOKEN-9 — LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
+TOKEN-8  — Deterministic execution engine and plugin boundary — Accepted / Closed
+TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration — Accepted / Closed
+TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
+
+Subtasks: **TOKEN-10A** (current) through **TOKEN-10H** — see §TOKEN-10.
+
+**Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
 #### TOKEN-8A — Layer Registry and Pipeline Runner
 
@@ -1465,6 +1479,76 @@ Canonical transport is native tool calling via `token_optimization.select_config
 The model selects only approved configuration IDs from a closed catalog (`no_optimization`, `exact_only`, `extractive_only`, `packing_only`, `exact_then_packing`, `exact_then_extractive`, `extractive_then_exact`). Layer settings, policy, and pipeline mode are compiled deterministically by the platform. Caller policy and central validation remain authoritative. Route invocation is explicit — no global auto-apply.
 
 Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1`, `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_MODELS=qwen2.5:7b`, `INTERGRAX_TOKEN_OPTIMIZATION_ROUTER_E2E_REPEATS=3`. Tested model: `qwen2.5:7b` (native `tools` capability). Ollama tool-choice forcing is not claimed. Not every Ollama model declares `tools`.
+
+**Next step:** **TOKEN-10** — Cache-Aware Universal Token Optimization Runtime and Proof (§TOKEN-10 below). TOKEN-9 is not the final Token Optimization phase.
+
+---
+
+## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
+
+**Status:** **Planned / Active roadmap** (`TOKEN-10A` current docs-only task).
+
+**Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
+
+**Dependency chain:**
+
+```text
+TOKEN-10A → TOKEN-10B → TOKEN-10C → TOKEN-10D → TOKEN-10E → TOKEN-10F → TOKEN-10G → TOKEN-10H
+```
+
+Do not collapse these into one implementation commit.
+
+### TOKEN-10A — Cache-Aware Universal Runtime and Proof Canon
+
+**Status:** **Current task** (docs-only architecture and implementation plan).
+
+**Scope:** Update feature architecture, feature plan, LLM_ADAPTERS ownership, public claims, LKW integration ordering, audit expectations, and roadmap indexes. No runtime implementation.
+
+**Closeout:** All TOKEN-10A acceptance criteria in task instruction satisfied; documentation checks green; docs-only commit.
+
+### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
+
+**Status:** Planned.
+
+Wire stable prefix / dynamic tail assembly, append-only invariants, stable tool-envelope fingerprinting, and prefix invalidation reasons into the real request assembly path. Helper-level contracts alone are insufficient.
+
+### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
+
+**Status:** Planned.
+
+**Owner:** `LLM_ADAPTERS` (`TOKEN-LLM-3`). Pin vLLM image/version; enable automatic prefix caching; expose health, readiness, cache metrics, and `cached_input_tokens` through existing adapter usage envelope. Distinguish cold, warm, and changed-prefix controls.
+
+### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
+
+**Status:** Planned.
+
+Place cache-aware compaction gate in production orchestration path after router selection and before pipeline execution. Orchestrate provider cache signals with deterministic pipeline.
+
+### TOKEN-10E — Policy-Governed In-Cache Compaction
+
+**Status:** Planned.
+
+Implement in-cache compaction with explicit opt-in, protected-region preservation, receipts, rollback metadata, and cache attribution separate from content reduction. No automatic production enablement by default.
+
+### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
+
+**Status:** Planned.
+
+Canonical paths: `intergrax/runtime/token_optimization/proof/`, `configs/token_optimization/proof_vllm.toml`, `scripts/token_optimization/run_universal_proof.py`, `infra/docker/vllm/docker-compose.yml`, `.artifacts/token_optimization/proof/`. Proof uses real `LLMAdapterRegistry`, router, catalog, registry, runner — no test-only alternative engine.
+
+### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
+
+**Status:** Planned.
+
+Safe-mode checked-in proof with executive summary and per-case auditable trace; hard gates for router, pipeline, protected regions, prefix stability, warm cache reuse, and changed-prefix negative control.
+
+### TOKEN-10H — Checked-In Proof, README Promotion and Public Claims
+
+**Status:** Planned.
+
+Only phase allowed to promote Token Optimization in main README with reproducible run command, proof link, and evidence-supported measurements. Updates [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) with proof-gated wording.
+
+---
 
 #### TOKEN-9A — LLM Optimization Router Contract (superseded by TOKEN-9)
 
@@ -1932,9 +2016,15 @@ TOKEN-7B    advisory recommendation evaluation and report pack — Done / Closed
 TOKEN-7C    policy-gated advisory integration surface — Done / Closed
 TOKEN-7D    advisory policy presets and resolver — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
+TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
+TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
+TOKEN-10A   cache-aware runtime and proof canon (docs) — Current
+TOKEN-10B..10H cache-stable runtime, vLLM, orchestration, compaction, proof, README — Planned
 ```
 
-TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply. Runtime/adaptive integration remains deferred.
+TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.
+
+**TOKEN-10** is the active implementation roadmap. Runtime/provider cache integration is planned under TOKEN-10B–TOKEN-10D — not deferred indefinitely.
 
 Semantic compression is deliberately delayed until protected-region validation, receipts, telemetry, and regression gates exist. **TOKEN-OPT-3A** sequences stronger mechanisms one algorithm per task (§TOKEN-OPT-3A); semantic compression and LLM summarization remain excluded from the next implementation slice.
 

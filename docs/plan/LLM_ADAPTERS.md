@@ -47,6 +47,8 @@ Load **only** the satellite matching your task or cited gap ID.
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
 | **TOKEN-LLM-1** | Guardrail | P1 | Planned | Verify Token Optimization integrations consume existing `LLMAdapter.count_messages_tokens`, `context_window_tokens`, `LLMAdapterResponse.usage`, and ModelCatalog context metadata | No parallel tokenizer or per-feature cost tracker; CE/context preflight still uses adapter token path; token savings attribution can consume usage envelope; `uv run python scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`; `uv run python scripts/check_token_optimization_contracts.py` |
+| **TOKEN-LLM-2** | Capability | P1 | Planned | Prompt-cache provider capability and usage contract integration — expose cache mode, cached/uncached input tokens, prefix-cache signals through `LLMAdapterResponse.usage` and provider extensions without a Token Optimization private client | Managed and self-hosted paths documented; Token Optimization reads signals only; no second tokenizer; feature plan §TOKEN-10C |
+| **TOKEN-LLM-3** | Proof path | P1 | Planned | vLLM prefix-cache request/metrics proof path — pin image/version, enable automatic prefix caching, health/readiness, cache metrics, cold/warm/changed-prefix controls for universal proof | Reuse `VllmChatAdapter`, `infra/docker/vllm/docker-compose.yml`; fail closed when metrics unavailable; model configurable via proof TOML; feature plan §TOKEN-10C |
 
 ---
 
