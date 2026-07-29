@@ -249,6 +249,8 @@ intergrax/llm_adapters/registry/context_window.py  — resolve_context_window_to
 | `provider_hints` | `tuple[str, ...]` | no | Slugs where this id is valid |
 | `family_prefix` | `str \| None` | no | For prefix rules |
 
+`CatalogCapabilityAdapter` overlays catalog capability flags on the concrete adapter returned by `LLMAdapterRegistry.create()` but does not erase provider-specific `model_capabilities` on the inner adapter. Consumers that need concrete capability state (for example Token Optimization router preflight) call `unwrap_catalog_capability_adapter()` for inspection only and keep using the outer wrapper for generation, tool calling, structured output, and usage accounting.
+
 #### Resolution order (deterministic)
 
 ```text

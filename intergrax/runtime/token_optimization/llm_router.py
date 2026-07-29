@@ -12,6 +12,9 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    unwrap_catalog_capability_adapter,
+)
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
@@ -172,8 +175,12 @@ def _preflight_blocked_result(
     )
 
 
+def _capability_subject(adapter: LLMAdapter) -> LLMAdapter:
+    return unwrap_catalog_capability_adapter(adapter)
+
+
 def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
-    caps = attribute_access.optional(adapter, "model_capabilities", None)
+    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
     if caps is None:
         return None
     resolved = attribute_access.optional(caps, "resolved", None)
@@ -183,7 +190,7 @@ def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
 
 
 def _adapter_model_capabilities_set(adapter: LLMAdapter) -> frozenset[str] | None:
-    caps = attribute_access.optional(adapter, "model_capabilities", None)
+    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
     if caps is None:
         return None
     capabilities = attribute_access.optional(caps, "capabilities", None)

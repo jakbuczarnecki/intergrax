@@ -1440,11 +1440,17 @@ test-only third-party plugin descriptor
 
 #### TOKEN-9 — LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
 
-**Status:** **Accepted / Closed** (TOKEN-9-R1 hardening verified).
+**Status:** **Accepted / Closed** (TOKEN-9-R2 catalog-wrapper capability inspection verified).
 
 #### TOKEN-9-R1 — Router Preflight, Capability Failure Semantics and Live E2E Enforcement
 
+**Status:** **Accepted / Closed** (TOKEN-9-R2 correction verified).
+
+#### TOKEN-9-R2 — Preserve Ollama Capability State Through Catalog Wrapper
+
 **Status:** **Done / Closed** (live native Ollama E2E verified on `qwen2.5:7b`, `repeats=3`).
+
+`CatalogCapabilityAdapter` does not erase concrete model capability state. The Token Optimization router unwraps catalog capability overlays only for model-capability inspection and continues using the outer adapter for execution. Live E2E transport reporting distinguishes `native_tools`, `structured_output`, and `unsupported`.
 
 Hardening delivered in TOKEN-9-R1:
 

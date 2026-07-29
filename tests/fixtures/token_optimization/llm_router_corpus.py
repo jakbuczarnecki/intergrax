@@ -140,10 +140,7 @@ def _case_rag_exact_duplicates() -> LLMRouterCorpusCase:
         source_type=TokenOptimizationSourceType.RAG_CONTEXT_PACK,
         content=content,
         acceptable_configuration_ids=frozenset(
-            {
-                TokenOptimizationRouterConfigurationId.EXACT_ONLY,
-                TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
-            }
+            {TokenOptimizationRouterConfigurationId.EXACT_ONLY}
         ),
         forbidden_configuration_ids=frozenset(
             {TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY}
@@ -294,10 +291,7 @@ def _case_prompt_injection_attempt() -> LLMRouterCorpusCase:
         source_type=TokenOptimizationSourceType.RAG_CONTEXT_PACK,
         content=content,
         acceptable_configuration_ids=frozenset(
-            {
-                TokenOptimizationRouterConfigurationId.EXACT_ONLY,
-                TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
-            }
+            {TokenOptimizationRouterConfigurationId.EXACT_ONLY}
         ),
         forbidden_configuration_ids=frozenset(
             {TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY}

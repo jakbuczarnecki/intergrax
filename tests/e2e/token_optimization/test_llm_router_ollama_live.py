@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.providers.ollama_capabilities import OllamaModelCapabilityResolver
+from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.runtime.token_optimization.contracts import TokenOptimizationRequest
 from intergrax.runtime.token_optimization.llm_router import (
     TokenOptimizationLLMRouter,
@@ -28,6 +28,7 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterTransport,
 )
 from tests.fixtures.token_optimization.llm_router_corpus import LLM_ROUTER_CORPUS
+from intergrax.utils import attribute_access
 
 pytestmark = [
     pytest.mark.e2e,
@@ -108,6 +109,7 @@ class _ModelSummary:
     model: str
     transport: str
     declared_capabilities: tuple[str, ...]
+    capabilities_resolved: bool
     native_tools_supported: bool
     structured_output_supported: bool
     case_count: int = 0
@@ -167,9 +169,39 @@ class _ModelSummary:
             "forbidden_configuration_execution_count": self.forbidden_configuration_execution_count,
             "average_duration_ms": self.average_duration_ms,
             "declared_capabilities": list(self.declared_capabilities),
+            "capabilities_resolved": self.capabilities_resolved,
             "native_tools_supported": self.native_tools_supported,
             "structured_output_supported": self.structured_output_supported,
         }
+
+
+def _summary_transport(
+    *,
+    capabilities_resolved: bool,
+    native_tools_supported: bool,
+    structured_output_supported: bool,
+) -> str:
+    if not capabilities_resolved:
+        return TokenOptimizationRouterTransport.UNSUPPORTED.value
+    if native_tools_supported:
+        return TokenOptimizationRouterTransport.NATIVE_TOOLS.value
+    if structured_output_supported:
+        return TokenOptimizationRouterTransport.STRUCTURED_OUTPUT.value
+    return TokenOptimizationRouterTransport.UNSUPPORTED.value
+
+
+def _read_concrete_model_capabilities(adapter) -> tuple[bool, tuple[str, ...]]:
+    concrete = unwrap_catalog_capability_adapter(adapter)
+    caps = attribute_access.optional(concrete, "model_capabilities", None)
+    if caps is None:
+        return False, ()
+    resolved = attribute_access.optional(caps, "resolved", None)
+    if resolved is not True:
+        return False, ()
+    capabilities = attribute_access.optional(caps, "capabilities", None)
+    if not isinstance(capabilities, frozenset):
+        return False, ()
+    return True, tuple(sorted(capabilities))
 
 
 def _is_valid_native_tool_call(
@@ -322,18 +354,28 @@ def _evaluate_case(
 
 def _run_model_matrix(model: str) -> _ModelSummary:
     adapter = LLMAdapterRegistry.create(LLMProvider.OLLAMA, model=model)
-    caps = OllamaModelCapabilityResolver().resolve(model)
-    native_tools = adapter.supports_tools()
-    structured = adapter.supports_structured_output()
-    transport = (
-        TokenOptimizationRouterTransport.NATIVE_TOOLS.value
-        if native_tools
-        else TokenOptimizationRouterTransport.STRUCTURED_OUTPUT.value
+    capabilities_resolved, declared_capabilities = _read_concrete_model_capabilities(adapter)
+    if not capabilities_resolved:
+        native_tools = False
+        structured = False
+    else:
+        native_tools = "tools" in frozenset(declared_capabilities)
+        structured = bool(adapter.supports_structured_output())
+    transport = _summary_transport(
+        capabilities_resolved=capabilities_resolved,
+        native_tools_supported=native_tools,
+        structured_output_supported=structured,
     )
+    if not capabilities_resolved and any(case.expected_llm_call for case in LLM_ROUTER_CORPUS):
+        pytest.fail(
+            f"adapter capabilities unresolved for {model}; "
+            "summary transport must remain unsupported"
+        )
     summary = _ModelSummary(
         model=model,
         transport=transport,
-        declared_capabilities=tuple(sorted(caps.capabilities)),
+        declared_capabilities=declared_capabilities,
+        capabilities_resolved=capabilities_resolved,
         native_tools_supported=native_tools,
         structured_output_supported=structured,
     )

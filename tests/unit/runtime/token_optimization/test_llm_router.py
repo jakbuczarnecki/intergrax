@@ -13,8 +13,13 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    CatalogCapabilityAdapter,
+    enrich_adapter_with_catalog_capabilities,
+)
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaCapabilityResolutionSource,
     OllamaModelCapabilities,
@@ -566,18 +571,18 @@ class _CountingAdapter(LLMAdapter):
 
 
 class _OllamaLikeAdapter(LLMAdapter):
-    provider = "ollama"
-    model = "legacy:7b"
+    provider = LLMProvider.OLLAMA
+    model = "qwen2.5:7b"
 
     def __init__(
         self,
         *,
         capabilities: OllamaModelCapabilities,
-        structured_calls: int = 0,
     ) -> None:
         super().__init__()
         self._model_capabilities = capabilities
-        self.structured_calls = structured_calls
+        self.structured_calls = 0
+        self.generate_with_tools_calls = 0
 
     @property
     def context_window_tokens(self) -> int:
@@ -628,6 +633,7 @@ class _OllamaLikeAdapter(LLMAdapter):
         tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
+        self.generate_with_tools_calls += 1
         return build_adapter_response(
             content="",
             tool_calls=(
@@ -640,6 +646,21 @@ class _OllamaLikeAdapter(LLMAdapter):
                 ),
             ),
         )
+
+
+def _wrap_ollama_like_adapter(inner: _OllamaLikeAdapter) -> CatalogCapabilityAdapter:
+    wrapped = enrich_adapter_with_catalog_capabilities(
+        inner,
+        provider=LLMProvider.OLLAMA,
+        model="qwen2.5:7b",
+    )
+    assert isinstance(wrapped, CatalogCapabilityAdapter)
+    return wrapped
+
+
+def _assert_zero_ollama_activity(inner: _OllamaLikeAdapter) -> None:
+    assert inner.generate_with_tools_calls == 0
+    assert inner.structured_calls == 0
 
 
 def _assert_zero_adapter_activity(adapter: _CountingAdapter) -> None:
@@ -733,6 +754,101 @@ def test_resolved_tools_model_uses_native_transport() -> None:
     result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
     assert result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
     assert adapter.structured_calls == 0
+
+
+def test_wrapped_unresolved_ollama_capabilities_fail_closed() -> None:
+    inner = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="qwen2.5:7b",
+            capabilities=frozenset(),
+            resolved=False,
+            source=OllamaCapabilityResolutionSource.UNAVAILABLE,
+            error_type="ConnectionError",
+        )
+    )
+    adapter = _wrap_ollama_like_adapter(inner)
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    assert result.status is TokenOptimizationRouterStatus.UNSUPPORTED_ADAPTER
+    assert result.reason is TokenOptimizationRouterReason.CAPABILITY_RESOLUTION_FAILED
+    assert result.transport is TokenOptimizationRouterTransport.UNSUPPORTED
+    assert result.executed is False
+    assert result.pipeline_config is None
+    assert result.pipeline_result is None
+    _assert_zero_ollama_activity(inner)
+
+
+def test_wrapped_unresolved_capabilities_do_not_use_structured_fallback() -> None:
+    inner = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="qwen2.5:7b",
+            capabilities=frozenset(),
+            resolved=False,
+            source=OllamaCapabilityResolutionSource.UNAVAILABLE,
+            error_type="InvalidCapabilities",
+        )
+    )
+    adapter = _wrap_ollama_like_adapter(inner)
+    TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    _assert_zero_ollama_activity(inner)
+
+
+def test_wrapped_resolved_no_tools_model_uses_structured_fallback() -> None:
+    inner = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="qwen2.5:7b",
+            capabilities=frozenset({"completion"}),
+            resolved=True,
+            source=OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE,
+        )
+    )
+    adapter = _wrap_ollama_like_adapter(inner)
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    assert result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
+    assert inner.structured_calls == 1
+    assert inner.generate_with_tools_calls == 0
+
+
+def test_wrapped_resolved_tools_model_uses_native_transport() -> None:
+    inner = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="qwen2.5:7b",
+            capabilities=frozenset({"tools", "completion"}),
+            resolved=True,
+            source=OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE,
+        )
+    )
+    adapter = _wrap_ollama_like_adapter(inner)
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    assert result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
+    assert inner.generate_with_tools_calls == 1
+    assert inner.structured_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("capabilities_resolved", "native_tools_supported", "structured_output_supported", "expected"),
+    [
+        (True, True, False, TokenOptimizationRouterTransport.NATIVE_TOOLS.value),
+        (True, False, True, TokenOptimizationRouterTransport.STRUCTURED_OUTPUT.value),
+        (False, False, True, TokenOptimizationRouterTransport.UNSUPPORTED.value),
+        (True, False, False, TokenOptimizationRouterTransport.UNSUPPORTED.value),
+    ],
+)
+def test_summary_transport_selection(
+    capabilities_resolved: bool,
+    native_tools_supported: bool,
+    structured_output_supported: bool,
+    expected: str,
+) -> None:
+    from tests.e2e.token_optimization.test_llm_router_ollama_live import _summary_transport
+
+    assert (
+        _summary_transport(
+            capabilities_resolved=capabilities_resolved,
+            native_tools_supported=native_tools_supported,
+            structured_output_supported=structured_output_supported,
+        )
+        == expected
+    )
 
 
 def test_safe_report_preserves_canonical_executed_order() -> None:
