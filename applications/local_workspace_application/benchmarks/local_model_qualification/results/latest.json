@@ -1,0 +1,2532 @@
+{
+  "benchmark_id": "LKW-CONVERSATIONAL-INTERACTION-1A-C2-LOCAL-MODEL-QUALIFICATION-MATRIX",
+  "configuration_sha256": "16daa87a3f01f0d919323a58877ee029899aabb436859a1d4efadb8b286de082",
+  "corpus_version": "lkw.local_model_qualification.corpus.v1",
+  "generated_at_utc": "2026-07-29T09:04:31.503458+00:00",
+  "generated_from_commit": "fe2b01270d360c61324c5937acc35aa1b5ca9226",
+  "host": {
+    "cpu_description": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+    "gpu_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+    "gpu_total_vram_bytes": 12878610432,
+    "machine_architecture": "AMD64",
+    "nvidia_driver_version": "581.32",
+    "operating_system": "Windows",
+    "os_release": "11",
+    "python_version": "3.12.4",
+    "total_system_ram_bytes": 68388851712
+  },
+  "models": [
+    {
+      "declared_capabilities": [
+        "completion",
+        "tools"
+      ],
+      "installed": true,
+      "metadata": {
+        "artifact_size_bytes": null,
+        "context_length": null,
+        "digest": null,
+        "loaded_size_bytes": null,
+        "model_family": "qwen2",
+        "parameter_size": "14.8B",
+        "quantization_level": "Q4_K_M",
+        "size_vram_bytes": null
+      },
+      "name": "qwen2.5:14b",
+      "observed_execution_mode": "UNKNOWN",
+      "protocols": [
+        {
+          "capability_supported": true,
+          "case_count": 36,
+          "case_results": [
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 10264.53600008972,
+              "object_types": [
+                "local_file_reference",
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 11927.483399980702,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 9762.120899977162,
+              "object_types": [
+                "local_file_reference",
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 5081.562799983658,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 4480.188700021245,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources",
+                "workspace.activate"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT",
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 5988.4330999339,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                },
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2760.993600008078,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2649.5457000564784,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2846.1329999845475,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 4220.498899929225,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 4563.584199990146,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 4162.122799898498,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 1701.5112999361008,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2078.0084000434726,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 1690.9458000445738,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.list"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT"
+              ],
+              "latency_ms": 3939.024000079371,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.list"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT"
+              ],
+              "latency_ms": 3841.0383999580517,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.list"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT"
+              ],
+              "latency_ms": 3841.6954000713304,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3697.787699988112,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 4010.2158000227064,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3316.5273000486195,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 7007.731500081718,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 7697.817199979909,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 8512.037300039083,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 4293.455499922857,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 4268.325899960473,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 4254.503699950874,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2778.06529996451,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2718.2129999855533,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2678.778399946168,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 3877.690599998459,
+              "object_types": [],
+              "primary_failure_category": "WRONG_ACTION_TYPE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 3708.2740000914782,
+              "object_types": [],
+              "primary_failure_category": "WRONG_ACTION_TYPE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.list"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT"
+              ],
+              "latency_ms": 3811.8273000000045,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 6621.897800010629,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 4606.9446000037715,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 7041.960000060499,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            }
+          ],
+          "failure_category_counts": {
+            "CANONICAL_VALIDATION_FAILED": 6,
+            "DRAFT_COMPILATION_FAILED": 7,
+            "UNNECESSARY_WORKSPACE_ACTIVATE": 5,
+            "WRONG_ACTION_COUNT": 5,
+            "WRONG_ACTION_TYPE": 2,
+            "WRONG_WORKSPACE_REFERENCE": 1
+          },
+          "failure_count": 20,
+          "invalid_draft_count": 0,
+          "latency_ms": {
+            "maximum": 11927.483399980702,
+            "median": 4086.169299960602,
+            "minimum": 1690.9458000445738,
+            "p95": 10264.53600008972
+          },
+          "pass_count": 16,
+          "protocol": "structured_output",
+          "provider_failure_count": 0,
+          "qualification_status": "NOT_QUALIFIED",
+          "schema_probe_status": "PASS",
+          "semantic_success_rate": 0.4444444444444444,
+          "unsafe_state_change_count": 5,
+          "warmup_status": "PASS"
+        },
+        {
+          "capability_supported": true,
+          "case_count": 0,
+          "case_results": [],
+          "failure_category_counts": {},
+          "failure_count": 0,
+          "invalid_draft_count": 0,
+          "latency_ms": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p95": 0.0
+          },
+          "pass_count": 0,
+          "protocol": "single_plan_tool",
+          "provider_failure_count": 0,
+          "qualification_status": "PROVIDER_ERROR",
+          "schema_probe_status": "PROVIDER_ERROR",
+          "semantic_success_rate": 0.0,
+          "unsafe_state_change_count": 0,
+          "warmup_status": "SKIPPED"
+        }
+      ],
+      "role": "baseline",
+      "status": "COMPLETED_WITH_FAILURES"
+    },
+    {
+      "declared_capabilities": [
+        "completion",
+        "thinking",
+        "tools"
+      ],
+      "installed": true,
+      "metadata": {
+        "artifact_size_bytes": null,
+        "context_length": null,
+        "digest": null,
+        "loaded_size_bytes": null,
+        "model_family": "qwen3",
+        "parameter_size": "14.8B",
+        "quantization_level": "Q4_K_M",
+        "size_vram_bytes": null
+      },
+      "name": "qwen3:14b",
+      "observed_execution_mode": "UNKNOWN",
+      "protocols": [
+        {
+          "capability_supported": true,
+          "case_count": 36,
+          "case_results": [
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 23055.73129991535,
+              "object_types": [
+                "local_file_reference",
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 19989.262400078587,
+              "object_types": [
+                "local_file_reference",
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 20276.21379995253,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 15268.073399900459,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 13708.662200020626,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 14145.340300048701,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 14444.162200088613,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 14513.639400014654,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 14329.586400068365,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 17014.060399960726,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "active",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 12532.756100059487,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "active",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 14850.620200042613,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 10854.091900051571,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 13500.334099982865,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 13097.699700039811,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 1,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_TYPE",
+                "UNNECESSARY_CLARIFICATION"
+              ],
+              "latency_ms": 103394.68429994304,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 21555.894699995406,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 29175.92769989278,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 15425.68049998954,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 13989.231099956669,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 14441.088099963963,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 20102.916600066237,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 17772.860699915327,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 56444.50159999542,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 34336.13609999884,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 42351.60310007632,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 47824.20079992153,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 19796.93640000187,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 17884.549099951982,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 12343.36370008532,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_ACTION_TYPE",
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 20509.606300038286,
+              "object_types": [],
+              "primary_failure_category": "WRONG_ACTION_TYPE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.list"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT"
+              ],
+              "latency_ms": 13884.706799988635,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": "PlanRequestValidationError",
+              "failure_categories": [
+                "CANONICAL_VALIDATION_FAILED"
+              ],
+              "latency_ms": 18478.192700073123,
+              "object_types": [],
+              "primary_failure_category": "CANONICAL_VALIDATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 19748.811800032854,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 22824.86880000215,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 96758.06350004859,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            }
+          ],
+          "failure_category_counts": {
+            "CANONICAL_VALIDATION_FAILED": 5,
+            "DRAFT_COMPILATION_FAILED": 9,
+            "UNNECESSARY_CLARIFICATION": 1,
+            "UNNECESSARY_WORKSPACE_ACTIVATE": 2,
+            "WRONG_ACTION_COUNT": 1,
+            "WRONG_ACTION_TYPE": 2,
+            "WRONG_WORKSPACE_REFERENCE": 1
+          },
+          "failure_count": 17,
+          "invalid_draft_count": 0,
+          "latency_ms": {
+            "maximum": 103394.68429994304,
+            "median": 17828.704899933655,
+            "minimum": 10854.091900051571,
+            "p95": 96758.06350004859
+          },
+          "pass_count": 19,
+          "protocol": "structured_output",
+          "provider_failure_count": 0,
+          "qualification_status": "NOT_QUALIFIED",
+          "schema_probe_status": "PASS",
+          "semantic_success_rate": 0.5277777777777778,
+          "unsafe_state_change_count": 2,
+          "warmup_status": "PASS"
+        },
+        {
+          "capability_supported": true,
+          "case_count": 0,
+          "case_results": [],
+          "failure_category_counts": {},
+          "failure_count": 0,
+          "invalid_draft_count": 0,
+          "latency_ms": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p95": 0.0
+          },
+          "pass_count": 0,
+          "protocol": "single_plan_tool",
+          "provider_failure_count": 0,
+          "qualification_status": "PROVIDER_ERROR",
+          "schema_probe_status": "PROVIDER_ERROR",
+          "semantic_success_rate": 0.0,
+          "unsafe_state_change_count": 0,
+          "warmup_status": "SKIPPED"
+        }
+      ],
+      "role": "same-size-generation-candidate",
+      "status": "COMPLETED_WITH_FAILURES"
+    },
+    {
+      "declared_capabilities": [],
+      "installed": true,
+      "metadata": {
+        "artifact_size_bytes": null,
+        "context_length": null,
+        "digest": null,
+        "loaded_size_bytes": null,
+        "model_family": "llama",
+        "parameter_size": "8.0B",
+        "quantization_level": "Q4_K_M",
+        "size_vram_bytes": null
+      },
+      "name": "llama3.1:8b",
+      "observed_execution_mode": "UNKNOWN",
+      "protocols": [
+        {
+          "capability_supported": true,
+          "case_count": 36,
+          "case_results": [
+            {
+              "action_types": [],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 13101.39429999981,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 12488.006100058556,
+              "object_types": [
+                "local_file_reference",
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.mixed_source_ordinal_routing",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 12526.728700031526,
+              "object_types": [
+                "local_file_reference",
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 6799.394099973142,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "WRONG_WORKSPACE_REFERENCE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 5786.155099980533,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.target_workspace_without_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 5477.259600069374,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "WRONG_WORKSPACE_REFERENCE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "2"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 1,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_CLARIFICATION"
+              ],
+              "latency_ms": 8187.832099967636,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_CLARIFICATION",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3859.472700045444,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.explicit_workspace_activation",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3416.2862999364734,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources",
+                "workspace.ask"
+              ],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_ACTION_COUNT",
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 9028.171099955216,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "WRONG_ACTION_COUNT",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 6462.244099937379,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "active",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.active_workspace_source_add",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 5232.217899989337,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "active",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3083.8364000665024,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3288.261199952103,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 2,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.list"
+              ],
+              "case_id": "planner.workspace_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 3473.600999917835,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.ask"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT",
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 4054.1009000735357,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                },
+                {
+                  "kind": "active",
+                  "value": null
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 2032.701300107874,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.source_list_named_workspace",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 2178.8665000349283,
+              "object_types": [],
+              "primary_failure_category": "WRONG_ACTION_TYPE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 2470.740299904719,
+              "object_types": [],
+              "primary_failure_category": "WRONG_WORKSPACE_REFERENCE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources",
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNEXPECTED_STATE_CHANGE",
+                "WRONG_ACTION_COUNT",
+                "WRONG_WORKSPACE_REFERENCE",
+                "WRONG_SOURCE_EXTRACTION"
+              ],
+              "latency_ms": 4130.684999981895,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "UNEXPECTED_STATE_CHANGE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "1"
+                },
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.url_question_not_ingestion",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2281.8193999119103,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "finanse"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 5117.015199968591,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 4069.916100008413,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.attachment_ingestion",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 3866.2621999392286,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNEXPECTED_STATE_CHANGE",
+                "WRONG_ACTION_COUNT",
+                "MISSING_CLARIFICATION"
+              ],
+              "latency_ms": 2848.624699981883,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "UNEXPECTED_STATE_CHANGE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "ordinal",
+                  "value": "00430"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNEXPECTED_STATE_CHANGE",
+                "WRONG_ACTION_COUNT",
+                "MISSING_CLARIFICATION"
+              ],
+              "latency_ms": 2719.621399999596,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "UNEXPECTED_STATE_CHANGE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "workspace"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "knowledge.add_sources"
+              ],
+              "case_id": "planner.ambiguous_missing_workspace_target",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNEXPECTED_STATE_CHANGE",
+                "WRONG_ACTION_COUNT",
+                "MISSING_CLARIFICATION"
+              ],
+              "latency_ms": 2773.373599979095,
+              "object_types": [
+                "web_url"
+              ],
+              "primary_failure_category": "UNEXPECTED_STATE_CHANGE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "workspace"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 2067.585200071335,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 1,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate",
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_COUNT",
+                "WRONG_WORKSPACE_REFERENCE"
+              ],
+              "latency_ms": 2617.363999946974,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                },
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.delete"
+              ],
+              "case_id": "planner.explicit_workspace_delete",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [],
+              "latency_ms": 1838.3358001010492,
+              "object_types": [],
+              "primary_failure_category": null,
+              "repetition": 3,
+              "status": "PASS",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "archiwum"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 2453.1697999918833,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.ask"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 2473.1592999305576,
+              "object_types": [],
+              "primary_failure_category": "WRONG_ACTION_TYPE",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [
+                "workspace.activate"
+              ],
+              "case_id": "planner.source_candidate_list",
+              "clarification_count": 0,
+              "error_type": null,
+              "failure_categories": [
+                "UNNECESSARY_WORKSPACE_ACTIVATE",
+                "WRONG_ACTION_TYPE"
+              ],
+              "latency_ms": 2275.2266000024974,
+              "object_types": [],
+              "primary_failure_category": "UNNECESSARY_WORKSPACE_ACTIVATE",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 1,
+              "workspace_references": [
+                {
+                  "kind": "name",
+                  "value": "magazyn"
+                }
+              ]
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 3071.271999971941,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 1,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 2965.281500015408,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 2,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            },
+            {
+              "action_types": [],
+              "case_id": "planner.source_candidate_attach_ordinal",
+              "clarification_count": 0,
+              "error_type": "ConversationDraftCompilationError",
+              "failure_categories": [
+                "DRAFT_COMPILATION_FAILED"
+              ],
+              "latency_ms": 2938.0306000821292,
+              "object_types": [],
+              "primary_failure_category": "DRAFT_COMPILATION_FAILED",
+              "repetition": 3,
+              "status": "FAIL",
+              "unsafe_state_change_count": 0,
+              "workspace_references": []
+            }
+          ],
+          "failure_category_counts": {
+            "DRAFT_COMPILATION_FAILED": 7,
+            "MISSING_CLARIFICATION": 3,
+            "UNEXPECTED_STATE_CHANGE": 4,
+            "UNNECESSARY_CLARIFICATION": 1,
+            "UNNECESSARY_WORKSPACE_ACTIVATE": 5,
+            "WRONG_ACTION_COUNT": 7,
+            "WRONG_ACTION_TYPE": 5,
+            "WRONG_SOURCE_EXTRACTION": 1,
+            "WRONG_WORKSPACE_REFERENCE": 7
+          },
+          "failure_count": 23,
+          "invalid_draft_count": 0,
+          "latency_ms": {
+            "maximum": 13101.39429999981,
+            "median": 3352.2737499442883,
+            "minimum": 1838.3358001010492,
+            "p95": 12526.728700031526
+          },
+          "pass_count": 13,
+          "protocol": "structured_output",
+          "provider_failure_count": 0,
+          "qualification_status": "NOT_QUALIFIED",
+          "schema_probe_status": "PASS",
+          "semantic_success_rate": 0.3611111111111111,
+          "unsafe_state_change_count": 9,
+          "warmup_status": "PASS"
+        },
+        {
+          "capability_supported": true,
+          "case_count": 0,
+          "case_results": [],
+          "failure_category_counts": {},
+          "failure_count": 0,
+          "invalid_draft_count": 0,
+          "latency_ms": {
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p95": 0.0
+          },
+          "pass_count": 0,
+          "protocol": "single_plan_tool",
+          "provider_failure_count": 0,
+          "qualification_status": "PROVIDER_ERROR",
+          "schema_probe_status": "PROVIDER_ERROR",
+          "semantic_success_rate": 0.0,
+          "unsafe_state_change_count": 0,
+          "warmup_status": "SKIPPED"
+        }
+      ],
+      "role": "lightweight-control",
+      "status": "COMPLETED_WITH_FAILURES"
+    },
+    {
+      "declared_capabilities": [],
+      "installed": false,
+      "metadata": {
+        "artifact_size_bytes": null,
+        "context_length": null,
+        "digest": null,
+        "loaded_size_bytes": null,
+        "model_family": null,
+        "parameter_size": null,
+        "quantization_level": null,
+        "size_vram_bytes": null
+      },
+      "name": "gpt-oss:20b",
+      "observed_execution_mode": "UNKNOWN",
+      "protocols": [],
+      "role": "agentic-candidate",
+      "status": "NOT_INSTALLED"
+    },
+    {
+      "declared_capabilities": [],
+      "installed": false,
+      "metadata": {
+        "artifact_size_bytes": null,
+        "context_length": null,
+        "digest": null,
+        "loaded_size_bytes": null,
+        "model_family": null,
+        "parameter_size": null,
+        "quantization_level": null,
+        "size_vram_bytes": null
+      },
+      "name": "mistral-small3.2:24b",
+      "observed_execution_mode": "UNKNOWN",
+      "protocols": [],
+      "role": "instruction-following-candidate",
+      "status": "NOT_INSTALLED"
+    }
+  ],
+  "ollama": {
+    "host": "http://localhost:11434",
+    "version": "0.32.1"
+  },
+  "repair_attempts": 0,
+  "schema_version": "lkw.local_model_qualification.result.v1",
+  "summary": {
+    "conditional_candidates": [],
+    "message": "No tested model/protocol pair met the full LKW qualification threshold.",
+    "recommended_model": null,
+    "recommended_protocol": null
+  }
+}

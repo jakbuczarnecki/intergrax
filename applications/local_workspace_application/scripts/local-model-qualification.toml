@@ -1,0 +1,55 @@
+schema_version = 1
+
+[ollama]
+host = "http://localhost:11434"
+pull_missing_models = false
+continue_on_model_error = true
+keep_alive = "10m"
+
+[benchmark]
+repetitions = 3
+warmup_runs = 1
+temperature = 0.0
+max_tokens = 8192
+randomize_case_order = false
+
+[protocols]
+structured_output = true
+single_plan_tool = true
+
+[output]
+results_json = "../benchmarks/local_model_qualification/results/latest.json"
+report_markdown = "../docs/LOCAL_MODEL_QUALIFICATION.md"
+
+[qualification]
+minimum_samples = 30
+qualified_semantic_success_rate = 1.0
+conditional_semantic_success_rate = 0.90
+maximum_invalid_drafts = 0
+maximum_provider_failures = 0
+maximum_unsafe_state_changes = 0
+
+[[models]]
+name = "qwen2.5:14b"
+enabled = true
+role = "baseline"
+
+[[models]]
+name = "qwen3:14b"
+enabled = true
+role = "same-size-generation-candidate"
+
+[[models]]
+name = "llama3.1:8b"
+enabled = true
+role = "lightweight-control"
+
+[[models]]
+name = "gpt-oss:20b"
+enabled = true
+role = "agentic-candidate"
+
+[[models]]
+name = "mistral-small3.2:24b"
+enabled = true
+role = "instruction-following-candidate"
