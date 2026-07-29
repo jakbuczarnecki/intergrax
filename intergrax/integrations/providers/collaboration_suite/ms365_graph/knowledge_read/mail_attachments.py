@@ -559,15 +559,6 @@ def _extract_message_attachments_path(
     mailbox_segment = remainder[:slash_index]
     after_mailbox = remainder[slash_index + 1 :]
 
-    if "/$value" in after_mailbox.lower():
-        return None
-    if "mailfolders" in after_mailbox.lower():
-        return None
-    if "delta" in after_mailbox.lower():
-        return None
-    if after_mailbox.count("/") > 2:
-        return None
-
     slash_match = _SLASH_MESSAGE_ATTACHMENTS_RE.match(after_mailbox)
     if slash_match is not None:
         message_segment = slash_match.group(1)
@@ -580,7 +571,9 @@ def _extract_message_attachments_path(
         message_literal = odata_match.group(1)
         if not message_literal:
             return None
-        return unquote(mailbox_segment), unquote(_decode_odata_message_literal(message_literal))
+        decoded_literal = unquote(message_literal)
+        message_id = _decode_odata_message_literal(decoded_literal)
+        return unquote(mailbox_segment), message_id
 
     return None
 

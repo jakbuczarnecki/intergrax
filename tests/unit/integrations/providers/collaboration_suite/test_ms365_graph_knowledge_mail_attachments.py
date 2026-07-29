@@ -129,6 +129,23 @@ def _odata_attachments_next_link(message_id: str = _MESSAGE_ID) -> str:
     )
 
 
+def _slash_attachments_next_link(message_id: str) -> str:
+    quoted = quote(message_id, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/messages/"
+        f"{quoted}/attachments?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _odata_percent_encoded_attachments_next_link(message_id: str) -> str:
+    escaped = message_id.replace("'", "''")
+    encoded_literal = quote(escaped, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/"
+        f"messages('{encoded_literal}')/attachments?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
 def _page_payload(
     *,
     value: list[dict[str, Any]] | None = None,
@@ -891,6 +908,80 @@ def test_validate_continuation_accepts_percent_encoded_message_literal() -> None
     )
     assert validated == continuation
     assert validated is not continuation
+
+
+@pytest.mark.parametrize(
+    "message_id",
+    [
+        "AAMk-delta-mailFolders-attachments",
+        "AAMk-DELTA-MAILFOLDERS-attachments",
+        "opaque-delta-only",
+        "opaque-mailFolders-only",
+        "opaque-messages-attachments",
+    ],
+)
+def test_validate_continuation_accepts_opaque_message_id_with_reserved_substrings(
+    message_id: str,
+) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_slash_attachments_next_link(message_id),
+    )
+    validated = validate_msgraph_mail_attachments_continuation(
+        continuation,
+        mailbox_user_id=_MAILBOX_USER_ID,
+        message_id=message_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_continuation_accepts_odata_literal_with_quote_percent_and_delta() -> None:
+    message_id = "msg'delta/special"
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_percent_encoded_attachments_next_link(message_id),
+    )
+    validated = validate_msgraph_mail_attachments_continuation(
+        continuation,
+        mailbox_user_id=_MAILBOX_USER_ID,
+        message_id=message_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_continuation_rejects_delta_resource_segment_but_accepts_delta_in_message_id() -> (
+    None
+):
+    resource_delta_url = (
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/messages/"
+        f"{_QUOTED_MESSAGE_ID}/attachments/delta?$skiptoken={_SECRET_TOKEN}"
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
+        validate_msgraph_mail_attachments_continuation(
+            MsGraphKnowledgeContinuation(
+                kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+                url=resource_delta_url,
+            ),
+            mailbox_user_id=_MAILBOX_USER_ID,
+            message_id=_MESSAGE_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+    opaque_message_id = "AAMk-delta-in-opaque-id"
+    validated = validate_msgraph_mail_attachments_continuation(
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=_slash_attachments_next_link(opaque_message_id),
+        ),
+        mailbox_user_id=_MAILBOX_USER_ID,
+        message_id=opaque_message_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated.url == _slash_attachments_next_link(opaque_message_id)
 
 
 @pytest.mark.parametrize(
