@@ -1336,20 +1336,61 @@ Wire the three existing built-in optimization layers into an explicit, determini
 
 #### TOKEN-8C — Pipeline Configuration Evals
 
-Run the same cases through different engine configurations and compare results.
+**Status:** **Done / Closed**.
 
-Example configurations:
+Deterministic synthetic pipeline-configuration evaluation pack exercising the standard TOKEN-8A/TOKEN-8B execution path across multiple built-in pipeline configurations.
+
+Canonical matrix:
+
+```text
+6 synthetic cases
+× 9 pipeline configurations
+= 54 executions
+```
+
+Configurations:
 
 ```text
 disabled
 measure_only
-only_trim
-only_extractive_filtering
-trim_plus_extractive_filtering
-plugin_only_fake
+exact_only
+extractive_allowed
+extractive_blocked
+packing_only
+exact_then_packing
+exact_then_extractive
+extractive_then_exact
 ```
 
-Reports should show original size / optimized size where measured, applied layers, bypassed layers, failed layers, fallback status, validation status, and raw-content-safe metadata only.
+Each execution uses:
+
+```text
+create_builtin_token_optimization_layer_catalog()
+→ catalog.create_registry(selections)
+→ TokenOptimizationPipelineRunner(registry=registry)
+→ TokenOptimizationPipelineConfig(mode=REPLACE)
+→ runner.run(request=..., config=...)
+→ raw-content-safe character-level report
+```
+
+**Closeout:**
+
+- deterministic synthetic pipeline-configuration corpus added (`tests/fixtures/token_optimization/pipeline_configuration_corpus.py`)
+- six cases and nine configurations evaluated (54 case/configuration executions)
+- built-in catalog, registry, and standard TOKEN-8A runner used for every execution
+- disabled and measure-only behavior proven (no layer execution or mutation)
+- lossy policy gate proven (`extractive_blocked` → `policy_disallowed`)
+- exact deduplication, extractive filtering, and budget-aware packing configurations proven
+- sequential layer-order behavior proven (`exact_then_packing`, `exact_then_extractive`, `extractive_then_exact`)
+- protected-region fallback proven
+- character-level metrics only (`original_chars`, `final_chars`, `char_delta`, `reduction_ratio`, `budget_unit=chars`)
+- raw-content-safe reports (no case content, protected values, or arbitrary metadata)
+- no provider-aware tokenizer claim
+- no best-configuration recommendation
+- no production/runtime integration
+- no new optimization algorithm
+
+**Next step:** TOKEN-8D — Third-party Plugin Adapter Contract Proof
 
 #### TOKEN-8D — Third-party Plugin Adapter Contract Proof
 
