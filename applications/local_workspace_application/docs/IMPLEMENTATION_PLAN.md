@@ -15,8 +15,9 @@ Current milestone: LKW MVP
 Current roadmap stage: Workspace Contents — Knowledge Intake source expansion + Conversational Interaction
 Last accepted: LKW-WORKSPACE-CONTENTS-1B-4-2 — ACCEPTED
 Last accepted: LKW-WORKSPACE-CONTENTS-1B-5-1 — ACCEPTED
-Current implementation: LKW-CONVERSATIONAL-INTERACTION-1A — structured interaction plan contract and LLM planner
-Next after acceptance: LKW-WORKSPACE-CONTENTS-1B-5-2 — WEB_URL intake capability
+Current implementation: LKW-WORKSPACE-CONTENTS-1B-5-2 — END-TO-END WEB_URL KNOWLEDGE INTAKE — READY_FOR_REVIEW
+LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
+Next after acceptance: LKW-CONVERSATIONAL-INTERACTION-1B
 Following source expansion: 1B-6 VENDOR-KNOWLEDGE integration
 Then: 1C shared synchronization and completion lifecycle → 1D provenance inspection → 1E safe removal
 ```
@@ -107,11 +108,9 @@ Current implementation: `LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral 
 
 ```text
 LKW-CONVERSATIONAL-INTERACTION-1A
-→ structured interaction plan contract and LLM planner
+→ structured interaction plan contract and LLM planner (sufficient for roadmap continuation)
 → LKW-WORKSPACE-CONTENTS-1B-5-2
-→ WEB_URL intake capability
-→ LKW-WORKSPACE-CONTENTS-1B-5-3
-→ Web URL ingestion and Ask proof
+→ end-to-end WEB_URL Knowledge Intake
 → LKW-CONVERSATIONAL-INTERACTION-1B
 → deterministic reference resolver and validated action executor
 → LKW-CONVERSATIONAL-INTERACTION-1C
@@ -129,12 +128,12 @@ LKW-CONVERSATIONAL-INTERACTION-1A
 |---|---|---|
 | `1B-4-2` | A Slack user can select a safe numbered preconfigured folder without seeing its path | ACCEPTED |
 | `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
-| `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED — **next after 1A** |
-| `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
-| `CONV-1A` | Channel-neutral structured interaction plan contract and LLM planner | **CURRENT** |
+| `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **CURRENT / IMPLEMENTED / READY_FOR_REVIEW** |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
+| `CONV-1A` | Channel-neutral structured interaction plan contract and LLM planner | ACCEPTED (sufficient to continue) |
 | `CONV-1B` | Deterministic reference resolver and validated action executor | PLANNED |
 | `CONV-1C` | Slack mixed-message cutover and natural-language UX | PLANNED |
-| `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | PLANNED (via `1B-5-2` / `1B-5-3`) |
+| `1B-5` | A trusted client can attach an explicit Web URL through Knowledge Intake | **READY_FOR_REVIEW** (via expanded `1B-5-2`) |
 | `1B-6-0` | LKW and VENDOR-KNOWLEDGE have a frozen ownership and integration contract | PLANNED |
 | `1B-6-1` | A user can discover safe opaque vendor connections and resources | PLANNED |
 | `1B-6-2` | One real vendor resource is attached end to end through LKW Knowledge Intake | PLANNED |
@@ -192,8 +191,8 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 | Task | Outcome | Status |
 |------|---------|--------|
 | `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
-| `1B-5-2` | LKW `WEB_URL` intake and private Source locator | PLANNED |
-| `1B-5-3` | Web URL ingestion, indexing and Ask proof | PLANNED |
+| `1B-5-2` | End-to-end WEB_URL Knowledge Intake | **READY_FOR_REVIEW** |
+| `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
 | `1B-5-4` | Slack explicit Web URL intake | **SUPERSEDED** by `LKW-CONVERSATIONAL-INTERACTION-1C` |
 
 **Why `1B-5-4` was superseded:** the target frontend will not use a separate strict URL command; one natural message can contain multiple source types and actions (attachments, URLs, local references, workspace targets). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
@@ -473,18 +472,10 @@ A second conversational adapter and broad provider matrix do not delay the curre
 
 ```text
 CURRENT:
-LKW-CONVERSATIONAL-INTERACTION-1A
-Channel-neutral structured interaction plan contract and provider-neutral LLM planner
-
-LAST ACCEPTED:
-LKW-WORKSPACE-CONTENTS-1B-4-2 — Slack Source Candidate selection
-LKW-WORKSPACE-CONTENTS-1B-5-1 — Web Content Capture contract
-
-NEXT (after 1A acceptance):
 LKW-WORKSPACE-CONTENTS-1B-5-2
-WEB_URL intake capability
+END-TO-END WEB_URL KNOWLEDGE INTAKE — READY_FOR_REVIEW
 
-THEN (conversational track):
+NEXT (after acceptance):
 LKW-CONVERSATIONAL-INTERACTION-1B → resolver + executor
 LKW-CONVERSATIONAL-INTERACTION-1C → Slack mixed-message cutover
 

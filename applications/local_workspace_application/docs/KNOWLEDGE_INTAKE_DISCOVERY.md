@@ -324,15 +324,16 @@ Reasons: path disclosure in channel history; ambiguous target host; no guarantee
 
 A local path may be accepted only by a trusted local-capable interface and converted behind the LKW boundary into a safe candidate/reference.
 
-### 6.5 URL intake (`DIRECTION`)
+### 6.5 URL intake (`IMPLEMENTED` — `1B-5-2`)
 
-- URL ingestion must be an **explicit** user action.
+- `WEB_URL` is accepted by the public LKW capability `POST /v1/local_workspace/workspaces/{workspace_id}/knowledge/web-urls`.
+- Resolves to a durable `WEB_RESOURCE` Source (`path=""`, `recursive=false`).
+- Processed by the existing Knowledge Ingestion worker via `WebContentCapture` and `WorkspaceDocumentIndexingService`.
+- Private canonical URL is stored only in `WebUrlSourceLocator` (not on Source or submission metadata).
+- URL ingestion remains an **explicit** user/client action.
 - Ordinary Ask messages containing a URL must **not** automatically trigger ingestion.
-- Exact Slack command syntax is **DEFERRED**.
-- Public web URLs and connector-authenticated resources are different cases.
-- Credentials must never be embedded in user-visible URLs.
+- Slack natural-language URL execution belongs to `CONV-1C`, not a separate strict URL command.
 - Authenticated Drive/SharePoint/private-system resources should use a connector/Source Candidate rather than raw credentials or credential-bearing URLs.
-- Implementation requires SSRF, redirect, egress and private-network access policy before acceptance.
 
 ---
 
@@ -788,10 +789,10 @@ the complete candidate list is one Cursor audit instruction.
 | `LKW-WORKSPACE-CONTENTS-1B-1-A` | architecture-led audit phase | Architecture-led bounded audit; not a Cursor implementation task. |
 | `LKW-WORKSPACE-CONTENTS-1B-1-A1` | `NEXT` | Architecture review of the existing LKW source-sync execution path (outside Cursor). |
 | `LKW-WORKSPACE-CONTENTS-1B-1-B` | `BLOCKED UNTIL AUDIT ACCEPTED` | Implement the frozen result of the accepted capability audit. |
-| `LKW-WORKSPACE-CONTENTS-1B-2` | planned | Managed file upload capability |
-| `LKW-WORKSPACE-CONTENTS-1B-3` | planned | Slack attachment and multi-attachment adapter |
-| `LKW-WORKSPACE-CONTENTS-1B-4` | planned | Preconfigured source candidate registration |
-| `LKW-WORKSPACE-CONTENTS-1B-5` | planned | Explicit web URL intake |
+| `LKW-WORKSPACE-CONTENTS-1B-2` | implemented | Managed file upload capability |
+| `LKW-WORKSPACE-CONTENTS-1B-3` | implemented | Slack attachment and multi-attachment adapter |
+| `LKW-WORKSPACE-CONTENTS-1B-4` | implemented | Preconfigured source candidate registration |
+| `LKW-WORKSPACE-CONTENTS-1B-5` | **READY_FOR_REVIEW** | End-to-end explicit `WEB_URL` Knowledge Intake (`1B-5-2`; former `1B-5-3` merged) |
 | `LKW-WORKSPACE-CONTENTS-1C` | planned | Synchronization, operation inspection and channel-neutral completion notification |
 | `LKW-WORKSPACE-CONTENTS-1D` | planned | Inspect indexed documents |
 | `LKW-WORKSPACE-CONTENTS-1E` | planned | Safely remove source-owned knowledge |
@@ -894,6 +895,7 @@ Do not present `/knowledge-inputs`, upload-session routes or event schemas as ex
 - [x] Document directly owned by Knowledge Input rejected
 - [x] Source is not defined only as connector-backed local path
 - [x] managed upload, source candidate and URL represented
+- [x] `WEB_URL` intake, ingestion, indexing and Ask proof implemented in `1B-5-2` (awaiting review)
 - [x] uploaded folder snapshot vs connected folder distinct
 - [x] `managed_file_batch` removed as Knowledge Input kind; Intake Batch groups item-level inputs
 - [x] raw local path in Slack rejected
@@ -905,4 +907,4 @@ Do not present `/knowledge-inputs`, upload-session routes or event schemas as ex
 - [x] tenant/workspace and idempotency documented
 - [x] deferred decisions listed without invented vendors/routes
 - [x] historical Ask MVP file-ignore scoped, not erased
-- [x] no claim that uploads, URLs, workers or Slack attachments are implemented
+- [x] no false claim that Slack natural-language URL execution is implemented (`CONV-1C` remains)

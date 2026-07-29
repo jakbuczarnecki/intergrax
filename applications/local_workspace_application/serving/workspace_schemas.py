@@ -229,3 +229,26 @@ class SourceCandidateAcceptedV1(BaseModel):
         "completed",
         "failed",
     ]
+
+
+class WebUrlIntakeRequestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    url: str = Field(..., min_length=1, max_length=2048, repr=False)
+
+
+class WebUrlAcceptedV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input_id: str
+    workspace_id: str
+    source_id: str
+    operation_id: str
+    status: Literal[
+        "accepted",
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+    ]
+    safe_display_url: str

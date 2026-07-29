@@ -216,7 +216,7 @@ planner (v2)
 → aggregate response
 ```
 
-W zadaniu **1A** wykonanie **nie jest podłączone**. Nie są jeszcze zaimplementowane: resolving workspace names, resolving local references, local filesystem access, URL downloading, source creation, executor, Slack cutover ani backend execution. Obecne dokładne komendy Slack pozostają tymczasowym fallbackiem.
+W zadaniu **1A** wykonanie **nie jest podłączone**. Planner rozpoznaje intencję dodania źródła URL (`web_url` → `knowledge.add_sources` w kontrakcie planu). Backend LKW udostępnia już capability `WEB_URL` (`POST …/knowledge/web-urls`), ale planner nie jest jeszcze podłączony do tego API. Resolving workspace references, validated execution i Slack natural-language cutover nadal należą do **CONV-1B** / **CONV-1C** (nie do osobnej komendy URL). Obecne dokładne komendy Slack pozostają tymczasowym fallbackiem.
 
 ---
 

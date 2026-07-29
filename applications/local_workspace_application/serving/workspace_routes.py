@@ -32,6 +32,8 @@ from local_workspace_application.serving.workspace_schemas import (
     SourceResponseV1,
     SourceSummaryResponseV1,
     SyncOperationAcceptedV1,
+    WebUrlAcceptedV1,
+    WebUrlIntakeRequestV1,
     WorkspaceAskCitationLocationV1,
     WorkspaceAskCitationV1,
     WorkspaceAskErrorV1,
@@ -118,6 +120,17 @@ from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyn
 from local_workspace_application.workspaces.sync_runtime import (
     ManagedWorkspaceSyncRuntime,
     build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.web_url_ingestion import (
+    WebUrlAlreadyRegistered,
+    WebUrlIdempotencyConflict,
+    WebUrlIntakeService,
+    WebUrlKnowledgeIngestionProcessor,
+    WebUrlSourceResolver,
+    WebUrlStateConflict,
+    WebUrlTextMaterializer,
+    WebUrlValidationError,
+    http_status_for_web_url_error,
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 from local_workspace_application.workspaces.vector_cleanup import (
@@ -290,13 +303,19 @@ def mount_managed_workspace_routes(
     llm_adapter: Any | None = None,
     vectorstore_manager: Any | None = None,
     object_storage: ObjectStorage | None = None,
+    web_url_access_policy: Any | None = None,
+    web_content_capture: Any | None = None,
+    indexing_service: WorkspaceDocumentIndexingService | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
     from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
+    from intergrax.websearch.capture import SecureHttpWebContentCapture, WebUrlAccessPolicy
 
     configured = settings.allowed_read_roots or read_allowlist_roots_from_env()
-    allowlist = frozenset(set(configured) | {settings.managed_upload_staging_dir})
+    allowlist = frozenset(
+        set(configured) | {settings.managed_upload_staging_dir, settings.web_url_staging_dir}
+    )
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
     if repository is None:
         repository = ManagedWorkspaceRepository(resolve_managed_workspace_document_store())
@@ -317,7 +336,10 @@ def mount_managed_workspace_routes(
         vector_cleanup=vector_cleanup,
         managed_file_cleanup=managed_file_cleanup,
     )
-    indexing_service = WorkspaceDocumentIndexingService(repository, task_executor)
+    indexing_service = indexing_service or WorkspaceDocumentIndexingService(
+        repository,
+        task_executor,
+    )
     folder_indexing = LocalFolderIndexingService(
         indexing_service,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
@@ -365,6 +387,17 @@ def mount_managed_workspace_routes(
         )
         resolver_map[KnowledgeInputKind.MANAGED_FILE] = ManagedFileSourceResolver(repository)
 
+    web_url_policy = web_url_access_policy or WebUrlAccessPolicy()
+    web_url_capture = web_content_capture or SecureHttpWebContentCapture(policy=web_url_policy)
+    web_url_materializer = WebUrlTextMaterializer(Path(settings.web_url_staging_dir))
+    processor_map[KnowledgeInputKind.WEB_URL] = WebUrlKnowledgeIngestionProcessor(
+        repository,
+        web_url_capture,
+        indexing_service,
+        web_url_materializer,
+    )
+    resolver_map[KnowledgeInputKind.WEB_URL] = WebUrlSourceResolver(repository)
+
     source_resolver = KnowledgeInputSourceResolverRouter(resolver_map)  # type: ignore[arg-type]
     processor = KnowledgeIngestionProcessorRouter(processor_map)  # type: ignore[arg-type]
     knowledge_ingestion_service = KnowledgeIngestionService(repository, processor)
@@ -391,6 +424,12 @@ def mount_managed_workspace_routes(
         knowledge_intake_service,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
         shadow_roots=shadow_roots,
+    )
+    web_url_intake_service = WebUrlIntakeService(
+        repository,
+        knowledge_intake_service,
+        web_url_policy,
+        preflight_timeout_seconds=settings.web_url_preflight_timeout_seconds,
     )
 
     if owns_runtime:
@@ -425,6 +464,7 @@ def mount_managed_workspace_routes(
     app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service
     app.state.lkw_source_candidate_registry = source_candidate_registry
     app.state.lkw_source_candidate_intake_service = source_candidate_intake_service
+    app.state.lkw_web_url_intake_service = web_url_intake_service
     app.state.lkw_local_folder_indexing_service = folder_indexing
 
     router = APIRouter(prefix=prefix, tags=["local_workspace_managed"])
@@ -716,6 +756,67 @@ def mount_managed_workspace_routes(
             source_id=accepted.source_id,
             operation_id=accepted.operation_id,
             status=accepted.status,  # type: ignore[arg-type]
+        )
+
+    @router.post(
+        "/workspaces/{workspace_id}/knowledge/web-urls",
+        response_model=WebUrlAcceptedV1,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    async def accept_web_url(
+        request: Request,
+        workspace_id: str,
+        body: WebUrlIntakeRequestV1,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> WebUrlAcceptedV1:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        if idempotency_key is None or not idempotency_key.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="idempotency_key_required",
+            )
+        try:
+            accepted = await web_url_intake_service.accept(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                raw_url=body.url,
+                idempotency_key=idempotency_key.strip(),
+            )
+        except LookupError:
+            raise _not_found() from None
+        except WebUrlValidationError as exc:
+            raise HTTPException(
+                status_code=http_status_for_web_url_error(exc.error_code),
+                detail=exc.error_code,
+            ) from None
+        except WebUrlIdempotencyConflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="web_url_idempotency_conflict",
+            ) from None
+        except WebUrlAlreadyRegistered:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="web_url_already_registered",
+            ) from None
+        except WebUrlStateConflict as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc) or "web_url_state_conflict",
+            ) from None
+        except KnowledgeIntakeDispatchError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="web_url_dispatch_failed",
+            ) from None
+        return WebUrlAcceptedV1(
+            input_id=accepted.input_id,
+            workspace_id=accepted.workspace_id,
+            source_id=accepted.source_id,
+            operation_id=accepted.operation_id,
+            status=accepted.status,  # type: ignore[arg-type]
+            safe_display_url=accepted.safe_display_url,
         )
 
     @router.post(

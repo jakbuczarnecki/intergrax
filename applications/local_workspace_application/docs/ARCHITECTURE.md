@@ -463,7 +463,35 @@ Canonical feature docs: [`docs/features/architecture/TOKEN_OPTIMIZATION.md`](../
 
 ### Channel-neutral Knowledge Intake and asynchronous ingestion
 
-**Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Implementation status of upload endpoints, workers, URL fetch, Slack attachments, or Blob providers is **not** implied here.
+**Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Managed-file upload, Source Candidate intake and end-to-end `WEB_URL` intake are implemented and awaiting independent review; Slack natural-language URL execution remains `CONV-1C`.
+
+### End-to-end `WEB_URL` Knowledge Intake (`1B-5-2`)
+
+```text
+trusted HTTP client
+→ POST /v1/local_workspace/workspaces/{workspace_id}/knowledge/web-urls
+→ tenant and workspace authorization
+→ WebUrlAccessPolicy canonicalization + DNS/SSRF preflight
+→ private WebUrlSourceLocator (not part of public Source projection)
+→ durable KnowledgeInput (kind web_url)
+→ durable WEB_RESOURCE Source (path="", recursive=false)
+→ KNOWLEDGE_INGESTION operation
+→ existing queue and worker
+→ WebContentCapture
+→ normalized UTF-8 staging text
+→ WorkspaceDocumentIndexingService
+→ Document / Chunks / Vectors
+→ grounded Ask with safe provenance (safe_display_url only)
+```
+
+**Ownership split:**
+
+| Layer | Owns |
+|-------|------|
+| `WebContentCapture` | URL parsing/canonicalization; scheme/port/host policy; DNS; private-network/SSRF blocking; redirect validation; pinned HTTPS transport; content-type/size limits; extraction; safe capture result and stable errors |
+| LKW | Tenant/workspace authorization; idempotency; private locator persistence; `KnowledgeInput`; Source identity; operation lifecycle; queue/worker dispatch; document ownership; indexing; Ask provenance; local retention/removal |
+
+The private canonical URL lives only in `WebUrlSourceLocator`. It is never stored on `WorkspaceSource`, in `submission_metadata`, queue payloads, or public API responses.
 
 **Knowledge Intake** is a core LKW capability. LKW / Intergrax owns the complete knowledge intake and ingestion lifecycle: acceptance, durable operation state, queue dispatch, extraction/parsing/chunking/embedding, Document Store / Vector Store / managed-original persistence, retry classification, status events, idempotency, and tenant/workspace isolation.
 
@@ -488,7 +516,7 @@ Canonical feature docs: [`docs/features/architecture/TOKEN_OPTIMIZATION.md`](../
 | `managed_file` | Yes | No (unless later replaced) | Single uploaded file → managed-upload-backed Source → Document |
 | `uploaded_folder_snapshot` | Yes | No | Copied snapshot Source; **not** a live connector; many Documents |
 | `source_candidate` | Provider-dependent | Usually yes | Opaque candidate id + safe label; resolve/create connector-backed Source |
-| `web_url` | Policy-dependent | Policy-dependent | Explicit intake only; Ask text with a URL must not auto-ingest |
+| `web_url` | No (captured text indexed; private URL in locator only) | Policy-dependent | Explicit intake via `POST …/knowledge/web-urls`; Ask text with a URL must not auto-ingest |
 
 **Submission grouping (not an input kind):** multi-file / multi-item submissions use **Intake Batch** → N item-level Knowledge Inputs → N Sources → N Ingestion Operations. Aggregate `managed_file_batch` Knowledge Input kind is **REJECTED**.
 

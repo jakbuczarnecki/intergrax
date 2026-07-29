@@ -137,6 +137,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     slack_ask_timeout_seconds: float = 60.0
     managed_file_max_bytes: int = 25 * 1024 * 1024
     managed_file_max_batch_files: int = 20
+    web_url_preflight_timeout_seconds: float = 10.0
 
     @property
     def config_dir(self) -> str:
@@ -165,6 +166,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     @property
     def managed_upload_staging_dir(self) -> str:
         return _data_home_path(self.data_home, "run", "managed_upload_staging")
+
+    @property
+    def web_url_staging_dir(self) -> str:
+        return _data_home_path(self.data_home, "run", "web_url_staging")
 
     @property
     def logs_dir(self) -> str:
