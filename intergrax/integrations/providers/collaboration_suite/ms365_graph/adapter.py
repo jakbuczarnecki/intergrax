@@ -63,6 +63,25 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChatHostedContentBytes,
     MsGraphTeamsChatHostedContentPage,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_inventory import (
+    MsGraphTeamsChannel,
+    MsGraphTeamsChannelPage,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_members import (
+    MsGraphTeamsChannelMemberPage,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_messages import (
+    DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelReplyPage,
+    MsGraphTeamsChannelRootMessagePage,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_hosted_content import (
+    DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    MsGraphTeamsChannelHostedContent,
+    MsGraphTeamsChannelHostedContentBytes,
+    MsGraphTeamsChannelHostedContentPage,
+)
 
 
 class _Ms365GraphCollaborationSuite:
@@ -301,6 +320,82 @@ class _Ms365GraphCollaborationSuite:
         max_bytes: int = DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
     ) -> MsGraphTeamsChatHostedContentBytes:
         return self._client.read_teams_chat_hosted_content_bytes(
+            message=message,
+            hosted_content=hosted_content,
+            max_bytes=max_bytes,
+        )
+
+    def read_teams_channels_page(
+        self,
+        *,
+        team_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChannelPage:
+        return self._client.read_teams_channels_page(
+            team_id=team_id,
+            continuation=continuation,
+        )
+
+    def read_teams_channel_members_page(
+        self,
+        *,
+        channel: MsGraphTeamsChannel,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChannelMemberPage:
+        return self._client.read_teams_channel_members_page(
+            channel=channel,
+            continuation=continuation,
+        )
+
+    def read_teams_channel_root_messages_page(
+        self,
+        *,
+        channel: MsGraphTeamsChannel,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        return self._client.read_teams_channel_root_messages_page(
+            channel=channel,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_replies_page(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelReplyPage:
+        return self._client.read_teams_channel_replies_page(
+            root_message=root_message,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_hosted_contents_page(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChannelHostedContentPage:
+        return self._client.read_teams_channel_hosted_contents_page(
+            message=message,
+            continuation=continuation,
+        )
+
+    def read_teams_channel_hosted_content_bytes(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessage,
+        hosted_content: MsGraphTeamsChannelHostedContent,
+        max_bytes: int = DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    ) -> MsGraphTeamsChannelHostedContentBytes:
+        return self._client.read_teams_channel_hosted_content_bytes(
             message=message,
             hosted_content=hosted_content,
             max_bytes=max_bytes,

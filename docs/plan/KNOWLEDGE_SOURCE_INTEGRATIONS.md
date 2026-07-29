@@ -77,7 +77,7 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
-  NEXT:
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
@@ -148,6 +148,32 @@ supported SharePoint and OneDrive references through the existing Drive
 surface.
 
 No beta Graph endpoint, Teams Chat Vendor Knowledge adapter, webhook,
+subscription, rich-card semantic renderer or direct external attachment
+download is implemented.
+
+Microsoft Graph Teams Channel low-level knowledge-read support is complete
+using stable Graph v1.0 contracts.
+
+Caller-visible channels can be enumerated per team and complete effective
+member rosters can be read through allMembers.
+
+Each selected channel supports complete paged root-message inventory and
+threaded reply reads for explicit root posts. Stable Graph v1.0 channel
+message delta is not used.
+
+Deleted root posts and replies are recognized only when Graph explicitly
+returns deletedDateTime. Absence from a page is not treated as proof of
+global deletion.
+
+Message bodies, senders, mentions, reactions, safe attachment references,
+forwarded-message metadata and bounded Teams-hosted content reads are
+implemented.
+
+Channel messages use the dedicated replies endpoint for threaded replies.
+File attachment URLs are retained only as hidden provider references and are
+not downloaded directly.
+
+No beta Graph endpoint, Teams Channel Vendor Knowledge adapter, webhook,
 subscription, rich-card semantic renderer or direct external attachment
 download is implemented.
 
