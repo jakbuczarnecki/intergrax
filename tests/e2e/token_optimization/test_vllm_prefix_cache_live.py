@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import uuid
 
 import httpx
 import pytest
@@ -22,6 +23,7 @@ from intergrax.runtime.token_optimization.vllm_prefix_cache_proof import (
     VllmPrefixCacheProofCaseId,
     VllmPrefixCacheProofCaseObservation,
     assemble_proof_case,
+    build_proof_prefix_variant,
     evaluate_vllm_prefix_cache_proof,
     materialize_proof_send_payload,
     vllm_prefix_cache_proof_result_to_safe_dict,
@@ -91,13 +93,22 @@ def test_vllm_prefix_cache_live_proof() -> None:
 
     observations: list[VllmPrefixCacheProofCaseObservation] = []
     previous_state = None
+    run_namespace = f"token-10c-{uuid.uuid4()}"
 
     case_specs = (
-        (VllmPrefixCacheProofCaseId.COLD, "proof-a", "dynamic tail one for cold proof"),
-        (VllmPrefixCacheProofCaseId.WARM, "proof-a", "dynamic tail two for warm proof"),
+        (
+            VllmPrefixCacheProofCaseId.COLD,
+            build_proof_prefix_variant(run_namespace=run_namespace, variant_suffix="proof-a"),
+            "dynamic tail one for cold proof",
+        ),
+        (
+            VllmPrefixCacheProofCaseId.WARM,
+            build_proof_prefix_variant(run_namespace=run_namespace, variant_suffix="proof-a"),
+            "dynamic tail two for warm proof",
+        ),
         (
             VllmPrefixCacheProofCaseId.CHANGED_PREFIX,
-            "proof-b",
+            build_proof_prefix_variant(run_namespace=run_namespace, variant_suffix="proof-b"),
             "dynamic tail three for changed-prefix proof",
         ),
     )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import traceback
 from unittest.mock import MagicMock
 
 import httpx
@@ -20,6 +21,7 @@ from intergrax.llm_adapters.providers.vllm_diagnostics import (
     derive_vllm_server_root,
     fetch_vllm_health,
     fetch_vllm_metrics,
+    fetch_vllm_version,
     parse_prometheus_metric_series,
     parse_vllm_metrics_snapshot,
 )
@@ -149,3 +151,65 @@ def test_aggregate_metric_values() -> None:
     )
     aggregated = aggregate_metric_values(series)
     assert aggregated["vllm:prefix_cache_hits"] == 3.5
+
+
+def test_fetch_vllm_version_success() -> None:
+    client = httpx.Client(
+        base_url="http://127.0.0.1:8100",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, text='{"version":"0.23.0"}')
+        ),
+    )
+    assert fetch_vllm_version(client, server_root="http://127.0.0.1:8100") == "0.23.0"
+
+
+def test_fetch_vllm_version_non_200_fails_closed() -> None:
+    client = httpx.Client(
+        base_url="http://127.0.0.1:8100",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(500, text="SYNTHETIC-SECRET-VERSION-BODY")
+        ),
+    )
+    with pytest.raises(VllmDiagnosticsError, match="/version request failed"):
+        fetch_vllm_version(client, server_root="http://127.0.0.1:8100")
+
+
+def test_fetch_vllm_version_malformed_json_does_not_leak_body() -> None:
+    secret = "SYNTHETIC-SECRET-VERSION-BODY"
+    client = httpx.Client(
+        base_url="http://127.0.0.1:8100",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, text=secret)
+        ),
+    )
+    with pytest.raises(VllmDiagnosticsError, match="invalid JSON") as exc_info:
+        fetch_vllm_version(client, server_root="http://127.0.0.1:8100")
+
+    error = exc_info.value
+    assert error.__cause__ is None
+    assert secret not in str(error)
+    assert secret not in repr(error)
+    rendered = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+    assert secret not in rendered
+
+
+def test_fetch_vllm_version_missing_version_field() -> None:
+    client = httpx.Client(
+        base_url="http://127.0.0.1:8100",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, text='{"build":"abc"}')
+        ),
+    )
+    with pytest.raises(VllmDiagnosticsError, match="missing version field"):
+        fetch_vllm_version(client, server_root="http://127.0.0.1:8100")
+
+
+def test_fetch_vllm_version_empty_version_field() -> None:
+    client = httpx.Client(
+        base_url="http://127.0.0.1:8100",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, text='{"version":"   "}')
+        ),
+    )
+    with pytest.raises(VllmDiagnosticsError, match="missing version field"):
+        fetch_vllm_version(client, server_root="http://127.0.0.1:8100")

@@ -96,6 +96,15 @@ def build_synthetic_stable_prefix_block(
     )
 
 
+def build_proof_prefix_variant(*, run_namespace: str, variant_suffix: str) -> str:
+    """Build a deterministic prefix variant label from an explicit run namespace."""
+    trimmed_namespace = run_namespace.strip()
+    trimmed_suffix = variant_suffix.strip()
+    if not trimmed_namespace or not trimmed_suffix:
+        raise ValueError("run_namespace and variant_suffix must be nonblank")
+    return f"{trimmed_namespace}-{trimmed_suffix}"
+
+
 def build_synthetic_proof_tool_schema() -> tuple[Mapping[str, Any], ...]:
     return (
         {
