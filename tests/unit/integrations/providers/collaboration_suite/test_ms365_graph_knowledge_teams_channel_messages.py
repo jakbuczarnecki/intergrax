@@ -43,12 +43,17 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     parse_msgraph_teams_channel,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_messages import (
+    MsGraphTeamsChannelMessageChanged,
     MsGraphTeamsChannelMessageKind,
     MsGraphTeamsChannelMessagesReader,
+    MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessageState,
     parse_msgraph_teams_channel_message,
+    read_and_validate_current_teams_channel_message_observation,
     validate_msgraph_teams_channel_message,
+    validate_msgraph_teams_channel_reply_page,
+    validate_msgraph_teams_channel_replies_continuation,
     validate_msgraph_teams_channel_root_messages_continuation,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
@@ -66,12 +71,23 @@ _OTHER_TEAM_ID = "other-team-456"
 _CHANNEL_ID = "channel-abc-123"
 _OTHER_CHANNEL_ID = "other-channel-456"
 _MESSAGE_ID = "root-msg-001"
+_ROOT_MESSAGE_ID = "root-msg-001"
+_REPLY_MESSAGE_ID = "reply-msg-002"
+_OTHER_ROOT_MESSAGE_ID = "other-root-999"
+_REPLY_ETAG = "reply-etag-2"
 _SENDER_ID = "sender-secret-id"
 _ETAG = "etag-1"
 _SECRET_TOKEN = "secret-skiptoken-value"
 _QUOTED_TEAM_ID = quote(_TEAM_ID, safe="")
 _QUOTED_OTHER_TEAM_ID = quote(_OTHER_TEAM_ID, safe="")
 _QUOTED_CHANNEL = quote(_CHANNEL_ID, safe="")
+_QUOTED_ROOT_MESSAGE_ID = quote(_ROOT_MESSAGE_ID, safe="")
+_QUOTED_REPLY_MESSAGE_ID = quote(_REPLY_MESSAGE_ID, safe="")
+_ROOT_OBSERVATION_PATH = (
+    f"/teams/{_QUOTED_TEAM_ID}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}"
+)
+_REPLIES_COLLECTION_PATH = f"{_ROOT_OBSERVATION_PATH}/replies"
+_REPLY_OBSERVATION_PATH = f"{_REPLIES_COLLECTION_PATH}/{_QUOTED_REPLY_MESSAGE_ID}"
 _PREFER = {"Prefer": "include-unknown-enum-members"}
 _SAFE = "unexpected Microsoft Graph Teams channel messages response"
 _CHAT_PRIMITIVE_SAFE = "unexpected Microsoft Graph Teams chat messages response"
@@ -141,6 +157,161 @@ def _valid_active_message(**overrides: object) -> MsGraphTeamsChannelMessage:
     }
     defaults.update(overrides)
     return MsGraphTeamsChannelMessage(**defaults)
+
+
+def _active_reply_payload(**overrides: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "id": _REPLY_MESSAGE_ID,
+        "replyToId": _ROOT_MESSAGE_ID,
+        "channelIdentity": {"teamId": _TEAM_ID, "channelId": _CHANNEL_ID},
+        "etag": _REPLY_ETAG,
+        "messageType": "message",
+        "createdDateTime": "2024-01-01T10:00:00Z",
+        "lastModifiedDateTime": "2024-01-01T11:00:00Z",
+        "deletedDateTime": None,
+        "importance": "normal",
+        "body": {"contentType": "text", "content": "Reply body"},
+        "from": {"user": {"id": "u2", "displayName": "Bob"}},
+        "attachments": [],
+        "mentions": [],
+        "reactions": [],
+    }
+    base.update(overrides)
+    return base
+
+
+def _valid_active_reply(**overrides: object) -> MsGraphTeamsChannelMessage:
+    defaults: dict[str, object] = {
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _ROOT_MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.REPLY,
+        "remote_id": _REPLY_MESSAGE_ID,
+        "revision": _REPLY_ETAG,
+        "state": MsGraphTeamsChannelMessageState.ACTIVE,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
+        "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        "last_modified_at": datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
+        "body_kind": MsGraphTeamsChannelBodyKind.TEXT,
+        "body_content": "Reply body",
+    }
+    defaults.update(overrides)
+    return MsGraphTeamsChannelMessage(**defaults)
+
+
+def _valid_deleted_reply(**overrides: object) -> MsGraphTeamsChannelMessage:
+    defaults: dict[str, object] = {
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _ROOT_MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.REPLY,
+        "remote_id": _REPLY_MESSAGE_ID,
+        "revision": _REPLY_ETAG,
+        "state": MsGraphTeamsChannelMessageState.DELETED,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
+        "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        "last_modified_at": datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+        "deleted_at": datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+    }
+    defaults.update(overrides)
+    return MsGraphTeamsChannelMessage(**defaults)
+
+
+def _json_response(payload: object) -> MagicMock:
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = payload
+    response.raise_for_status = MagicMock()
+    return response
+
+
+def _replies_next_link(
+    root_id: str = _ROOT_MESSAGE_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
+) -> str:
+    quoted_root = quote(root_id, safe="")
+    quoted_channel = quote(channel_id, safe="")
+    quoted_team = quote(team_id, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams/{quoted_team}/channels/"
+        f"{quoted_channel}/messages/{quoted_root}/replies?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _odata_replies_next_link(
+    root_id: str = _ROOT_MESSAGE_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
+) -> str:
+    escaped_root = root_id.replace("'", "''")
+    escaped_channel = channel_id.replace("'", "''")
+    escaped_team = team_id.replace("'", "''")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams('{escaped_team}')/channels('{escaped_channel}')"
+        f"/messages('{escaped_root}')/replies?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _slash_replies_next_link(root_id: str, channel_id: str = _CHANNEL_ID) -> str:
+    quoted_root = quote(root_id, safe="")
+    quoted_channel = quote(channel_id, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{quoted_channel}/messages/{quoted_root}/replies?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _odata_percent_encoded_replies_next_link(
+    root_id: str,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
+) -> str:
+    escaped_root = root_id.replace("'", "''")
+    escaped_channel = channel_id.replace("'", "''")
+    escaped_team = team_id.replace("'", "''")
+    encoded_root = quote(escaped_root, safe="")
+    encoded_channel = quote(escaped_channel, safe="")
+    encoded_team = quote(escaped_team, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams('{encoded_team}')/channels('{encoded_channel}')"
+        f"/messages('{encoded_root}')/replies?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _valid_reply_page(
+    *,
+    continuation: MsGraphKnowledgeContinuation | None = None,
+) -> MsGraphTeamsChannelReplyPage:
+    return MsGraphTeamsChannelReplyPage(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        root_message_remote_id=_ROOT_MESSAGE_ID,
+        root_message_revision=_ETAG,
+        items=(_valid_active_reply(),),
+        continuation=continuation,
+    )
+
+
+def _setup_replies_page_http(
+    http: MagicMock,
+    *,
+    reply_items: list[dict[str, object]] | None = None,
+    next_link: str | None = None,
+) -> None:
+    root_observation = _active_message_payload()
+    replies_payload: dict[str, object] = {
+        "value": reply_items if reply_items is not None else [_active_reply_payload()],
+    }
+    if next_link is not None:
+        replies_payload["@odata.nextLink"] = next_link
+    http.get.side_effect = [
+        _json_response(payload=root_observation),
+        _json_response(payload=replies_payload),
+        _json_response(payload=root_observation),
+    ]
 
 
 def _reference_attachment(**overrides: object) -> MsGraphTeamsChatAttachmentReference:
@@ -1066,3 +1237,689 @@ def test_parse_forwarded_message_reference_from_provider_payload() -> None:
     assert msg.attachments[0].forwarded_message is not None
     assert msg.attachments[0].forwarded_message.original_sender is not None
     assert msg.attachments[0].forwarded_message.original_sender.identity_type == "aadUser"
+
+
+# --- Teams Channel reply messages ---
+
+
+def test_parse_active_reply_message() -> None:
+    msg = parse_msgraph_teams_channel_message(
+        _active_reply_payload(),
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert msg.message_kind is MsGraphTeamsChannelMessageKind.REPLY
+    assert msg.remote_id == _REPLY_MESSAGE_ID
+    assert msg.thread_root_remote_id == _ROOT_MESSAGE_ID
+    assert msg.state is MsGraphTeamsChannelMessageState.ACTIVE
+    assert msg.body_content == "Reply body"
+
+
+def test_parse_deleted_reply_message() -> None:
+    msg = parse_msgraph_teams_channel_message(
+        _active_reply_payload(
+            deletedDateTime="2024-01-01T12:00:00Z",
+            lastModifiedDateTime="2024-01-01T12:00:00Z",
+        ),
+        expected_team_id=_TEAM_ID,
+        expected_channel_id=_CHANNEL_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+        max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert msg.state is MsGraphTeamsChannelMessageState.DELETED
+    assert msg.deleted_at is not None
+    assert msg.body_kind is None
+
+
+def test_parse_reply_requires_reply_to_id() -> None:
+    with pytest.raises(ValueError, match=_SAFE):
+        parse_msgraph_teams_channel_message(
+            _active_reply_payload(replyToId=None),
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_parse_reply_reply_to_id_must_match_expected_root() -> None:
+    with pytest.raises(ValueError, match=_SAFE):
+        parse_msgraph_teams_channel_message(
+            _active_reply_payload(replyToId=_OTHER_ROOT_MESSAGE_ID),
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_parse_reply_id_must_differ_from_root_id() -> None:
+    with pytest.raises(ValueError, match=_SAFE):
+        parse_msgraph_teams_channel_message(
+            _active_reply_payload(id=_ROOT_MESSAGE_ID, replyToId=_ROOT_MESSAGE_ID),
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_parse_reply_channel_identity_team_mismatch_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE):
+        parse_msgraph_teams_channel_message(
+            _active_reply_payload(channelIdentity={"teamId": _OTHER_TEAM_ID, "channelId": _CHANNEL_ID}),
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_parse_reply_channel_identity_channel_mismatch_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE):
+        parse_msgraph_teams_channel_message(
+            _active_reply_payload(channelIdentity={"teamId": _TEAM_ID, "channelId": _OTHER_CHANNEL_ID}),
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_parse_reply_non_null_chat_id_rejected() -> None:
+    with pytest.raises(ValueError, match=_SAFE):
+        parse_msgraph_teams_channel_message(
+            _active_reply_payload(chatId="19:chat@thread.v2"),
+            expected_team_id=_TEAM_ID,
+            expected_channel_id=_CHANNEL_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            expected_thread_root_remote_id=_ROOT_MESSAGE_ID,
+            max_chars=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_validate_reply_page_returns_new_instances() -> None:
+    original = _valid_reply_page()
+    validated = validate_msgraph_teams_channel_reply_page(
+        original,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=_ROOT_MESSAGE_ID,
+        root_message_revision=_ETAG,
+        graph_base_url=_GRAPH_BASE,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert validated == original
+    assert validated is not original
+    assert validated.items[0] is not original.items[0]
+    assert validated.items[0].message_kind is MsGraphTeamsChannelMessageKind.REPLY
+
+
+def test_reader_reply_request_sequence_and_params() -> None:
+    http = MagicMock()
+    _setup_replies_page_http(http)
+    root = _valid_active_message()
+    page = _reader(http).read_teams_channel_replies_page(
+        root_message=root,
+        continuation=None,
+        limit=25,
+        max_chars_per_message=1000,
+    )
+    assert http.get.call_count == 3
+    pre_observation = http.get.call_args_list[0]
+    collection = http.get.call_args_list[1]
+    post_observation = http.get.call_args_list[2]
+    assert pre_observation.args[0] == _ROOT_OBSERVATION_PATH
+    assert collection.args[0] == _REPLIES_COLLECTION_PATH
+    assert post_observation.args[0] == _ROOT_OBSERVATION_PATH
+    assert collection.kwargs["params"] == {"$top": 25}
+    assert "$filter" not in collection.kwargs["params"]
+    assert "$orderby" not in collection.kwargs["params"]
+    assert "$select" not in collection.kwargs["params"]
+    assert "$expand" not in collection.kwargs["params"]
+    assert collection.kwargs["headers"] == _PREFER
+    assert page.items[0].message_kind is MsGraphTeamsChannelMessageKind.REPLY
+    assert page.items[0].thread_root_remote_id == _ROOT_MESSAGE_ID
+
+
+def test_reader_empty_reply_page_is_complete() -> None:
+    http = MagicMock()
+    _setup_replies_page_http(http, reply_items=[])
+    page = _reader(http).read_teams_channel_replies_page(
+        root_message=_valid_active_message(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert page.items == ()
+    assert page.is_complete is True
+
+
+def test_reader_one_reply_page() -> None:
+    http = MagicMock()
+    _setup_replies_page_http(http)
+    page = _reader(http).read_teams_channel_replies_page(
+        root_message=_valid_active_message(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert len(page.items) == 1
+    assert page.items[0].remote_id == _REPLY_MESSAGE_ID
+
+
+def test_reader_multiple_replies_page() -> None:
+    http = MagicMock()
+    second_reply = _active_reply_payload(
+        id="reply-msg-003",
+        etag="reply-etag-3",
+        body={"contentType": "text", "content": "Second reply"},
+    )
+    _setup_replies_page_http(http, reply_items=[_active_reply_payload(), second_reply])
+    page = _reader(http).read_teams_channel_replies_page(
+        root_message=_valid_active_message(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert len(page.items) == 2
+
+
+def test_reader_reply_page_with_next_page_continuation() -> None:
+    http = MagicMock()
+    next_link = _replies_next_link()
+    _setup_replies_page_http(http, next_link=next_link)
+    page = _reader(http).read_teams_channel_replies_page(
+        root_message=_valid_active_message(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert page.continuation is not None
+    assert page.continuation.kind is MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    assert page.is_complete is False
+
+
+def test_reader_duplicate_reply_ids_last_occurrence_wins() -> None:
+    http = MagicMock()
+    first = _active_reply_payload(body={"contentType": "text", "content": "first"})
+    second = _active_reply_payload(body={"contentType": "text", "content": "second"})
+    _setup_replies_page_http(http, reply_items=[first, second])
+    page = _reader(http).read_teams_channel_replies_page(
+        root_message=_valid_active_message(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert len(page.items) == 1
+    assert page.items[0].body_content == "second"
+
+
+def test_reader_rejects_root_message_in_reply_page() -> None:
+    http = MagicMock()
+    _setup_replies_page_http(http, reply_items=[_active_message_payload()])
+    with pytest.raises(ValueError, match=_SAFE):
+        _reader(http).read_teams_channel_replies_page(
+            root_message=_valid_active_message(),
+            continuation=None,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_reader_rejects_reply_bound_to_other_root() -> None:
+    http = MagicMock()
+    wrong_reply = _active_reply_payload(replyToId=_OTHER_ROOT_MESSAGE_ID)
+    _setup_replies_page_http(http, reply_items=[wrong_reply])
+    with pytest.raises(ValueError, match=_SAFE):
+        _reader(http).read_teams_channel_replies_page(
+            root_message=_valid_active_message(),
+            continuation=None,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_validate_replies_continuation_accepts_slash_path() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_replies_next_link(),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=_ROOT_MESSAGE_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+    assert validated.url == continuation.url
+
+
+def test_validate_replies_continuation_accepts_odata_path() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_replies_next_link(),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=_ROOT_MESSAGE_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_replies_continuation_accepts_literal_with_escaped_quotes() -> None:
+    root_id = "root'quote'part"
+    channel_id = "channel'quote'part"
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_replies_next_link(root_id=root_id, channel_id=channel_id),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=channel_id,
+        root_message_remote_id=root_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_replies_continuation_accepts_uppercase_resource_names() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=(
+            f"https://graph.microsoft.com/v1.0/TEAMS/{_QUOTED_TEAM_ID}/CHANNELS/"
+            f"{_QUOTED_CHANNEL}/MESSAGES/{_QUOTED_ROOT_MESSAGE_ID}/REPLIES?$skiptoken={_SECRET_TOKEN}"
+        ),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=_ROOT_MESSAGE_ID,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_replies_continuation_accepts_percent_encoded_root_literal() -> None:
+    root_id = "root/special"
+    encoded = quote(root_id, safe="")
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=(
+            f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+            f"{_QUOTED_CHANNEL}/messages('{encoded}')/replies?$skiptoken={_SECRET_TOKEN}"
+        ),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=root_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+@pytest.mark.parametrize(
+    "root_id",
+    [
+        "opaque-messages-replies",
+        "opaque-replies-only",
+        "opaque-members-replies",
+        "opaque-hostedContents-replies",
+        "opaque-teams-channels",
+        "opaque-channels-messages",
+        "opaque-users-chats",
+        "opaque-chats-replies",
+        "messages",
+        "replies",
+        "members",
+        "hostedContents",
+        "teams",
+        "channels",
+        "users",
+        "chats",
+    ],
+)
+def test_validate_replies_continuation_accepts_opaque_root_id_with_reserved_words(
+    root_id: str,
+) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_slash_replies_next_link(root_id),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=root_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_replies_continuation_accepts_odata_literal_with_quote_percent() -> None:
+    root_id = "root'delta/special"
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_percent_encoded_replies_next_link(root_id),
+    )
+    validated = validate_msgraph_teams_channel_replies_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        root_message_remote_id=root_id,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_OTHER_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{quote(_OTHER_CHANNEL_ID, safe='')}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quote(_OTHER_ROOT_MESSAGE_ID, safe='')}/replies?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/{_QUOTED_REPLY_MESSAGE_ID}?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/extra?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM_ID}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/delta?$skiptoken={_SECRET_TOKEN}",
+        "https://graph.microsoft.com/v1.0/drives/drive-1/root/children?$skiptoken=x",
+    ],
+)
+def test_validate_replies_continuation_rejects_invalid_urls(url: str) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=url,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT) as exc:
+        validate_msgraph_teams_channel_replies_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            root_message_remote_id=_ROOT_MESSAGE_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert _SECRET_TOKEN not in str(exc.value)
+    assert _TEAM_ID not in str(exc.value)
+
+
+def test_validate_replies_continuation_rejects_delta_kind() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.DELTA,
+        url=_replies_next_link(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT):
+        validate_msgraph_teams_channel_replies_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            root_message_remote_id=_ROOT_MESSAGE_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        ),
+        MsGraphKnowledgeContinuation.model_construct(url=_replies_next_link()),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind="next_page",
+            url=_replies_next_link(),
+        ),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=123,
+        ),
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url="",
+        ),
+    ],
+)
+def test_validate_replies_continuation_rejects_model_construct_malformed(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    with pytest.raises(IntegrationConfigurationError, match=_CONT) as exc:
+        validate_msgraph_teams_channel_replies_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            root_message_remote_id=_ROOT_MESSAGE_ID,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert exc.value.__cause__ is None
+    assert _SECRET_TOKEN not in str(exc.value)
+    assert _ROOT_MESSAGE_ID not in str(exc.value)
+
+
+class _CountingRepliesClient(GraphRestClient):
+    def __init__(self, page: MsGraphTeamsChannelReplyPage, http: MagicMock) -> None:
+        super().__init__(_config(), http_client=http)
+        self._custom_page = page
+        self.call_count = 0
+        self.last_continuation: MsGraphKnowledgeContinuation | None = None
+
+    def read_teams_channel_replies_page(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelMessage,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChannelReplyPage:
+        self.call_count += 1
+        self.last_continuation = continuation
+        return self._custom_page
+
+
+class _CustomRepliesSuite(CollaborationSuite):
+    def __init__(self, client: _CountingRepliesClient) -> None:
+        self._client = client
+
+    def read_teams_channel_replies_page(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelReplyPage:
+        return self._client.read_teams_channel_replies_page(
+            root_message=root_message,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def get_message(self, user_id: str, message_id: str):
+        raise NotImplementedError
+
+    def list_messages(self, user_id: str, *, folder: str = "inbox", limit: int = 25):
+        raise NotImplementedError
+
+    def send_mail(self, user_id: str, *, subject: str, body: str, to):
+        raise NotImplementedError
+
+    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+        raise NotImplementedError
+
+    def get_user(self, user_id: str):
+        raise NotImplementedError
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        raise NotImplementedError
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees=(),
+    ):
+        raise NotImplementedError
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=_replies_next_link(),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=_replies_next_link(team_id=_OTHER_TEAM_ID),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=_replies_next_link(root_id=_OTHER_ROOT_MESSAGE_ID),
+        ),
+    ],
+)
+def test_integration_rejects_malformed_reply_continuation_before_custom_call(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    client = _CountingRepliesClient(page=_valid_reply_page(), http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT) as exc:
+        integration.read_teams_channel_replies_page(
+            root_message=_valid_active_message(),
+            continuation=continuation,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+        )
+    assert client.call_count == 0
+    assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_integration_valid_reply_continuation_calls_custom_client_once() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_replies_next_link(),
+    )
+    client = _CountingRepliesClient(page=_valid_reply_page(), http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    returned = integration.read_teams_channel_replies_page(
+        root_message=_valid_active_message(),
+        continuation=continuation,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    )
+    assert client.call_count == 1
+    assert client.last_continuation == continuation
+    assert client.last_continuation is not continuation
+    assert client.last_continuation is not None
+    assert client.last_continuation.url == continuation.url
+    assert returned.items[0] is not _valid_reply_page().items[0]
+    assert returned.items[0].message_kind is MsGraphTeamsChannelMessageKind.REPLY
+
+
+def test_read_and_validate_reply_observation_uses_reply_endpoint() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(payload=_active_reply_payload())
+    transport = MsGraphKnowledgeTransport(config=_config(), http_client=http)
+    read_and_validate_current_teams_channel_message_observation(
+        message=_valid_active_reply(),
+        transport=transport,
+    )
+    http.get.assert_called_once()
+    assert http.get.call_args.args[0] == _REPLY_OBSERVATION_PATH
+    assert http.get.call_args.kwargs["headers"] == _PREFER
+
+
+@pytest.mark.parametrize(
+    ("payload_overrides", "message_overrides"),
+    [
+        ({"id": "wrong-reply-id"}, {}),
+        ({"replyToId": _OTHER_ROOT_MESSAGE_ID}, {}),
+        ({"etag": "wrong-etag"}, {}),
+        ({"deletedDateTime": "2024-01-01T12:00:00Z"}, {}),
+        (
+            {"channelIdentity": {"teamId": _OTHER_TEAM_ID, "channelId": _CHANNEL_ID}},
+            {},
+        ),
+        (
+            {"channelIdentity": {"teamId": _TEAM_ID, "channelId": _OTHER_CHANNEL_ID}},
+            {},
+        ),
+    ],
+)
+def test_read_and_validate_reply_observation_failures(
+    payload_overrides: dict[str, object],
+    message_overrides: dict[str, object],
+) -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_active_reply_payload(**payload_overrides),
+    )
+    transport = MsGraphKnowledgeTransport(config=_config(), http_client=http)
+    with pytest.raises(MsGraphTeamsChannelMessageChanged):
+        read_and_validate_current_teams_channel_message_observation(
+            message=_valid_active_reply(**message_overrides),
+            transport=transport,
+        )
+    assert http.get.call_args.args[0] == _REPLY_OBSERVATION_PATH
+    assert f"/messages/{_QUOTED_REPLY_MESSAGE_ID}" not in http.get.call_args.args[0].replace(
+        f"/replies/{_QUOTED_REPLY_MESSAGE_ID}", ""
+    )
+
+
+def test_read_and_validate_reply_observation_does_not_use_flat_message_path() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(payload=_active_reply_payload())
+    transport = MsGraphKnowledgeTransport(config=_config(), http_client=http)
+    read_and_validate_current_teams_channel_message_observation(
+        message=_valid_active_reply(),
+        transport=transport,
+    )
+    called_path = http.get.call_args.args[0]
+    assert called_path == _REPLY_OBSERVATION_PATH
+    assert called_path != f"/teams/{_QUOTED_TEAM_ID}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_REPLY_MESSAGE_ID}"

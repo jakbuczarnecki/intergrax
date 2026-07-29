@@ -63,8 +63,12 @@ _OTHER_TEAM_ID = "other@contoso.com"
 _CHANNEL_ID = "channel-abc-123"
 _OTHER_CHANNEL_ID = "other-channel-456"
 _MESSAGE_ID = "root-msg-001"
+_ROOT_MESSAGE_ID = "root-msg-001"
+_REPLY_MESSAGE_ID = "reply-msg-002"
+_OTHER_ROOT_MESSAGE_ID = "other-root-999"
 _OTHER_MESSAGE_ID = "reply-msg-002"
 _REVISION = "etag-secret-value"
+_REPLY_REVISION = "reply-etag-value"
 _OTHER_REVISION = "other-etag-value"
 _HOSTED_CONTENT_ID = "hosted-content-001"
 _OTHER_HOSTED_CONTENT_ID = "hosted-other-002"
@@ -73,6 +77,8 @@ _QUOTED_TEAM = quote(_TEAM_ID, safe="")
 _QUOTED_CHANNEL = quote(_CHANNEL_ID, safe="")
 _QUOTED_OTHER_CHANNEL = quote(_OTHER_CHANNEL_ID, safe="")
 _QUOTED_MESSAGE_ID = quote(_MESSAGE_ID, safe="")
+_QUOTED_ROOT_MESSAGE_ID = quote(_ROOT_MESSAGE_ID, safe="")
+_QUOTED_REPLY_MESSAGE_ID = quote(_REPLY_MESSAGE_ID, safe="")
 _QUOTED_OTHER_MESSAGE_ID = quote(_OTHER_MESSAGE_ID, safe="")
 _QUOTED_HOSTED_CONTENT_ID = quote(_HOSTED_CONTENT_ID, safe="")
 _HOSTED_CONTENTS_PATH = (
@@ -85,6 +91,18 @@ _VALUE_PATH = (
 )
 _OBSERVATION_PATH = (
     f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_MESSAGE_ID}"
+)
+_REPLY_OBSERVATION_PATH = (
+    f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}"
+    f"/replies/{_QUOTED_REPLY_MESSAGE_ID}"
+)
+_REPLY_HOSTED_CONTENTS_PATH = (
+    f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}"
+    f"/replies/{_QUOTED_REPLY_MESSAGE_ID}/hostedContents"
+)
+_REPLY_VALUE_PATH = (
+    f"/teams/{_QUOTED_TEAM}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}"
+    f"/replies/{_QUOTED_REPLY_MESSAGE_ID}/hostedContents/{_QUOTED_HOSTED_CONTENT_ID}/$value"
 )
 _PREFER_HEADER = {"Prefer": "include-unknown-enum-members"}
 _SAFE_ERROR = "unexpected Microsoft Graph Teams hosted content response"
@@ -268,6 +286,170 @@ def _valid_active_message(**overrides: object) -> MsGraphTeamsChannelMessage:
     }
     defaults.update(overrides)
     return MsGraphTeamsChannelMessage(**defaults)
+
+
+def _valid_active_reply(**overrides: object) -> MsGraphTeamsChannelMessage:
+    defaults: dict[str, object] = {
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _ROOT_MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.REPLY,
+        "remote_id": _REPLY_MESSAGE_ID,
+        "revision": _REPLY_REVISION,
+        "state": MsGraphTeamsChannelMessageState.ACTIVE,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
+        "created_at": datetime(2024, 6, 1, 10, 0, tzinfo=timezone.utc),
+        "last_modified_at": datetime(2024, 6, 1, 12, 0, tzinfo=timezone.utc),
+        "body_kind": MsGraphTeamsChannelBodyKind.TEXT,
+        "body_content": "reply body",
+    }
+    defaults.update(overrides)
+    return MsGraphTeamsChannelMessage(**defaults)
+
+
+def _reply_observation_payload(
+    *,
+    message_id: str = _REPLY_MESSAGE_ID,
+    root_id: str = _ROOT_MESSAGE_ID,
+    revision: str = _REPLY_REVISION,
+    deleted: bool = False,
+) -> dict[str, Any]:
+    return {
+        "id": message_id,
+        "replyToId": root_id,
+        "channelIdentity": {"teamId": _TEAM_ID, "channelId": _CHANNEL_ID},
+        "etag": revision,
+        "deletedDateTime": "2024-06-01T12:00:00Z" if deleted else None,
+    }
+
+
+def _valid_reply_hosted_content(**overrides: object) -> MsGraphTeamsChannelHostedContent:
+    return MsGraphTeamsChannelHostedContent(
+        **_valid_hosted_content_kwargs(
+            message_remote_id=_REPLY_MESSAGE_ID,
+            thread_root_remote_id=_ROOT_MESSAGE_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            message_revision=_REPLY_REVISION,
+            **overrides,
+        )
+    )
+
+
+def _valid_reply_hosted_content_page(**overrides: object) -> MsGraphTeamsChannelHostedContentPage:
+    defaults: dict[str, object] = {
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "message_remote_id": _REPLY_MESSAGE_ID,
+        "thread_root_remote_id": _ROOT_MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.REPLY,
+        "message_revision": _REPLY_REVISION,
+        "items": (_valid_reply_hosted_content(),),
+        "continuation": None,
+    }
+    defaults.update(overrides)
+    return MsGraphTeamsChannelHostedContentPage(**defaults)
+
+
+def _reply_hosted_contents_next_link(
+    reply_id: str = _REPLY_MESSAGE_ID,
+    root_id: str = _ROOT_MESSAGE_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
+) -> str:
+    quoted_reply = quote(reply_id, safe="")
+    quoted_root = quote(root_id, safe="")
+    quoted_channel = quote(channel_id, safe="")
+    quoted_team = quote(team_id, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams/{quoted_team}/channels/"
+        f"{quoted_channel}/messages/{quoted_root}/replies/{quoted_reply}/hostedContents"
+        f"?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _odata_reply_hosted_contents_next_link(
+    reply_id: str = _REPLY_MESSAGE_ID,
+    root_id: str = _ROOT_MESSAGE_ID,
+    channel_id: str = _CHANNEL_ID,
+    team_id: str = _TEAM_ID,
+) -> str:
+    escaped_reply = reply_id.replace("'", "''")
+    escaped_root = root_id.replace("'", "''")
+    escaped_channel = channel_id.replace("'", "''")
+    escaped_team = team_id.replace("'", "''")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams('{escaped_team}')/channels('{escaped_channel}')"
+        f"/messages('{escaped_root}')/replies('{escaped_reply}')/hostedContents"
+        f"?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _slash_reply_hosted_contents_next_link(reply_id: str, root_id: str = _ROOT_MESSAGE_ID) -> str:
+    quoted_reply = quote(reply_id, safe="")
+    quoted_root = quote(root_id, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quoted_root}/replies/{quoted_reply}/hostedContents"
+        f"?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _odata_percent_encoded_reply_hosted_contents_next_link(
+    reply_id: str,
+    root_id: str = _ROOT_MESSAGE_ID,
+) -> str:
+    escaped_reply = reply_id.replace("'", "''")
+    escaped_root = root_id.replace("'", "''")
+    encoded_reply = quote(escaped_reply, safe="")
+    encoded_root = quote(escaped_root, safe="")
+    return (
+        f"https://graph.microsoft.com/v1.0/teams('{_TEAM_ID}')/channels('{_CHANNEL_ID}')"
+        f"/messages('{encoded_root}')/replies('{encoded_reply}')/hostedContents"
+        f"?$skiptoken={_SECRET_TOKEN}"
+    )
+
+
+def _setup_reply_hosted_contents_page(
+    http: MagicMock,
+    *,
+    items: list[dict[str, Any]] | None = None,
+    next_link: str | None = None,
+) -> None:
+    observation = _reply_observation_payload()
+    hosted_payload = _page_payload(
+        value=items if items is not None else [_hosted_content_payload()],
+        next_link=next_link,
+    )
+    http.get.side_effect = [
+        _json_response(payload=observation),
+        _json_response(payload=hosted_payload),
+        _json_response(payload=observation),
+    ]
+
+
+def _setup_reply_hosted_content_bytes(
+    http: MagicMock,
+    *,
+    file_bytes: bytes = b"hello-world",
+    hosted_content: MsGraphTeamsChannelHostedContent | None = None,
+    content_type: str | None = "application/octet-stream",
+) -> MsGraphTeamsChannelHostedContent:
+    if hosted_content is None:
+        hosted_content = _valid_reply_hosted_content()
+    observation = _reply_observation_payload()
+    http.get.side_effect = [
+        _json_response(payload=observation),
+        _json_response(payload=observation),
+    ]
+    headers: dict[str, str] = {"Content-Length": str(len(file_bytes))}
+    if content_type is not None:
+        headers["Content-Type"] = content_type
+    http.stream.return_value = _FakeStreamContext(
+        headers=headers,
+        chunks=(file_bytes,),
+    )
+    return hosted_content
 
 
 def _valid_deleted_message(**overrides: object) -> MsGraphTeamsChannelMessage:
@@ -1939,3 +2121,414 @@ def test_security_repr_hides_sensitive_fields() -> None:
 def test_default_max_bytes_constants() -> None:
     assert DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES == 10 * 1024 * 1024
     assert ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES == 25 * 1024 * 1024
+
+
+# --- Teams Channel reply hosted content ---
+
+
+def test_parse_reply_hosted_content_metadata() -> None:
+    hosted = parse_msgraph_teams_channel_hosted_content(
+        _hosted_content_payload(),
+        message=_valid_active_reply(),
+    )
+    assert hosted.message_kind is MsGraphTeamsChannelMessageKind.REPLY
+    assert hosted.message_remote_id == _REPLY_MESSAGE_ID
+    assert hosted.thread_root_remote_id == _ROOT_MESSAGE_ID
+    assert hosted.message_revision == _REPLY_REVISION
+
+
+def test_reply_hosted_contents_page_request_sequence() -> None:
+    http = MagicMock()
+    _setup_reply_hosted_contents_page(http)
+    page = _reader(http).read_teams_channel_hosted_contents_page(
+        message=_valid_active_reply(),
+        continuation=None,
+    )
+    assert http.get.call_count == 3
+    pre_observation = http.get.call_args_list[0]
+    collection = http.get.call_args_list[1]
+    post_observation = http.get.call_args_list[2]
+    assert pre_observation.args[0] == _REPLY_OBSERVATION_PATH
+    assert collection.args[0] == _REPLY_HOSTED_CONTENTS_PATH
+    assert post_observation.args[0] == _REPLY_OBSERVATION_PATH
+    assert collection.kwargs.get("params") is None
+    assert pre_observation.kwargs["headers"] == _PREFER_HEADER
+    assert collection.kwargs["headers"] == _PREFER_HEADER
+    assert page.message_kind is MsGraphTeamsChannelMessageKind.REPLY
+    assert page.message_remote_id == _REPLY_MESSAGE_ID
+    assert page.thread_root_remote_id == _ROOT_MESSAGE_ID
+    assert page.message_revision == _REPLY_REVISION
+    assert page.items[0].message_kind is MsGraphTeamsChannelMessageKind.REPLY
+
+
+def test_reply_hosted_content_bytes_request_sequence() -> None:
+    data = b"reply-bytes"
+    http = MagicMock()
+    hosted = _setup_reply_hosted_content_bytes(http, file_bytes=data)
+    result = _reader(http).read_teams_channel_hosted_content_bytes(
+        message=_valid_active_reply(),
+        hosted_content=hosted,
+        max_bytes=1024,
+    )
+    assert http.get.call_args_list[0].args[0] == _REPLY_OBSERVATION_PATH
+    assert http.get.call_args_list[1].args[0] == _REPLY_OBSERVATION_PATH
+    stream_call = http.stream.call_args
+    assert stream_call.args[1] == _REPLY_VALUE_PATH
+    assert stream_call.kwargs["follow_redirects"] is False
+    assert stream_call.kwargs["headers"] == {"Accept": "application/octet-stream"}
+    assert "params" not in stream_call.kwargs
+    assert result.data == data
+    assert result.size_bytes == len(data)
+    assert result.content_hash == hashlib.sha256(data).hexdigest()
+    assert result.message_kind is MsGraphTeamsChannelMessageKind.REPLY
+    assert result.message_remote_id == _REPLY_MESSAGE_ID
+    assert result.thread_root_remote_id == _ROOT_MESSAGE_ID
+    assert result.message_revision == _REPLY_REVISION
+
+
+def test_validate_reply_hosted_continuation_accepts_slash_path() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_reply_hosted_contents_next_link(),
+    )
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_ROOT_MESSAGE_ID,
+        message_id=_REPLY_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_reply_hosted_continuation_accepts_odata_path() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_reply_hosted_contents_next_link(),
+    )
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_ROOT_MESSAGE_ID,
+        message_id=_REPLY_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_reply_hosted_continuation_accepts_literal_with_escaped_quotes() -> None:
+    reply_id = "reply'quote'part"
+    root_id = "root'quote'part"
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_reply_hosted_contents_next_link(reply_id=reply_id, root_id=root_id),
+    )
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=root_id,
+        message_id=reply_id,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+@pytest.mark.parametrize(
+    "reply_id",
+    [
+        "opaque-messages-replies",
+        "opaque-replies-only",
+        "opaque-hostedContents-replies",
+        "messages",
+        "replies",
+        "members",
+        "hostedContents",
+        "teams",
+        "channels",
+        "users",
+        "chats",
+    ],
+)
+def test_validate_reply_hosted_continuation_accepts_opaque_reply_id_with_reserved_words(
+    reply_id: str,
+) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_slash_reply_hosted_contents_next_link(reply_id),
+    )
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_ROOT_MESSAGE_ID,
+        message_id=reply_id,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_reply_hosted_continuation_accepts_percent_encoded_literal() -> None:
+    reply_id = "reply'delta/special"
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_odata_percent_encoded_reply_hosted_contents_next_link(reply_id),
+    )
+    validated = validate_msgraph_teams_channel_hosted_contents_continuation(
+        continuation,
+        team_id=_TEAM_ID,
+        channel_id=_CHANNEL_ID,
+        thread_root_id=_ROOT_MESSAGE_ID,
+        message_id=reply_id,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        graph_base_url=_GRAPH_BASE,
+    )
+    assert validated == continuation
+    assert validated is not continuation
+
+
+def test_validate_reply_hosted_continuation_rejects_root_hosted_path_for_reply_context() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_hosted_contents_next_link(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
+        validate_msgraph_teams_channel_hosted_contents_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_ROOT_MESSAGE_ID,
+            message_id=_REPLY_MESSAGE_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+def test_validate_root_hosted_continuation_rejects_reply_path_for_root_context() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_reply_hosted_contents_next_link(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
+        validate_msgraph_teams_channel_hosted_contents_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_ROOT_MESSAGE_ID,
+            message_id=_ROOT_MESSAGE_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{quote(_OTHER_ROOT_MESSAGE_ID, safe='')}/replies/"
+        f"{_QUOTED_REPLY_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/"
+        f"{quote('other-reply', safe='')}/hostedContents?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/"
+        f"{_QUOTED_REPLY_MESSAGE_ID}/hostedContents/{_QUOTED_HOSTED_CONTENT_ID}/$value",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/"
+        f"{_QUOTED_REPLY_MESSAGE_ID}/hostedContents/extra?$skiptoken={_SECRET_TOKEN}",
+        f"https://graph.microsoft.com/v1.0/teams/{_QUOTED_TEAM}/channels/"
+        f"{_QUOTED_CHANNEL}/messages/{_QUOTED_ROOT_MESSAGE_ID}/replies/"
+        f"{_QUOTED_REPLY_MESSAGE_ID}/hostedContents/delta?$skiptoken={_SECRET_TOKEN}",
+    ],
+)
+def test_validate_reply_hosted_continuation_rejects_invalid_urls(url: str) -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=url,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        validate_msgraph_teams_channel_hosted_contents_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_ROOT_MESSAGE_ID,
+            message_id=_REPLY_MESSAGE_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            graph_base_url=_GRAPH_BASE,
+        )
+    assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_validate_reply_hosted_continuation_rejects_delta_kind() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.DELTA,
+        url=_reply_hosted_contents_next_link(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
+        validate_msgraph_teams_channel_hosted_contents_continuation(
+            continuation,
+            team_id=_TEAM_ID,
+            channel_id=_CHANNEL_ID,
+            thread_root_id=_ROOT_MESSAGE_ID,
+            message_id=_REPLY_MESSAGE_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+            graph_base_url=_GRAPH_BASE,
+        )
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=_reply_hosted_contents_next_link(),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=_reply_hosted_contents_next_link(reply_id="other-reply-999"),
+        ),
+    ],
+)
+def test_integration_rejects_malformed_reply_hosted_continuation_before_custom_call(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    page = _valid_reply_hosted_content_page()
+    client = _CountingHostedContentClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        integration.read_teams_channel_hosted_contents_page(
+            message=_valid_active_reply(),
+            continuation=continuation,
+        )
+    assert client.call_count == 0
+    assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_integration_valid_reply_hosted_continuation_calls_custom_client_once() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_reply_hosted_contents_next_link(),
+    )
+    page = _valid_reply_hosted_content_page(continuation=continuation)
+    client = _CountingHostedContentClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    returned = integration.read_teams_channel_hosted_contents_page(
+        message=_valid_active_reply(),
+        continuation=continuation,
+    )
+    assert client.call_count == 1
+    assert client.last_continuation == continuation
+    assert client.last_continuation is not continuation
+    assert client.last_continuation is not None
+    assert client.last_continuation.url == continuation.url
+    assert returned.items[0] is not page.items[0]
+    assert returned.message_kind is MsGraphTeamsChannelMessageKind.REPLY
+
+
+@pytest.mark.parametrize(
+    ("page_overrides", "message"),
+    [
+        (
+            {
+                "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
+                "message_remote_id": _ROOT_MESSAGE_ID,
+                "thread_root_remote_id": _ROOT_MESSAGE_ID,
+            },
+            _valid_active_reply(),
+        ),
+        (
+            {
+                "thread_root_remote_id": _OTHER_ROOT_MESSAGE_ID,
+                "items": (
+                    MsGraphTeamsChannelHostedContent(
+                        **_valid_hosted_content_kwargs(
+                            message_remote_id=_REPLY_MESSAGE_ID,
+                            thread_root_remote_id=_OTHER_ROOT_MESSAGE_ID,
+                            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+                            message_revision=_REPLY_REVISION,
+                        )
+                    ),
+                ),
+            },
+            _valid_active_reply(),
+        ),
+        (
+            {
+                "message_remote_id": "wrong-reply",
+                "items": (
+                    MsGraphTeamsChannelHostedContent(
+                        **_valid_hosted_content_kwargs(
+                            message_remote_id="wrong-reply",
+                            thread_root_remote_id=_ROOT_MESSAGE_ID,
+                            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+                            message_revision=_REPLY_REVISION,
+                        )
+                    ),
+                ),
+            },
+            _valid_active_reply(),
+        ),
+        (
+            {
+                "message_revision": _OTHER_REVISION,
+                "items": (
+                    MsGraphTeamsChannelHostedContent(
+                        **_valid_hosted_content_kwargs(
+                            message_remote_id=_REPLY_MESSAGE_ID,
+                            thread_root_remote_id=_ROOT_MESSAGE_ID,
+                            message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+                            message_revision=_OTHER_REVISION,
+                        )
+                    ),
+                ),
+            },
+            _valid_active_reply(),
+        ),
+    ],
+)
+def test_integration_custom_client_malformed_reply_hosted_page_rejected(
+    page_overrides: dict[str, object],
+    message: MsGraphTeamsChannelMessage,
+) -> None:
+    if page_overrides.get("message_kind") is MsGraphTeamsChannelMessageKind.ROOT:
+        page = MsGraphTeamsChannelHostedContentPage.model_construct(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
+            message_remote_id=_ROOT_MESSAGE_ID,
+            thread_root_remote_id=_ROOT_MESSAGE_ID,
+            message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+            message_revision=_REPLY_REVISION,
+            items=(_valid_reply_hosted_content(),),
+        )
+    else:
+        page = _valid_reply_hosted_content_page(**page_overrides)
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(
+            _CustomGraphTeamsChannelHostedContentClient(page=page, http=MagicMock())
+        ),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        integration.read_teams_channel_hosted_contents_page(message=message)
+    assert exc.value.__cause__ is None
