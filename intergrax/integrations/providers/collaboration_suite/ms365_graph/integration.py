@@ -17,6 +17,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter im
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    DEFAULT_MAIL_CONTENT_MAX_CHARS,
     MsGraphDriveContentReadClient,
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
@@ -25,12 +27,22 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionPage,
     MsGraphDrivePermissionsReadClient,
     MsGraphKnowledgeContinuation,
+    MsGraphMailAttachment,
+    MsGraphMailAttachmentPage,
+    MsGraphMailAttachmentsReadClient,
+    MsGraphMailContentReadClient,
+    MsGraphMailFileAttachmentContent,
     MsGraphMailFolderPage,
     MsGraphMailFoldersReadClient,
+    MsGraphMailMessageChange,
+    MsGraphMailMessageContent,
     MsGraphMailMessageDeltaPage,
     MsGraphMailMessagesReadClient,
     validate_msgraph_drive_permission_page,
+    validate_msgraph_mail_attachment_page,
+    validate_msgraph_mail_file_attachment_content,
     validate_msgraph_mail_folder_page,
+    validate_msgraph_mail_message_content,
     validate_msgraph_mail_message_delta_page,
 )
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
@@ -119,6 +131,60 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             mailbox_user_id=mailbox_user_id,
             folder_id=folder_id,
             graph_base_url=graph_base_url,
+        )
+
+    def read_mail_message_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        max_chars: int = DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    ) -> MsGraphMailMessageContent:
+        result = self._require_mail_content_client().read_mail_message_content(
+            message=message,
+            max_chars=max_chars,
+        )
+        return validate_msgraph_mail_message_content(
+            result,
+            message=message,
+            max_chars=max_chars,
+        )
+
+    def read_mail_attachments_page(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailAttachmentPage:
+        result = self._require_mail_attachments_client().read_mail_attachments_page(
+            message=message,
+            continuation=continuation,
+            limit=limit,
+        )
+        graph_base_url = self._graph_base_url_for_mail_attachments_validation()
+        return validate_msgraph_mail_attachment_page(
+            result,
+            message=message,
+            graph_base_url=graph_base_url,
+        )
+
+    def read_mail_file_attachment_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        attachment: MsGraphMailAttachment,
+        max_bytes: int = DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphMailFileAttachmentContent:
+        result = self._require_mail_attachments_client().read_mail_file_attachment_content(
+            message=message,
+            attachment=attachment,
+            max_bytes=max_bytes,
+        )
+        return validate_msgraph_mail_file_attachment_content(
+            result,
+            message=message,
+            attachment=attachment,
+            max_bytes=max_bytes,
         )
 
     def read_drive_file_content(
@@ -241,6 +307,22 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             )
         return client
 
+    def _require_mail_content_client(self) -> MsGraphMailContentReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphMailContentReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Mail content capability",
+            )
+        return client
+
+    def _require_mail_attachments_client(self) -> MsGraphMailAttachmentsReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphMailAttachmentsReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Mail attachments capability",
+            )
+        return client
+
     def _graph_base_url_for_mail_messages_validation(self) -> str:
         client = self._require_client()
         if isinstance(client, GraphRestClient):
@@ -249,6 +331,16 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             return client.rest_client.config.graph_base_url
         raise IntegrationConfigurationError(
             "Microsoft Graph Mail messages delta validation is not configured",
+        )
+
+    def _graph_base_url_for_mail_attachments_validation(self) -> str:
+        client = self._require_client()
+        if isinstance(client, GraphRestClient):
+            return client.config.graph_base_url
+        if isinstance(client, _Ms365GraphCollaborationSuite):
+            return client.rest_client.config.graph_base_url
+        raise IntegrationConfigurationError(
+            "Microsoft Graph Mail attachment validation is not configured",
         )
 
     @classmethod

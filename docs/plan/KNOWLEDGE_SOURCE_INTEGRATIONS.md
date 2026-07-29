@@ -53,8 +53,6 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   shared transport, paging and delta foundation
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE
-  IN_PROGRESS:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-DELTA
   drive inventory, delta and tombstones
@@ -65,20 +63,37 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1B-DRIVE-PERMISSIONS
   caller-visible sharing permissions read
   DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-FOLDERS
   mailbox root and child folder paging
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-MESSAGES-DELTA
   per-folder message metadata delta with immutable IDs
+  DONE:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-COMPLETE
+  text message content, participants, attachment inventory and bounded file content
   NEXT:
-  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-CONTENT
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1C-MAIL-ATTACHMENTS
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
 PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
 PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
+
+Microsoft Graph Mail low-level knowledge-read support is complete.
+
+Mailbox folder paging, per-folder immutable-ID message delta, text message
+content, normalized participants, attachment inventory and bounded ordinary
+file-attachment content reads are implemented.
+
+Removed delta entries remain folder-scoped and are not treated as proof of
+global mailbox deletion.
+
+Item attachments, reference-attachment downloads, MIME, raw internet headers
+and recursive attached-message expansion are intentionally not implemented.
+
+No Microsoft Vendor Knowledge adapter is exposed yet.
 
 Current runtime state:
 

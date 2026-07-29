@@ -17,12 +17,19 @@ from intergrax.integrations.contracts.collaboration_suite import (
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    DEFAULT_MAIL_CONTENT_MAX_CHARS,
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
     MsGraphDriveItem,
     MsGraphDrivePermissionPage,
     MsGraphKnowledgeContinuation,
+    MsGraphMailAttachment,
+    MsGraphMailAttachmentPage,
+    MsGraphMailFileAttachmentContent,
     MsGraphMailFolderPage,
+    MsGraphMailMessageChange,
+    MsGraphMailMessageContent,
     MsGraphMailMessageDeltaPage,
 )
 
@@ -90,6 +97,40 @@ class _Ms365GraphCollaborationSuite:
             folder_id=folder_id,
             continuation=continuation,
             limit=limit,
+        )
+
+    def read_mail_message_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        max_chars: int = DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    ) -> MsGraphMailMessageContent:
+        return self._client.read_mail_message_content(message=message, max_chars=max_chars)
+
+    def read_mail_attachments_page(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailAttachmentPage:
+        return self._client.read_mail_attachments_page(
+            message=message,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_mail_file_attachment_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        attachment: MsGraphMailAttachment,
+        max_bytes: int = DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphMailFileAttachmentContent:
+        return self._client.read_mail_file_attachment_content(
+            message=message,
+            attachment=attachment,
+            max_bytes=max_bytes,
         )
 
     def read_drive_file_content(

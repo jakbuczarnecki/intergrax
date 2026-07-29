@@ -19,6 +19,8 @@ from intergrax.integrations.contracts.collaboration_suite import (
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import Ms365GraphIntegrationConfig
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
     DEFAULT_DRIVE_CONTENT_MAX_BYTES,
+    DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    DEFAULT_MAIL_CONTENT_MAX_CHARS,
     MsGraphDriveDeltaPage,
     MsGraphDriveFileContent,
     MsGraphDriveItem,
@@ -28,8 +30,15 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphDrivePermissionsReader,
     MsGraphKnowledgeContinuation,
     MsGraphKnowledgeTransport,
+    MsGraphMailAttachment,
+    MsGraphMailAttachmentPage,
+    MsGraphMailAttachmentsReader,
+    MsGraphMailContentReader,
+    MsGraphMailFileAttachmentContent,
     MsGraphMailFolderPage,
     MsGraphMailFoldersReader,
+    MsGraphMailMessageChange,
+    MsGraphMailMessageContent,
     MsGraphMailMessageDeltaPage,
     MsGraphMailMessagesReader,
 )
@@ -134,6 +143,15 @@ class GraphRestClient:
             config=config,
             transport=self._knowledge_transport,
         )
+        self._mail_content_reader = MsGraphMailContentReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._mail_attachments_reader = MsGraphMailAttachmentsReader(
+            config=config,
+            transport=self._knowledge_transport,
+            graph_http_client=http_client,
+        )
         self._drive_content_reader: MsGraphDriveContentReader | None = None
         if download_http_client is not None:
             self._drive_content_reader = MsGraphDriveContentReader(
@@ -199,6 +217,43 @@ class GraphRestClient:
             folder_id=folder_id,
             continuation=continuation,
             limit=limit,
+        )
+
+    def read_mail_message_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        max_chars: int = DEFAULT_MAIL_CONTENT_MAX_CHARS,
+    ) -> MsGraphMailMessageContent:
+        return self._mail_content_reader.read_message_content(
+            message=message,
+            max_chars=max_chars,
+        )
+
+    def read_mail_attachments_page(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 100,
+    ) -> MsGraphMailAttachmentPage:
+        return self._mail_attachments_reader.read_attachments_page(
+            message=message,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_mail_file_attachment_content(
+        self,
+        *,
+        message: MsGraphMailMessageChange,
+        attachment: MsGraphMailAttachment,
+        max_bytes: int = DEFAULT_MAIL_ATTACHMENT_MAX_BYTES,
+    ) -> MsGraphMailFileAttachmentContent:
+        return self._mail_attachments_reader.read_file_attachment_content(
+            message=message,
+            attachment=attachment,
+            max_bytes=max_bytes,
         )
 
     def read_drive_file_content(
