@@ -96,17 +96,12 @@ def compile_interaction_draft(
     action_ids = tuple(f"action-{index}" for index in range(1, action_count + 1))
     action_id_by_number = {index: action_ids[index - 1] for index in range(1, action_count + 1)}
 
-    create_name_to_action_id: dict[str, str] = {}
+    create_name_to_action_ids: dict[str, list[str]] = {}
     for index, action in enumerate(draft.actions, start=1):
         if action.action_type != "workspace.create":
             continue
         assert isinstance(action, WorkspaceCreateDraftAction)
-        name = action.name
-        if name in create_name_to_action_id:
-            raise ConversationDraftCompilationError(
-                ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference
-            )
-        create_name_to_action_id[name] = action_ids[index - 1]
+        create_name_to_action_ids.setdefault(action.name, []).append(action_ids[index - 1])
 
     grounded_by_object_id: dict[str, _GroundedSource] = {}
     grounded_by_position: dict[_PositionKey, _GroundedSource] = {}
@@ -185,7 +180,7 @@ def compile_interaction_draft(
         )
         workspace_ref, extra_depends = _compile_workspace_reference(
             _extract_draft_workspace(action),
-            create_name_to_action_id=create_name_to_action_id,
+            create_name_to_action_ids=create_name_to_action_ids,
         )
         depends_on = _merge_depends_on(depends_on, extra_depends)
         compiled = _compile_action(
@@ -304,7 +299,7 @@ def _extract_draft_workspace(action: DraftPlannedAction) -> DraftWorkspaceRefere
 def _compile_workspace_reference(
     workspace: DraftWorkspaceReference | None,
     *,
-    create_name_to_action_id: dict[str, str],
+    create_name_to_action_ids: dict[str, list[str]],
 ) -> tuple[WorkspaceReference | None, tuple[str, ...]]:
     if workspace is None:
         return None, ()
@@ -314,11 +309,16 @@ def _compile_workspace_reference(
             (),
         )
     assert workspace.value is not None
-    create_action_id = create_name_to_action_id.get(workspace.value)
-    if create_action_id is None:
+    matching_action_ids = create_name_to_action_ids.get(workspace.value, ())
+    if not matching_action_ids:
         raise ConversationDraftCompilationError(
             ConversationDraftCompilationErrorCode.invalid_created_workspace_reference
         )
+    if len(matching_action_ids) > 1:
+        raise ConversationDraftCompilationError(
+            ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference
+        )
+    create_action_id = matching_action_ids[0]
     return (
         WorkspaceReference(
             kind=WorkspaceReferenceKind.created_by_action,

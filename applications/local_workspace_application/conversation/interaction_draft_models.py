@@ -276,33 +276,3 @@ class ConversationInteractionDraft(BaseModel):
             raise ValueError("too many clarifications")
         return self
 
-
-CANONICAL_ACTION_TYPES: frozenset[str] = frozenset(
-    {
-        "workspace.list",
-        "workspace.create",
-        "workspace.activate",
-        "workspace.delete",
-        "source.list",
-        "source_candidate.list",
-        "source_candidate.attach",
-        "knowledge.add_attachments",
-        "knowledge.add_sources",
-        "workspace.ask",
-    }
-)
-
-DRAFT_ACTION_TYPES: frozenset[str] = frozenset(
-    {
-        "workspace.list",
-        "workspace.create",
-        "workspace.activate",
-        "workspace.delete",
-        "source.list",
-        "source_candidate.list",
-        "source_candidate.attach",
-        "knowledge.add_attachments",
-        "knowledge.add_sources",
-        "workspace.ask",
-    }
-)

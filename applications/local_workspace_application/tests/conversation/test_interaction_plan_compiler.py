@@ -353,15 +353,39 @@ def test_missing_created_workspace() -> None:
 
 
 @pytest.mark.unit
-def test_duplicate_created_workspace_names() -> None:
+def test_duplicate_created_workspace_names_without_reference() -> None:
     draft = ConversationInteractionDraft(
         actions=(
             WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
             WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
         ),
     )
+    plan = compile_interaction_draft(draft, _request("create dup twice"))
+    assert len(plan.actions) == 2
+    assert plan.actions[0].action_id == "action-1"
+    assert plan.actions[1].action_id == "action-2"
+    assert plan.actions[0].name == "dup"  # type: ignore[attr-defined]
+    assert plan.actions[1].name == "dup"  # type: ignore[attr-defined]
+
+
+@pytest.mark.unit
+def test_duplicate_created_workspace_names_with_ambiguous_reference() -> None:
+    draft = ConversationInteractionDraft(
+        actions=(
+            WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
+            WorkspaceCreateDraftAction(action_type="workspace.create", name="dup"),
+            KnowledgeAddSourcesDraftAction(
+                action_type="knowledge.add_sources",
+                workspace=DraftWorkspaceReference(
+                    kind=WorkspaceReferenceKind.created_by_action,
+                    value="dup",
+                ),
+                sources=(DraftWebUrlSource(object_type="web_url", value="https://dup.example"),),
+            ),
+        ),
+    )
     with pytest.raises(ConversationDraftCompilationError) as exc_info:
-        compile_interaction_draft(draft, _request("create dup twice"))
+        compile_interaction_draft(draft, _request("create dup twice and add https://dup.example"))
     assert exc_info.value.code == ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference
 
 

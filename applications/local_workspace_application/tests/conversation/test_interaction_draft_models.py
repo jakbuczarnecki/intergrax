@@ -8,8 +8,6 @@ import pytest
 from pydantic import ValidationError
 
 from local_workspace_application.conversation.interaction_draft_models import (
-    CANONICAL_ACTION_TYPES,
-    DRAFT_ACTION_TYPES,
     ConversationClarificationDraft,
     ConversationInteractionDraft,
     DraftLocalFileReferenceSource,
@@ -17,8 +15,110 @@ from local_workspace_application.conversation.interaction_draft_models import (
     KnowledgeAddSourcesDraftAction,
     WorkspaceListDraftAction,
 )
-from local_workspace_application.conversation.interaction_models import WorkspaceReferenceKind
+from local_workspace_application.conversation.interaction_models import (
+    ConversationInteractionPlan,
+    WorkspaceReferenceKind,
+)
 from local_workspace_application.conversation.interaction_draft_models import DraftWorkspaceReference
+
+_EXPECTED_ACTION_TYPES = frozenset(
+    {
+        "workspace.list",
+        "workspace.create",
+        "workspace.activate",
+        "workspace.delete",
+        "source.list",
+        "source_candidate.list",
+        "source_candidate.attach",
+        "knowledge.add_attachments",
+        "knowledge.add_sources",
+        "workspace.ask",
+    }
+)
+
+_FORBIDDEN_SCHEMA_PROPERTIES = frozenset(
+    {
+        "plan_version",
+        "response_mode",
+        "objects",
+        "action_id",
+        "object_id",
+        "clarification_id",
+        "source_object_ids",
+        "evidence",
+        "start",
+        "end",
+        "depends_on",
+        "blocks_action_ids",
+    }
+)
+
+_REQUIRED_SEMANTIC_PROPERTIES = frozenset(
+    {
+        "actions",
+        "clarifications",
+        "depends_on_action_numbers",
+        "blocks_action_numbers",
+        "sources",
+        "occurrence",
+    }
+)
+
+
+def _collect_action_type_literals(node: object) -> set[str]:
+    literals: set[str] = set()
+    if isinstance(node, dict):
+        if "action_type" in node:
+            action_type_schema = node["action_type"]
+            if isinstance(action_type_schema, dict):
+                const_value = action_type_schema.get("const")
+                if isinstance(const_value, str):
+                    literals.add(const_value)
+                enum_values = action_type_schema.get("enum")
+                if isinstance(enum_values, list):
+                    literals.update(value for value in enum_values if isinstance(value, str))
+        for key in ("properties", "$defs", "items"):
+            child = node.get(key)
+            if child is not None:
+                literals.update(_collect_action_type_literals(child))
+        for key in ("oneOf", "anyOf", "allOf"):
+            children = node.get(key)
+            if isinstance(children, list):
+                for child in children:
+                    literals.update(_collect_action_type_literals(child))
+        for value in node.values():
+            if value is not node.get("properties") and value is not node.get("$defs"):
+                literals.update(_collect_action_type_literals(value))
+    elif isinstance(node, list):
+        for item in node:
+            literals.update(_collect_action_type_literals(item))
+    return literals
+
+
+def _collect_schema_property_names(node: object) -> set[str]:
+    names: set[str] = set()
+    if isinstance(node, dict):
+        properties = node.get("properties")
+        if isinstance(properties, dict):
+            names.update(properties.keys())
+            for child in properties.values():
+                names.update(_collect_schema_property_names(child))
+        for key in ("$defs", "items"):
+            child = node.get(key)
+            if child is not None:
+                names.update(_collect_schema_property_names(child))
+        for key in ("oneOf", "anyOf", "allOf"):
+            children = node.get(key)
+            if isinstance(children, list):
+                for child in children:
+                    names.update(_collect_schema_property_names(child))
+        for key, value in node.items():
+            if key not in {"properties", "$defs", "items", "oneOf", "anyOf", "allOf"}:
+                names.update(_collect_schema_property_names(value))
+    elif isinstance(node, list):
+        for item in node:
+            names.update(_collect_schema_property_names(item))
+    return names
 
 
 @pytest.mark.unit
@@ -38,30 +138,28 @@ def test_draft_schema_generated_from_class() -> None:
 
 @pytest.mark.unit
 def test_draft_schema_excludes_technical_fields() -> None:
-    schema_text = str(ConversationInteractionDraft.model_json_schema())
-    forbidden = (
-        "action_id",
-        "object_id",
-        "clarification_id",
-        "source_object_ids",
-        '"start"',
-        '"end"',
-    )
-    for token in forbidden:
-        assert token not in schema_text
+    schema = ConversationInteractionDraft.model_json_schema()
+    property_names = _collect_schema_property_names(schema)
+    assert not property_names & _FORBIDDEN_SCHEMA_PROPERTIES
+    assert _REQUIRED_SEMANTIC_PROPERTIES <= property_names
 
 
 @pytest.mark.unit
 def test_every_canonical_action_has_draft_variant() -> None:
-    assert DRAFT_ACTION_TYPES == CANONICAL_ACTION_TYPES
+    canonical = _collect_action_type_literals(ConversationInteractionPlan.model_json_schema())
+    draft = _collect_action_type_literals(ConversationInteractionDraft.model_json_schema())
+    assert canonical
+    assert draft
+    assert draft == canonical
+    assert canonical == _EXPECTED_ACTION_TYPES
 
 
 @pytest.mark.unit
 def test_action_discriminators_use_action_type_literals() -> None:
-    schema = ConversationInteractionDraft.model_json_schema()
-    actions_schema = str(schema)
-    for action_type in CANONICAL_ACTION_TYPES:
-        assert action_type in actions_schema
+    draft_action_types = _collect_action_type_literals(
+        ConversationInteractionDraft.model_json_schema()
+    )
+    assert draft_action_types == _EXPECTED_ACTION_TYPES
 
 
 @pytest.mark.unit
