@@ -13,8 +13,8 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from local_workspace_application.conversation.interaction_draft_models import (
     ConversationInteractionDraft,
     DraftWebUrlSource,
-    DraftWorkspaceReference,
     KnowledgeAddSourcesDraftAction,
+    NameDraftWorkspaceReference,
 )
 from local_workspace_application.conversation.interaction_models import (
     ConversationPlanningAttachment,
@@ -188,7 +188,7 @@ async def test_valid_first_result_single_adapter_call() -> None:
         actions=(
             KnowledgeAddSourcesDraftAction(
                 action_type="knowledge.add_sources",
-                workspace=DraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="projekty"),
+                workspace=NameDraftWorkspaceReference(kind=WorkspaceReferenceKind.name, value="projekty"),
                 sources=(DraftWebUrlSource(object_type="web_url", value="https://portal.vendor.io"),),
             ),
         ),

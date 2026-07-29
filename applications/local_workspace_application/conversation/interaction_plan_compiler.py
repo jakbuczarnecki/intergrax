@@ -9,17 +9,21 @@ from enum import Enum
 from typing import NamedTuple
 
 from local_workspace_application.conversation.interaction_draft_models import (
+    ActiveDraftWorkspaceReference,
     ConversationClarificationDraft,
     ConversationInteractionDraft,
+    CreatedByActionDraftWorkspaceReference,
     DraftLocalFileReferenceSource,
     DraftPlannedAction,
     DraftSource,
     DraftWebUrlSource,
-    DraftWorkspaceReference,
+    DraftWorkspaceReferenceBase,
     KnowledgeAddAttachmentsDraftAction,
     KnowledgeAddSourcesDraftAction,
     SourceCandidateAttachDraftAction,
     SourceCandidateListDraftAction,
+    NameDraftWorkspaceReference,
+    OrdinalDraftWorkspaceReference,
     SourceListDraftAction,
     WorkspaceActivateDraftAction,
     WorkspaceAskDraftAction,
@@ -289,43 +293,63 @@ def _merge_depends_on(
     return tuple(merged)
 
 
-def _extract_draft_workspace(action: DraftPlannedAction) -> DraftWorkspaceReference | None:
+def _extract_draft_workspace(action: DraftPlannedAction) -> DraftWorkspaceReferenceBase | None:
     workspace = getattr(action, "workspace", None)
-    if isinstance(workspace, DraftWorkspaceReference):
+    if isinstance(workspace, DraftWorkspaceReferenceBase):
         return workspace
     return None
 
 
 def _compile_workspace_reference(
-    workspace: DraftWorkspaceReference | None,
+    workspace: DraftWorkspaceReferenceBase | None,
     *,
     create_name_to_action_ids: dict[str, list[str]],
 ) -> tuple[WorkspaceReference | None, tuple[str, ...]]:
     if workspace is None:
         return None, ()
-    if workspace.kind != WorkspaceReferenceKind.created_by_action:
+    if isinstance(workspace, ActiveDraftWorkspaceReference):
         return (
-            WorkspaceReference(kind=workspace.kind, value=workspace.value),
+            WorkspaceReference(
+                kind=WorkspaceReferenceKind.active,
+                value=None,
+            ),
             (),
         )
-    assert workspace.value is not None
-    matching_action_ids = create_name_to_action_ids.get(workspace.value, ())
-    if not matching_action_ids:
-        raise ConversationDraftCompilationError(
-            ConversationDraftCompilationErrorCode.invalid_created_workspace_reference
+    if isinstance(workspace, NameDraftWorkspaceReference):
+        return (
+            WorkspaceReference(
+                kind=WorkspaceReferenceKind.name,
+                value=workspace.value,
+            ),
+            (),
         )
-    if len(matching_action_ids) > 1:
-        raise ConversationDraftCompilationError(
-            ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference
+    if isinstance(workspace, OrdinalDraftWorkspaceReference):
+        return (
+            WorkspaceReference(
+                kind=WorkspaceReferenceKind.ordinal,
+                value=workspace.value,
+            ),
+            (),
         )
-    create_action_id = matching_action_ids[0]
-    return (
-        WorkspaceReference(
-            kind=WorkspaceReferenceKind.created_by_action,
-            value=create_action_id,
-        ),
-        (create_action_id,),
-    )
+    if isinstance(workspace, CreatedByActionDraftWorkspaceReference):
+        matching_action_ids = create_name_to_action_ids.get(workspace.value, ())
+        if not matching_action_ids:
+            raise ConversationDraftCompilationError(
+                ConversationDraftCompilationErrorCode.invalid_created_workspace_reference
+            )
+        if len(matching_action_ids) > 1:
+            raise ConversationDraftCompilationError(
+                ConversationDraftCompilationErrorCode.ambiguous_created_workspace_reference
+            )
+        create_action_id = matching_action_ids[0]
+        return (
+            WorkspaceReference(
+                kind=WorkspaceReferenceKind.created_by_action,
+                value=create_action_id,
+            ),
+            (create_action_id,),
+        )
+    raise TypeError("unsupported draft workspace reference type")
 
 
 def _compile_action(
