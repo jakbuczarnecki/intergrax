@@ -1394,24 +1394,51 @@ create_builtin_token_optimization_layer_catalog()
 
 #### TOKEN-8D — Third-party Plugin Adapter Contract Proof
 
-Prove that an external developer can implement a custom optimization layer and run it through the standard engine path.
+**Status:** **Done / Closed**.
+
+Prove that an explicitly instantiated third-party Token Optimization layer can be registered and executed through the standard registry and pipeline runner while remaining subject to plugin/version resolution, policy gates, source gates, protected-region validation, malformed-result handling, exception containment, rollback, and safe reporting.
 
 Expected proof shape:
 
 ```text
-fake third-party layer
-→ registry
-→ pipeline mode REPLACE
-→ only that layer runs
-→ standard validation/fallback/reporting remains enforced
+test-only third-party plugin descriptor
+→ test-only third-party layer implementation
+→ explicit TokenOptimizationLayerRegistry registration
+→ TokenOptimizationLayerRef with plugin_id and version
+→ TokenOptimizationPipelineConfig(mode=REPLACE)
+→ TokenOptimizationPipelineRunner
+→ normal policy, source, validation, fallback, failure, and receipt behavior
 ```
 
-Out of scope:
+**Closeout:**
 
-- package manager integration
-- marketplace/distribution model
-- remote plugin execution
-- unsafe plugin sandboxing claims
+- synthetic third-party plugin descriptor added under tests (`tests/fixtures/token_optimization/fake_third_party_plugin.py`)
+- synthetic external layer implements existing `TokenOptimizationLayer` protocol
+- no inheritance or new production base class required
+- explicit registry registration proven
+- built-in catalog remains unchanged
+- exact `layer_id + plugin_id + version` resolution proven
+- wrong plugin ID and version produce `PLUGIN_UNAVAILABLE`
+- plugin-only REPLACE pipeline proven
+- lossy policy gate proven
+- source-type gate proven
+- central protected-region fallback proven
+- malformed-result handling proven
+- exception containment proven
+- required-unavailable rollback proven
+- receipts and failure metadata remain raw-content-safe
+- no dynamic loading
+- no package manager integration
+- no marketplace
+- no sandboxing claim
+- no production file changes
+- no new optimization algorithm
+
+**Proven:** interface compatibility, explicit registration, deterministic resolution, policy and validation enforcement, safe malformed-result and exception handling.
+
+**Not proven:** safe execution of untrusted Python, process isolation, sandboxing, package authenticity, dependency safety.
+
+**Next step:** TOKEN-9A — LLM Optimization Router Contract
 
 #### TOKEN-9A — LLM Optimization Router Contract
 
