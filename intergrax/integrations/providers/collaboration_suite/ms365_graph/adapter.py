@@ -44,6 +44,25 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphMailMessageContent,
     MsGraphMailMessageDeltaPage,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+    MsGraphTeamsChat,
+    MsGraphTeamsChatPage,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_members import (
+    MsGraphTeamsChatMemberPage,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
+    DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    MsGraphTeamsChatMessage,
+    MsGraphTeamsChatMessageSnapshotPage,
+    MsGraphTeamsChatMessageWindow,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_hosted_content import (
+    DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
+    MsGraphTeamsChatHostedContent,
+    MsGraphTeamsChatHostedContentBytes,
+    MsGraphTeamsChatHostedContentPage,
+)
 
 
 class _Ms365GraphCollaborationSuite:
@@ -219,6 +238,71 @@ class _Ms365GraphCollaborationSuite:
         return self._client.read_calendar_file_attachment_content(
             event=event,
             attachment=attachment,
+            max_bytes=max_bytes,
+        )
+
+    def read_teams_chats_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+    ) -> MsGraphTeamsChatPage:
+        return self._client.read_teams_chats_page(
+            mailbox_user_id=mailbox_user_id,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_teams_chat_members_page(
+        self,
+        *,
+        chat: MsGraphTeamsChat,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChatMemberPage:
+        return self._client.read_teams_chat_members_page(
+            chat=chat,
+            continuation=continuation,
+        )
+
+    def read_teams_chat_messages_snapshot_page(
+        self,
+        *,
+        chat: MsGraphTeamsChat,
+        window: MsGraphTeamsChatMessageWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        return self._client.read_teams_chat_messages_snapshot_page(
+            chat=chat,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_chat_hosted_contents_page(
+        self,
+        *,
+        message: MsGraphTeamsChatMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChatHostedContentPage:
+        return self._client.read_teams_chat_hosted_contents_page(
+            message=message,
+            continuation=continuation,
+        )
+
+    def read_teams_chat_hosted_content_bytes(
+        self,
+        *,
+        message: MsGraphTeamsChatMessage,
+        hosted_content: MsGraphTeamsChatHostedContent,
+        max_bytes: int = DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
+    ) -> MsGraphTeamsChatHostedContentBytes:
+        return self._client.read_teams_chat_hosted_content_bytes(
+            message=message,
+            hosted_content=hosted_content,
             max_bytes=max_bytes,
         )
 

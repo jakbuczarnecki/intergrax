@@ -75,9 +75,10 @@ MSGRAPH-KNOWLEDGE-READ-SURFACE-1
   text message content, participants, attachment inventory and bounded file content
   DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
-  NEXT:
+  DONE:
   MSGRAPH-KNOWLEDGE-READ-SURFACE-1E-TEAMS-CHAT
-PLANNED:  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
+  NEXT:
+  MSGRAPH-KNOWLEDGE-READ-SURFACE-1F-TEAMS-CHANNEL
 PLANNED:  MSGRAPH-KNOWLEDGE-ADAPTERS-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
@@ -121,6 +122,34 @@ treated as proof of global event deletion.
 No beta Graph endpoint, Calendar Vendor Knowledge adapter, Calendar ACL,
 group calendar, recursive item attachment or reference-attachment download is
 implemented.
+
+Microsoft Graph Teams Chat low-level knowledge-read support is complete using
+stable Graph v1.0 contracts.
+
+Caller-visible chats can be enumerated and complete member rosters can be read.
+
+Each selected chat supports complete paged message snapshots for explicit
+lastModifiedDateTime windows. Stable Graph v1.0 chat-message delta is not used.
+
+Deleted messages are recognized only when Graph explicitly returns
+deletedDateTime. Absence from a window snapshot is not treated as proof of
+global deletion.
+
+Message bodies, senders, mentions, reactions, safe attachment references,
+forwarded-message metadata and bounded Teams-hosted content reads are
+implemented.
+
+Chat messages are a flat collection. No synthetic chat-replies endpoint is
+implemented.
+
+File attachment URLs are retained only as hidden provider references and are
+not downloaded directly. A later Microsoft Vendor Knowledge adapter can resolve
+supported SharePoint and OneDrive references through the existing Drive
+surface.
+
+No beta Graph endpoint, Teams Chat Vendor Knowledge adapter, webhook,
+subscription, rich-card semantic renderer or direct external attachment
+download is implemented.
 
 Current runtime state:
 
