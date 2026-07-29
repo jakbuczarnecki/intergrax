@@ -157,3 +157,111 @@ def test_packing_input_typed_instance_accepted() -> None:
         metadata={"packing_input": packing_input},
     )
     assert packing_input_from_request(request) is packing_input
+
+
+def _request(
+    *,
+    source_type: TokenOptimizationSourceType = TokenOptimizationSourceType.RAG_CONTEXT_PACK,
+    allow_lossy: bool = True,
+    metadata: dict[str, object] | None = None,
+    protected_regions: tuple = (),
+) -> TokenOptimizationRequest:
+    from intergrax.runtime.token_optimization.contracts import ProtectedRegion
+
+    return TokenOptimizationRequest(
+        content="x",
+        source_type=source_type,
+        policy=TokenOptimizationPolicy(
+            enabled=True,
+            profile=TokenOptimizationProfile.CONSERVATIVE,
+            allow_lossy=allow_lossy,
+        ),
+        protected_regions=protected_regions,
+        metadata=metadata or {},
+    )
+
+
+def test_available_rag_without_packing_input() -> None:
+    catalog = create_token_optimization_router_configuration_catalog()
+    available = catalog.available_for(_request(), TokenOptimizationLLMRouterPolicy())
+    ids = {spec.configuration_id for spec in available}
+    assert ids == {
+        TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+        TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+    }
+
+
+def test_available_rag_with_typed_packing_input() -> None:
+    catalog = create_token_optimization_router_configuration_catalog()
+    packing_input = BudgetAwarePackingInput(fragments=())
+    available = catalog.available_for(
+        _request(metadata={"packing_input": packing_input}),
+        TokenOptimizationLLMRouterPolicy(),
+    )
+    ids = {spec.configuration_id for spec in available}
+    assert ids == {
+        TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+        TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+        TokenOptimizationRouterConfigurationId.PACKING_ONLY,
+        TokenOptimizationRouterConfigurationId.EXACT_THEN_PACKING,
+    }
+
+
+def test_available_tool_output_allow_lossy_true() -> None:
+    catalog = create_token_optimization_router_configuration_catalog()
+    available = catalog.available_for(
+        _request(source_type=TokenOptimizationSourceType.TOOL_OUTPUT, allow_lossy=True),
+        TokenOptimizationLLMRouterPolicy(),
+    )
+    ids = {spec.configuration_id for spec in available}
+    assert ids == {
+        TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+        TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+        TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+        TokenOptimizationRouterConfigurationId.EXACT_THEN_EXTRACTIVE,
+        TokenOptimizationRouterConfigurationId.EXTRACTIVE_THEN_EXACT,
+    }
+
+
+def test_available_tool_output_allow_lossy_false() -> None:
+    catalog = create_token_optimization_router_configuration_catalog()
+    available = catalog.available_for(
+        _request(source_type=TokenOptimizationSourceType.TOOL_OUTPUT, allow_lossy=False),
+        TokenOptimizationLLMRouterPolicy(),
+    )
+    ids = {spec.configuration_id for spec in available}
+    assert ids == {
+        TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+        TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+    }
+
+
+def test_available_protected_tool_output_excludes_lossy() -> None:
+    from intergrax.runtime.token_optimization.contracts import (
+        ProtectedRegion,
+        ProtectedRegionKind,
+    )
+
+    catalog = create_token_optimization_router_configuration_catalog()
+    protected = ProtectedRegion(kind=ProtectedRegionKind.IDENTIFIER, value="SECRET")
+    available = catalog.available_for(
+        _request(
+            source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+            allow_lossy=True,
+            protected_regions=(protected,),
+        ),
+        TokenOptimizationLLMRouterPolicy(),
+    )
+    ids = {spec.configuration_id for spec in available}
+    assert TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY not in ids
+    assert TokenOptimizationRouterConfigurationId.EXACT_ONLY in ids
+
+
+def test_available_unsupported_source_type_only_no_optimization() -> None:
+    catalog = create_token_optimization_router_configuration_catalog()
+    available = catalog.available_for(
+        _request(source_type=TokenOptimizationSourceType.SYSTEM_POLICY),
+        TokenOptimizationLLMRouterPolicy(),
+    )
+    ids = {spec.configuration_id for spec in available}
+    assert ids == {TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION}

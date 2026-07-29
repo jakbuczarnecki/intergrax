@@ -1440,13 +1440,25 @@ test-only third-party plugin descriptor
 
 #### TOKEN-9 — LLM Tool-Calling Router, Safe Compiler, Engine Integration and Live E2E
 
-**Status:** **Done / Closed** (live native Ollama E2E verified on `qwen2.5:7b`).
+**Status:** **Accepted / Closed** (TOKEN-9-R1 hardening verified).
 
-Canonical transport is native tool calling via `token_optimization.select_configuration`. Structured output is fallback only when the adapter lacks native tools and router policy allows it. Native tool failure never silently switches transport.
+#### TOKEN-9-R1 — Router Preflight, Capability Failure Semantics and Live E2E Enforcement
+
+**Status:** **Done / Closed** (live native Ollama E2E verified on `qwen2.5:7b`, `repeats=3`).
+
+Hardening delivered in TOKEN-9-R1:
+
+- Disabled policy and `profile=OFF` preflight block all adapter/capability activity before transport selection.
+- Ollama capability resolution distinguishes resolved tools, resolved no-tools, and unresolved failure; unresolved state returns `CAPABILITY_RESOLUTION_FAILED` and never uses structured-output fallback.
+- `available_for()` filters by source type, `allow_lossy`, typed packing input, and protected lossy restrictions.
+- Safe router reports read canonical pipeline receipt order and completion state.
+- Live E2E corpus includes policy-disabled, profile-OFF, and lossy-disallowed cases; hard gates enforce 100% tool-call, execution, pipeline, and review correctness plus zero policy bypass.
+
+Canonical transport is native tool calling via `token_optimization.select_configuration`. Structured output is fallback only when the adapter **resolved** model capabilities and genuinely lacks native tools, and router policy allows it. Native tool failure never silently switches transport.
 
 The model selects only approved configuration IDs from a closed catalog (`no_optimization`, `exact_only`, `extractive_only`, `packing_only`, `exact_then_packing`, `exact_then_extractive`, `extractive_then_exact`). Layer settings, policy, and pipeline mode are compiled deterministically by the platform. Caller policy and central validation remain authoritative. Route invocation is explicit — no global auto-apply.
 
-Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1`. Tested model: `qwen2.5:7b` (native `tools` capability). Ollama tool-choice forcing is not claimed.
+Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1`, `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_MODELS=qwen2.5:7b`, `INTERGRAX_TOKEN_OPTIMIZATION_ROUTER_E2E_REPEATS=3`. Tested model: `qwen2.5:7b` (native `tools` capability). Ollama tool-choice forcing is not claimed. Not every Ollama model declares `tools`.
 
 #### TOKEN-9A — LLM Optimization Router Contract (superseded by TOKEN-9)
 

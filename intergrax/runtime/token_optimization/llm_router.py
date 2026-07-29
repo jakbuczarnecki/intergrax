@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Mapping
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -69,7 +69,8 @@ Routing heuristics:
 - noisy_long_output=true for tool/terminal/log source -> extractive_only or exact_then_extractive
 - Short clean output with noisy_long_output=false -> no_optimization
 - packing_input_available=true without duplicate_lines_detected -> packing_only
-- Protected regions plus lossy need -> set review_required=true"""
+- Protected regions plus lossy need -> set review_required=true
+- Protected regions present -> set review_required=true unless selecting no_optimization"""
 
 
 class _RouterToolOutput(BaseModel):
@@ -129,23 +130,124 @@ def _adapter_model(adapter: LLMAdapter) -> str:
     return str(model or "")
 
 
+@dataclass(frozen=True, slots=True)
+class _TransportSelection:
+    transport: TokenOptimizationRouterTransport
+    failure_reason: TokenOptimizationRouterReason | None
+
+
+def _preflight_policy(
+    router_request: TokenOptimizationLLMRouterRequest,
+) -> TokenOptimizationRouterReason | None:
+    req = router_request.request
+    if not req.policy.enabled:
+        return TokenOptimizationRouterReason.POLICY_DISABLED
+    if req.policy.profile is TokenOptimizationProfile.OFF:
+        return TokenOptimizationRouterReason.PROFILE_OFF
+    return None
+
+
+def _preflight_blocked_result(
+    *,
+    router_request: TokenOptimizationLLMRouterRequest,
+    reason: TokenOptimizationRouterReason,
+    adapter: LLMAdapter,
+) -> TokenOptimizationLLMRouterResult:
+    return TokenOptimizationLLMRouterResult(
+        request_id=router_request.request_id,
+        status=TokenOptimizationRouterStatus.BLOCKED,
+        reason=reason,
+        transport=TokenOptimizationRouterTransport.UNSUPPORTED,
+        configuration_id=None,
+        reason_code=None,
+        risk=None,
+        review_required=None,
+        confidence=None,
+        provider=_adapter_provider(adapter),
+        model=_adapter_model(adapter),
+        tool_call_id=None,
+        pipeline_config=None,
+        pipeline_result=None,
+        executed=False,
+    )
+
+
+def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
+    caps = attribute_access.optional(adapter, "model_capabilities", None)
+    if caps is None:
+        return None
+    resolved = attribute_access.optional(caps, "resolved", None)
+    if type(resolved) is not bool:
+        return None
+    return resolved
+
+
+def _adapter_model_capabilities_set(adapter: LLMAdapter) -> frozenset[str] | None:
+    caps = attribute_access.optional(adapter, "model_capabilities", None)
+    if caps is None:
+        return None
+    capabilities = attribute_access.optional(caps, "capabilities", None)
+    if capabilities is None:
+        return None
+    if not isinstance(capabilities, frozenset):
+        return None
+    return capabilities
+
+
 def _select_transport(
     adapter: LLMAdapter,
     router_policy: TokenOptimizationLLMRouterPolicy,
-) -> TokenOptimizationRouterTransport:
+) -> _TransportSelection:
+    resolved_state = _adapter_model_capabilities_resolved(adapter)
+    if resolved_state is False:
+        return _TransportSelection(
+            transport=TokenOptimizationRouterTransport.UNSUPPORTED,
+            failure_reason=TokenOptimizationRouterReason.CAPABILITY_RESOLUTION_FAILED,
+        )
+
+    if resolved_state is True:
+        capabilities = _adapter_model_capabilities_set(adapter) or frozenset()
+        if "tools" in capabilities:
+            return _TransportSelection(
+                transport=TokenOptimizationRouterTransport.NATIVE_TOOLS,
+                failure_reason=None,
+            )
+        try:
+            structured = bool(adapter.supports_structured_output())
+        except Exception:
+            structured = False
+        if structured and router_policy.allow_structured_output_fallback:
+            return _TransportSelection(
+                transport=TokenOptimizationRouterTransport.STRUCTURED_OUTPUT,
+                failure_reason=None,
+            )
+        return _TransportSelection(
+            transport=TokenOptimizationRouterTransport.UNSUPPORTED,
+            failure_reason=TokenOptimizationRouterReason.UNSUPPORTED_ADAPTER,
+        )
+
     try:
         native = bool(adapter.supports_tools())
     except Exception:
         native = False
     if native:
-        return TokenOptimizationRouterTransport.NATIVE_TOOLS
+        return _TransportSelection(
+            transport=TokenOptimizationRouterTransport.NATIVE_TOOLS,
+            failure_reason=None,
+        )
     try:
         structured = bool(adapter.supports_structured_output())
     except Exception:
         structured = False
     if structured and router_policy.allow_structured_output_fallback:
-        return TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
-    return TokenOptimizationRouterTransport.UNSUPPORTED
+        return _TransportSelection(
+            transport=TokenOptimizationRouterTransport.STRUCTURED_OUTPUT,
+            failure_reason=None,
+        )
+    return _TransportSelection(
+        transport=TokenOptimizationRouterTransport.UNSUPPORTED,
+        failure_reason=TokenOptimizationRouterReason.UNSUPPORTED_ADAPTER,
+    )
 
 
 def _format_available_configurations(
@@ -193,6 +295,11 @@ def _build_router_messages(
             f"noisy_long_output: {str(_is_noisy_long_output(req.content)).lower()}",
             f"protected_region_count: {len(req.protected_regions)}",
             f"protected_region_kinds: {_protected_region_kinds(router_request)}",
+            (
+                "protected_review_required: true"
+                if req.protected_regions
+                else "protected_review_required: false"
+            ),
             f"packing_input_available: {str(packing_available).lower()}",
             f"policy_allow_lossy: {str(req.policy.allow_lossy).lower()}",
             f"policy_profile: {req.policy.profile.value}",
@@ -519,13 +626,25 @@ class TokenOptimizationLLMRouter:
         self,
         router_request: TokenOptimizationLLMRouterRequest,
     ) -> TokenOptimizationLLMRouterResult:
-        transport = _select_transport(self._adapter, router_request.policy)
+        preflight_reason = _preflight_policy(router_request)
+        if preflight_reason is not None:
+            return _preflight_blocked_result(
+                router_request=router_request,
+                reason=preflight_reason,
+                adapter=self._adapter,
+            )
+
+        transport_selection = _select_transport(self._adapter, router_request.policy)
+        transport = transport_selection.transport
         if transport is TokenOptimizationRouterTransport.UNSUPPORTED:
             return _failure_result(
                 router_request=router_request,
                 transport=transport,
                 status=TokenOptimizationRouterStatus.UNSUPPORTED_ADAPTER,
-                reason=TokenOptimizationRouterReason.UNSUPPORTED_ADAPTER,
+                reason=(
+                    transport_selection.failure_reason
+                    or TokenOptimizationRouterReason.UNSUPPORTED_ADAPTER
+                ),
                 adapter=self._adapter,
             )
 
@@ -632,11 +751,46 @@ _ALLOWED_REPORT_FIELDS = frozenset(
         "failed_layer_ids",
         "fallback_used",
         "completed",
+        "required_failure_layer_id",
         "original_character_count",
         "final_character_count",
         "character_delta",
     }
 )
+
+
+def _safe_string_list(value: object) -> list[str] | None:
+    if not isinstance(value, (list, tuple)):
+        return None
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            return None
+        normalized.append(item)
+    return normalized
+
+
+def _safe_bool(value: object) -> bool | None:
+    if type(value) is not bool:
+        return None
+    return value
+
+
+def _safe_receipt_fields(
+    receipt: Mapping[str, object],
+) -> tuple[list[str], bool, str | None] | None:
+    executed_layer_ids = _safe_string_list(receipt.get("executed_layer_ids"))
+    completed = _safe_bool(receipt.get("completed"))
+    failure_id_raw = receipt.get("required_failure_layer_id")
+    if failure_id_raw is None:
+        required_failure_layer_id: str | None = None
+    elif isinstance(failure_id_raw, str):
+        required_failure_layer_id = failure_id_raw
+    else:
+        return None
+    if executed_layer_ids is None or completed is None:
+        return None
+    return executed_layer_ids, completed, required_failure_layer_id
 
 
 def token_optimization_router_result_to_safe_dict(
@@ -670,14 +824,21 @@ def token_optimization_router_result_to_safe_dict(
 
     pipeline_result = result.pipeline_result
     if pipeline_result is not None:
-        payload["executed_layer_ids"] = list(pipeline_result.applied_layer_ids) + list(
-            pipeline_result.bypassed_layer_ids
-        ) + list(pipeline_result.failed_layer_ids)
+        receipt_fields = _safe_receipt_fields(pipeline_result.receipt_metadata)
+        if receipt_fields is None:
+            executed_layer_ids: list[str] = []
+            completed = False
+            required_failure_layer_id = None
+        else:
+            executed_layer_ids, completed, required_failure_layer_id = receipt_fields
+
+        payload["executed_layer_ids"] = executed_layer_ids
         payload["applied_layer_ids"] = list(pipeline_result.applied_layer_ids)
         payload["bypassed_layer_ids"] = list(pipeline_result.bypassed_layer_ids)
         payload["failed_layer_ids"] = list(pipeline_result.failed_layer_ids)
         payload["fallback_used"] = pipeline_result.fallback_used
-        payload["completed"] = len(pipeline_result.failed_layer_ids) == 0
+        payload["completed"] = completed
+        payload["required_failure_layer_id"] = required_failure_layer_id
         payload["original_character_count"] = len(pipeline_result.original_content)
         payload["final_character_count"] = len(pipeline_result.final_content)
         payload["character_delta"] = (
@@ -690,6 +851,7 @@ def token_optimization_router_result_to_safe_dict(
         payload["failed_layer_ids"] = []
         payload["fallback_used"] = False
         payload["completed"] = False
+        payload["required_failure_layer_id"] = None
         payload["original_character_count"] = None
         payload["final_character_count"] = None
         payload["character_delta"] = None

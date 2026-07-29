@@ -15,6 +15,10 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.providers.ollama_capabilities import (
+    OllamaCapabilityResolutionSource,
+    OllamaModelCapabilities,
+)
 from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegion,
     ProtectedRegionKind,
@@ -344,7 +348,9 @@ def test_disabled_policy_blocked() -> None:
         policy=TokenOptimizationPolicy(enabled=False, profile=TokenOptimizationProfile.OFF),
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    assert result.status is TokenOptimizationRouterStatus.BLOCKED
     assert result.reason is TokenOptimizationRouterReason.POLICY_DISABLED
+    assert result.transport is TokenOptimizationRouterTransport.UNSUPPORTED
 
 
 def test_off_profile_blocked() -> None:
@@ -353,7 +359,9 @@ def test_off_profile_blocked() -> None:
         policy=TokenOptimizationPolicy(enabled=True, profile=TokenOptimizationProfile.OFF),
     )
     result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    assert result.status is TokenOptimizationRouterStatus.BLOCKED
     assert result.reason is TokenOptimizationRouterReason.PROFILE_OFF
+    assert result.transport is TokenOptimizationRouterTransport.UNSUPPORTED
 
 
 def test_lossy_blocked_when_not_allowed() -> None:
@@ -490,5 +498,308 @@ def test_corpus_cases_define_required_fields(case: object) -> None:
 
     assert isinstance(case, LLMRouterCorpusCase)
     assert case.case_id.startswith("router.")
-    assert case.acceptable_configuration_ids
+    if case.evaluate_suitability:
+        assert case.acceptable_configuration_ids
     assert case.synthetic_marker
+
+
+class _CountingAdapter(LLMAdapter):
+    provider = "fake-counting"
+    model = "fake-counting"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.supports_tools_calls = 0
+        self.supports_structured_output_calls = 0
+        self.generate_with_tools_calls = 0
+        self.generate_structured_calls = 0
+        self.generate_messages_calls = 0
+        self.messages_built = False
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 8192
+
+    def supports_tools(self) -> bool:
+        self.supports_tools_calls += 1
+        return True
+
+    def supports_structured_output(self) -> bool:
+        self.supports_structured_output_calls += 1
+        return True
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
+    ) -> LLMAdapterResponse:
+        self.generate_messages_calls += 1
+        return build_adapter_response(content="unused")
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: list[dict[str, Any]],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+        run_id: str | None = None,
+    ) -> LLMAdapterResponse:
+        self.generate_with_tools_calls += 1
+        return build_adapter_response(content="")
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
+    ) -> LLMStructuredResult[Any]:
+        self.generate_structured_calls += 1
+        raise AssertionError("structured output must not be called during preflight")
+
+
+class _OllamaLikeAdapter(LLMAdapter):
+    provider = "ollama"
+    model = "legacy:7b"
+
+    def __init__(
+        self,
+        *,
+        capabilities: OllamaModelCapabilities,
+        structured_calls: int = 0,
+    ) -> None:
+        super().__init__()
+        self._model_capabilities = capabilities
+        self.structured_calls = structured_calls
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 8192
+
+    @property
+    def model_capabilities(self) -> OllamaModelCapabilities:
+        return self._model_capabilities
+
+    def supports_tools(self) -> bool:
+        return self._model_capabilities.supports_tools
+
+    def supports_structured_output(self) -> bool:
+        return True
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
+    ) -> LLMAdapterResponse:
+        return build_adapter_response(content="unused")
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        run_id: str | None = None,
+    ) -> LLMStructuredResult[Any]:
+        self.structured_calls += 1
+        return LLMStructuredResult(
+            parsed=_decision(TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION),
+            response=build_adapter_response(content="{}"),
+        )
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: list[dict[str, Any]],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+        run_id: str | None = None,
+    ) -> LLMAdapterResponse:
+        return build_adapter_response(
+            content="",
+            tool_calls=(
+                LLMToolCall(
+                    id="ollama-call",
+                    name=ROUTER_TOOL_ID,
+                    arguments_json=_decision(
+                        TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+                    ).model_dump_json(),
+                ),
+            ),
+        )
+
+
+def _assert_zero_adapter_activity(adapter: _CountingAdapter) -> None:
+    assert adapter.supports_tools_calls == 0
+    assert adapter.supports_structured_output_calls == 0
+    assert adapter.generate_with_tools_calls == 0
+    assert adapter.generate_structured_calls == 0
+    assert adapter.generate_messages_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("policy", "expected_reason"),
+    [
+        (
+            TokenOptimizationPolicy(enabled=False, profile=TokenOptimizationProfile.OFF),
+            TokenOptimizationRouterReason.POLICY_DISABLED,
+        ),
+        (
+            TokenOptimizationPolicy(enabled=True, profile=TokenOptimizationProfile.OFF),
+            TokenOptimizationRouterReason.PROFILE_OFF,
+        ),
+    ],
+)
+def test_policy_preflight_blocks_before_adapter_activity(
+    policy: TokenOptimizationPolicy,
+    expected_reason: TokenOptimizationRouterReason,
+) -> None:
+    adapter = _CountingAdapter()
+    request = _router_request(policy=policy)
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    assert result.status is TokenOptimizationRouterStatus.BLOCKED
+    assert result.reason is expected_reason
+    assert result.transport is TokenOptimizationRouterTransport.UNSUPPORTED
+    assert result.executed is False
+    _assert_zero_adapter_activity(adapter)
+
+
+def test_unresolved_ollama_capabilities_fail_closed() -> None:
+    adapter = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="legacy:7b",
+            capabilities=frozenset(),
+            resolved=False,
+            source=OllamaCapabilityResolutionSource.UNAVAILABLE,
+            error_type="ConnectionError",
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    assert result.status is TokenOptimizationRouterStatus.UNSUPPORTED_ADAPTER
+    assert result.reason is TokenOptimizationRouterReason.CAPABILITY_RESOLUTION_FAILED
+    assert adapter.structured_calls == 0
+
+
+def test_unresolved_capabilities_do_not_use_structured_fallback() -> None:
+    adapter = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="legacy:7b",
+            capabilities=frozenset(),
+            resolved=False,
+            source=OllamaCapabilityResolutionSource.UNAVAILABLE,
+            error_type="InvalidCapabilities",
+        )
+    )
+    TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    assert adapter.structured_calls == 0
+
+
+def test_resolved_no_tools_model_uses_structured_fallback() -> None:
+    adapter = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="legacy:7b",
+            capabilities=frozenset({"completion"}),
+            resolved=True,
+            source=OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE,
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    assert result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
+    assert adapter.structured_calls == 1
+
+
+def test_resolved_tools_model_uses_native_transport() -> None:
+    adapter = _OllamaLikeAdapter(
+        capabilities=OllamaModelCapabilities(
+            model="qwen2.5:7b",
+            capabilities=frozenset({"tools", "completion"}),
+            resolved=True,
+            source=OllamaCapabilityResolutionSource.EXPLICIT_TEST_OVERRIDE,
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    assert result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
+    assert adapter.structured_calls == 0
+
+
+def test_safe_report_preserves_canonical_executed_order() -> None:
+    packing_case = next(
+        case for case in LLM_ROUTER_CORPUS if case.case_id == "router.rag_mixed_dedupe_packing"
+    )
+    packing_input = packing_case.metadata["packing_input"]
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.EXACT_THEN_PACKING,
+            reason_code=TokenOptimizationRouterReasonCode.MIXED_DEDUPLICATION_PACKING,
+        )
+    )
+    request = _router_request(
+        content="unique-line-one\nunique-line-two\n",
+        metadata={"packing_input": packing_input},
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(request)
+    assert result.pipeline_result is not None
+    canonical_order = list(result.pipeline_result.receipt_metadata["executed_layer_ids"])
+    grouped_order = list(result.pipeline_result.applied_layer_ids) + list(
+        result.pipeline_result.bypassed_layer_ids
+    )
+    assert len(canonical_order) == 2
+    assert canonical_order != grouped_order
+    safe = token_optimization_router_result_to_safe_dict(result)
+    assert safe["executed_layer_ids"] == canonical_order
+    assert safe["completed"] is result.pipeline_result.receipt_metadata["completed"]
+
+
+def test_safe_report_includes_required_failure_layer_id() -> None:
+    from intergrax.runtime.token_optimization.contracts import TokenOptimizationPipelineResult
+    from intergrax.runtime.token_optimization.llm_router_contracts import (
+        TokenOptimizationLLMRouterResult,
+    )
+
+    pipeline_result = TokenOptimizationPipelineResult(
+        pipeline_id="router.exact_only",
+        original_content="a",
+        final_content="a",
+        receipt_metadata={
+            "executed_layer_ids": ["builtin.exact_deduplication"],
+            "completed": False,
+            "required_failure_layer_id": "builtin.exact_deduplication",
+            "secret_payload": "must-not-leak",
+        },
+    )
+    router_result = TokenOptimizationLLMRouterResult(
+        request_id="safe-report-test",
+        status=TokenOptimizationRouterStatus.ROUTED,
+        reason=None,
+        transport=TokenOptimizationRouterTransport.NATIVE_TOOLS,
+        configuration_id=TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+        reason_code=TokenOptimizationRouterReasonCode.EXACT_DUPLICATES,
+        risk=TokenOptimizationRouterRisk.LOW,
+        review_required=False,
+        confidence=0.9,
+        provider="fake",
+        model="fake",
+        tool_call_id="call-1",
+        pipeline_config=None,
+        pipeline_result=pipeline_result,
+        executed=True,
+    )
+    safe = token_optimization_router_result_to_safe_dict(router_result)
+    assert safe["required_failure_layer_id"] == "builtin.exact_deduplication"
+    assert safe["completed"] is False
+    dumped = json.dumps(safe)
+    assert "secret_payload" not in dumped
+    assert "must-not-leak" not in dumped

@@ -138,13 +138,25 @@ class TokenOptimizationRouterConfigurationCatalog:
         request: TokenOptimizationRequest,
         router_policy: TokenOptimizationLLMRouterPolicy,
     ) -> tuple[TokenOptimizationRouterConfigurationSpec, ...]:
-        _ = router_policy
+        has_packing_input = packing_input_from_request(request) is not None
+        protected_lossy_blocked = (
+            bool(request.protected_regions)
+            and router_policy.require_review_for_protected_lossy_content
+        )
         available: list[TokenOptimizationRouterConfigurationSpec] = []
         for spec in self._specs:
             if spec.configuration_id is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION:
                 available.append(spec)
-            elif request.source_type in spec.supported_source_types:
-                available.append(spec)
+                continue
+            if request.source_type not in spec.supported_source_types:
+                continue
+            if spec.lossy and not request.policy.allow_lossy:
+                continue
+            if spec.requires_packing_input and not has_packing_input:
+                continue
+            if spec.lossy and protected_lossy_blocked:
+                continue
+            available.append(spec)
         return tuple(available)
 
     def compile(

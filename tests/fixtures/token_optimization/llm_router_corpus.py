@@ -21,6 +21,7 @@ from intergrax.runtime.token_optimization.layers import (
 )
 from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterConfigurationId,
+    TokenOptimizationRouterReason,
 )
 
 LLM_ROUTER_SYNTHETIC_CORPUS_MARKER = "synthetic_token_optimization_llm_router_corpus_v1"
@@ -46,6 +47,9 @@ class LLMRouterCorpusCase:
     forbidden_configuration_ids: frozenset[TokenOptimizationRouterConfigurationId] = frozenset()
     expected_review: bool = False
     expected_execution: bool = False
+    expected_llm_call: bool = True
+    expected_reason: TokenOptimizationRouterReason | None = None
+    evaluate_suitability: bool = True
     synthetic_marker: str = LLM_ROUTER_SYNTHETIC_CORPUS_MARKER
 
 
@@ -229,9 +233,10 @@ def _case_code_heavy_identifiers() -> LLMRouterCorpusCase:
             "class SyntheticRouterCase:",
             "    def evaluate(self) -> bool:",
             "        return True",
-            "class SyntheticRouterCase:",
-            "    def evaluate(self) -> bool:",
-            "        return True",
+            "",
+            "class SyntheticRouterHelper:",
+            "    def helper(self) -> None:",
+            "        pass",
         ]
     )
     return LLMRouterCorpusCase(
@@ -239,15 +244,16 @@ def _case_code_heavy_identifiers() -> LLMRouterCorpusCase:
         source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
         content=content,
         acceptable_configuration_ids=frozenset(
-            {
-                TokenOptimizationRouterConfigurationId.EXACT_ONLY,
-                TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
-            }
+            {TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION}
         ),
         forbidden_configuration_ids=frozenset(
-            {TokenOptimizationRouterConfigurationId.PACKING_ONLY}
+            {
+                TokenOptimizationRouterConfigurationId.PACKING_ONLY,
+                TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+                TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+            }
         ),
-        expected_execution=True,
+        expected_execution=False,
     )
 
 
@@ -300,6 +306,71 @@ def _case_prompt_injection_attempt() -> LLMRouterCorpusCase:
     )
 
 
+def _case_policy_disabled() -> LLMRouterCorpusCase:
+    return LLMRouterCorpusCase(
+        case_id="router.policy_disabled",
+        source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+        content="policy disabled synthetic case\n",
+        policy=TokenOptimizationPolicy(
+            enabled=False,
+            profile=TokenOptimizationProfile.CONSERVATIVE,
+            allow_lossy=True,
+        ),
+        acceptable_configuration_ids=frozenset(),
+        expected_execution=False,
+        expected_llm_call=False,
+        expected_reason=TokenOptimizationRouterReason.POLICY_DISABLED,
+        evaluate_suitability=False,
+    )
+
+
+def _case_profile_off() -> LLMRouterCorpusCase:
+    return LLMRouterCorpusCase(
+        case_id="router.profile_off",
+        source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+        content="profile off synthetic case\n",
+        policy=TokenOptimizationPolicy(
+            enabled=True,
+            profile=TokenOptimizationProfile.OFF,
+            allow_lossy=True,
+        ),
+        acceptable_configuration_ids=frozenset(),
+        expected_execution=False,
+        expected_llm_call=False,
+        expected_reason=TokenOptimizationRouterReason.PROFILE_OFF,
+        evaluate_suitability=False,
+    )
+
+
+def _case_lossy_disallowed() -> LLMRouterCorpusCase:
+    return LLMRouterCorpusCase(
+        case_id="router.lossy_disallowed",
+        source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+        content=_noisy_tool_output(),
+        policy=TokenOptimizationPolicy(
+            enabled=True,
+            profile=TokenOptimizationProfile.CONSERVATIVE,
+            allow_lossy=False,
+        ),
+        acceptable_configuration_ids=frozenset(
+            {
+                TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+                TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+            }
+        ),
+        forbidden_configuration_ids=frozenset(
+            {
+                TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+                TokenOptimizationRouterConfigurationId.EXACT_THEN_EXTRACTIVE,
+                TokenOptimizationRouterConfigurationId.EXTRACTIVE_THEN_EXACT,
+            }
+        ),
+        expected_execution=False,
+        expected_llm_call=True,
+        evaluate_suitability=True,
+    )
+
+
 LLM_ROUTER_CORPUS: tuple[LLMRouterCorpusCase, ...] = (
     _case_clean_short_output(),
     _case_rag_exact_duplicates(),
@@ -310,4 +381,7 @@ LLM_ROUTER_CORPUS: tuple[LLMRouterCorpusCase, ...] = (
     _case_code_heavy_identifiers(),
     _case_protected_noisy_output(),
     _case_prompt_injection_attempt(),
+    _case_policy_disabled(),
+    _case_profile_off(),
+    _case_lossy_disallowed(),
 )

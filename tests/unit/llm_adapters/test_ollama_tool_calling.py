@@ -120,20 +120,60 @@ def test_capability_names_normalized() -> None:
     assert caps.capabilities == frozenset({"tools", "completion"})
 
 
-def test_missing_capability_field_fails_closed() -> None:
+def test_missing_capability_field_unresolved() -> None:
     resolver = OllamaModelCapabilityResolver(
         show_model=lambda _model: SimpleNamespace(),
     )
     caps = resolver.resolve("qwen2.5:14b")
-    assert caps.resolved is True
-    assert caps.supports_tools is False
+    assert caps.resolved is False
+    assert caps.error_type == "MissingCapabilities"
+    assert caps.capabilities == frozenset()
 
 
-def test_malformed_capability_field_fails_closed() -> None:
+def test_null_capabilities_unresolved() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: SimpleNamespace(capabilities=None),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is False
+    assert caps.error_type == "MissingCapabilities"
+
+
+def test_string_capabilities_unresolved() -> None:
     resolver = OllamaModelCapabilityResolver(
         show_model=lambda _model: SimpleNamespace(capabilities="tools"),
     )
     caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is False
+    assert caps.error_type == "InvalidCapabilities"
+    assert caps.capabilities == frozenset()
+
+
+def test_mapping_capabilities_unresolved() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: SimpleNamespace(capabilities={"tools": True}),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is False
+    assert caps.error_type == "InvalidCapabilities"
+
+
+def test_non_string_capability_item_unresolved() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: SimpleNamespace(capabilities=["tools", 1]),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is False
+    assert caps.error_type == "InvalidCapabilities"
+
+
+def test_empty_capability_list_resolved_without_tools() -> None:
+    resolver = OllamaModelCapabilityResolver(
+        show_model=lambda _model: SimpleNamespace(capabilities=[]),
+    )
+    caps = resolver.resolve("qwen2.5:14b")
+    assert caps.resolved is True
+    assert caps.supports_tools is False
     assert caps.capabilities == frozenset()
 
 
@@ -148,13 +188,12 @@ def test_malformed_capability_field_fails_closed() -> None:
         None,
     ],
 )
-def test_capability_resolver_rejects_empty_model_before_provider(model) -> None:
+def test_blank_model_returns_unresolved_without_raising(model) -> None:
     show_model = MagicMock()
     resolver = OllamaModelCapabilityResolver(show_model=show_model)
-
-    with pytest.raises(ValueError, match="^model must be non-empty$"):
-        resolver.resolve(model)  # type: ignore[arg-type]
-
+    caps = resolver.resolve(model)  # type: ignore[arg-type]
+    assert caps.resolved is False
+    assert caps.capabilities == frozenset()
     show_model.assert_not_called()
 
 
@@ -164,6 +203,8 @@ def test_resolver_exception_exposes_only_type() -> None:
     assert caps.resolved is False
     assert caps.error_type == "RuntimeError"
     assert caps.capabilities == frozenset()
+    assert "sensitive" not in str(caps)
+    assert caps.source.value == "unavailable"
 
 
 def test_capability_resolution_cached(fake_chat: MagicMock) -> None:
