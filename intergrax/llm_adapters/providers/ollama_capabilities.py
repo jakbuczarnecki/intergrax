@@ -82,13 +82,7 @@ class OllamaModelCapabilityResolver:
     def resolve(self, model: str) -> OllamaModelCapabilities:
         trimmed = (model or "").strip()
         if not trimmed:
-            return OllamaModelCapabilities(
-                model="",
-                capabilities=frozenset(),
-                resolved=False,
-                source=OllamaCapabilityResolutionSource.UNAVAILABLE,
-                error_type="ValueError",
-            )
+            raise ValueError("model must be non-empty")
         try:
             payload = self._show_model(trimmed)
             raw_caps = attribute_access.optional(payload, "capabilities", None)

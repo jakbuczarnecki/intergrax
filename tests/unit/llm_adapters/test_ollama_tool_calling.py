@@ -137,6 +137,27 @@ def test_malformed_capability_field_fails_closed() -> None:
     assert caps.capabilities == frozenset()
 
 
+@pytest.mark.parametrize(
+    "model",
+    [
+        "",
+        " ",
+        "   ",
+        "\t",
+        "\r\n",
+        None,
+    ],
+)
+def test_capability_resolver_rejects_empty_model_before_provider(model) -> None:
+    show_model = MagicMock()
+    resolver = OllamaModelCapabilityResolver(show_model=show_model)
+
+    with pytest.raises(ValueError, match="^model must be non-empty$"):
+        resolver.resolve(model)  # type: ignore[arg-type]
+
+    show_model.assert_not_called()
+
+
 def test_resolver_exception_exposes_only_type() -> None:
     resolver = _resolver_with_exception()
     caps = resolver.resolve("qwen2.5:14b")
