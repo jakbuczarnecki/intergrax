@@ -1,6 +1,8 @@
 # Local Knowledge Workspace (LKW)
 
-Tier-3 product host for private-by-default, tenant-scoped, deployment-neutral knowledge workspace capabilities: source-backed indexing, semantic search, and synthesis.
+Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral **Hybrid Knowledge Workspace**: indexed knowledge, controlled live provider access (planned), semantic search, grounded Ask, and synthesis.
+
+**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1`); final live Slack platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 **“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 

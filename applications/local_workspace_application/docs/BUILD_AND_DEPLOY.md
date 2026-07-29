@@ -45,6 +45,21 @@ Minimum local stack variables are documented in `.env.example`:
 
 Agent roster and integrations: `manifest.py`, `host/environment_profile.py`, `host/tool_wiring.py`.
 
+### Model runtime profiles (conversation LLM)
+
+LKW receives a provider-neutral `LLMAdapter` through application wiring. The LKW domain must not branch on `ollama` vs `vllm`.
+
+| Profile | Existing configuration | Status |
+|---------|------------------------|--------|
+| **Ollama** (default) | `INTERGRAX_LLM_PROVIDER=ollama`, `INTERGRAX_LLM_MODEL`, `INTERGRAX_DEFAULT_OLLAMA_MODEL` | **IMPLEMENTED** — default local stack |
+| **vLLM** | Commented optional block in `.env.example`: `INTERGRAX_LLM_PROVIDER=vllm`, `INTERGRAX_DEFAULT_VLLM_BASE_URL`, `INTERGRAX_DEFAULT_VLLM_MODEL` | **EXISTING CONFIG** — end-to-end LKW product proof **PLANNED** (`LKW-MODEL-RUNTIME-1`) |
+
+**Embedding provider is separate** from the conversation/reasoning LLM. Switching `INTERGRAX_LLM_PROVIDER` must not silently change embedding model, vector dimensions or indexed collections. Reindexing is not required merely because the chat model changes.
+
+Provider switch may require **application restart** in the initial portability proof. Runtime hot swapping is **not** required.
+
+Slack and LKW product HTTP APIs remain unchanged across runtime profiles. Deployment remains local, hosted, private enterprise or hybrid per [`ARCHITECTURE.md`](ARCHITECTURE.md#deployment-storage-and-tenancy-model).
+
 ---
 
 ## 2. Recommended local Docker bootstrap

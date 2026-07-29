@@ -1694,3 +1694,40 @@ Inspect the Windows Interaction receipt using `proof_receipt_id` / `proof_receip
 ## Token optimization claim guardrails
 
 For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md).
+
+---
+
+## Target platform proof direction (planned — not completed)
+
+**Status honesty:** The Core Platform Proof above validates indexed local-folder knowledge, Ask Workspace over RAG, background ingest, hosting and observability. The following **planned** proof (`LKW-LIVE-PLATFORM-PROOF-1`) is **not** claimed as completed.
+
+### Already proven (Core Platform Proof)
+
+- LKW starts as a real Tier-3 application with policy-safe observability
+- Persistent indexed knowledge across restart
+- Background ingest through real message-bus/worker path
+- Trusted Ask Workspace over **indexed** RAG with citations and persisted runs
+- Managed workspaces, folder sources, file watcher E2E
+
+### Implemented but awaiting review
+
+- Managed-file upload, Source Candidate intake, end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`)
+
+### Planned proof (future public claim)
+
+```text
+1. Start LKW with Ollama.
+2. Create or select a workspace.
+3. Upload files; add a Web URL.
+4. Configure Microsoft 365, Jira, Confluence (collaboration pack).
+5. Configure Databricks, Power BI, Atlan (data pack) — read-only.
+6. Ask a Hybrid Ask question requiring indexed and live evidence.
+7. Receive one answer with citations and live freshness markers.
+8. Restart with vLLM; repeat without changing LKW domain behavior.
+```
+
+**Not claimed today:** live vendor querying; Databricks/Power BI/Atlan execution; complete Ollama/vLLM product parity; Hybrid Ask; final Slack platform proof.
+
+Claim types must be labeled: **real provider proof**, **controlled integration proof**, or **deterministic fixture proof**.
+
+Canonical roadmap: [`applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md`](../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).

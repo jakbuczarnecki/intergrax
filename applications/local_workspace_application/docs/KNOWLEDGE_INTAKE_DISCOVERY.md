@@ -4,6 +4,7 @@
 **Task:** `LKW-WORKSPACE-CONTENTS-1B-0`  
 **Classification:** docs-only architecture and product contract  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
+**Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Slack adapter contract:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 
@@ -58,6 +59,19 @@ channel-native user input
 ```
 
 One-sentence result: every accepted knowledge item resolves or creates a durable Source before Document persistence; Slack is only one replaceable frontend adapter.
+
+### Knowledge Intake vs Live Access Binding
+
+| Concept | Role | Becomes Documents? |
+|---------|------|-------------------|
+| **Knowledge Intake** | Introduces or synchronizes **durable indexed knowledge** into LKW-owned stores | Yes — through Source → Document → Chunks → Vectors |
+| **Live Access Binding** | Authorizes **bounded query-time read-only** capabilities against a Connection or Remote Resource | No — live results are ephemeral evidence unless explicitly promoted through ingestion workflow |
+
+A provider resource may support **indexed only**, **live only**, or **both**. Live provider queries are **not** another `KnowledgeInput` kind. Do not route live reads through the ingestion pipeline.
+
+Example: a Confluence space may be synchronized into RAG (Indexed Source) and/or searched live at Ask time (Live Access Binding) — independently configured per workspace.
+
+Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 ---
 

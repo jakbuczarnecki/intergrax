@@ -6,7 +6,7 @@
 
 **Status:** target onboarding narrative for the final LKW experience  
 **Scope:** from GitHub discovery to first useful local workspace run  
-**Related:** [`README.md`](../README.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)
+**Related:** [`README.md`](../README.md) · [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) · [`PLATFORM_PROOF_LOOP.md`](PLATFORM_PROOF_LOOP.md)
 
 ---
 
@@ -18,13 +18,12 @@ A new user lands on the Intergrax repository and should understand this in the f
 
 **LKW** is the first product-grade proof application built on that platform.
 
-LKW gives the user a private-by-default knowledge workspace over sources they control:
+LKW gives the user a private-by-default **Hybrid Knowledge Workspace**:
 
-- it can run fully locally or under other deployment topologies (storage location is configuration — see [`ARCHITECTURE.md`](ARCHITECTURE.md#deployment-storage-and-tenancy-model));
-- knowledge enters through **channel-neutral Knowledge Intake** (managed upload, connected source, or explicit web URL) — see [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md);
-- the first **implemented** source provider is local-folder (connected folder / allowlisted roots remain the common first slice);
-- it indexes documents asynchronously into a tenant-scoped knowledge workspace;
-- it answers questions with evidence from those sources;
+- indexed knowledge (uploads, folders, Web URLs, synchronized vendor content);
+- controlled live read-only access to external systems (planned);
+- deployment-neutral operation with provider-neutral frontends (Slack, HTTP, MCP);
+- interchangeable Ollama/vLLM conversation runtime through configuration (portability proof planned);
 - it writes generated drafts only into a shadow workspace;
 - it exposes what happened through trace/evidence inspection;
 - it proves that Intergrax can create, configure, run, package, deploy, and observe real agent applications.
@@ -33,11 +32,12 @@ LKW gives the user a private-by-default knowledge workspace over sources they co
 
 ```text
 user-controlled knowledge input
-→ LKW Knowledge Intake
-→ managed upload / source connector / web resource
-→ asynchronous ingestion (durable Ingestion Operation)
+→ LKW Knowledge Intake (indexed) and/or Live Access Binding (query-time)
+→ Workspace Knowledge Configuration
+→ asynchronous ingestion for indexed sources
 → Document Store + Vector Store
-→ Ask and grounded results
+→ Hybrid Ask (indexed + authorized live evidence)
+→ grounded results with unified provenance
 ```
 
 Common self-hosted / local-folder first slice (still valid):
@@ -62,6 +62,23 @@ Target input modes (product direction — not all implemented yet):
 | Add web URL | explicit web intake |
 
 Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat clients must never receive a raw local path as the product input.
+
+### Target end-to-end journey (status labels)
+
+| Step | Status |
+|------|--------|
+| Install / start LKW | **IMPLEMENTED** (local dev, Docker) |
+| Select Ollama or vLLM conversation runtime | **PLANNED** (`LKW-MODEL-RUNTIME-1`; `INTERGRAX_LLM_PROVIDER` exists; portability not proven) |
+| Create workspace | **IMPLEMENTED** |
+| Upload files | **IMPLEMENTED** (HTTP; Slack attachments via adapter) |
+| Add Web URL | **IMPLEMENTED / READY_FOR_REVIEW** (`1B-5-2`) |
+| Configure Connections (MS365, Jira, …) | **PLANNED** (`LKW-KNOWLEDGE-ACCESS-1`) |
+| Choose indexed vs live access per resource | **PLANNED** |
+| Ask through Slack with Hybrid Ask | **PARTIAL** — indexed Ask **IMPLEMENTED**; live/hybrid **PLANNED** |
+| Inspect citations and live freshness | **PARTIAL** — indexed citations **IMPLEMENTED**; live freshness **PLANNED** |
+| Switch model runtime and repeat | **PLANNED** |
+
+Full journey reference: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
 
 ---
 
