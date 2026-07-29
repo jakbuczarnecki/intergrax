@@ -76,7 +76,7 @@ class MsGraphTeamsChatHostedContent(BaseModel):
     message_remote_id: str
     message_revision: str = Field(repr=False)
 
-    remote_id: str
+    remote_id: str = Field(repr=False)
 
     @field_validator("mailbox_user_id", mode="before")
     @classmethod
@@ -194,7 +194,7 @@ class MsGraphTeamsChatHostedContentBytes(BaseModel):
     message_remote_id: str
     message_revision: str = Field(repr=False)
 
-    hosted_content_remote_id: str
+    hosted_content_remote_id: str = Field(repr=False)
 
     content_type: str | None = None
 
@@ -904,7 +904,7 @@ class MsGraphTeamsChatHostedContentReader:
 
                 data = bytes(buffer)
                 if content_length is not None and len(data) != content_length:
-                    raise MsGraphTeamsChatMessageChanged() from None
+                    raise IntegrationDependencyError(_INVALID_HOSTED_CONTENT_RESPONSE) from None
         except (
             IntegrationConfigurationError,
             IntegrationDependencyError,

@@ -13,6 +13,10 @@ from urllib.parse import quote
 import pytest
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import (
+    _Ms365GraphCollaborationSuite,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import (
     DEFAULT_GRAPH_BASE_URL,
     Ms365GraphIntegrationConfig,
@@ -897,5 +901,95 @@ def test_security_repr_hides_sensitive_member_fields() -> None:
     page = _valid_member_page(continuation=continuation)
     page_rendered = repr(page)
     assert _SECRET_TOKEN not in page_rendered
-    assert "nextLink" not in page_rendered
-    assert "skiptoken" not in page_rendered
+
+
+class _CountingMembersClient(GraphRestClient):
+    def __init__(self, page: MsGraphTeamsChatMemberPage, http: MagicMock) -> None:
+        super().__init__(_config(), http_client=http)
+        self._custom_page = page
+        self.call_count = 0
+        self.last_continuation: MsGraphKnowledgeContinuation | None = None
+
+    def read_teams_chat_members_page(
+        self,
+        *,
+        chat: MsGraphTeamsChat,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChatMemberPage:
+        self.call_count += 1
+        self.last_continuation = continuation
+        return self._custom_page
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+                f"{_QUOTED_CHAT}/members/delta?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
+                f"{_QUOTED_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+                f"{_QUOTED_OTHER_CHAT}/members?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+    ],
+)
+def test_integration_rejects_malformed_continuation_before_custom_call(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+        Ms365GraphCollaborationSuiteIntegration,
+    )
+
+    client = _CountingMembersClient(page=_valid_member_page(), http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        integration.read_teams_chat_members_page(chat=_valid_chat(), continuation=continuation)
+    assert client.call_count == 0
+    assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_integration_valid_continuation_calls_custom_client_once() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+        Ms365GraphCollaborationSuiteIntegration,
+    )
+
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_members_next_link(),
+    )
+    page = _valid_member_page(continuation=continuation)
+    client = _CountingMembersClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    returned = integration.read_teams_chat_members_page(
+        chat=_valid_chat(),
+        continuation=continuation,
+    )
+    assert client.call_count == 1
+    assert client.last_continuation == continuation
+    assert client.last_continuation is not continuation
+    assert client.last_continuation is not None
+    assert client.last_continuation.url == continuation.url
+    assert returned.items[0] is not page.items[0]

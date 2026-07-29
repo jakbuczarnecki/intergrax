@@ -70,7 +70,6 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
     DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
     ABSOLUTE_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
-    ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS,
     MsGraphTeamsChat,
     MsGraphTeamsChatHostedContent,
     MsGraphTeamsChatHostedContentBytes,
@@ -92,6 +91,10 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_teams_chat_message,
     validate_msgraph_teams_chat_message_snapshot_page,
     validate_msgraph_teams_chat_page,
+    validate_msgraph_teams_chats_continuation,
+    validate_msgraph_teams_chat_members_continuation,
+    validate_msgraph_teams_chat_messages_continuation,
+    validate_msgraph_teams_chat_hosted_contents_continuation,
 )
 from intergrax.runtime.integrations.categories.collaboration import CollaborationSuiteIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
@@ -374,12 +377,22 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             raise IntegrationConfigurationError(
                 "invalid Microsoft Graph Teams chats request"
             ) from None
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
+            validated_continuation = validate_msgraph_teams_chats_continuation(
+                continuation,
+                mailbox_user_id=mailbox_user_id,
+                graph_base_url=graph_base_url,
+            )
         result = self._require_teams_chats_client().read_teams_chats_page(
             mailbox_user_id=mailbox_user_id,
-            continuation=continuation,
+            continuation=validated_continuation,
             limit=limit,
         )
-        graph_base_url = self._graph_base_url_for_teams_chat_validation()
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
         return validate_msgraph_teams_chat_page(
             result,
             mailbox_user_id=mailbox_user_id,
@@ -393,11 +406,22 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         continuation: MsGraphKnowledgeContinuation | None = None,
     ) -> MsGraphTeamsChatMemberPage:
         validated_chat = validate_msgraph_teams_chat(chat)
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
+            validated_continuation = validate_msgraph_teams_chat_members_continuation(
+                continuation,
+                mailbox_user_id=validated_chat.mailbox_user_id,
+                chat_id=validated_chat.remote_id,
+                graph_base_url=graph_base_url,
+            )
         result = self._require_teams_chat_members_client().read_teams_chat_members_page(
             chat=validated_chat,
-            continuation=continuation,
+            continuation=validated_continuation,
         )
-        graph_base_url = self._graph_base_url_for_teams_chat_validation()
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
         return validate_msgraph_teams_chat_member_page(
             result,
             chat=validated_chat,
@@ -426,27 +450,41 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             raise IntegrationConfigurationError(
                 "invalid Microsoft Graph Teams chat messages request"
             ) from None
-        if (
-            type(max_chars_per_message) is not int
-            or max_chars_per_message < 1
-            or max_chars_per_message > ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS
-        ):
+        try:
+            from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
+                _validate_message_max_chars,
+            )
+
+            _validate_message_max_chars(max_chars_per_message)
+        except ValueError:
             raise IntegrationConfigurationError(
                 "invalid Microsoft Graph Teams chat messages request"
             ) from None
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
+            validated_continuation = validate_msgraph_teams_chat_messages_continuation(
+                continuation,
+                mailbox_user_id=validated_chat.mailbox_user_id,
+                chat_id=validated_chat.remote_id,
+                graph_base_url=graph_base_url,
+            )
         result = self._require_teams_chat_messages_client().read_teams_chat_messages_snapshot_page(
             chat=validated_chat,
             window=validated_window,
-            continuation=continuation,
+            continuation=validated_continuation,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
         )
-        graph_base_url = self._graph_base_url_for_teams_chat_validation()
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
         return validate_msgraph_teams_chat_message_snapshot_page(
             result,
             chat=validated_chat,
             window=validated_window,
             graph_base_url=graph_base_url,
+            max_chars_per_message=max_chars_per_message,
         )
 
     def read_teams_chat_hosted_contents_page(
@@ -462,11 +500,23 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
 
         if validated_message.state is not MsGraphTeamsChatMessageState.ACTIVE:
             raise IntegrationConfigurationError(_INVALID_HOSTED_CONTENT_REQUEST) from None
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
+            validated_continuation = validate_msgraph_teams_chat_hosted_contents_continuation(
+                continuation,
+                mailbox_user_id=validated_message.mailbox_user_id,
+                chat_id=validated_message.chat_remote_id,
+                message_id=validated_message.remote_id,
+                graph_base_url=graph_base_url,
+            )
         result = self._require_teams_chat_hosted_content_client().read_teams_chat_hosted_contents_page(
             message=validated_message,
-            continuation=continuation,
+            continuation=validated_continuation,
         )
-        graph_base_url = self._graph_base_url_for_teams_chat_validation()
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
         return validate_msgraph_teams_chat_hosted_content_page(
             result,
             message=validated_message,

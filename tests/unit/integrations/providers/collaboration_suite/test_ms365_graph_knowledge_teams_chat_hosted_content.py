@@ -1200,7 +1200,7 @@ def test_download_content_length_mismatch() -> None:
         headers={"Content-Length": "10"},
         chunks=(b"short",),
     )
-    with pytest.raises(MsGraphTeamsChatMessageChanged):
+    with pytest.raises(IntegrationDependencyError, match=_INVALID_RESPONSE):
         _reader(http).read_hosted_content_bytes(
             message=_valid_active_message(),
             hosted_content=hosted,
@@ -1719,6 +1719,87 @@ def test_integration_custom_client_cross_message_continuation_rejected() -> None
         integration.read_teams_chat_hosted_contents_page(message=_valid_active_message())
 
 
+class _CountingHostedContentClient(GraphRestClient):
+    def __init__(self, page: MsGraphTeamsChatHostedContentPage, http: MagicMock) -> None:
+        super().__init__(_config(), http_client=http)
+        self._custom_page = page
+        self.call_count = 0
+        self.last_continuation: MsGraphKnowledgeContinuation | None = None
+
+    def read_teams_chat_hosted_contents_page(
+        self,
+        *,
+        message: MsGraphTeamsChatMessage,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+    ) -> MsGraphTeamsChatHostedContentPage:
+        self.call_count += 1
+        self.last_continuation = continuation
+        return self._custom_page
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+                f"{_QUOTED_CHAT}/messages/{_QUOTED_MESSAGE_ID}/hostedContents/delta"
+            ),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+                f"{_QUOTED_CHAT}/messages/{_QUOTED_OTHER_MESSAGE_ID}/hostedContents?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+    ],
+)
+def test_integration_rejects_malformed_input_continuation_before_custom_call(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    page = _valid_hosted_content_page()
+    client = _CountingHostedContentClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        integration.read_teams_chat_hosted_contents_page(
+            message=_valid_active_message(),
+            continuation=continuation,
+        )
+    assert client.call_count == 0
+    assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_integration_valid_hosted_continuation_calls_custom_client_once() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_hosted_contents_next_link(),
+    )
+    page = _valid_hosted_content_page(continuation=continuation)
+    client = _CountingHostedContentClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    returned = integration.read_teams_chat_hosted_contents_page(
+        message=_valid_active_message(),
+        continuation=continuation,
+    )
+    assert client.call_count == 1
+    assert client.last_continuation == continuation
+    assert client.last_continuation is not continuation
+    assert client.last_continuation is not None
+    assert client.last_continuation.url == continuation.url
+    assert returned.items[0] is not page.items[0]
+
+
 def test_custom_client_validation_not_configured() -> None:
     page = _valid_hosted_content_page()
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
@@ -1775,6 +1856,7 @@ def test_security_repr_hides_sensitive_fields() -> None:
     hosted = _valid_hosted_content()
     rendered = repr(hosted)
     assert _REVISION not in rendered
+    assert _HOSTED_CONTENT_ID not in rendered
 
     page = _valid_hosted_content_page(
         continuation=MsGraphKnowledgeContinuation(
@@ -1791,6 +1873,7 @@ def test_security_repr_hides_sensitive_fields() -> None:
     content = _valid_hosted_content_bytes(data=data)
     content_rendered = repr(content)
     assert data.decode() not in content_rendered
+    assert _HOSTED_CONTENT_ID not in content_rendered
 
 
 def test_default_max_bytes_constants() -> None:

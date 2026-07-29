@@ -9,7 +9,7 @@ import json
 import re
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, Self, runtime_checkable
 from urllib.parse import quote, unquote, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
@@ -268,12 +268,20 @@ def _validate_https_reference_url(value: object) -> str:
     return value
 
 
+def _validate_message_max_chars(value: object) -> int:
+    if type(value) is not int:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    if value < 1 or value > ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    return value
+
+
 class MsGraphTeamsIdentity(BaseModel):
     model_config = _STRICT_MODEL_CONFIG
 
     identity_kind: MsGraphTeamsIdentityKind
 
-    remote_id: str | None = None
+    remote_id: str | None = Field(default=None, repr=False)
     display_name: str | None = Field(default=None, repr=False)
     tenant_id: str | None = Field(default=None, repr=False)
     identity_type: str | None = None
@@ -359,12 +367,19 @@ def _parse_identity_user(payload: object) -> MsGraphTeamsIdentity | None:
         if tenant_id is None:
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
     identity_type: str | None = None
-    if "@odata.type" in payload and payload.get("@odata.type") is not None:
+    if "userIdentityType" in payload and payload.get("userIdentityType") is not None:
         identity_type = _validate_optional_trimmed_string(
-            payload.get("@odata.type"),
+            payload.get("userIdentityType"),
             max_length=_MAX_IDENTITY_TYPE_LEN,
         )
         if identity_type is None:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    if "@odata.type" in payload and payload.get("@odata.type") is not None:
+        validated_odata_type = _validate_optional_trimmed_string(
+            payload.get("@odata.type"),
+            max_length=_MAX_IDENTITY_TYPE_LEN,
+        )
+        if validated_odata_type is None:
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
     if remote_id is None and display_name is None:
         return None
@@ -394,12 +409,19 @@ def _parse_identity_application(payload: object) -> MsGraphTeamsIdentity | None:
         if display_name is None:
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
     identity_type: str | None = None
-    if "@odata.type" in payload and payload.get("@odata.type") is not None:
+    if "applicationIdentityType" in payload and payload.get("applicationIdentityType") is not None:
         identity_type = _validate_optional_trimmed_string(
-            payload.get("@odata.type"),
+            payload.get("applicationIdentityType"),
             max_length=_MAX_IDENTITY_TYPE_LEN,
         )
         if identity_type is None:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    if "@odata.type" in payload and payload.get("@odata.type") is not None:
+        validated_odata_type = _validate_optional_trimmed_string(
+            payload.get("@odata.type"),
+            max_length=_MAX_IDENTITY_TYPE_LEN,
+        )
+        if validated_odata_type is None:
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
     if remote_id is None and display_name is None:
         return None
@@ -576,6 +598,15 @@ class MsGraphTeamsForwardedMessageReference(BaseModel):
     def _validate_original_sent_at(cls, value: object) -> datetime:
         return _normalize_model_datetime(value)
 
+    @field_validator("original_sender", mode="before")
+    @classmethod
+    def _validate_original_sender(cls, value: object) -> MsGraphTeamsIdentity | None:
+        if value is None:
+            return None
+        if not isinstance(value, MsGraphTeamsIdentity):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return value
+
 
 class MsGraphTeamsChatAttachmentReference(BaseModel):
     model_config = _STRICT_MODEL_CONFIG
@@ -621,12 +652,69 @@ class MsGraphTeamsChatAttachmentReference(BaseModel):
     def _validate_optional_name(cls, value: object) -> str | None:
         return _validate_optional_trimmed_string(value, max_length=_MAX_ATTACHMENT_NAME_LEN)
 
+    @field_validator("embedded_content", mode="before")
+    @classmethod
+    def _validate_embedded_content(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        if "\x00" in value:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        if len(value) > _MAX_EMBEDDED_CONTENT_LEN:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return value
+
+    @field_validator("content_url", mode="before")
+    @classmethod
+    def _validate_content_url(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        return _validate_https_reference_url(value)
+
+    @field_validator("forwarded_message", mode="before")
+    @classmethod
+    def _validate_forwarded_message(cls, value: object) -> MsGraphTeamsForwardedMessageReference | None:
+        if value is None:
+            return None
+        if not isinstance(value, MsGraphTeamsForwardedMessageReference):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return value
+
     @field_validator("has_thumbnail_url", mode="before")
     @classmethod
     def _validate_has_thumbnail(cls, value: object) -> bool:
         if type(value) is not bool:
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
         return value
+
+    @model_validator(mode="after")
+    def _validate_attachment_kind_and_content(self) -> Self:
+        expected_kind = _map_attachment_kind(self.content_type)
+        if self.attachment_kind != expected_kind:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+
+        if self.content_url is not None and self.embedded_content is not None:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        if self.content_url is not None and self.forwarded_message is not None:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        if self.embedded_content is not None and self.forwarded_message is not None:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+
+        if self.attachment_kind is MsGraphTeamsChatAttachmentKind.REFERENCE:
+            if self.content_url is None or self.embedded_content is not None or self.forwarded_message is not None:
+                raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        elif self.attachment_kind is MsGraphTeamsChatAttachmentKind.FORWARDED_MESSAGE_REFERENCE:
+            if (
+                self.forwarded_message is None
+                or self.content_url is not None
+                or self.embedded_content is not None
+            ):
+                raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        else:
+            if self.content_url is not None or self.forwarded_message is not None:
+                raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return self
 
 
 def _map_attachment_kind(content_type: str) -> MsGraphTeamsChatAttachmentKind:
@@ -816,6 +904,17 @@ class MsGraphTeamsChatMessage(BaseModel):
     @classmethod
     def _validate_subject(cls, value: object) -> str | None:
         return _validate_optional_trimmed_string(value, max_length=_MAX_SUBJECT_LEN)
+
+    @field_validator("body_content", mode="before")
+    @classmethod
+    def _validate_body_content(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        if "\x00" in value:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return value
 
     @field_validator("locale", mode="before")
     @classmethod
@@ -1203,51 +1302,106 @@ def validate_msgraph_teams_chat_reaction(value: object) -> MsGraphTeamsChatReact
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
 
 
+def validate_msgraph_teams_forwarded_message_reference(
+    value: object,
+) -> MsGraphTeamsForwardedMessageReference:
+    if isinstance(value, MsGraphTeamsForwardedMessageReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if not isinstance(source, dict):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    try:
+        dumped = dict(source)
+        if dumped.get("original_sender") is not None:
+            dumped["original_sender"] = validate_msgraph_teams_identity(dumped["original_sender"])
+        return MsGraphTeamsForwardedMessageReference.model_validate(dumped)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+
 def validate_msgraph_teams_chat_attachment_reference(
     value: object,
 ) -> MsGraphTeamsChatAttachmentReference:
-    if not isinstance(value, MsGraphTeamsChatAttachmentReference):
+    if isinstance(value, MsGraphTeamsChatAttachmentReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if not isinstance(source, dict):
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
     try:
-        dumped = value.model_dump(mode="python")
-        if dumped.get("forwarded_message") is not None:
-            forwarded = dumped["forwarded_message"]
-            if isinstance(forwarded, MsGraphTeamsForwardedMessageReference):
-                forwarded_source: object = forwarded.model_dump(mode="python")
-            elif isinstance(forwarded, dict):
-                forwarded_source = forwarded
-            else:
+        dumped = dict(source)
+        dumped["remote_id"] = validate_msgraph_teams_chat_attachment_id(dumped.get("remote_id"))
+        content_type = dumped.get("content_type")
+        if not isinstance(content_type, str):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        trimmed_type = content_type.strip()
+        if not trimmed_type or _ASCII_CONTROL.search(trimmed_type):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        if len(trimmed_type) > _MAX_CONTENT_TYPE_LEN:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        dumped["content_type"] = trimmed_type
+        attachment_kind = dumped.get("attachment_kind")
+        if not isinstance(attachment_kind, MsGraphTeamsChatAttachmentKind):
+            if not isinstance(attachment_kind, str):
                 raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
-            if forwarded_source.get("original_sender") is not None:
-                forwarded_source["original_sender"] = validate_msgraph_teams_identity(
-                    forwarded_source["original_sender"]
-                )
-            dumped["forwarded_message"] = MsGraphTeamsForwardedMessageReference.model_validate(
-                forwarded_source
+            try:
+                dumped["attachment_kind"] = MsGraphTeamsChatAttachmentKind(attachment_kind)
+            except ValueError:
+                raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        if dumped.get("forwarded_message") is not None:
+            dumped["forwarded_message"] = validate_msgraph_teams_forwarded_message_reference(
+                dumped["forwarded_message"]
             )
         return MsGraphTeamsChatAttachmentReference.model_validate(dumped)
     except (ValueError, TypeError, AttributeError, ValidationError):
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
 
 
-def validate_msgraph_teams_chat_message(value: object) -> MsGraphTeamsChatMessage:
-    if not isinstance(value, MsGraphTeamsChatMessage):
+def validate_msgraph_teams_chat_message(
+    value: object,
+    *,
+    max_chars: int = ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+) -> MsGraphTeamsChatMessage:
+    try:
+        validated_max_chars = _validate_message_max_chars(max_chars)
+    except ValueError:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    if isinstance(value, MsGraphTeamsChatMessage):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if not isinstance(source, dict):
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
     try:
-        dumped = value.model_dump(mode="python")
+        dumped = dict(source)
         if dumped.get("sender") is not None:
             dumped["sender"] = validate_msgraph_teams_identity(dumped["sender"])
         dumped["attachments"] = tuple(
             validate_msgraph_teams_chat_attachment_reference(item)
-            for item in dumped["attachments"]
+            for item in dumped.get("attachments", ())
         )
         dumped["mentions"] = tuple(
-            validate_msgraph_teams_chat_mention(item) for item in dumped["mentions"]
+            validate_msgraph_teams_chat_mention(item) for item in dumped.get("mentions", ())
         )
         dumped["reactions"] = tuple(
-            validate_msgraph_teams_chat_reaction(item) for item in dumped["reactions"]
+            validate_msgraph_teams_chat_reaction(item) for item in dumped.get("reactions", ())
         )
-        return MsGraphTeamsChatMessage.model_validate(dumped)
+        validated = MsGraphTeamsChatMessage.model_validate(dumped)
+        if (
+            validated.state is MsGraphTeamsChatMessageState.ACTIVE
+            and validated.body_content is not None
+            and len(validated.body_content) > validated_max_chars
+        ):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return validated
     except (ValueError, TypeError, AttributeError, ValidationError):
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
 
@@ -1258,7 +1412,13 @@ def validate_msgraph_teams_chat_message_snapshot_page(
     chat: MsGraphTeamsChat,
     window: MsGraphTeamsChatMessageWindow,
     graph_base_url: str,
+    max_chars_per_message: int,
 ) -> MsGraphTeamsChatMessageSnapshotPage:
+    try:
+        validated_max_chars = _validate_message_max_chars(max_chars_per_message)
+    except ValueError:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
     if not isinstance(value, MsGraphTeamsChatMessageSnapshotPage):
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
 
@@ -1295,10 +1455,16 @@ def validate_msgraph_teams_chat_message_snapshot_page(
     for item in raw_items:
         if not isinstance(item, MsGraphTeamsChatMessage):
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
-        validated_item = validate_msgraph_teams_chat_message(item)
+        validated_item = validate_msgraph_teams_chat_message(item, max_chars=validated_max_chars)
         if (
             validated_item.mailbox_user_id != validated_chat.mailbox_user_id
             or validated_item.chat_remote_id != validated_chat.remote_id
+        ):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        if not (
+            validated_window.start_at
+            < validated_item.last_modified_at
+            < validated_window.end_at
         ):
             raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
         validated_items.append(validated_item)
@@ -1457,14 +1623,11 @@ def _validate_message_limits(limit: object, max_chars_per_message: object) -> tu
         raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST)
     if limit < _MIN_MESSAGE_LIMIT or limit > _MAX_MESSAGE_LIMIT:
         raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST)
-    if type(max_chars_per_message) is not int:
-        raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST)
-    if (
-        max_chars_per_message < 1
-        or max_chars_per_message > ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS
-    ):
-        raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST)
-    return limit, max_chars_per_message
+    try:
+        validated_max_chars = _validate_message_max_chars(max_chars_per_message)
+    except ValueError:
+        raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
+    return limit, validated_max_chars
 
 
 def _compare_message_observation(
@@ -1620,5 +1783,6 @@ class MsGraphTeamsChatMessagesReader:
             chat=validated_chat,
             window=validated_window,
             graph_base_url=self._config.graph_base_url,
+            max_chars_per_message=validated_max_chars,
         )
         return page

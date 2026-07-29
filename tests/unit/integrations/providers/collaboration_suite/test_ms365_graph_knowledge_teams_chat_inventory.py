@@ -1132,6 +1132,86 @@ def test_custom_client_validation_not_configured() -> None:
         integration._graph_base_url_for_teams_chat_validation()
 
 
+class _CountingChatsClient(GraphRestClient):
+    def __init__(self, page: MsGraphTeamsChatPage, http: MagicMock) -> None:
+        super().__init__(_config(), http_client=http)
+        self._custom_page = page
+        self.call_count = 0
+        self.last_continuation: MsGraphKnowledgeContinuation | None = None
+
+    def read_teams_chats_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+    ) -> MsGraphTeamsChatPage:
+        self.call_count += 1
+        self.last_continuation = continuation
+        return self._custom_page
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation.model_construct(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=_next_link(path=f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/delta"),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=_next_link(
+                path=f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats"
+            ),
+        ),
+    ],
+)
+def test_integration_rejects_malformed_continuation_before_custom_call(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    page = MsGraphTeamsChatPage(mailbox_user_id=_MAILBOX_USER_ID, items=(_valid_chat(),))
+    client = _CountingChatsClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR) as exc:
+        integration.read_teams_chats_page(
+            mailbox_user_id=_MAILBOX_USER_ID,
+            continuation=continuation,
+            limit=50,
+        )
+    assert client.call_count == 0
+    assert _SECRET_TOKEN not in str(exc.value)
+
+
+def test_integration_valid_continuation_calls_custom_client_once() -> None:
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_next_link(path=f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats"),
+    )
+    page = MsGraphTeamsChatPage(mailbox_user_id=_MAILBOX_USER_ID, items=(_valid_chat(),))
+    client = _CountingChatsClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    returned = integration.read_teams_chats_page(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        continuation=continuation,
+        limit=50,
+    )
+    assert client.call_count == 1
+    assert client.last_continuation == continuation
+    assert client.last_continuation is not continuation
+    assert client.last_continuation is not None
+    assert client.last_continuation.url == continuation.url
+    assert returned.items[0] is not page.items[0]
+
+
 # --- security ---
 
 
