@@ -50,6 +50,7 @@ def test_prompt_cache_invalidation_reason_values_are_stable() -> None:
         "disabled",
         "unsupported_provider",
         "prefix_changed",
+        "append_only_violation",
         "tool_envelope_changed",
         "dynamic_data_in_prefix",
         "ttl_expired",

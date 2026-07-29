@@ -122,6 +122,42 @@ def test_reordered_stable_blocks_break_append_only_invariant() -> None:
     assert result.invalidation_reason is PromptCacheInvalidationReason.PREFIX_CHANGED
 
 
+def test_append_only_extension_keeps_prefix_stable() -> None:
+    previous = build_prefix_snapshot(
+        (
+            PromptCacheBlock("system", "SYNTH-STABLE-POLICY", cacheable=True),
+        )
+    )
+    current = build_prefix_snapshot(
+        (
+            PromptCacheBlock("system", "SYNTH-STABLE-POLICY", cacheable=True),
+            PromptCacheBlock("thread.000000.user", "SYNTH-HISTORY", cacheable=True),
+            PromptCacheBlock("thread.000001.assistant", "SYNTH-REPLY", cacheable=True),
+        )
+    )
+    result = evaluate_prefix_stability(previous, current)
+    assert result.prefix_stability_status == PREFIX_STABILITY_STABLE
+    assert result.invalidation_reason is PromptCacheInvalidationReason.NONE
+    assert preserves_append_only_prefix(previous, current) is True
+
+
+def test_removed_stable_block_reports_append_only_violation() -> None:
+    previous = build_prefix_snapshot(
+        (
+            PromptCacheBlock("system", "SYNTH-STABLE-POLICY", cacheable=True),
+            PromptCacheBlock("thread.000000.user", "SYNTH-HISTORY", cacheable=True),
+        )
+    )
+    current = build_prefix_snapshot(
+        (
+            PromptCacheBlock("system", "SYNTH-STABLE-POLICY", cacheable=True),
+        )
+    )
+    result = evaluate_prefix_stability(previous, current)
+    assert result.prefix_stability_status == PREFIX_STABILITY_INVALIDATED
+    assert result.invalidation_reason is PromptCacheInvalidationReason.APPEND_ONLY_VIOLATION
+
+
 def test_prefix_stability_reports_are_raw_content_safe() -> None:
     for case in PROMPT_CACHE_PREFIX_CORPUS:
         result = evaluate_prefix_stability(case.previous_snapshot(), case.current_snapshot())

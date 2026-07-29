@@ -122,6 +122,17 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterToolInput,
     TokenOptimizationRouterTransport,
 )
+from intergrax.runtime.token_optimization.prompt_assembly import (
+    CacheStablePromptAssembly,
+    CacheStablePromptAssemblyReport,
+    CacheStablePromptState,
+    CacheStableToolEnvelope,
+    PromptAssemblyMessageBlock,
+    PromptCacheBlockFingerprint,
+    assemble_cache_stable_prompt,
+    build_cache_stable_tool_envelope,
+    cache_stable_prompt_assembly_to_safe_dict,
+)
 from intergrax.runtime.token_optimization.prompt_cache import (
     PREFIX_STABILITY_INITIAL,
     PREFIX_STABILITY_INVALIDATED,
@@ -331,6 +342,15 @@ __all__ = [
     "token_optimization_advisory_policy_resolution_to_dict",
     "token_optimization_advisory_report_to_dict",
     "TokenOptimizationAttribution",
+    "CacheStablePromptAssembly",
+    "CacheStablePromptAssemblyReport",
+    "CacheStablePromptState",
+    "CacheStableToolEnvelope",
+    "PromptAssemblyMessageBlock",
+    "PromptCacheBlockFingerprint",
+    "assemble_cache_stable_prompt",
+    "build_cache_stable_tool_envelope",
+    "cache_stable_prompt_assembly_to_safe_dict",
     "build_prefix_snapshot",
     "compute_prefix_hash",
     "evaluate_prefix_stability",

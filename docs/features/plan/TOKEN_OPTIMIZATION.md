@@ -209,7 +209,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next implementation step:** `TOKEN-10B` — Cache-Stable Prompt, Thread and Tool-Envelope Runtime, after TOKEN-10A documentation closeout.
+**Current next implementation step:** `TOKEN-10C` — vLLM Prefix-Cache Provider Integration and Metrics, after TOKEN-10B acceptance.
 
 ### LKW proof phase map (post-design)
 
@@ -1277,7 +1277,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10B**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10C**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1490,7 +1490,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B next implementation task).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review; TOKEN-10C next).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1512,9 +1512,16 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
 
-**Status:** Planned.
+**Status:** **Implemented / Ready for review**.
 
-Wire stable prefix / dynamic tail assembly, append-only invariants, stable tool-envelope fingerprinting, and prefix invalidation reasons into the real request assembly path. Helper-level contracts alone are insufficient.
+**Scope delivered:**
+
+- `intergrax/runtime/token_optimization/prompt_assembly.py` — provider-neutral cache-stable assembler (`assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, redaction-safe state/report contracts).
+- Append-only thread semantics with explicit `APPEND_ONLY_VIOLATION` invalidation reason.
+- Deterministic tool-planning schema export (`build_tool_planning_schema` in `tool_planning_service.py`) and exact prepared-schema forwarding through `plan_native_round`.
+- `TokenOptimizationLLMRouter` integration: stable system prefix block `token_optimization.router.system`, dynamic tail for request facts and untrusted content, caller-owned `previous_prompt_cache_state` on router request/result.
+
+**Out of scope (TOKEN-10C+):** provider cache capabilities, vLLM startup, cache-hit metrics, cache-aware orchestration gate, in-cache compaction, proof harness.
 
 ### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
 
@@ -2023,8 +2030,9 @@ TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
 TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
 TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
-TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Next
-TOKEN-10C..10H vLLM, orchestration, compaction, proof, README — Planned
+TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review
+TOKEN-10C   vLLM prefix-cache provider integration and metrics — Next
+TOKEN-10D..10H orchestration, compaction, proof, README — Planned
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Dict, List, Optional, Union
 
 from intergrax.llm.messages import ChatMessage
@@ -31,12 +31,63 @@ def _registered_tools_for_planning(
     return [item for item in registry.list() if item.contract.tool_id in allowed]
 
 
+def build_tool_planning_schema(
+    registry: ToolRegistry,
+    *,
+    allowed_tool_ids: Sequence[str] | None = None,
+) -> List[Dict[str, Any]]:
+    """Export registered tools in deterministic lexicographic tool_id order."""
+    registered = _registered_tools_for_planning(registry, allowed_tool_ids)
+    ordered = sorted(registered, key=lambda item: item.contract.tool_id)
+    return to_openai_tools(ordered)
+
+
+def _expected_tool_ids(
+    registry: ToolRegistry,
+    allowed_tool_ids: Sequence[str] | None,
+) -> frozenset[str]:
+    return frozenset(
+        item.contract.tool_id
+        for item in _registered_tools_for_planning(registry, allowed_tool_ids)
+    )
+
+
+def _validate_prepared_tools_schema(
+    prepared_tools_schema: Sequence[Mapping[str, Any]],
+    *,
+    expected_tool_ids: frozenset[str],
+) -> List[Dict[str, Any]]:
+    materialized: List[Dict[str, Any]] = [dict(entry) for entry in prepared_tools_schema]
+    observed: list[str] = []
+    for entry in materialized:
+        function = entry.get("function")
+        if not isinstance(function, dict):
+            raise ValueError("prepared_tools_schema entry missing function object")
+        name = function.get("name")
+        if not isinstance(name, str) or not name:
+            raise ValueError("prepared_tools_schema entry missing function.name")
+        if name in observed:
+            raise ValueError(f"duplicate tool id in prepared_tools_schema: {name}")
+        observed.append(name)
+    observed_set = frozenset(observed)
+    if observed_set != expected_tool_ids:
+        missing = expected_tool_ids - observed_set
+        unexpected = observed_set - expected_tool_ids
+        if missing:
+            raise ValueError(f"prepared_tools_schema missing expected tools: {sorted(missing)}")
+        if unexpected:
+            raise ValueError(
+                f"prepared_tools_schema contains unexpected tools: {sorted(unexpected)}"
+            )
+    return materialized
+
+
 def _build_openai_tools_schema(
     registry: ToolRegistry,
     *,
     allowed_tool_ids: Sequence[str] | None = None,
 ) -> List[Dict[str, Any]]:
-    return to_openai_tools(_registered_tools_for_planning(registry, allowed_tool_ids))
+    return build_tool_planning_schema(registry, allowed_tool_ids=allowed_tool_ids)
 
 
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
@@ -236,16 +287,24 @@ class ToolPlanningService:
         allowed_tool_ids: Sequence[str] | None = None,
         run_id: Optional[str] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        prepared_tools_schema: Sequence[Mapping[str, Any]] | None = None,
     ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
         """One native LLM tool round — used by TOOL-ENG-6 multi-iteration loop."""
         if not self._native_tools:
             raise ValueError("plan_native_round requires an LLM adapter with native tool support")
 
         allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
-        tools_schema = _build_openai_tools_schema(
-            self.tools,
-            allowed_tool_ids=allowed_tool_ids,
-        )
+        if prepared_tools_schema is not None:
+            expected = _expected_tool_ids(self.tools, allowed_tool_ids)
+            tools_schema = _validate_prepared_tools_schema(
+                prepared_tools_schema,
+                expected_tool_ids=expected,
+            )
+        else:
+            tools_schema = _build_openai_tools_schema(
+                self.tools,
+                allowed_tool_ids=allowed_tool_ids,
+            )
         pruned = _prune_messages_for_openai(list(messages))
         effective_tool_choice = tool_choice if tool_choice is not None else "auto"
 

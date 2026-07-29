@@ -493,7 +493,7 @@ For requests expected to share a cache prefix:
 9. Prefix invalidation must produce an explicit reason.
 10. Cache stability is a runtime property, not only a test helper.
 
-Existing helper-level contracts (`build_prefix_snapshot`, `evaluate_prefix_stability`, `preserves_append_only_prefix`) are **not yet sufficient** until wired into the real request assembly path (**TOKEN-10B**).
+Existing helper-level contracts (`build_prefix_snapshot`, `evaluate_prefix_stability`, `preserves_append_only_prefix`) are extended by the production assembler in **`intergrax/runtime/token_optimization/prompt_assembly.py`** (**TOKEN-10B** — implemented / ready for review). Provider cache integration remains **TOKEN-10C+**.
 
 #### Append-only prompt/thread invariant
 

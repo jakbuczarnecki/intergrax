@@ -14,6 +14,10 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationPipelineResult,
     TokenOptimizationRequest,
 )
+from intergrax.runtime.token_optimization.prompt_assembly import (
+    CacheStablePromptAssemblyReport,
+    CacheStablePromptState,
+)
 
 
 class TokenOptimizationRouterConfigurationId(StrEnum):
@@ -119,6 +123,7 @@ class TokenOptimizationLLMRouterRequest:
     request: TokenOptimizationRequest
     policy: TokenOptimizationLLMRouterPolicy
     request_id: str
+    previous_prompt_cache_state: CacheStablePromptState | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,3 +143,5 @@ class TokenOptimizationLLMRouterResult:
     pipeline_config: TokenOptimizationPipelineConfig | None
     pipeline_result: TokenOptimizationPipelineResult | None
     executed: bool
+    prompt_cache_state: CacheStablePromptState | None = None
+    prompt_assembly_report: CacheStablePromptAssemblyReport | None = None

@@ -94,7 +94,7 @@ current optimization request data
 9. Prefix invalidation must produce an explicit reason.
 10. Cache stability is a runtime property, not only a test helper.
 
-Helper-level contracts are **not yet sufficient** until wired into the real request assembly path.
+Helper-level contracts are extended by the production assembler at `intergrax/runtime/token_optimization/prompt_assembly.py` (**TOKEN-10B** — implemented / ready for review).
 
 ---
 
@@ -137,7 +137,31 @@ Native tool calling remains valid when the exposed envelope is deterministic and
 
 ---
 
-## 6. Provider ownership boundary
+## 6. As-built runtime (TOKEN-10B)
+
+Production assembler: `intergrax/runtime/token_optimization/prompt_assembly.py`.
+
+Public contracts:
+
+- `PromptAssemblyMessageBlock`, `PromptCacheBlockFingerprint`, `CacheStablePromptState`, `CacheStableToolEnvelope`, `CacheStablePromptAssemblyReport`, `CacheStablePromptAssembly`
+- `assemble_cache_stable_prompt`, `build_cache_stable_tool_envelope`, `cache_stable_prompt_assembly_to_safe_dict`
+
+Router integration (`TokenOptimizationLLMRouter`):
+
+- stable prefix block: `token_optimization.router.system`
+- dynamic tail: request facts + untrusted analyzed content
+- caller-owned continuity: `previous_prompt_cache_state` on `TokenOptimizationLLMRouterRequest`; `prompt_cache_state` + `prompt_assembly_report` on `TokenOptimizationLLMRouterResult`
+
+Tool envelope:
+
+- deterministic export: `build_tool_planning_schema` in `intergrax/runtime/nexus/tools/tool_planning_service.py`
+- exact schema forwarding: `prepared_tools_schema` on `plan_native_round`
+
+Invalidation reasons include `append_only_violation` and `tool_envelope_changed` alongside existing helper-level reasons.
+
+---
+
+## 8. Provider ownership boundary
 
 ### `LLM_ADAPTERS` owns
 
@@ -242,8 +266,9 @@ vLLM proves compute reuse and latency/prefill improvement — not Claude billing
 |-------|--------|
 | `TOKEN-OPT-5A`–`TOKEN-OPT-5E` | **Done / Closed** (contracts + helpers + synthetic policy tests) |
 | `TOKEN-8`, `TOKEN-9` | **Accepted / Closed** (execution engine + router) |
-| `TOKEN-10A` | **Current** (docs-only canon) |
-| `TOKEN-10B`–`TOKEN-10H` | **Planned** |
+| `TOKEN-10A` | **Accepted / Closed** (docs-only canon) |
+| `TOKEN-10B` | **Implemented / Ready for review** (`prompt_assembly.py`, router wiring) |
+| `TOKEN-10C`–`TOKEN-10H` | **Planned** |
 
 See [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-10 for subtask acceptance criteria.
 
@@ -257,4 +282,4 @@ See [`../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption
 
 ## 13. Current decision
 
-Next implementation: **TOKEN-10B** after **TOKEN-10A** docs closeout. Universal platform proof precedes LKW product proof (**LKW-PF6-A**–**C**).
+Next implementation: **TOKEN-10C** (vLLM prefix-cache provider integration). **TOKEN-10B** assembler is implemented at `intergrax/runtime/token_optimization/prompt_assembly.py`. Universal platform proof precedes LKW product proof (**LKW-PF6-A**–**C**).

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from typing import Any, Sequence
 
@@ -34,6 +35,7 @@ from intergrax.runtime.token_optimization.contracts import (
 )
 from intergrax.runtime.token_optimization.layers import BudgetAwarePackingInput
 from intergrax.runtime.token_optimization.llm_router import (
+    ROUTER_STABLE_PREFIX_BLOCK_ID,
     ROUTER_TOOL_ID,
     TokenOptimizationLLMRouter,
     token_optimization_router_result_to_safe_dict,
@@ -919,3 +921,161 @@ def test_safe_report_includes_required_failure_layer_id() -> None:
     dumped = json.dumps(safe)
     assert "secret_payload" not in dumped
     assert "must-not-leak" not in dumped
+
+
+class _SchemaCapturingNativeAdapter(_NativeToolsAdapter):
+    def __init__(self, *, decision: TokenOptimizationRouterToolInput) -> None:
+        super().__init__(decision=decision)
+        self.captured_messages: list[ChatMessage] | None = None
+        self.captured_tools_schema: list[dict[str, Any]] | None = None
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: list[dict[str, Any]],
+        *,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+        run_id: str | None = None,
+    ) -> LLMAdapterResponse:
+        self.captured_messages = list(messages)
+        self.captured_tools_schema = tools_schema
+        return super().generate_with_tools(
+            messages,
+            tools_schema,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
+
+
+def test_router_system_prompt_in_stable_prefix() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    assert result.prompt_assembly_report is not None
+    assert result.prompt_cache_state is not None
+    assert result.prompt_cache_state.stable_block_fingerprints[0].block_id == (
+        ROUTER_STABLE_PREFIX_BLOCK_ID
+    )
+    assert adapter.captured_messages is not None
+    assert adapter.captured_messages[0].role == "system"
+
+
+def test_router_facts_and_content_in_dynamic_tail() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    request = _router_request(content="SYNTH-ROUTER-CONTENT-MARKER")
+    TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    assert adapter.captured_messages is not None
+    assert len(adapter.captured_messages) == 2
+    tail = adapter.captured_messages[1]
+    assert tail.role == "user"
+    assert "source_type:" in tail.content
+    assert "SYNTH-ROUTER-CONTENT-MARKER" in tail.content
+
+
+def test_repeated_requests_with_previous_state_stable_prefix() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    router = TokenOptimizationLLMRouter(adapter=adapter)
+    first = router.route(_router_request(content="SYNTH-FIRST"))
+    second_request = TokenOptimizationLLMRouterRequest(
+        request=_router_request(content="SYNTH-SECOND").request,
+        policy=TokenOptimizationLLMRouterPolicy(),
+        request_id="router-test-2",
+        previous_prompt_cache_state=first.prompt_cache_state,
+    )
+    second = router.route(second_request)
+    assert second.prompt_assembly_report is not None
+    assert second.prompt_assembly_report.prefix_stability_status == "stable"
+
+
+def test_different_request_content_preserves_prefix_hash() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    router = TokenOptimizationLLMRouter(adapter=adapter)
+    first = router.route(_router_request(content="SYNTH-CONTENT-A"))
+    second = router.route(
+        TokenOptimizationLLMRouterRequest(
+            request=_router_request(content="SYNTH-CONTENT-B").request,
+            policy=TokenOptimizationLLMRouterPolicy(),
+            request_id="router-test-2",
+            previous_prompt_cache_state=first.prompt_cache_state,
+        )
+    )
+    assert first.prompt_assembly_report is not None
+    assert second.prompt_assembly_report is not None
+    assert second.prompt_assembly_report.prefix_hash == first.prompt_assembly_report.prefix_hash
+
+
+def test_router_returns_safe_prompt_cache_state() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="SYNTH-SECRET-STATE")
+    )
+    assert result.prompt_cache_state is not None
+    dumped = json.dumps(dataclasses.asdict(result.prompt_cache_state), default=str)
+    assert "SYNTH-SECRET-STATE" not in dumped
+
+
+def test_native_adapter_receives_exact_fingerprinted_tool_schema() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request())
+    assert result.prompt_cache_state is not None
+    assert adapter.captured_tools_schema is not None
+    assert result.prompt_cache_state.tool_envelope_hash is not None
+    from intergrax.runtime.token_optimization.prompt_assembly import (
+        build_cache_stable_tool_envelope,
+    )
+
+    envelope = build_cache_stable_tool_envelope(adapter.captured_tools_schema)
+    assert envelope.envelope_hash == result.prompt_cache_state.tool_envelope_hash
+
+
+def test_structured_fallback_does_not_claim_tool_envelope() -> None:
+    adapter = _StructuredOutputAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(_router_request(content="ok"))
+    assert result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
+    assert result.prompt_assembly_report is not None
+    assert result.prompt_assembly_report.tool_envelope_hash is None
+    assert result.prompt_cache_state is not None
+    assert result.prompt_cache_state.tool_envelope_hash is None
+
+
+def test_safe_router_report_contains_no_raw_content_or_tool_schema() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(content="SYNTH-RAW-CONTENT-MARKER")
+    )
+    safe = token_optimization_router_result_to_safe_dict(result)
+    dumped = json.dumps(safe)
+    assert "SYNTH-RAW-CONTENT-MARKER" not in dumped
+    assert "function" not in dumped
+    assert safe["raw_content_included"] is False
+    assert safe["prefix_hash"] is not None
+
+
+def test_preflight_blocked_returns_no_prompt_cache_state() -> None:
+    adapter = _CountingAdapter()
+    request = _router_request(
+        policy=TokenOptimizationPolicy(enabled=False, profile=TokenOptimizationProfile.OFF),
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    assert result.prompt_cache_state is None
+    assert result.prompt_assembly_report is None
+    _assert_zero_adapter_activity(adapter)

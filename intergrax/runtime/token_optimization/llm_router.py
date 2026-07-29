@@ -17,7 +17,10 @@ from intergrax.llm_adapters.registry.catalog_capabilities import (
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
-from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
+from intergrax.runtime.nexus.tools.tool_planning_service import (
+    ToolPlanningService,
+    build_tool_planning_schema,
+)
 from intergrax.runtime.token_optimization.builtin_catalog import (
     create_builtin_token_optimization_layer_catalog,
 )
@@ -43,12 +46,21 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterToolInput,
     TokenOptimizationRouterTransport,
 )
+from intergrax.runtime.token_optimization.prompt_assembly import (
+    CacheStablePromptAssembly,
+    CacheStablePromptAssemblyReport,
+    CacheStablePromptState,
+    PromptAssemblyMessageBlock,
+    assemble_cache_stable_prompt,
+)
 from intergrax.runtime.token_optimization.pipeline import TokenOptimizationPipelineRunner
-from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+
 from intergrax.utils import attribute_access
 
 ROUTER_TOOL_ID = "token_optimization.select_configuration"
+ROUTER_STABLE_PREFIX_BLOCK_ID = "token_optimization.router.system"
 
 _SYSTEM_PROMPT = """You are a Token Optimization configuration router.
 You select a pre-approved pipeline configuration ID; you do NOT optimize, summarize, or rewrite content.
@@ -287,10 +299,10 @@ def _is_noisy_long_output(content: str, *, line_threshold: int = 50) -> bool:
     return content.count("\n") + (1 if content else 0) >= line_threshold
 
 
-def _build_router_messages(
+def _build_router_dynamic_tail(
     catalog: TokenOptimizationRouterConfigurationCatalog,
     router_request: TokenOptimizationLLMRouterRequest,
-) -> list[ChatMessage]:
+) -> ChatMessage:
     req = router_request.request
     packing_available = packing_input_from_request(req) is not None
     facts = "\n".join(
@@ -318,10 +330,34 @@ def _build_router_messages(
             "</untrusted_content>",
         ]
     )
-    return [
-        ChatMessage(role="system", content=_SYSTEM_PROMPT),
-        ChatMessage(role="user", content=facts),
-    ]
+    return ChatMessage(role="user", content=facts)
+
+
+def _assemble_router_prompt(
+    catalog: TokenOptimizationRouterConfigurationCatalog,
+    router_request: TokenOptimizationLLMRouterRequest,
+    *,
+    include_tool_envelope: bool,
+) -> CacheStablePromptAssembly:
+    tools_schema: list[dict[str, Any]] = []
+    if include_tool_envelope:
+        tools_schema = build_tool_planning_schema(
+            create_token_optimization_router_tool_registry(),
+            allowed_tool_ids=(ROUTER_TOOL_ID,),
+        )
+    return assemble_cache_stable_prompt(
+        stable_prefix_blocks=(
+            PromptAssemblyMessageBlock(
+                block_id=ROUTER_STABLE_PREFIX_BLOCK_ID,
+                message=ChatMessage(role="system", content=_SYSTEM_PROMPT),
+            ),
+        ),
+        dynamic_tail=(
+            _build_router_dynamic_tail(catalog, router_request),
+        ),
+        tools_schema=tools_schema,
+        previous_state=router_request.previous_prompt_cache_state,
+    )
 
 
 def _compile_decision(
@@ -494,6 +530,8 @@ def _failure_result(
     reason: TokenOptimizationRouterReason,
     adapter: LLMAdapter,
     tool_call_id: str | None = None,
+    prompt_cache_state: CacheStablePromptState | None = None,
+    prompt_assembly_report: CacheStablePromptAssemblyReport | None = None,
 ) -> TokenOptimizationLLMRouterResult:
     return TokenOptimizationLLMRouterResult(
         request_id=router_request.request_id,
@@ -511,6 +549,8 @@ def _failure_result(
         pipeline_config=None,
         pipeline_result=None,
         executed=False,
+        prompt_cache_state=prompt_cache_state,
+        prompt_assembly_report=prompt_assembly_report,
     )
 
 
@@ -522,6 +562,8 @@ def _success_result(
     adapter: LLMAdapter,
     tool_call_id: str | None,
     pipeline_result: TokenOptimizationPipelineResult | None = None,
+    prompt_cache_state: CacheStablePromptState | None = None,
+    prompt_assembly_report: CacheStablePromptAssemblyReport | None = None,
 ) -> TokenOptimizationLLMRouterResult:
     return TokenOptimizationLLMRouterResult(
         request_id=router_request.request_id,
@@ -539,6 +581,8 @@ def _success_result(
         pipeline_config=compiled.pipeline_config,
         pipeline_result=pipeline_result,
         executed=pipeline_result is not None,
+        prompt_cache_state=prompt_cache_state,
+        prompt_assembly_report=prompt_assembly_report,
     )
 
 
@@ -561,7 +605,7 @@ class TokenOptimizationLLMRouter:
 
     def _obtain_decision_native(
         self,
-        messages: list[ChatMessage],
+        assembly: CacheStablePromptAssembly,
         *,
         run_id: str,
     ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
@@ -570,12 +614,16 @@ class TokenOptimizationLLMRouter:
             self._tool_registry,
             config=ToolPlanningConfig(temperature=0.0, max_answer_tokens=512),
         )
+        prepared_schema = None
+        if assembly.tool_envelope is not None:
+            prepared_schema = list(assembly.tool_envelope.tools_schema)
         try:
             llm_result, tool_plan = planner.plan_native_round(
-                messages,
+                list(assembly.messages),
                 allowed_tool_ids=(ROUTER_TOOL_ID,),
                 run_id=run_id,
                 tool_choice="required",
+                prepared_tools_schema=prepared_schema,
             )
         except ValidationError:
             return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, None
@@ -655,12 +703,19 @@ class TokenOptimizationLLMRouter:
                 adapter=self._adapter,
             )
 
-        messages = _build_router_messages(self._catalog, router_request)
+        assembly = _assemble_router_prompt(
+            self._catalog,
+            router_request,
+            include_tool_envelope=(
+                transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
+            ),
+        )
+        messages = list(assembly.messages)
         run_id = router_request.request_id
 
         if transport is TokenOptimizationRouterTransport.NATIVE_TOOLS:
             decision, failure_reason, tool_call_id = self._obtain_decision_native(
-                messages,
+                assembly,
                 run_id=run_id,
             )
         else:
@@ -682,6 +737,8 @@ class TokenOptimizationLLMRouter:
                 reason=failure_reason or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
                 adapter=self._adapter,
                 tool_call_id=tool_call_id,
+                prompt_cache_state=assembly.state,
+                prompt_assembly_report=assembly.report,
             )
 
         compiled = _compile_decision(
@@ -695,6 +752,8 @@ class TokenOptimizationLLMRouter:
             compiled=compiled,
             adapter=self._adapter,
             tool_call_id=tool_call_id,
+            prompt_cache_state=assembly.state,
+            prompt_assembly_report=assembly.report,
         )
 
     def route_and_execute(
@@ -733,6 +792,8 @@ class TokenOptimizationLLMRouter:
             pipeline_config=routed.pipeline_config,
             pipeline_result=pipeline_result,
             executed=True,
+            prompt_cache_state=routed.prompt_cache_state,
+            prompt_assembly_report=routed.prompt_assembly_report,
         )
 
 
@@ -762,6 +823,16 @@ _ALLOWED_REPORT_FIELDS = frozenset(
         "original_character_count",
         "final_character_count",
         "character_delta",
+        "prefix_hash",
+        "prefix_stability_status",
+        "prefix_invalidation_reason",
+        "append_only_valid",
+        "append_only_extended",
+        "reusable_prefix_block_count",
+        "tool_envelope_hash",
+        "tool_envelope_stable",
+        "tool_count",
+        "raw_content_included",
     }
 )
 
@@ -862,6 +933,30 @@ def token_optimization_router_result_to_safe_dict(
         payload["original_character_count"] = None
         payload["final_character_count"] = None
         payload["character_delta"] = None
+
+    if result.prompt_assembly_report is not None:
+        report = result.prompt_assembly_report
+        payload["prefix_hash"] = report.prefix_hash
+        payload["prefix_stability_status"] = report.prefix_stability_status
+        payload["prefix_invalidation_reason"] = report.invalidation_reason.value
+        payload["append_only_valid"] = report.append_only_valid
+        payload["append_only_extended"] = report.append_only_extended
+        payload["reusable_prefix_block_count"] = report.reusable_prefix_block_count
+        payload["tool_envelope_hash"] = report.tool_envelope_hash
+        payload["tool_envelope_stable"] = report.tool_envelope_stable
+        payload["tool_count"] = report.tool_count
+        payload["raw_content_included"] = report.raw_content_included
+    else:
+        payload["prefix_hash"] = None
+        payload["prefix_stability_status"] = None
+        payload["prefix_invalidation_reason"] = None
+        payload["append_only_valid"] = None
+        payload["append_only_extended"] = None
+        payload["reusable_prefix_block_count"] = None
+        payload["tool_envelope_hash"] = None
+        payload["tool_envelope_stable"] = None
+        payload["tool_count"] = None
+        payload["raw_content_included"] = False
 
     for key in payload:
         if key not in _ALLOWED_REPORT_FIELDS:

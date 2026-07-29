@@ -194,9 +194,22 @@ def evaluate_prefix_stability(
             dynamic_tail_chars=dynamic_tail_chars,
         )
 
-    reason = PromptCacheInvalidationReason.PREFIX_CHANGED
     if _tool_envelope_ids_changed(previous, current):
         reason = PromptCacheInvalidationReason.TOOL_ENVELOPE_CHANGED
+    elif preserves_append_only_prefix(previous, current):
+        return PromptCachePrefixStabilityResult(
+            prefix_hash=prefix_hash,
+            prefix_stability_status=PREFIX_STABILITY_STABLE,
+            invalidation_reason=PromptCacheInvalidationReason.NONE,
+            stable_block_count=stable_block_count,
+            dynamic_tail_block_count=dynamic_tail_block_count,
+            cacheable_prefix_chars=cacheable_prefix_chars,
+            dynamic_tail_chars=dynamic_tail_chars,
+        )
+    elif _is_append_only_violation(previous, current):
+        reason = PromptCacheInvalidationReason.APPEND_ONLY_VIOLATION
+    else:
+        reason = PromptCacheInvalidationReason.PREFIX_CHANGED
 
     return PromptCachePrefixStabilityResult(
         prefix_hash=prefix_hash,
@@ -207,6 +220,20 @@ def evaluate_prefix_stability(
         cacheable_prefix_chars=cacheable_prefix_chars,
         dynamic_tail_chars=dynamic_tail_chars,
     )
+
+
+def _is_append_only_violation(
+    previous: PromptCachePrefixSnapshot,
+    current: PromptCachePrefixSnapshot,
+) -> bool:
+    """Return True when stable-prefix change is removal or mid-history insertion."""
+    if len(current.stable_blocks) < len(previous.stable_blocks):
+        return True
+    if len(current.stable_blocks) > len(previous.stable_blocks):
+        previous_ids = [block.block_id for block in previous.stable_blocks]
+        current_ids = [block.block_id for block in current.stable_blocks]
+        return previous_ids != current_ids[: len(previous_ids)]
+    return False
 
 
 def preserves_append_only_prefix(
