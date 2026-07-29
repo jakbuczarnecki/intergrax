@@ -202,10 +202,14 @@ Later public-grade proof must include:
 Done / Closed when:
 
 - [x] §Representative workflows, baseline/optimized shapes, categories, quality criteria, protected regions, receipts, observability, and public proof format are defined above.
-- [x] **TOKEN-1A** remains not started.
+- [x] At the time of the LKW-PF6-0 docs-only closeout, TOKEN-1A had not yet started.
 - [x] No code/runtime/test/CI/dependency files changed.
 
-**Next step:** **TOKEN-1A** — shared contracts + package skeleton (Phase TOKEN-1 below). Preceded by **TOKEN-ARCH-0** (§TOKEN-ARCH-0 below).
+**Historical next step at LKW-PF6-0 closeout:** `TOKEN-1A` — shared contracts and package skeleton.
+
+That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
+
+**Current next implementation step:** `TOKEN-10B` — Cache-Stable Prompt, Thread and Tool-Envelope Runtime, after TOKEN-10A documentation closeout.
 
 ### LKW proof phase map (post-design)
 
@@ -1273,7 +1277,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (current) through **TOKEN-10H** — see §TOKEN-10.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10B**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1486,7 +1490,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (`TOKEN-10A` current docs-only task).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B next implementation task).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1500,11 +1504,11 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10A — Cache-Aware Universal Runtime and Proof Canon
 
-**Status:** **Current task** (docs-only architecture and implementation plan).
+**Status:** **Accepted / Closed** (docs-only).
 
 **Scope:** Update feature architecture, feature plan, LLM_ADAPTERS ownership, public claims, LKW integration ordering, audit expectations, and roadmap indexes. No runtime implementation.
 
-**Closeout:** All TOKEN-10A acceptance criteria in task instruction satisfied; documentation checks green; docs-only commit.
+**Closeout:** TOKEN-10A documentation scope and architecture acceptance criteria were completed. The repository-wide `check_docs_domain_pairs.py` check remains blocked by the pre-existing missing `docs/plan/APPLICATION_RUNTIME_GRAPH_MODEL.md` pair. That repository defect was not introduced or modified by TOKEN-10A.
 
 ### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
 
@@ -2018,8 +2022,9 @@ TOKEN-7D    advisory policy presets and resolver — Done / Closed
 TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
 TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
-TOKEN-10A   cache-aware runtime and proof canon (docs) — Current
-TOKEN-10B..10H cache-stable runtime, vLLM, orchestration, compaction, proof, README — Planned
+TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
+TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Next
+TOKEN-10C..10H vLLM, orchestration, compaction, proof, README — Planned
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.
