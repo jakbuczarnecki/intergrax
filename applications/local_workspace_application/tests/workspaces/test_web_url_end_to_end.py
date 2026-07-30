@@ -14,27 +14,49 @@ from typing import Any, Optional, Sequence
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.queueing.providers.document_store.colocated_worker import DocumentStoreTaskWorker
+from intergrax.queueing.providers.document_store.colocated_worker import (
+    DocumentStoreTaskWorker,
+)
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
-from intergrax.websearch.capture.contracts import CapturedWebContent, WebContentCaptureRequest
+from intergrax.websearch.capture.contracts import (
+    CapturedWebContent,
+    WebContentCaptureRequest,
+)
 from intergrax.websearch.capture.url_policy import WebUrlAccessPolicy
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
-from local_workspace_application.host.lkw_task_enricher import build_lkw_combined_task_enricher
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+)
+from local_workspace_application.host.lkw_task_enricher import (
+    build_lkw_combined_task_enricher,
+)
 from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.serving import workspace_routes
-from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
+from local_workspace_application.serving.workspace_routes import (
+    mount_managed_workspace_routes,
+)
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingResult,
+)
 from local_workspace_application.workspaces.knowledge_ingestion import (
     register_knowledge_ingestion_worker_handler,
 )
@@ -44,8 +66,12 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceStatus,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
-from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+from local_workspace_application.workspaces.sync_runtime import (
+    build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.sync_service import (
+    ManagedWorkspaceSyncService,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -54,6 +80,23 @@ FIXTURE_TEXT = "The Oriole warehouse verification code is BLUE-7319."
 PUBLIC_IP = "93.184.216.34"
 SUBMIT_URL = "https://example.com/oriole?track=secret"
 DISPLAY_URL = "https://example.com/oriole"
+RETRIEVAL_MARKER = "BLUE-7319"
+
+
+def _assert_web_url_rag_retrieval_evidence(
+    *,
+    citation: dict[str, Any],
+    source_id: str,
+    marker: str = RETRIEVAL_MARKER,
+    display_url: str = DISPLAY_URL,
+) -> None:
+    """Require the public Ask citation excerpt to contain the retrieved fixture marker."""
+    assert citation["source_id"] == source_id
+    assert citation["file_name"] == display_url
+    assert marker in citation["excerpt"], (
+        "retrieved evidence excerpt must contain the fixture marker"
+    )
+    assert "track=secret" not in json.dumps(citation)
 
 
 async def _resolve_public(_host: str) -> tuple[str, ...]:
@@ -85,7 +128,9 @@ class RecordingFakeLLM(LLMAdapter):
 
 
 class FakeWebContentCapture:
-    def __init__(self, *, policy: WebUrlAccessPolicy | None = None, text: str = FIXTURE_TEXT) -> None:
+    def __init__(
+        self, *, policy: WebUrlAccessPolicy | None = None, text: str = FIXTURE_TEXT
+    ) -> None:
         self._policy = policy or WebUrlAccessPolicy(dns_resolver=_resolve_public)
         self._text = text
 
@@ -219,7 +264,9 @@ def e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("DATA_HOME", str(data_home))
     monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(tmp_path / "docs"))
     (tmp_path / "docs").mkdir()
-    settings = replace(LocalWorkspaceBackendSettings.from_env(), data_home=str(data_home))
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(), data_home=str(data_home)
+    )
     executor = _FakeExecutor()
     sync = ManagedWorkspaceSyncService(repo, executor)  # type: ignore[arg-type]
     runtime = build_managed_workspace_sync_runtime(
@@ -258,7 +305,9 @@ def e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     async def _search_execute(task: Any) -> TaskResult:
         metadata = getattr(task, "metadata", {}) or {}
         workspace_id = str(metadata.get("workspace_id") or "")
-        tenant_id = str(getattr(task, "tenant_id", "") or metadata.get("tenant_id") or "")
+        tenant_id = str(
+            getattr(task, "tenant_id", "") or metadata.get("tenant_id") or ""
+        )
         refs = repo.list_document_refs(tenant_id=tenant_id, workspace_id=workspace_id)
         if not refs:
             return _search_task_result(
@@ -366,7 +415,9 @@ def rag_e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         web_content_capture=capture,
         vectorstore_manager=harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
     )
-    vectorstore_manager = harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager
+    vectorstore_manager = (
+        harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager
+    )
 
     with TestClient(app) as client:
         yield {
@@ -411,7 +462,9 @@ def test_web_url_http_worker_and_ask_projection_with_test_doubles(e2e_bundle) ->
     op = repo.get_operation(tenant_id=tenant, operation_id=operation_id)
     assert op is not None
     assert op.status is WorkspaceOperationStatus.COMPLETED
-    source = repo.get_source(tenant_id=tenant, workspace_id=workspace_id, source_id=source_id)
+    source = repo.get_source(
+        tenant_id=tenant, workspace_id=workspace_id, source_id=source_id
+    )
     assert source is not None
     assert source.status is WorkspaceSourceStatus.READY
     assert repo.list_document_refs(tenant_id=tenant, workspace_id=workspace_id)
@@ -470,7 +523,9 @@ def test_web_url_end_to_end_real_rag_ask_proof(rag_e2e_bundle) -> None:
     assert op.status is WorkspaceOperationStatus.COMPLETED, (op.error_code, op.error)
     assert op.documents_indexed >= 1
 
-    source = repo.get_source(tenant_id=tenant, workspace_id=workspace_id, source_id=source_id)
+    source = repo.get_source(
+        tenant_id=tenant, workspace_id=workspace_id, source_id=source_id
+    )
     assert source is not None
     assert source.status is WorkspaceSourceStatus.READY
 
@@ -494,10 +549,20 @@ def test_web_url_end_to_end_real_rag_ask_proof(rag_e2e_bundle) -> None:
     )
     assert ask.status_code == 200, ask.text
     answer_body = ask.json()
-    assert "BLUE-7319" in answer_body["answer"]
+    assert RETRIEVAL_MARKER in answer_body["answer"]
     assert answer_body["citations"]
     citation = answer_body["citations"][0]
-    assert citation["source_id"] == source_id
-    assert citation["file_name"] == DISPLAY_URL
+    _assert_web_url_rag_retrieval_evidence(citation=citation, source_id=source_id)
     assert "track=secret" not in json.dumps(answer_body)
-    assert "BLUE-7319" in citation.get("excerpt", "") or "BLUE-7319" in answer_body["answer"]
+
+
+def test_web_url_rag_proof_rejects_answer_only_marker_match() -> None:
+    with pytest.raises(AssertionError, match="retrieved evidence excerpt must contain"):
+        _assert_web_url_rag_retrieval_evidence(
+            citation={
+                "source_id": "src-oriole",
+                "file_name": DISPLAY_URL,
+                "excerpt": "The Oriole warehouse verification code is RED-0000.",
+            },
+            source_id="src-oriole",
+        )
