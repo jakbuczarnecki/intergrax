@@ -84,6 +84,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannelContentReader,
     MsGraphTeamsChannelMessage,
     MsGraphTeamsChannelMessageReference,
+    MsGraphTeamsChannelReference,
+    MsGraphTeamsChannelRootMessageReference,
     MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessagesReader,
@@ -550,6 +552,36 @@ class GraphRestClient:
         max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     ) -> MsGraphTeamsChannelReplyPage:
         return self._teams_channel_messages_reader.read_teams_channel_replies_page(
+            root_message=root_message,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_root_messages_page_by_reference(
+        self,
+        *,
+        channel: MsGraphTeamsChannelReference,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        return self._teams_channel_messages_reader.read_teams_channel_root_messages_page_by_reference(
+            channel=channel,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_replies_page_by_reference(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelRootMessageReference,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelReplyPage:
+        return self._teams_channel_messages_reader.read_teams_channel_replies_page_by_reference(
             root_message=root_message,
             continuation=continuation,
             limit=limit,

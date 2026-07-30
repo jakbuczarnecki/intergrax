@@ -30,9 +30,12 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_inventory import (
     MsGraphTeamsChannel,
+    MsGraphTeamsChannelReference,
+    channel_reference_from_channel,
     validate_msgraph_teams_channel,
     validate_msgraph_teams_channel_id,
     validate_msgraph_teams_channel_message_id,
+    validate_msgraph_teams_channel_reference,
     validate_msgraph_teams_team_id,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
@@ -84,6 +87,88 @@ class MsGraphTeamsChannelMessageKind(StrEnum):
 class MsGraphTeamsChannelMessageState(StrEnum):
     ACTIVE = "active"
     DELETED = "deleted"
+
+
+class MsGraphTeamsChannelRootMessageReference(BaseModel):
+    """Identity, revision and state for one Teams channel root post."""
+
+    model_config = _STRICT_MODEL_CONFIG
+
+    team_remote_id: str = Field(repr=False)
+    channel_remote_id: str = Field(repr=False)
+    remote_id: str = Field(repr=False)
+    revision: str = Field(repr=False)
+    state: MsGraphTeamsChannelMessageState
+
+    @field_validator("team_remote_id", mode="before")
+    @classmethod
+    def _validate_team_remote_id(cls, value: object) -> str:
+        return validate_msgraph_teams_team_id(value)
+
+    @field_validator("channel_remote_id", mode="before")
+    @classmethod
+    def _validate_channel_remote_id(cls, value: object) -> str:
+        return validate_msgraph_teams_channel_id(value)
+
+    @field_validator("remote_id", mode="before")
+    @classmethod
+    def _validate_remote_id(cls, value: object) -> str:
+        return validate_msgraph_teams_channel_message_id(value)
+
+    @field_validator("revision", mode="before")
+    @classmethod
+    def _validate_revision_field(cls, value: object) -> str:
+        return _validate_revision(value)
+
+    @field_validator("state", mode="before")
+    @classmethod
+    def _validate_state(cls, value: object) -> MsGraphTeamsChannelMessageState:
+        if not isinstance(value, MsGraphTeamsChannelMessageState):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        return value
+
+
+def validate_msgraph_teams_channel_root_message_reference(
+    value: object,
+) -> MsGraphTeamsChannelRootMessageReference:
+    if isinstance(value, MsGraphTeamsChannelRootMessageReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if not isinstance(source, dict):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    try:
+        dumped = dict(source)
+        dumped["team_remote_id"] = validate_msgraph_teams_team_id(dumped.get("team_remote_id"))
+        dumped["channel_remote_id"] = validate_msgraph_teams_channel_id(dumped.get("channel_remote_id"))
+        dumped["remote_id"] = validate_msgraph_teams_channel_message_id(dumped.get("remote_id"))
+        dumped["revision"] = _validate_revision(dumped.get("revision"))
+        state = dumped.get("state")
+        if not isinstance(state, MsGraphTeamsChannelMessageState):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+        dumped["state"] = state
+        return MsGraphTeamsChannelRootMessageReference.model_validate(dumped)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+
+def root_message_reference_from_message(
+    message: MsGraphTeamsChannelMessage,
+) -> MsGraphTeamsChannelRootMessageReference:
+    validated_message = validate_msgraph_teams_channel_message(message)
+    if validated_message.message_kind is not MsGraphTeamsChannelMessageKind.ROOT:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    return validate_msgraph_teams_channel_root_message_reference(
+        {
+            "team_remote_id": validated_message.team_remote_id,
+            "channel_remote_id": validated_message.channel_remote_id,
+            "remote_id": validated_message.remote_id,
+            "revision": validated_message.revision,
+            "state": validated_message.state,
+        }
+    )
 
 
 class MsGraphTeamsChannelMessageType(StrEnum):
@@ -1621,6 +1706,59 @@ def _compare_message_observation(
         raise MsGraphTeamsChannelMessageChanged() from None
 
 
+def _compare_root_message_reference_observation(
+    payload: dict[str, object],
+    *,
+    root_message: MsGraphTeamsChannelRootMessageReference,
+) -> None:
+    try:
+        response_id = validate_msgraph_teams_channel_message_id(payload.get("id"))
+        response_revision = _validate_revision(payload.get("etag"))
+        deleted_raw = payload.get("deletedDateTime")
+        is_deleted = deleted_raw is not None
+        _parse_channel_identity(
+            payload.get("channelIdentity"),
+            expected_team_id=root_message.team_remote_id,
+            expected_channel_id=root_message.channel_remote_id,
+        )
+    except ValueError:
+        raise MsGraphTeamsChannelMessageChanged() from None
+
+    if payload.get("chatId") is not None:
+        raise MsGraphTeamsChannelMessageChanged() from None
+
+    if payload.get("replyToId") is not None:
+        raise MsGraphTeamsChannelMessageChanged() from None
+
+    expected_deleted = root_message.state is MsGraphTeamsChannelMessageState.DELETED
+    if (
+        response_id != root_message.remote_id
+        or response_revision != root_message.revision
+        or is_deleted != expected_deleted
+    ):
+        raise MsGraphTeamsChannelMessageChanged() from None
+
+
+def read_and_validate_current_teams_channel_root_observation(
+    *,
+    root_message: MsGraphTeamsChannelRootMessageReference,
+    transport: MsGraphKnowledgeTransport,
+) -> None:
+    validated_root = validate_msgraph_teams_channel_root_message_reference(root_message)
+    quoted_team = quote(validated_root.team_remote_id, safe="")
+    quoted_channel = quote(validated_root.channel_remote_id, safe="")
+    quoted_root = quote(validated_root.remote_id, safe="")
+    path = f"/teams/{quoted_team}/channels/{quoted_channel}/messages/{quoted_root}"
+    payload = transport.get_initial_json(
+        path=path,
+        headers=_PREFER_UNKNOWN_ENUM,
+        not_found_is_dependency=True,
+    )
+    if not isinstance(payload, dict):
+        raise MsGraphTeamsChannelMessageChanged() from None
+    _compare_root_message_reference_observation(payload, root_message=validated_root)
+
+
 def read_and_validate_current_teams_channel_message_observation(
     *,
     message: MsGraphTeamsChannelMessage,
@@ -1645,6 +1783,29 @@ def read_and_validate_current_teams_channel_message_observation(
         not_found_is_dependency=True,
     )
     _compare_message_observation(payload, message=validated_message)
+
+
+@runtime_checkable
+class MsGraphTeamsChannelReferencePagingReadClient(Protocol):
+    def read_teams_channel_root_messages_page_by_reference(
+        self,
+        *,
+        channel: MsGraphTeamsChannelReference,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        ...
+
+    def read_teams_channel_replies_page_by_reference(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelRootMessageReference,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChannelReplyPage:
+        ...
 
 
 @runtime_checkable
@@ -1695,6 +1856,27 @@ class MsGraphTeamsChannelMessagesReader:
         except ValueError:
             raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
 
+        channel_reference = channel_reference_from_channel(validated_channel)
+        return self.read_teams_channel_root_messages_page_by_reference(
+            channel=channel_reference,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_root_messages_page_by_reference(
+        self,
+        *,
+        channel: MsGraphTeamsChannelReference,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        try:
+            validated_channel = validate_msgraph_teams_channel_reference(channel)
+        except ValueError:
+            raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
+
         validated_limit, validated_max_chars = _validate_message_limits(
             limit,
             max_chars_per_message,
@@ -1702,7 +1884,7 @@ class MsGraphTeamsChannelMessagesReader:
 
         if continuation is None:
             quoted_team = quote(validated_channel.team_remote_id, safe="")
-            quoted_channel = quote(validated_channel.remote_id, safe="")
+            quoted_channel = quote(validated_channel.channel_remote_id, safe="")
             path = f"/teams/{quoted_team}/channels/{quoted_channel}/messages"
             payload = self._transport.get_initial_json(
                 path=path,
@@ -1713,7 +1895,7 @@ class MsGraphTeamsChannelMessagesReader:
             validated_continuation = validate_msgraph_teams_channel_root_messages_continuation(
                 continuation,
                 team_id=validated_channel.team_remote_id,
-                channel_id=validated_channel.remote_id,
+                channel_id=validated_channel.channel_remote_id,
                 graph_base_url=self._config.graph_base_url,
             )
             payload = self._transport.get_continuation_json(
@@ -1733,7 +1915,7 @@ class MsGraphTeamsChannelMessagesReader:
                 parse_msgraph_teams_channel_message(
                     raw_item,
                     expected_team_id=validated_channel.team_remote_id,
-                    expected_channel_id=validated_channel.remote_id,
+                    expected_channel_id=validated_channel.channel_remote_id,
                     message_kind=MsGraphTeamsChannelMessageKind.ROOT,
                     max_chars=validated_max_chars,
                 )
@@ -1743,12 +1925,12 @@ class MsGraphTeamsChannelMessagesReader:
         return validate_msgraph_teams_channel_root_message_page(
             _safe_construct_root_page(
                 team_remote_id=validated_channel.team_remote_id,
-                channel_remote_id=validated_channel.remote_id,
+                channel_remote_id=validated_channel.channel_remote_id,
                 items=deduplicated,
                 continuation=collection_page.continuation,
             ),
             team_id=validated_channel.team_remote_id,
-            channel_id=validated_channel.remote_id,
+            channel_id=validated_channel.channel_remote_id,
             graph_base_url=self._config.graph_base_url,
             max_chars_per_message=validated_max_chars,
         )
@@ -1769,13 +1951,34 @@ class MsGraphTeamsChannelMessagesReader:
         if validated_root.message_kind is not MsGraphTeamsChannelMessageKind.ROOT:
             raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
 
+        root_reference = root_message_reference_from_message(validated_root)
+        return self.read_teams_channel_replies_page_by_reference(
+            root_message=root_reference,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_replies_page_by_reference(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelRootMessageReference,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChannelReplyPage:
+        try:
+            validated_root = validate_msgraph_teams_channel_root_message_reference(root_message)
+        except ValueError:
+            raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
+
         validated_limit, validated_max_chars = _validate_message_limits(
             limit,
             max_chars_per_message,
         )
 
-        read_and_validate_current_teams_channel_message_observation(
-            message=validated_root,
+        read_and_validate_current_teams_channel_root_observation(
+            root_message=validated_root,
             transport=self._transport,
         )
 
@@ -1842,8 +2045,8 @@ class MsGraphTeamsChannelMessagesReader:
             max_chars_per_message=validated_max_chars,
         )
 
-        read_and_validate_current_teams_channel_message_observation(
-            message=validated_root,
+        read_and_validate_current_teams_channel_root_observation(
+            root_message=validated_root,
             transport=self._transport,
         )
         return page

@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 from urllib.parse import quote
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
@@ -49,11 +50,14 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessageState,
+    MsGraphTeamsChannelRootMessageReference,
     parse_msgraph_teams_channel_message,
     read_and_validate_current_teams_channel_message_observation,
+    root_message_reference_from_message,
     validate_msgraph_teams_channel_message,
     validate_msgraph_teams_channel_reply_page,
     validate_msgraph_teams_channel_replies_continuation,
+    validate_msgraph_teams_channel_root_message_reference,
     validate_msgraph_teams_channel_root_messages_continuation,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
@@ -1929,3 +1933,205 @@ def test_read_and_validate_reply_observation_does_not_use_flat_message_path() ->
     called_path = http.get.call_args.args[0]
     assert called_path == _REPLY_OBSERVATION_PATH
     assert called_path != f"/teams/{_QUOTED_TEAM_ID}/channels/{_QUOTED_CHANNEL}/messages/{_QUOTED_REPLY_MESSAGE_ID}"
+
+
+# --- root message reference ---
+
+
+def _valid_root_reference(**overrides: object) -> MsGraphTeamsChannelRootMessageReference:
+    defaults: dict[str, object] = {
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "remote_id": _MESSAGE_ID,
+        "revision": _ETAG,
+        "state": MsGraphTeamsChannelMessageState.ACTIVE,
+    }
+    defaults.update(overrides)
+    return MsGraphTeamsChannelRootMessageReference(**defaults)
+
+
+def test_root_reference_active_valid() -> None:
+    ref = _valid_root_reference()
+    assert ref.state is MsGraphTeamsChannelMessageState.ACTIVE
+
+
+def test_root_reference_deleted_valid() -> None:
+    ref = _valid_root_reference(state=MsGraphTeamsChannelMessageState.DELETED)
+    assert ref.state is MsGraphTeamsChannelMessageState.DELETED
+
+
+def test_root_reference_state_enum_accepted() -> None:
+    ref = validate_msgraph_teams_channel_root_message_reference(
+        {
+            "team_remote_id": _TEAM_ID,
+            "channel_remote_id": _CHANNEL_ID,
+            "remote_id": _MESSAGE_ID,
+            "revision": _ETAG,
+            "state": MsGraphTeamsChannelMessageState.ACTIVE,
+        }
+    )
+    assert ref.state is MsGraphTeamsChannelMessageState.ACTIVE
+
+
+@pytest.mark.parametrize("raw_state", ["active", "deleted"])
+def test_root_reference_raw_state_strings_rejected(raw_state: str) -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "remote_id": _MESSAGE_ID,
+                "revision": _ETAG,
+                "state": raw_state,
+            }
+        )
+    assert exc.value.__cause__ is None
+    assert raw_state not in str(exc.value)
+
+
+def test_root_reference_invalid_team_id() -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": "",
+                "channel_remote_id": _CHANNEL_ID,
+                "remote_id": _MESSAGE_ID,
+                "revision": _ETAG,
+                "state": MsGraphTeamsChannelMessageState.ACTIVE,
+            }
+        )
+    assert exc.value.__cause__ is None
+    assert _TEAM_ID not in str(exc.value)
+
+
+def test_root_reference_invalid_channel_id() -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": "bad\x00id",
+                "remote_id": _MESSAGE_ID,
+                "revision": _ETAG,
+                "state": MsGraphTeamsChannelMessageState.ACTIVE,
+            }
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_root_reference_invalid_root_id() -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "remote_id": "",
+                "revision": _ETAG,
+                "state": MsGraphTeamsChannelMessageState.ACTIVE,
+            }
+        )
+    assert exc.value.__cause__ is None
+    assert _MESSAGE_ID not in str(exc.value)
+
+
+def test_root_reference_invalid_revision() -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "remote_id": _MESSAGE_ID,
+                "revision": "",
+                "state": MsGraphTeamsChannelMessageState.ACTIVE,
+            }
+        )
+    assert exc.value.__cause__ is None
+    assert _ETAG not in str(exc.value)
+
+
+def test_root_reference_oversized_revision() -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "remote_id": _MESSAGE_ID,
+                "revision": "x" * 5000,
+                "state": MsGraphTeamsChannelMessageState.ACTIVE,
+            }
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_root_reference_control_characters_in_revision() -> None:
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(
+            {
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "remote_id": _MESSAGE_ID,
+                "revision": "bad\x00etag",
+                "state": MsGraphTeamsChannelMessageState.ACTIVE,
+            }
+        )
+    assert exc.value.__cause__ is None
+
+
+def test_root_reference_extra_field_rejected() -> None:
+    with pytest.raises(ValidationError):
+        MsGraphTeamsChannelRootMessageReference(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
+            remote_id=_MESSAGE_ID,
+            revision=_ETAG,
+            state=MsGraphTeamsChannelMessageState.ACTIVE,
+            body_content="secret",
+        )
+
+
+def test_root_reference_model_construct_deep_validation() -> None:
+    malformed = MsGraphTeamsChannelRootMessageReference.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        remote_id=_MESSAGE_ID,
+        revision=_ETAG,
+        state="active",
+    )
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        validate_msgraph_teams_channel_root_message_reference(malformed)
+    assert exc.value.__cause__ is None
+
+
+def test_root_reference_repr_hides_identifiers() -> None:
+    ref = _valid_root_reference()
+    rendered = repr(ref)
+    assert _TEAM_ID not in rendered
+    assert _CHANNEL_ID not in rendered
+    assert _MESSAGE_ID not in rendered
+    assert _ETAG not in rendered
+    assert "active" in rendered.lower() or "ACTIVE" in rendered
+
+
+def test_root_reference_attributes_accessible() -> None:
+    ref = _valid_root_reference()
+    assert ref.team_remote_id == _TEAM_ID
+    assert ref.channel_remote_id == _CHANNEL_ID
+    assert ref.remote_id == _MESSAGE_ID
+    assert ref.revision == _ETAG
+
+
+def test_root_reference_serialization_complete() -> None:
+    ref = _valid_root_reference()
+    dumped = ref.model_dump()
+    assert dumped["team_remote_id"] == _TEAM_ID
+    assert dumped["channel_remote_id"] == _CHANNEL_ID
+    assert dumped["remote_id"] == _MESSAGE_ID
+    assert dumped["revision"] == _ETAG
+    assert dumped["state"] is MsGraphTeamsChannelMessageState.ACTIVE
+
+
+def test_root_message_reference_from_message() -> None:
+    root = _valid_active_message()
+    ref = root_message_reference_from_message(root)
+    assert ref.remote_id == _MESSAGE_ID
+    assert ref.revision == _ETAG
+    assert ref.state is MsGraphTeamsChannelMessageState.ACTIVE

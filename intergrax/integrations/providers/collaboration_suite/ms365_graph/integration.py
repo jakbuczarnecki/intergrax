@@ -109,9 +109,12 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannelMembersReadClient,
     MsGraphTeamsChannelMessage,
     MsGraphTeamsChannelMessageReference,
+    MsGraphTeamsChannelReference,
+    MsGraphTeamsChannelRootMessageReference,
     MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessagesReadClient,
+    MsGraphTeamsChannelReferencePagingReadClient,
     MsGraphTeamsChannelPage,
     MsGraphTeamsChannelsReadClient,
     validate_msgraph_teams_channel,
@@ -122,6 +125,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_teams_channel_message,
     validate_msgraph_teams_channel_message_content,
     validate_msgraph_teams_channel_message_reference,
+    validate_msgraph_teams_channel_reference,
+    validate_msgraph_teams_channel_root_message_reference,
     validate_msgraph_teams_channel_reply_page,
     validate_msgraph_teams_channel_root_message_page,
     validate_msgraph_teams_channel_page,
@@ -774,6 +779,117 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             max_chars_per_message=max_chars_per_message,
         )
 
+    def read_teams_channel_root_messages_page_by_reference(
+        self,
+        *,
+        channel: MsGraphTeamsChannelReference,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        try:
+            validated_channel = validate_msgraph_teams_channel_reference(channel)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams channel messages request"
+            ) from None
+        if type(limit) is not int or limit < 1 or limit > 50:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams channel messages request"
+            ) from None
+        try:
+            from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_messages import (
+                _validate_message_max_chars,
+            )
+
+            _validate_message_max_chars(max_chars_per_message)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams channel messages request"
+            ) from None
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_channel_validation()
+            validated_continuation = validate_msgraph_teams_channel_root_messages_continuation(
+                continuation,
+                team_id=validated_channel.team_remote_id,
+                channel_id=validated_channel.channel_remote_id,
+                graph_base_url=graph_base_url,
+            )
+        result = self._require_teams_channel_reference_paging_client().read_teams_channel_root_messages_page_by_reference(
+            channel=validated_channel,
+            continuation=validated_continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_channel_validation()
+        return validate_msgraph_teams_channel_root_message_page(
+            result,
+            team_id=validated_channel.team_remote_id,
+            channel_id=validated_channel.channel_remote_id,
+            graph_base_url=graph_base_url,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_replies_page_by_reference(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelRootMessageReference,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelReplyPage:
+        try:
+            validated_root = validate_msgraph_teams_channel_root_message_reference(root_message)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams channel messages request"
+            ) from None
+        if type(limit) is not int or limit < 1 or limit > 50:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams channel messages request"
+            ) from None
+        try:
+            from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_messages import (
+                _validate_message_max_chars,
+            )
+
+            _validate_message_max_chars(max_chars_per_message)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams channel messages request"
+            ) from None
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_channel_validation()
+            validated_continuation = validate_msgraph_teams_channel_replies_continuation(
+                continuation,
+                team_id=validated_root.team_remote_id,
+                channel_id=validated_root.channel_remote_id,
+                root_message_remote_id=validated_root.remote_id,
+                graph_base_url=graph_base_url,
+            )
+        result = self._require_teams_channel_reference_paging_client().read_teams_channel_replies_page_by_reference(
+            root_message=validated_root,
+            continuation=validated_continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_channel_validation()
+        return validate_msgraph_teams_channel_reply_page(
+            result,
+            team_id=validated_root.team_remote_id,
+            channel_id=validated_root.channel_remote_id,
+            root_message_remote_id=validated_root.remote_id,
+            root_message_revision=validated_root.revision,
+            graph_base_url=graph_base_url,
+            max_chars_per_message=max_chars_per_message,
+        )
+
     def read_teams_channel_message_content(
         self,
         *,
@@ -1106,6 +1222,16 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphTeamsChannelMessagesReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph integration does not expose Teams channel messages capability",
+            )
+        return client
+
+    def _require_teams_channel_reference_paging_client(
+        self,
+    ) -> MsGraphTeamsChannelReferencePagingReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphTeamsChannelReferencePagingReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Teams channel reference paging capability",
             )
         return client
 
