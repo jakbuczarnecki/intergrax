@@ -322,6 +322,14 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_teams_channel_root_message_page,
     validate_msgraph_teams_channel_root_messages_continuation,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_content import (
+    MsGraphTeamsChannelContentReadClient,
+    MsGraphTeamsChannelContentReader,
+    MsGraphTeamsChannelContentTooLarge,
+    MsGraphTeamsChannelMessageReference,
+    validate_msgraph_teams_channel_message_content,
+    validate_msgraph_teams_channel_message_reference,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_hosted_content import (
     ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
     DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
@@ -466,9 +474,13 @@ __all__ = [
     "MsGraphTeamsChannelMembersReadClient",
     "MsGraphTeamsChannelMembersReader",
     "MsGraphTeamsChannelMembershipType",
+    "MsGraphTeamsChannelContentReadClient",
+    "MsGraphTeamsChannelContentReader",
+    "MsGraphTeamsChannelContentTooLarge",
     "MsGraphTeamsChannelMessage",
     "MsGraphTeamsChannelMessageChanged",
     "MsGraphTeamsChannelMessageKind",
+    "MsGraphTeamsChannelMessageReference",
     "MsGraphTeamsChannelMessageState",
     "MsGraphTeamsChannelMessageType",
     "MsGraphTeamsChannelMessagesReadClient",
@@ -603,7 +615,9 @@ __all__ = [
     "validate_msgraph_teams_channel_member_page",
     "validate_msgraph_teams_channel_members_continuation",
     "validate_msgraph_teams_channel_message",
+    "validate_msgraph_teams_channel_message_content",
     "validate_msgraph_teams_channel_message_id",
+    "validate_msgraph_teams_channel_message_reference",
     "validate_msgraph_teams_channel_page",
     "validate_msgraph_teams_channel_reply_page",
     "validate_msgraph_teams_channel_replies_continuation",

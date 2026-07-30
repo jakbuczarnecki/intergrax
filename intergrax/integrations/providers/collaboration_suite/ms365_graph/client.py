@@ -81,7 +81,9 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannelHostedContentReader,
     MsGraphTeamsChannelMemberPage,
     MsGraphTeamsChannelMembersReader,
+    MsGraphTeamsChannelContentReader,
     MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelMessageReference,
     MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessagesReader,
@@ -241,6 +243,10 @@ class GraphRestClient:
             transport=self._knowledge_transport,
         )
         self._teams_channel_messages_reader = MsGraphTeamsChannelMessagesReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_channel_content_reader = MsGraphTeamsChannelContentReader(
             config=config,
             transport=self._knowledge_transport,
         )
@@ -548,6 +554,17 @@ class GraphRestClient:
             continuation=continuation,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_message_content(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessageReference,
+        max_chars: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelMessage:
+        return self._teams_channel_content_reader.read_message_content(
+            message=message,
+            max_chars=max_chars,
         )
 
     def read_teams_channel_hosted_contents_page(

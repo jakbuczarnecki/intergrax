@@ -98,7 +98,9 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
     DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     ABSOLUTE_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
+    ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
     MsGraphTeamsChannel,
+    MsGraphTeamsChannelContentReadClient,
     MsGraphTeamsChannelHostedContent,
     MsGraphTeamsChannelHostedContentBytes,
     MsGraphTeamsChannelHostedContentPage,
@@ -106,6 +108,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannelMemberPage,
     MsGraphTeamsChannelMembersReadClient,
     MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelMessageReference,
     MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessagesReadClient,
@@ -117,6 +120,8 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_teams_channel_hosted_content_page,
     validate_msgraph_teams_channel_member_page,
     validate_msgraph_teams_channel_message,
+    validate_msgraph_teams_channel_message_content,
+    validate_msgraph_teams_channel_message_reference,
     validate_msgraph_teams_channel_reply_page,
     validate_msgraph_teams_channel_root_message_page,
     validate_msgraph_teams_channel_page,
@@ -131,6 +136,7 @@ from intergrax.runtime.integrations.categories._base import CategoryIntegrationC
 
 MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID = "ms365_graph"
 _INVALID_HOSTED_CONTENT_REQUEST = "invalid Microsoft Graph Teams hosted content request"
+_INVALID_TEAMS_CHANNEL_CONTENT_REQUEST = "invalid Microsoft Graph Teams channel message content request"
 
 
 class Ms365GraphCollaborationSuiteIntegrationConfig(CategoryIntegrationConfig):
@@ -768,6 +774,29 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             max_chars_per_message=max_chars_per_message,
         )
 
+    def read_teams_channel_message_content(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessageReference,
+        max_chars: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelMessage:
+        validated_reference = validate_msgraph_teams_channel_message_reference(message)
+        if (
+            type(max_chars) is not int
+            or max_chars < 1
+            or max_chars > ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS
+        ):
+            raise IntegrationConfigurationError(_INVALID_TEAMS_CHANNEL_CONTENT_REQUEST) from None
+        result = self._require_teams_channel_content_client().read_teams_channel_message_content(
+            message=validated_reference,
+            max_chars=max_chars,
+        )
+        return validate_msgraph_teams_channel_message_content(
+            result,
+            reference=validated_reference,
+            max_chars=max_chars,
+        )
+
     def read_teams_channel_hosted_contents_page(
         self,
         *,
@@ -1077,6 +1106,14 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphTeamsChannelMessagesReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph integration does not expose Teams channel messages capability",
+            )
+        return client
+
+    def _require_teams_channel_content_client(self) -> MsGraphTeamsChannelContentReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphTeamsChannelContentReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Teams channel message content capability",
             )
         return client
 
