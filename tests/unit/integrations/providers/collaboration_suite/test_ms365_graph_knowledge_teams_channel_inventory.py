@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 from urllib.parse import quote
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
@@ -34,10 +35,13 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannel,
     MsGraphTeamsChannelPage,
     MsGraphTeamsChannelMembershipType,
+    MsGraphTeamsChannelReference,
     MsGraphTeamsChannelsReader,
+    channel_reference_from_channel,
     parse_msgraph_teams_channel,
     validate_msgraph_teams_channel,
     validate_msgraph_teams_channel_page,
+    validate_msgraph_teams_channel_reference,
     validate_msgraph_teams_channels_continuation,
 )
 
@@ -1137,3 +1141,86 @@ def test_security_channel_repr_and_errors() -> None:
         )
     assert _SECRET_TOKEN not in str(exc.value)
     assert _TEAM_ID not in str(exc.value)
+
+
+# --- channel reference ---
+
+
+def test_channel_reference_valid_construction() -> None:
+    ref = MsGraphTeamsChannelReference(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+    )
+    assert ref.team_remote_id == _TEAM_ID
+    assert ref.channel_remote_id == _CHANNEL_ID
+
+
+def test_channel_reference_valid_deep_validation() -> None:
+    ref = MsGraphTeamsChannelReference(team_remote_id=_TEAM_ID, channel_remote_id=_CHANNEL_ID)
+    validated = validate_msgraph_teams_channel_reference(ref)
+    assert validated == ref
+    assert validated is not ref
+
+
+def test_channel_reference_mapping_validation() -> None:
+    validated = validate_msgraph_teams_channel_reference(
+        {"team_remote_id": _TEAM_ID, "channel_remote_id": _CHANNEL_ID}
+    )
+    assert validated.team_remote_id == _TEAM_ID
+    assert validated.channel_remote_id == _CHANNEL_ID
+
+
+def test_channel_reference_model_construct_malformed_team_id() -> None:
+    malformed = MsGraphTeamsChannelReference.model_construct(
+        team_remote_id="bad\x00team",
+        channel_remote_id=_CHANNEL_ID,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_teams_channel_reference(malformed)
+    _assert_safe_provider_error(exc)
+
+
+def test_channel_reference_model_construct_malformed_channel_id() -> None:
+    malformed = MsGraphTeamsChannelReference.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id="",
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_teams_channel_reference(malformed)
+    _assert_safe_provider_error(exc)
+
+
+def test_channel_reference_extra_field_rejected() -> None:
+    with pytest.raises(ValidationError):
+        MsGraphTeamsChannelReference(
+            team_remote_id=_TEAM_ID,
+            channel_remote_id=_CHANNEL_ID,
+            tenant_id=_TENANT_ID,
+        )
+
+
+def test_channel_reference_repr_hides_ids() -> None:
+    ref = MsGraphTeamsChannelReference(team_remote_id=_TEAM_ID, channel_remote_id=_CHANNEL_ID)
+    rendered = repr(ref)
+    assert _TEAM_ID not in rendered
+    assert _CHANNEL_ID not in rendered
+
+
+def test_channel_reference_attributes_accessible() -> None:
+    ref = MsGraphTeamsChannelReference(team_remote_id=_TEAM_ID, channel_remote_id=_CHANNEL_ID)
+    assert ref.team_remote_id == _TEAM_ID
+    assert ref.channel_remote_id == _CHANNEL_ID
+
+
+def test_channel_reference_serialization_complete() -> None:
+    ref = MsGraphTeamsChannelReference(team_remote_id=_TEAM_ID, channel_remote_id=_CHANNEL_ID)
+    dumped = ref.model_dump()
+    assert dumped["team_remote_id"] == _TEAM_ID
+    assert dumped["channel_remote_id"] == _CHANNEL_ID
+
+
+def test_channel_reference_from_channel() -> None:
+    channel = _valid_channel()
+    ref = channel_reference_from_channel(channel)
+    assert ref.team_remote_id == _TEAM_ID
+    assert ref.channel_remote_id == _CHANNEL_ID

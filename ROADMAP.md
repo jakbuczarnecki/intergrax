@@ -68,12 +68,12 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | Item | Notes |
 |------|-------|
 | **Build the LKW MVP as the primary active Intergrax program** | Hybrid Knowledge Workspace: indexed intake → Workspace Knowledge Configuration → Hybrid Ask → natural-language Slack proof (see [Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md)) |
-| **WEB_URL end-to-end intake** | `LKW-WORKSPACE-CONTENTS-1B-5-2` — **READY_FOR_REVIEW** |
-| **Hybrid knowledge access architecture** | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` — **DOCUMENTED / READY_FOR_REVIEW** — [KNOWLEDGE_ACCESS_ARCHITECTURE.md](applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
-| **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — Ollama/vLLM end-to-end product proof — **PLANNED** (next after WEB_URL acceptance) |
+| **WEB_URL end-to-end intake** | `LKW-WORKSPACE-CONTENTS-1B-5-2` — **ACCEPTED** (including C1 and C2 corrections) |
+| **Hybrid knowledge access architecture** | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` — **ACCEPTED** — [KNOWLEDGE_ACCESS_ARCHITECTURE.md](applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
+| **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — Ollama/vLLM end-to-end product proof — **NEXT** |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace over **indexed** knowledge; grounded answers, citations and persisted runs are implemented and live-verified |
 | Slack conversational MVP in active development | Connect the existing Ask Workspace capability to an approved Slack user and workspace through the governed interaction path; source inspection (`sources`) is operator-verified |
-| Knowledge Intake architecture being frozen | Channel-neutral intake and asynchronous ingestion contract documented; managed-file upload, Source Candidate intake and end-to-end `WEB_URL` intake are **implemented and awaiting independent review** — see [Knowledge Intake discovery](applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) |
+| Knowledge Intake architecture being frozen | Channel-neutral intake and asynchronous ingestion contract documented; managed-file upload, Source Candidate intake and end-to-end `WEB_URL` indexed intake are **ACCEPTED** — see [Knowledge Intake discovery](applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) |
 | Preserve application-first platform development | Concrete LKW blockers may produce reusable Intergrax improvements; unrelated platform expansion does not override the LKW MVP path |
 | Source-available collaboration model clarified | See [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 | Core harness proof path available from README | Local evaluation path documented in [README.md](README.md) |
@@ -91,7 +91,6 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 
 | Item | Notes |
 |------|-------|
-| Accept `1B-5-2` WEB_URL end-to-end intake | Current implementation review gate |
 | **LKW-MODEL-RUNTIME-1** | Ollama/vLLM end-to-end portability proof — planner, tool calling, grounded Ask |
 | **LKW-KNOWLEDGE-ACCESS-1** | Connections, Remote Resources, Indexed Sources, Live Access Bindings, Query Policy |
 | **LKW-HYBRID-ASK-1** | Indexed RAG + authorized live evidence with unified provenance |

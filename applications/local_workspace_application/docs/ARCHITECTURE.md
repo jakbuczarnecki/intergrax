@@ -467,7 +467,7 @@ Canonical feature docs: [`docs/features/architecture/TOKEN_OPTIMIZATION.md`](../
 
 ### Channel-neutral Knowledge Intake and asynchronous ingestion
 
-**Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Managed-file upload, Source Candidate intake and end-to-end `WEB_URL` intake are implemented and awaiting independent review; Slack natural-language URL execution remains `CONV-1C`.
+**Status:** architectural contract frozen by `LKW-WORKSPACE-CONTENTS-1B-0` (`DOCUMENTED / READY_FOR_REVIEW`). Binding product detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Managed-file upload, Source Candidate intake and end-to-end `WEB_URL` indexed intake are **ACCEPTED** (`1B-5-2`, including C1 and C2); Slack natural-language URL execution remains `CONV-1C`.
 
 ### End-to-end `WEB_URL` Knowledge Intake (`1B-5-2`)
 
@@ -574,7 +574,7 @@ Reuse an existing Intergrax queue/message-bus/outbox capability when verified su
 
 ### Hybrid Knowledge Access (indexed + live)
 
-**Status:** architectural contract frozen by `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` (`DOCUMENTED / READY_FOR_REVIEW`). Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+**Status:** architectural contract frozen by `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` (`ACCEPTED`). Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 LKW is not defined solely by RAG. The target product combines:
 

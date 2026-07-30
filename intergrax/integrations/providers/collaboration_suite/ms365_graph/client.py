@@ -81,7 +81,11 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChannelHostedContentReader,
     MsGraphTeamsChannelMemberPage,
     MsGraphTeamsChannelMembersReader,
+    MsGraphTeamsChannelContentReader,
     MsGraphTeamsChannelMessage,
+    MsGraphTeamsChannelMessageReference,
+    MsGraphTeamsChannelReference,
+    MsGraphTeamsChannelRootMessageReference,
     MsGraphTeamsChannelReplyPage,
     MsGraphTeamsChannelRootMessagePage,
     MsGraphTeamsChannelMessagesReader,
@@ -241,6 +245,10 @@ class GraphRestClient:
             transport=self._knowledge_transport,
         )
         self._teams_channel_messages_reader = MsGraphTeamsChannelMessagesReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_channel_content_reader = MsGraphTeamsChannelContentReader(
             config=config,
             transport=self._knowledge_transport,
         )
@@ -548,6 +556,47 @@ class GraphRestClient:
             continuation=continuation,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_root_messages_page_by_reference(
+        self,
+        *,
+        channel: MsGraphTeamsChannelReference,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelRootMessagePage:
+        return self._teams_channel_messages_reader.read_teams_channel_root_messages_page_by_reference(
+            channel=channel,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_replies_page_by_reference(
+        self,
+        *,
+        root_message: MsGraphTeamsChannelRootMessageReference,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelReplyPage:
+        return self._teams_channel_messages_reader.read_teams_channel_replies_page_by_reference(
+            root_message=root_message,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_channel_message_content(
+        self,
+        *,
+        message: MsGraphTeamsChannelMessageReference,
+        max_chars: int = DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChannelMessage:
+        return self._teams_channel_content_reader.read_message_content(
+            message=message,
+            max_chars=max_chars,
         )
 
     def read_teams_channel_hosted_contents_page(

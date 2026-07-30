@@ -552,8 +552,11 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         if managed_file_max_batch_files < 1:
             raise ValueError("LOCAL_WORKSPACE_MANAGED_FILE_MAX_BATCH_FILES must be >= 1")
 
-        staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
-        allowed_read_roots = frozenset(set(allowed_read_roots) | {staging_root})
+        managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
+        web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
+        allowed_read_roots = frozenset(
+            set(allowed_read_roots) | {managed_staging_root, web_url_staging_root}
+        )
 
         return {
             "data_home": data_home,

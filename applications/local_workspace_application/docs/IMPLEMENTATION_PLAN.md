@@ -13,12 +13,17 @@
 ```text
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP — Hybrid Knowledge Workspace
-Current roadmap stage: Workspace Contents intake completion → model runtime → knowledge configuration → Hybrid Ask → conversational frontend → vendor access → live platform proof
-Last accepted: LKW-WORKSPACE-CONTENTS-1B-5-1 — ACCEPTED
-Architecture documented: LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — DOCUMENTED / READY_FOR_REVIEW
-Current implementation: LKW-WORKSPACE-CONTENTS-1B-5-2 — END-TO-END WEB_URL KNOWLEDGE INTAKE — READY_FOR_REVIEW
+Last accepted implementation:
+  LKW-WORKSPACE-CONTENTS-1B-5-2
+  including C1 and C2 corrections
+
+Architecture:
+  LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — ACCEPTED
+
+Next implementation:
+  LKW-MODEL-RUNTIME-1 — NEXT
+
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
-Next after WEB_URL acceptance: LKW-MODEL-RUNTIME-1 → Ollama / vLLM end-to-end portability
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
 ```
 
@@ -29,7 +34,7 @@ Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform
 This file is the canonical source of truth for:
 
 - the active LKW execution order;
-- the current task and review gate;
+- the current next implementation block;
 - the Workspace Contents source-expansion roadmap;
 - the integration boundary between LKW and VENDOR-KNOWLEDGE;
 - the planned synchronization, inspection and removal lifecycle;
@@ -82,15 +87,17 @@ Microsoft Teams in vendor-access blocks means Teams-hosted organizational knowle
 
 ---
 
-## 4. Active product roadmap (functional blocks)
+## 3. Active product roadmap (functional blocks)
 
-Canonical execution order after current WEB_URL review gate:
+Canonical execution order:
 
 ```text
+COMPLETED / ACCEPTED:
 LKW-WORKSPACE-CONTENTS-1B-5-2
 → END-TO-END WEB_URL KNOWLEDGE INTAKE
-→ READY_FOR_REVIEW (current)
+→ including accepted C1 and C2 corrections
 
+NEXT:
 LKW-MODEL-RUNTIME-1
 → OLLAMA / vLLM END-TO-END PORTABILITY
 
@@ -121,18 +128,18 @@ LKW-LIVE-PLATFORM-PROOF-1
 → COMPLETE DEMONSTRABLE PLATFORM PROOF
 ```
 
-### 4.1 Current and review gate
+### 3.1 Recently accepted
 
 | Task | User/product outcome | Status |
 |---|---|---|
-| `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **CURRENT / IMPLEMENTED / READY_FOR_REVIEW** |
-| `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **DOCUMENTED / READY_FOR_REVIEW** |
+| `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **ACCEPTED** |
+| `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **ACCEPTED** |
 
-### 4.2 Planned product blocks
+### 3.2 Next and planned product blocks
 
 | Block | One-sentence outcome | Status |
 |---|---|---|
-| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **PLANNED** |
+| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **NEXT** |
 | `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **PLANNED** |
 | `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
@@ -141,7 +148,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `LKW-KNOWLEDGE-LIFECYCLE-1` | Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data | **PLANNED** |
 | `LKW-LIVE-PLATFORM-PROOF-1` | A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace | **PLANNED** |
 
-### 4.3 Internal implementation slices (historical identity preserved)
+### 3.3 Internal implementation slices (historical identity preserved)
 
 | Slice | Placement | Status |
 |---|---|---|
@@ -157,7 +164,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `1D` | Provenance inspection | **MAPPED INTO** `LKW-KNOWLEDGE-LIFECYCLE-1` |
 | `1E` | Safe removal | **MAPPED INTO** `LKW-KNOWLEDGE-LIFECYCLE-1` |
 
-### 4.4 Old-to-new task mapping
+### 3.4 Old-to-new task mapping
 
 | Previous task | New roadmap placement | Mapping |
 |---|---|---|
@@ -174,9 +181,9 @@ LKW-LIVE-PLATFORM-PROOF-1
 
 ---
 
-## 4A. Legacy Workspace Contents execution detail (accepted foundations)
+## 4. Legacy Workspace Contents execution detail (accepted foundations)
 
-The following table preserves accepted intake foundations and the current WEB_URL gate. It does not override the functional block order in §4.
+The following table preserves accepted intake foundations and the accepted WEB_URL slice. It does not override the functional block order in §3.
 
 ### Completed and accepted intake foundations
 
@@ -187,7 +194,7 @@ The following table preserves accepted intake foundations and the current WEB_UR
 | `LKW-WORKSPACE-CONTENTS-1B-2` | Managed-file HTTP intake | ACCEPTED |
 | `LKW-WORKSPACE-CONTENTS-1B-3` | Slack attachment and multi-attachment adapter over managed-file intake | ACCEPTED |
 
-### Current implementation and review gate
+### Accepted intake expansions
 
 | Task | Result | Status |
 |---|---|---|
@@ -195,8 +202,11 @@ The following table preserves accepted intake foundations and the current WEB_UR
 | `LKW-WORKSPACE-CONTENTS-1B-4-1-C1` | Harden public safety, candidate identity and operation evidence | ACCEPTED |
 | `LKW-WORKSPACE-CONTENTS-1B-4-2` | Slack safe numbered Source Candidate selection | ACCEPTED |
 | `LKW-WORKSPACE-CONTENTS-1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
+| `LKW-WORKSPACE-CONTENTS-1B-5-2` | End-to-end WEB_URL Knowledge Intake | ACCEPTED |
+| `LKW-WORKSPACE-CONTENTS-1B-5-2-C1` | Harden production index path and real RAG proof | ACCEPTED (correction to `1B-5-2`) |
+| `LKW-WORKSPACE-CONTENTS-1B-5-2-C2` | Close retrieval evidence and regression review | ACCEPTED (correction to `1B-5-2`) |
 
-Current implementation: `LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (execution not wired).
+`LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (execution not wired; sufficient to continue).
 
 ---
 
@@ -247,7 +257,9 @@ It must not create a second URL-specific queue, worker or document pipeline. URL
 | Task | Outcome | Status |
 |------|---------|--------|
 | `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend | ACCEPTED |
-| `1B-5-2` | End-to-end WEB_URL Knowledge Intake | **READY_FOR_REVIEW** |
+| `1B-5-2` | End-to-end WEB_URL Knowledge Intake | **ACCEPTED** |
+| `1B-5-2-C1` | Harden production index path and real RAG proof | **ACCEPTED** (correction to `1B-5-2`) |
+| `1B-5-2-C2` | Close retrieval evidence and regression review | **ACCEPTED** (correction to `1B-5-2`) |
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
 | `1B-5-4` | Slack explicit Web URL intake | **SUPERSEDED** by `LKW-CONVERSATIONAL-INTERACTION-1C` |
 
@@ -265,7 +277,7 @@ Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCH
 
 **One-sentence outcome:** The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates.
 
-**Status:** **PLANNED** (next implementation block after `1B-5-2` acceptance).
+**Status:** **NEXT**.
 
 Proof must cover: basic generation; structured output; Conversation Interaction Plan generation; tool calling; grounded synthesis; health check; configuration switch; same product contracts. Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex.
 
@@ -323,7 +335,7 @@ Target scenario: start with Ollama → create/select workspace → upload files 
 
 **Status:** **REPLANNED** — scope distributed across `LKW-KNOWLEDGE-ACCESS-1`, `LKW-HYBRID-ASK-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1`, `LKW-VENDOR-ACCESS-DATA-1` and `LKW-KNOWLEDGE-LIFECYCLE-1`. Retained for ownership-boundary detail.
 
-### 7.1 Ordering rule
+### 8.1 Ordering rule
 
 `1B-6` is placed after explicit Web URL intake and before the shared `1C` lifecycle:
 
@@ -337,7 +349,7 @@ Target scenario: start with Ollama → create/select workspace → upload files 
 
 This ensures synchronization, operation inspection, completion notification, provenance and removal are designed once for local folders, Web URLs and vendor-backed Sources.
 
-### 7.2 Ownership boundary
+### 8.2 Ownership boundary
 
 ```text
 VENDOR-KNOWLEDGE owns:
@@ -360,7 +372,7 @@ tenant/workspace authorization and source attachment
 
 VENDOR-KNOWLEDGE expands the provider catalog. It does not become a second knowledge workspace or a second LKW ingestion runtime.
 
-### 7.3 Architectural invariants
+### 8.3 Architectural invariants
 
 LKW must not implement separate pipelines such as:
 
@@ -397,7 +409,7 @@ They must not expose:
 - raw credentials;
 - internal checkpoint or cursor material unless explicitly converted into a safe public status.
 
-### 7.4 `1B-6-0` — integration contract and ownership gate
+### 8.4 `1B-6-0` — integration contract and ownership gate
 
 Freeze, from the real VENDOR-KNOWLEDGE implementation rather than assumptions:
 
@@ -414,7 +426,7 @@ Freeze, from the real VENDOR-KNOWLEDGE implementation rather than assumptions:
 
 Do not freeze a provider-specific LKW Source architecture. Exact names of new `KnowledgeInputKind` or Source representation remain an architecture decision for this gate.
 
-### 7.5 `1B-6-1` — safe connection and resource discovery
+### 8.5 `1B-6-1` — safe connection and resource discovery
 
 Expose tenant-scoped, authorized and safely labelled vendor connections/resources. Discovery must support unavailable states without leaking credentials or technical locator details.
 
@@ -431,7 +443,7 @@ Representative resource families:
 | Data catalog | Atlan |
 | Reports and analytics | Power BI |
 
-### 7.6 `1B-6-2` — vendor resource Knowledge Intake
+### 8.6 `1B-6-2` — vendor resource Knowledge Intake
 
 Attach one real vendor resource end to end:
 
@@ -449,7 +461,7 @@ safe opaque vendor resource selection
 
 This task proves one representative provider. It must not attempt to implement every provider listed in the roadmap.
 
-### 7.7 `1B-6-3` — provider-neutral verification
+### 8.7 `1B-6-3` — provider-neutral verification
 
 Demonstrate that materially different provider families can reuse the same LKW contracts and lifecycle. The verification may use focused adapters/fakes where full production integrations are not yet justified, but it must prove that adding another vendor does not require:
 
@@ -558,7 +570,7 @@ Parallel work rules:
 
 ---
 
-## 14. LKW-PF6 — Token Optimization product proof (planned)
+## 13. LKW-PF6 — Token Optimization product proof (planned)
 
 **Status:** **LKW-PF6-0** Done / Closed (proof design only). **LKW-PF6-A**–**C** planned after universal platform proof.
 
@@ -574,7 +586,7 @@ Canonical: [`docs/features/plan/TOKEN_OPTIMIZATION.md`](../../../docs/features/p
 
 ---
 
-## 13. Post-MVP direction to LKW 1.0
+## 14. Post-MVP direction to LKW 1.0
 
 LKW 1.0 aims to be installable, restart-safe, auditable, daily-usable and supportable for its declared source portfolio. Broad provider breadth is not automatically required for 1.0; the bounded `1B-6` contract, one end-to-end provider proof and provider-neutral verification establish the expansion path.
 
@@ -595,16 +607,17 @@ A second conversational adapter and broad provider matrix do not delay the curre
 ## Appendix A — Current task summary
 
 ```text
-ARCHITECTURE (this task):
+ARCHITECTURE:
 LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1
 HYBRID KNOWLEDGE ACCESS AND LIVE PLATFORM PROOF ROADMAP
-→ DOCUMENTED / READY_FOR_REVIEW
+→ ACCEPTED
 
-CURRENT IMPLEMENTATION:
+LAST ACCEPTED IMPLEMENTATION:
 LKW-WORKSPACE-CONTENTS-1B-5-2
-END-TO-END WEB_URL KNOWLEDGE INTAKE — READY_FOR_REVIEW
+END-TO-END WEB_URL KNOWLEDGE INTAKE
+→ ACCEPTED (including C1 and C2 corrections)
 
-NEXT (after WEB_URL acceptance):
+NEXT:
 LKW-MODEL-RUNTIME-1 → Ollama / vLLM end-to-end portability
 
 THEN (functional blocks):
@@ -636,10 +649,10 @@ Conversational planning (CONV-1A):
 
 | Label | Meaning |
 |---|---|
-| `ACCEPTED` | Actual implementation was audited and accepted |
-| `CURRENT` | Active bounded task |
-| `CURSOR IN PROGRESS` | Implementation is being performed in the current Cursor task |
-| `NEXT` | First task after the current review gate |
-| `PLANNED` | Intentionally on the active execution path |
+| `ACCEPTED` | Implementation or architecture was independently audited and accepted |
+| `NEXT` | First bounded implementation block to be started next |
+| `CURRENT` | Task actively being implemented |
+| `PLANNED` | Accepted roadmap block not yet started |
 | `DOCUMENTED / READY_FOR_REVIEW` | Architecture or contract documented; implementation not claimed |
-| `DEFERRED` | Outside active scope until justified by product need |
+| `DEFERRED` | Intentionally outside the active execution path |
+| `HISTORICAL` | Retained record that does not define current status |

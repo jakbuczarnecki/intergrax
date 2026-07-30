@@ -25,6 +25,7 @@ from local_workspace_application.workspaces.web_url_ingestion import (
     WebUrlAlreadyRegistered,
     WebUrlIdempotencyConflict,
     WebUrlIntakeService,
+    WebUrlStateConflict,
     WebUrlValidationError,
 )
 
@@ -84,9 +85,10 @@ def _locator(*, input_id: str, fingerprint: str, url: str = "https://example.com
 def _build_intake(
     *,
     dns_resolver=_resolve_public,
+    repository: ManagedWorkspaceRepository | None = None,
 ) -> tuple[ManagedWorkspaceRepository, WebUrlIntakeService]:
     store = InMemoryDocumentStore()
-    repo = ManagedWorkspaceRepository(store)
+    repo = repository or ManagedWorkspaceRepository(store)
     policy = WebUrlAccessPolicy(dns_resolver=dns_resolver)
     queue = DocumentStoreTaskQueue(store)
     from local_workspace_application.workspaces.web_url_ingestion import WebUrlSourceResolver
@@ -97,7 +99,8 @@ def _build_intake(
         ToolWiringContext(message_bus=queue),
     )
     service = WebUrlIntakeService(repo, intake, policy)
-    _seed_workspace(repo)
+    if repository is None:
+        _seed_workspace(repo)
     return repo, service
 
 
@@ -295,4 +298,120 @@ async def test_cross_tenant_workspace_not_found() -> None:
             workspace_id=WORKSPACE,
             raw_url="https://example.com/a",
             idempotency_key="nf",
+        )
+
+
+class _SpyDnsResolver:
+    def __init__(self, inner) -> None:
+        self._inner = inner
+        self.calls: list[str] = []
+
+    async def __call__(self, host: str) -> tuple[str, ...]:
+        self.calls.append(host)
+        return await self._inner(host)
+
+
+@pytest.mark.asyncio
+async def test_idempotent_retry_skips_dns_preflight() -> None:
+    spy = _SpyDnsResolver(_resolve_public)
+    repo, intake = _build_intake(dns_resolver=spy)
+    first = await intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        raw_url="https://example.com/resume",
+        idempotency_key="dns-retry",
+    )
+    first_call_count = len(spy.calls)
+    assert first_call_count >= 1
+
+    failing = _SpyDnsResolver(_resolve_fail)
+    _, retry_intake = _build_intake(dns_resolver=failing, repository=repo)
+    second = await retry_intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        raw_url="https://example.com/resume",
+        idempotency_key="dns-retry",
+    )
+    assert failing.calls == []
+    assert first.input_id == second.input_id
+    assert first.source_id == second.source_id
+    assert first.operation_id == second.operation_id
+
+
+@pytest.mark.asyncio
+async def test_new_url_still_requires_dns_preflight() -> None:
+    failing = _SpyDnsResolver(_resolve_fail)
+    _, intake = _build_intake(dns_resolver=failing)
+    with pytest.raises(WebUrlValidationError) as exc:
+        await intake.accept(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            raw_url="https://example.com/brand-new",
+            idempotency_key="dns-new",
+        )
+    assert exc.value.error_code == "web_url_resolution_failed"
+    assert len(failing.calls) >= 1
+
+
+@pytest.mark.asyncio
+async def test_resume_missing_locator_fails_closed() -> None:
+    repo, intake = _build_intake()
+    accepted = await intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        raw_url="https://example.com/missing-locator",
+        idempotency_key="loc-missing",
+    )
+    fingerprint = repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE)[
+        0
+    ].submission_metadata["source_fingerprint"]
+    locator = repo.get_web_url_locator(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        requested_url_fingerprint=fingerprint,
+    )
+    assert locator is not None
+    repo.delete_web_url_locator(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        requested_url_fingerprint=fingerprint,
+    )
+
+    with pytest.raises(WebUrlStateConflict):
+        await intake.accept(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            raw_url="https://example.com/missing-locator",
+            idempotency_key="loc-missing",
+        )
+
+
+@pytest.mark.asyncio
+async def test_resume_locator_mismatch_fails_closed() -> None:
+    repo, intake = _build_intake()
+    await intake.accept(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        raw_url="https://example.com/locator-mismatch",
+        idempotency_key="loc-mismatch",
+    )
+    fingerprint = repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE)[
+        0
+    ].submission_metadata["source_fingerprint"]
+    locator = repo.get_web_url_locator(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        requested_url_fingerprint=fingerprint,
+    )
+    assert locator is not None
+    repo.put_web_url_locator(
+        locator.model_copy(update={"input_id": "ki:wrong"})
+    )
+
+    with pytest.raises(WebUrlStateConflict):
+        await intake.accept(
+            tenant_id=TENANT,
+            workspace_id=WORKSPACE,
+            raw_url="https://example.com/locator-mismatch",
+            idempotency_key="loc-mismatch",
         )

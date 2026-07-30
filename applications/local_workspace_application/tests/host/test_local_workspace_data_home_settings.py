@@ -106,3 +106,42 @@ def test_env_example_persistence_defaults_match_data_home_layout() -> None:
     assert _posix(settings.shadow_workspaces_dir).endswith(
         "build/local_workspace/data/shadow_workspaces"
     )
+
+
+def test_default_allowed_read_roots_include_application_staging_dirs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data_home = tmp_path / "custom-data"
+    user_root = tmp_path / "user-docs"
+    user_root.mkdir()
+    data_home.mkdir()
+    monkeypatch.setenv("LOCAL_WORKSPACE_DATA_HOME", str(data_home))
+    monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(user_root))
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+
+    assert str(user_root.resolve()) in settings.allowed_read_roots
+    assert settings.managed_upload_staging_dir in settings.allowed_read_roots
+    assert settings.web_url_staging_dir in settings.allowed_read_roots
+    assert str((tmp_path / "unrelated").resolve()) not in settings.allowed_read_roots
+
+
+def test_custom_data_home_changes_both_staging_allowlist_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data_home = tmp_path / "alt-home"
+    data_home.mkdir()
+    monkeypatch.setenv("LKW_DATA_HOME", str(data_home))
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+
+    assert Path(settings.managed_upload_staging_dir).resolve() == (
+        data_home / "run" / "managed_upload_staging"
+    ).resolve()
+    assert Path(settings.web_url_staging_dir).resolve() == (
+        data_home / "run" / "web_url_staging"
+    ).resolve()
+    assert settings.managed_upload_staging_dir in settings.allowed_read_roots
+    assert settings.web_url_staging_dir in settings.allowed_read_roots

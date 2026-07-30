@@ -379,6 +379,57 @@ def validate_msgraph_teams_channel(value: object) -> MsGraphTeamsChannel:
         raise ValueError(_MALFORMED_CHANNELS_RESPONSE) from None
 
 
+class MsGraphTeamsChannelReference(BaseModel):
+    """Identity-only Teams channel reference for stateless paging."""
+
+    model_config = _STRICT_MODEL_CONFIG
+
+    team_remote_id: str = Field(repr=False)
+    channel_remote_id: str = Field(repr=False)
+
+    @field_validator("team_remote_id", mode="before")
+    @classmethod
+    def _validate_team_remote_id(cls, value: object) -> str:
+        return validate_msgraph_teams_team_id(value)
+
+    @field_validator("channel_remote_id", mode="before")
+    @classmethod
+    def _validate_channel_remote_id(cls, value: object) -> str:
+        return validate_msgraph_teams_channel_id(value)
+
+
+def validate_msgraph_teams_channel_reference(
+    value: object,
+) -> MsGraphTeamsChannelReference:
+    if isinstance(value, MsGraphTeamsChannelReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_CHANNELS_RESPONSE) from None
+    if not isinstance(source, dict):
+        raise ValueError(_MALFORMED_CHANNELS_RESPONSE) from None
+    try:
+        dumped = dict(source)
+        dumped["team_remote_id"] = validate_msgraph_teams_team_id(dumped.get("team_remote_id"))
+        dumped["channel_remote_id"] = validate_msgraph_teams_channel_id(dumped.get("channel_remote_id"))
+        return MsGraphTeamsChannelReference.model_validate(dumped)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CHANNELS_RESPONSE) from None
+
+
+def channel_reference_from_channel(
+    channel: MsGraphTeamsChannel,
+) -> MsGraphTeamsChannelReference:
+    validated_channel = validate_msgraph_teams_channel(channel)
+    return validate_msgraph_teams_channel_reference(
+        {
+            "team_remote_id": validated_channel.team_remote_id,
+            "channel_remote_id": validated_channel.remote_id,
+        }
+    )
+
+
 def validate_msgraph_teams_channel_page(
     value: object,
     *,

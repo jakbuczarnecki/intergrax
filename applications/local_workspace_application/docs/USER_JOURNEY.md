@@ -71,7 +71,7 @@ Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat
 | Select Ollama or vLLM conversation runtime | **PLANNED** (`LKW-MODEL-RUNTIME-1`; `INTERGRAX_LLM_PROVIDER` exists; portability not proven) |
 | Create workspace | **IMPLEMENTED** |
 | Upload files | **IMPLEMENTED** (HTTP; Slack attachments via adapter) |
-| Add Web URL | **IMPLEMENTED / READY_FOR_REVIEW** (`1B-5-2`) |
+| Add Web URL | **ACCEPTED** (`1B-5-2`, including C1 and C2) |
 | Configure Connections (MS365, Jira, …) | **PLANNED** (`LKW-KNOWLEDGE-ACCESS-1`) |
 | Choose indexed vs live access per resource | **PLANNED** |
 | Ask through Slack with Hybrid Ask | **PARTIAL** — indexed Ask **IMPLEMENTED**; live/hybrid **PLANNED** |

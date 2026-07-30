@@ -17,14 +17,26 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_drive import (
     MsGraphDriveKnowledgeAdapter,
     register_msgraph_drive_knowledge_adapter,
 )
+from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_mail import (
+    MSGRAPH_MAIL_CURSOR_VERSION,
+    MSGRAPH_MAIL_SCOPE_TYPE,
+    MsGraphMailKnowledgeAdapter,
+    encode_msgraph_mail_folder_scope_id,
+    register_msgraph_mail_knowledge_adapter,
+)
 
 __all__ = [
     "ConfluencePagesKnowledgeAdapter",
     "JiraIssuesKnowledgeAdapter",
     "MSGRAPH_DRIVE_CURSOR_VERSION",
     "MSGRAPH_DRIVE_SCOPE_TYPE",
+    "MSGRAPH_MAIL_CURSOR_VERSION",
+    "MSGRAPH_MAIL_SCOPE_TYPE",
     "MsGraphDriveKnowledgeAdapter",
+    "MsGraphMailKnowledgeAdapter",
+    "encode_msgraph_mail_folder_scope_id",
     "register_confluence_pages_knowledge_adapter",
     "register_jira_issues_knowledge_adapter",
     "register_msgraph_drive_knowledge_adapter",
+    "register_msgraph_mail_knowledge_adapter",
 ]

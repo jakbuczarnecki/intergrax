@@ -12,11 +12,19 @@ from intergrax.applications._shared.environment_conformance import (
     EnvironmentSkillToolConsistencyCheck,
     ProfileInvariantValidator,
 )
-from intergrax.applications._shared.integration_health_wiring import probe_integration_profile_health
-from intergrax.applications._shared.context_wiring import bootstrap_application_context_catalog
-from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
+from intergrax.applications._shared.integration_health_wiring import (
+    probe_integration_profile_health,
+)
+from intergrax.applications._shared.context_wiring import (
+    bootstrap_application_context_catalog,
+)
+from intergrax.applications._shared.integration_wiring import (
+    bootstrap_application_integration_catalog,
+)
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
-from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_stack_for_environment
+from intergrax.applications._shared.rag_runtime_bridge import (
+    resolve_rag_stack_for_environment,
+)
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
@@ -27,30 +35,56 @@ from intergrax.applications._shared.capability_graph_wiring import (
     EnvironmentCapabilityGraphView,
     resolve_environment_capability_graph,
 )
-from intergrax.applications._shared.reliability_wiring import wire_application_reliability
-from intergrax.applications._shared.registry_assembly_resolver import assert_registry_assembly_valid
-from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
-from intergrax.applications._shared.integration_tool_profile import extend_tool_profile_for_integration
+from intergrax.applications._shared.reliability_wiring import (
+    wire_application_reliability,
+)
+from intergrax.applications._shared.registry_assembly_resolver import (
+    assert_registry_assembly_valid,
+)
+from intergrax.applications._shared.registry_snapshot import (
+    HarnessRegistrySnapshot,
+    resolve_registry_snapshot,
+)
+from intergrax.applications._shared.integration_tool_profile import (
+    extend_tool_profile_for_integration,
+)
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
 from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     build_user_profile_manager,
     resolve_rag_stack_for_memory_wiring,
 )
-from intergrax.applications._shared.notify_tool_wiring import wire_scheduled_notification_tool_binding
-from intergrax.applications._shared.session_tool_wiring import wire_session_storage_tool_binding
-from intergrax.applications._shared.skill_tool_profile import extend_tool_profile_for_skills
-from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
+from intergrax.applications._shared.notify_tool_wiring import (
+    wire_scheduled_notification_tool_binding,
+)
+from intergrax.applications._shared.session_tool_wiring import (
+    wire_session_storage_tool_binding,
+)
+from intergrax.applications._shared.skill_tool_profile import (
+    extend_tool_profile_for_skills,
+)
+from intergrax.applications._shared.sandbox_wiring import (
+    tool_profile_with_sandbox,
+    wire_sandbox_sessions,
+)
 from intergrax.applications._shared.codecraft_wiring import (
     apply_codecraft_to_wiring_context,
     tool_profile_with_codecraft,
     wire_application_codecraft,
 )
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
-from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring, build_application_skill_wiring
-from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
+from intergrax.applications._shared.skill_wiring import (
+    ApplicationSkillWiring,
+    build_application_skill_wiring,
+)
+from intergrax.applications._shared.tool_wiring import (
+    ApplicationToolWiring,
+    build_application_tool_wiring,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -77,6 +111,27 @@ class ApplicationEnvironmentWiring:
     capability_graph: EnvironmentCapabilityGraphView | None = None
 
 
+def _merge_integration_read_allowlist_roots(
+    wiring_context: ToolWiringContext,
+    resolved_integration: Any,
+) -> ToolWiringContext:
+    """Union integration option ``allowed_read_roots`` with existing context roots."""
+    merged_roots = set(wiring_context.read_allowlist_roots or ())
+    if resolved_integration is not None:
+        for option_block in resolved_integration.options.values():
+            raw_roots = option_block.get("allowed_read_roots")
+            if not raw_roots:
+                continue
+            if isinstance(raw_roots, (str, bytes)):
+                continue
+            merged_roots.update(str(root) for root in raw_roots)
+    if merged_roots == set(wiring_context.read_allowlist_roots or ()):
+        return wiring_context
+    from dataclasses import replace
+
+    return replace(wiring_context, read_allowlist_roots=frozenset(merged_roots))
+
+
 def wire_application_environment(
     manifest: ApplicationManifest,
     env: ApplicationEnvironmentProfile,
@@ -99,7 +154,9 @@ def wire_application_environment(
     """
     bootstrap_application_integration_catalog()
     bootstrap_application_context_catalog()
-    resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
+    resolved_integration = (
+        integration_profile or env.integration_profile or manifest.integration_profile
+    )
     reliability_wiring = wire_application_reliability(env)
     integration_health = probe_integration_profile_health(
         resolved_integration,
@@ -118,29 +175,42 @@ def wire_application_environment(
     tool_profile = tool_profile_with_codecraft(env_for_codecraft)
     tool_profile = extend_tool_profile_for_skills(tool_profile, env.skill_profile)
     if resolved_integration is not None:
-        tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
+        tool_profile = extend_tool_profile_for_integration(
+            tool_profile, resolved_integration
+        )
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
     if env.modality_profile is not None:
         wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
-    from intergrax.applications._shared.integration_tool_wiring import wire_integration_tool_context
+    from intergrax.applications._shared.integration_tool_wiring import (
+        wire_integration_tool_context,
+    )
 
     wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
     if document_store is not None:
         from dataclasses import replace
 
         wiring_context = replace(wiring_context, document_store=document_store)
-    codecraft_wiring = wire_application_codecraft(env, producer_adapter=resolve_environment_llm_adapter(env))
+    codecraft_wiring = wire_application_codecraft(
+        env, producer_adapter=resolve_environment_llm_adapter(env)
+    )
     wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
     if resolved_integration is not None:
         from dataclasses import replace
 
         wiring_context = replace(
             wiring_context,
-            extras={**wiring_context.extras, "integration_profile": resolved_integration},
+            extras={
+                **wiring_context.extras,
+                "integration_profile": resolved_integration,
+            },
         )
 
-    memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
-    from intergrax.applications._shared.memory_wiring import build_session_manager_from_environment
+    memory_wiring = resolve_memory_platform_wiring(
+        env, integration_profile=resolved_integration
+    )
+    from intergrax.applications._shared.memory_wiring import (
+        build_session_manager_from_environment,
+    )
 
     session_manager = build_session_manager_from_environment(
         env,
@@ -168,12 +238,19 @@ def wire_application_environment(
             wiring_context,
             extras={**wiring_context.extras, "session_manager": session_manager},
         )
-    wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+    wiring_context = wire_session_storage_tool_binding(
+        wiring_context, memory_wiring.session_storage
+    )
     wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
+    wiring_context = _merge_integration_read_allowlist_roots(
+        wiring_context, resolved_integration
+    )
 
     hosted_session = None
     if wiring_context.sandbox_session is None and resolved_integration is not None:
-        from intergrax.applications._shared.sandbox_host_wiring import resolve_hosted_sandbox_session
+        from intergrax.applications._shared.sandbox_host_wiring import (
+            resolve_hosted_sandbox_session,
+        )
 
         hosted_session = resolve_hosted_sandbox_session(
             resolved_integration,
@@ -185,14 +262,24 @@ def wire_application_environment(
         tool_profile,
         integration_profile=resolved_integration,
         wiring_context=wiring_context,
-        vectorstore_manager=rag_stack.vectorstore_manager if rag_stack is not None else None,
-        embedding_manager=rag_stack.embedding_manager if rag_stack is not None else None,
-        retriever_manager=rag_stack.retriever_manager if rag_stack is not None else None,
+        vectorstore_manager=rag_stack.vectorstore_manager
+        if rag_stack is not None
+        else None,
+        embedding_manager=rag_stack.embedding_manager
+        if rag_stack is not None
+        else None,
+        retriever_manager=rag_stack.retriever_manager
+        if rag_stack is not None
+        else None,
         reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
         rag_profile=rag_stack.profile if rag_stack is not None else None,
-        retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
+        retrieval_service=rag_stack.retrieval_service
+        if rag_stack is not None
+        else None,
         rag_graph_store=rag_stack.graph_store if rag_stack is not None else None,
-        toc_vectorstore_manager=rag_stack.toc_vectorstore_manager if rag_stack is not None else None,
+        toc_vectorstore_manager=rag_stack.toc_vectorstore_manager
+        if rag_stack is not None
+        else None,
         sandbox_session=sandbox_session or hosted_session,
         websearch_executor=websearch_executor,
         security_profile=env.security_profile,
@@ -233,17 +320,23 @@ def wire_application_environment(
     )
 
     registry_snapshot = resolve_registry_snapshot(build_context)
-    capability_graph = resolve_environment_capability_graph(manifest, env, registry_snapshot)
+    capability_graph = resolve_environment_capability_graph(
+        manifest, env, registry_snapshot
+    )
 
     if conformance_check:
         assert_registry_assembly_valid(registry_snapshot, env)
-        assert_capability_graph_assembly_valid(capability_graph, registry_snapshot, manifest)
+        assert_capability_graph_assembly_valid(
+            capability_graph, registry_snapshot, manifest
+        )
         EnvironmentSkillToolConsistencyCheck(fail_on_violation=False).validate_roster(
             manifest.agents,
             env,
         )
         ProfileInvariantValidator(fail_on_violation=False).validate(env)
-        from intergrax.applications._shared.package_wiring import assert_manifest_package_closure
+        from intergrax.applications._shared.package_wiring import (
+            assert_manifest_package_closure,
+        )
 
         assert_manifest_package_closure(
             manifest,
