@@ -103,6 +103,39 @@ def _descriptor(**overrides: object) -> KnowledgeItemDescriptor:
 
 
 @pytest.mark.unit
+def test_descriptor_repr_hides_title() -> None:
+    descriptor = _descriptor(title="Secret Subject Line")
+    rendered = repr(descriptor)
+    assert "Secret Subject Line" not in rendered
+    assert descriptor.model_dump()["title"] == "Secret Subject Line"
+
+
+@pytest.mark.unit
+def test_content_repr_hides_payloads() -> None:
+    content = KnowledgeContent(
+        mode=KnowledgeContentMode.BINARY,
+        binary=b"secret-bytes",
+        mime_type="application/pdf",
+    )
+    rendered = repr(content)
+    assert "secret-bytes" not in rendered
+    assert content.model_dump()["binary"] == b"secret-bytes"
+
+    rich = KnowledgeContent(mode=KnowledgeContentMode.RICH_TEXT, rich_text="secret body")
+    rich_rendered = repr(rich)
+    assert "secret body" not in rich_rendered
+    assert rich.model_dump()["rich_text"] == "secret body"
+
+    structured = KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={"secret": "value"},
+    )
+    structured_rendered = repr(structured)
+    assert "secret" not in structured_rendered
+    assert structured.model_dump()["structured_record"] == {"secret": "value"}
+
+
+@pytest.mark.unit
 def test_models_construct_successfully() -> None:
     source = _source()
     descriptor = _descriptor()

@@ -72,9 +72,12 @@ global mailbox deletion.
 Item attachments, reference-attachment downloads, MIME, raw internet headers
 and recursive attached-message expansion are intentionally not implemented.
 
-No Microsoft Vendor Knowledge adapter is exposed yet except Drive.
+No Microsoft Vendor Knowledge adapter is exposed yet except Drive and Mail.
 
 Microsoft Graph Drive Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`)
+is implemented.
+
+Microsoft Graph Mail Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`)
 is implemented.
 
 Drive capability matrix:
@@ -105,6 +108,36 @@ inheritance graph.
 
 The existing permission read surface is preserved for a future ACL-contract
 task and is not represented as authoritative `KnowledgePermissions`.
+
+Mail capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`):
+
+```text
+source_kind: mail
+scope: one known mailbox user ID plus one known folder ID
+full_inventory: yes
+incremental_changes: yes
+reconciliation: yes
+content_fetch: yes
+binary_content: no
+rich_text_content: no
+structured_content: yes
+permissions: no
+tombstones: yes
+remote_versions: yes
+```
+
+The initial per-folder Graph delta sequence supplies reconciliation inventory.
+The final `DELTA` continuation is the durable incremental checkpoint.
+
+Mail content is `msgraph.mail.message.knowledge.v1` structured JSON. Participants
+live in content, not descriptor metadata.
+
+`REMOVED` delta entries mean removed from the synchronized folder view, not
+global mailbox deletion.
+
+Attachment presence (`has_attachments`) is preserved in descriptor metadata and
+structured content. Attachment inventory and binary bytes remain deferred.
+Permissions remain false.
 
 Microsoft Graph Calendar low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -680,7 +713,9 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE` is **DONE**.
 
-**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL` is **DONE**.
+
+**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`
 
 **Planned:**
 
@@ -713,7 +748,7 @@ Registry keys:
 Content mapping:
 
 - `drive` → `BINARY` for files, with safe structured metadata for folders and inventory records;
-- `mail` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items;
+- `mail` → `STRUCTURED_RECORD`; attachments remain deferred in this adapter slice;
 - `calendar` → `STRUCTURED_RECORD`;
 - `teams_chat` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items;
 - `teams_channel` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items.

@@ -285,7 +285,7 @@ class KnowledgeItemDescriptor(BaseModel):
 
     identity: KnowledgeItemIdentity
     revision: KnowledgeItemRevision
-    title: str
+    title: str = Field(repr=False)
     item_type: str
     content_mode: KnowledgeContentMode
     content_available: bool
@@ -370,9 +370,9 @@ class KnowledgeContent(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     mode: KnowledgeContentMode
-    binary: bytes | None = None
-    rich_text: str | None = None
-    structured_record: JsonObject | None = None
+    binary: bytes | None = Field(default=None, repr=False)
+    rich_text: str | None = Field(default=None, repr=False)
+    structured_record: JsonObject | None = Field(default=None, repr=False)
     mime_type: str | None = None
     encoding: str | None = None
     content_hash: str | None = None
