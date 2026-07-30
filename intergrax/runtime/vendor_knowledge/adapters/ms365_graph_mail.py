@@ -332,18 +332,19 @@ class MsGraphMailKnowledgeAdapter:
         graph_integration = self._require_graph_integration(integration=integration, source=source)
         mailbox_user_id, folder_id = self._validate_source(source)
         try:
+            validated_item = self._deep_validate_item_descriptor(item)
             message_identity, revision = self._validate_message_item(
-                item,
+                validated_item,
                 source=source,
                 mailbox_user_id=mailbox_user_id,
                 folder_id=folder_id,
             )
-            metadata = self._validate_descriptor_metadata(item.metadata)
+            metadata = self._validate_descriptor_metadata(validated_item.metadata)
             provider_message = self._descriptor_to_provider_message(
                 message_identity=message_identity,
                 revision=revision,
                 metadata=metadata,
-                updated_at=item.revision.updated_at,
+                updated_at=validated_item.revision.updated_at,
             )
         except VendorKnowledgeError:
             raise
@@ -360,7 +361,6 @@ class MsGraphMailKnowledgeAdapter:
                 message=provider_message,
                 max_chars=DEFAULT_MAIL_CONTENT_MAX_CHARS,
             ),
-            content_errors=True,
         )
         try:
             validated_content = validate_msgraph_mail_message_content(
@@ -392,7 +392,7 @@ class MsGraphMailKnowledgeAdapter:
         structured_record = self._build_structured_record(
             content=validated_content,
             metadata=metadata,
-            updated_at=item.revision.updated_at,
+            updated_at=validated_item.revision.updated_at,
         )
         canonical = json.dumps(
             structured_record,
@@ -447,46 +447,76 @@ class MsGraphMailKnowledgeAdapter:
         return integration
 
     def _validate_source(self, source: KnowledgeSourceRef) -> tuple[str, str]:
-        if (
-            source.provider_id != self.provider_id
-            or source.integration_kind != self.integration_kind
-            or source.source_kind != self.source_kind
-        ):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message="Microsoft Graph Mail knowledge source scope is invalid",
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
+        if not isinstance(source, KnowledgeSourceRef):
+            raise self._invalid_source_scope_error()
+        try:
+            validated_source = KnowledgeSourceRef.model_validate(
+                source.model_dump(mode="python")
             )
-        scope = source.scope
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise self._invalid_source_scope_error() from None
+        if (
+            validated_source.provider_id != self.provider_id
+            or validated_source.integration_kind != self.integration_kind
+            or validated_source.source_kind != self.source_kind
+        ):
+            raise self._invalid_source_scope_error(
+                provider_id=validated_source.provider_id,
+                source_kind=validated_source.source_kind,
+            )
+        scope = validated_source.scope
         if scope.remote_scope_type != MSGRAPH_MAIL_SCOPE_TYPE:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message="Microsoft Graph Mail knowledge source scope is invalid",
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
+            raise self._invalid_source_scope_error(
+                provider_id=validated_source.provider_id,
+                source_kind=validated_source.source_kind,
             )
         if scope.parameters:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message="Microsoft Graph Mail knowledge source scope is invalid",
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
+            raise self._invalid_source_scope_error(
+                provider_id=validated_source.provider_id,
+                source_kind=validated_source.source_kind,
             )
         try:
             decoded = _decode_scope_payload(scope.remote_scope_id)
-        except ValueError:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message="Microsoft Graph Mail knowledge source scope is invalid",
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise self._invalid_source_scope_error(
+                provider_id=validated_source.provider_id,
+                source_kind=validated_source.source_kind,
             ) from None
         return decoded.mailbox_user_id, decoded.folder_id
+
+    def _invalid_source_scope_error(
+        self,
+        *,
+        provider_id: str | None = None,
+        source_kind: str | None = None,
+    ) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+            safe_message="Microsoft Graph Mail knowledge source scope is invalid",
+            provider_id=provider_id or self.provider_id,
+            source_kind=source_kind or self.source_kind,
+            retryable=False,
+        )
+
+    def _deep_validate_item_descriptor(self, item: object) -> KnowledgeItemDescriptor:
+        if not isinstance(item, KnowledgeItemDescriptor):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Microsoft Graph Mail message descriptor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            )
+        try:
+            return KnowledgeItemDescriptor.model_validate(item.model_dump(mode="python"))
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Microsoft Graph Mail message descriptor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
 
     def _validate_limit(self, limit: object) -> int:
         if type(limit) is not int:
@@ -993,33 +1023,11 @@ class MsGraphMailKnowledgeAdapter:
     async def _invoke_integration(
         self,
         operation: Callable[[], _T],
-        *,
-        content_errors: bool = False,
     ) -> _T:
         try:
             return await asyncio.to_thread(operation)
         except VendorKnowledgeError:
             raise
-        except IntegrationConfigurationError:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
-                safe_message=(
-                    "Microsoft Graph Mail knowledge adapter configuration is invalid"
-                    if not content_errors
-                    else "Microsoft Graph Mail message exceeds the configured content limit"
-                ),
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            ) from None
-        except (IntegrationDependencyError, MsGraphMailMessageChanged):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
-                safe_message="Microsoft Graph Mail knowledge dependency is unavailable",
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=True,
-            ) from None
         except MsGraphMailContentTooLarge:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
@@ -1027,6 +1035,30 @@ class MsGraphMailKnowledgeAdapter:
                 provider_id=self.provider_id,
                 source_kind=self.source_kind,
                 retryable=False,
+            ) from None
+        except IntegrationConfigurationError:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Microsoft Graph Mail knowledge adapter configuration is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
+        except MsGraphMailMessageChanged:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Microsoft Graph Mail knowledge dependency is unavailable",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=True,
+            ) from None
+        except IntegrationDependencyError:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Microsoft Graph Mail knowledge dependency is unavailable",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=True,
             ) from None
         except (ValueError, TypeError, AttributeError, ValidationError):
             raise VendorKnowledgeError(

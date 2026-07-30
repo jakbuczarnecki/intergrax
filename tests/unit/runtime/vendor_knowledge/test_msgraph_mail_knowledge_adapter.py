@@ -626,6 +626,116 @@ async def test_wrong_integration_object_rejected() -> None:
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
 
 
+def _assert_invalid_source_boundary(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    *,
+    fake: _FakeMailCollaborationSuite,
+) -> None:
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert err.retryable is False
+    assert err.__cause__ is None
+    assert err.safe_message == "Microsoft Graph Mail knowledge source scope is invalid"
+    assert fake.delta_calls == []
+    rendered = f"{err!r} {err.safe_message}"
+    for secret in (_MAILBOX_USER_ID, _FOLDER_ID, "not-a-scope", "123", "[]"):
+        assert secret not in rendered
+
+
+async def _inspect_invalid_constructed_source(source: KnowledgeSourceRef) -> None:
+    adapter = MsGraphMailKnowledgeAdapter()
+    fake = _FakeMailCollaborationSuite()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(integration=_integration(fake), source=source)
+    _assert_invalid_source_boundary(exc_info, fake=fake)
+
+
+async def test_constructed_source_rejects_none_remote_scope_id() -> None:
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        scope=KnowledgeSourceScope.model_construct(
+            remote_scope_id=None,
+            remote_scope_type=MSGRAPH_MAIL_SCOPE_TYPE,
+            safe_display_name="Inbox",
+            parameters={},
+        ),
+    )
+    await _inspect_invalid_constructed_source(source)
+
+
+async def test_constructed_source_rejects_non_string_remote_scope_id() -> None:
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        scope=KnowledgeSourceScope.model_construct(
+            remote_scope_id=123,
+            remote_scope_type=MSGRAPH_MAIL_SCOPE_TYPE,
+            safe_display_name="Inbox",
+            parameters={},
+        ),
+    )
+    await _inspect_invalid_constructed_source(source)
+
+
+async def test_constructed_source_rejects_list_remote_scope_id() -> None:
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        scope=KnowledgeSourceScope.model_construct(
+            remote_scope_id=[],
+            remote_scope_type=MSGRAPH_MAIL_SCOPE_TYPE,
+            safe_display_name="Inbox",
+            parameters={},
+        ),
+    )
+    await _inspect_invalid_constructed_source(source)
+
+
+async def test_constructed_source_rejects_none_scope() -> None:
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        scope=None,
+    )
+    await _inspect_invalid_constructed_source(source)
+
+
+async def test_constructed_source_rejects_string_scope() -> None:
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        scope="not-a-scope",
+    )
+    await _inspect_invalid_constructed_source(source)
+
+
+async def test_constructed_source_rejects_invalid_parameters_type() -> None:
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        scope=KnowledgeSourceScope.model_construct(
+            remote_scope_id=_scope_id(),
+            remote_scope_type=MSGRAPH_MAIL_SCOPE_TYPE,
+            safe_display_name="Inbox",
+            parameters="not-a-mapping",
+        ),
+    )
+    await _inspect_invalid_constructed_source(source)
+
+
 # --- 3. Limits ---
 
 
@@ -1291,6 +1401,104 @@ async def test_fetch_content_rejects_malformed_descriptor_shape(
     await _fetch_content_invalid_descriptor(item)
 
 
+async def test_fetch_content_rejects_identity_provenance_mismatch() -> None:
+    item = _message_descriptor()
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=item.revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=KnowledgeItemProvenance.model_construct(
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+            remote_id="different-remote-id",
+        ),
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
+async def test_fetch_content_rejects_malformed_provenance() -> None:
+    item = _message_descriptor()
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=item.revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=KnowledgeItemProvenance.model_construct(
+            provider_id=None,
+            source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+            remote_id=item.provenance.remote_id,
+        ),
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
+async def test_fetch_content_rejects_malformed_identity() -> None:
+    item = _message_descriptor()
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=KnowledgeItemIdentity.model_construct(remote_id=None, parent_remote_id=None),
+        revision=item.revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=item.provenance,
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
+async def test_fetch_content_rejects_malformed_revision() -> None:
+    item = _message_descriptor()
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=KnowledgeItemRevision.model_construct(version=None, etag=None, updated_at=_TS),
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=item.provenance,
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
+async def test_fetch_content_rejects_raw_string_content_mode() -> None:
+    item = _message_descriptor()
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=item.revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode="not-a-valid-content-mode",
+        content_available=item.content_available,
+        provenance=item.provenance,
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
+async def test_fetch_content_rejects_nested_invalid_metadata_value() -> None:
+    item = _message_descriptor()
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=item.revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=item.provenance,
+        metadata={"nested": {"token": "secret-value"}},
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
 # --- 10. Malformed content boundary ---
 
 
@@ -1414,8 +1622,40 @@ async def test_content_too_large_translated() -> None:
             item=_message_descriptor(),
         )
     assert exc_info.value.code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+    assert exc_info.value.retryable is False
     assert exc_info.value.__cause__ is None
+    assert (
+        exc_info.value.safe_message
+        == "Microsoft Graph Mail message exceeds the configured content limit"
+    )
     assert huge not in str(exc_info.value)
+
+
+async def test_content_configuration_error_translated() -> None:
+    adapter = MsGraphMailKnowledgeAdapter()
+
+    class _MisconfiguredContentSuite(_FakeMailCollaborationSuite):
+        def read_mail_message_content(self, *, message, max_chars):
+            raise IntegrationConfigurationError("sensitive configuration details")
+
+    fake = _MisconfiguredContentSuite(
+        content_by_id={_MESSAGE_ID: _message_content(body_text="x")},
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(fake),
+            source=_source(),
+            item=_message_descriptor(),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+    assert exc_info.value.retryable is False
+    assert exc_info.value.__cause__ is None
+    assert (
+        exc_info.value.safe_message
+        == "Microsoft Graph Mail knowledge adapter configuration is invalid"
+    )
+    assert "too large" not in exc_info.value.safe_message.lower()
+    assert "sensitive configuration details" not in str(exc_info.value)
 
 
 async def test_message_changed_during_read_translated() -> None:

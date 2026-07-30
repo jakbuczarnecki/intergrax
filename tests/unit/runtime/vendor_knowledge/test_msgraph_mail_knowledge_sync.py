@@ -43,6 +43,7 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_mail import (
     register_msgraph_mail_knowledge_adapter,
 )
 from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.models import KnowledgeContentMode, KnowledgeSourceScope
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
@@ -507,3 +508,27 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
         }
     )
     _assert_no_secrets(public_proof)
+
+
+@pytest.mark.asyncio
+async def test_msgraph_mail_sink_failure_does_not_commit_checkpoint_or_state() -> None:
+    coordinator, sink, checkpoint_repo, state_repo, fake = _build_coordinator(
+        _MailFakeCollaborationSuite()
+    )
+    sink.fail_times = 1
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(binding_id="msgraph-mail-binding", restart=True)
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert len(sink.calls) == 1
+    assert sink.durable_delivery_ids == []
+    assert checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-mail-binding") is None
+    for message_id in ("msg-a", "msg-b", "msg-c"):
+        assert (
+            state_repo.get(
+                tenant_id="tenant-1",
+                binding_id="msgraph-mail-binding",
+                remote_id=_encode_message_remote_id(message_id=message_id),
+            )
+            is None
+        )
+    assert fake.delta_calls
