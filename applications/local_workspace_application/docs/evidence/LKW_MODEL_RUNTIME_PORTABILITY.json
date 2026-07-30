@@ -1,0 +1,127 @@
+{
+  "completed_at": "2026-07-30T09:01:37.868844Z",
+  "embedding_identity_after": {
+    "dimensions": 384,
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "provider": "hf"
+  },
+  "embedding_identity_before": {
+    "dimensions": 384,
+    "model": "sentence-transformers/all-MiniLM-L6-v2",
+    "provider": "hf"
+  },
+  "extra_safe": {},
+  "fixture": {
+    "chunk_count": 1,
+    "content_hash": "sha256:1bce80deb06ac8161025daf32a9759210c410ad5fa5d30c0a9db417e678afc4b",
+    "document_id": "lkwdoc:aa53acb5e7c1249d18db706e44e155b0",
+    "fixture_text_excerpt": "The LKW model runtime portability verification code is MODEL-RUNTIME-8421.",
+    "index_path_classification": "managed_file_knowledge_intake",
+    "indexing_operations": 1,
+    "input_id": "ki:1ddfea0e25f7fa56a73ea02d151c42f2d8e9ee61e9af27c5ee66c98d984ca9fe",
+    "marker": "MODEL-RUNTIME-8421",
+    "operation_id": "op:5622e7463646d8aa52107dd0b8789c3d364c9ebd7d2be8f2998e151876f1f2ca",
+    "source_id": "src:66b096c85c7474dfa8c369c88fe33b4ee7be9fb96092c4c9f6a44394087533c9",
+    "tenant_id": "lkw-model-runtime-proof",
+    "workspace_id": "76bcbe33-c6ed-4e97-9cdd-64b837b3ab66"
+  },
+  "index_identity": {
+    "chunk_count": 1,
+    "collection_identity": "76bcbe33-c6ed-4e97-9cdd-64b837b3ab66",
+    "content_hash": "sha256:1bce80deb06ac8161025daf32a9759210c410ad5fa5d30c0a9db417e678afc4b",
+    "document_id": "lkwdoc:aa53acb5e7c1249d18db706e44e155b0",
+    "embedding": {
+      "dimensions": 384,
+      "model": "sentence-transformers/all-MiniLM-L6-v2",
+      "provider": "hf"
+    },
+    "source_id": "src:66b096c85c7474dfa8c369c88fe33b4ee7be9fb96092c4c9f6a44394087533c9",
+    "tenant_id": "lkw-model-runtime-proof",
+    "vector_count": 1,
+    "workspace_id": "76bcbe33-c6ed-4e97-9cdd-64b837b3ab66"
+  },
+  "index_invariance": {
+    "collection_identity": "PASS",
+    "embedding_identity": "PASS",
+    "no_reindex": "PASS",
+    "vector_count": "PASS"
+  },
+  "limitations": [
+    "exact configured Ollama and vLLM pairs only; not universal model parity",
+    "runtime hot swapping not required or proven"
+  ],
+  "overall_status": "PASS",
+  "proof_classification": "controlled local-provider live LKW product proof for exact Ollama and vLLM provider/model pairs",
+  "proof_id": "lkw-model-runtime-proof:2c54661f223a",
+  "provider_results": {
+    "ollama": {
+      "adapter_class": "LangChainOllamaAdapter",
+      "ask_answer_excerpt": "MODEL-RUNTIME-8421",
+      "ask_run_persisted": true,
+      "base_url_classification": "loopback",
+      "basic_generation_excerpt": "LKW-RUNTIME-BASIC-7319 is included in the basic package.",
+      "basic_generation_status": "PASS",
+      "citation_excerpt": "The LKW model runtime portability verification code is MODEL-RUNTIME-8421.",
+      "citation_source_id": "src:66b096c85c7474dfa8c369c88fe33b4ee7be9fb96092c4c9f6a44394087533c9",
+      "citation_status": "PASS",
+      "configured_model": "qwen2.5:7b",
+      "failure_code": null,
+      "grounded_ask_status": "PASS",
+      "health_status": "PASS",
+      "latency_ms": {
+        "basic_generation_ms": 2079.1820999002084,
+        "grounded_ask_ms": 2143.3159000007436,
+        "structured_plan_ms": 2525.9331999113783,
+        "tool_execution_ms": 4980.316999950446
+      },
+      "planning_validation": "validate_plan_against_request:pass",
+      "provider": "ollama",
+      "resolved_model": "qwen2.5:7b",
+      "safe_error_excerpt": null,
+      "safe_error_type": null,
+      "server_model": "qwen2.5:7b",
+      "server_version": "0.32.1",
+      "structured_planning_status": "PASS",
+      "tool_call_status": "PASS",
+      "tool_choice_mode": "forced",
+      "tool_execution_status": "PASS"
+    },
+    "vllm": {
+      "adapter_class": "VllmChatAdapter",
+      "ask_answer_excerpt": "MODEL-RUNTIME-8421.",
+      "ask_run_persisted": true,
+      "base_url_classification": "loopback",
+      "basic_generation_excerpt": "LKW-RUNTIME-BASIC-7319 is currently causing an issue in our system.",
+      "basic_generation_status": "PASS",
+      "citation_excerpt": "The LKW model runtime portability verification code is MODEL-RUNTIME-8421.",
+      "citation_source_id": "src:66b096c85c7474dfa8c369c88fe33b4ee7be9fb96092c4c9f6a44394087533c9",
+      "citation_status": "PASS",
+      "configured_model": "Qwen/Qwen2.5-3B-Instruct",
+      "failure_code": null,
+      "grounded_ask_status": "PASS",
+      "health_status": "PASS",
+      "latency_ms": {
+        "basic_generation_ms": 1987.3331999406219,
+        "grounded_ask_ms": 1521.4570999378338,
+        "structured_plan_ms": 3168.893599999137,
+        "tool_execution_ms": 4717.56949997507
+      },
+      "planning_validation": "validate_plan_against_request:pass",
+      "provider": "vllm",
+      "resolved_model": "Qwen/Qwen2.5-3B-Instruct",
+      "safe_error_excerpt": null,
+      "safe_error_type": null,
+      "server_model": "Qwen/Qwen2.5-3B-Instruct",
+      "server_version": "0.23.0",
+      "structured_planning_status": "PASS",
+      "tool_call_status": "PASS",
+      "tool_choice_mode": "forced",
+      "tool_execution_status": "PASS"
+    }
+  },
+  "repository_commit": "19daaf6934ae8a28bac855674616a2d210dc092c",
+  "schema_version": "lkw.model_runtime_portability.proof.v1",
+  "started_at": "2026-07-30T09:00:58.664514Z",
+  "task_id": "LKW-MODEL-RUNTIME-1",
+  "working_tree_classification": "clean"
+}
