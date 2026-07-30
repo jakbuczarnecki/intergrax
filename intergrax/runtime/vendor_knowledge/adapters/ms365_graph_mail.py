@@ -507,6 +507,14 @@ class MsGraphMailKnowledgeAdapter:
                 source_kind=self.source_kind,
                 retryable=False,
             )
+        if type(item.content_mode) is not KnowledgeContentMode:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Microsoft Graph Mail message descriptor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            )
         try:
             return KnowledgeItemDescriptor.model_validate(item.model_dump(mode="python"))
         except (ValueError, TypeError, AttributeError, ValidationError):

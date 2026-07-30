@@ -1469,19 +1469,30 @@ async def test_fetch_content_rejects_malformed_revision() -> None:
     await _fetch_content_invalid_descriptor(broken)
 
 
-async def test_fetch_content_rejects_raw_string_content_mode() -> None:
+@pytest.mark.parametrize(
+    "raw_content_mode",
+    (
+        "structured_record",
+        "not-a-valid-content-mode",
+    ),
+)
+async def test_fetch_content_rejects_raw_string_content_mode(raw_content_mode: str) -> None:
     item = _message_descriptor()
     broken = KnowledgeItemDescriptor.model_construct(
         identity=item.identity,
         revision=item.revision,
         title=item.title,
         item_type=item.item_type,
-        content_mode="not-a-valid-content-mode",
+        content_mode=raw_content_mode,
         content_available=item.content_available,
         provenance=item.provenance,
         metadata=item.metadata,
     )
-    await _fetch_content_invalid_descriptor(broken)
+    exc_info = await _fetch_content_invalid_descriptor(broken)
+    err = exc_info.value
+    assert err.safe_message == "Microsoft Graph Mail message descriptor is invalid"
+    rendered = f"{err!r} {err.safe_message}"
+    assert raw_content_mode not in rendered
 
 
 async def test_fetch_content_rejects_nested_invalid_metadata_value() -> None:
