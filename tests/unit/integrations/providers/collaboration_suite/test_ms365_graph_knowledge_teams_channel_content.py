@@ -272,11 +272,15 @@ def test_validate_reference_accepts_mapping() -> None:
     assert validated.remote_id == _MESSAGE_ID
 
 
-def test_reference_repr_hides_revision() -> None:
+def test_reference_repr_hides_identifiers() -> None:
     reference = _valid_root_reference()
     rendered = repr(reference)
     assert _ETAG not in rendered
-    assert _TEAM_ID in rendered
+    assert _TEAM_ID not in rendered
+    assert _CHANNEL_ID not in rendered
+    assert _MESSAGE_ID not in rendered
+    assert reference.team_remote_id == _TEAM_ID
+    assert reference.remote_id == _MESSAGE_ID
 
 
 @pytest.mark.parametrize(
@@ -437,22 +441,8 @@ def test_exact_reference_mismatch_raises_changed(
     if reference.message_kind is MsGraphTeamsChannelMessageKind.REPLY:
         message = _valid_active_reply(**message_overrides)
     elif "remote_id" in message_overrides:
-        base = _valid_active_message()
-        message = MsGraphTeamsChannelMessage.model_construct(
-            team_remote_id=base.team_remote_id,
-            channel_remote_id=base.channel_remote_id,
-            thread_root_remote_id=base.thread_root_remote_id,
-            message_kind=base.message_kind,
-            remote_id=message_overrides["remote_id"],
-            revision=base.revision,
-            state=base.state,
-            message_type=base.message_type,
-            importance=base.importance,
-            created_at=base.created_at,
-            last_modified_at=base.last_modified_at,
-            body_kind=base.body_kind,
-            body_content=base.body_content,
-        )
+        other_id = message_overrides["remote_id"]
+        message = _valid_active_message(remote_id=other_id, thread_root_remote_id=other_id)
     else:
         message = _valid_active_message(**message_overrides)
     with pytest.raises(MsGraphTeamsChannelMessageChanged, match=_CHANGED_ERROR) as exc:
@@ -579,6 +569,91 @@ def test_model_construct_full_message_with_invalid_nested_fields_rejected() -> N
             max_chars=10_000,
         )
     assert exc.value.__cause__ is None
+    assert str(exc.value) == _SAFE_CONTENT
+    assert "123" not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"team_remote_id": None},
+        {"channel_remote_id": None},
+        {"thread_root_remote_id": None},
+        {"remote_id": None},
+        {"revision": None},
+        {"message_kind": "root"},
+        {"message_kind": "reply"},
+        {"state": "active"},
+        {"message_type": "message"},
+        {"importance": "normal"},
+        {"body_kind": "text"},
+        {"created_at": "not-a-datetime"},
+        {"created_at": datetime(2024, 1, 1, 10, 0)},
+        {"last_modified_at": None},
+        {"attachments": []},
+        {"mentions": []},
+        {"reactions": []},
+        {
+            "sender": MsGraphTeamsIdentity.model_construct(),
+        },
+    ],
+)
+def test_model_construct_malformed_message_rejected(kwargs: dict[str, object]) -> None:
+    base: dict[str, object] = {
+        "team_remote_id": _TEAM_ID,
+        "channel_remote_id": _CHANNEL_ID,
+        "thread_root_remote_id": _MESSAGE_ID,
+        "message_kind": MsGraphTeamsChannelMessageKind.ROOT,
+        "remote_id": _MESSAGE_ID,
+        "revision": _ETAG,
+        "state": MsGraphTeamsChannelMessageState.ACTIVE,
+        "message_type": MsGraphTeamsChannelMessageType.MESSAGE,
+        "importance": MsGraphTeamsChannelImportance.NORMAL,
+        "created_at": datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        "last_modified_at": datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
+        "body_kind": MsGraphTeamsChannelBodyKind.TEXT,
+        "body_content": "Hello",
+    }
+    malformed = MsGraphTeamsChannelMessage.model_construct(**{**base, **kwargs})
+    with pytest.raises(ValueError, match=_SAFE_CONTENT) as exc:
+        validate_msgraph_teams_channel_message_content(
+            malformed,
+            reference=_valid_root_reference(),
+            max_chars=10_000,
+        )
+    assert exc.value.__cause__ is None
+    assert str(exc.value) == _SAFE_CONTENT
+    error_text = str(exc.value)
+    assert _TEAM_ID not in error_text
+    assert _CHANNEL_ID not in error_text
+    assert _MESSAGE_ID not in error_text
+    assert _ETAG not in error_text
+    assert _SECRET_BODY not in error_text
+
+
+def test_model_construct_malformed_message_identity_mismatch_not_changed() -> None:
+    malformed = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=None,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        remote_id=_MESSAGE_ID,
+        revision=_ETAG,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
+        created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
+        body_content="Hello",
+    )
+    with pytest.raises(ValueError, match=_SAFE_CONTENT) as exc:
+        validate_msgraph_teams_channel_message_content(
+            malformed,
+            reference=_valid_root_reference(),
+            max_chars=10_000,
+        )
+    assert not isinstance(exc.value, MsGraphTeamsChannelMessageChanged)
 
 
 # --- character limits ---
@@ -768,6 +843,36 @@ def test_custom_client_malformed_content_rejected() -> None:
     with pytest.raises(ValueError, match=_SAFE_CONTENT) as exc:
         integration.read_teams_channel_message_content(message=_valid_root_reference())
     assert exc.value.__cause__ is None
+    assert not isinstance(exc.value, MsGraphTeamsChannelMessageChanged)
+
+
+def test_custom_client_malformed_top_level_message_rejected_not_changed() -> None:
+    malformed = MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=None,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_MESSAGE_ID,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        remote_id=_MESSAGE_ID,
+        revision=_ETAG,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
+        created_at=datetime(2024, 1, 1, 10, 0, tzinfo=timezone.utc),
+        last_modified_at=datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc),
+        body_kind=MsGraphTeamsChannelBodyKind.TEXT,
+        body_content="Hello",
+    )
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(
+            _TrackingTeamsChannelContentClient(message=malformed, http=MagicMock())
+        ),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE_CONTENT) as exc:
+        integration.read_teams_channel_message_content(message=_valid_root_reference())
+    assert exc.value.__cause__ is None
+    assert not isinstance(exc.value, MsGraphTeamsChannelMessageChanged)
+    assert _TEAM_ID not in str(exc.value)
 
 
 @pytest.mark.parametrize("max_chars", [0, ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS + 1, True, "1000", None])
@@ -786,21 +891,9 @@ def test_integration_invalid_max_chars_rejected(max_chars: object) -> None:
 
 
 def test_custom_client_identity_mismatch_rejected() -> None:
-    base = _valid_active_message()
-    supplied = MsGraphTeamsChannelMessage.model_construct(
-        team_remote_id=base.team_remote_id,
-        channel_remote_id=base.channel_remote_id,
-        thread_root_remote_id=base.thread_root_remote_id,
-        message_kind=base.message_kind,
+    supplied = _valid_active_message(
         remote_id=_OTHER_MESSAGE_ID,
-        revision=base.revision,
-        state=base.state,
-        message_type=base.message_type,
-        importance=base.importance,
-        created_at=base.created_at,
-        last_modified_at=base.last_modified_at,
-        body_kind=base.body_kind,
-        body_content=base.body_content,
+        thread_root_remote_id=_OTHER_MESSAGE_ID,
     )
     integration = Ms365GraphCollaborationSuiteIntegration.from_client(
         _Ms365GraphCollaborationSuite(
@@ -863,9 +956,18 @@ def test_security_repr_and_errors_hide_sensitive_fields() -> None:
     assert _SECRET_MENTION_TEXT not in rendered
     assert _SECRET_REACTION_TYPE not in rendered
     assert _ETAG not in rendered
+    assert _TEAM_ID not in rendered
+    assert _CHANNEL_ID not in rendered
+    assert _MESSAGE_ID not in rendered
+    assert _SENDER_ID not in rendered
+    assert message.team_remote_id == _TEAM_ID
+    assert message.remote_id == _MESSAGE_ID
 
     reference_rendered = repr(reference)
     assert _ETAG not in reference_rendered
+    assert _TEAM_ID not in reference_rendered
+    assert _CHANNEL_ID not in reference_rendered
+    assert _MESSAGE_ID not in reference_rendered
 
     validated_attachment = validate_msgraph_teams_chat_attachment_reference(attachment)
     assert _SECRET_ATTACHMENT_URL not in repr(validated_attachment)
@@ -879,21 +981,9 @@ def test_security_repr_and_errors_hide_sensitive_fields() -> None:
     assert _ETAG not in str(exc.value)
 
     with pytest.raises(MsGraphTeamsChannelMessageChanged, match=_CHANGED_ERROR) as changed_exc:
-        base = _valid_active_message()
-        mismatch = MsGraphTeamsChannelMessage.model_construct(
-            team_remote_id=base.team_remote_id,
-            channel_remote_id=base.channel_remote_id,
-            thread_root_remote_id=base.thread_root_remote_id,
-            message_kind=base.message_kind,
+        mismatch = _valid_active_message(
             remote_id=_OTHER_MESSAGE_ID,
-            revision=base.revision,
-            state=base.state,
-            message_type=base.message_type,
-            importance=base.importance,
-            created_at=base.created_at,
-            last_modified_at=base.last_modified_at,
-            body_kind=base.body_kind,
-            body_content=base.body_content,
+            thread_root_remote_id=_OTHER_MESSAGE_ID,
         )
         validate_msgraph_teams_channel_message_content(
             mismatch,

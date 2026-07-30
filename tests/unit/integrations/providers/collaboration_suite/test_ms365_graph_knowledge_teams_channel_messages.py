@@ -1202,6 +1202,12 @@ def test_security_repr_hides_sensitive_identifiers() -> None:
     rendered = repr(message)
     assert _SENDER_ID not in rendered
     assert "Hello" not in rendered
+    assert _TEAM_ID not in rendered
+    assert _CHANNEL_ID not in rendered
+    assert _MESSAGE_ID not in rendered
+    assert _ETAG not in rendered
+    assert message.team_remote_id == _TEAM_ID
+    assert message.remote_id == _MESSAGE_ID
 
 
 def test_parse_forwarded_message_reference_from_provider_payload() -> None:

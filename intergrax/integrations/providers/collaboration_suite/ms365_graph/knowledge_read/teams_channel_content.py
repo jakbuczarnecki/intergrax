@@ -74,11 +74,11 @@ def _validate_max_chars(max_chars: object) -> int:
 class MsGraphTeamsChannelMessageReference(BaseModel):
     model_config = _STRICT_MODEL_CONFIG
 
-    team_remote_id: str
-    channel_remote_id: str
-    thread_root_remote_id: str
+    team_remote_id: str = Field(repr=False)
+    channel_remote_id: str = Field(repr=False)
+    thread_root_remote_id: str = Field(repr=False)
     message_kind: MsGraphTeamsChannelMessageKind
-    remote_id: str
+    remote_id: str = Field(repr=False)
     revision: str = Field(repr=False)
 
     @field_validator("team_remote_id", mode="before")
@@ -159,21 +159,6 @@ def validate_msgraph_teams_channel_message_content(
     if not isinstance(value, MsGraphTeamsChannelMessage):
         raise ValueError(_MALFORMED_CONTENT_RESPONSE) from None
 
-    if (
-        value.team_remote_id != validated_reference.team_remote_id
-        or value.channel_remote_id != validated_reference.channel_remote_id
-        or value.thread_root_remote_id != validated_reference.thread_root_remote_id
-        or value.message_kind != validated_reference.message_kind
-        or value.remote_id != validated_reference.remote_id
-        or value.revision != validated_reference.revision
-    ):
-        raise MsGraphTeamsChannelMessageChanged() from None
-
-    if value.state is not MsGraphTeamsChannelMessageState.ACTIVE:
-        raise MsGraphTeamsChannelMessageChanged() from None
-    if value.body_kind is None or value.body_content is None:
-        raise MsGraphTeamsChannelMessageChanged() from None
-
     try:
         source = value.model_dump(mode="python")
         if not isinstance(source, dict):
@@ -187,8 +172,23 @@ def validate_msgraph_teams_channel_message_content(
             revalidate_source,
             max_chars=ABSOLUTE_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
         )
-    except ValueError:
+    except (ValueError, TypeError, AttributeError, ValidationError, KeyError):
         raise ValueError(_MALFORMED_CONTENT_RESPONSE) from None
+
+    if (
+        validated_message.team_remote_id != validated_reference.team_remote_id
+        or validated_message.channel_remote_id != validated_reference.channel_remote_id
+        or validated_message.thread_root_remote_id != validated_reference.thread_root_remote_id
+        or validated_message.message_kind != validated_reference.message_kind
+        or validated_message.remote_id != validated_reference.remote_id
+        or validated_message.revision != validated_reference.revision
+    ):
+        raise MsGraphTeamsChannelMessageChanged() from None
+
+    if validated_message.state is not MsGraphTeamsChannelMessageState.ACTIVE:
+        raise MsGraphTeamsChannelMessageChanged() from None
+    if validated_message.body_kind is None or validated_message.body_content is None:
+        raise MsGraphTeamsChannelMessageChanged() from None
 
     if len(validated_message.body_content) > validated_max_chars:
         raise MsGraphTeamsChannelContentTooLarge() from None

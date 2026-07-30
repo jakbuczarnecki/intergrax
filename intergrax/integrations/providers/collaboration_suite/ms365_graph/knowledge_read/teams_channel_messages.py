@@ -543,11 +543,11 @@ def _parse_attachment_reference(payload: dict[str, Any]) -> MsGraphTeamsChatAtta
 class MsGraphTeamsChannelMessage(BaseModel):
     model_config = _STRICT_MODEL_CONFIG
 
-    team_remote_id: str
-    channel_remote_id: str
-    thread_root_remote_id: str
+    team_remote_id: str = Field(repr=False)
+    channel_remote_id: str = Field(repr=False)
+    thread_root_remote_id: str = Field(repr=False)
     message_kind: MsGraphTeamsChannelMessageKind
-    remote_id: str
+    remote_id: str = Field(repr=False)
 
     revision: str = Field(repr=False)
 
@@ -1106,15 +1106,24 @@ def validate_msgraph_teams_channel_message(
         dumped = dict(source)
         if dumped.get("sender") is not None:
             dumped["sender"] = validate_msgraph_teams_identity(dumped["sender"])
+        raw_attachments = dumped.get("attachments", ())
+        if type(raw_attachments) is not tuple:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
         dumped["attachments"] = tuple(
             validate_msgraph_teams_chat_attachment_reference(item)
-            for item in dumped.get("attachments", ())
+            for item in raw_attachments
         )
+        raw_mentions = dumped.get("mentions", ())
+        if type(raw_mentions) is not tuple:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
         dumped["mentions"] = tuple(
-            validate_msgraph_teams_chat_mention(item) for item in dumped.get("mentions", ())
+            validate_msgraph_teams_chat_mention(item) for item in raw_mentions
         )
+        raw_reactions = dumped.get("reactions", ())
+        if type(raw_reactions) is not tuple:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
         dumped["reactions"] = tuple(
-            validate_msgraph_teams_chat_reaction(item) for item in dumped.get("reactions", ())
+            validate_msgraph_teams_chat_reaction(item) for item in raw_reactions
         )
         validated = MsGraphTeamsChannelMessage.model_validate(dumped)
         if (
