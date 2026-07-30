@@ -237,27 +237,11 @@ class WebUrlIntakeService:
         except WebContentCaptureError as exc:
             raise WebUrlValidationError(map_web_url_capture_error(exc)) from exc
 
-        try:
-            await asyncio.wait_for(
-                self._url_policy.approve_target(canonical),
-                timeout=self._preflight_timeout_seconds,
-            )
-        except TimeoutError as exc:
-            raise WebUrlValidationError("web_url_timeout") from exc
-        except WebContentCaptureError as exc:
-            code = map_web_url_capture_error(exc)
-            if code in {item.value for item in _BAD_REQUEST_CAPTURE_CODES}:
-                raise WebUrlValidationError(code) from exc
-            if code in {item.value for item in _SERVICE_UNAVAILABLE_CAPTURE_CODES}:
-                raise WebUrlValidationError(code) from exc
-            raise WebUrlValidationError(code) from exc
-
         input_id = deterministic_knowledge_input_id(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             idempotency_key=idempotency_key,
         )
-        metadata = {_METADATA_KEY: canonical.fingerprint}
 
         existing_input = self._repository.get_knowledge_input(
             tenant_id=tenant_id,
@@ -270,6 +254,12 @@ class WebUrlIntakeService:
             stored_fingerprint = existing_input.submission_metadata.get(_METADATA_KEY, "")
             if stored_fingerprint != canonical.fingerprint:
                 raise WebUrlIdempotencyConflict()
+            self._validate_resume_locator(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                input_id=input_id,
+                fingerprint=canonical.fingerprint,
+            )
             return await self._resume_intake(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -284,6 +274,21 @@ class WebUrlIntakeService:
         )
         if existing_locator is not None and existing_locator.input_id != input_id:
             raise WebUrlAlreadyRegistered()
+
+        try:
+            await asyncio.wait_for(
+                self._url_policy.approve_target(canonical),
+                timeout=self._preflight_timeout_seconds,
+            )
+        except TimeoutError as exc:
+            raise WebUrlValidationError("web_url_timeout") from exc
+        except WebContentCaptureError as exc:
+            code = map_web_url_capture_error(exc)
+            if code in {item.value for item in _BAD_REQUEST_CAPTURE_CODES}:
+                raise WebUrlValidationError(code) from exc
+            if code in {item.value for item in _SERVICE_UNAVAILABLE_CAPTURE_CODES}:
+                raise WebUrlValidationError(code) from exc
+            raise WebUrlValidationError(code) from exc
 
         now = _utc_now()
         locator = WebUrlSourceLocator(
@@ -307,7 +312,7 @@ class WebUrlIntakeService:
                 workspace_id=workspace_id,
                 input_kind=KnowledgeInputKind.WEB_URL,
                 idempotency_key=idempotency_key,
-                submission_metadata=metadata,
+                submission_metadata={_METADATA_KEY: canonical.fingerprint},
             )
         except KnowledgeInputIdempotencyConflict as exc:
             raise WebUrlIdempotencyConflict() from exc
@@ -369,6 +374,32 @@ class WebUrlIntakeService:
             status=self._public_status(acceptance.operation),
             safe_display_url=safe_display_url,
         )
+
+    def _validate_resume_locator(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        input_id: str,
+        fingerprint: str,
+    ) -> WebUrlSourceLocator:
+        locator = self._repository.get_web_url_locator(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            requested_url_fingerprint=fingerprint,
+        )
+        if locator is None:
+            raise WebUrlStateConflict()
+        if (
+            locator.tenant_id != tenant_id
+            or locator.workspace_id != workspace_id
+            or locator.input_id != input_id
+            or locator.requested_url_fingerprint != fingerprint
+            or not locator.canonical_private_url
+            or not locator.safe_display_url
+        ):
+            raise WebUrlStateConflict()
+        return locator
 
     @staticmethod
     def _assert_locator_match(
@@ -510,6 +541,9 @@ class WebUrlKnowledgeIngestionProcessor:
             )
         except WebContentCaptureError as exc:
             raise KnowledgeIngestionProcessorError(map_web_url_capture_error(exc)) from exc
+
+        if captured.requested_url_fingerprint != locator.requested_url_fingerprint:
+            raise KnowledgeIngestionProcessorError("web_url_capture_identity_mismatch")
 
         now = _utc_now()
         self._repository.put_web_url_locator(

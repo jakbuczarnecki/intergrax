@@ -25,7 +25,14 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.websearch.capture.contracts import CapturedWebContent, WebContentCaptureRequest
 from intergrax.websearch.capture.url_policy import WebUrlAccessPolicy
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from local_workspace_application.host.environment_profile import build_local_workspace_environment_profile
+from local_workspace_application.host.lkw_task_enricher import build_lkw_combined_task_enricher
+from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
+from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
+from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.serving import workspace_routes
 from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
 from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
 from local_workspace_application.workspaces.knowledge_ingestion import (
@@ -45,6 +52,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _PREFIX = "/v1/local_workspace"
 FIXTURE_TEXT = "The Oriole warehouse verification code is BLUE-7319."
 PUBLIC_IP = "93.184.216.34"
+SUBMIT_URL = "https://example.com/oriole?track=secret"
+DISPLAY_URL = "https://example.com/oriole"
 
 
 async def _resolve_public(_host: str) -> tuple[str, ...]:
@@ -76,21 +85,26 @@ class RecordingFakeLLM(LLMAdapter):
 
 
 class FakeWebContentCapture:
+    def __init__(self, *, policy: WebUrlAccessPolicy | None = None, text: str = FIXTURE_TEXT) -> None:
+        self._policy = policy or WebUrlAccessPolicy(dns_resolver=_resolve_public)
+        self._text = text
+
     async def capture(self, request: WebContentCaptureRequest) -> CapturedWebContent:
+        canonical = self._policy.canonicalize(request.url)
         now = datetime.now(UTC)
         return CapturedWebContent(
-            safe_display_url="https://example.com/oriole",
-            requested_url_fingerprint="sha256:" + "a" * 64,
+            safe_display_url=canonical.safe_display_url,
+            requested_url_fingerprint=canonical.fingerprint,
             final_url_fingerprint="sha256:" + "b" * 64,
             final_host_changed=False,
             title="Oriole",
-            text=FIXTURE_TEXT,
+            text=self._text,
             content_type="text/html",
             content_hash="sha256:" + "c" * 64,
             status_code=200,
             redirect_count=0,
-            content_bytes=len(FIXTURE_TEXT.encode()),
-            text_chars=len(FIXTURE_TEXT),
+            content_bytes=len(self._text.encode()),
+            text_chars=len(self._text),
             capture_mode="http",
             extraction_method="basic",
             fetched_at=now,
@@ -214,7 +228,7 @@ def e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         repository=repo,
     )
     policy = WebUrlAccessPolicy(dns_resolver=_resolve_public)
-    capture = FakeWebContentCapture()
+    capture = FakeWebContentCapture(policy=policy)
     llm = RecordingFakeLLM(
         fixed_text=json.dumps(
             {
@@ -250,8 +264,9 @@ def e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             return _search_task_result(
                 workspace_id=workspace_id,
                 source_id="missing",
-                file_name="https://example.com/oriole",
+                file_name=DISPLAY_URL,
                 document_id="missing",
+                source_path="",
             )
         ref = refs[0]
         return _search_task_result(
@@ -271,10 +286,102 @@ def e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "repo": repo,
             "service": service,
             "llm": llm,
+            "settings": settings,
         }
 
 
-def test_web_url_end_to_end_ask_proof(e2e_bundle) -> None:
+@pytest.fixture
+def rag_e2e_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    store = InMemoryDocumentStore()
+    data_home = tmp_path / "lkw-data"
+    sqlite_dir = tmp_path / "sqlite"
+    shadow_dir = tmp_path / "shadow"
+    user_docs = tmp_path / "docs"
+    for path in (data_home, sqlite_dir, shadow_dir, user_docs):
+        path.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(user_docs.resolve()))
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG", "true")
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG_INGEST", "true")
+    monkeypatch.setenv("LKW_DATA_HOME", str(data_home))
+    monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(sqlite_dir))
+    monkeypatch.setenv("INTERGRAX_SHADOW_ROOT", str(shadow_dir))
+    monkeypatch.delenv("INTERGRAX_MONGODB_URI", raising=False)
+    monkeypatch.setattr(
+        workspace_routes,
+        "resolve_managed_workspace_document_store",
+        lambda document_store=None: store,
+    )
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    env = build_local_workspace_environment_profile(settings)
+    harness_runtime = build_harness_host_runtime(
+        LOCAL_WORKSPACE_APPLICATION_MANIFEST,
+        env,
+        settings=settings,
+    )
+    lifecycle = LocalWorkspaceHostLifecycle()
+    lifecycle.transition_to_ready()
+    lifecycle.set_executor_available(True)
+    task_enricher = build_lkw_combined_task_enricher(
+        env,
+        default_capability="local.workspace.search",
+        agent_checkpoint_store=harness_runtime.agent_checkpoint_store,
+        compensation_queue_store=harness_runtime.compensation_queue_store,
+        idempotency_store=harness_runtime.reliability.idempotency_store,
+    )
+    task_executor = LocalWorkspaceTaskExecutor(
+        harness_runtime.nexus_loop,
+        task_enricher=task_enricher,
+        readiness=lifecycle,
+    )
+    repo = ManagedWorkspaceRepository(store)
+    sync = ManagedWorkspaceSyncService(repo, task_executor)
+    runtime = build_managed_workspace_sync_runtime(
+        document_store=store,
+        sync_service=sync,
+        repository=repo,
+    )
+    policy = WebUrlAccessPolicy(dns_resolver=_resolve_public)
+    capture = FakeWebContentCapture(policy=policy)
+    llm = RecordingFakeLLM(
+        fixed_text=json.dumps(
+            {
+                "status": "completed",
+                "answer": "The verification code is BLUE-7319.",
+                "used_evidence_ids": ["E1"],
+            }
+        )
+    )
+    app = FastAPI()
+    mount_managed_workspace_routes(
+        app,
+        task_executor=task_executor,
+        settings=settings,
+        repository=repo,
+        sync_runtime=runtime,
+        llm_adapter=llm,
+        web_url_access_policy=policy,
+        web_content_capture=capture,
+        vectorstore_manager=harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
+    )
+    vectorstore_manager = harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager
+
+    with TestClient(app) as client:
+        yield {
+            "client": client,
+            "repo": repo,
+            "runtime": runtime,
+            "llm": llm,
+            "settings": settings,
+            "vectorstore_manager": vectorstore_manager,
+            "task_executor": task_executor,
+            "harness_runtime": harness_runtime,
+        }
+
+
+def test_web_url_http_worker_and_ask_projection_with_test_doubles(e2e_bundle) -> None:
     client = e2e_bundle["client"]
     worker = e2e_bundle["worker"]
     repo: ManagedWorkspaceRepository = e2e_bundle["repo"]
@@ -291,13 +398,13 @@ def test_web_url_end_to_end_ask_proof(e2e_bundle) -> None:
     accepted = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/knowledge/web-urls",
         headers={"X-Tenant-Id": tenant, "Idempotency-Key": "oriole-url"},
-        json={"url": "https://example.com/oriole?track=secret"},
+        json={"url": SUBMIT_URL},
     )
     assert accepted.status_code == 202, accepted.text
     body = accepted.json()
     source_id = body["source_id"]
     operation_id = body["operation_id"]
-    assert body["safe_display_url"] == "https://example.com/oriole"
+    assert body["safe_display_url"] == DISPLAY_URL
     assert "track=secret" not in json.dumps(body)
 
     assert worker.drain_once() == 1
@@ -320,5 +427,77 @@ def test_web_url_end_to_end_ask_proof(e2e_bundle) -> None:
     assert answer_body["citations"]
     citation = answer_body["citations"][0]
     assert citation["source_id"] == source_id
-    assert citation["file_name"] == "https://example.com/oriole"
+    assert citation["file_name"] == DISPLAY_URL
     assert "track=secret" not in json.dumps(answer_body)
+
+
+def test_web_url_end_to_end_real_rag_ask_proof(rag_e2e_bundle) -> None:
+    client = rag_e2e_bundle["client"]
+    repo: ManagedWorkspaceRepository = rag_e2e_bundle["repo"]
+    runtime = rag_e2e_bundle["runtime"]
+    settings: LocalWorkspaceBackendSettings = rag_e2e_bundle["settings"]
+    vectorstore_manager = rag_e2e_bundle["vectorstore_manager"]
+    _ = vectorstore_manager
+    tenant = f"tenant-{uuid.uuid4().hex[:8]}"
+
+    assert settings.web_url_staging_dir in settings.allowed_read_roots
+
+    created = client.post(
+        f"{_PREFIX}/workspaces",
+        headers={"X-Tenant-Id": tenant},
+        json={"name": "Oriole RAG"},
+    )
+    assert created.status_code == 201
+    workspace_id = created.json()["workspace_id"]
+
+    accepted = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/knowledge/web-urls",
+        headers={"X-Tenant-Id": tenant, "Idempotency-Key": "oriole-rag"},
+        json={"url": SUBMIT_URL},
+    )
+    assert accepted.status_code == 202, accepted.text
+    body = accepted.json()
+    source_id = body["source_id"]
+    operation_id = body["operation_id"]
+    assert body["safe_display_url"] == DISPLAY_URL
+    assert "track=secret" not in json.dumps(body)
+
+    worker = runtime.worker
+    assert worker.drain_once() == 1
+
+    op = repo.get_operation(tenant_id=tenant, operation_id=operation_id)
+    assert op is not None
+    assert op.status is WorkspaceOperationStatus.COMPLETED, (op.error_code, op.error)
+    assert op.documents_indexed >= 1
+
+    source = repo.get_source(tenant_id=tenant, workspace_id=workspace_id, source_id=source_id)
+    assert source is not None
+    assert source.status is WorkspaceSourceStatus.READY
+
+    refs = repo.list_document_refs(tenant_id=tenant, workspace_id=workspace_id)
+    assert refs
+    assert refs[0].source_id == source_id
+
+    staging_root = Path(settings.web_url_staging_dir)
+    assert not any(staging_root.rglob("web-content.txt"))
+
+    wiring_ctx = rag_e2e_bundle["harness_runtime"].env_wiring.tool_wiring.wiring_context
+    tenant_stores = wiring_ctx.extras.get("tenant_vectorstore_managers", {})
+    scoped_manager = tenant_stores.get(tenant)
+    assert scoped_manager is not None
+    assert scoped_manager.count() >= 1
+
+    ask = client.post(
+        f"{_PREFIX}/workspaces/{workspace_id}/ask",
+        headers={"X-Tenant-Id": tenant},
+        json={"question": "What is the Oriole warehouse verification code?"},
+    )
+    assert ask.status_code == 200, ask.text
+    answer_body = ask.json()
+    assert "BLUE-7319" in answer_body["answer"]
+    assert answer_body["citations"]
+    citation = answer_body["citations"][0]
+    assert citation["source_id"] == source_id
+    assert citation["file_name"] == DISPLAY_URL
+    assert "track=secret" not in json.dumps(answer_body)
+    assert "BLUE-7319" in citation.get("excerpt", "") or "BLUE-7319" in answer_body["answer"]

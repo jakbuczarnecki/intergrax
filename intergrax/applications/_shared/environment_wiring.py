@@ -171,6 +171,18 @@ def wire_application_environment(
     wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
     wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
 
+    if resolved_integration is not None:
+        for option_block in resolved_integration.options.values():
+            raw_roots = option_block.get("allowed_read_roots")
+            if raw_roots:
+                from dataclasses import replace
+
+                wiring_context = replace(
+                    wiring_context,
+                    read_allowlist_roots=frozenset(str(root) for root in raw_roots),
+                )
+                break
+
     hosted_session = None
     if wiring_context.sandbox_session is None and resolved_integration is not None:
         from intergrax.applications._shared.sandbox_host_wiring import resolve_hosted_sandbox_session

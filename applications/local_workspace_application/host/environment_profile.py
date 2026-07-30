@@ -91,6 +91,9 @@ def build_local_workspace_integration_profile(
         options[REDIS.slug] = {}
     if enable_message_bus:
         options[KAFKA.slug] = {}
+    options["lkw_host"] = {
+        "allowed_read_roots": sorted(resolved_settings.allowed_read_roots),
+    }
     profile = IntegrationProfile(
         relational_store=SQLITE,
         vector_store=vector_store,

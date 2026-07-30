@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from intergrax.integrations.core.binding import IntegrationBinding
@@ -78,4 +80,20 @@ def test_base_tools_remain_enabled_with_message_bus_guardrails() -> None:
     wiring = wire_local_workspace_tools(settings=settings, integration_profile=IntegrationProfile())
 
     enabled = set(wiring.profile.enabled)
+    assert "workspace.search" in enabled
     assert "workspace.read_file" in enabled or "rag.list_collections" in enabled
+
+
+def test_tool_wiring_receives_web_url_staging_read_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data_home = tmp_path / "data"
+    data_home.mkdir()
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+
+    settings = LocalWorkspaceBackendSettings.from_env()
+    wiring = wire_local_workspace_tools(settings=settings, integration_profile=IntegrationProfile())
+
+    assert settings.web_url_staging_dir in wiring.wiring_context.read_allowlist_roots
+    assert settings.managed_upload_staging_dir in wiring.wiring_context.read_allowlist_roots

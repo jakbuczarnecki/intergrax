@@ -84,9 +84,18 @@ def _seed_workspace(repo: ManagedWorkspaceRepository) -> None:
 
 
 class FakeWebContentCapture:
-    def __init__(self, *, text: str = FIXTURE_TEXT, error_code: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        text: str = FIXTURE_TEXT,
+        error_code: str | None = None,
+        requested_fingerprint_override: str | None = None,
+        policy: WebUrlAccessPolicy | None = None,
+    ) -> None:
         self.text = text
         self.error_code = error_code
+        self.requested_fingerprint_override = requested_fingerprint_override
+        self._policy = policy or WebUrlAccessPolicy(dns_resolver=_resolve_public)
         self.calls: list[WebContentCaptureRequest] = []
 
     async def capture(self, request: WebContentCaptureRequest) -> CapturedWebContent:
@@ -98,10 +107,16 @@ class FakeWebContentCapture:
             )
 
             raise WebContentCaptureError(WebContentCaptureErrorCode(self.error_code))
+        canonical = self._policy.canonicalize(request.url)
+        requested_fingerprint = (
+            self.requested_fingerprint_override
+            if self.requested_fingerprint_override is not None
+            else canonical.fingerprint
+        )
         now = _now()
         return CapturedWebContent(
-            safe_display_url="https://example.com/docs",
-            requested_url_fingerprint="sha256:" + "f" * 64,
+            safe_display_url=canonical.safe_display_url,
+            requested_url_fingerprint=requested_fingerprint,
             final_url_fingerprint="sha256:" + "e" * 64,
             final_host_changed=False,
             title="Docs",
@@ -320,6 +335,40 @@ def test_worker_payload_has_identities_only(tmp_path: Path) -> None:
     assert "x=1" not in payload
     decoded = decode_knowledge_ingestion_job(encode_knowledge_ingestion_job(job))
     assert decoded.input_id == accepted.input_id
+
+
+def test_processor_capture_identity_mismatch_fails_closed(tmp_path: Path) -> None:
+    repo, web_intake, _, worker, _, indexing, _ = _build_stack(
+        tmp_path,
+        capture=FakeWebContentCapture(requested_fingerprint_override="sha256:" + "0" * 64),
+    )
+    accepted = _accept(
+        web_intake,
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        raw_url="https://example.com/docs",
+        idempotency_key="identity-mismatch",
+    )
+    assert worker.drain_once() == 1
+    op = repo.get_operation(tenant_id=TENANT, operation_id=accepted.operation_id)
+    assert op is not None
+    assert op.status is WorkspaceOperationStatus.FAILED
+    assert op.error_code == "web_url_capture_identity_mismatch"
+    assert "sha256:" not in (op.error or "")
+    assert "https://" not in (op.error or "")
+    assert indexing.calls == []
+    fingerprint = repo.list_knowledge_inputs(tenant_id=TENANT, workspace_id=WORKSPACE)[
+        0
+    ].submission_metadata["source_fingerprint"]
+    locator = repo.get_web_url_locator(
+        tenant_id=TENANT,
+        workspace_id=WORKSPACE,
+        requested_url_fingerprint=fingerprint,
+    )
+    assert locator is not None
+    assert locator.final_url_fingerprint is None
+    assert locator.content_hash is None
+    assert not any(tmp_path.rglob("web-content.txt"))
 
 
 def test_resolver_rejects_wrong_kind() -> None:

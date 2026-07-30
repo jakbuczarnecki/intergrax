@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.integration_tool_profile import apply_resolved_integration_tool_guardrails
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -63,6 +64,25 @@ _FILESYSTEM_TOOL_IDS: tuple[str, ...] = (
 )
 
 
+def resolve_local_workspace_read_allowlist_roots(
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> frozenset[str]:
+    settings = settings or LocalWorkspaceBackendSettings.from_env()
+    if settings.allowed_read_roots:
+        return frozenset(settings.allowed_read_roots)
+    return read_allowlist_roots_from_env()
+
+
+def apply_local_workspace_read_allowlist_to_context(
+    ctx: ToolWiringContext,
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> ToolWiringContext:
+    allowed_roots = resolve_local_workspace_read_allowlist_roots(settings)
+    if allowed_roots:
+        return replace(ctx, read_allowlist_roots=allowed_roots)
+    return ctx
+
+
 def wire_local_workspace_tools(
     *,
     settings: LocalWorkspaceBackendSettings | None = None,
@@ -73,7 +93,7 @@ def wire_local_workspace_tools(
     enabled.extend(settings.enabled_tool_ids)
 
     resolved_profile = integration_profile or IntegrationProfile.legal_product()
-    allowed_roots = frozenset(settings.allowed_read_roots) if settings.allowed_read_roots else read_allowlist_roots_from_env()
+    allowed_roots = resolve_local_workspace_read_allowlist_roots(settings)
     if allowed_roots:
         for tool_id in _FILESYSTEM_TOOL_IDS:
             if tool_id not in enabled:
@@ -93,4 +113,30 @@ def wire_local_workspace_tools(
         profile,
         integration_profile=resolved_profile,
         wiring_context=ctx,
+    )
+
+
+def apply_local_workspace_read_allowlist_to_runtime(
+    runtime: HarnessHostRuntime,
+    settings: LocalWorkspaceBackendSettings | None = None,
+) -> HarnessHostRuntime:
+    """Merge canonical LKW read roots into the harness tool-wiring context."""
+    resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
+    allowed_roots = resolve_local_workspace_read_allowlist_roots(resolved_settings)
+    if not allowed_roots:
+        return runtime
+    env_wiring = runtime.env_wiring
+    tool_wiring = env_wiring.tool_wiring
+    return replace(
+        runtime,
+        env_wiring=replace(
+            env_wiring,
+            tool_wiring=replace(
+                tool_wiring,
+                wiring_context=replace(
+                    tool_wiring.wiring_context,
+                    read_allowlist_roots=allowed_roots,
+                ),
+            ),
+        ),
     )
