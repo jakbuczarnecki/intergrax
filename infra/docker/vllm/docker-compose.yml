@@ -24,7 +24,7 @@ services:
       retries: 5
       start_period: 120s
     command:
-      - ${VLLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      - ${VLLM_MODEL:-Qwen/Qwen2.5-3B-Instruct}
       - --host
       - "0.0.0.0"
       - --port

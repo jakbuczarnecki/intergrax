@@ -1555,6 +1555,18 @@ Do not collapse these into one implementation commit.
 
 **Owner:** `LLM_ADAPTERS` (`TOKEN-LLM-2`, `TOKEN-LLM-3`). Pin vLLM image/version; enable automatic prefix caching; expose health, readiness, cache metrics, and `cached_input_tokens` through existing adapter usage envelope. Distinguish cold, warm, and changed-prefix controls.
 
+### TOKEN-10C-R4 — Canonical Proof Default and Shared-Server Pass Semantics
+
+**Status:** **Implemented / Ready for review**.
+
+**Scope delivered:**
+
+- Canonical proof model default changed to `Qwen/Qwen2.5-3B-Instruct` in runner `build_default_config()` and `infra/docker/vllm/docker-compose.yml`.
+- Shared lifecycle (`manage_vllm=false`) separated from canonical proof outcome; verified shared server can return `PASS` and exit code `0`.
+- Wrong model, wrong vLLM version, and missing required metrics remain fail-closed.
+- Managed server behavior preserved; cold/warm/changed-prefix gates unchanged.
+- Reviewer guide updated (`intergrax/runtime/token_optimization/proofs/README.md`).
+
 ### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
 
 **Status:** Planned.
@@ -1571,7 +1583,7 @@ Implement in-cache compaction with explicit opt-in, protected-region preservatio
 
 **Status:** Planned.
 
-Canonical paths: `intergrax/runtime/token_optimization/proof/`, `configs/token_optimization/proof_vllm.toml`, `scripts/token_optimization/run_universal_proof.py`, `infra/docker/vllm/docker-compose.yml`, `.artifacts/token_optimization/proof/`. Proof uses real `LLMAdapterRegistry`, router, catalog, registry, runner — no test-only alternative engine.
+Canonical paths: `intergrax/runtime/token_optimization/proofs/`, `configs/token_optimization/proof_vllm.toml`, `scripts/token_optimization/run_universal_proof.py`, `infra/docker/vllm/docker-compose.yml`, `.artifacts/token_optimization/proof/`. Proof uses real `LLMAdapterRegistry`, router, catalog, registry, runner — no test-only alternative engine.
 
 ### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
 
@@ -2060,6 +2072,7 @@ TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemente
 TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Implemented / Ready for review
 TOKEN-10B-R2 exact tool-schema order integrity — Implemented / Ready for review
 TOKEN-10C   vLLM prefix-cache provider integration and metrics — Implemented / Ready for review
+TOKEN-10C-R4 canonical proof default and shared-server pass semantics — Implemented / Ready for review
 TOKEN-10D..10H orchestration, compaction, proof, README — Planned
 ```
 
