@@ -245,6 +245,6 @@ Browser automation and vendor fetch providers (BrowserAutomation contract, Firec
 | Task | Scope |
 |------|-------|
 | `1B-5-1` | Shared secure Web Content Capture contract and HTTPS backend (this document) — **ACCEPTED** |
-| `1B-5-2` | End-to-end LKW `WEB_URL` Knowledge Intake — **READY_FOR_REVIEW** |
+| `1B-5-2` | End-to-end LKW `WEB_URL` Knowledge Intake — **ACCEPTED** (including C1 and C2) |
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof — **MERGED INTO 1B-5-2** |
 | `CONV-1C` | Slack natural-language URL execution (not a strict URL command) |

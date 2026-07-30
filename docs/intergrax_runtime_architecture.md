@@ -214,9 +214,9 @@ Canonical execution order: [pplications/local_workspace_application/docs/IMPLEM
 
 | Block | Scope | Status |
 |-------|-------|--------|
-| **1B-5-2** | End-to-end WEB_URL Knowledge Intake | **READY_FOR_REVIEW** (current implementation) |
-| **LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1** | Hybrid knowledge access vocabulary and roadmap | **DOCUMENTED / READY_FOR_REVIEW** |
-| **LKW-MODEL-RUNTIME-1** | Ollama / vLLM end-to-end portability | **PLANNED** |
+| **1B-5-2** | End-to-end WEB_URL Knowledge Intake | **ACCEPTED** (including C1 and C2) |
+| **LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1** | Hybrid knowledge access vocabulary and roadmap | **ACCEPTED** |
+| **LKW-MODEL-RUNTIME-1** | Ollama / vLLM end-to-end portability | **NEXT** |
 | **LKW-KNOWLEDGE-ACCESS-1** | Connections, Indexed Sources, Live Access Bindings | **PLANNED** |
 | **LKW-HYBRID-ASK-1** | RAG + live with unified provenance | **PLANNED** |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language execution + Slack cutover | **PLANNED** |
@@ -225,4 +225,4 @@ Canonical execution order: [pplications/local_workspace_application/docs/IMPLEM
 | **LKW-KNOWLEDGE-LIFECYCLE-1** | Sync, freshness, permissions, removal | **PLANNED** |
 | **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable Slack platform proof | **PLANNED** |
 
-Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §4.4.
+Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.

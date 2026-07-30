@@ -1709,9 +1709,14 @@ For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZAT
 - Trusted Ask Workspace over **indexed** RAG with citations and persisted runs
 - Managed workspaces, folder sources, file watcher E2E
 
-### Implemented but awaiting review
+### Implemented and independently accepted
 
-- Managed-file upload, Source Candidate intake, end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`)
+- Managed-file upload and Source Candidate intake
+- End-to-end `WEB_URL` Knowledge Intake (`1B-5-2`, including C1 and C2)
+- Deterministic application-level real RAG path proof (production staging allowlist; real indexing, vector write, retrieval and safe citation)
+- Trusted Ask Workspace over **indexed** RAG with citations and persisted runs
+
+**Proof classification:** not a live external-website certification; not a live provider proof; not final `LKW-LIVE-PLATFORM-PROOF-1`.
 
 ### Planned proof (future public claim)
 

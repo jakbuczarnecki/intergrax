@@ -338,12 +338,13 @@ Reasons: path disclosure in channel history; ambiguous target host; no guarantee
 
 A local path may be accepted only by a trusted local-capable interface and converted behind the LKW boundary into a safe candidate/reference.
 
-### 6.5 URL intake (`IMPLEMENTED` — `1B-5-2`)
+### 6.5 URL intake (`ACCEPTED` — `1B-5-2`)
 
 - `WEB_URL` is accepted by the public LKW capability `POST /v1/local_workspace/workspaces/{workspace_id}/knowledge/web-urls`.
 - Resolves to a durable `WEB_RESOURCE` Source (`path=""`, `recursive=false`).
 - Processed by the existing Knowledge Ingestion worker via `WebContentCapture` and `WorkspaceDocumentIndexingService`.
 - Private canonical URL is stored only in `WebUrlSourceLocator` (not on Source or submission metadata).
+- Accepted lifecycle: durable input/source/operation → capture → real indexing → retrieval through Ask with safe citation.
 - URL ingestion remains an **explicit** user/client action.
 - Ordinary Ask messages containing a URL must **not** automatically trigger ingestion.
 - Slack natural-language URL execution belongs to `CONV-1C`, not a separate strict URL command.
@@ -806,7 +807,7 @@ the complete candidate list is one Cursor audit instruction.
 | `LKW-WORKSPACE-CONTENTS-1B-2` | implemented | Managed file upload capability |
 | `LKW-WORKSPACE-CONTENTS-1B-3` | implemented | Slack attachment and multi-attachment adapter |
 | `LKW-WORKSPACE-CONTENTS-1B-4` | implemented | Preconfigured source candidate registration |
-| `LKW-WORKSPACE-CONTENTS-1B-5` | **READY_FOR_REVIEW** | End-to-end explicit `WEB_URL` Knowledge Intake (`1B-5-2`; former `1B-5-3` merged) |
+| `LKW-WORKSPACE-CONTENTS-1B-5` | **ACCEPTED** | End-to-end explicit `WEB_URL` Knowledge Intake (`1B-5-2`; former `1B-5-3` merged; C1 and C2 corrections accepted) |
 | `LKW-WORKSPACE-CONTENTS-1C` | planned | Synchronization, operation inspection and channel-neutral completion notification |
 | `LKW-WORKSPACE-CONTENTS-1D` | planned | Inspect indexed documents |
 | `LKW-WORKSPACE-CONTENTS-1E` | planned | Safely remove source-owned knowledge |
@@ -909,7 +910,7 @@ Do not present `/knowledge-inputs`, upload-session routes or event schemas as ex
 - [x] Document directly owned by Knowledge Input rejected
 - [x] Source is not defined only as connector-backed local path
 - [x] managed upload, source candidate and URL represented
-- [x] `WEB_URL` intake, ingestion, indexing and Ask proof implemented in `1B-5-2` (awaiting review)
+- [x] `WEB_URL` intake, ingestion, indexing and Ask proof accepted in `1B-5-2` (including C1 and C2)
 - [x] uploaded folder snapshot vs connected folder distinct
 - [x] `managed_file_batch` removed as Knowledge Input kind; Intake Batch groups item-level inputs
 - [x] raw local path in Slack rejected

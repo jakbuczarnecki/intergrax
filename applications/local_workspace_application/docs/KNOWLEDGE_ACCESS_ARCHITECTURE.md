@@ -1,6 +1,6 @@
 # Hybrid Knowledge Access — LKW Architecture
 
-**Status:** `DOCUMENTED / READY_FOR_REVIEW`  
+**Status:** `ACCEPTED`
 **Task:** `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1`  
 **Classification:** docs-only architecture and product contract  
 **Top-level architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
@@ -37,7 +37,7 @@ LKW lets a user:
 
 | Category | Examples |
 |----------|----------|
-| **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (awaiting review); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
+| **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
 | **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace |
 | **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; live Slack platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
@@ -617,7 +617,7 @@ Live results must not automatically become durable workspace knowledge. Policy d
 
 ## 12. Model runtime portability
 
-**Task:** `LKW-MODEL-RUNTIME-1` — Ollama / vLLM end-to-end portability (**PLANNED**).
+**Task:** `LKW-MODEL-RUNTIME-1` — Ollama / vLLM end-to-end portability (**NEXT**).
 
 **One-sentence outcome:** The same LKW product workflows run through either Ollama or vLLM selected by configuration, with no product-domain branching and with both runtimes qualified for structured planning, tool calling and grounded Ask.
 
