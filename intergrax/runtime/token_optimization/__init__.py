@@ -98,6 +98,15 @@ from intergrax.runtime.token_optimization.builtin_catalog import (
     BuiltInTokenOptimizationLayerSpec,
     create_builtin_token_optimization_layer_catalog,
 )
+from intergrax.runtime.token_optimization.cache_aware_orchestration import (
+    CacheAwareTokenOptimizationOrchestrator,
+    cache_aware_orchestration_result_to_safe_dict,
+)
+from intergrax.runtime.token_optimization.cache_aware_orchestration_contracts import (
+    CacheAwareTokenOptimizationOrchestrationRequest,
+    CacheAwareTokenOptimizationOrchestrationResult,
+    CacheAwareTokenOptimizationOrchestrationStatus,
+)
 from intergrax.runtime.token_optimization.llm_router import (
     ROUTER_TOOL_ID,
     TokenOptimizationLLMRouter,
@@ -273,11 +282,16 @@ __all__ = [
     "CacheAwareCompactionTarget",
     "CacheAwareCompactionTimingDecision",
     "CacheAwareCompactionTimingInput",
+    "CacheAwareTokenOptimizationOrchestrationRequest",
+    "CacheAwareTokenOptimizationOrchestrationResult",
+    "CacheAwareTokenOptimizationOrchestrationStatus",
+    "CacheAwareTokenOptimizationOrchestrator",
     "CompressionLevel",
     "CompressionReceipt",
     "CompressionReceiptRef",
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
+    "cache_aware_orchestration_result_to_safe_dict",
     "create_builtin_token_optimization_layer_catalog",
     "decide_cache_aware_compaction_timing",
     "MAX_ENV_PROTECTED_TERMS",

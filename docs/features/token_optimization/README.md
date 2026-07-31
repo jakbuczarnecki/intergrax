@@ -62,7 +62,7 @@ input
 
 | Label | Meaning in this repository |
 | ----- | -------------------------- |
-| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, vLLM proof runner |
+| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware orchestration gate (TOKEN-10D-1), vLLM proof runner |
 | **Live-verified** | Manual vLLM prefix-cache proof path (documented environment); gated Ollama router E2E |
 | **Live-certified** | Not claimed for TOKEN-10C alone; universal proof packaging still planned |
 | **Planned** | TOKEN-10D–10H (cache-aware orchestration, in-cache compaction, universal harness, public promotion) |
@@ -76,7 +76,8 @@ input
 | TOKEN-10A | Accepted / Closed (docs canon) |
 | TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 | Implemented / Ready for review |
 | TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Implemented / Ready for review |
-| TOKEN-10D … TOKEN-10H | Planned / not yet accepted |
+| TOKEN-10D-1 | Implemented / Ready for review |
+| TOKEN-10D (remainder) … TOKEN-10H | Planned / not yet accepted |
 | TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
 
 TOKEN-10 is **not** complete. Do not treat cache reuse, universal proof, or public promotion as finished.
@@ -116,6 +117,10 @@ Token Optimization request and policy
         ▼
 Optional LLM configuration router
   (TokenOptimizationLLMRouter + approved catalog)
+        │
+        ▼
+Cache-aware timing gate (TOKEN-10D-1)
+  (CacheAwareTokenOptimizationOrchestrator)
         │
         ▼
 Approved configuration compiler
@@ -412,7 +417,24 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 
 **Invalidation:** documented reasons in cache-stable contracts when prefix or envelope changes.
 
-**Cache-aware compaction timing:** `cache_aware_compaction_policy` helper — orchestration wiring is TOKEN-10D+.
+**Cache-aware compaction timing:** `decide_cache_aware_compaction_timing()` in `prompt_cache.py` — deterministic policy helper. **TOKEN-10D-1** wires it through `CacheAwareTokenOptimizationOrchestrator` before pipeline execution.
+
+**Orchestration semantics (TOKEN-10D-1):**
+
+| Timing decision | Pipeline execution |
+| ---------------- | ------------------ |
+| `RUN` | Execute compiled configuration once via `TokenOptimizationPipelineRunner` |
+| `DEFER` | No execution; preserve timing reason (not an error) |
+| `BYPASS` | No execution; no synthetic savings |
+| `REQUIRE_MANUAL_REVIEW` | No execution; `review_required=True` on orchestration result |
+
+Router terminal statuses (`BLOCKED`, `NO_OPTIMIZATION`, `REVIEW_REQUIRED`, etc.) skip the timing gate and do not execute the pipeline.
+
+**Caller-supplied timing input:** `CacheAwareCompactionTimingInput` is provided by the caller in TOKEN-10D-1 — provider-signal normalization remains a later TOKEN-10D block.
+
+**Direct `route_and_execute()`:** remains compatible (routes then executes without cache-aware gate). Use `CacheAwareTokenOptimizationOrchestrator.orchestrate()` for cache-aware entry.
+
+**TOKEN-10D-1 does not perform in-cache compaction** — `RUN` means execute the deterministic pipeline, not rewrite provider cache bytes.
 
 **Cache hit ≠ content reduction:** prefix-cache reuse reports provider cached tokens; optimization layers report removed chars separately.
 
@@ -484,7 +506,7 @@ Expected: terminal summary with `final status: PASS` and reports under `build/pr
 
 - Reproducible universal platform proof (TOKEN-10F/10G).
 - Public README promotion (TOKEN-10H).
-- Production cache-aware orchestration and in-cache compaction (TOKEN-10D/10E).
+- Cache-aware orchestration gate between router and pipeline (TOKEN-10D-1).
 - Real-customer workload savings.
 
 ### What must not be claimed
@@ -509,7 +531,8 @@ foundation (TOKEN-1…9)
 → LLM router (TOKEN-9)
 → cache-stable prompt (TOKEN-10B)
 → vLLM prefix cache (TOKEN-10C)
-→ cache-aware orchestration (TOKEN-10D)
+→ cache-aware orchestration gate (TOKEN-10D-1 implemented)
+→ cache-aware orchestration remainder (TOKEN-10D)
 → in-cache compaction (TOKEN-10E)
 → universal proof harness (TOKEN-10F)
 → proof corpus and hard gates (TOKEN-10G)

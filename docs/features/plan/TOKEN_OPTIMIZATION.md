@@ -1600,9 +1600,36 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
 
-**Status:** Planned.
+**Status:** **Active** — TOKEN-10D-1 implemented / ready for review; remainder planned.
 
 Place cache-aware compaction gate in production orchestration path after router selection and before pipeline execution. Orchestrate provider cache signals with deterministic pipeline.
+
+#### TOKEN-10D-1 — Cache-Aware Orchestration Gate and Controlled Pipeline Execution
+
+**Status:** **Implemented / Ready for review**.
+
+- Router configuration selection separated from execution timing.
+- Deterministic timing gate (`decide_cache_aware_compaction_timing`) wired before pipeline execution via `CacheAwareTokenOptimizationOrchestrator`.
+- Only `RUN` executes pipeline; `DEFER`, `BYPASS`, `REQUIRE_MANUAL_REVIEW` do not execute.
+- Normalized timing input remains caller-supplied (no provider metric ingestion in this block).
+- Existing router and pipeline behavior preserved; `route_and_execute()` remains compatible.
+- No provider calls beyond router; no in-cache mutation; no live runtime proof.
+- TOKEN-10D remainder (provider-signal normalization, broader wiring) remains open.
+
+#### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
+
+**Status:** **Implemented / Ready for review**.
+
+Closeout:
+
+- required public claim document sections restored
+- implementation status synchronized with TOKEN-10B/C/D-1
+- no provider-aware tokenizer boundary made explicit
+- conditional and forbidden wording restored
+- no public claim scope expanded
+- full Token Optimization unit suite passes
+- no runtime logic changed
+- no live execution performed
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 

@@ -646,16 +646,16 @@ changing stable tool catalog formatting per request
 
 `TOKEN-OPT-5E` adds a provider-neutral helper/policy layer that decides whether compaction should **RUN**, **DEFER**, **BYPASS**, or **REQUIRE_MANUAL_REVIEW**.
 
-**TOKEN-10D** places this decision in the real orchestration path:
+**TOKEN-10D** places this decision in the real orchestration path. **TOKEN-10D-1** implemented `CacheAwareTokenOptimizationOrchestrator` as the runtime consumer:
 
 ```text
-router-selected configuration
-  → identify optimization target
-  → inspect cache and prefix state
-  → evaluate estimated content benefit vs cache invalidation cost
-  → RUN / DEFER / BYPASS / REQUIRE_MANUAL_REVIEW
-  → pipeline execution only when allowed
+TokenOptimizationLLMRouter.route()
+  → CacheAwareTokenOptimizationOrchestrator.orchestrate()
+  → decide_cache_aware_compaction_timing()
+  → TokenOptimizationLLMRouter.execute_routed() only on RUN
 ```
+
+Router owns configuration selection; the gate owns execution timing; the pipeline owns deterministic transforms.
 
 **Prefer RUN:** optimization affects only the dynamic tail; noisy tool/log output can be filtered before joining stable history; cold history can be compacted safely; prefix cache value is absent or no longer useful; protected-region and policy validation permit the operation.
 

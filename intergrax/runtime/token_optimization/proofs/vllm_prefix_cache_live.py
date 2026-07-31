@@ -188,7 +188,10 @@ def validate_config(config: VllmPrefixCacheLiveProofConfig) -> None:
         raise ValueError("--startup-timeout-seconds must be positive")
     if not config.model.strip():
         raise ValueError("--model must be nonblank")
-    derive_vllm_server_root(config.base_url)
+    try:
+        derive_vllm_server_root(config.base_url)
+    except VllmDiagnosticsError as exc:
+        raise ValueError(f"--base-url: {exc}") from exc
 
 
 def _resolve_repository_commit(
