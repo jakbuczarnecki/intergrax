@@ -5,11 +5,19 @@
 from __future__ import annotations
 
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 from local_workspace_application.model_runtime_proof.contracts import (
     RepositoryStateRecord,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class GitPorcelainResult:
+    available: bool
+    lines: tuple[str, ...]
+
 
 _TASK_OWNED_PREFIXES: tuple[str, ...] = (
     "applications/local_workspace_application/model_runtime_proof/",
@@ -47,7 +55,7 @@ def _git_head(repo_root: Path | None = None) -> str | None:
         return None
 
 
-def _git_porcelain(repo_root: Path | None = None) -> list[str]:
+def _git_porcelain(repo_root: Path | None = None) -> GitPorcelainResult:
     try:
         output = subprocess.check_output(
             ["git", "status", "--porcelain"],
@@ -57,8 +65,9 @@ def _git_porcelain(repo_root: Path | None = None) -> list[str]:
             timeout=5,
         )
     except (OSError, subprocess.SubprocessError):
-        return []
-    return [line for line in output.splitlines() if line.strip()]
+        return GitPorcelainResult(available=False, lines=())
+    lines = tuple(line for line in output.splitlines() if line.strip())
+    return GitPorcelainResult(available=True, lines=lines)
 
 
 def _dirty_path_from_porcelain(line: str) -> str | None:
@@ -75,10 +84,10 @@ def capture_repository_state(
     repo_root: Path | None = None,
 ) -> RepositoryStateRecord:
     head = _git_head(repo_root)
-    lines = _git_porcelain(repo_root)
+    porcelain = _git_porcelain(repo_root)
     task_owned: list[str] = []
     unrelated: list[str] = []
-    for line in lines:
+    for line in porcelain.lines:
         path = _dirty_path_from_porcelain(line)
         if not path:
             continue
@@ -87,7 +96,9 @@ def capture_repository_state(
         else:
             unrelated.append(path)
 
-    if not lines:
+    if head is None or not porcelain.available:
+        classification = "unavailable"
+    elif not porcelain.lines:
         classification = "clean"
     elif task_owned and unrelated:
         classification = "task_owned_and_unrelated_changes"

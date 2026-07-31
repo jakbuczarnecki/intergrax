@@ -332,6 +332,7 @@ def test_orchestration_with_fake_providers(
         timeout_seconds=60.0,
         vector_store="inmemory",
         require_live_providers=False,
+        vllm_provisioning_classification="committed_compose_sufficient",
     )
 
     async def _fake_qualify(self, *, provider, fixture, index_identity):
@@ -595,3 +596,389 @@ def test_global_document_store_resolver_unchanged_after_session_close(
     finally:
         session.close()
     assert workspace_routes.resolve_managed_workspace_document_store is original
+
+
+def test_repository_state_clean_when_porcelain_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.repository_state import (
+        GitPorcelainResult,
+        capture_repository_state,
+    )
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_head",
+        lambda repo_root=None: "abc123",
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_porcelain",
+        lambda repo_root=None: GitPorcelainResult(available=True, lines=()),
+    )
+    state = capture_repository_state()
+    assert state.working_tree_classification == "clean"
+
+
+def test_repository_state_task_owned_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.repository_state import (
+        GitPorcelainResult,
+        capture_repository_state,
+    )
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_head",
+        lambda repo_root=None: "abc123",
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_porcelain",
+        lambda repo_root=None: GitPorcelainResult(
+            available=True,
+            lines=(
+                " M applications/local_workspace_application/model_runtime_proof/runner.py",
+            ),
+        ),
+    )
+    state = capture_repository_state()
+    assert state.working_tree_classification == "task_owned_changes"
+
+
+def test_repository_state_unrelated_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.repository_state import (
+        GitPorcelainResult,
+        capture_repository_state,
+    )
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_head",
+        lambda repo_root=None: "abc123",
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_porcelain",
+        lambda repo_root=None: GitPorcelainResult(
+            available=True,
+            lines=(" M README.md",),
+        ),
+    )
+    state = capture_repository_state()
+    assert state.working_tree_classification == "unrelated_changes"
+
+
+def test_repository_state_mixed_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.repository_state import (
+        GitPorcelainResult,
+        capture_repository_state,
+    )
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_head",
+        lambda repo_root=None: "abc123",
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_porcelain",
+        lambda repo_root=None: GitPorcelainResult(
+            available=True,
+            lines=(
+                " M applications/local_workspace_application/model_runtime_proof/runner.py",
+                " M README.md",
+            ),
+        ),
+    )
+    state = capture_repository_state()
+    assert state.working_tree_classification == "task_owned_and_unrelated_changes"
+
+
+def test_repository_state_unavailable_on_porcelain_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.repository_state import (
+        GitPorcelainResult,
+        capture_repository_state,
+    )
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_head",
+        lambda repo_root=None: "abc123",
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_porcelain",
+        lambda repo_root=None: GitPorcelainResult(available=False, lines=()),
+    )
+    state = capture_repository_state()
+    assert state.working_tree_classification == "unavailable"
+
+
+def test_repository_state_unavailable_on_rev_parse_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.repository_state import (
+        GitPorcelainResult,
+        capture_repository_state,
+    )
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_head",
+        lambda repo_root=None: None,
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.repository_state._git_porcelain",
+        lambda repo_root=None: GitPorcelainResult(available=True, lines=()),
+    )
+    state = capture_repository_state()
+    assert state.working_tree_classification == "unavailable"
+
+
+def test_vllm_provisioning_defaults_to_unverified(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(
+        "LKW_MODEL_RUNTIME_PROOF_VLLM_PROVISIONING_CLASSIFICATION", raising=False
+    )
+    from local_workspace_application.model_runtime_proof.config import (
+        load_vllm_provisioning_classification_from_env,
+    )
+
+    assert load_vllm_provisioning_classification_from_env() == "unverified"
+
+
+def test_vllm_provisioning_explicit_committed_compose(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "LKW_MODEL_RUNTIME_PROOF_VLLM_PROVISIONING_CLASSIFICATION",
+        "committed_compose_sufficient",
+    )
+    config = load_proof_config_from_env()
+    assert config.vllm_provisioning_classification == "committed_compose_sufficient"
+
+
+def test_vllm_provisioning_explicit_external_runtime(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "LKW_MODEL_RUNTIME_PROOF_VLLM_PROVISIONING_CLASSIFICATION",
+        "external_runtime",
+    )
+    config = load_proof_config_from_env()
+    assert config.vllm_provisioning_classification == "external_runtime"
+
+
+def test_vllm_provisioning_unsupported_value_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "LKW_MODEL_RUNTIME_PROOF_VLLM_PROVISIONING_CLASSIFICATION",
+        "made_up",
+    )
+    config = load_proof_config_from_env()
+    assert ProofFailureCode.CONFIG_INVALID in config.validate()
+
+
+def test_unverified_vllm_provisioning_blocks_pass(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+
+    async def _fake_qualify(self, *, provider, fixture, index_identity):
+        return ProviderQualificationResult(
+            provider=provider,
+            configured_model="fake",
+            resolved_model="fake",
+            server_model="fake",
+            adapter_class="_FakeAdapter",
+            health_status=StageStatus.PASS,
+            basic_generation_status=StageStatus.PASS,
+            structured_planning_status=StageStatus.PASS,
+            tool_call_status=StageStatus.PASS,
+            tool_execution_status=StageStatus.PASS,
+            grounded_ask_status=StageStatus.PASS,
+            citation_status=StageStatus.PASS,
+            ask_run_persisted=True,
+            resolved_through_canonical_resolver=True,
+            session_adapter_object_id=f"{provider}-adapter",
+        )
+
+    monkeypatch.setattr(ModelRuntimeProofRunner, "_qualify_provider", _fake_qualify)
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.runner.index_identity_is_complete",
+        lambda identity: True,
+    )
+    config = ModelRuntimeProofConfig(
+        ollama_model="fake",
+        vllm_model="fake",
+        ollama_base_url="http://127.0.0.1:11434",
+        vllm_base_url="http://127.0.0.1:8100/v1",
+        tenant_id="tenant-proof",
+        data_home=str(tmp_path / "proof-data"),
+        timeout_seconds=60.0,
+        vector_store="inmemory",
+        require_live_providers=False,
+        vllm_provisioning_classification="unverified",
+    )
+    import asyncio
+
+    result = asyncio.run(ModelRuntimeProofRunner(config).run())
+    assert result.overall_status is ProofOverallStatus.FAIL
+
+
+def test_stale_v1_evidence_removed_after_failed_write(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from local_workspace_application.model_runtime_proof.contracts import (
+        ModelRuntimeProofResult,
+    )
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    json_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "lkw.model_runtime_portability.proof.v1",
+                "overall_status": "PASS",
+            }
+        ),
+        encoding="utf-8",
+    )
+    markdown_path.write_text("# stale", encoding="utf-8")
+    result = ModelRuntimeProofResult(
+        proof_id="proof-fail",
+        started_at=datetime.now(UTC),
+        overall_status=ProofOverallStatus.FAIL,
+    )
+    write_evidence(result, json_path=json_path, markdown_path=markdown_path)
+    assert not json_path.is_file()
+    assert not markdown_path.is_file()
+
+
+def test_atomic_evidence_replacement_on_pass(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from local_workspace_application.model_runtime_proof.contracts import (
+        ModelRuntimeProofResult,
+        ProviderQualificationResult,
+    )
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    json_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "lkw.model_runtime_portability.proof.v1",
+                "overall_status": "PASS",
+            }
+        ),
+        encoding="utf-8",
+    )
+    markdown_path.write_text("# stale", encoding="utf-8")
+    result = ModelRuntimeProofResult(
+        proof_id="proof-pass",
+        started_at=datetime.now(UTC),
+        overall_status=ProofOverallStatus.PASS,
+        provider_results={
+            "ollama": ProviderQualificationResult(
+                provider="ollama",
+                configured_model="llama3.1:8b",
+            )
+        },
+        vllm_provisioning_classification="committed_compose_sufficient",
+    )
+    write_evidence(result, json_path=json_path, markdown_path=markdown_path)
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "lkw.model_runtime_portability.proof.v2"
+    assert payload["overall_status"] == "PASS"
+    assert "lkw.model_runtime_portability.proof.v2" in markdown_path.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_partial_evidence_write_cannot_replace_canonical(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from datetime import UTC, datetime
+
+    from local_workspace_application.model_runtime_proof.contracts import (
+        ModelRuntimeProofResult,
+    )
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    json_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "lkw.model_runtime_portability.proof.v1",
+                "overall_status": "PASS",
+            }
+        ),
+        encoding="utf-8",
+    )
+    markdown_path.write_text("# stale", encoding="utf-8")
+
+    def _fail_markdown(*args, **kwargs):
+        raise OSError("markdown write failed")
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.report.render_markdown",
+        _fail_markdown,
+    )
+    result = ModelRuntimeProofResult(
+        proof_id="proof-pass",
+        started_at=datetime.now(UTC),
+        overall_status=ProofOverallStatus.PASS,
+    )
+    with pytest.raises(OSError):
+        write_evidence(result, json_path=json_path, markdown_path=markdown_path)
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "lkw.model_runtime_portability.proof.v1"
+    assert markdown_path.read_text(encoding="utf-8") == "# stale"
+
+
+def test_qualified_ollama_model_stored_in_v2_result() -> None:
+    from datetime import UTC, datetime
+
+    from local_workspace_application.model_runtime_proof.contracts import (
+        ModelRuntimeProofResult,
+        ProviderQualificationResult,
+    )
+
+    result = ModelRuntimeProofResult(
+        proof_id="proof-pass",
+        started_at=datetime.now(UTC),
+        overall_status=ProofOverallStatus.PASS,
+        provider_results={
+            "ollama": ProviderQualificationResult(
+                provider="ollama",
+                configured_model="llama3.1:8b",
+                resolved_model="llama3.1:8b",
+            )
+        },
+    )
+    payload = json.loads(serialize_result_json(result))
+    assert payload["provider_results"]["ollama"]["configured_model"] == "llama3.1:8b"
+    assert payload["provider_results"]["ollama"]["resolved_model"] == "llama3.1:8b"
+
+
+def test_failed_candidate_not_reported_as_qualified() -> None:
+    result = ProviderQualificationResult(
+        provider="ollama",
+        configured_model="qwen2.5:7b",
+        resolved_model="qwen2.5:7b",
+        health_status=StageStatus.PASS,
+        basic_generation_status=StageStatus.PASS,
+        structured_planning_status=StageStatus.PASS,
+        tool_call_status=StageStatus.PASS,
+        tool_execution_status=StageStatus.PASS,
+        grounded_ask_status=StageStatus.FAIL,
+        citation_status=StageStatus.FAIL,
+        resolved_through_canonical_resolver=True,
+        ask_run_persisted=False,
+    )
+    assert provider_qualification_passes(result) is False

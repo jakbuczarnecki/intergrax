@@ -49,6 +49,7 @@ from local_workspace_application.model_runtime_proof.index_identity import (
 )
 from local_workspace_application.model_runtime_proof.report import (
     render_terminal_summary,
+    stale_evidence_notice,
     write_evidence,
 )
 from local_workspace_application.model_runtime_proof.repository_state import (
@@ -65,7 +66,7 @@ from local_workspace_application.model_runtime_proof.stages import (
     run_tool_call_and_execution,
 )
 
-VLLM_PROVISIONING_CLASSIFICATION = "committed_compose_sufficient"
+_REJECTED_OLLAMA_MODEL = "qwen2.5:7b"
 
 
 class ModelRuntimeProofRunner:
@@ -84,7 +85,7 @@ class ModelRuntimeProofRunner:
             started_at=started,
             repository_commit=repository_state.repository_head_at_proof,
             repository_state=repository_state,
-            vllm_provisioning_classification=VLLM_PROVISIONING_CLASSIFICATION,
+            vllm_provisioning_classification=self._config.vllm_provisioning_classification,
         )
 
         validation_errors = self._config.validate()
@@ -140,7 +141,9 @@ class ModelRuntimeProofRunner:
                 update={
                     "completed_at": datetime.now(UTC),
                     "overall_status": ProofOverallStatus.FAIL,
-                    "limitations": (f"index_fixture_failed:{exc.__class__.__name__}",),
+                    "limitations": (
+                        f"index_fixture_failed:{exc.__class__.__name__}:{exc}",
+                    ),
                 }
             )
         finally:
@@ -219,6 +222,20 @@ class ModelRuntimeProofRunner:
         if not index_invariance_passes(index_invariance):
             overall_pass = False
 
+        if self._config.vllm_provisioning_classification == "unverified":
+            overall_pass = False
+
+        limitations: list[str] = [
+            "exact configured Ollama and vLLM pairs only; not universal model parity",
+            "runtime hot swapping not required or proven",
+        ]
+        if self._config.vllm_provisioning_classification == "unverified":
+            limitations.append("vllm_provisioning_classification_unverified")
+        if self._config.ollama_model != _REJECTED_OLLAMA_MODEL:
+            limitations.append(
+                f"{_REJECTED_OLLAMA_MODEL} was not the qualified full-product Ollama model"
+            )
+
         completed = datetime.now(UTC)
         return result.model_copy(
             update={
@@ -232,10 +249,7 @@ class ModelRuntimeProofRunner:
                 "overall_status": ProofOverallStatus.PASS
                 if overall_pass
                 else ProofOverallStatus.FAIL,
-                "limitations": (
-                    "exact configured Ollama and vLLM pairs only; not universal model parity",
-                    "runtime hot swapping not required or proven",
-                ),
+                "limitations": tuple(limitations),
             }
         )
 
@@ -493,6 +507,13 @@ async def run_model_runtime_proof(
     runner = ModelRuntimeProofRunner(resolved)
     result = await runner.run()
     print(render_terminal_summary(result))
-    if evidence_json and evidence_markdown:
+    if evidence_json is not None and evidence_markdown is not None:
+        stale = stale_evidence_notice(evidence_json)
+        if stale:
+            print(stale)
         write_evidence(result, json_path=evidence_json, markdown_path=evidence_markdown)
+    elif evidence_json is not None:
+        stale = stale_evidence_notice(evidence_json)
+        if stale:
+            print(stale)
     return result

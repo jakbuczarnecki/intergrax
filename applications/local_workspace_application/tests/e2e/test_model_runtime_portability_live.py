@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import pytest
 
@@ -15,7 +14,6 @@ pytestmark = [
     pytest.mark.no_ci,
 ]
 
-_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 _FLAG = "INTERGRAX_LKW_MODEL_RUNTIME_PROOF"
 
 
@@ -23,26 +21,16 @@ def _enabled() -> bool:
     return os.environ.get(_FLAG, "").strip() == "1"
 
 
-def _load_env() -> None:
-    if not _ENV_FILE.is_file():
-        return
-    try:
-        from dotenv import load_dotenv
-    except ImportError:
-        return
-    load_dotenv(_ENV_FILE, override=False)
-
-
 def _require_config() -> None:
-    _load_env()
     missing = []
     for name in (
         "LKW_MODEL_RUNTIME_PROOF_OLLAMA_MODEL",
         "LKW_MODEL_RUNTIME_PROOF_VLLM_MODEL",
+        "LKW_MODEL_RUNTIME_PROOF_VLLM_PROVISIONING_CLASSIFICATION",
     ):
-        if not (os.environ.get(name) or os.environ.get("INTERGRAX_LLM_MODEL")):
+        if not os.environ.get(name, "").strip():
             missing.append(name)
-    if missing and not os.environ.get("INTERGRAX_LLM_MODEL"):
+    if missing:
         pytest.fail(f"Missing required env when {_FLAG}=1: {', '.join(missing)}")
 
 

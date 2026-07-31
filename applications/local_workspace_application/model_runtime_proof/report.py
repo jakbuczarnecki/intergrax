@@ -5,10 +5,14 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from pathlib import Path
 
 from local_workspace_application.model_runtime_proof.contracts import (
+    PROOF_SCHEMA_VERSION,
     ModelRuntimeProofResult,
+    ProofOverallStatus,
     ProviderQualificationResult,
     StageStatus,
 )
@@ -143,14 +147,105 @@ def render_markdown(result: ModelRuntimeProofResult) -> str:
     return "\n".join(lines)
 
 
+def read_existing_evidence_schema(json_path: Path) -> str | None:
+    if not json_path.is_file():
+        return None
+    try:
+        payload = json.loads(json_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "invalid"
+    schema = payload.get("schema_version")
+    return str(schema) if schema is not None else "invalid"
+
+
+def evidence_is_stale(json_path: Path) -> bool:
+    schema = read_existing_evidence_schema(json_path)
+    if schema is None:
+        return False
+    return schema != PROOF_SCHEMA_VERSION
+
+
+def invalidate_canonical_evidence(
+    *,
+    json_path: Path,
+    markdown_path: Path,
+) -> None:
+    for path in (json_path, markdown_path):
+        if path.is_file():
+            path.unlink()
+
+
+def _validate_evidence_payload(json_text: str, markdown_text: str) -> None:
+    payload = json.loads(json_text)
+    if payload.get("schema_version") != PROOF_SCHEMA_VERSION:
+        raise ValueError("evidence_schema_mismatch")
+    if payload.get("overall_status") != ProofOverallStatus.PASS.value:
+        raise ValueError("evidence_not_pass")
+    if PROOF_SCHEMA_VERSION not in markdown_text:
+        raise ValueError("markdown_schema_missing")
+
+
 def write_evidence(
     result: ModelRuntimeProofResult,
     *,
     json_path: Path,
     markdown_path: Path,
 ) -> None:
-    if result.overall_status.value != "PASS":
+    if result.overall_status is not ProofOverallStatus.PASS:
+        invalidate_canonical_evidence(json_path=json_path, markdown_path=markdown_path)
         return
+
+    json_text = serialize_result_json(result)
+    markdown_text = render_markdown(result)
+    _validate_evidence_payload(json_text, markdown_text)
+
     json_path.parent.mkdir(parents=True, exist_ok=True)
-    json_path.write_text(serialize_result_json(result), encoding="utf-8")
-    markdown_path.write_text(render_markdown(result), encoding="utf-8")
+    markdown_path.parent.mkdir(parents=True, exist_ok=True)
+
+    tmp_json: Path | None = None
+    tmp_markdown: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=json_path.parent,
+            delete=False,
+            suffix=".tmp",
+        ) as handle:
+            handle.write(json_text)
+            tmp_json = Path(handle.name)
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=markdown_path.parent,
+            delete=False,
+            suffix=".tmp",
+        ) as handle:
+            handle.write(markdown_text)
+            tmp_markdown = Path(handle.name)
+
+        _validate_evidence_payload(
+            tmp_json.read_text(encoding="utf-8"),
+            tmp_markdown.read_text(encoding="utf-8"),
+        )
+        os.replace(tmp_json, json_path)
+        tmp_json = None
+        os.replace(tmp_markdown, markdown_path)
+        tmp_markdown = None
+    except Exception:
+        if tmp_json is not None and tmp_json.is_file():
+            tmp_json.unlink()
+        if tmp_markdown is not None and tmp_markdown.is_file():
+            tmp_markdown.unlink()
+        raise
+
+
+def stale_evidence_notice(json_path: Path) -> str | None:
+    schema = read_existing_evidence_schema(json_path)
+    if schema is None or schema == PROOF_SCHEMA_VERSION:
+        return None
+    return (
+        f"STALE EVIDENCE: canonical schema `{schema}` "
+        f"differs from current `{PROOF_SCHEMA_VERSION}`"
+    )

@@ -97,6 +97,7 @@ def build_proof_runtime_session(
         "INTERGRAX_DEFAULT_VLLM_MODEL",
         "INTERGRAX_DEFAULT_VLLM_BASE_URL",
         "OLLAMA_HOST",
+        "INTERGRAX_QDRANT_URL",
         "LOCAL_WORKSPACE_VECTOR_STORE",
         "LOCAL_WORKSPACE_ENABLE_RAG",
         "LOCAL_WORKSPACE_ENABLE_RAG_INGEST",
@@ -122,6 +123,10 @@ def build_proof_runtime_session(
     os.environ["INTERGRAX_SQLITE_DATA_DIR"] = str(sqlite_dir)
     os.environ["INTERGRAX_SHADOW_ROOT"] = str(shadow_dir)
     os.environ["INTERGRAX_ALLOWED_READ_ROOTS"] = str(user_docs.resolve())
+    os.environ["INTERGRAX_QDRANT_URL"] = (
+        os.environ.get("LKW_MODEL_RUNTIME_PROOF_QDRANT_URL", "").strip()
+        or "http://127.0.0.1:6333"
+    )
 
     store = document_store or InMemoryDocumentStore()
     settings = cast(

@@ -30,6 +30,9 @@ def main() -> int:
     from local_workspace_application.model_runtime_proof.runner import (
         run_model_runtime_proof,
     )
+    from local_workspace_application.model_runtime_proof.report import (
+        stale_evidence_notice,
+    )
 
     config = load_proof_config_from_env()
     json_path = _EVIDENCE_DIR / "LKW_MODEL_RUNTIME_PORTABILITY.json"
@@ -41,6 +44,12 @@ def main() -> int:
             evidence_markdown=markdown_path if args.write_evidence else None,
         )
     )
+    if not args.write_evidence:
+        stale = stale_evidence_notice(json_path)
+        if stale:
+            print(stale)
+    if args.write_evidence and result.overall_status.value != "PASS":
+        return 1
     return 0 if result.overall_status.value == "PASS" else 1
 
 
