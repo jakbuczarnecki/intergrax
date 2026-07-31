@@ -300,6 +300,8 @@ retention mode
 freshness requirements
 ```
 
+**V1 implementation subset:** [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) freezes `indexed_only` and `live_only` modes only; `prefer_indexed_evidence` and `allow_live_fallback` are deferred to future hybrid/automatic modes.
+
 ### 4.7 Model Runtime Profile
 
 Product-level runtime selection containing at least:

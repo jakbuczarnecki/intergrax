@@ -1,8 +1,17 @@
-# Workspace Knowledge Access — Implementation Contract
+﻿# Workspace Knowledge Access ÔÇö Implementation Contract
 
-**Status:** `READY_FOR_REVIEW`  
-**Task:** `LKW-KNOWLEDGE-ACCESS-1A — IMPLEMENTATION CONTRACT FREEZE AND EXISTING FOUNDATION AUDIT`  
-**Classification:** docs-only architecture-to-implementation contract  
+**Status:** `READY_FOR_REVIEW`
+**Task:** `LKW-KNOWLEDGE-ACCESS-1A-C1 — CONTRACT CONSISTENCY, TENANT-BINDING REUSE AND SAFE IMPLEMENTATION FREEZE`
+**Prior task:** `LKW-KNOWLEDGE-ACCESS-1A` (commit `354923950bdcd9530e5bc9dbd2c988fa146d9c0d`)
+**Classification:** docs-only architecture-to-implementation contract
+
+**C1 correction:**
+
+- tenant `KnowledgeSourceBinding` is authoritative for provider/resource identity;
+- workspace records are authorization references only;
+- aggregate revision is monotonic and CAS-protected via `WorkspaceKnowledgeConfigurationHead`;
+- indexed detach is non-destructive (logical disable, indexed data preserved);
+- live capabilities require typed `CapabilityEffectV1` metadata (suffix checks are defense-in-depth only).
 **Architecture:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)  
 **Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Platform integration canon:** [`../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
@@ -19,7 +28,7 @@ Freeze the smallest provider-neutral implementation contract so one existing ten
 
 - Repository audit of real LKW, Vendor Knowledge, integration resolution and persistence foundations.
 - Typed Pydantic contracts, persistence records, service boundaries and HTTP proposal for the first implementation sequence.
-- Bounded decomposition of `LKW-KNOWLEDGE-ACCESS-1` into subtasks `1B`–`1F`.
+- Bounded decomposition of `LKW-KNOWLEDGE-ACCESS-1` into subtasks `1B`ÔÇô`1F`.
 - Security threat review and observable no-duplication proof design.
 
 ### 1.3 Out of scope
@@ -38,14 +47,14 @@ Hybrid Ask, Knowledge Query Orchestrator, live provider execution, Slack UI, new
 
 | Concern | Verified owner |
 |---------|----------------|
-| Workspace identity | `Workspace.workspace_id` (`uuid.uuid4()` on create) — `applications/local_workspace_application/workspaces/models.py` |
+| Workspace identity | `Workspace.workspace_id` (`uuid.uuid4()` on create) ÔÇö `applications/local_workspace_application/workspaces/models.py` |
 | Tenant identity | `Workspace.tenant_id`; resolved via `resolve_tenant_id()` in `serving/workspace_routes.py` |
-| Principal / authorization | Request context `get_request_context(request).tenant_id` preferred; workspace existence checked via `ManagedWorkspaceService.require_workspace()` → **404** when unknown or cross-tenant |
-| Workspace repository | `ManagedWorkspaceRepository` — `workspaces/repository.py` |
-| Workspace service | `ManagedWorkspaceService` — `workspaces/service.py` |
-| FastAPI routes | `mount_managed_workspace_routes()` — `serving/workspace_routes.py`, prefix `/v1/local_workspace` |
+| Principal / authorization | Request context `get_request_context(request).tenant_id` preferred; workspace existence checked via `ManagedWorkspaceService.require_workspace()` Ôćĺ **404** when unknown or cross-tenant |
+| Workspace repository | `ManagedWorkspaceRepository` ÔÇö `workspaces/repository.py` |
+| Workspace service | `ManagedWorkspaceService` ÔÇö `workspaces/service.py` |
+| FastAPI routes | `mount_managed_workspace_routes()` ÔÇö `serving/workspace_routes.py`, prefix `/v1/local_workspace` |
 | Public response conventions | `serving/workspace_schemas.py` (`*ResponseV1`, `extra="forbid"` on requests) |
-| Error normalization | HTTP `detail` string codes (`not_found`, `workspace_not_found`, domain `error_code` on operations); Ask uses `WorkspaceAskLookupError` → 404 |
+| Error normalization | HTTP `detail` string codes (`not_found`, `workspace_not_found`, domain `error_code` on operations); Ask uses `WorkspaceAskLookupError` Ôćĺ 404 |
 | Idempotency | Deterministic IDs via SHA-256 in `knowledge_intake.py` (`ki:`, `op:`, `src:` prefixes); managed-file and web-url intake have dedicated idempotency conflict types |
 | Timestamps | UTC `datetime` on all durable models (`created_at`, `updated_at` where applicable) |
 | Repository atomicity | Single-record `DocumentStore.put()`; no cross-entity transactions; compensating deletes in `delete_workspace()` |
@@ -66,24 +75,24 @@ lkw.ask_run:{tenant_id}:ask_run
 | Source ID generation | `uuid.uuid4()` for local folder; deterministic `src:knowledge_input_source:{input_id}` for intake-derived sources |
 | Tenant/workspace validation | `KnowledgeIntakeService.accept()` and resolvers check `repository.get_workspace()` |
 | Source metadata storage | `ManagedWorkspaceRepository.put_source()` row key `{workspace_id}:{source_id}` |
-| Provider correlation | **Not present** on `WorkspaceSource` today; `CONNECTED_SOURCE` path is deferred per `docs/plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md` §6 |
-| `KnowledgeInputKind` | `managed_file`, `uploaded_folder_snapshot`, `source_candidate`, `web_url` — **no new provider-specific kind required** for first connected-source milestone |
-| Document ownership | `WorkspaceDocumentReference` — every indexed document references exactly one `source_id` |
+| Provider correlation | **Not present** on `WorkspaceSource` today; `CONNECTED_SOURCE` path is deferred per `docs/plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md` ┬ž6 |
+| `KnowledgeInputKind` | `managed_file`, `uploaded_folder_snapshot`, `source_candidate`, `web_url` ÔÇö **no new provider-specific kind required** for first connected-source milestone |
+| Document ownership | `WorkspaceDocumentReference` ÔÇö every indexed document references exactly one `source_id` |
 | Operation state | `WorkspaceOperation` + `KnowledgeInput` linked by `operation_id` / `input_id` |
 
 ### 2.3 Vendor Knowledge foundation
 
 | Symbol | Role | Reuse for LKW |
 |--------|------|---------------|
-| `KnowledgeSourceRef` | Tenant-scoped vendor-neutral source identity with optional `connection_ref` | **Direct** — build from LKW bindings for sync/live resolution |
-| `KnowledgeSourceScope` | `remote_scope_id`, `remote_scope_type`, `safe_display_name`, safe `parameters` | **Direct** — maps to Remote Resource scope |
-| `KnowledgeScopeInfo` | Output of `inspect_scope` | **Direct** — discovery / inspect projection |
-| `KnowledgeSourceBinding` | Tenant-scoped durable sync binding (`connection_ref`, optional `credential_ref`) | **Reuse at tenant layer** — not workspace-scoped; LKW must not duplicate |
-| `KnowledgeConnectionRegistry` | Instance-local `(tenant_id, connection_ref) → integration` | **Direct** — prevents second client when registered |
+| `KnowledgeSourceRef` | Tenant-scoped vendor-neutral source identity with optional `connection_ref` | **Direct** — build from tenant `KnowledgeSourceBinding` via `to_source_ref()` |
+| `KnowledgeSourceScope` | `remote_scope_id`, `remote_scope_type`, `safe_display_name`, safe `parameters` | **Direct** ÔÇö maps to Remote Resource scope |
+| `KnowledgeScopeInfo` | Output of `inspect_scope` | **Direct** ÔÇö discovery / inspect projection |
+| `KnowledgeSourceBinding` | Tenant-scoped durable sync binding (`connection_ref`, optional `credential_ref`) | **Reuse at tenant layer** ÔÇö not workspace-scoped; LKW must not duplicate |
+| `KnowledgeConnectionRegistry` | Instance-local `(tenant_id, connection_ref) Ôćĺ integration` | **Direct** ÔÇö prevents second client when registered |
 | `ConnectionAwareVendorResolver` | Registry-first resolver with profile fallback | **Direct** |
 | `IntegrationProfileVendorResolver` | Profile-only; **rejects** `connection_ref` | Fallback path only |
 | `VendorKnowledgeFacadeService` | Durable/indexed read path | **Direct** for indexed sync; not for live |
-| `KnowledgeAdapterRegistry` | `(provider_id, integration_kind, source_kind) → adapter` | **Direct** |
+| `KnowledgeAdapterRegistry` | `(provider_id, integration_kind, source_kind) Ôćĺ adapter` | **Direct** |
 | `DocumentStoreKnowledgeSourceBindingRepository` | Tenant binding persistence | **Do not duplicate** in LKW |
 
 **Implemented adapters (verified):** Jira issues, Confluence pages, MS365 Graph drive/mail/teams_channel.
@@ -94,18 +103,18 @@ lkw.ask_run:{tenant_id}:ask_run
 
 | Path | Role |
 |------|------|
-| `intergrax/integrations/registry/profile.py` — `IntegrationProfile` | Application composition; `resolve(IntegrationCategory)` returns constructed integration |
-| `intergrax/integrations/contracts/secrets_store.py` — `SecretsStore` | Credential storage; secrets never in LKW state |
-| `intergrax/tools/registry/runtime.py` — `ToolRegistry` | Tool execution registry (future live path, not LKW domain model) |
+| `intergrax/integrations/registry/profile.py` ÔÇö `IntegrationProfile` | Application composition; `resolve(IntegrationCategory)` returns constructed integration |
+| `intergrax/integrations/contracts/secrets_store.py` ÔÇö `SecretsStore` | Credential storage; secrets never in LKW state |
+| `intergrax/tools/registry/runtime.py` ÔÇö `ToolRegistry` | Tool execution registry (future live path, not LKW domain model) |
 
 **Reusable resolution path (frozen):**
 
 ```text
 connection_ref + tenant_id + provider_id + integration_kind
-→ KnowledgeConnectionRegistry.resolve()   # when registered
-→ OR IntegrationProfileVendorResolver     # profile fallback; connection_ref must be None
-→ existing integration instance (single)
-→ VendorKnowledgeAdapter (indexed) OR LiveCapabilityAdapter (future, platform)
+Ôćĺ KnowledgeConnectionRegistry.resolve()   # when registered
+Ôćĺ OR IntegrationProfileVendorResolver     # profile fallback; connection_ref must be None
+Ôćĺ existing integration instance (single)
+Ôćĺ VendorKnowledgeAdapter (indexed) OR LiveCapabilityAdapter (future, platform)
 ```
 
 LKW configuration stores only `connection_ref`. It never constructs vendor clients.
@@ -127,7 +136,7 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 | Tenant resolution | Auth context > `X-Tenant-Id` > body > `"default"` |
 | Cross-tenant | **404** `not_found`, never 403 for workspace/resource existence |
 | Validation errors | HTTP 400/422 with stable string `detail` |
-| Pagination | List endpoints use repository `limit` (typically 500–2000); no cursor pagination on workspace lists today |
+| Pagination | List endpoints use repository `limit` (typically 500ÔÇô2000); no cursor pagination on workspace lists today |
 | Opaque IDs | `workspace_id`, `source_id`, `operation_id`, `run_id` |
 | Secret redaction | `SourceSummaryResponseV1` omits raw `path` for list; web URL locators keep private URL `repr=False` |
 | Response size | Managed file upload max from settings; Ask `limit` capped at 100 |
@@ -144,7 +153,9 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 | `KnowledgeConnectionRegistry` + `ConnectionAwareVendorResolver` | Single integration instance per `(tenant_id, connection_ref)` |
 | `VendorKnowledgeFacadeService` | Indexed synchronization reads |
 | `KnowledgeAdapterRegistry` | Adapter lookup |
-| `KnowledgeSourceBinding` + `DocumentStoreKnowledgeSourceBindingRepository` | Tenant-level sync bindings (optional convergence, not LKW duplicate) |
+| `KnowledgeSourceBinding` + `DocumentStoreKnowledgeSourceBindingRepository` | **Authoritative** tenant-level provider/resource/scope/connection configuration |
+| `TenantKnowledgeSourceBindingPort` | Provider-neutral LKW lookup port for tenant bindings (new in 1B) |
+| `ConditionalDocumentStore` | `put_if_absent`, `replace_if_match`, `delete_if_match` — required for configuration mutations |
 | `ManagedWorkspaceRepository` | LKW durable state pattern |
 | `WorkspaceSource` + `WorkspaceDocumentReference` | One Source owns Documents |
 | `KnowledgeIntakeService` idempotency patterns | Deterministic IDs for configuration mutations |
@@ -159,7 +170,8 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 | Symbol / path | Reason |
 |---------------|--------|
 | `KnowledgeConnectionRegistry` | Second registry would allow second client construction |
-| `KnowledgeSourceBinding` repository at LKW tier | Tenant sync binding ≠ workspace indexed/live authorization |
+| `KnowledgeSourceBinding` provider identity fields in LKW records | Tenant binding is authoritative; LKW stores only `knowledge_source_binding_ref` authorization |
+| `credential_ref` in LKW persistence | Credentials stay in tenant binding / `SecretsStore`; LKW never persists credentials |
 | `IntegrationProfile` per workspace | Application composition, not workspace product state |
 | `SecretsStore` / credential blobs | Credentials stay in integration foundation |
 | `VendorKnowledgeFacadeService` inside LKW routes | LKW calls ports; facade stays Tier-1 |
@@ -172,12 +184,13 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 
 | Concern | Owner | Verified / decision |
 |---------|-------|---------------------|
-| Raw credentials and tokens | Integration / `SecretsStore` | Confirmed — not in LKW models |
+| Raw credentials and tokens | Integration / `SecretsStore` | Confirmed ÔÇö not in LKW models |
 | Global tenant Connection | Platform connection foundation | **Gap:** durable catalog not implemented; runtime `KnowledgeConnectionRegistry` + opaque `connection_ref` contract frozen |
 | Vendor API client | Existing integration instance | Confirmed via `IntegrationProfile` / connection registry |
 | Remote Resource discovery | Vendor Knowledge adapters + future list port | `inspect_scope` exists; list candidates planned |
 | Workspace connection attachment | **LKW** | New `WorkspaceConnectionAttachment` record |
-| Indexed Source authorization | **LKW** | New `WorkspaceIndexedSourceBinding` + `WorkspaceSource(CONNECTED_SOURCE)` |
+| Tenant knowledge source binding | **Vendor Knowledge** (`KnowledgeSourceBinding`) | Authoritative provider/resource/scope/connection; LKW references via `knowledge_source_binding_ref` |
+| Indexed Source authorization | **LKW** | `WorkspaceIndexedSourceBinding` (authorization reference) + `WorkspaceSource(CONNECTED_SOURCE)` |
 | Live Access Binding | **LKW** | New `WorkspaceLiveAccessBinding` |
 | Query Policy | **LKW** | New `WorkspaceQueryPolicy` |
 | Durable Source | **LKW** | `WorkspaceSource` + `WorkspaceDocumentReference` |
@@ -199,7 +212,7 @@ A **Connection** is not a standalone durable LKW entity today. It is:
 
 1. An opaque **`connection_ref`** string carried on `KnowledgeSourceRef` / `KnowledgeSourceBinding`.
 2. A runtime registration in **`KnowledgeConnectionRegistry`** mapping `(tenant_id, connection_ref)` to an already-constructed integration instance with matching `provider_id` and `integration_kind`.
-3. An architectural tenant-owned record (documented in `docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md` §7.1) **not yet persisted** in code.
+3. An architectural tenant-owned record (documented in `docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md` ┬ž7.1) **not yet persisted** in code.
 
 ### 6.2 LKW representation (frozen)
 
@@ -234,11 +247,11 @@ class SafeConnectionSummaryV1(BaseModel):
 | Field | Source |
 |-------|--------|
 | `connection_ref` | Issued by platform connection administration (out of LKW) |
-| `tenant_id` | Must match resolver tenant; cross-tenant ref → fail closed |
+| `tenant_id` | Must match resolver tenant; cross-tenant ref Ôćĺ fail closed |
 | `provider_id` / `integration_kind` | From platform Connection metadata |
 | Health / capability projection | Platform port + adapter registry |
 | Delete semantics | Removing LKW attachment does not delete tenant Connection |
-| Unavailable | `status=unavailable` → discovery and binding mutations rejected; existing bindings → `unavailable` state, no credential copy |
+| Unavailable | `status=unavailable` Ôćĺ discovery and binding mutations rejected; existing bindings Ôćĺ `unavailable` state, no credential copy |
 
 ---
 
@@ -249,7 +262,7 @@ class SafeConnectionSummaryV1(BaseModel):
 | Contract | Durability |
 |----------|------------|
 | `RemoteResourceDescriptorV1` | **Ephemeral** discovery output |
-| Optional future `RemoteResourceSnapshotV1` | **Not in 1B** — defer cached snapshots |
+| Optional future `RemoteResourceSnapshotV1` | **Not in 1B** ÔÇö defer cached snapshots |
 
 Remote Resource never auto-becomes Indexed Source, Live Access Binding or Document.
 
@@ -283,10 +296,10 @@ class RemoteResourceDescriptorV1(BaseModel):
 
 **Identity:** `(connection_ref, remote_resource_id, source_kind)` within tenant.  
 **Stable identity:** provider `remote_resource_id` + `source_kind`; renames update `safe_display_label` only.  
-**Pagination:** cursor `next_page_token: str | None`, `limit` 1–100, opaque token max 4096 chars.  
+**Pagination:** cursor `next_page_token: str | None`, `limit` 1-100, opaque token max 4096 chars.
 **Permission loss:** `availability=permission_denied`; bindings transition to `unavailable`, execution fail closed.  
 **Duplicate discovery:** dedupe by identity; deterministic sort by `(connection_ref, remote_resource_id, source_kind)`.  
-**Unsafe metadata:** map to `KnowledgeSourceScope.parameters` rules — secret keys forbidden, URL credential embedding forbidden.
+**Unsafe metadata:** map to `KnowledgeSourceScope.parameters` rules ÔÇö secret keys forbidden, URL credential embedding forbidden.
 
 **Implementation mapping:** build from `KnowledgeScopeInfo` + adapter-specific list operations when added in `1C`.
 
@@ -296,9 +309,38 @@ class RemoteResourceDescriptorV1(BaseModel):
 
 ### 8.1 Decision
 
-**Dedicated workspace binding** `WorkspaceIndexedSourceBinding` that **creates or references** one durable `WorkspaceSource` with `source_type=CONNECTED_SOURCE`. Not a direct unstructured extension of `WorkspaceSource` fields alone.
+**Dedicated workspace authorization** `WorkspaceIndexedSourceBinding` that references one tenant `KnowledgeSourceBinding` and one durable `WorkspaceSource` with `source_type=CONNECTED_SOURCE`.
 
-### 8.2 Model
+LKW must **not** duplicate provider identity, connection scope, credentials or remote scope configuration from the tenant binding. The tenant binding is the single authoritative provider-resource definition for durable/indexed access.
+
+### 8.2 Tenant binding reference (frozen)
+
+| Aspect | Frozen decision |
+|--------|-----------------|
+| Field name | `knowledge_source_binding_ref` |
+| Field type | `str`, `min_length=1`, `max_length=128` |
+| Format | Opaque binding ID matching `KnowledgeSourceBinding.binding_id` |
+| Tenant ownership | Lookup via `TenantKnowledgeSourceBindingPort.get_binding(tenant_id, binding_id)`; cross-tenant -> safe `None` -> 404 |
+| Not-found | 404 `knowledge_source_binding_not_found` |
+| Status validation | Only `KnowledgeSourceBindingStatus.ACTIVE` permits create; `DISABLED`/`REVOKED`/`EXPIRED` -> 400 `knowledge_source_binding_unavailable` |
+| Corrupt record | Port raises or returns invalid -> 400 `knowledge_source_binding_invalid` |
+| Version relationship | LKW stores tenant binding ref only; tenant `configuration_version` is not copied into LKW records |
+| Credential handling | LKW never persists `credential_ref`; resolved at sync time through tenant binding |
+
+```python
+class TenantKnowledgeSourceBindingPort(Protocol):
+    def get_binding(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSourceBinding | None:
+        ...
+```
+
+LKW domain services must not import a concrete Vendor Knowledge repository. Application wiring adapts the existing `KnowledgeSourceBindingRepository` / `KnowledgeSourceBindingService` behind this port.
+
+### 8.3 Model
 
 ```python
 class IndexedSourceSyncModeV1(StrEnum):
@@ -306,66 +348,168 @@ class IndexedSourceSyncModeV1(StrEnum):
     INCREMENTAL = "incremental"
 
 
-class IndexedSourceStatusV1(StrEnum):
+class WorkspaceIndexedSourceBindingStatusV1(StrEnum):
     ACTIVE = "active"
     DISABLED = "disabled"
-    SYNCING = "syncing"
-    ERROR = "error"
     UNAVAILABLE = "unavailable"
+    ERROR = "error"
 
 
 class WorkspaceIndexedSourceBinding(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     indexed_source_binding_id: str = Field(..., min_length=1, max_length=128)
     tenant_id: str = Field(..., min_length=1, max_length=128)
     workspace_id: str = Field(..., min_length=1, max_length=128)
+
+    knowledge_source_binding_ref: str = Field(..., min_length=1, max_length=128)
     source_id: str = Field(..., min_length=1, max_length=128)
-    connection_ref: str = Field(..., min_length=1, max_length=128)
-    remote_resource_id: str = Field(..., min_length=1, max_length=256)
-    provider_id: str = Field(..., min_length=1, max_length=64)
-    integration_kind: IntegrationCategory
-    source_kind: str = Field(..., min_length=1, max_length=64)
-    resource_type: str = Field(..., min_length=1, max_length=64)
-    safe_display_label: str = Field(..., min_length=1, max_length=256)
-    safe_description: str = Field(default="", max_length=1024)
+
     sync_mode: IndexedSourceSyncModeV1 = IndexedSourceSyncModeV1.INCREMENTAL
-    status: IndexedSourceStatusV1 = IndexedSourceStatusV1.ACTIVE
-    configuration_version: int = Field(..., ge=1)
-    idempotency_key: str = Field(..., min_length=1, max_length=256)
+    status: WorkspaceIndexedSourceBindingStatusV1 = WorkspaceIndexedSourceBindingStatusV1.ACTIVE
+
+    semantic_identity_hash: str = Field(..., min_length=64, max_length=64)
+    create_idempotency_key: str = Field(..., min_length=1, max_length=256)
+
+    created_at_revision: int = Field(..., ge=1)
+    last_modified_revision: int = Field(..., ge=1)
     created_at: datetime
     updated_at: datetime
+
+    # Optional non-authoritative presentation snapshot only:
+    cached_safe_display_label: str | None = Field(default=None, max_length=256)
 ```
 
-**Source relationship:** exactly one `WorkspaceSource` per binding; `WorkspaceSource.source_type = connected_source`, `path=""`, `recursive=false` (existing validator).  
-**Idempotency:** `indexed_source_binding_id = sha256(tenant_id, workspace_id, idempotency_key)` prefixed `idx:`; same key + same payload → 200; conflicting payload → 409 `indexed_source_idempotency_conflict`.  
-**Delete:** remove binding + LKW Source metadata; **does not** delete remote provider resource or tenant `KnowledgeSourceBinding`.  
-**Live permission:** **not implied** — indexed binding does not create `WorkspaceLiveAccessBinding`.
+**Forbidden fields on this record:** `credential_ref`, `provider_id`, `integration_kind`, `source_kind`, `connection_ref`, `remote_resource_id`, `resource_type`, remote scope configuration, provider parameters.
 
-**Vendor projection for sync:**
+**Source relationship:** exactly one `WorkspaceSource` per binding; `WorkspaceSource.source_type = connected_source`, `path=""`, `recursive=false`. On detach, `WorkspaceSource.status` transitions to `ERROR` or a future `DISABLED` status — the Source record is **not** deleted.
+
+### 8.4 Semantic identity and idempotency (separate)
+
+**Request identity** (idempotency replay):
+
+```text
+(tenant_id, workspace_id, operation="create_indexed_source", idempotency_key)
+```
+
+- Same key + same normalized request -> replay existing result (200).
+- Same key + different normalized request -> 409 `indexed_source_idempotency_conflict`.
+
+**Semantic identity** (logical resource):
+
+```text
+(tenant_id, workspace_id, knowledge_source_binding_ref)
+```
+
+First milestone: one Indexed Source authorization per tenant binding per workspace (`sync_mode` excluded from semantic identity).
+
+**Duplicate behavior (frozen):** second request with a different `idempotency_key` but the same semantic identity -> **return existing binding** (200) with stable `indexed_source_binding_id`. Do not create a second binding.
+
+**Normalized comparison rules:**
+
+- Trim opaque refs (`knowledge_source_binding_ref`, `connection_ref`).
+- Canonical enum serialization for `sync_mode`.
+- No frontend-controlled display fields in identity.
+- `semantic_identity_hash = sha256(canonical_semantic_identity_json)` hex.
+
+**Binding ID generation:** `indexed_source_binding_id = "idx:" + sha256(tenant_id, workspace_id, knowledge_source_binding_ref)[:32]` — derived from semantic identity, not idempotency key.
+
+### 8.5 Provider metadata resolution
+
+Provider metadata (`provider_id`, `integration_kind`, `source_kind`, `connection_ref`, scope) is resolved **only** from the referenced tenant `KnowledgeSourceBinding` at create and sync time. LKW does not persist or reconstruct these fields.
+
+**Vendor projection for sync** (ephemeral, not stored in LKW):
 
 ```python
-def to_knowledge_source_ref(binding: WorkspaceIndexedSourceBinding) -> KnowledgeSourceRef:
-    return KnowledgeSourceRef(
-        tenant_id=binding.tenant_id,
-        provider_id=binding.provider_id,
-        integration_kind=binding.integration_kind,
-        source_kind=binding.source_kind,
-        connection_ref=binding.connection_ref,
-        scope=KnowledgeSourceScope(
-            remote_scope_id=binding.remote_resource_id,
-            remote_scope_type=binding.resource_type,
-            safe_display_name=binding.safe_display_label,
-            parameters={},
-        ),
-    )
+def to_knowledge_source_ref(
+    binding: WorkspaceIndexedSourceBinding,
+    tenant_binding: KnowledgeSourceBinding,
+) -> KnowledgeSourceRef:
+    return to_source_ref(tenant_binding)  # intergrax/runtime/vendor_knowledge/bindings.py
 ```
+
+### 8.6 Tenant binding lifecycle effects on workspace binding
+
+| Tenant binding state | Workspace indexed binding | Future sync | Existing indexed data |
+|---------------------|---------------------------|-------------|----------------------|
+| `ACTIVE` | `ACTIVE` (if workspace authorized) | Allowed | Preserved |
+| `DISABLED` | -> `UNAVAILABLE` | Blocked | Preserved |
+| `REVOKED` | -> `UNAVAILABLE` | Blocked | Preserved |
+| `EXPIRED` | -> `UNAVAILABLE` | Blocked | Preserved |
+| Missing | -> `UNAVAILABLE` | Blocked | Preserved |
+| Corrupt | -> `UNAVAILABLE` | Blocked | Preserved |
+
+Do not silently reconstruct provider identity from stale LKW fields.
+
+### 8.7 Detach semantics (non-destructive)
+
+First-milestone removal means **logical detach**, not physical indexed-data deletion.
+
+| Action | Effect |
+|--------|--------|
+| `PATCH .../indexed-sources/{id}` with `status=disabled` | Binding -> `DISABLED`; Source marked unavailable; future sync blocked |
+| `DELETE .../indexed-sources/{id}` | **Logical detach only** — same as disable; does not delete Documents, Chunks or Vectors |
+
+Physical source-owned cleanup belongs to `LKW-KNOWLEDGE-LIFECYCLE-1` or a separately reviewed safe-removal operation. `ManagedWorkspaceRepository.delete_source()` removes only the Source metadata row — it does **not** delete Documents, Chunks or Vectors.
+
+**Live permission:** indexed authorization does **not** create `WorkspaceLiveAccessBinding`.
 
 ---
 
 ## 9. Live Access Binding contract
 
-### 9.1 Model
+### 9.1 Typed capability descriptor (authoritative read-only classification)
+
+Read-only enforcement must **not** depend primarily on capability ID suffixes. Names such as `mail.send`, `jira.issue.transition`, `databricks.job.run`, `powerbi.refresh` may have side effects without ending in `.write`.
+
+```python
+class CapabilityEffectV1(StrEnum):
+    READ = "read"
+    WRITE = "write"
+    EXECUTE = "execute"
+    ADMIN = "admin"
+
+
+class LiveCapabilityDescriptorV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    capability_id: str = Field(..., min_length=1, max_length=128)
+    provider_id: str = Field(..., min_length=1, max_length=64)
+    integration_kind: IntegrationCategory
+
+    effect: CapabilityEffectV1
+    read_only: bool
+
+    resource_scope_required: bool
+    supported_resource_types: tuple[str, ...] = ()
+
+    request_schema_ref: str = Field(..., min_length=1, max_length=256)
+    result_schema_ref: str = Field(..., min_length=1, max_length=256)
+
+    max_result_items: int | None = Field(default=None, ge=1)
+    max_result_bytes: int | None = Field(default=None, ge=1)
+    available: bool = True
+```
+
+**First-milestone acceptance rule:** only capabilities where `effect == READ` **and** `read_only == True` **and** `available == True` may be bound.
+
+**Suffix checking** (`.write`, `.create`, `.delete`, `.update`) may remain as defense-in-depth only. It must not be the authoritative read-only classification.
+
+```python
+class TenantLiveCapabilityCatalogPort(Protocol):
+    def list_capabilities(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        remote_resource_id: str | None,
+    ) -> tuple[LiveCapabilityDescriptorV1, ...]:
+        ...
+```
+
+Task `1C` (or a separate prerequisite) establishes capability discovery/catalog. Task `1D` may persist Live Access Bindings only against validated read-only descriptors. Arbitrary capability IDs from the frontend are rejected.
+
+### 9.2 Model
 
 ```python
 class LiveAccessBindingStatusV1(StrEnum):
@@ -376,34 +520,50 @@ class LiveAccessBindingStatusV1(StrEnum):
 
 
 class WorkspaceLiveAccessBinding(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     live_access_binding_id: str = Field(..., min_length=1, max_length=128)
     tenant_id: str = Field(..., min_length=1, max_length=128)
     workspace_id: str = Field(..., min_length=1, max_length=128)
+
     connection_ref: str = Field(..., min_length=1, max_length=128)
     remote_resource_id: str | None = Field(default=None, max_length=256)
-    resource_type: str | None = Field(default=None, max_length=64)
-    provider_id: str = Field(..., min_length=1, max_length=64)
-    integration_kind: IntegrationCategory
     allowed_capability_ids: tuple[str, ...] = Field(..., min_length=1)
-    read_only_mode: Literal[True] = True
+
+    # Server-derived at create time (not accepted from frontend request):
+    derived_provider_id: str = Field(..., min_length=1, max_length=64)
+    derived_integration_kind: IntegrationCategory
+    derived_resource_type: str | None = Field(default=None, max_length=64)
+    derived_safe_display_label: str = Field(..., min_length=1, max_length=256)
+
     status: LiveAccessBindingStatusV1 = LiveAccessBindingStatusV1.ACTIVE
-    policy_reference: str | None = Field(default=None, max_length=128)
-    configuration_version: int = Field(..., ge=1)
-    idempotency_key: str = Field(..., min_length=1, max_length=256)
+
+    semantic_identity_hash: str = Field(..., min_length=64, max_length=64)
+    create_idempotency_key: str = Field(..., min_length=1, max_length=256)
+
+    created_at_revision: int = Field(..., ge=1)
+    last_modified_revision: int = Field(..., ge=1)
     created_at: datetime
     updated_at: datetime
 ```
 
 **Validation rules:**
 
-- Every `allowed_capability_id` must match `^[a-z][a-z0-9._-]{1,127}$`.
-- Write-capable capability IDs (suffix `.write`, `.create`, `.delete`, `.update`) → **rejected** at create/update.
-- `remote_resource_id` required when any capability is resource-scoped (adapter declares scope requirement).
-- Unknown connection, unauthorized workspace, unknown capability, resource outside connection → **fail closed** (404 workspace/connection, 400 validation).
-- Duplicate binding same `(workspace_id, connection_ref, remote_resource_id, capability set)` → 409 `live_access_binding_duplicate`.
+- Every `allowed_capability_id` must exist in `TenantLiveCapabilityCatalogPort.list_capabilities()` for the same `(tenant_id, connection_ref, remote_resource_id)`.
+- Capabilities with `effect != READ` or `read_only != True` or `available != True` -> **rejected** (400 `capability_not_read_only`).
+- `remote_resource_id` required when any selected descriptor has `resource_scope_required=True`.
+- Unknown capability -> 400 `capability_not_found`.
+- Unknown connection, unauthorized workspace, resource outside connection -> fail closed (404 workspace/connection, 400 validation).
+- Duplicate binding same semantic identity -> return existing binding (200).
 - Does **not** imply durable ingestion rights.
+
+**Semantic identity:**
+
+```text
+(tenant_id, workspace_id, connection_ref, normalized_remote_resource_id, normalized_capability_set)
+```
+
+Normalized capability set: trim IDs, sort, deduplicate.
 
 ---
 
@@ -415,8 +575,8 @@ class WorkspaceLiveAccessBinding(BaseModel):
 |------|-----------------|
 | `indexed_only` | **Yes** |
 | `live_only` | **Yes** |
-| `hybrid` | **No** — explicit 400 `query_policy_mode_unsupported` |
-| `automatic` | **No** — explicit 400 `query_policy_mode_unsupported` |
+| `hybrid` | **No** ÔÇö explicit 400 `query_policy_mode_unsupported` |
+| `automatic` | **No** ÔÇö explicit 400 `query_policy_mode_unsupported` |
 
 ### 10.2 Model
 
@@ -432,26 +592,49 @@ class LiveResultRetentionV1(StrEnum):
 
 
 class WorkspaceQueryPolicy(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     tenant_id: str = Field(..., min_length=1, max_length=128)
     workspace_id: str = Field(..., min_length=1, max_length=128)
+
     mode: QueryPolicyModeV1 = QueryPolicyModeV1.INDEXED_ONLY
-    prefer_indexed_evidence: bool = True
-    allow_live_fallback: bool = False
+
     allowed_connection_refs: tuple[str, ...] = ()
     allowed_capability_ids: tuple[str, ...] = ()
-    max_live_calls: int = Field(default=5, ge=0, le=50)
+
+    max_live_calls: int = Field(default=0, ge=0, le=50)
     max_total_duration_ms: int = Field(default=30_000, ge=1, le=300_000)
     max_result_items: int = Field(default=50, ge=1, le=500)
     max_result_bytes: int = Field(default=1_048_576, ge=1, le=16_777_216)
+
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
-    configuration_version: int = Field(..., ge=1)
+    workspace_configuration_revision: int = Field(..., ge=1)
     updated_at: datetime
 ```
 
-**Defaults:** `mode=indexed_only`, `live_result_retention=ephemeral`.  
-**Unsupported mode behavior:** reject request; never accept-and-ignore.
+**Removed from v1:** `prefer_indexed_evidence`, `allow_live_fallback` — belong to future `hybrid` / `automatic` modes.
+
+### 10.3 Cross-field invariants (enforced at model validation)
+
+**`indexed_only`:**
+
+```text
+allowed_connection_refs == ()
+allowed_capability_ids == ()
+max_live_calls == 0
+live_result_retention == ephemeral
+```
+
+**`live_only`:**
+
+```text
+allowed_connection_refs not empty
+allowed_capability_ids not empty
+max_live_calls >= 1
+all capabilities validated as read-only via TenantLiveCapabilityCatalogPort
+```
+
+**Unsupported modes:** `hybrid`, `automatic` -> explicit 400 `query_policy_mode_unsupported`. Do not accept-and-ignore future fields.
 
 ---
 
@@ -469,7 +652,34 @@ class WorkspaceQueryPolicy(BaseModel):
 
 Not one mutable JSON blob.
 
-### 11.2 Projection model
+### 11.2 Revision head (monotonic aggregate version)
+
+One durable revision-head record — **not** derived from `max(child.configuration_version)`.
+
+```python
+class WorkspaceKnowledgeConfigurationHead(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    configuration_revision: int = Field(ge=1)
+    updated_at: datetime
+```
+
+**Persistence:**
+
+```text
+partition: lkw.managed_workspace:{tenant_id}:knowledge_configuration_head
+row key: {workspace_id}
+```
+
+Every successful configuration mutation increments `configuration_revision = previous + 1`. Mutations include: attach/detach connection, create/disable indexed source binding, create/disable live access binding, update query policy, any future binding update.
+
+**Empty workspace:** head missing -> logical revision `0`. First mutation creates head with `configuration_revision = 1`.
+
+**Conditional-write requirement:** configuration mutations require `ConditionalDocumentStore.replace_if_match()` (or equivalent atomic compare-and-swap). When `ConditionalDocumentStore` is unavailable -> configuration mutation capability unavailable -> **fail closed**. Do not claim concurrency safety using normal `DocumentStore.put()`.
+
+### 11.3 Projection model
 
 ```python
 class WorkspaceKnowledgeConfigurationV1(BaseModel):
@@ -477,21 +687,29 @@ class WorkspaceKnowledgeConfigurationV1(BaseModel):
 
     tenant_id: str
     workspace_id: str
-    configuration_version: int = Field(..., ge=1)
+    configuration_revision: int  # from head record only
+
     connection_attachments: tuple[WorkspaceConnectionAttachment, ...]
     indexed_sources: tuple[WorkspaceIndexedSourceBinding, ...]
     live_access_bindings: tuple[WorkspaceLiveAccessBinding, ...]
     query_policy: WorkspaceQueryPolicy | None
+
     updated_at: datetime
 ```
 
-**Versioning:** `configuration_version = max(child.configuration_version)`; bump on any child mutation.  
-**Concurrency:** `If-Match: WKC/{configuration_version}` header on mutating endpoints; mismatch → 409 `configuration_version_conflict`.  
-**Deterministic ordering:** sort attachments by `connection_ref`, indexed by `indexed_source_binding_id`, live by `live_access_binding_id`.  
-**Empty state:** all child collections empty, `query_policy=None`, `configuration_version=1`.  
-**Partial updates:** resource-scoped endpoints mutate one child; projection recomputed.
+**Concurrency:** `If-Match: WKC/{configuration_revision}` header on mutating endpoints.
 
-### 11.3 Workspace connection attachment
+| Condition | Behavior |
+|-----------|----------|
+| Missing `If-Match` | Allowed only for idempotent create when explicitly documented; otherwise 428 `precondition_required` |
+| Mismatch | 409 `configuration_revision_conflict` |
+
+**Deterministic ordering:** sort attachments by `connection_ref`, indexed by `indexed_source_binding_id`, live by `live_access_binding_id`.
+**Empty state:** all child collections empty, `query_policy=None`, `configuration_revision=0` (head missing).
+**Integrity:** all child records must belong to same `tenant_id`/`workspace_id`; corrupt cross-workspace child records -> fail closed.
+**Child revision fields:** `created_at_revision`, `last_modified_revision` — not confused with aggregate `configuration_revision`.
+
+### 11.4 Workspace connection attachment
 
 ```python
 class WorkspaceConnectionAttachmentStatusV1(StrEnum):
@@ -509,8 +727,9 @@ class WorkspaceConnectionAttachment(BaseModel):
     connection_ref: str = Field(..., min_length=1, max_length=128)
     safe_display_label: str = Field(..., min_length=1, max_length=256)
     status: WorkspaceConnectionAttachmentStatusV1
-    configuration_version: int = Field(..., ge=1)
-    idempotency_key: str = Field(..., min_length=1, max_length=256)
+    created_at_revision: int = Field(..., ge=1)
+    last_modified_revision: int = Field(..., ge=1)
+    create_idempotency_key: str = Field(..., min_length=1, max_length=256)
     created_at: datetime
     updated_at: datetime
 ```
@@ -521,30 +740,35 @@ class WorkspaceConnectionAttachment(BaseModel):
 
 ### 12.1 Records
 
-| Record | Partition | Row key | Unique constraint |
-|--------|-----------|---------|-------------------|
+| Record | Partition | Row key | Semantic unique constraint |
+|--------|-----------|---------|---------------------------|
+| `WorkspaceKnowledgeConfigurationHead` | `lkw.managed_workspace:{tenant_id}:knowledge_configuration_head` | `{workspace_id}` | one per workspace |
 | `WorkspaceConnectionAttachment` | `lkw.managed_workspace:{tenant_id}:connection_attachment` | `{workspace_id}:{attachment_id}` | `(tenant_id, workspace_id, connection_ref)` |
-| `WorkspaceIndexedSourceBinding` | `lkw.managed_workspace:{tenant_id}:indexed_source_binding` | `{workspace_id}:{indexed_source_binding_id}` | `(tenant_id, workspace_id, idempotency_key)` |
-| `WorkspaceLiveAccessBinding` | `lkw.managed_workspace:{tenant_id}:live_access_binding` | `{workspace_id}:{live_access_binding_id}` | `(tenant_id, workspace_id, idempotency_key)` |
+| `WorkspaceIndexedSourceBinding` | `lkw.managed_workspace:{tenant_id}:indexed_source_binding` | `{workspace_id}:{indexed_source_binding_id}` | `(tenant_id, workspace_id, knowledge_source_binding_ref)` |
+| `WorkspaceLiveAccessBinding` | `lkw.managed_workspace:{tenant_id}:live_access_binding` | `{workspace_id}:{live_access_binding_id}` | `(tenant_id, workspace_id, connection_ref, normalized_remote_resource_id, normalized_capability_set)` |
 | `WorkspaceQueryPolicy` | `lkw.managed_workspace:{tenant_id}:query_policy` | `{workspace_id}` | one per workspace |
 | `WorkspaceSource` (existing) | `lkw.managed_workspace:{tenant_id}:source` | `{workspace_id}:{source_id}` | — |
 
+**Idempotency uniqueness** (separate from semantic uniqueness): service-level index keyed by `(tenant_id, workspace_id, operation, idempotency_key)` stored in a dedicated partition or embedded operation record. Generic `DocumentStore` does not enforce database-level uniqueness — service-level identity plus conditional writes provide uniqueness.
+
 ### 12.2 Repository
 
-Extend `ManagedWorkspaceRepository` with typed put/get/list/delete methods mirroring existing Source/Operation patterns. No new DocumentStore implementation.
+Extend `ManagedWorkspaceRepository` with typed put/get/list methods mirroring existing Source/Operation patterns. Configuration mutations require `ConditionalDocumentStore` (or repository-specific CAS equivalent). No new DocumentStore implementation.
 
 ### 12.3 Migrations
 
-Additive partitions only. Existing workspaces: empty knowledge configuration (backward compatible). `CONNECTED_SOURCE` sources absent until explicit binding create.
+Additive partitions only. Existing workspaces: empty knowledge configuration (head missing, revision 0). `CONNECTED_SOURCE` sources absent until explicit binding create.
 
 ### 12.4 Deletion semantics
 
 | Action | Effect |
 |--------|--------|
-| Delete indexed binding | Remove binding + workspace Source + document refs via existing workspace delete patterns for that source; no upstream delete |
-| Delete live binding | Remove binding only; no Document changes |
-| Detach connection | `status=detached`; indexed/live bindings for that `connection_ref` → `unavailable` |
-| Delete workspace | Existing `delete_workspace()` extended to purge new partitions |
+| Disable/detach indexed binding | Binding -> `DISABLED`; Source marked unavailable; future sync blocked; **Documents, Chunks, Vectors preserved** |
+| Disable live binding | Binding -> `DISABLED`; no Document changes |
+| Detach connection | `status=detached`; indexed/live bindings for that `connection_ref` -> `unavailable` |
+| Delete workspace | Existing `delete_workspace()` extended to purge new partitions; relies on workspace deletion lifecycle being extended and tested across all relevant stores (including vector index) |
+
+Physical source-owned cleanup (Documents + Chunks + Vectors) belongs to `LKW-KNOWLEDGE-LIFECYCLE-1`, not `LKW-KNOWLEDGE-ACCESS-1D`.
 
 ---
 
@@ -552,10 +776,12 @@ Additive partitions only. Existing workspaces: empty knowledge configuration (ba
 
 ```text
 WorkspaceKnowledgeConfigurationService (LKW)
-├── ManagedWorkspaceRepository (durable LKW records)
+├── ManagedWorkspaceRepository (durable LKW records + revision head)
 ├── ManagedWorkspaceService (workspace existence authority)
-├── TenantConnectionPort (read-only; platform — new in 1C)
+├── TenantKnowledgeSourceBindingPort (read-only tenant binding lookup — 1B)
+├── TenantConnectionPort (read-only; platform — 1C)
 ├── RemoteResourceDiscoveryPort (wraps VendorKnowledgeFacade inspect/list — 1C)
+├── TenantLiveCapabilityCatalogPort (typed read-only capability catalog — 1C)
 └── WorkspaceKnowledgeAuthorizationService (tenant + workspace + binding checks)
 
 VendorKnowledgeFacadeService (Tier-1, unchanged)
@@ -565,6 +791,26 @@ VendorKnowledgeFacadeService (Tier-1, unchanged)
 ```
 
 LKW services **must not** import provider packages (`jira`, `confluence`, `ms365_graph`).
+
+### 13.1 Indexed binding create flow
+
+```text
+request
+→ require workspace
+→ resolve tenant KnowledgeSourceBinding via TenantKnowledgeSourceBindingPort
+→ validate binding ACTIVE and tenant-owned
+→ calculate semantic identity
+→ check idempotency replay/conflict
+→ conditional increment workspace configuration_revision (CAS on head)
+→ create WorkspaceSource(CONNECTED_SOURCE)
+→ create workspace Indexed Source authorization record
+```
+
+### 13.2 Multi-record failure compensation
+
+`DocumentStore` has no cross-record transaction. The create flow above is **not atomic**. On failure between Source creation and binding creation, the contract requires **compensating delete** of the orphaned `WorkspaceSource` (recoverable pending state is an acceptable alternative if explicitly documented).
+
+First implementation task (`1B`) must include explicit failure-injection tests for the chosen compensation behavior. Do not claim multi-record mutation atomicity.
 
 ---
 
@@ -579,8 +825,8 @@ Base prefix: `/v1/local_workspace`. All endpoints require resolved `tenant_id`. 
 | Method / path | `GET /connections` |
 | Response | `SafeConnectionListResponseV1 { connections: list[SafeConnectionSummaryV1] }` |
 | Auth | Tenant context |
-| Pagination | `limit` 1–100, optional `page_token` |
-| Secrets | Projection only — no `credential_ref` |
+| Pagination | `limit` 1ÔÇô100, optional `page_token` |
+| Secrets | Projection only ÔÇö no `credential_ref` |
 | Errors | 401 unauthenticated |
 
 ### 14.2 Inspect Connection
@@ -607,8 +853,9 @@ Base prefix: `/v1/local_workspace`. All endpoints require resolved `tenant_id`. 
 |--|--|
 | Method / path | `PUT /workspaces/{workspace_id}/connections/{connection_ref}` |
 | Request | `AttachConnectionRequestV1 { idempotency_key, safe_display_label? }` |
-| Response | `WorkspaceConnectionAttachment` + `configuration_version` |
-| Idempotency | Same `idempotency_key` → 200 replay |
+| Response | `WorkspaceConnectionAttachment` + `configuration_revision` |
+| Concurrency | `If-Match: WKC/{configuration_revision}` required; mismatch -> 409 |
+| Idempotency | Same `idempotency_key` Ôćĺ 200 replay |
 | Errors | 404 workspace/connection; 409 conflict |
 
 ### 14.5 Read Workspace Knowledge Configuration
@@ -624,35 +871,63 @@ Base prefix: `/v1/local_workspace`. All endpoints require resolved `tenant_id`. 
 | | |
 |--|--|
 | Method / path | `POST /workspaces/{workspace_id}/indexed-sources` |
-| Request | `CreateIndexedSourceRequestV1` (connection_ref, remote_resource_id, source_kind, resource_type, safe_display_label, sync_mode, idempotency_key) |
+| Request | `CreateWorkspaceIndexedSourceRequestV1 { knowledge_source_binding_ref, sync_mode, idempotency_key }` |
+| Server-derived | `provider_id`, `integration_kind`, `source_kind`, `connection_ref`, scope, `safe_display_label` — from tenant binding; **not in request schema** |
 | Response | 201 `WorkspaceIndexedSourceBinding` |
-| Idempotency | `Idempotency-Key` header or body key |
-| Errors | 400 validation; 404 workspace/connection/resource; 409 idempotency conflict |
+| Idempotency | Same `(tenant_id, workspace_id, operation, idempotency_key)` -> 200 replay; conflicting payload -> 409 |
+| Semantic duplicate | Same `knowledge_source_binding_ref` with different idempotency key -> 200 existing binding |
+| Concurrency | `If-Match: WKC/{configuration_revision}` required |
+| Errors | 400 validation; 404 workspace/tenant-binding; 409 idempotency/revision conflict; 428 missing If-Match |
+
+```python
+class CreateWorkspaceIndexedSourceRequestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    knowledge_source_binding_ref: str = Field(..., min_length=1, max_length=128)
+    sync_mode: IndexedSourceSyncModeV1 = IndexedSourceSyncModeV1.INCREMENTAL
+    idempotency_key: str = Field(..., min_length=1, max_length=256)
+```
 
 ### 14.7 Create Live Access Binding
 
 | | |
 |--|--|
 | Method / path | `POST /workspaces/{workspace_id}/live-access-bindings` |
-| Request | `CreateLiveAccessBindingRequestV1` |
+| Request | `CreateWorkspaceLiveAccessBindingRequestV1 { connection_ref, remote_resource_id, allowed_capability_ids, idempotency_key }` |
+| Server-derived | `provider_id`, `integration_kind`, `resource_type`, `safe_display_label`, capability effect classification — validated via `TenantLiveCapabilityCatalogPort` |
 | Response | 201 `WorkspaceLiveAccessBinding` |
-| Errors | 400 write capability / unknown capability; 404 |
+| Concurrency | `If-Match: WKC/{configuration_revision}` required |
+| Errors | 400 `capability_not_read_only` / `capability_not_found`; 404 workspace/connection; 409 revision conflict |
+
+```python
+class CreateWorkspaceLiveAccessBindingRequestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    remote_resource_id: str | None = Field(default=None, max_length=256)
+    allowed_capability_ids: tuple[str, ...] = Field(..., min_length=1)
+    idempotency_key: str = Field(..., min_length=1, max_length=256)
+```
 
 ### 14.8 Update Query Policy
 
 | | |
 |--|--|
 | Method / path | `PUT /workspaces/{workspace_id}/query-policy` |
-| Request | `UpdateQueryPolicyRequestV1` + optional `If-Match` |
+| Request | `UpdateQueryPolicyRequestV1` |
+| Concurrency | `If-Match: WKC/{configuration_revision}` required (aggregate revision, not child-local version) |
 | Response | `WorkspaceQueryPolicy` |
-| Errors | 400 unsupported mode; 409 version conflict |
+| Errors | 400 unsupported mode / invariant violation; 409 `configuration_revision_conflict`; 428 missing If-Match |
 
-### 14.9 Delete Indexed Source binding
+### 14.9 Detach Indexed Source binding
 
 | | |
 |--|--|
-| Method / path | `DELETE /workspaces/{workspace_id}/indexed-sources/{indexed_source_binding_id}` |
-| Response | 204 |
+| Method / path | `PATCH /workspaces/{workspace_id}/indexed-sources/{indexed_source_binding_id}` with `{ "status": "disabled" }` |
+| Alternative | `DELETE /workspaces/{workspace_id}/indexed-sources/{indexed_source_binding_id}` — **logical detach only**, not physical indexed-data deletion |
+| Response | 204 (logical detach) or 202 (if future cleanup queued) |
+| Effect | Binding disabled; Source unavailable; Documents/Chunks/Vectors **preserved** |
+| Concurrency | `If-Match: WKC/{configuration_revision}` required |
 | Errors | 404 |
 
 ### 14.10 Delete Live Access Binding
@@ -670,27 +945,45 @@ Base prefix: `/v1/local_workspace`. All endpoints require resolved `tenant_id`. 
 | Boundary | Behavior |
 |----------|----------|
 | Tenant | `resolve_tenant_id()`; data queries always include `tenant_id` partition |
-| Workspace | `get_workspace()` None → **404** |
+| Workspace | `get_workspace()` None Ôćĺ **404** |
 | Principal | Request context principal (when present) must match tenant; future fine-grained workspace ACL hooks at service layer |
 | Connection | `connection_ref` must resolve for same `tenant_id`; else 404 |
 | Resource | `remote_resource_id` must be discovered under connection before binding |
-| Capability | Must be in allowlist and declared read-only |
-| Fail closed | Unknown/stale/unauthorized → 404 or 400; never silent downgrade |
+| Capability | Must be in catalog with `effect=READ`, `read_only=True`, `available=True` |
+| Fail closed | Unknown/stale/unauthorized Ôćĺ 404 or 400; never silent downgrade |
 
 Safe errors: stable snake_case `detail` string; no `connection_ref` in error messages (matches `test_connections.py` pattern).
 
 ---
 
-## 16. Idempotency and configuration-version semantics
+## 16. Idempotency, semantic identity and configuration-revision semantics
 
-| Operation | Key | Conflict |
-|-----------|-----|----------|
-| Attach connection | `(tenant_id, workspace_id, idempotency_key)` | 409 |
-| Create indexed source | `(tenant_id, workspace_id, idempotency_key)` | 409 if payload differs |
-| Create live binding | same | 409 |
-| Update query policy | `If-Match: WKC/{version}` | 409 `configuration_version_conflict` |
+### 16.1 Two separate identities
 
-Child record `configuration_version` starts at 1; increments on update. Workspace aggregate version derived as max.
+| Identity | Key components | Purpose |
+|----------|---------------|---------|
+| Request (idempotency) | `(tenant_id, workspace_id, operation, idempotency_key)` | Detect replay vs conflict |
+| Semantic (logical resource) | Indexed: `(tenant_id, workspace_id, knowledge_source_binding_ref)`; Live: `(tenant_id, workspace_id, connection_ref, normalized_resource_scope, normalized_capability_set)` | Prevent duplicate logical bindings |
+
+### 16.2 Idempotency behavior
+
+| Operation | Replay | Conflict |
+|-----------|--------|----------|
+| Attach connection | Same key + same payload -> 200 | Same key + different payload -> 409 |
+| Create indexed source | Same key + same payload -> 200 | Same key + different payload -> 409 `indexed_source_idempotency_conflict` |
+| Create live binding | Same key + same payload -> 200 | Same key + different payload -> 409 |
+| Update query policy | N/A (uses If-Match) | Mismatch -> 409 `configuration_revision_conflict` |
+
+### 16.3 Semantic duplicate behavior
+
+Second request with different `idempotency_key` but same semantic identity -> **return existing binding** (200). Do not create a second binding.
+
+### 16.4 Configuration revision
+
+- Single monotonic `configuration_revision` on `WorkspaceKnowledgeConfigurationHead`.
+- Every successful mutation increments revision via `ConditionalDocumentStore.replace_if_match()`.
+- Aggregate projection reads revision from head record only — children do not define aggregate version.
+- Child records store `created_at_revision` / `last_modified_revision` when useful.
 
 ---
 
@@ -699,27 +992,30 @@ Child record `configuration_version` starts at 1; increments on update. Workspac
 ### 17.1 Scenario
 
 ```text
-one tenant Connection (connection_ref = conn-proof-1)
-→ attached to workspace W
-→ remote resource R selected
-→ WorkspaceIndexedSourceBinding I
-→ WorkspaceLiveAccessBinding L
+one tenant KnowledgeSourceBinding (binding_ref = bind-proof-1)
+-> references connection_ref = conn-proof-1
+-> attached to workspace W
+-> WorkspaceIndexedSourceBinding I (references bind-proof-1)
+-> WorkspaceLiveAccessBinding L (references conn-proof-1)
 ```
 
 ### 17.2 Required invariants
 
 | Invariant | Observable check |
 |-----------|-------------------|
-| Same `connection_ref` on I and L | Assert record fields |
-| Same credential reference | Spy `SecretsStore` lookup count == 1 per operation window |
-| Same integration registration | `KnowledgeConnectionRegistry.resolve` call count; returned object `id()` equal for indexed sync stub and live stub |
-| No second vendor client | Patch integration constructor counter == 1 per `(tenant_id, connection_ref)` |
-| Independent authorization | Disable L → indexed sync still allowed; disable I → live still allowed if policy permits |
-| Same workspace boundary | Cross-workspace binding attempt → 404 |
+| One tenant binding | `TenantKnowledgeSourceBindingPort.get_binding` count == 1 |
+| Indexed authorization references tenant binding | `I.knowledge_source_binding_ref == bind-proof-1`; no `provider_id`/`connection_ref` on I |
+| Live authorization references same connection | `L.connection_ref == conn-proof-1` (derived from tenant binding at create) |
+| No provider identity copied into indexed authorization | Serialized LKW indexed binding record lacks `provider_id`, `integration_kind`, `source_kind`, `credential_ref` |
+| No credential duplication | `SecretsStore` lookup count == 1 per operation window; no `credential_ref` in LKW records |
+| Same integration registration | `KnowledgeConnectionRegistry.resolve` returned object `id()` equal for indexed sync stub and live stub |
+| No second vendor client | Integration constructor counter == 1 per `(tenant_id, connection_ref)` |
+| Independent authorization | Disable I -> live still allowed; disable L -> indexed sync still allowed |
+| Same workspace boundary | Cross-workspace binding attempt -> 404 |
 
 ### 17.3 Test harness sketch
 
-Inject instrumented `KnowledgeConnectionRegistry`, `ConnectionAwareVendorResolver`, and `SecretsStore` fake into wiring used by configuration service and facade. Use existing vendor knowledge fakes from `tests/unit/runtime/vendor_knowledge/_fakes.py`.
+Inject instrumented `TenantKnowledgeSourceBindingPort`, `KnowledgeConnectionRegistry`, `ConnectionAwareVendorResolver`, and `SecretsStore` fake into wiring used by configuration service and facade. Use existing vendor knowledge fakes from `tests/unit/runtime/vendor_knowledge/_fakes.py`. Assert absence of credential/provider-scope duplication in serialized LKW records.
 
 ---
 
@@ -730,11 +1026,12 @@ Inject instrumented `KnowledgeConnectionRegistry`, `ConnectionAwareVendorResolve
 | Credential leakage | LKW persistence / API | Forbidden field scan on serialize; no secret keys in models | 500 corrupt record / reject write | Unit: binding store secret rejection pattern |
 | Cross-tenant connection ref | Resolver + repository | Partition + tenant match on all reads | 404 | Integration: tenant A ref in tenant B workspace |
 | Cross-workspace binding | Workspace service | `workspace_id` on all records | 404 | API test |
-| Capability escalation | Live binding create | Deny write suffix capabilities | 400 | Unit validator |
-| Write capability exposed | Live executor (future) | Read-only allowlist + executor gate | 403/400 | Contract test |
+| Capability escalation | Live binding create | `TenantLiveCapabilityCatalogPort` rejects `effect != READ` | 400 `capability_not_read_only` | Unit validator |
+| Write/execute/admin capability | Live binding create | Typed `CapabilityEffectV1` check (suffix check defense-in-depth only) | 400 | Contract test |
 | Resource reference substitution | Binding create | Resource must be discovered under same `connection_ref` | 400 | Integration |
 | Unsafe provider locator | Remote resource / evidence | `KnowledgeSourceScope` safe mapping rules | 400 validation | Reuse vendor_knowledge model tests |
-| Stale capability descriptor | Live execution | Re-validate against adapter registry at execution | `unavailable` | Future executor test |
+| Provider identity spoofing | Indexed/live create | Request schema excludes `provider_id`, `integration_kind`, etc. | 422 validation | Schema scan |
+| Stale tenant binding | Indexed sync | Re-resolve via `TenantKnowledgeSourceBindingPort`; unavailable -> block sync | `UNAVAILABLE` | Integration test |
 | Provider permission loss | Discovery + execution | `availability` enum + binding `unavailable` | Fail closed | Simulated adapter denial |
 | Live result persisted | Ask / executor | `ephemeral` retention default; no Document write path | Assert no `put_document_ref` | Integration |
 | Duplicate vendor client | Connection registry | Single registration per ref | Constructor count | **1F proof** |
@@ -745,12 +1042,12 @@ Inject instrumented `KnowledgeConnectionRegistry`, `ConnectionAwareVendorResolve
 
 ## 19. Migration and backward-compatibility impact
 
-- **Additive only** — new DocumentStore partitions and routes.
+- **Additive only** ÔÇö new DocumentStore partitions and routes.
 - Existing workspaces without knowledge configuration: valid empty projection.
 - `WorkspaceSourceType.CONNECTED_SOURCE` enum already exists; first binding implementation activates it.
 - No change to existing intake kinds (`web_url`, `managed_file`, etc.).
 - Ask remains indexed-only until Hybrid Ask (out of scope).
-- Roadmap status `LKW-KNOWLEDGE-ACCESS-1 → NEXT` unchanged.
+- Roadmap status `LKW-KNOWLEDGE-ACCESS-1 Ôćĺ NEXT` unchanged.
 
 ---
 
@@ -765,58 +1062,103 @@ Inject instrumented `KnowledgeConnectionRegistry`, `ConnectionAwareVendorResolve
 **Tests:** `git diff --check`, manual link/symbol verification.  
 **Gate:** `READY_FOR_REVIEW` on this document.
 
-### 20.2 `LKW-KNOWLEDGE-ACCESS-1B` — provider-neutral durable configuration foundation
+### 20.2 `LKW-KNOWLEDGE-ACCESS-1B` — provider-neutral durable workspace authorization foundation
 
-**Outcome:** Typed LKW contracts, repository records, configuration service, idempotency and versioning unit tests.  
-**Dependencies:** 1A.  
-**Code areas:** `workspaces/models.py` (or `knowledge_access_models.py`), `workspaces/repository.py`, new `workspaces/knowledge_configuration_service.py`, tests under `tests/workspaces/`.  
-**Non-goals:** Provider discovery, live calls, HTTP routes, Slack.  
-**Tests:** Repository round-trip, idempotency conflict, version conflict, secret-field rejection.  
-**Gate:** All 1B unit tests green; no provider imports in LKW.
+**Outcome:** Durable workspace configuration foundation with revision head, tenant-binding references, idempotency/semantic identity separation, and multi-record compensation.
+**Dependencies:** 1A-C1.
+**Code areas:** `workspaces/models.py` (or `knowledge_access_models.py`), `workspaces/repository.py`, `workspaces/knowledge_configuration_service.py`, `TenantKnowledgeSourceBindingPort`, tests under `tests/workspaces/`.
+**Non-goals:** HTTP routes, Connection catalog, Remote Resource discovery, live capability catalog, live execution, provider imports, physical Source data deletion.
+**Tests:** Repository round-trip, revision head CAS, idempotency replay/conflict, semantic duplicate prevention, compensation on partial failure, secret-field rejection.
+**Gate:** One tenant binding reference; no provider identity duplication; monotonic revision; zero provider-specific imports.
 
-### 20.3 `LKW-KNOWLEDGE-ACCESS-1C` — safe Connection listing and Remote Resource discovery
+### 20.3 `LKW-KNOWLEDGE-ACCESS-1C` — tenant ports, connection discovery and typed capability catalog
 
-**Outcome:** `TenantConnectionPort`, safe connection list/inspect, remote resource discovery HTTP endpoints.  
-**Dependencies:** 1B, `KnowledgeConnectionRegistry` wiring.  
-**Code areas:** `serving/workspace_routes.py`, `serving/workspace_schemas.py`, host wiring, platform connection read port.  
-**Non-goals:** Indexed/live binding mutations.  
-**Tests:** API tests with fakes; cross-tenant 404; pagination.  
-**Gate:** Discovery returns `RemoteResourceDescriptorV1` without secrets.
+**Outcome:** `TenantConnectionPort`, `TenantKnowledgeSourceBindingPort` adapter, `TenantLiveCapabilityCatalogPort`, Remote Resource discovery, safe connection/resource HTTP reads.
+**Dependencies:** 1B, `KnowledgeConnectionRegistry` wiring.
+**Code areas:** `serving/workspace_routes.py`, `serving/workspace_schemas.py`, host wiring, platform ports.
+**Non-goals:** Indexed/live binding mutations.
+**Tests:** API tests with fakes; cross-tenant 404; capability catalog read-only validation.
+**Gate:** Discovery returns descriptors without secrets; only read-only capabilities listed.
 
-### 20.4 `LKW-KNOWLEDGE-ACCESS-1D` — Indexed Source and Live Access Binding HTTP configuration
+### 20.4 `LKW-KNOWLEDGE-ACCESS-1D` — HTTP create/disable for bindings with server-derived metadata
 
-**Outcome:** Create/delete indexed and live bindings via HTTP.  
-**Dependencies:** 1B, 1C.  
-**Code areas:** routes, schemas, `WorkspaceKnowledgeConfigurationService`.  
-**Non-goals:** Actual sync or live execution.  
-**Tests:** API acceptance, idempotency, independent binding authorization.  
-**Gate:** `CONNECTED_SOURCE` workspace Source created; no live binding auto-created.
+**Outcome:** HTTP create/disable for connection attachment, Indexed Source authorization, Live Access Binding; server-derived metadata; no physical indexed-data deletion.
+**Dependencies:** 1B, 1C.
+**Code areas:** routes, schemas, `WorkspaceKnowledgeConfigurationService`.
+**Non-goals:** Actual sync or live execution.
+**Tests:** API acceptance, idempotency, semantic duplicate, independent binding authorization, non-destructive detach.
+**Gate:** `CONNECTED_SOURCE` workspace Source created; indexed detach preserves Documents; no live binding auto-created.
 
 ### 20.5 `LKW-KNOWLEDGE-ACCESS-1E` — Query Policy and complete configuration projection
 
-**Outcome:** Query policy CRUD + `GET knowledge-configuration` aggregate.  
-**Dependencies:** 1D.  
-**Non-goals:** Hybrid/automatic modes.  
-**Tests:** Unsupported mode rejection; deterministic ordering; version concurrency.  
-**Gate:** Full projection matches stored records.
+**Outcome:** Query policy CRUD + `GET knowledge-configuration` aggregate with revision head.
+**Dependencies:** 1D.
+**Non-goals:** Hybrid/automatic modes.
+**Tests:** Unsupported mode rejection; cross-field invariant enforcement; deterministic ordering; revision concurrency.
+**Gate:** Full projection matches stored records; revision from head only.
 
-### 20.6 `LKW-KNOWLEDGE-ACCESS-1F` — one-Connection indexed/live reuse proof
+### 20.6 `LKW-KNOWLEDGE-ACCESS-1F` — one tenant binding / one connection indexed-live reuse proof
 
-**Outcome:** Observable proof test — one connection, one integration instance, no credential copy.  
-**Dependencies:** 1E + minimal live executor stub OR facade-only proof with shared resolver instrumentation.  
-**Non-goals:** Production live queries.  
-**Tests:** Instrumented acceptance test per §17.  
+**Outcome:** Observable proof test — one tenant binding, one connection, one integration instance, no credential or provider-identity copy.
+**Dependencies:** 1E + minimal live executor stub OR facade-only proof with shared resolver instrumentation.
+**Non-goals:** Production live queries.
+**Tests:** Instrumented acceptance test per section 17.
 **Gate:** All invariants green in CI proof module.
 
 ---
 
 ## 21. First implementation task
 
-### Recommended: `LKW-KNOWLEDGE-ACCESS-1B`
+### Recommended: `LKW-KNOWLEDGE-ACCESS-1B` — PROVIDER-NEUTRAL DURABLE WORKSPACE AUTHORIZATION FOUNDATION
 
-**Ready-to-use task summary for next session:**
+**One-sentence outcome:** Create the durable provider-neutral workspace configuration foundation that references existing tenant knowledge-source bindings, maintains one monotonic workspace configuration revision through conditional writes, separates semantic identity from idempotency and safely compensates multi-record failures without adding HTTP routes or provider execution.
 
-Implement provider-neutral durable Workspace Knowledge Configuration foundations in LKW: add `WorkspaceConnectionAttachment`, `WorkspaceIndexedSourceBinding`, `WorkspaceLiveAccessBinding`, and `WorkspaceQueryPolicy` Pydantic models with frozen validation rules; extend `ManagedWorkspaceRepository` with partitioned DocumentStore persistence and optimistic `configuration_version` handling; introduce `WorkspaceKnowledgeConfigurationService` with tenant/workspace fail-closed checks, deterministic idempotency IDs, and projection assembly without provider imports; cover repository round-trips, idempotency conflicts, version conflicts, and secret-field rejection in unit tests. Exclude HTTP routes, provider discovery, live execution, and Slack.
+**Expected scope:**
+
+```text
+typed models
+configuration revision head (WorkspaceKnowledgeConfigurationHead)
+workspace Indexed Source authorization (references tenant binding)
+workspace Live Access Binding record
+workspace connection attachment
+query policy storage shape
+ManagedWorkspaceRepository extensions
+WorkspaceKnowledgeConfigurationService
+TenantKnowledgeSourceBindingPort
+conditional-write requirement
+idempotency replay/conflict
+semantic duplicate detection
+multi-record compensation
+unit tests
+```
+
+**Explicit non-goals:**
+
+```text
+HTTP routes
+Connection catalog implementation
+Remote Resource discovery
+live capability execution
+Hybrid Ask
+Slack
+provider imports
+physical Source data deletion
+vendor client construction
+```
+
+**Required acceptance gate:**
+
+```text
+one tenant binding reference
+no provider identity duplication
+no credential duplication
+monotonic workspace revision
+safe concurrent conflict
+idempotency replay
+semantic duplicate prevention
+compensation on partial failure
+zero provider-specific imports
+```
 
 ---
 
@@ -831,16 +1173,17 @@ Hybrid Ask, live Jira/Confluence/Graph queries, MCP execution, provider sync wor
 | Blocker | Severity | Mitigation |
 |---------|----------|------------|
 | No durable tenant Connection catalog | Medium | `TenantConnectionPort` + runtime registry for proofs (`1C`) |
-| No live capability executor / capability ID registry | Medium | Bindings-only in `1D`; executor in later platform task |
+| No typed live capability catalog | Medium | `TenantLiveCapabilityCatalogPort` in `1C`; bindings-only in `1D` |
+| No live capability executor | Medium | Executor in later platform task |
 | `list_source_candidates` not implemented on facade | Low | Use `inspect_scope` + adapter list in `1C` |
 | `CONNECTED_SOURCE` ingestion processor not wired | Medium | Separate intake task after configuration stable |
 
-**Contract freeze status:** Not blocked — gaps are explicit and sequenced.
+**Contract freeze status:** Not blocked ÔÇö gaps are explicit and sequenced.
 
 ---
 
 ## 24. Final architecture verdict
 
-The repository supports the intended design when LKW stores only opaque `connection_ref` values and workspace-scoped bindings, reuses `KnowledgeSourceRef` / `ConnectionAwareVendorResolver` / `VendorKnowledgeFacadeService` for indexed paths, and keeps live execution on a future shared executor. One `WorkspaceSource` continues to own all persisted Documents. Provider-specific LKW models and credential duplication are rejected.
+The repository supports the intended design when LKW stores workspace authorization references to tenant `KnowledgeSourceBinding` records (not duplicated provider identity), maintains one monotonic `configuration_revision` via CAS-protected head record, reuses `to_source_ref(tenant_binding)` / `ConnectionAwareVendorResolver` / `VendorKnowledgeFacadeService` for indexed paths, validates live capabilities through typed `LiveCapabilityDescriptorV1`, and keeps live execution on a future shared executor. One `WorkspaceSource` continues to own all persisted Documents. Indexed detach is non-destructive. Provider-specific LKW models and credential duplication are rejected.
 
 **STATUS: `READY_FOR_REVIEW`**
