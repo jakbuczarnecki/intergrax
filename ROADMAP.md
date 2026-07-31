@@ -82,7 +82,8 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | **WEB_URL end-to-end intake** | `LKW-WORKSPACE-CONTENTS-1B-5-2` — **ACCEPTED** (including C1 and C2 corrections) |
 | **Hybrid knowledge access architecture** | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` — **ACCEPTED** — [KNOWLEDGE_ACCESS_ARCHITECTURE.md](applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
 | **Vendor knowledge three-mode reuse architecture** | `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` — **ACCEPTED** — one provider integration reused for indexed RAG, durable materialization and planned live access; [KNOWLEDGE_SOURCE_INTEGRATIONS.md](docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
-| **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — Ollama/vLLM end-to-end product proof — **NEXT** |
+| **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — **ACCEPTED** — full canonical LKW proof for Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct`; [evidence](applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.md) |
+| **Workspace Knowledge Configuration** | `LKW-KNOWLEDGE-ACCESS-1` — **NEXT** — Connections, Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace over **indexed** knowledge; grounded answers, citations and persisted runs are implemented and live-verified |
 | Slack conversational MVP in active development | Connect the existing Ask Workspace capability to an approved Slack user and workspace through the governed interaction path; source inspection (`sources`) is operator-verified |
 | Knowledge Intake architecture being frozen | Channel-neutral intake and asynchronous ingestion contract documented; managed-file upload, Source Candidate intake and end-to-end `WEB_URL` indexed intake are **ACCEPTED** — see [Knowledge Intake discovery](applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) |
@@ -103,9 +104,8 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 
 | Item | Notes |
 |------|-------|
-| **LKW-MODEL-RUNTIME-1** | Ollama/vLLM end-to-end portability proof — planner, tool calling, grounded Ask |
+| **LKW-KNOWLEDGE-ACCESS-1** | **NEXT** — Connections, Remote Resources, Indexed Sources, Live Access Bindings and Query Policy |
 | **Vendor knowledge durable + live branches** | Complete Microsoft Graph adapter family; durable materialization sink contract; live capability contract and executor — convergence at Hybrid Ask |
-| **LKW-KNOWLEDGE-ACCESS-1** | Connections, Remote Resources, Indexed Sources, Live Access Bindings, Query Policy |
 | **LKW-HYBRID-ASK-1** | Indexed RAG + authorized live evidence with unified provenance |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language planner execution and Slack cutover (`CONV-1B`, `CONV-1C`) |
 | **LKW-VENDOR-ACCESS-COLLABORATION-1** | Microsoft 365, Jira, Confluence indexed and live access |
