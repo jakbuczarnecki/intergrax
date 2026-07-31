@@ -227,13 +227,26 @@ Implementation rows: `TOKEN-LLM-2`, `TOKEN-LLM-3` in [`docs/plan/LLM_ADAPTERS.md
 `TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D-1** wired the runtime consumer:
 
 ```text
+LLM adapter → typed usage
+  → PromptCacheUsageSnapshot
+  → PromptCacheAttribution
+  → cache signal normalizer (TOKEN-10D-2)
+  → CacheAwareCompactionTimingInput
 TokenOptimizationLLMRouter.route()
   → CacheAwareTokenOptimizationOrchestrator.orchestrate()
   → decide_cache_aware_compaction_timing()   # prompt_cache.py — policy only
   → pipeline execution only on RUN
 ```
 
-Later TOKEN-10D blocks add provider-signal normalization; TOKEN-10E adds in-cache compaction.
+**Source-of-truth rules (TOKEN-10D-2):**
+
+- reported zero is not the same as unknown cache state;
+- missing provider cache details must not be coerced into cache miss;
+- TTL remaining is an explicit runtime signal — never inferred from requested/default/max TTL;
+- global provider KV metrics do not prove per-request prefix hotness;
+- the normalizer performs no provider I/O.
+
+TOKEN-10E adds in-cache compaction.
 
 Do not claim mixed character/token estimates as measured savings.
 

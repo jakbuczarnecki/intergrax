@@ -1600,7 +1600,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
 
-**Status:** **Active** — TOKEN-10D-1 implemented / ready for review; remainder planned.
+**Status:** **Active** — TOKEN-10D-1 and TOKEN-10D-2 implemented / ready for review; remainder planned.
 
 Place cache-aware compaction gate in production orchestration path after router selection and before pipeline execution. Orchestrate provider cache signals with deterministic pipeline.
 
@@ -1614,7 +1614,25 @@ Place cache-aware compaction gate in production orchestration path after router 
 - Normalized timing input remains caller-supplied (no provider metric ingestion in this block).
 - Existing router and pipeline behavior preserved; `route_and_execute()` remains compatible.
 - No provider calls beyond router; no in-cache mutation; no live runtime proof.
-- TOKEN-10D remainder (provider-signal normalization, broader wiring) remains open.
+- TOKEN-10D remainder (broader wiring) remains open.
+
+#### TOKEN-10D-2 — Provider Cache Signal Normalization and Timing Input Compiler
+
+**Status:** **Implemented / Ready for review**.
+
+Closeout:
+
+- typed adapter usage mapped to `PromptCacheUsageSnapshot`
+- reported zero distinguished from unknown
+- provider-neutral timing input compiler added
+- contradictory signals rejected fail-closed
+- explicit TTL passed through without inference
+- no char-to-token conversion
+- global provider metrics not treated as per-request cache state
+- existing TOKEN-10D-1 orchestrator unchanged
+- no provider I/O
+- no live execution
+- TOKEN-10D remains open
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 

@@ -646,14 +646,21 @@ changing stable tool catalog formatting per request
 
 `TOKEN-OPT-5E` adds a provider-neutral helper/policy layer that decides whether compaction should **RUN**, **DEFER**, **BYPASS**, or **REQUIRE_MANUAL_REVIEW**.
 
-**TOKEN-10D** places this decision in the real orchestration path. **TOKEN-10D-1** implemented `CacheAwareTokenOptimizationOrchestrator` as the runtime consumer:
+**TOKEN-10D** places this decision in the real orchestration path. **TOKEN-10D-1** implemented `CacheAwareTokenOptimizationOrchestrator` as the runtime consumer. **TOKEN-10D-2** adds provider-neutral cache signal normalization before the gate:
 
 ```text
+LLM adapter → typed usage (LLMAdapterResponse)
+  → PromptCacheUsageSnapshot extraction
+  → PromptCacheAttribution
+  → normalize_cache_aware_compaction_signals()
+  → CacheAwareCompactionTimingInput
 TokenOptimizationLLMRouter.route()
   → CacheAwareTokenOptimizationOrchestrator.orchestrate()
   → decide_cache_aware_compaction_timing()
   → TokenOptimizationLLMRouter.execute_routed() only on RUN
 ```
+
+**Ownership:** LLM adapter mapping owns typed usage; cache signal normalizer owns timing-input compilation; timing policy owns timing decision; orchestrator owns execution control.
 
 Router owns configuration selection; the gate owns execution timing; the pipeline owns deterministic transforms.
 
