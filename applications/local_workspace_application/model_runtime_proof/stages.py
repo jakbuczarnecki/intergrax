@@ -17,6 +17,8 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 
+from fastapi.testclient import TestClient
+
 from local_workspace_application.conversation.interaction_models import (
     ConversationPlanningRequest,
     ConversationPlanningWorkspace,
@@ -42,10 +44,11 @@ from local_workspace_application.model_runtime_proof.safety import (
     assert_no_secret_leak,
     normalize_provider_error,
 )
-from local_workspace_application.workspaces.ask_service import WorkspaceAskService
 from local_workspace_application.workspaces.models import WorkspaceOperationStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.search_evidence import map_search_hits
+
+_ASK_PREFIX = "/v1/local_workspace"
 
 WORKSPACE_SEARCH_TOOL_SCHEMA: list[dict[str, Any]] = [
     {
@@ -286,7 +289,12 @@ async def run_tool_call_and_execution(
     tool_calls = list(getattr(response, "tool_calls", None) or [])
     args, failure, detail = validate_tool_call(tool_calls, workspace_id=workspace_id)
     if failure is not None or args is None:
-        return False, mode, failure or ProofFailureCode.TOOL_CALL_INVALID, detail or "args_missing"
+        return (
+            False,
+            mode,
+            failure or ProofFailureCode.TOOL_CALL_INVALID,
+            detail or "args_missing",
+        )
 
     run_id = new_run_id()
     task = Task(
@@ -329,18 +337,26 @@ async def run_tool_call_and_execution(
 
 
 async def run_grounded_ask(
-    ask_service: WorkspaceAskService,
+    client: TestClient,
     *,
     tenant_id: str,
     workspace_id: str,
     source_id: str,
     repository: ManagedWorkspaceRepository,
-) -> tuple[bool, str | None, str | None, bool, ProofFailureCode | None, str | None]:
+) -> tuple[
+    bool,
+    str | None,
+    str | None,
+    bool,
+    ProofFailureCode | None,
+    str | None,
+    int | None,
+]:
     try:
-        run = await ask_service.ask(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            question=ASK_QUESTION,
+        response = client.post(
+            f"{_ASK_PREFIX}/workspaces/{workspace_id}/ask",
+            headers={"X-Tenant-Id": tenant_id},
+            json={"question": ASK_QUESTION},
         )
     except Exception as exc:
         return (
@@ -350,9 +366,51 @@ async def run_grounded_ask(
             False,
             ProofFailureCode.GROUNDED_ASK_FAILED,
             normalize_provider_error(exc)[1],
+            None,
         )
 
-    answer = str(run.answer or "")
+    status_code = int(response.status_code)
+    if status_code != 200:
+        return (
+            False,
+            None,
+            None,
+            False,
+            ProofFailureCode.GROUNDED_ASK_FAILED,
+            f"http_status:{status_code}",
+            status_code,
+        )
+
+    try:
+        body = response.json()
+    except ValueError:
+        return (
+            False,
+            None,
+            None,
+            False,
+            ProofFailureCode.GROUNDED_ASK_FAILED,
+            "invalid_json",
+            status_code,
+        )
+
+    ask_status = str(body.get("status") or "")
+    if ask_status != "completed":
+        error = body.get("error") or {}
+        error_code = str(error.get("code") or ask_status or "ask_not_completed")
+        return (
+            False,
+            None,
+            None,
+            False,
+            ProofFailureCode.GROUNDED_ASK_FAILED,
+            f"ask_status:{error_code}",
+            status_code,
+        )
+
+    answer = str(body.get("answer") or "")
+    run_id = str(body.get("run_id") or "")
+    citations = body.get("citations") or []
     if FIXTURE_MARKER not in answer:
         return (
             False,
@@ -361,9 +419,10 @@ async def run_grounded_ask(
             False,
             ProofFailureCode.GROUNDED_ASK_FAILED,
             "answer_marker",
+            status_code,
         )
 
-    if not run.citations:
+    if not citations:
         return (
             False,
             answer[:160],
@@ -371,11 +430,12 @@ async def run_grounded_ask(
             False,
             ProofFailureCode.CITATION_MISSING,
             "no_citations",
+            status_code,
         )
 
-    citation = run.citations[0]
-    excerpt = str(getattr(citation, "excerpt", "") or "")
-    citation_source = str(getattr(citation, "source_id", "") or "")
+    citation = citations[0]
+    excerpt = str(citation.get("excerpt") or "")
+    citation_source = str(citation.get("source_id") or "")
     if citation_source != source_id:
         return (
             False,
@@ -384,6 +444,7 @@ async def run_grounded_ask(
             False,
             ProofFailureCode.CITATION_MISSING,
             "source_id",
+            status_code,
         )
     if FIXTURE_MARKER not in excerpt:
         return (
@@ -393,6 +454,18 @@ async def run_grounded_ask(
             False,
             ProofFailureCode.CITATION_MARKER_MISSING,
             "excerpt",
+            status_code,
+        )
+
+    if not run_id:
+        return (
+            False,
+            answer[:160],
+            excerpt[:160],
+            False,
+            ProofFailureCode.GROUNDED_ASK_FAILED,
+            "missing_run_id",
+            status_code,
         )
 
     payload = json.dumps(
@@ -411,6 +484,7 @@ async def run_grounded_ask(
             False,
             ProofFailureCode.PROOF_SECRET_LEAK_DETECTED,
             leak,
+            status_code,
         )
 
     from local_workspace_application.workspaces.ask_repository import (
@@ -418,8 +492,19 @@ async def run_grounded_ask(
     )
 
     ask_repo = WorkspaceAskRepository(repository.document_store)
-    ask_persisted = ask_repo.get_run(tenant_id=tenant_id, run_id=run.run_id) is not None
-    return True, answer[:160], excerpt[:160], ask_persisted, None, None
+    ask_persisted = ask_repo.get_run(tenant_id=tenant_id, run_id=run_id) is not None
+    if not ask_persisted:
+        return (
+            False,
+            answer[:160],
+            excerpt[:160],
+            False,
+            ProofFailureCode.GROUNDED_ASK_FAILED,
+            "ask_not_persisted",
+            status_code,
+        )
+
+    return True, answer[:160], excerpt[:160], ask_persisted, None, None, status_code
 
 
 def count_indexing_operations(

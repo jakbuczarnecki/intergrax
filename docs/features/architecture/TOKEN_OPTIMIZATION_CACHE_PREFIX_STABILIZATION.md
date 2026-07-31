@@ -224,16 +224,16 @@ Implementation rows: `TOKEN-LLM-2`, `TOKEN-LLM-3` in [`docs/plan/LLM_ADAPTERS.md
 
 ## 7. Cache-aware execution gate (TOKEN-10D)
 
-`TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D** places it in the orchestration path:
+`TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D-1** wired the runtime consumer:
 
 ```text
-router-selected configuration
-  → identify optimization target
-  → inspect cache and prefix state
-  → evaluate content benefit vs cache invalidation cost
-  → RUN / DEFER / BYPASS / REQUIRE_MANUAL_REVIEW
-  → pipeline execution only when allowed
+TokenOptimizationLLMRouter.route()
+  → CacheAwareTokenOptimizationOrchestrator.orchestrate()
+  → decide_cache_aware_compaction_timing()   # prompt_cache.py — policy only
+  → pipeline execution only on RUN
 ```
+
+Later TOKEN-10D blocks add provider-signal normalization; TOKEN-10E adds in-cache compaction.
 
 Do not claim mixed character/token estimates as measured savings.
 

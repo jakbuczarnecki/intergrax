@@ -55,9 +55,9 @@ Do **not** create `docs/features/satellites/` at the features root. Satellites b
 
 ## Current multi-layer features
 
-| Feature | Architecture | Plan | Status |
-|---------|--------------|------|--------|
-| `TOKEN_OPTIMIZATION` | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
+| Feature | Guide | Architecture | Plan | Status |
+|---------|-------|--------------|------|--------|
+| `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
 
 **Satellites (on demand):**
 

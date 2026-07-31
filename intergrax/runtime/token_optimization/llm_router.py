@@ -770,6 +770,54 @@ class TokenOptimizationLLMRouter:
             prompt_assembly_report=assembly.report,
         )
 
+    def execute_routed(
+        self,
+        router_request: TokenOptimizationLLMRouterRequest,
+        routed_result: TokenOptimizationLLMRouterResult,
+    ) -> TokenOptimizationLLMRouterResult:
+        if routed_result.status is not TokenOptimizationRouterStatus.ROUTED:
+            raise ValueError(
+                "execute_routed requires router status ROUTED, "
+                f"got {routed_result.status.value}"
+            )
+        if routed_result.pipeline_config is None:
+            raise ValueError("execute_routed requires pipeline_config")
+        if routed_result.configuration_id is None:
+            raise ValueError("execute_routed requires configuration_id")
+        if routed_result.request_id != router_request.request_id:
+            raise ValueError(
+                "execute_routed request_id mismatch: "
+                f"{routed_result.request_id!r} != {router_request.request_id!r}"
+            )
+
+        builtin_catalog = create_builtin_token_optimization_layer_catalog()
+        compiled = self._catalog.compile(routed_result.configuration_id)
+        registry = builtin_catalog.create_registry(compiled.selections)
+        runner = TokenOptimizationPipelineRunner(registry=registry)
+        pipeline_result = runner.run(
+            request=router_request.request,
+            config=routed_result.pipeline_config,
+        )
+        return TokenOptimizationLLMRouterResult(
+            request_id=routed_result.request_id,
+            status=routed_result.status,
+            reason=routed_result.reason,
+            transport=routed_result.transport,
+            configuration_id=routed_result.configuration_id,
+            reason_code=routed_result.reason_code,
+            risk=routed_result.risk,
+            review_required=routed_result.review_required,
+            confidence=routed_result.confidence,
+            provider=routed_result.provider,
+            model=routed_result.model,
+            tool_call_id=routed_result.tool_call_id,
+            pipeline_config=routed_result.pipeline_config,
+            pipeline_result=pipeline_result,
+            executed=True,
+            prompt_cache_state=routed_result.prompt_cache_state,
+            prompt_assembly_report=routed_result.prompt_assembly_report,
+        )
+
     def route_and_execute(
         self,
         router_request: TokenOptimizationLLMRouterRequest,
@@ -779,36 +827,7 @@ class TokenOptimizationLLMRouter:
             return routed
         if routed.pipeline_config is None:
             return routed
-
-        builtin_catalog = create_builtin_token_optimization_layer_catalog()
-        compiled = self._catalog.compile(
-            routed.configuration_id  # type: ignore[arg-type]
-        )
-        registry = builtin_catalog.create_registry(compiled.selections)
-        runner = TokenOptimizationPipelineRunner(registry=registry)
-        pipeline_result = runner.run(
-            request=router_request.request,
-            config=routed.pipeline_config,
-        )
-        return TokenOptimizationLLMRouterResult(
-            request_id=routed.request_id,
-            status=routed.status,
-            reason=routed.reason,
-            transport=routed.transport,
-            configuration_id=routed.configuration_id,
-            reason_code=routed.reason_code,
-            risk=routed.risk,
-            review_required=routed.review_required,
-            confidence=routed.confidence,
-            provider=routed.provider,
-            model=routed.model,
-            tool_call_id=routed.tool_call_id,
-            pipeline_config=routed.pipeline_config,
-            pipeline_result=pipeline_result,
-            executed=True,
-            prompt_cache_state=routed.prompt_cache_state,
-            prompt_assembly_report=routed.prompt_assembly_report,
-        )
+        return self.execute_routed(router_request, routed)
 
 
 _ALLOWED_REPORT_FIELDS = frozenset(

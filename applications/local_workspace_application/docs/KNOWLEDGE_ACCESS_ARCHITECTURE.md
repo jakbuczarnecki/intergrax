@@ -125,6 +125,48 @@ Result:
 - visible distinction between indexed and live evidence
 ```
 
+### 3.4 Platform provider foundation vs LKW product modes
+
+LKW product modes remain:
+
+```text
+indexed
+live
+hybrid
+```
+
+The reusable Intergrax provider foundation has three **consumption modes**:
+
+```text
+indexed RAG
+durable materialization without RAG
+live access
+```
+
+LKW uses:
+
+```text
+durable materialization
+→ LKW Knowledge Intake
+→ indexed RAG
+```
+
+Other Intergrax applications may use durable materialization without creating a vector index. LKW is **not** a generic data-replication or ETL product.
+
+### 3.5 Shared provider foundation diagram
+
+```text
+one Connection
+→ one vendor integration
+→ shared provider primitives
+   ├── durable sync/materialization
+   │      ├── application database/store
+   │      └── LKW Knowledge Intake → RAG
+   └── live capability execution → ephemeral evidence
+```
+
+Hybrid Ask combines indexed and live evidence at the application level. It does not create a fourth vendor integration.
+
 ---
 
 ## 4. Canonical vocabulary
@@ -163,6 +205,8 @@ A durable workspace-owned Source whose content is ingested or synchronized into 
 
 Every persisted Document must remain owned by exactly one durable Source.
 
+An **Indexed Source** authorizes durable ingestion/materialization into LKW. It does **not** automatically grant live access capabilities.
+
 ### 4.4 Live Access Binding
 
 A workspace-scoped authorization that permits selected read-only capabilities against a Connection or Remote Resource at question time.
@@ -186,7 +230,19 @@ A Live Access Binding:
 - does not contain credentials;
 - does not expose every provider capability;
 - must define an allowlisted, read-only capability surface;
-- is tenant- and workspace-scoped.
+- is tenant- and workspace-scoped;
+- does **not** automatically grant durable ingestion rights.
+
+A resource may have:
+
+```text
+Indexed Source only
+Live Access Binding only
+both
+neither
+```
+
+Neither binding automatically grants the other.
 
 ### 4.5 Workspace Knowledge Configuration
 
@@ -548,6 +604,33 @@ frontend behavior
 ```
 
 Do not make `vendor_knowledge` import or depend on LKW. Do not duplicate provider integrations inside LKW.
+
+### 9.1 No-duplication invariant
+
+LKW must **never** instantiate a vendor client for live access when the same Connection already resolves an Intergrax integration.
+
+Both indexed and live modes resolve through the shared integration/connection foundation:
+
+```text
+one Connection
+→ one vendor integration
+→ shared provider read primitives
+   ├── durable path (Vendor Knowledge adapters / sync)
+   └── live path (Live Capability adapter / executor)
+```
+
+### 9.2 Live result promotion semantics
+
+```text
+Live result
+→ ephemeral evidence by default
+
+Live result
+→ explicit promote/materialize operation
+→ durable Source or application record
+```
+
+Promotion must use a reviewed application lifecycle. It is **not** a flag on the live API call.
 
 ---
 

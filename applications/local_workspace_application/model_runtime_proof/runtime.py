@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -18,6 +18,7 @@ from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -34,7 +35,6 @@ from local_workspace_application.model_runtime_proof.config import (
     apply_env,
     materialize_provider_env,
 )
-from local_workspace_application.serving import workspace_routes
 from local_workspace_application.serving.workspace_routes import (
     mount_managed_workspace_routes,
 )
@@ -57,6 +57,7 @@ class ProofRuntimeSession:
     repository: ManagedWorkspaceRepository
     task_executor: LocalWorkspaceTaskExecutor
     ask_service: WorkspaceAskService
+    llm_adapter: LLMAdapter | None
     harness_runtime: Any
     sync_runtime: Any
     wiring_context: Any
@@ -96,6 +97,7 @@ def build_proof_runtime_session(
         "INTERGRAX_DEFAULT_VLLM_MODEL",
         "INTERGRAX_DEFAULT_VLLM_BASE_URL",
         "OLLAMA_HOST",
+        "INTERGRAX_QDRANT_URL",
         "LOCAL_WORKSPACE_VECTOR_STORE",
         "LOCAL_WORKSPACE_ENABLE_RAG",
         "LOCAL_WORKSPACE_ENABLE_RAG_INGEST",
@@ -121,24 +123,30 @@ def build_proof_runtime_session(
     os.environ["INTERGRAX_SQLITE_DATA_DIR"] = str(sqlite_dir)
     os.environ["INTERGRAX_SHADOW_ROOT"] = str(shadow_dir)
     os.environ["INTERGRAX_ALLOWED_READ_ROOTS"] = str(user_docs.resolve())
+    os.environ["INTERGRAX_QDRANT_URL"] = (
+        os.environ.get("LKW_MODEL_RUNTIME_PROOF_QDRANT_URL", "").strip()
+        or "http://127.0.0.1:6333"
+    )
 
     store = document_store or InMemoryDocumentStore()
-    workspace_routes.resolve_managed_workspace_document_store = (
-        lambda document_store=None: store
-    )  # type: ignore[method-assign]
+    settings = cast(
+        LocalWorkspaceBackendSettings, LocalWorkspaceBackendSettings.from_env()
+    )
+    environment_profile = build_local_workspace_environment_profile(settings)
+    llm_adapter: LLMAdapter | None = None
+    if provider is not None:
+        llm_adapter = resolve_llm_adapter(environment_profile)
 
-    settings = LocalWorkspaceBackendSettings.from_env()
-    env = build_local_workspace_environment_profile(settings)
     harness_runtime = build_harness_host_runtime(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
-        env,
+        environment_profile,
         settings=settings,
     )
     lifecycle = LocalWorkspaceHostLifecycle()
     lifecycle.transition_to_ready()
     lifecycle.set_executor_available(True)
     task_enricher = build_lkw_combined_task_enricher(
-        env,
+        environment_profile,
         default_capability="local.workspace.search",
         agent_checkpoint_store=harness_runtime.agent_checkpoint_store,
         compensation_queue_store=harness_runtime.compensation_queue_store,
@@ -163,7 +171,7 @@ def build_proof_runtime_session(
         settings=settings,
         repository=repository,
         sync_runtime=sync_runtime,
-        llm_adapter=None,
+        llm_adapter=llm_adapter,
         vectorstore_manager=harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
         object_storage=harness_runtime.env_wiring.tool_wiring.wiring_context.object_storage,
     )
@@ -179,27 +187,10 @@ def build_proof_runtime_session(
         repository=repository,
         task_executor=task_executor,
         ask_service=ask_service,
+        llm_adapter=llm_adapter,
         harness_runtime=harness_runtime,
         sync_runtime=sync_runtime,
         wiring_context=wiring_context,
         embedding_manager=embedding_manager,
         previous_env=previous_env,
     )
-
-
-def resolve_provider_adapter(
-    *,
-    provider: Literal["ollama", "vllm"],
-    config: ModelRuntimeProofConfig,
-):
-    env = materialize_provider_env(provider=provider, config=config)
-    previous = {key: os.environ.get(key) for key in env}
-    apply_env(env)
-    try:
-        return resolve_llm_adapter(build_local_workspace_environment_profile())
-    finally:
-        for key, value in previous.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value

@@ -16,6 +16,7 @@ wheels/
 # Project
 temp_documents/
 .tmp/
+.worktrees/
 api/chat/rag_app.db
 
 # Documents

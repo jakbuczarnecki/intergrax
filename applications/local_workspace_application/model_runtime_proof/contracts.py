@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-PROOF_SCHEMA_VERSION = "lkw.model_runtime_portability.proof.v1"
+PROOF_SCHEMA_VERSION = "lkw.model_runtime_portability.proof.v2"
 PROOF_TASK_ID = "LKW-MODEL-RUNTIME-1"
 PROOF_CLASSIFICATION = "controlled local-provider live LKW product proof for exact Ollama and vLLM provider/model pairs"
 FIXTURE_MARKER = "MODEL-RUNTIME-8421"
@@ -116,6 +116,7 @@ class ProviderQualificationResult(_Frozen):
     configured_model: str
     resolved_model: str | None = None
     server_model: str | None = None
+    server_model_digest: str | None = None
     adapter_class: str | None = None
     server_version: str | None = None
     base_url_classification: str | None = None
@@ -133,6 +134,9 @@ class ProviderQualificationResult(_Frozen):
     citation_source_id: str | None = None
     citation_excerpt: str | None = None
     ask_run_persisted: bool = False
+    http_ask_status_code: int | None = None
+    resolved_through_canonical_resolver: bool = False
+    session_adapter_object_id: str | None = None
     latency_ms: dict[str, float] = Field(default_factory=dict)
     failure_code: ProofFailureCode | None = None
     safe_error_type: str | None = None
@@ -155,7 +159,19 @@ class IndexInvarianceResult(_Frozen):
     embedding_identity: StageStatus = StageStatus.NOT_RUN
     collection_identity: StageStatus = StageStatus.NOT_RUN
     vector_count: StageStatus = StageStatus.NOT_RUN
+    source_identity: StageStatus = StageStatus.NOT_RUN
+    document_identity: StageStatus = StageStatus.NOT_RUN
+    content_hash: StageStatus = StageStatus.NOT_RUN
+    chunk_count: StageStatus = StageStatus.NOT_RUN
     no_reindex: StageStatus = StageStatus.NOT_RUN
+
+
+class RepositoryStateRecord(_Frozen):
+    repository_head_at_proof: str | None = None
+    repository_head_role: str = "pre_evidence_commit_head"
+    working_tree_classification: str = "unavailable"
+    task_owned_dirty_paths: tuple[str, ...] = ()
+    unrelated_dirty_paths: tuple[str, ...] = ()
 
 
 class ModelRuntimeProofResult(_Frozen):
@@ -165,8 +181,11 @@ class ModelRuntimeProofResult(_Frozen):
     started_at: datetime
     completed_at: datetime | None = None
     repository_commit: str | None = None
-    working_tree_classification: str = "clean"
+    repository_state: RepositoryStateRecord = Field(
+        default_factory=RepositoryStateRecord
+    )
     proof_classification: str = PROOF_CLASSIFICATION
+    vllm_provisioning_classification: str | None = None
     fixture: FixtureRecord = Field(default_factory=FixtureRecord)
     index_identity: IndexIdentityRecord | None = None
     embedding_identity_before: EmbeddingIdentityRecord | None = None

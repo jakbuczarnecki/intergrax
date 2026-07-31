@@ -289,13 +289,23 @@ Proof must cover: basic generation; structured output; Conversation Interaction 
 
 Expected capabilities: connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
+**Acceptance gate:** Must prove that **one Connection** can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
+
 ### 7.3 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
 
 **One-sentence outcome:** One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance.
 
 **Status:** **PLANNED**.
 
-First real connector proof should use Microsoft 365 unless repository evidence at implementation time shows another provider is materially more complete. Initial live access is read-only.
+Microsoft Graph remains an appropriate durable synchronization and exact-read connector proof because its low-level reads and several Vendor Knowledge adapters are implemented.
+
+Jira or Confluence is the preferred first provider-neutral live search/read capability proof because the existing integrations already expose operational search and exact-read methods.
+
+A Microsoft Graph live search capability requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
+
+Initial live access is read-only.
+
+**Acceptance gate:** Must prove that indexed evidence and live evidence can be combined; live evidence is **not** automatically persisted; each evidence item retains mode and provenance.
 
 ### 7.4 `LKW-CONVERSATIONAL-FRONTEND-1` — Natural-language execution and Slack cutover
 
@@ -309,11 +319,37 @@ First real connector proof should use Microsoft 365 unless repository evidence a
 
 **Status:** **PLANNED**. Scope: OneDrive/SharePoint files; mail; Teams-hosted organizational knowledge; Jira issue discovery/search/state and selected project sync; Confluence space/page discovery, search/read and selected space sync.
 
+**Acceptance gate:** Must prove at least one provider vertical slice in both paths:
+
+```text
+same vendor integration
+├── durable normalized delivery toward LKW/RAG
+└── bounded live query/read toward Live Evidence
+```
+
+Jira or Confluence is the preferred first provider-neutral live search/read capability proof because the existing integrations already expose operational search and exact-read methods.
+
+A Microsoft Graph live search capability requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
+
+**Execution order:**
+
+```text
+1. complete Teams Chat and Calendar durable adapters;
+2. perform the adapter-family and three-mode capability audit;
+3. use Jira or Confluence for the first bounded live search/read capability proof;
+4. add bounded Microsoft Graph live capabilities separately;
+5. converge at Hybrid Ask.
+```
+
+The immediate current task remains `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`.
+
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 
 **One-sentence outcome:** LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask.
 
 **Status:** **PLANNED**. All queries pass capability-specific validation and policy — no unrestricted user SQL/DAX.
+
+**Acceptance gate:** Must state per resource whether it supports durable materialization, RAG indexing, live query, or a documented subset. Do not assume Power BI, Databricks and Atlan should all be copied into RAG.
 
 ### 7.7 `LKW-KNOWLEDGE-LIFECYCLE-1`
 
@@ -328,6 +364,18 @@ First real connector proof should use Microsoft 365 unless repository evidence a
 **Status:** **PLANNED**.
 
 Target scenario: start with Ollama → create/select workspace → upload files → add Web URL → configure MS365, Jira, Confluence, Databricks, Power BI, Atlan → Hybrid Ask with indexed + live evidence → restart with vLLM → repeat without changing LKW domain behavior. Public claims must distinguish real provider proof, controlled integration proof and deterministic fixture proof.
+
+**Final platform proof requirement:**
+
+```text
+one vendor connection
+→ one durable/indexed use
+→ one live use
+→ one hybrid answer
+→ no duplicated vendor client
+→ explicit provenance and freshness
+→ no automatic persistence of live results
+```
 
 ---
 

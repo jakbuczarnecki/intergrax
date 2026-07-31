@@ -399,3 +399,54 @@ LATER:   VENDOR-KNOWLEDGE-CONNECTION-1
 LATER:   VENDOR-KNOWLEDGE-SYNC-1A
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
+
+## Three-mode reuse audit
+
+**Date:** 2026-07-31
+**Task:** `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1`
+**Type:** docs-only architecture audit append
+
+### Verdict
+
+The existing provider/category integration architecture is suitable as a shared foundation for indexed RAG, durable materialization and live access.
+
+The currently implemented Vendor Knowledge Facade and Sync Coordinator directly cover the durable synchronization/materialization path.
+
+They do not yet constitute the complete live-query capability layer.
+
+### Findings
+
+1. Existing integrations are correctly reusable.
+2. Jira and Confluence already expose separate operational search/get methods and knowledge inventory/content methods.
+3. Microsoft Graph exact reads and typed references are reusable for live exact access.
+4. Graph delta and reconciliation methods are not substitutes for live search.
+5. `VendorKnowledgeAdapter.read_page()` must not be used as an artificial live search engine.
+6. Live access requires typed capability contracts and a validated executor.
+7. Database materialization requires an injected durable sink, not LKW ownership.
+8. RAG requires the LKW/application ingestion path after durable normalized delivery.
+9. Live results remain ephemeral unless explicitly promoted.
+10. The largest cross-mode security gap remains explicit authorization and ACL policy.
+
+### Gap classification
+
+Future audits and tasks must use these classifications instead of calling every missing behavior an "adapter gap":
+
+```text
+PROVIDER PRIMITIVE GAP
+DURABLE MATERIALIZATION GAP
+RAG BRIDGE GAP
+LIVE CAPABILITY GAP
+AUTHORIZATION / ACL GAP
+```
+
+### Current marker (post-append)
+
+```text
+DONE:    VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
+IN_PROGRESS: MSGRAPH-KNOWLEDGE-ADAPTERS-1
+  NEXT:  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
+DEFERRED: LKW-CONNECTED-SOURCE-1
+PLANNED: VENDOR-LIVE-CAPABILITY-CONTRACT-1
+PLANNED: VENDOR-LIVE-CAPABILITY-EXECUTOR-1
+  (planned after adapter-family completion; not part of the immediate adapter task)
+```

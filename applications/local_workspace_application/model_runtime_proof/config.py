@@ -10,6 +10,16 @@ from typing import Literal
 
 from local_workspace_application.model_runtime_proof.contracts import ProofFailureCode
 
+VllmProvisioningClassification = Literal[
+    "committed_compose_sufficient",
+    "external_runtime",
+    "unverified",
+]
+
+_SUPPORTED_VLLM_PROVISIONING: frozenset[str] = frozenset(
+    {"committed_compose_sufficient", "external_runtime", "unverified"}
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ModelRuntimeProofConfig:
@@ -22,6 +32,7 @@ class ModelRuntimeProofConfig:
     timeout_seconds: float
     vector_store: Literal["qdrant", "inmemory"] = "qdrant"
     require_live_providers: bool = True
+    vllm_provisioning_classification: VllmProvisioningClassification = "unverified"
 
     def validate(self) -> list[ProofFailureCode]:
         errors: list[ProofFailureCode] = []
@@ -37,11 +48,20 @@ class ModelRuntimeProofConfig:
             errors.append(ProofFailureCode.CONFIG_INVALID)
         if self.timeout_seconds <= 0:
             errors.append(ProofFailureCode.CONFIG_INVALID)
+        if self.vllm_provisioning_classification not in _SUPPORTED_VLLM_PROVISIONING:
+            errors.append(ProofFailureCode.CONFIG_INVALID)
         return errors
 
 
 def _env(name: str, default: str = "") -> str:
     return (os.environ.get(name) or default).strip()
+
+
+def load_vllm_provisioning_classification_from_env() -> str:
+    return _env(
+        "LKW_MODEL_RUNTIME_PROOF_VLLM_PROVISIONING_CLASSIFICATION",
+        "unverified",
+    )
 
 
 def load_proof_config_from_env() -> ModelRuntimeProofConfig:
@@ -71,6 +91,7 @@ def load_proof_config_from_env() -> ModelRuntimeProofConfig:
         ),
         vector_store=vector_store,
         require_live_providers=_env("INTERGRAX_LKW_MODEL_RUNTIME_PROOF", "0") == "1",
+        vllm_provisioning_classification=load_vllm_provisioning_classification_from_env(),  # type: ignore[assignment]
     )
 
 

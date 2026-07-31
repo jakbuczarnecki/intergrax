@@ -313,6 +313,22 @@ def test_cli_validation(kwargs: dict[str, Any], message: str) -> None:
         live_module.validate_config(config)
 
 
+def test_invalid_base_url_fails_before_http_or_docker() -> None:
+    commands: list[list[str]] = []
+
+    def command_runner(args, **kwargs):
+        commands.append(args)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    with pytest.raises(ValueError, match="base_url"):
+        run_vllm_prefix_cache_live_proof(
+            _proof_config(base_url="not-a-url"),
+            command_runner=command_runner,
+            skip_report_write=True,
+        )
+    assert commands == []
+
+
 def test_three_run_orchestration(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     adapter = _FakeAdapter()
     namespaces: list[str] = []
@@ -716,6 +732,7 @@ def test_internal_failure_exit_code(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 def test_successful_canonical_exit_code(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(live_module, "_execute_warmup", lambda **kwargs: None)
     monkeypatch.setattr(live_module, "collect_vllm_diagnostics", lambda *args, **kwargs: _diagnostics())
+    monkeypatch.setattr(live_module, "_wait_for_health", lambda **kwargs: (True, "0.23.0"))
     monkeypatch.setattr(
         live_module,
         "_execute_single_run",
@@ -809,7 +826,7 @@ def test_cleanup_stops_only_managed_service(monkeypatch: pytest.MonkeyPatch, tmp
         command_runner=command_runner,
         skip_report_write=True,
     )
-    assert any(command[:4] == ["docker", "compose", "-f"] and command[-2:] == ["stop", "vllm"] for command in commands)
+    assert any(command[:3] == ["docker", "compose", "-f"] and command[-2:] == ["stop", "vllm"] for command in commands)
 
 
 def test_keep_vllm_running_skips_stop(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

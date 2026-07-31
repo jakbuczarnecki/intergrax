@@ -12,6 +12,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
 **Related domains:** `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`
 
+**Main engine guide:** [`../token_optimization/README.md`](../token_optimization/README.md)
+
 ---
 
 ## Satellite registers (read on demand)
@@ -1565,13 +1567,69 @@ Do not collapse these into one implementation commit.
 - Shared lifecycle (`manage_vllm=false`) separated from canonical proof outcome; verified shared server can return `PASS` and exit code `0`.
 - Wrong model, wrong vLLM version, and missing required metrics remain fail-closed.
 - Managed server behavior preserved; cold/warm/changed-prefix gates unchanged.
-- Reviewer guide updated (`intergrax/runtime/token_optimization/proofs/README.md`).
+- Reviewer guide updated ([`docs/features/token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md`](../token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md)).
+
+### TOKEN-10C-R4-R1 — Proof Test Contract and Managed Cleanup Correction
+
+**Status:** **Implemented / Ready for review**.
+
+**Closeout:**
+
+- Full proof unit-test suite passes.
+- `base_url` validation exception contract aligned (`ValueError` for invalid local config; `VllmDiagnosticsError` reserved for remote diagnostics).
+- Managed cleanup contract verified (`docker compose … stop vllm` only for runner-started/recreated managed service).
+- Shared server never stopped by runner.
+- Shared-server PASS semantics preserved.
+- Non-live E2E guard verified.
+- No live vLLM run performed.
+
+### TOKEN-DOCS-1 — Token Optimization Documentation Hub and Relocation
+
+**Status:** **Implemented / Ready for review**.
+
+**Closeout:**
+
+- Module documentation moved under `docs/features/token_optimization/`.
+- Central engine guide created at `docs/features/token_optimization/README.md`.
+- Proof guide relocated to `docs/features/token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md`.
+- Architecture and plan pair preserved.
+- Root README navigation added.
+- Old module proof README removed; active links updated.
+- No runtime behavior changed.
+- No live proof run performed.
 
 ### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
 
-**Status:** Planned.
+**Status:** **Active** — TOKEN-10D-1 implemented / ready for review; remainder planned.
 
 Place cache-aware compaction gate in production orchestration path after router selection and before pipeline execution. Orchestrate provider cache signals with deterministic pipeline.
+
+#### TOKEN-10D-1 — Cache-Aware Orchestration Gate and Controlled Pipeline Execution
+
+**Status:** **Implemented / Ready for review**.
+
+- Router configuration selection separated from execution timing.
+- Deterministic timing gate (`decide_cache_aware_compaction_timing`) wired before pipeline execution via `CacheAwareTokenOptimizationOrchestrator`.
+- Only `RUN` executes pipeline; `DEFER`, `BYPASS`, `REQUIRE_MANUAL_REVIEW` do not execute.
+- Normalized timing input remains caller-supplied (no provider metric ingestion in this block).
+- Existing router and pipeline behavior preserved; `route_and_execute()` remains compatible.
+- No provider calls beyond router; no in-cache mutation; no live runtime proof.
+- TOKEN-10D remainder (provider-signal normalization, broader wiring) remains open.
+
+#### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
+
+**Status:** **Implemented / Ready for review**.
+
+Closeout:
+
+- required public claim document sections restored
+- implementation status synchronized with TOKEN-10B/C/D-1
+- no provider-aware tokenizer boundary made explicit
+- conditional and forbidden wording restored
+- no public claim scope expanded
+- full Token Optimization unit suite passes
+- no runtime logic changed
+- no live execution performed
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
@@ -2073,6 +2131,8 @@ TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections —
 TOKEN-10B-R2 exact tool-schema order integrity — Implemented / Ready for review
 TOKEN-10C   vLLM prefix-cache provider integration and metrics — Implemented / Ready for review
 TOKEN-10C-R4 canonical proof default and shared-server pass semantics — Implemented / Ready for review
+TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Implemented / Ready for review
+TOKEN-DOCS-1   token optimization documentation hub and relocation — Implemented / Ready for review
 TOKEN-10D..10H orchestration, compaction, proof, README — Planned
 ```
 

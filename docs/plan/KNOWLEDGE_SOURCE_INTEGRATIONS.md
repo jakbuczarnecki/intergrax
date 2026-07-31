@@ -10,25 +10,46 @@
 
 ## 1. Objective
 
-Build one platform-level facade above existing category-specific vendor integrations so applications such as Local Knowledge Workspace can consume external enterprise knowledge through one stable, vendor-neutral boundary.
+Build one platform-level reusable provider foundation above existing category-specific vendor integrations so applications can consume external enterprise knowledge through **three separate consumption modes**:
 
 ```text
-LKW / another application
-        |
-        v
-Vendor Knowledge Facade
-        |
-        v
-source adapter
-        |
-        v
+indexed RAG
+durable materialization without RAG
+bounded live access
+```
+
+Synchronization is a lifecycle mechanism of the durable modes, not a separate fourth consumption mode.
+
+```text
 existing provider/category integration
         |
         v
-vendor API
+shared provider read primitives
+        |
+        +----------------------------------+
+        |                                  |
+        v                                  v
+durable knowledge path                live capability path
+        |                                  |
+        v                                  v
+Vendor Knowledge Adapter           Live Capability Adapter
+        |                                  |
+        v                                  v
+Vendor Knowledge Facade            Validated Executor
+        |                                  |
+        v                                  v
+Sync / Materialization Runtime      ephemeral Live Evidence
+        |
+        v
+injected durable sink
+├── DocumentStore
+├── relational / NoSQL database
+├── object storage
+├── application repository
+└── optional LKW Knowledge Intake → RAG
 ```
 
-Existing integrations remain low-level and authoritative. The facade is not an integration category.
+Existing integrations remain low-level and authoritative. Vendor Knowledge Facade and Sync Coordinator cover the **durable** path today. Live capability execution remains planned. The facade is not an integration category.
 
 ---
 
@@ -47,18 +68,20 @@ DONE:     VENDOR-KNOWLEDGE-SYNC-1B
 DONE:     JIRA-KNOWLEDGE-ADAPTER-1
 DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
 DONE:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
+DONE:     VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
 IN_PROGRESS:
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
   MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL
-  NEXT:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
-  PLANNED:
+  NEXT:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
+
+`VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
 Microsoft Graph Mail low-level knowledge-read support is complete.
 
@@ -72,13 +95,16 @@ global mailbox deletion.
 Item attachments, reference-attachment downloads, MIME, raw internet headers
 and recursive attached-message expansion are intentionally not implemented.
 
-No Microsoft Vendor Knowledge adapter is exposed yet except Drive and Mail.
+No Microsoft Vendor Knowledge adapter is exposed yet except Drive, Mail and Teams Channel.
 
 Microsoft Graph Drive Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`)
 is implemented.
 
 Microsoft Graph Mail Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`)
 is implemented.
+
+Microsoft Graph Teams Channel Vendor Knowledge adapter
+(`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`) is implemented.
 
 Drive capability matrix:
 
@@ -138,6 +164,36 @@ global mailbox deletion.
 Attachment presence (`has_attachments`) is preserved in descriptor metadata and
 structured content. Attachment inventory and binary bytes remain deferred.
 Permissions remain false.
+
+Teams Channel capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`):
+
+```text
+source_kind: teams_channel
+scope: one known team ID plus one known channel ID
+full_inventory: yes
+incremental_changes: no
+reconciliation: yes
+content_fetch: yes
+binary_content: no
+rich_text_content: no
+structured_content: yes
+permissions: no
+tombstones: yes, explicit deletedDateTime only
+remote_versions: yes
+```
+
+Reconciliation traverses root posts one at a time. Replies for the current root
+are read immediately before advancing to the next root page. The final
+reconciliation checkpoint is a complete adapter-owned cursor.
+
+Exact message content is materialized as `msgraph.teams-channel.message.knowledge.v1`
+structured JSON. Tombstones apply only when Graph explicitly returns
+`deletedDateTime`; absence from a page is not treated as deletion.
+
+Attachment inventory is included in structured content. Attachment URLs,
+embedded card payloads and hosted-content bytes are excluded. Channel member
+inventory is not an authoritative ACL projection. No Graph delta, webhook,
+subscription or LKW changes are introduced.
 
 Microsoft Graph Calendar low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -215,7 +271,7 @@ Channel messages use the dedicated replies endpoint for threaded replies.
 File attachment URLs are retained only as hidden provider references and are
 not downloaded directly.
 
-No beta Graph endpoint, Teams Channel Vendor Knowledge adapter, webhook,
+No beta Graph endpoint, Teams Channel webhook,
 subscription, rich-card semantic renderer or direct external attachment
 download is implemented.
 
@@ -241,7 +297,9 @@ Bounded sync-handler retry/backoff implemented
 Jira issues knowledge adapter implemented
 Confluence pages knowledge adapter implemented
 First real vendor facade/coordinator proof implemented
-Vendor adapters beyond Jira and Confluence not implemented
+Jira Issues, Confluence Pages, Microsoft Graph Drive, Microsoft Graph Mail and Microsoft Graph Teams Channel Vendor Knowledge adapters implemented.
+
+Microsoft Graph Teams Chat and Calendar Vendor Knowledge adapters remain planned in the current adapter-family roadmap.
 LKW connected-source bridge not implemented
 ```
 
@@ -264,7 +322,7 @@ Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
 6. The facade is a platform service above integrations.
 7. Source adapters are thin mappings over already resolved integration instances.
 8. Adapters do not own clients, credentials, persistence or checkpoints.
-9. LKW communicates with the facade, not vendor SDKs.
+9. LKW and other knowledge-consuming applications use Vendor Knowledge Facade for durable operations and the validated live capability boundary for live operations; they do not call vendor SDKs or provider-specific integration methods directly.
 10. Reuse `IntegrationProfile` and the existing integration catalog for integration resolution.
 11. Reuse `SecretsStore` for secret material; durable bindings contain opaque references only.
 12. Reuse `DocumentStoreTaskQueue`, `DocumentStoreTaskWorker` and `TaskExecutionRegistry` for later asynchronous sync.
@@ -275,10 +333,86 @@ Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
 17. ACL must be enforceable before model access.
 18. One existing provider/category integration may expose multiple knowledge `source_kind` values through separate thin adapters.
 19. All work remains on branch `development`.
+20. Every future vendor task description and `READY_FOR_REVIEW` report must include a **THREE-MODE REUSE ASSESSMENT** (documentation evidence; does not require implementing all three modes):
+
+```text
+THREE-MODE REUSE ASSESSMENT:
+- shared integration:
+- shared client/transport:
+- shared provider references:
+- shared exact-read primitives:
+- indexed RAG readiness:
+- durable materialization readiness:
+- live exact-read readiness:
+- live search/query readiness:
+- provider primitive gaps:
+- durable adapter gaps:
+- live capability gaps:
+- duplicate client/integration introduced: no
+```
 
 ---
 
-## 4. Reuse decisions
+## 4. Current provider readiness matrix
+
+Status-honest readiness across the three consumption modes. Architecture is not proof of implementation.
+
+### Jira
+
+```text
+durable inventory/content foundation: implemented
+RAG downstream bridge: not yet connected to LKW
+live search/read primitives: existing integration operations available
+provider-neutral live capability/executor: not implemented
+```
+
+### Confluence
+
+```text
+durable inventory/content foundation: implemented
+RAG downstream bridge: not yet connected to LKW
+live search/read primitives: existing integration operations available
+provider-neutral live capability/executor: not implemented
+```
+
+### Microsoft Graph Drive
+
+```text
+durable adapter: implemented
+exact live read foundation: available where an exact item is known
+bounded provider-neutral live search: not implemented
+LKW bridge: not implemented
+```
+
+### Microsoft Graph Mail
+
+```text
+durable adapter: implemented
+exact live read foundation: available where an exact message is known
+bounded provider-neutral live search: not implemented
+LKW bridge: not implemented
+```
+
+### Microsoft Graph Teams Channel
+
+```text
+durable reconciliation adapter: implemented
+exact message/thread read foundation: available
+provider-neutral live search/discovery capability: not implemented
+LKW bridge: not implemented
+```
+
+### Microsoft Graph Teams Chat and Calendar
+
+```text
+low-level read foundations: implemented
+Vendor Knowledge adapters: planned/current roadmap
+live capability layer: not implemented
+```
+
+---
+
+## 5. Reuse decisions
 
 | Area | Decision |
 |---|---|
@@ -295,7 +429,7 @@ Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
 
 ---
 
-## 5. Ownership during parallel work
+## 6. Ownership during parallel work
 
 ### Vendor facade track
 
@@ -334,7 +468,7 @@ Deferred until both tracks are stable:
 
 ---
 
-## 6. Implementation roadmap
+## 7. Implementation roadmap
 
 ### Phase 0 — Architecture, plan and reuse audit
 
@@ -715,12 +849,13 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL` is **DONE**.
 
-**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL` is **DONE**.
+
+**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`
 
 **Planned:**
 
 ```text
-MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 ```
 
@@ -746,11 +881,11 @@ Registry keys:
 
 Content mapping:
 
-- `drive` → `BINARY` for files, with safe structured metadata for folders and inventory records;
-- `mail` → `STRUCTURED_RECORD`; attachments remain deferred in this adapter slice;
-- `calendar` → `STRUCTURED_RECORD`;
-- `teams_chat` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items;
-- `teams_channel` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items.
+- `drive` → `BINARY` for files; metadata-only non-file records for folders and inventory records;
+- `mail` → `STRUCTURED_RECORD`; attachment binary content deferred;
+- `teams_channel` → `STRUCTURED_RECORD` only; safe attachment inventory included; attachment URLs, embedded payloads, hosted-content bytes and binary attachment materialization excluded;
+- `teams_chat` → planned / to be frozen by the adapter task (`RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items);
+- `calendar` → planned / to be frozen by the adapter task (`STRUCTURED_RECORD`).
 
 Each adapter:
 
@@ -810,7 +945,92 @@ First select one precise source kind: Unity Catalog metadata, workspace tree, vo
 
 ---
 
-### Phase 6 — LKW convergence
+### Phase 6 — Post-adapter roadmap (parallel branches)
+
+After the Microsoft Graph adapter-family audit (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`), platform work splits into durable and live branches converging at Hybrid Ask.
+
+#### COMMON PROVIDER FOUNDATION
+
+```text
+- existing integrations
+- connections
+- remote resources
+- typed provider references
+- exact reads
+- inventory/change reads
+- safe validation
+- normalized errors
+- provider capability matrix
+```
+
+Planned tasks:
+
+| Task | Purpose |
+|---|---|
+| `VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1` | Audit adapter-family completeness and gap classification |
+| `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1` | Explicit per-provider, per-source-kind, per-mode capability matrix |
+
+#### DURABLE BRANCH
+
+```text
+- source bindings
+- Vendor Knowledge adapters
+- Sync / Materialization Runtime
+- generic durable sink contract
+- application/database materialization
+- LKW Connected Source bridge
+- optional RAG ingestion
+```
+
+Planned tasks:
+
+| Task | Purpose | LKW mapping |
+|---|---|---|
+| `VENDOR-MATERIALIZATION-SINK-CONTRACT-1` | Generic injected durable sink contract beyond DocumentStore proof | `LKW-KNOWLEDGE-LIFECYCLE-1` |
+| `LKW-CONNECTED-SOURCE-1` | LKW bridge from Connected Source to facade sync runtime | `LKW-KNOWLEDGE-ACCESS-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1` |
+
+#### LIVE BRANCH
+
+```text
+- Live Access Bindings
+- typed live capability contracts
+- live capability registry
+- validated read-only executor
+- normalized Live Evidence
+- execution receipts
+- result/count/byte/time limits
+- ephemeral retention default
+```
+
+Planned tasks:
+
+| Task | Purpose | LKW mapping |
+|---|---|---|
+| `VENDOR-LIVE-CAPABILITY-CONTRACT-1` | Typed live capability contracts and registry | `LKW-KNOWLEDGE-ACCESS-1` |
+| `VENDOR-LIVE-CAPABILITY-EXECUTOR-1` | Validated read-only executor with bounded limits | `LKW-HYBRID-ASK-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1` |
+
+#### CONVERGENCE
+
+```text
+- Knowledge Query Orchestrator
+- indexed + live evidence normalization
+- Hybrid Ask
+- unified provenance
+```
+
+Maps to existing LKW product blocks — do not create duplicate LKW roadmap blocks:
+
+```text
+LKW-KNOWLEDGE-ACCESS-1
+LKW-HYBRID-ASK-1
+LKW-VENDOR-ACCESS-COLLABORATION-1
+LKW-VENDOR-ACCESS-DATA-1
+LKW-KNOWLEDGE-LIFECYCLE-1
+```
+
+---
+
+### Phase 7 — LKW convergence
 
 #### `LKW-CONNECTED-SOURCE-1`
 
@@ -839,7 +1059,7 @@ No duplicate parsing or embedding path is allowed.
 
 ---
 
-### Phase 7 — Slack source management
+### Phase 8 — Slack source management
 
 #### `LKW-SLACK-CONNECTED-SOURCES-1`
 

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import re
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -31,6 +32,10 @@ from local_workspace_application.model_runtime_proof.safety import (
     normalize_provider_error,
 )
 
+_SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
+_SHA256_PREFIX_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_MAX_DIGEST_LEN = 128
+
 
 @dataclass(frozen=True, slots=True)
 class ProviderHealthSnapshot:
@@ -41,6 +46,7 @@ class ProviderHealthSnapshot:
     adapter_class: str
     server_version: str | None
     base_url_classification: str
+    server_model_digest: str | None = None
     capability_metadata: tuple[str, ...] = ()
 
 
@@ -52,6 +58,35 @@ def _http_json(url: str, *, timeout: float) -> dict[str, Any]:
         if not isinstance(body, dict):
             raise ValueError("health_response_not_object")
         return body
+
+
+def normalize_model_digest(digest: str) -> str | None:
+    value = digest.strip()
+    if not value or len(value) > _MAX_DIGEST_LEN:
+        return None
+    if _SHA256_PREFIX_RE.fullmatch(value):
+        return value
+    if _SHA256_HEX_RE.fullmatch(value):
+        return f"sha256:{value}"
+    return None
+
+
+def _resolve_ollama_model_digest(
+    models: list[Any],
+    *,
+    model_name: str,
+) -> str | None:
+    for item in models:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name", "")).strip()
+        if name != model_name:
+            continue
+        raw_digest = item.get("digest")
+        if not isinstance(raw_digest, str):
+            return None
+        return normalize_model_digest(raw_digest)
+    return None
 
 
 def probe_ollama_health(
@@ -87,6 +122,17 @@ def probe_ollama_health(
             f"model={config.ollama_model}",
         )
 
+    server_model_digest = _resolve_ollama_model_digest(
+        models,
+        model_name=config.ollama_model,
+    )
+    if server_model_digest is None:
+        return (
+            None,
+            ProofFailureCode.PROVIDER_IDENTITY_MISMATCH,
+            "model_digest_missing",
+        )
+
     env = materialize_provider_env(provider="ollama", config=config)
     adapter = unwrap_catalog_capability_adapter(
         LLMAdapterRegistry.create(
@@ -119,6 +165,7 @@ def probe_ollama_health(
             adapter_class=adapter.__class__.__name__,
             server_version=str(version_body.get("version", "")) or None,
             base_url_classification=classify_endpoint(base),
+            server_model_digest=server_model_digest,
             capability_metadata=metadata,
         ),
         None,
