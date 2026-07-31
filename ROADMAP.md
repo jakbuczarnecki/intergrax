@@ -29,10 +29,21 @@ Local Knowledge Workspace is the current primary product-development and platfor
 
 LKW is a **deployment-neutral Hybrid Knowledge Workspace**: private by default, tenant-scoped, with indexed RAG knowledge, controlled live provider access (planned), unified evidence provenance, and storage location selected by configuration and provider wiring. **“Local”** means user-controlled deployment and first-class self-hosted topology — not “all data always on one device.” Canonical contract: [LKW Architecture — Deployment, storage and tenancy model](applications/local_workspace_application/docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model). Hybrid knowledge access: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
+Intergrax vendor integrations are designed as **reusable foundations** for three consumption modes:
+
+```text
+indexed RAG
+durable application/database materialization
+controlled live access
+```
+
+The same provider integration is reused across modes; the lifecycle is **not** the same. Database materialization does not automatically mean RAG. Live access remains **planned** — not yet implemented as a provider-neutral executor.
+
 The immediate product goal is:
 
 ```text
 controlled channel-neutral knowledge intake (indexed)
+→ shared provider foundation (durable + live branches)
 → Workspace Knowledge Configuration (Connections, Indexed Sources, Live Access Bindings)
 → Hybrid Ask (indexed + authorized live evidence)
 → natural-language frontends (Slack and others)
@@ -70,6 +81,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | **Build the LKW MVP as the primary active Intergrax program** | Hybrid Knowledge Workspace: indexed intake → Workspace Knowledge Configuration → Hybrid Ask → natural-language Slack proof (see [Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md)) |
 | **WEB_URL end-to-end intake** | `LKW-WORKSPACE-CONTENTS-1B-5-2` — **ACCEPTED** (including C1 and C2 corrections) |
 | **Hybrid knowledge access architecture** | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` — **ACCEPTED** — [KNOWLEDGE_ACCESS_ARCHITECTURE.md](applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
+| **Vendor knowledge three-mode reuse architecture** | `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` — **ACCEPTED** — one provider integration reused for indexed RAG, durable materialization and planned live access; [KNOWLEDGE_SOURCE_INTEGRATIONS.md](docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
 | **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — Ollama/vLLM end-to-end product proof — **NEXT** |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace over **indexed** knowledge; grounded answers, citations and persisted runs are implemented and live-verified |
 | Slack conversational MVP in active development | Connect the existing Ask Workspace capability to an approved Slack user and workspace through the governed interaction path; source inspection (`sources`) is operator-verified |
@@ -92,6 +104,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | Item | Notes |
 |------|-------|
 | **LKW-MODEL-RUNTIME-1** | Ollama/vLLM end-to-end portability proof — planner, tool calling, grounded Ask |
+| **Vendor knowledge durable + live branches** | Complete Microsoft Graph adapter family; durable materialization sink contract; live capability contract and executor — convergence at Hybrid Ask |
 | **LKW-KNOWLEDGE-ACCESS-1** | Connections, Remote Resources, Indexed Sources, Live Access Bindings, Query Policy |
 | **LKW-HYBRID-ASK-1** | Indexed RAG + authorized live evidence with unified provenance |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language planner execution and Slack cutover (`CONV-1B`, `CONV-1C`) |
