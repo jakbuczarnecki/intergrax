@@ -414,6 +414,55 @@ def validate_msgraph_teams_chat(value: object) -> MsGraphTeamsChat:
         raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
 
 
+class MsGraphTeamsChatReference(BaseModel):
+    """Identity-only Teams chat reference for stateless paging and content reads."""
+
+    model_config = _STRICT_MODEL_CONFIG
+
+    mailbox_user_id: str = Field(repr=False)
+    chat_remote_id: str = Field(repr=False)
+
+    @field_validator("mailbox_user_id", mode="before")
+    @classmethod
+    def _validate_mailbox_user_id(cls, value: object) -> str:
+        return validate_msgraph_mailbox_user_id(value)
+
+    @field_validator("chat_remote_id", mode="before")
+    @classmethod
+    def _validate_chat_remote_id(cls, value: object) -> str:
+        return validate_msgraph_teams_chat_id(value)
+
+
+def validate_msgraph_teams_chat_reference(
+    value: object,
+) -> MsGraphTeamsChatReference:
+    if isinstance(value, MsGraphTeamsChatReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+    if not isinstance(source, dict):
+        raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+    try:
+        dumped = dict(source)
+        dumped["mailbox_user_id"] = validate_msgraph_mailbox_user_id(dumped.get("mailbox_user_id"))
+        dumped["chat_remote_id"] = validate_msgraph_teams_chat_id(dumped.get("chat_remote_id"))
+        return MsGraphTeamsChatReference.model_validate(dumped)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+
+
+def chat_reference_from_chat(chat: MsGraphTeamsChat) -> MsGraphTeamsChatReference:
+    validated_chat = validate_msgraph_teams_chat(chat)
+    return validate_msgraph_teams_chat_reference(
+        {
+            "mailbox_user_id": validated_chat.mailbox_user_id,
+            "chat_remote_id": validated_chat.remote_id,
+        }
+    )
+
+
 def validate_msgraph_teams_chat_page(
     value: object,
     *,

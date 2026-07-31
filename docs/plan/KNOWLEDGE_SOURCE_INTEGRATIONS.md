@@ -75,6 +75,8 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
   MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL
   MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
+  DONE:
+  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-BASED-PAGING-AND-EXACT-MESSAGE-READ
   NEXT:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
@@ -227,7 +229,9 @@ stable Graph v1.0 contracts.
 Caller-visible chats can be enumerated and complete member rosters can be read.
 
 Each selected chat supports complete paged message snapshots for explicit
-lastModifiedDateTime windows. Stable Graph v1.0 chat-message delta is not used.
+lastModifiedDateTime windows. Reference-based fixed-window snapshot paging and
+exact revision-bound active message reads are implemented for stateless adapter
+use. Stable Graph v1.0 chat-message delta is not used.
 
 Deleted messages are recognized only when Graph explicitly returns
 deletedDateTime. Absence from a window snapshot is not treated as proof of
@@ -239,6 +243,9 @@ implemented.
 
 Chat messages are a flat collection. No synthetic chat-replies endpoint is
 implemented.
+
+Teams Chat Vendor Knowledge adapter, live capability layer and live search are
+not yet implemented.
 
 File attachment URLs are retained only as hidden provider references and are
 not downloaded directly. A later Microsoft Vendor Knowledge adapter can resolve
@@ -850,6 +857,8 @@ This task must not create separate public Microsoft integrations for Drive, mail
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL` is **DONE**.
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL` is **DONE**.
+
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-BASED-PAGING-AND-EXACT-MESSAGE-READ` is **DONE**.
 
 **Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`
 

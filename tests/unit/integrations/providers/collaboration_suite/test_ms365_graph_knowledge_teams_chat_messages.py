@@ -1123,3 +1123,320 @@ def test_parse_forwarded_message_reference_from_provider_payload() -> None:
     assert msg.attachments[0].forwarded_message is not None
     assert msg.attachments[0].forwarded_message.original_sender is not None
     assert msg.attachments[0].forwarded_message.original_sender.identity_type == "aadUser"
+
+
+# --- reference-based paging ---
+
+
+def _chat_reference():
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+    )
+
+    return MsGraphTeamsChatReference(
+        mailbox_user_id=_MAILBOX,
+        chat_remote_id=_CHAT_ID,
+    )
+
+
+_MESSAGES_PATH = f"/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}/messages"
+
+
+def test_reference_paging_first_page_exact_request() -> None:
+    http = MagicMock()
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": []})
+    window = _window()
+    _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+        chat=_chat_reference(),
+        window=window,
+        continuation=None,
+        limit=25,
+        max_chars_per_message=1000,
+    )
+    call_args = http.get.call_args
+    assert _MESSAGES_PATH in call_args[0][0]
+    params = call_args[1]["params"]
+    assert params["$top"] == 25
+    assert params["$orderby"] == "lastModifiedDateTime desc"
+    assert "lastModifiedDateTime gt" in params["$filter"]
+    assert call_args[1]["headers"] == _PREFER
+
+
+def test_reference_paging_continuation_uses_transport() -> None:
+    http = MagicMock()
+    continuation_url = (
+        f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+        f"{_QUOTED_CHAT}/messages?$skiptoken={_SECRET_TOKEN}"
+    )
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": []})
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=continuation_url,
+    )
+    _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+        chat=_chat_reference(),
+        window=_window(),
+        continuation=continuation,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    )
+    call_url = http.get.call_args[0][0]
+    assert _SECRET_TOKEN in call_url
+
+
+@pytest.mark.parametrize(
+    "continuation",
+    [
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+                f"{_QUOTED_CHAT}/messages/delta?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_OTHER_MAILBOX}/chats/"
+                f"{_QUOTED_CHAT}/messages?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=(
+                f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/chats/"
+                f"{quote(_OTHER_CHAT_ID, safe='')}/messages?$skiptoken={_SECRET_TOKEN}"
+            ),
+        ),
+        MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+            url=f"http://evil.example/users/{_QUOTED_MAILBOX}/chats/{_QUOTED_CHAT}/messages",
+        ),
+    ],
+)
+def test_reference_paging_rejects_foreign_or_malicious_continuation(
+    continuation: MsGraphKnowledgeContinuation,
+) -> None:
+    http = MagicMock()
+    with pytest.raises(IntegrationConfigurationError, match=_CONT):
+        _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+            chat=_chat_reference(),
+            window=_window(),
+            continuation=continuation,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    http.get.assert_not_called()
+
+
+def test_reference_paging_rejects_message_outside_window() -> None:
+    http = MagicMock()
+    payload = _active_message_payload(
+        lastModifiedDateTime="2023-12-01T10:00:00Z",
+    )
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": [payload]})
+    with pytest.raises(ValueError, match=_SAFE):
+        _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+            chat=_chat_reference(),
+            window=_window(),
+            continuation=None,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_reference_paging_rejects_wrong_chat_in_item() -> None:
+    http = MagicMock()
+    payload = _active_message_payload(chatId=_OTHER_CHAT_ID)
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": [payload]})
+    with pytest.raises(ValueError, match=_SAFE):
+        _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+            chat=_chat_reference(),
+            window=_window(),
+            continuation=None,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_reference_paging_rejects_duplicate_message_ids() -> None:
+    http = MagicMock()
+    first = _active_message_payload(body={"contentType": "text", "content": "first"})
+    second = _active_message_payload(body={"contentType": "text", "content": "second"})
+    http.get.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {"value": [first, second]},
+    )
+    page = _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+        chat=_chat_reference(),
+        window=_window(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    )
+    assert len(page.items) == 1
+    assert page.items[0].body_content == "second"
+
+
+def test_reference_paging_list_items_rejected_at_validation() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
+        validate_msgraph_teams_chat_message_snapshot_page_by_reference,
+    )
+
+    page = MsGraphTeamsChatMessageSnapshotPage.model_construct(
+        mailbox_user_id=_MAILBOX,
+        chat_remote_id=_CHAT_ID,
+        window=_window(),
+        items=[_valid_active_message()],
+    )
+    with pytest.raises(ValueError, match=_SAFE):
+        validate_msgraph_teams_chat_message_snapshot_page_by_reference(
+            page,
+            chat=_chat_reference(),
+            window=_window(),
+            graph_base_url=_GRAPH_BASE,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+
+
+def test_reference_paging_no_chat_inventory_call() -> None:
+    http = MagicMock()
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": []})
+    _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+        chat=_chat_reference(),
+        window=_window(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    )
+    assert http.get.call_count == 1
+    assert "/chats" in http.get.call_args[0][0]
+    assert http.get.call_args[0][0].endswith("/messages") or "/messages?" in http.get.call_args[0][0]
+
+
+def test_object_based_paging_preserved_through_reference_delegate() -> None:
+    http = MagicMock()
+    http.get.return_value = MagicMock(
+        status_code=200,
+        json=lambda: {"value": [_active_message_payload()]},
+    )
+    page = _reader(http).read_messages_snapshot_page(
+        chat=_chat(),
+        window=_window(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    )
+    assert page.items[0].body_content == "Hello"
+
+
+def test_graph_client_reference_paging_delegates() -> None:
+    http = MagicMock()
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": []})
+    GraphRestClient(_config(), http_client=http).read_teams_chat_messages_snapshot_page_by_reference(
+        chat=_chat_reference(),
+        window=_window(),
+        continuation=None,
+        limit=50,
+        max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    )
+    assert http.get.call_count == 1
+
+
+class _CountingReferencePagingClient(GraphRestClient):
+    def __init__(self, *, page: MsGraphTeamsChatMessageSnapshotPage, http: MagicMock) -> None:
+        super().__init__(_config(), http_client=http)
+        self._custom_page = page
+        self.call_count = 0
+
+    def read_teams_chat_messages_snapshot_page_by_reference(
+        self,
+        *,
+        chat,
+        window,
+        continuation=None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        self.call_count += 1
+        return self._custom_page
+
+
+class _CustomReferencePagingSuite(CollaborationSuite):
+    def __init__(self, client: _CountingReferencePagingClient) -> None:
+        self._client = client
+
+    def read_teams_chat_messages_snapshot_page_by_reference(
+        self,
+        *,
+        chat,
+        window,
+        continuation=None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        return self._client.read_teams_chat_messages_snapshot_page_by_reference(
+            chat=chat,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def get_message(self, user_id: str, message_id: str):
+        raise NotImplementedError
+
+    def list_messages(self, user_id: str, *, folder: str = "inbox", limit: int = 25):
+        raise NotImplementedError
+
+    def send_mail(self, user_id: str, *, subject: str, body: str, to):
+        raise NotImplementedError
+
+    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+        raise NotImplementedError
+
+    def get_user(self, user_id: str):
+        raise NotImplementedError
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        raise NotImplementedError
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees=(),
+    ):
+        raise NotImplementedError
+
+
+def test_integration_reference_paging_invalid_input_before_client() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+    )
+
+    client = _CountingReferencePagingClient(
+        page=_valid_snapshot_page(),
+        http=MagicMock(),
+    )
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _CustomReferencePagingSuite(client),
+        enabled=True,
+    )
+    bad_ref = MsGraphTeamsChatReference.model_construct(
+        mailbox_user_id="",
+        chat_remote_id=_CHAT_ID,
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_REQUEST_ERROR):
+        integration.read_teams_chat_messages_snapshot_page_by_reference(
+            chat=bad_ref,
+            window=_window(),
+            continuation=None,
+            limit=50,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    assert client.call_count == 0

@@ -33,10 +33,13 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
     MsGraphTeamsChat,
+    MsGraphTeamsChatReference,
+    chat_reference_from_chat,
     validate_msgraph_teams_chat,
     validate_msgraph_teams_chat_attachment_id,
     validate_msgraph_teams_chat_id,
     validate_msgraph_teams_chat_message_id,
+    validate_msgraph_teams_chat_reference,
 )
 
 DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS = 2_000_000
@@ -1497,6 +1500,103 @@ def validate_msgraph_teams_chat_message_snapshot_page(
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
 
 
+def validate_msgraph_teams_chat_message_snapshot_page_by_reference(
+    value: object,
+    *,
+    chat: MsGraphTeamsChatReference,
+    window: MsGraphTeamsChatMessageWindow,
+    graph_base_url: str,
+    max_chars_per_message: int,
+) -> MsGraphTeamsChatMessageSnapshotPage:
+    try:
+        validated_max_chars = _validate_message_max_chars(max_chars_per_message)
+    except ValueError:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    if not isinstance(value, MsGraphTeamsChatMessageSnapshotPage):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    try:
+        validated_chat = validate_msgraph_teams_chat_reference(chat)
+    except ValueError:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    try:
+        validated_window = MsGraphTeamsChatMessageWindow.model_validate(
+            window.model_dump(mode="python")
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    try:
+        raw_mailbox = value.mailbox_user_id
+        raw_chat_id = value.chat_remote_id
+        raw_window = value.window
+        raw_items = value.items
+        raw_continuation = value.continuation
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    if raw_mailbox != validated_chat.mailbox_user_id:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if raw_chat_id != validated_chat.chat_remote_id:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if not isinstance(raw_window, MsGraphTeamsChatMessageWindow):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+    if raw_window.start_at != validated_window.start_at or raw_window.end_at != validated_window.end_at:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    if type(raw_items) is not tuple:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    validated_items: list[MsGraphTeamsChatMessage] = []
+    for item in raw_items:
+        if not isinstance(item, MsGraphTeamsChatMessage):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        validated_item = validate_msgraph_teams_chat_message(item, max_chars=validated_max_chars)
+        if (
+            validated_item.mailbox_user_id != validated_chat.mailbox_user_id
+            or validated_item.chat_remote_id != validated_chat.chat_remote_id
+        ):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        if not (
+            validated_window.start_at
+            < validated_item.last_modified_at
+            < validated_window.end_at
+        ):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        validated_items.append(validated_item)
+
+    remote_ids = [item.remote_id for item in validated_items]
+    if len(remote_ids) != len(set(remote_ids)):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    validated_continuation: MsGraphKnowledgeContinuation | None = None
+    if raw_continuation is not None:
+        if not isinstance(raw_continuation, MsGraphKnowledgeContinuation):
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+        try:
+            validated_continuation = validate_msgraph_teams_chat_messages_continuation(
+                raw_continuation,
+                mailbox_user_id=validated_chat.mailbox_user_id,
+                chat_id=validated_chat.chat_remote_id,
+                graph_base_url=graph_base_url,
+            )
+        except IntegrationConfigurationError:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    try:
+        return MsGraphTeamsChatMessageSnapshotPage(
+            mailbox_user_id=validated_chat.mailbox_user_id,
+            chat_remote_id=validated_chat.chat_remote_id,
+            window=validated_window,
+            items=tuple(validated_items),
+            continuation=validated_continuation,
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+
 def _graph_base_path(graph_base_url: str) -> str:
     parsed_base = urlparse(graph_base_url)
     return parsed_base.path.rstrip("/") or "/"
@@ -1674,6 +1774,20 @@ def read_and_validate_current_teams_chat_message_observation(
 
 
 @runtime_checkable
+class MsGraphTeamsChatReferencePagingReadClient(Protocol):
+    def read_teams_chat_messages_snapshot_page_by_reference(
+        self,
+        *,
+        chat: MsGraphTeamsChatReference,
+        window: MsGraphTeamsChatMessageWindow,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        ...
+
+
+@runtime_checkable
 class MsGraphTeamsChatMessagesReadClient(Protocol):
     def read_teams_chat_messages_snapshot_page(
         self,
@@ -1708,7 +1822,34 @@ class MsGraphTeamsChatMessagesReader:
         limit: int,
         max_chars_per_message: int,
     ) -> MsGraphTeamsChatMessageSnapshotPage:
-        validated_chat = validate_msgraph_teams_chat(chat)
+        try:
+            validated_chat = validate_msgraph_teams_chat(chat)
+        except ValueError:
+            raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
+
+        chat_reference = chat_reference_from_chat(validated_chat)
+        return self.read_teams_chat_messages_snapshot_page_by_reference(
+            chat=chat_reference,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_chat_messages_snapshot_page_by_reference(
+        self,
+        *,
+        chat: MsGraphTeamsChatReference,
+        window: MsGraphTeamsChatMessageWindow,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+        max_chars_per_message: int,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        try:
+            validated_chat = validate_msgraph_teams_chat_reference(chat)
+        except ValueError:
+            raise IntegrationConfigurationError(_INVALID_MESSAGES_REQUEST) from None
+
         try:
             validated_window = MsGraphTeamsChatMessageWindow.model_validate(
                 window.model_dump(mode="python")
@@ -1726,7 +1867,7 @@ class MsGraphTeamsChatMessagesReader:
 
         if continuation is None:
             quoted_mailbox = quote(validated_chat.mailbox_user_id, safe="")
-            quoted_chat = quote(validated_chat.remote_id, safe="")
+            quoted_chat = quote(validated_chat.chat_remote_id, safe="")
             path = f"/users/{quoted_mailbox}/chats/{quoted_chat}/messages"
             payload = self._transport.get_initial_json(
                 path=path,
@@ -1744,7 +1885,7 @@ class MsGraphTeamsChatMessagesReader:
             validated_continuation = validate_msgraph_teams_chat_messages_continuation(
                 continuation,
                 mailbox_user_id=validated_chat.mailbox_user_id,
-                chat_id=validated_chat.remote_id,
+                chat_id=validated_chat.chat_remote_id,
                 graph_base_url=self._config.graph_base_url,
             )
             payload = self._transport.get_continuation_json(
@@ -1764,16 +1905,16 @@ class MsGraphTeamsChatMessagesReader:
                 parse_msgraph_teams_chat_message(
                     raw_item,
                     expected_mailbox_user_id=validated_chat.mailbox_user_id,
-                    expected_chat_id=validated_chat.remote_id,
+                    expected_chat_id=validated_chat.chat_remote_id,
                     max_chars=validated_max_chars,
                 )
             )
 
         deduplicated = _deduplicate_messages(tuple(parsed_items))
-        page = validate_msgraph_teams_chat_message_snapshot_page(
+        return validate_msgraph_teams_chat_message_snapshot_page_by_reference(
             _safe_construct_snapshot_page(
                 mailbox_user_id=validated_chat.mailbox_user_id,
-                chat_remote_id=validated_chat.remote_id,
+                chat_remote_id=validated_chat.chat_remote_id,
                 window=validated_window,
                 items=deduplicated,
                 continuation=collection_page.continuation,
@@ -1783,4 +1924,3 @@ class MsGraphTeamsChatMessagesReader:
             graph_base_url=self._config.graph_base_url,
             max_chars_per_message=validated_max_chars,
         )
-        return page

@@ -1215,6 +1215,105 @@ def test_integration_valid_continuation_calls_custom_client_once() -> None:
 # --- security ---
 
 
+# --- chat reference ---
+
+
+def test_chat_reference_valid_construction() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+        validate_msgraph_teams_chat_reference,
+    )
+
+    ref = MsGraphTeamsChatReference(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        chat_remote_id=_CHAT_ID,
+    )
+    assert ref.mailbox_user_id == _MAILBOX_USER_ID
+    assert ref.chat_remote_id == _CHAT_ID
+    validated = validate_msgraph_teams_chat_reference(ref)
+    assert validated == ref
+    assert validated is not ref
+
+
+def test_chat_reference_mapping_validation() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        validate_msgraph_teams_chat_reference,
+    )
+
+    validated = validate_msgraph_teams_chat_reference(
+        {"mailbox_user_id": _MAILBOX_USER_ID, "chat_remote_id": _CHAT_ID}
+    )
+    assert validated.mailbox_user_id == _MAILBOX_USER_ID
+    assert validated.chat_remote_id == _CHAT_ID
+
+
+def test_chat_reference_frozen_and_extra_key_rejected() -> None:
+    from pydantic import ValidationError
+
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+    )
+
+    ref = MsGraphTeamsChatReference(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        chat_remote_id=_CHAT_ID,
+    )
+    with pytest.raises(ValidationError):
+        ref.mailbox_user_id = "other@contoso.com"  # type: ignore[misc]
+    with pytest.raises(ValidationError):
+        MsGraphTeamsChatReference(
+            mailbox_user_id=_MAILBOX_USER_ID,
+            chat_remote_id=_CHAT_ID,
+            topic=_TOPIC,
+        )
+
+
+def test_chat_reference_invalid_ids_rejected() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        validate_msgraph_teams_chat_reference,
+    )
+
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_teams_chat_reference(
+            {"mailbox_user_id": "", "chat_remote_id": _CHAT_ID}
+        )
+    _assert_safe_provider_error(exc)
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_teams_chat_reference(
+            {"mailbox_user_id": _MAILBOX_USER_ID, "chat_remote_id": ""}
+        )
+    _assert_safe_provider_error(exc)
+
+
+def test_chat_reference_model_construct_corruption_rejected() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+        validate_msgraph_teams_chat_reference,
+    )
+
+    malformed = MsGraphTeamsChatReference.model_construct(
+        mailbox_user_id="bad\x00mailbox",
+        chat_remote_id=_CHAT_ID,
+    )
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_teams_chat_reference(malformed)
+    _assert_safe_provider_error(exc)
+
+
+def test_chat_reference_repr_hides_ids() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+    )
+
+    ref = MsGraphTeamsChatReference(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        chat_remote_id=_CHAT_ID,
+    )
+    rendered = repr(ref)
+    assert _MAILBOX_USER_ID not in rendered
+    assert _CHAT_ID not in rendered
+
+
 def test_security_chat_repr_and_errors() -> None:
     chat = _valid_chat(topic=_HIDDEN_TOPIC, tenant_id=_TENANT_ID)
     assert _HIDDEN_TOPIC not in repr(chat)
