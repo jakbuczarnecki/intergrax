@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -857,27 +858,15 @@ def test_stale_v1_evidence_removed_after_failed_write(
     assert not markdown_path.is_file()
 
 
-def test_atomic_evidence_replacement_on_pass(tmp_path: Path) -> None:
+def _pass_evidence_result(**updates):
     from datetime import UTC, datetime
 
     from local_workspace_application.model_runtime_proof.contracts import (
         ModelRuntimeProofResult,
         ProviderQualificationResult,
     )
-    from local_workspace_application.model_runtime_proof.report import write_evidence
 
-    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
-    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
-    json_path.write_text(
-        json.dumps(
-            {
-                "schema_version": "lkw.model_runtime_portability.proof.v1",
-                "overall_status": "PASS",
-            }
-        ),
-        encoding="utf-8",
-    )
-    markdown_path.write_text("# stale", encoding="utf-8")
+    digest = "sha256:" + ("a" * 64)
     result = ModelRuntimeProofResult(
         proof_id="proof-pass",
         started_at=datetime.now(UTC),
@@ -885,28 +874,177 @@ def test_atomic_evidence_replacement_on_pass(tmp_path: Path) -> None:
         provider_results={
             "ollama": ProviderQualificationResult(
                 provider="ollama",
-                configured_model="llama3.1:8b",
-            )
+                configured_model="qwen2.5:14b",
+                resolved_model="qwen2.5:14b",
+                server_model="qwen2.5:14b",
+                server_model_digest=digest,
+            ),
+            "vllm": ProviderQualificationResult(
+                provider="vllm",
+                configured_model="Qwen/Qwen2.5-3B-Instruct",
+                resolved_model="Qwen/Qwen2.5-3B-Instruct",
+                server_model="Qwen/Qwen2.5-3B-Instruct",
+            ),
         },
         vllm_provisioning_classification="committed_compose_sufficient",
     )
-    write_evidence(result, json_path=json_path, markdown_path=markdown_path)
-    payload = json.loads(json_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == "lkw.model_runtime_portability.proof.v2"
-    assert payload["overall_status"] == "PASS"
-    assert "lkw.model_runtime_portability.proof.v2" in markdown_path.read_text(
-        encoding="utf-8"
-    )
+    if updates:
+        return result.model_copy(update=updates)
+    return result
 
 
-def test_partial_evidence_write_cannot_replace_canonical(
+def _assert_no_evidence_residue(directory: Path) -> None:
+    for path in directory.iterdir():
+        name = path.name
+        assert not name.endswith(".tmp")
+        assert ".rollback." not in name
+
+
+def test_evidence_publication_fails_before_canonical_replacement(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from datetime import UTC, datetime
+    from local_workspace_application.model_runtime_proof.report import write_evidence
 
-    from local_workspace_application.model_runtime_proof.contracts import (
-        ModelRuntimeProofResult,
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    original_json = json.dumps(
+        {
+            "schema_version": "lkw.model_runtime_portability.proof.v1",
+            "overall_status": "PASS",
+        }
     )
+    original_markdown = "# stale"
+    json_path.write_text(original_json, encoding="utf-8")
+    markdown_path.write_text(original_markdown, encoding="utf-8")
+
+    def _fail_temp_write(*args, **kwargs):
+        raise OSError("temp write failed")
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.report._write_validated_temp_file",
+        _fail_temp_write,
+    )
+    with pytest.raises(OSError):
+        write_evidence(
+            _pass_evidence_result(),
+            json_path=json_path,
+            markdown_path=markdown_path,
+        )
+    assert json_path.read_text(encoding="utf-8") == original_json
+    assert markdown_path.read_text(encoding="utf-8") == original_markdown
+    _assert_no_evidence_residue(tmp_path)
+
+
+def test_evidence_publication_rolls_back_after_second_replacement_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    original_json = json.dumps(
+        {
+            "schema_version": "lkw.model_runtime_portability.proof.v1",
+            "overall_status": "PASS",
+        }
+    )
+    original_markdown = "# stale"
+    json_path.write_text(original_json, encoding="utf-8")
+    markdown_path.write_text(original_markdown, encoding="utf-8")
+
+    original_replace = os.replace
+    calls = {"count": 0}
+
+    def _replace_with_second_failure(src, dst):
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise OSError("markdown replacement failed")
+        return original_replace(src, dst)
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.report.os.replace",
+        _replace_with_second_failure,
+    )
+    with pytest.raises(OSError):
+        write_evidence(
+            _pass_evidence_result(),
+            json_path=json_path,
+            markdown_path=markdown_path,
+        )
+    assert json_path.read_text(encoding="utf-8") == original_json
+    assert markdown_path.read_text(encoding="utf-8") == original_markdown
+    _assert_no_evidence_residue(tmp_path)
+
+
+def test_evidence_publication_rolls_back_when_no_original_files_and_second_fails(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import os
+
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    original_replace = os.replace
+    calls = {"count": 0}
+
+    def _replace_with_second_failure(src, dst):
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise OSError("markdown replacement failed")
+        return original_replace(src, dst)
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.report.os.replace",
+        _replace_with_second_failure,
+    )
+    with pytest.raises(OSError):
+        write_evidence(
+            _pass_evidence_result(),
+            json_path=json_path,
+            markdown_path=markdown_path,
+        )
+    assert not json_path.is_file()
+    assert not markdown_path.is_file()
+    _assert_no_evidence_residue(tmp_path)
+
+
+def test_evidence_publication_rolls_back_when_only_json_existed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import os
+
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    original_json = json.dumps({"schema_version": "v1"})
+    json_path.write_text(original_json, encoding="utf-8")
+    original_replace = os.replace
+    calls = {"count": 0}
+
+    def _replace_with_second_failure(src, dst):
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise OSError("markdown replacement failed")
+        return original_replace(src, dst)
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.report.os.replace",
+        _replace_with_second_failure,
+    )
+    with pytest.raises(OSError):
+        write_evidence(
+            _pass_evidence_result(),
+            json_path=json_path,
+            markdown_path=markdown_path,
+        )
+    assert json_path.read_text(encoding="utf-8") == original_json
+    assert not markdown_path.is_file()
+    _assert_no_evidence_residue(tmp_path)
+
+
+def test_atomic_evidence_replacement_on_pass(tmp_path: Path) -> None:
     from local_workspace_application.model_runtime_proof.report import write_evidence
 
     json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
@@ -921,24 +1059,237 @@ def test_partial_evidence_write_cannot_replace_canonical(
         encoding="utf-8",
     )
     markdown_path.write_text("# stale", encoding="utf-8")
+    result = _pass_evidence_result()
+    write_evidence(result, json_path=json_path, markdown_path=markdown_path)
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    markdown_text = markdown_path.read_text(encoding="utf-8")
+    assert payload["schema_version"] == "lkw.model_runtime_portability.proof.v2"
+    assert payload["overall_status"] == "PASS"
+    assert payload["proof_id"] == result.proof_id
+    assert "lkw.model_runtime_portability.proof.v2" in markdown_text
+    assert f"proof_id: `{result.proof_id}`" in markdown_text
+    assert payload["provider_results"]["ollama"]["configured_model"] == "qwen2.5:14b"
+    assert (
+        payload["provider_results"]["vllm"]["configured_model"]
+        == "Qwen/Qwen2.5-3B-Instruct"
+    )
+    digest = payload["provider_results"]["ollama"]["server_model_digest"]
+    assert digest
+    assert f"server_model_digest: `{digest}`" in markdown_text
+    _assert_no_evidence_residue(tmp_path)
 
-    def _fail_markdown(*args, **kwargs):
-        raise OSError("markdown write failed")
+
+def test_evidence_publication_rolls_back_on_post_publication_validation_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from local_workspace_application.model_runtime_proof.report import write_evidence
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    original_json = json.dumps(
+        {
+            "schema_version": "lkw.model_runtime_portability.proof.v1",
+            "overall_status": "PASS",
+        }
+    )
+    original_markdown = "# stale"
+    json_path.write_text(original_json, encoding="utf-8")
+    markdown_path.write_text(original_markdown, encoding="utf-8")
+    calls = {"count": 0}
+    original_validate = "local_workspace_application.model_runtime_proof.report._validate_evidence_payload"
+
+    def _validate_with_post_failure(json_text, markdown_text):
+        calls["count"] += 1
+        if calls["count"] >= 3:
+            raise ValueError("post_publication_validation_failed")
+        import local_workspace_application.model_runtime_proof.report as report
+
+        return report._validate_evidence_payload(json_text, markdown_text)
+
+    monkeypatch.setattr(original_validate, _validate_with_post_failure)
+    with pytest.raises(ValueError):
+        write_evidence(
+            _pass_evidence_result(),
+            json_path=json_path,
+            markdown_path=markdown_path,
+        )
+    assert json_path.read_text(encoding="utf-8") == original_json
+    assert markdown_path.read_text(encoding="utf-8") == original_markdown
+    _assert_no_evidence_residue(tmp_path)
+
+
+def test_invalidation_rolls_back_when_second_unlink_fails(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from local_workspace_application.model_runtime_proof.report import (
+        invalidate_canonical_evidence,
+    )
+
+    json_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.json"
+    markdown_path = tmp_path / "LKW_MODEL_RUNTIME_PORTABILITY.md"
+    json_path.write_text('{"schema":"v1"}', encoding="utf-8")
+    markdown_path.write_text("# stale", encoding="utf-8")
+    original_unlink = Path.unlink
+    calls = {"count": 0}
+
+    def _unlink_with_second_failure(self, missing_ok=False):
+        calls["count"] += 1
+        if calls["count"] == 2:
+            raise OSError("markdown unlink failed")
+        return original_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", _unlink_with_second_failure)
+    with pytest.raises(OSError):
+        invalidate_canonical_evidence(json_path=json_path, markdown_path=markdown_path)
+    assert json_path.is_file()
+    assert markdown_path.is_file()
+
+
+def test_provider_qualification_fails_when_ollama_digest_missing() -> None:
+    result = ProviderQualificationResult(
+        provider="ollama",
+        configured_model="qwen2.5:14b",
+        health_status=StageStatus.PASS,
+        basic_generation_status=StageStatus.PASS,
+        structured_planning_status=StageStatus.PASS,
+        tool_call_status=StageStatus.PASS,
+        tool_execution_status=StageStatus.PASS,
+        grounded_ask_status=StageStatus.PASS,
+        citation_status=StageStatus.PASS,
+        resolved_through_canonical_resolver=True,
+        ask_run_persisted=True,
+    )
+    assert provider_qualification_passes(result) is False
+
+
+def test_normalize_model_digest_accepts_prefixed_and_bare_hex() -> None:
+    from local_workspace_application.model_runtime_proof.health import (
+        normalize_model_digest,
+    )
+
+    bare = "a" * 64
+    assert normalize_model_digest(bare) == f"sha256:{bare}"
+    assert normalize_model_digest(f"sha256:{bare}") == f"sha256:{bare}"
+    assert normalize_model_digest("sha256:short") is None
+    assert normalize_model_digest("") is None
+
+
+def test_ollama_health_requires_exact_model_digest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.config import (
+        ModelRuntimeProofConfig,
+    )
+    from local_workspace_application.model_runtime_proof.health import (
+        probe_ollama_health,
+    )
+
+    config = ModelRuntimeProofConfig(
+        ollama_model="qwen2.5:14b",
+        vllm_model="Qwen/Qwen2.5-3B-Instruct",
+        ollama_base_url="http://127.0.0.1:11434",
+        vllm_base_url="http://127.0.0.1:8100/v1",
+        tenant_id="tenant",
+        data_home="/tmp/proof",
+        timeout_seconds=30.0,
+    )
+
+    def _fake_http_json(url: str, *, timeout: float):
+        if url.endswith("/api/version"):
+            return {"version": "0.32.5"}
+        return {
+            "models": [
+                {
+                    "name": "qwen2.5:14b",
+                    "digest": "sha256:" + ("b" * 64),
+                    "size": 9000,
+                }
+            ]
+        }
 
     monkeypatch.setattr(
-        "local_workspace_application.model_runtime_proof.report.render_markdown",
-        _fail_markdown,
+        "local_workspace_application.model_runtime_proof.health._http_json",
+        _fake_http_json,
     )
-    result = ModelRuntimeProofResult(
-        proof_id="proof-pass",
-        started_at=datetime.now(UTC),
-        overall_status=ProofOverallStatus.PASS,
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.health.materialize_provider_env",
+        lambda **kwargs: {
+            "INTERGRAX_LLM_MODEL": "qwen2.5:14b",
+            "OLLAMA_HOST": "http://127.0.0.1:11434",
+        },
     )
-    with pytest.raises(OSError):
-        write_evidence(result, json_path=json_path, markdown_path=markdown_path)
-    payload = json.loads(json_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == "lkw.model_runtime_portability.proof.v1"
-    assert markdown_path.read_text(encoding="utf-8") == "# stale"
+
+    class _Adapter:
+        model = "qwen2.5:14b"
+
+        def __class_getitem__(cls, item):
+            return cls
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.health.unwrap_catalog_capability_adapter",
+        lambda adapter: _Adapter(),
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.health.LLMAdapterRegistry.create",
+        lambda *args, **kwargs: _Adapter(),
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.health.LangChainOllamaAdapter",
+        _Adapter,
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.health.OllamaModelCapabilityResolver",
+        lambda **kwargs: type(
+            "Resolver",
+            (),
+            {
+                "resolve": lambda self, model: type(
+                    "Caps", (), {"resolved": True, "capabilities": ()}
+                )()
+            },
+        )(),
+    )
+
+    snapshot, failure, detail = probe_ollama_health(config)
+    assert failure is None
+    assert snapshot is not None
+    assert snapshot.server_model_digest == "sha256:" + ("b" * 64)
+
+
+def test_ollama_health_fails_when_digest_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from local_workspace_application.model_runtime_proof.config import (
+        ModelRuntimeProofConfig,
+    )
+    from local_workspace_application.model_runtime_proof.health import (
+        probe_ollama_health,
+    )
+
+    config = ModelRuntimeProofConfig(
+        ollama_model="qwen2.5:14b",
+        vllm_model="Qwen/Qwen2.5-3B-Instruct",
+        ollama_base_url="http://127.0.0.1:11434",
+        vllm_base_url="http://127.0.0.1:8100/v1",
+        tenant_id="tenant",
+        data_home="/tmp/proof",
+        timeout_seconds=30.0,
+    )
+
+    def _fake_http_json(url: str, *, timeout: float):
+        if url.endswith("/api/version"):
+            return {"version": "0.32.5"}
+        return {"models": [{"name": "qwen2.5:14b", "size": 9000}]}
+
+    monkeypatch.setattr(
+        "local_workspace_application.model_runtime_proof.health._http_json",
+        _fake_http_json,
+    )
+
+    snapshot, failure, detail = probe_ollama_health(config)
+    assert snapshot is None
+    assert failure is ProofFailureCode.PROVIDER_IDENTITY_MISMATCH
+    assert detail == "model_digest_missing"
 
 
 def test_qualified_ollama_model_stored_in_v2_result() -> None:

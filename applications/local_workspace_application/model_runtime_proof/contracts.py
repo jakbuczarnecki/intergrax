@@ -116,6 +116,7 @@ class ProviderQualificationResult(_Frozen):
     configured_model: str
     resolved_model: str | None = None
     server_model: str | None = None
+    server_model_digest: str | None = None
     adapter_class: str | None = None
     server_version: str | None = None
     base_url_classification: str | None = None

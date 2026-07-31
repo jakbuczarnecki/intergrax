@@ -1,5 +1,5 @@
 {
-  "completed_at": "2026-07-31T12:32:47.171970Z",
+  "completed_at": "2026-07-31T13:31:58.140186Z",
   "embedding_identity_after": {
     "dimensions": 384,
     "model": "sentence-transformers/all-MiniLM-L6-v2",
@@ -14,31 +14,31 @@
   "fixture": {
     "chunk_count": 1,
     "content_hash": "sha256:1bce80deb06ac8161025daf32a9759210c410ad5fa5d30c0a9db417e678afc4b",
-    "document_id": "lkwdoc:af59f50c59414f3c29de962cbf953179",
+    "document_id": "lkwdoc:9a294c003dca9599f6b20a00c85a9ceb",
     "fixture_text_excerpt": "The LKW model runtime portability verification code is MODEL-RUNTIME-8421.",
     "index_path_classification": "managed_file_knowledge_intake",
     "indexing_operations": 1,
-    "input_id": "ki:042e91cb2ca6e50e1d307fce786b25607bee908abae0ff77ccd1e5c08b6711b8",
+    "input_id": "ki:ba5f78c5e844403631b748215d7b7eb56e601e29a6eb139ecd028e6878522adc",
     "marker": "MODEL-RUNTIME-8421",
-    "operation_id": "op:ceeee59c78d3600882a071cf5d913cad110831b00c629f62767b12c3da4519ba",
-    "source_id": "src:4c585b88f67c40470e66814b774ed33794cd9c070496b76e643f54f16d3411fb",
+    "operation_id": "op:9342bdf7b93d19fc22c7fb2f37129cce1d3222c549b7e68906e5be4951626d62",
+    "source_id": "src:d2af80663ef954d5a7f831f4fd51fdf487a4e475fc3d1c9996387d82e34493f0",
     "tenant_id": "lkw-model-runtime-proof",
-    "workspace_id": "dc5f49cc-4c81-4fe8-8a7e-b6757ad3adb8"
+    "workspace_id": "80cd9b6d-90b6-4a1f-9ffb-eb718c8aa3c9"
   },
   "index_identity": {
     "chunk_count": 1,
     "collection_identity": "intergrax",
     "content_hash": "sha256:1bce80deb06ac8161025daf32a9759210c410ad5fa5d30c0a9db417e678afc4b",
-    "document_id": "lkwdoc:af59f50c59414f3c29de962cbf953179",
+    "document_id": "lkwdoc:9a294c003dca9599f6b20a00c85a9ceb",
     "embedding": {
       "dimensions": 384,
       "model": "sentence-transformers/all-MiniLM-L6-v2",
       "provider": "hf"
     },
-    "source_id": "src:4c585b88f67c40470e66814b774ed33794cd9c070496b76e643f54f16d3411fb",
+    "source_id": "src:d2af80663ef954d5a7f831f4fd51fdf487a4e475fc3d1c9996387d82e34493f0",
     "tenant_id": "lkw-model-runtime-proof",
     "vector_count": 1,
-    "workspace_id": "dc5f49cc-4c81-4fe8-8a7e-b6757ad3adb8"
+    "workspace_id": "80cd9b6d-90b6-4a1f-9ffb-eb718c8aa3c9"
   },
   "index_invariance": {
     "chunk_count": "PASS",
@@ -57,17 +57,17 @@
   ],
   "overall_status": "PASS",
   "proof_classification": "controlled local-provider live LKW product proof for exact Ollama and vLLM provider/model pairs",
-  "proof_id": "lkw-model-runtime-proof:aceb47c173c5",
+  "proof_id": "lkw-model-runtime-proof:ea8f5bb82279",
   "provider_results": {
     "ollama": {
       "adapter_class": "LangChainOllamaAdapter",
       "ask_answer_excerpt": "MODEL-RUNTIME-8421",
       "ask_run_persisted": true,
       "base_url_classification": "loopback",
-      "basic_generation_excerpt": "The LKW-RUNTIME-BASIC-7319 configuration is now being reviewed for potential updates.",
+      "basic_generation_excerpt": "The project requires the immediate installation of LKW-RUNTIME-BASIC-7319 to proceed.",
       "basic_generation_status": "PASS",
       "citation_excerpt": "The LKW model runtime portability verification code is MODEL-RUNTIME-8421.",
-      "citation_source_id": "src:4c585b88f67c40470e66814b774ed33794cd9c070496b76e643f54f16d3411fb",
+      "citation_source_id": "src:d2af80663ef954d5a7f831f4fd51fdf487a4e475fc3d1c9996387d82e34493f0",
       "citation_status": "PASS",
       "configured_model": "qwen2.5:14b",
       "failure_code": null,
@@ -75,10 +75,10 @@
       "health_status": "PASS",
       "http_ask_status_code": 200,
       "latency_ms": {
-        "basic_generation_ms": 4047.6897999997163,
-        "grounded_ask_ms": 5715.366499999618,
-        "structured_plan_ms": 9914.809799999603,
-        "tool_execution_ms": 8086.240800000269
+        "basic_generation_ms": 4473.861300000863,
+        "grounded_ask_ms": 4902.807999998913,
+        "structured_plan_ms": 7991.193800000474,
+        "tool_execution_ms": 7448.306299998876
       },
       "planning_validation": "validate_plan_against_request:pass",
       "provider": "ollama",
@@ -87,8 +87,9 @@
       "safe_error_excerpt": null,
       "safe_error_type": null,
       "server_model": "qwen2.5:14b",
+      "server_model_digest": "sha256:7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
       "server_version": "0.32.5",
-      "session_adapter_object_id": "1990061072528",
+      "session_adapter_object_id": "2755195675920",
       "structured_planning_status": "PASS",
       "tool_call_status": "PASS",
       "tool_choice_mode": "forced",
@@ -99,10 +100,10 @@
       "ask_answer_excerpt": "MODEL-RUNTIME-8421.",
       "ask_run_persisted": true,
       "base_url_classification": "loopback",
-      "basic_generation_excerpt": "LKW-RUNTIME-BASIC-7319: The system encountered an issue requiring immediate attention.",
+      "basic_generation_excerpt": "LKW-RUNTIME-BASIC-7319 is causing an error in your system currently.",
       "basic_generation_status": "PASS",
       "citation_excerpt": "The LKW model runtime portability verification code is MODEL-RUNTIME-8421.",
-      "citation_source_id": "src:4c585b88f67c40470e66814b774ed33794cd9c070496b76e643f54f16d3411fb",
+      "citation_source_id": "src:d2af80663ef954d5a7f831f4fd51fdf487a4e475fc3d1c9996387d82e34493f0",
       "citation_status": "PASS",
       "configured_model": "Qwen/Qwen2.5-3B-Instruct",
       "failure_code": null,
@@ -110,10 +111,10 @@
       "health_status": "PASS",
       "http_ask_status_code": 200,
       "latency_ms": {
-        "basic_generation_ms": 3071.149599999444,
-        "grounded_ask_ms": 1428.5720999996556,
-        "structured_plan_ms": 3276.6165999992154,
-        "tool_execution_ms": 4813.530399999763
+        "basic_generation_ms": 2766.652199999953,
+        "grounded_ask_ms": 1145.6055999988166,
+        "structured_plan_ms": 2276.971900000717,
+        "tool_execution_ms": 4458.3178000011685
       },
       "planning_validation": "validate_plan_against_request:pass",
       "provider": "vllm",
@@ -122,36 +123,55 @@
       "safe_error_excerpt": null,
       "safe_error_type": null,
       "server_model": "Qwen/Qwen2.5-3B-Instruct",
+      "server_model_digest": null,
       "server_version": "0.23.0",
-      "session_adapter_object_id": "1990061658560",
+      "session_adapter_object_id": "2755195675104",
       "structured_planning_status": "PASS",
       "tool_call_status": "PASS",
       "tool_choice_mode": "forced",
       "tool_execution_status": "PASS"
     }
   },
-  "repository_commit": "053aedf6d046d75844ecc53a6a23e17c864c0508",
+  "repository_commit": "7b889e700d7e0d7b4d008f20382d5497e075df3c",
   "repository_state": {
-    "repository_head_at_proof": "053aedf6d046d75844ecc53a6a23e17c864c0508",
+    "repository_head_at_proof": "7b889e700d7e0d7b4d008f20382d5497e075df3c",
     "repository_head_role": "pre_evidence_commit_head",
     "task_owned_dirty_paths": [
-      "applications/local_workspace_application/model_runtime_proof/config.py",
+      "applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.json",
+      "applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.md",
+      "applications/local_workspace_application/model_runtime_proof/aggregation.py",
+      "applications/local_workspace_application/model_runtime_proof/contracts.py",
+      "applications/local_workspace_application/model_runtime_proof/health.py",
       "applications/local_workspace_application/model_runtime_proof/report.py",
-      "applications/local_workspace_application/model_runtime_proof/repository_state.py",
       "applications/local_workspace_application/model_runtime_proof/runner.py",
-      "applications/local_workspace_application/model_runtime_proof/runtime.py",
-      "applications/local_workspace_application/scripts/run-lkw-model-runtime-proof.py",
-      "applications/local_workspace_application/tests/e2e/test_model_runtime_portability_live.py",
       "applications/local_workspace_application/tests/model_runtime/test_model_runtime_proof.py"
     ],
     "unrelated_dirty_paths": [
+      ".env.example",
+      "ROADMAP.md",
+      "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md",
+      "applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md",
+      "docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "docs/audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "docs/features/architecture/TOKEN_OPTIMIZATION.md",
+      "docs/features/architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md",
+      "docs/features/plan/TOKEN_OPTIMIZATION.md",
+      "docs/features/token_optimization/README.md",
+      "docs/plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md",
+      "docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md",
+      "intergrax/runtime/token_optimization/__init__.py",
+      "intergrax/runtime/token_optimization/cache_aware_orchestration.py",
+      "intergrax/runtime/token_optimization/cache_aware_orchestration_contracts.py",
+      "intergrax/runtime/token_optimization/llm_router.py",
       "intergrax/runtime/token_optimization/proofs/vllm_prefix_cache_live.py",
-      "tests/unit/runtime/token_optimization/proofs/test_vllm_prefix_cache_live.py"
+      "tests/integration/runtime/token_optimization/test_cache_aware_orchestration_integration.py",
+      "tests/unit/runtime/token_optimization/proofs/test_vllm_prefix_cache_live.py",
+      "tests/unit/runtime/token_optimization/test_cache_aware_orchestration.py"
     ],
     "working_tree_classification": "task_owned_and_unrelated_changes"
   },
   "schema_version": "lkw.model_runtime_portability.proof.v2",
-  "started_at": "2026-07-31T12:31:50.984692Z",
+  "started_at": "2026-07-31T13:31:06.569777Z",
   "task_id": "LKW-MODEL-RUNTIME-1",
   "vllm_provisioning_classification": "committed_compose_sufficient"
 }

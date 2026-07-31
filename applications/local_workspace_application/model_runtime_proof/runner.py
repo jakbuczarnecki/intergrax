@@ -362,6 +362,7 @@ class ModelRuntimeProofRunner:
                 update={
                     "resolved_model": health.resolved_model,
                     "server_model": health.server_model,
+                    "server_model_digest": health.server_model_digest,
                     "adapter_class": health.adapter_class,
                     "server_version": health.server_version,
                     "base_url_classification": health.base_url_classification,

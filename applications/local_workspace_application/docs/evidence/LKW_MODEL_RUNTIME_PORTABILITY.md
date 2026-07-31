@@ -1,10 +1,10 @@
 # LKW Model Runtime Portability Proof
 
 - schema: `lkw.model_runtime_portability.proof.v2`
-- proof_id: `lkw-model-runtime-proof:aceb47c173c5`
+- proof_id: `lkw-model-runtime-proof:ea8f5bb82279`
 - classification: controlled local-provider live LKW product proof for exact Ollama and vLLM provider/model pairs
 - overall: **PASS**
-- repository_head_at_proof: `053aedf6d046d75844ecc53a6a23e17c864c0508`
+- repository_head_at_proof: `7b889e700d7e0d7b4d008f20382d5497e075df3c`
 - repository_head_role: `pre_evidence_commit_head`
 - working_tree_classification: `task_owned_and_unrelated_changes`
 - vllm_provisioning: `committed_compose_sufficient`
@@ -21,6 +21,7 @@
 - http_ask_status: `200`
 - ask_persisted: `True`
 - failure_code: `None`
+- server_model_digest: `sha256:7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6`
 
 ### vllm
 - configured_model: `Qwen/Qwen2.5-3B-Instruct`
@@ -35,10 +36,10 @@
 
 ## Shared index
 
-- workspace_id: `dc5f49cc-4c81-4fe8-8a7e-b6757ad3adb8`
+- workspace_id: `80cd9b6d-90b6-4a1f-9ffb-eb718c8aa3c9`
 - collection_identity: `intergrax`
-- source_id: `src:4c585b88f67c40470e66814b774ed33794cd9c070496b76e643f54f16d3411fb`
-- document_id: `lkwdoc:af59f50c59414f3c29de962cbf953179`
+- source_id: `src:d2af80663ef954d5a7f831f4fd51fdf487a4e475fc3d1c9996387d82e34493f0`
+- document_id: `lkwdoc:9a294c003dca9599f6b20a00c85a9ceb`
 - content_hash: `sha256:1bce80deb06ac8161025daf32a9759210c410ad5fa5d30c0a9db417e678afc4b`
 - chunk_count: `1`
 - vector_count: `1`

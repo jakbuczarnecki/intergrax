@@ -20,6 +20,8 @@ def provider_qualification_passes(result: ProviderQualificationResult) -> bool:
         return False
     if not result.ask_run_persisted:
         return False
+    if result.provider == "ollama" and not result.server_model_digest:
+        return False
     stages = result.stages
     for status in (
         stages.health,
