@@ -52,9 +52,8 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
   MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL
-  NEXT:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
-  PLANNED:
+  NEXT:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 DEFERRED: LKW-CONNECTED-SOURCE-1
@@ -72,13 +71,16 @@ global mailbox deletion.
 Item attachments, reference-attachment downloads, MIME, raw internet headers
 and recursive attached-message expansion are intentionally not implemented.
 
-No Microsoft Vendor Knowledge adapter is exposed yet except Drive and Mail.
+No Microsoft Vendor Knowledge adapter is exposed yet except Drive, Mail and Teams Channel.
 
 Microsoft Graph Drive Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`)
 is implemented.
 
 Microsoft Graph Mail Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`)
 is implemented.
+
+Microsoft Graph Teams Channel Vendor Knowledge adapter
+(`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`) is implemented.
 
 Drive capability matrix:
 
@@ -138,6 +140,36 @@ global mailbox deletion.
 Attachment presence (`has_attachments`) is preserved in descriptor metadata and
 structured content. Attachment inventory and binary bytes remain deferred.
 Permissions remain false.
+
+Teams Channel capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`):
+
+```text
+source_kind: teams_channel
+scope: one known team ID plus one known channel ID
+full_inventory: yes
+incremental_changes: no
+reconciliation: yes
+content_fetch: yes
+binary_content: no
+rich_text_content: no
+structured_content: yes
+permissions: no
+tombstones: yes, explicit deletedDateTime only
+remote_versions: yes
+```
+
+Reconciliation traverses root posts one at a time. Replies for the current root
+are read immediately before advancing to the next root page. The final
+reconciliation checkpoint is a complete adapter-owned cursor.
+
+Exact message content is materialized as `msgraph.teams-channel.message.knowledge.v1`
+structured JSON. Tombstones apply only when Graph explicitly returns
+`deletedDateTime`; absence from a page is not treated as deletion.
+
+Attachment inventory is included in structured content. Attachment URLs,
+embedded card payloads and hosted-content bytes are excluded. Channel member
+inventory is not an authoritative ACL projection. No Graph delta, webhook,
+subscription or LKW changes are introduced.
 
 Microsoft Graph Calendar low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -215,7 +247,7 @@ Channel messages use the dedicated replies endpoint for threaded replies.
 File attachment URLs are retained only as hidden provider references and are
 not downloaded directly.
 
-No beta Graph endpoint, Teams Channel Vendor Knowledge adapter, webhook,
+No beta Graph endpoint, Teams Channel webhook,
 subscription, rich-card semantic renderer or direct external attachment
 download is implemented.
 
@@ -715,12 +747,13 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL` is **DONE**.
 
-**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL` is **DONE**.
+
+**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`
 
 **Planned:**
 
 ```text
-MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 ```
 
