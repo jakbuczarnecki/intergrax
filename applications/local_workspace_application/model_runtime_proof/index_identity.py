@@ -4,18 +4,21 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, cast
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import (
     BaseEmbeddingManager,
 )
 from intergrax.tools.providers.rag.scope import resolve_tenant_scoped_vectorstore
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.utils import attribute_access
 
 from local_workspace_application.model_runtime_proof.contracts import (
     EmbeddingIdentityRecord,
     IndexIdentityRecord,
 )
+from local_workspace_application.workspaces.models import WorkspaceOperationStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 
@@ -57,6 +60,97 @@ def resolve_embedding_identity(
     )
 
 
+def resolve_collection_identity(
+    wiring_context: ToolWiringContext,
+    tenant_id: str,
+) -> str | None:
+    """Resolve physical/logical collection identity from the configured vector store."""
+    manager = resolve_tenant_scoped_vectorstore(wiring_context, tenant_id)
+    if manager is None:
+        return None
+
+    collection_name = attribute_access.optional(manager, "_collection_name", None)
+    if collection_name is not None and str(collection_name).strip():
+        return str(collection_name).strip()
+
+    list_collections = getattr(manager, "list_collections", None)
+    if callable(list_collections):
+        try:
+            raw_names = list_collections()
+            names = [str(name) for name in cast(Any, raw_names)]
+        except Exception:
+            names = []
+        if names:
+            return ",".join(sorted(names))
+
+    store = attribute_access.optional(manager, "_store", manager)
+    if store is not None:
+        store_collections = getattr(store, "list_collections", None)
+        if callable(store_collections):
+            try:
+                raw_names = store_collections()
+                names = [str(name) for name in cast(Any, raw_names)]
+            except Exception:
+                names = []
+            if names:
+                return ",".join(sorted(names))
+
+        direct_name = attribute_access.optional(store, "collection_name", None)
+        if direct_name is not None and str(direct_name).strip():
+            return str(direct_name).strip()
+
+        for config_attr in (
+            "cfg",
+            "store_config",
+            "_store_config",
+            "_config",
+            "config",
+        ):
+            cfg = attribute_access.optional(store, config_attr, None)
+            cfg_name = attribute_access.optional(cfg, "collection_name", None)
+            if cfg_name is not None and str(cfg_name).strip():
+                return str(cfg_name).strip()
+
+    return None
+
+
+def _resolve_chunk_count(
+    repository: ManagedWorkspaceRepository,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    vector_count: int,
+) -> int | None:
+    operations = repository.list_ingestion_operations(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        statuses={WorkspaceOperationStatus.COMPLETED},
+    )
+    for operation in operations:
+        indexed = getattr(operation, "documents_indexed", None)
+        if indexed is not None:
+            return int(indexed)
+    return vector_count if vector_count > 0 else None
+
+
+def index_identity_is_complete(identity: IndexIdentityRecord) -> bool:
+    if not identity.collection_identity or identity.collection_identity == "unknown":
+        return False
+    if identity.source_id is None:
+        return False
+    if identity.document_id is None:
+        return False
+    if identity.content_hash is None:
+        return False
+    if identity.chunk_count is None:
+        return False
+    if identity.embedding.provider == "unknown":
+        return False
+    if identity.embedding.model == "unknown":
+        return False
+    return True
+
+
 def capture_index_identity(
     *,
     tenant_id: str,
@@ -64,7 +158,6 @@ def capture_index_identity(
     repository: ManagedWorkspaceRepository,
     wiring_context: ToolWiringContext,
     embedding_manager: BaseEmbeddingManager | None,
-    collection_identity: str | None = None,
 ) -> IndexIdentityRecord:
     refs = repository.list_document_refs(tenant_id=tenant_id, workspace_id=workspace_id)
     source_id = refs[0].source_id if refs else None
@@ -74,7 +167,15 @@ def capture_index_identity(
     vector_count = (
         int(scoped.count()) if scoped is not None and hasattr(scoped, "count") else 0
     )
-    collection = collection_identity or workspace_id
+    collection = resolve_collection_identity(wiring_context, tenant_id)
+    if collection is None:
+        collection = "unknown"
+    chunk_count = _resolve_chunk_count(
+        repository,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        vector_count=vector_count,
+    )
     return IndexIdentityRecord(
         tenant_id=tenant_id,
         workspace_id=workspace_id,
@@ -83,7 +184,7 @@ def capture_index_identity(
         content_hash=content_hash,
         collection_identity=collection,
         vector_count=vector_count,
-        chunk_count=vector_count if vector_count else None,
+        chunk_count=chunk_count,
         embedding=resolve_embedding_identity(embedding_manager),
     )
 
@@ -99,11 +200,25 @@ def compare_embedding_identity(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class IndexIdentityComparison:
+    collection_identity: bool
+    vector_count: bool
+    source_id: bool
+    document_id: bool
+    content_hash: bool
+    chunk_count: bool
+
+
 def compare_index_identity(
     before: IndexIdentityRecord,
     after: IndexIdentityRecord,
-) -> tuple[bool, bool, bool]:
-    collection_ok = before.collection_identity == after.collection_identity
-    vector_ok = before.vector_count == after.vector_count
-    document_ok = before.document_id == after.document_id
-    return collection_ok, vector_ok, document_ok
+) -> IndexIdentityComparison:
+    return IndexIdentityComparison(
+        collection_identity=before.collection_identity == after.collection_identity,
+        vector_count=before.vector_count == after.vector_count,
+        source_id=before.source_id == after.source_id,
+        document_id=before.document_id == after.document_id,
+        content_hash=before.content_hash == after.content_hash,
+        chunk_count=before.chunk_count == after.chunk_count,
+    )

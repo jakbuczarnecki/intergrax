@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import secrets
-import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,20 +13,25 @@ from typing import Literal
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    unwrap_catalog_capability_adapter,
+)
 
+from local_workspace_application.model_runtime_proof.aggregation import (
+    index_invariance_passes,
+    provider_qualification_passes,
+)
 from local_workspace_application.model_runtime_proof.config import (
     ModelRuntimeProofConfig,
-    apply_env,
     load_proof_config_from_env,
-    materialize_provider_env,
 )
 from local_workspace_application.model_runtime_proof.contracts import (
     FIXTURE_MARKER,
     FixtureRecord,
     IndexInvarianceResult,
     ModelRuntimeProofResult,
+    ProofFailureCode,
     ProofOverallStatus,
     ProviderQualificationResult,
     StageStatus,
@@ -41,10 +45,14 @@ from local_workspace_application.model_runtime_proof.index_identity import (
     capture_index_identity,
     compare_embedding_identity,
     compare_index_identity,
+    index_identity_is_complete,
 )
 from local_workspace_application.model_runtime_proof.report import (
     render_terminal_summary,
     write_evidence,
+)
+from local_workspace_application.model_runtime_proof.repository_state import (
+    capture_repository_state,
 )
 from local_workspace_application.model_runtime_proof.runtime import (
     build_proof_runtime_session,
@@ -57,6 +65,8 @@ from local_workspace_application.model_runtime_proof.stages import (
     run_tool_call_and_execution,
 )
 
+VLLM_PROVISIONING_CLASSIFICATION = "committed_compose_sufficient"
+
 
 class ModelRuntimeProofRunner:
     def __init__(self, config: ModelRuntimeProofConfig) -> None:
@@ -65,37 +75,27 @@ class ModelRuntimeProofRunner:
         self._data_home: Path | None = None
         self._indexing_count_before = 0
 
-    def _git_commit(self) -> str | None:
-        try:
-            output = subprocess.check_output(
-                ["git", "rev-parse", "HEAD"],
-                stderr=subprocess.DEVNULL,
-                text=True,
-                timeout=5,
-            )
-            return output.strip()
-        except (OSError, subprocess.SubprocessError):
-            return None
-
     async def run(self) -> ModelRuntimeProofResult:
         started = datetime.now(UTC)
         proof_id = f"lkw-model-runtime-proof:{secrets.token_hex(6)}"
+        repository_state = capture_repository_state()
         result = ModelRuntimeProofResult(
             proof_id=proof_id,
             started_at=started,
-            repository_commit=self._git_commit(),
+            repository_commit=repository_state.repository_head_at_proof,
+            repository_state=repository_state,
+            vllm_provisioning_classification=VLLM_PROVISIONING_CLASSIFICATION,
         )
 
         validation_errors = self._config.validate()
         if validation_errors:
-            result = result.model_copy(
+            return result.model_copy(
                 update={
                     "completed_at": datetime.now(UTC),
                     "overall_status": ProofOverallStatus.BLOCKED,
                     "limitations": ("invalid_proof_configuration",),
                 }
             )
-            return result
 
         if self._config.data_home:
             self._data_home = Path(self._config.data_home)
@@ -120,13 +120,22 @@ class ModelRuntimeProofRunner:
                 wiring_context=index_session.wiring_context,
                 embedding_manager=index_session.embedding_manager,
             )
+            if not index_identity_is_complete(index_identity):
+                return result.model_copy(
+                    update={
+                        "completed_at": datetime.now(UTC),
+                        "fixture": self._fixture_record(fixture),
+                        "index_identity": index_identity,
+                        "overall_status": ProofOverallStatus.FAIL,
+                        "limitations": ("index_identity_incomplete",),
+                    }
+                )
             self._indexing_count_before = count_indexing_operations(
                 index_session.repository,
                 tenant_id=fixture.tenant_id,
                 workspace_id=fixture.workspace_id,
             )
         except Exception as exc:
-            index_session.close()
             return result.model_copy(
                 update={
                     "completed_at": datetime.now(UTC),
@@ -140,6 +149,7 @@ class ModelRuntimeProofRunner:
         embedding_before = index_identity.embedding
         provider_results: dict[str, ProviderQualificationResult] = {}
         overall_pass = True
+        adapter_ids: dict[str, str] = {}
 
         for provider in ("ollama", "vllm"):
             provider_result = await self._qualify_provider(
@@ -148,11 +158,13 @@ class ModelRuntimeProofRunner:
                 index_identity=index_identity,
             )
             provider_results[provider] = provider_result
-            if any(
-                status is StageStatus.FAIL
-                for status in provider_result.stages.model_dump().values()
-            ):
+            if provider_result.session_adapter_object_id is not None:
+                adapter_ids[provider] = provider_result.session_adapter_object_id
+            if not provider_qualification_passes(provider_result):
                 overall_pass = False
+
+        if len(adapter_ids) == 2 and adapter_ids["ollama"] == adapter_ids["vllm"]:
+            overall_pass = False
 
         after_session = build_proof_runtime_session(
             self._config,
@@ -176,10 +188,7 @@ class ModelRuntimeProofRunner:
         finally:
             after_session.close()
 
-        collection_ok, vector_ok, document_ok = compare_index_identity(
-            index_identity,
-            after_identity,
-        )
+        comparison = compare_index_identity(index_identity, after_identity)
         embedding_ok = compare_embedding_identity(
             embedding_before, after_identity.embedding
         )
@@ -187,34 +196,34 @@ class ModelRuntimeProofRunner:
 
         index_invariance = IndexInvarianceResult(
             embedding_identity=StageStatus.PASS if embedding_ok else StageStatus.FAIL,
-            collection_identity=StageStatus.PASS if collection_ok else StageStatus.FAIL,
-            vector_count=StageStatus.PASS if vector_ok else StageStatus.FAIL,
+            collection_identity=StageStatus.PASS
+            if comparison.collection_identity
+            else StageStatus.FAIL,
+            vector_count=StageStatus.PASS
+            if comparison.vector_count
+            else StageStatus.FAIL,
+            source_identity=StageStatus.PASS
+            if comparison.source_id
+            else StageStatus.FAIL,
+            document_identity=StageStatus.PASS
+            if comparison.document_id
+            else StageStatus.FAIL,
+            content_hash=StageStatus.PASS
+            if comparison.content_hash
+            else StageStatus.FAIL,
+            chunk_count=StageStatus.PASS
+            if comparison.chunk_count
+            else StageStatus.FAIL,
             no_reindex=StageStatus.PASS if no_reindex_ok else StageStatus.FAIL,
         )
-        if any(
-            status is StageStatus.FAIL
-            for status in index_invariance.model_dump().values()
-        ):
+        if not index_invariance_passes(index_invariance):
             overall_pass = False
 
-        fixture_record = FixtureRecord(
-            marker=FIXTURE_MARKER,
-            tenant_id=fixture.tenant_id,
-            workspace_id=fixture.workspace_id,
-            input_id=fixture.input_id,
-            source_id=fixture.source_id,
-            operation_id=fixture.operation_id,
-            document_id=fixture.document_id,
-            content_hash=fixture.content_hash,
-            indexing_operations=self._indexing_count_before,
-            chunk_count=fixture.chunk_count,
-        )
-
         completed = datetime.now(UTC)
-        final = result.model_copy(
+        return result.model_copy(
             update={
                 "completed_at": completed,
-                "fixture": fixture_record,
+                "fixture": self._fixture_record(fixture),
                 "index_identity": index_identity,
                 "embedding_identity_before": embedding_before,
                 "embedding_identity_after": after_identity.embedding,
@@ -229,7 +238,51 @@ class ModelRuntimeProofRunner:
                 ),
             }
         )
-        return final
+
+    def _fixture_record(self, fixture: IndexedFixture) -> FixtureRecord:
+        return FixtureRecord(
+            marker=FIXTURE_MARKER,
+            tenant_id=fixture.tenant_id,
+            workspace_id=fixture.workspace_id,
+            input_id=fixture.input_id,
+            source_id=fixture.source_id,
+            operation_id=fixture.operation_id,
+            document_id=fixture.document_id,
+            content_hash=fixture.content_hash,
+            indexing_operations=self._indexing_count_before,
+            chunk_count=fixture.chunk_count,
+        )
+
+    def _assert_adapter_identity(
+        self,
+        adapter: LLMAdapter,
+        *,
+        provider: Literal["ollama", "vllm"],
+        resolved_model: str | None,
+        session: object,
+    ) -> tuple[bool, str | None]:
+        session_adapter = getattr(session, "llm_adapter", None)
+        if session_adapter is None or adapter is not session_adapter:
+            return False, "session_adapter_mismatch"
+
+        ask_service = getattr(session, "ask_service", None)
+        if ask_service is None:
+            return False, "ask_service_missing"
+
+        core = unwrap_catalog_capability_adapter(adapter)
+        ask_core = unwrap_catalog_capability_adapter(ask_service.llm_adapter)
+        if id(core) != id(ask_core):
+            return False, "ask_adapter_mismatch"
+
+        provider_name = core._provider_slug()
+        if provider_name != provider:
+            return False, "provider_mismatch"
+
+        model_name = str(getattr(core, "model", "") or "")
+        expected_model = resolved_model or ""
+        if expected_model and model_name and model_name != expected_model:
+            return False, "model_mismatch"
+        return True, None
 
     async def _qualify_provider(
         self,
@@ -264,18 +317,32 @@ class ModelRuntimeProofRunner:
             data_home=self._data_home,
         )
         try:
-            env = materialize_provider_env(provider=provider, config=self._config)
-            apply_env(env)
-            base_url = (
-                env["OLLAMA_HOST"]
-                if provider == "ollama"
-                else env["INTERGRAX_DEFAULT_VLLM_BASE_URL"]
+            adapter = session.llm_adapter
+            if adapter is None:
+                return base.model_copy(
+                    update={
+                        "health_status": StageStatus.PASS,
+                        "resolved_through_canonical_resolver": False,
+                        "failure_code": failure,
+                        "safe_error_excerpt": "missing_canonical_adapter",
+                    }
+                )
+
+            identity_ok, identity_detail = self._assert_adapter_identity(
+                adapter,
+                provider=provider,
+                resolved_model=health.resolved_model,
+                session=session,
             )
-            adapter = LLMAdapterRegistry.create(
-                LLMProvider.OLLAMA if provider == "ollama" else LLMProvider.VLLM,
-                model=env["INTERGRAX_LLM_MODEL"],
-                base_url=base_url,
-            )
+            if not identity_ok:
+                return base.model_copy(
+                    update={
+                        "health_status": StageStatus.PASS,
+                        "resolved_through_canonical_resolver": False,
+                        "failure_code": ProofFailureCode.PROVIDER_IDENTITY_MISMATCH,
+                        "safe_error_excerpt": identity_detail,
+                    }
+                )
 
             base = base.model_copy(
                 update={
@@ -285,6 +352,8 @@ class ModelRuntimeProofRunner:
                     "server_version": health.server_version,
                     "base_url_classification": health.base_url_classification,
                     "health_status": StageStatus.PASS,
+                    "resolved_through_canonical_resolver": True,
+                    "session_adapter_object_id": str(id(adapter)),
                 }
             )
 
@@ -367,8 +436,16 @@ class ModelRuntimeProofRunner:
             )
 
             started = time.perf_counter()
-            ok, answer, citation, persisted, failure, detail = await run_grounded_ask(
-                session.ask_service,
+            (
+                ok,
+                answer,
+                citation,
+                persisted,
+                failure,
+                detail,
+                http_status,
+            ) = await run_grounded_ask(
+                session.client,
                 tenant_id=fixture.tenant_id,
                 workspace_id=fixture.workspace_id,
                 source_id=fixture.source_id,
@@ -378,13 +455,15 @@ class ModelRuntimeProofRunner:
                 **base.latency_ms,
                 "grounded_ask_ms": (time.perf_counter() - started) * 1000,
             }
-            if not ok:
+            if not ok or not persisted:
                 return base.model_copy(
                     update={
                         "grounded_ask_status": StageStatus.FAIL,
                         "citation_status": StageStatus.FAIL,
                         "failure_code": failure,
                         "safe_error_excerpt": detail,
+                        "ask_run_persisted": persisted,
+                        "http_ask_status_code": http_status,
                         "latency_ms": latency,
                     }
                 )
@@ -396,6 +475,7 @@ class ModelRuntimeProofRunner:
                     "citation_excerpt": citation,
                     "citation_source_id": fixture.source_id,
                     "ask_run_persisted": persisted,
+                    "http_ask_status_code": http_status,
                     "latency_ms": latency,
                 }
             )

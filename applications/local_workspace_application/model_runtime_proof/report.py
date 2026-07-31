@@ -32,6 +32,10 @@ def _provider_block(name: str, provider: ProviderQualificationResult) -> list[st
         _stage_line("tool_call", stages.tool_call),
         _stage_line("tool_execution", stages.tool_execution),
         _stage_line("grounded_ask", stages.grounded_ask),
+        _stage_line("citation", stages.citation),
+        f"  canonical_resolver: {provider.resolved_through_canonical_resolver}",
+        f"  http_ask_status: {provider.http_ask_status_code}",
+        f"  ask_persisted: {provider.ask_run_persisted}",
         "",
     ]
 
@@ -49,7 +53,15 @@ def render_terminal_summary(result: ModelRuntimeProofResult) -> str:
             _stage_line("embedding_identity", inv.embedding_identity),
             _stage_line("collection_identity", inv.collection_identity),
             _stage_line("vector_count", inv.vector_count),
+            _stage_line("source_identity", inv.source_identity),
+            _stage_line("document_identity", inv.document_identity),
+            _stage_line("content_hash", inv.content_hash),
+            _stage_line("chunk_count", inv.chunk_count),
             _stage_line("no_reindex", inv.no_reindex),
+            "",
+            "REPOSITORY STATE:",
+            f"  head: {result.repository_state.repository_head_at_proof}",
+            f"  classification: {result.repository_state.working_tree_classification}",
             "",
             "OVERALL:",
             f"  {result.overall_status.value}",
@@ -66,7 +78,10 @@ def render_markdown(result: ModelRuntimeProofResult) -> str:
         f"- proof_id: `{result.proof_id}`",
         f"- classification: {result.proof_classification}",
         f"- overall: **{result.overall_status.value}**",
-        f"- repository_commit: `{result.repository_commit or 'unknown'}`",
+        f"- repository_head_at_proof: `{result.repository_state.repository_head_at_proof or 'unknown'}`",
+        f"- repository_head_role: `{result.repository_state.repository_head_role}`",
+        f"- working_tree_classification: `{result.repository_state.working_tree_classification}`",
+        f"- vllm_provisioning: `{result.vllm_provisioning_classification or 'unknown'}`",
         "",
         "## Qualified provider pairs",
         "",
@@ -80,6 +95,9 @@ def render_markdown(result: ModelRuntimeProofResult) -> str:
                 f"- server_model: `{provider.server_model}`",
                 f"- adapter_class: `{provider.adapter_class}`",
                 f"- server_version: `{provider.server_version}`",
+                f"- canonical_resolver: `{provider.resolved_through_canonical_resolver}`",
+                f"- http_ask_status: `{provider.http_ask_status_code}`",
+                f"- ask_persisted: `{provider.ask_run_persisted}`",
                 f"- failure_code: `{provider.failure_code}`",
                 "",
             ]
@@ -91,14 +109,34 @@ def render_markdown(result: ModelRuntimeProofResult) -> str:
                 "## Shared index",
                 "",
                 f"- workspace_id: `{identity.workspace_id}`",
+                f"- collection_identity: `{identity.collection_identity}`",
                 f"- source_id: `{identity.source_id}`",
                 f"- document_id: `{identity.document_id}`",
+                f"- content_hash: `{identity.content_hash}`",
+                f"- chunk_count: `{identity.chunk_count}`",
                 f"- vector_count: `{identity.vector_count}`",
                 f"- embedding_provider: `{identity.embedding.provider}`",
                 f"- embedding_model: `{identity.embedding.model}`",
+                f"- embedding_dimensions: `{identity.embedding.dimensions}`",
                 "",
             ]
         )
+    inv = result.index_invariance
+    lines.extend(
+        [
+            "## Index invariance",
+            "",
+            f"- embedding_identity: `{inv.embedding_identity.value}`",
+            f"- collection_identity: `{inv.collection_identity.value}`",
+            f"- vector_count: `{inv.vector_count.value}`",
+            f"- source_identity: `{inv.source_identity.value}`",
+            f"- document_identity: `{inv.document_identity.value}`",
+            f"- content_hash: `{inv.content_hash.value}`",
+            f"- chunk_count: `{inv.chunk_count.value}`",
+            f"- no_reindex: `{inv.no_reindex.value}`",
+            "",
+        ]
+    )
     if result.limitations:
         lines.extend(["## Limitations", ""])
         lines.extend(f"- {item}" for item in result.limitations)
