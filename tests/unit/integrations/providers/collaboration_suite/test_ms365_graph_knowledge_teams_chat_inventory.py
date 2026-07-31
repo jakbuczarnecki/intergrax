@@ -1285,6 +1285,91 @@ def test_chat_reference_invalid_ids_rejected() -> None:
     _assert_safe_provider_error(exc)
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("mailbox_user_id", f" {_MAILBOX_USER_ID}"),
+        ("mailbox_user_id", f"{_MAILBOX_USER_ID} "),
+        ("chat_remote_id", f" {_CHAT_ID}"),
+        ("chat_remote_id", f"{_CHAT_ID} "),
+    ],
+)
+def test_chat_reference_rejects_whitespace_in_public_validator(
+    field: str,
+    value: str,
+) -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        validate_msgraph_teams_chat_reference,
+    )
+
+    payload = {
+        "mailbox_user_id": _MAILBOX_USER_ID,
+        "chat_remote_id": _CHAT_ID,
+    }
+    payload[field] = value
+    with pytest.raises(ValueError, match=_SAFE_ERROR) as exc:
+        validate_msgraph_teams_chat_reference(payload)
+    _assert_safe_provider_error(exc)
+    assert value.strip() not in str(exc.value) or value.strip() == value
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("mailbox_user_id", f" {_MAILBOX_USER_ID}"),
+        ("mailbox_user_id", f"{_MAILBOX_USER_ID} "),
+        ("chat_remote_id", f" {_CHAT_ID}"),
+        ("chat_remote_id", f"{_CHAT_ID} "),
+    ],
+)
+def test_chat_reference_rejects_whitespace_in_direct_model_construction(
+    field: str,
+    value: str,
+) -> None:
+    from pydantic import ValidationError
+
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+        MsGraphTeamsChatReference,
+    )
+
+    payload = {
+        "mailbox_user_id": _MAILBOX_USER_ID,
+        "chat_remote_id": _CHAT_ID,
+    }
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        MsGraphTeamsChatReference(**payload)
+
+
+def test_chat_reference_whitespace_rejected_before_transport() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
+        MsGraphTeamsChatMessageWindow,
+        MsGraphTeamsChatMessagesReader,
+    )
+
+    http = MagicMock()
+    reader = MsGraphTeamsChatMessagesReader(
+        config=_config(),
+        transport=MsGraphKnowledgeTransport(config=_config(), http_client=http),
+    )
+    window = MsGraphTeamsChatMessageWindow(
+        start_at=_CREATED_AT,
+        end_at=_UPDATED_AT,
+    )
+    with pytest.raises(
+        IntegrationConfigurationError,
+        match="invalid Microsoft Graph Teams chat messages request",
+    ):
+        reader.read_teams_chat_messages_snapshot_page_by_reference(
+            chat={"mailbox_user_id": f" {_MAILBOX_USER_ID}", "chat_remote_id": _CHAT_ID},
+            window=window,
+            continuation=None,
+            limit=50,
+            max_chars_per_message=10_000,
+        )
+    http.get.assert_not_called()
+
+
 def test_chat_reference_model_construct_corruption_rejected() -> None:
     from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
         MsGraphTeamsChatReference,

@@ -22,6 +22,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_mailbox_user_id,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+    _validate_exact_durable_opaque_reference_field,
     validate_msgraph_teams_chat_id,
     validate_msgraph_teams_chat_message_id,
 )
@@ -64,6 +65,14 @@ def _validate_revision(value: object) -> str:
     return trimmed
 
 
+def _validate_exact_durable_revision(value: object) -> str:
+    return _validate_exact_durable_opaque_reference_field(
+        value,
+        validator=_validate_revision,
+        error=_MALFORMED_CONTENT_RESPONSE,
+    )
+
+
 def _validate_max_chars(max_chars: object) -> int:
     if type(max_chars) is not int:
         raise IntegrationConfigurationError(_INVALID_CONTENT_REQUEST) from None
@@ -83,22 +92,34 @@ class MsGraphTeamsChatMessageReference(BaseModel):
     @field_validator("mailbox_user_id", mode="before")
     @classmethod
     def _validate_mailbox_user_id(cls, value: object) -> str:
-        return validate_msgraph_mailbox_user_id(value)
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_mailbox_user_id,
+            error=_MALFORMED_CONTENT_RESPONSE,
+        )
 
     @field_validator("chat_remote_id", mode="before")
     @classmethod
     def _validate_chat_remote_id(cls, value: object) -> str:
-        return validate_msgraph_teams_chat_id(value)
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_teams_chat_id,
+            error=_MALFORMED_CONTENT_RESPONSE,
+        )
 
     @field_validator("remote_id", mode="before")
     @classmethod
     def _validate_remote_id(cls, value: object) -> str:
-        return validate_msgraph_teams_chat_message_id(value)
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_teams_chat_message_id,
+            error=_MALFORMED_CONTENT_RESPONSE,
+        )
 
     @field_validator("revision", mode="before")
     @classmethod
     def _validate_revision_field(cls, value: object) -> str:
-        return _validate_revision(value)
+        return _validate_exact_durable_revision(value)
 
 
 def validate_msgraph_teams_chat_message_reference(
@@ -114,10 +135,22 @@ def validate_msgraph_teams_chat_message_reference(
         raise ValueError(_MALFORMED_CONTENT_RESPONSE) from None
     try:
         dumped = dict(source)
-        dumped["mailbox_user_id"] = validate_msgraph_mailbox_user_id(dumped.get("mailbox_user_id"))
-        dumped["chat_remote_id"] = validate_msgraph_teams_chat_id(dumped.get("chat_remote_id"))
-        dumped["remote_id"] = validate_msgraph_teams_chat_message_id(dumped.get("remote_id"))
-        dumped["revision"] = _validate_revision(dumped.get("revision"))
+        dumped["mailbox_user_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("mailbox_user_id"),
+            validator=validate_msgraph_mailbox_user_id,
+            error=_MALFORMED_CONTENT_RESPONSE,
+        )
+        dumped["chat_remote_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("chat_remote_id"),
+            validator=validate_msgraph_teams_chat_id,
+            error=_MALFORMED_CONTENT_RESPONSE,
+        )
+        dumped["remote_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("remote_id"),
+            validator=validate_msgraph_teams_chat_message_id,
+            error=_MALFORMED_CONTENT_RESPONSE,
+        )
+        dumped["revision"] = _validate_exact_durable_revision(dumped.get("revision"))
         return MsGraphTeamsChatMessageReference.model_validate(dumped)
     except (ValueError, TypeError, AttributeError, ValidationError):
         raise ValueError(_MALFORMED_CONTENT_RESPONSE) from None

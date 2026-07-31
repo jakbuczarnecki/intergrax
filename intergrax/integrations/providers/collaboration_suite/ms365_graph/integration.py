@@ -535,6 +535,7 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             window=validated_window,
             graph_base_url=graph_base_url,
             max_chars_per_message=max_chars_per_message,
+            limit=limit,
         )
 
     def read_teams_chat_messages_snapshot_page_by_reference(
@@ -603,6 +604,7 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             window=validated_window,
             graph_base_url=graph_base_url,
             max_chars_per_message=max_chars_per_message,
+            limit=limit,
         )
 
     def read_teams_chat_message_content(

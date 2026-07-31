@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 from enum import StrEnum
+from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 from urllib.parse import quote, unquote, urlparse
 
@@ -405,6 +406,24 @@ def parse_msgraph_teams_chat(
     )
 
 
+def _validate_exact_durable_opaque_reference_field(
+    value: object,
+    *,
+    validator: Callable[[object], str],
+    error: str = _MALFORMED_CHATS_RESPONSE,
+) -> str:
+    if not isinstance(value, str):
+        raise ValueError(error)
+    if value == "":
+        raise ValueError(error)
+    if value != value.strip():
+        raise ValueError(error)
+    canonical = validator(value)
+    if canonical != value:
+        raise ValueError(error)
+    return value
+
+
 def validate_msgraph_teams_chat(value: object) -> MsGraphTeamsChat:
     if not isinstance(value, MsGraphTeamsChat):
         raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
@@ -425,12 +444,18 @@ class MsGraphTeamsChatReference(BaseModel):
     @field_validator("mailbox_user_id", mode="before")
     @classmethod
     def _validate_mailbox_user_id(cls, value: object) -> str:
-        return validate_msgraph_mailbox_user_id(value)
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_mailbox_user_id,
+        )
 
     @field_validator("chat_remote_id", mode="before")
     @classmethod
     def _validate_chat_remote_id(cls, value: object) -> str:
-        return validate_msgraph_teams_chat_id(value)
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_teams_chat_id,
+        )
 
 
 def validate_msgraph_teams_chat_reference(
@@ -446,8 +471,14 @@ def validate_msgraph_teams_chat_reference(
         raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
     try:
         dumped = dict(source)
-        dumped["mailbox_user_id"] = validate_msgraph_mailbox_user_id(dumped.get("mailbox_user_id"))
-        dumped["chat_remote_id"] = validate_msgraph_teams_chat_id(dumped.get("chat_remote_id"))
+        dumped["mailbox_user_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("mailbox_user_id"),
+            validator=validate_msgraph_mailbox_user_id,
+        )
+        dumped["chat_remote_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("chat_remote_id"),
+            validator=validate_msgraph_teams_chat_id,
+        )
         return MsGraphTeamsChatReference.model_validate(dumped)
     except (ValueError, TypeError, AttributeError, ValidationError):
         raise ValueError(_MALFORMED_CHATS_RESPONSE) from None

@@ -1440,3 +1440,111 @@ def test_integration_reference_paging_invalid_input_before_client() -> None:
             max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
         )
     assert client.call_count == 0
+
+
+def _assert_safe_messages_error(exc: pytest.ExceptionInfo[BaseException]) -> None:
+    assert str(exc.value) == _SAFE
+    assert exc.value.__cause__ is None
+    for forbidden in (_MAILBOX, _CHAT_ID, _MESSAGE_ID, _SECRET_TOKEN, "Hello"):
+        assert forbidden not in str(exc.value)
+
+
+def _unique_message_payload(index: int) -> dict[str, Any]:
+    return _active_message_payload(
+        id=f"msg-{index:03d}",
+        body={"contentType": "text", "content": f"body-{index}"},
+    )
+
+
+def test_reference_paging_rejects_provider_page_exceeding_limit_with_unique_ids() -> None:
+    http = MagicMock()
+    limit = 10
+    items = [_unique_message_payload(index) for index in range(limit + 1)]
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": items})
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+            chat=_chat_reference(),
+            window=_window(),
+            continuation=None,
+            limit=limit,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    _assert_safe_messages_error(exc)
+
+
+def test_reference_paging_rejects_oversized_page_before_deduplication() -> None:
+    http = MagicMock()
+    limit = 2
+    repeated = [
+        _active_message_payload(body={"contentType": "text", "content": "first"}),
+        _active_message_payload(body={"contentType": "text", "content": "second"}),
+        _active_message_payload(body={"contentType": "text", "content": "third"}),
+    ]
+    http.get.return_value = MagicMock(status_code=200, json=lambda: {"value": repeated})
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        _reader(http).read_teams_chat_messages_snapshot_page_by_reference(
+            chat=_chat_reference(),
+            window=_window(),
+            continuation=None,
+            limit=limit,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    _assert_safe_messages_error(exc)
+
+
+def test_integration_reference_paging_rejects_custom_client_oversized_page() -> None:
+    limit = 10
+    oversized_items = tuple(
+        _valid_active_message(remote_id=f"msg-{index:03d}", body_content=f"body-{index}")
+        for index in range(limit + 1)
+    )
+    page = MsGraphTeamsChatMessageSnapshotPage(
+        mailbox_user_id=_MAILBOX,
+        chat_remote_id=_CHAT_ID,
+        window=_window(),
+        items=oversized_items,
+    )
+    client = _CountingReferencePagingClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        integration.read_teams_chat_messages_snapshot_page_by_reference(
+            chat=_chat_reference(),
+            window=_window(),
+            continuation=None,
+            limit=limit,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    _assert_safe_messages_error(exc)
+    assert client.call_count == 1
+
+
+def test_integration_object_paging_rejects_custom_client_oversized_page() -> None:
+    limit = 10
+    oversized_items = tuple(
+        _valid_active_message(remote_id=f"msg-{index:03d}", body_content=f"body-{index}")
+        for index in range(limit + 1)
+    )
+    page = MsGraphTeamsChatMessageSnapshotPage(
+        mailbox_user_id=_MAILBOX,
+        chat_remote_id=_CHAT_ID,
+        window=_window(),
+        items=oversized_items,
+    )
+    client = _CountingMessagesClient(page=page, http=MagicMock())
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        _Ms365GraphCollaborationSuite(client),
+        enabled=True,
+    )
+    with pytest.raises(ValueError, match=_SAFE) as exc:
+        integration.read_teams_chat_messages_snapshot_page(
+            chat=_chat(),
+            window=_window(),
+            continuation=None,
+            limit=limit,
+            max_chars_per_message=DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+        )
+    _assert_safe_messages_error(exc)
+    assert client.call_count == 1

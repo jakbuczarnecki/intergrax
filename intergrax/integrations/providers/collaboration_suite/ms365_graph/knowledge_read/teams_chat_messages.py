@@ -1407,6 +1407,22 @@ def validate_msgraph_teams_chat_message(
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
 
 
+def _validate_snapshot_page_request_limit(limit: object) -> int:
+    if type(limit) is not int:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    if limit < _MIN_MESSAGE_LIMIT or limit > _MAX_MESSAGE_LIMIT:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    return limit
+
+
+def _enforce_snapshot_page_item_count(raw_items: object, *, limit: int) -> None:
+    validated_limit = _validate_snapshot_page_request_limit(limit)
+    if type(raw_items) is not tuple:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+    if len(raw_items) > validated_limit:
+        raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+
+
 def validate_msgraph_teams_chat_message_snapshot_page(
     value: object,
     *,
@@ -1414,6 +1430,7 @@ def validate_msgraph_teams_chat_message_snapshot_page(
     window: MsGraphTeamsChatMessageWindow,
     graph_base_url: str,
     max_chars_per_message: int,
+    limit: int = 50,
 ) -> MsGraphTeamsChatMessageSnapshotPage:
     try:
         validated_max_chars = _validate_message_max_chars(max_chars_per_message)
@@ -1451,6 +1468,8 @@ def validate_msgraph_teams_chat_message_snapshot_page(
 
     if type(raw_items) is not tuple:
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    _enforce_snapshot_page_item_count(raw_items, limit=limit)
 
     validated_items: list[MsGraphTeamsChatMessage] = []
     for item in raw_items:
@@ -1507,6 +1526,7 @@ def validate_msgraph_teams_chat_message_snapshot_page_by_reference(
     window: MsGraphTeamsChatMessageWindow,
     graph_base_url: str,
     max_chars_per_message: int,
+    limit: int = 50,
 ) -> MsGraphTeamsChatMessageSnapshotPage:
     try:
         validated_max_chars = _validate_message_max_chars(max_chars_per_message)
@@ -1548,6 +1568,8 @@ def validate_msgraph_teams_chat_message_snapshot_page_by_reference(
 
     if type(raw_items) is not tuple:
         raise ValueError(_MALFORMED_MESSAGES_RESPONSE) from None
+
+    _enforce_snapshot_page_item_count(raw_items, limit=limit)
 
     validated_items: list[MsGraphTeamsChatMessage] = []
     for item in raw_items:
@@ -1899,6 +1921,9 @@ class MsGraphTeamsChatMessagesReader:
             delta_mode=False,
         )
 
+        if len(collection_page.items) > validated_limit:
+            raise ValueError(_MALFORMED_MESSAGES_RESPONSE)
+
         parsed_items: list[MsGraphTeamsChatMessage] = []
         for raw_item in collection_page.items:
             parsed_items.append(
@@ -1923,4 +1948,5 @@ class MsGraphTeamsChatMessagesReader:
             window=validated_window,
             graph_base_url=self._config.graph_base_url,
             max_chars_per_message=validated_max_chars,
+            limit=validated_limit,
         )

@@ -179,6 +179,93 @@ def test_validate_reference_accepts_mapping() -> None:
     assert validated.remote_id == _MESSAGE_ID
 
 
+def _assert_safe_content_reference_error(exc: pytest.ExceptionInfo[BaseException]) -> None:
+    assert str(exc.value) == _SAFE_CONTENT
+    assert exc.value.__cause__ is None
+    for forbidden in (_MAILBOX, _CHAT_ID, _MESSAGE_ID, _ETAG):
+        assert forbidden not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("mailbox_user_id", f" {_MAILBOX}"),
+        ("mailbox_user_id", f"{_MAILBOX} "),
+        ("chat_remote_id", f" {_CHAT_ID}"),
+        ("chat_remote_id", f"{_CHAT_ID} "),
+        ("remote_id", f" {_MESSAGE_ID}"),
+        ("remote_id", f"{_MESSAGE_ID} "),
+        ("revision", f" {_ETAG}"),
+        ("revision", f"{_ETAG} "),
+    ],
+)
+def test_message_reference_rejects_whitespace_in_public_validator(
+    field: str,
+    value: str,
+) -> None:
+    payload = {
+        "mailbox_user_id": _MAILBOX,
+        "chat_remote_id": _CHAT_ID,
+        "remote_id": _MESSAGE_ID,
+        "revision": _ETAG,
+    }
+    payload[field] = value
+    with pytest.raises(ValueError, match=_SAFE_CONTENT) as exc:
+        validate_msgraph_teams_chat_message_reference(payload)
+    _assert_safe_content_reference_error(exc)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("mailbox_user_id", f" {_MAILBOX}"),
+        ("mailbox_user_id", f"{_MAILBOX} "),
+        ("chat_remote_id", f" {_CHAT_ID}"),
+        ("chat_remote_id", f"{_CHAT_ID} "),
+        ("remote_id", f" {_MESSAGE_ID}"),
+        ("remote_id", f"{_MESSAGE_ID} "),
+        ("revision", f" {_ETAG}"),
+        ("revision", f"{_ETAG} "),
+    ],
+)
+def test_message_reference_rejects_whitespace_in_direct_model_construction(
+    field: str,
+    value: str,
+) -> None:
+    from pydantic import ValidationError
+
+    payload = {
+        "mailbox_user_id": _MAILBOX,
+        "chat_remote_id": _CHAT_ID,
+        "remote_id": _MESSAGE_ID,
+        "revision": _ETAG,
+    }
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        MsGraphTeamsChatMessageReference(**payload)
+
+
+def test_message_reference_model_construct_whitespace_rejected_by_public_validator() -> None:
+    malformed = MsGraphTeamsChatMessageReference.model_construct(
+        mailbox_user_id=f" {_MAILBOX}",
+        chat_remote_id=_CHAT_ID,
+        remote_id=_MESSAGE_ID,
+        revision=_ETAG,
+    )
+    with pytest.raises(ValueError, match=_SAFE_CONTENT) as exc:
+        validate_msgraph_teams_chat_message_reference(malformed)
+    _assert_safe_content_reference_error(exc)
+
+
+def test_message_reference_exact_valid_values_unchanged() -> None:
+    reference = _valid_reference()
+    validated = validate_msgraph_teams_chat_message_reference(reference)
+    assert validated.mailbox_user_id == _MAILBOX
+    assert validated.chat_remote_id == _CHAT_ID
+    assert validated.remote_id == _MESSAGE_ID
+    assert validated.revision == _ETAG
+
+
 def test_reference_repr_hides_identifiers() -> None:
     reference = _valid_reference()
     rendered = repr(reference)
@@ -363,6 +450,19 @@ def test_invalid_reference_rejected_before_http() -> None:
     http = MagicMock()
     bad = MsGraphTeamsChatMessageReference.model_construct(
         mailbox_user_id="",
+        chat_remote_id=_CHAT_ID,
+        remote_id=_MESSAGE_ID,
+        revision=_ETAG,
+    )
+    with pytest.raises(ValueError, match=_SAFE_CONTENT):
+        _reader(http).read_message_content(message=bad, max_chars=10_000)
+    http.get.assert_not_called()
+
+
+def test_message_reference_whitespace_rejected_before_http() -> None:
+    http = MagicMock()
+    bad = MsGraphTeamsChatMessageReference.model_construct(
+        mailbox_user_id=f" {_MAILBOX}",
         chat_remote_id=_CHAT_ID,
         remote_id=_MESSAGE_ID,
         revision=_ETAG,
