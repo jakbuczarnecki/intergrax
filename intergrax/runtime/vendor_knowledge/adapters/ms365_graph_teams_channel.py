@@ -103,6 +103,8 @@ _MAX_REVISION_LEN = 4096
 _ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _ROOT_PROVIDER_PAGE_LIMIT = 1
 _REPLY_PROVIDER_PAGE_LIMIT = 50
+_MAX_EVENT_DETAIL_TYPE_LEN = 1024
+_MAX_LOCALE_LEN = 128
 
 _METADATA_REQUIRED_KEYS = frozenset(
     {
@@ -440,14 +442,23 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                 source_kind=self.source_kind,
                 retryable=False,
             ) from None
-        structured_record = self._build_structured_record(validated_content)
-        canonical = json.dumps(
-            structured_record,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        ).encode("utf-8")
-        content_hash = hashlib.sha256(canonical).hexdigest()
+        try:
+            structured_record = self._build_structured_record(validated_content)
+            canonical = json.dumps(
+                structured_record,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+            content_hash = hashlib.sha256(canonical).hexdigest()
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Microsoft Graph Teams Channel knowledge provider response is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
         return KnowledgeContent(
             mode=KnowledgeContentMode.STRUCTURED_RECORD,
             structured_record=structured_record,
@@ -548,20 +559,23 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                 proposed_checkpoint=complete,
                 has_more=False,
             )
-        if len(validated_page.items) > 1:
+        try:
+            root_message = validated_page.items[0]
+            root_change = self._message_to_change(
+                root_message,
+                team_remote_id=team_remote_id,
+                channel_remote_id=channel_remote_id,
+            )
+        except VendorKnowledgeError:
+            raise
+        except (ValueError, TypeError, AttributeError, ValidationError):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Microsoft Graph Teams Channel knowledge provider response is invalid",
                 provider_id=self.provider_id,
                 source_kind=self.source_kind,
                 retryable=False,
-            )
-        root_message = validated_page.items[0]
-        root_change = self._message_to_change(
-            root_message,
-            team_remote_id=team_remote_id,
-            channel_remote_id=channel_remote_id,
-        )
+            ) from None
         resume_url = (
             validated_page.continuation.url if validated_page.continuation is not None else None
         )
@@ -593,16 +607,18 @@ class MsGraphTeamsChannelKnowledgeAdapter:
         decoded_cursor: _MsGraphTeamsChannelCursor,
         limit: int,
     ) -> KnowledgePage:
-        assert decoded_cursor.root_message_remote_id is not None
-        assert decoded_cursor.root_message_revision is not None
-        assert decoded_cursor.root_message_state is not None
+        (
+            root_message_remote_id,
+            root_message_revision,
+            root_message_state,
+        ) = self._require_replies_cursor_fields(decoded_cursor)
         root_reference = validate_msgraph_teams_channel_root_message_reference(
             MsGraphTeamsChannelRootMessageReference(
                 team_remote_id=team_remote_id,
                 channel_remote_id=channel_remote_id,
-                remote_id=decoded_cursor.root_message_remote_id,
-                revision=decoded_cursor.root_message_revision,
-                state=self._provider_root_state(decoded_cursor.root_message_state),
+                remote_id=root_message_remote_id,
+                revision=root_message_revision,
+                state=self._provider_root_state(root_message_state),
             )
         )
         reply_continuation: MsGraphKnowledgeContinuation | None = None
@@ -625,8 +641,8 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                 page,
                 team_remote_id=team_remote_id,
                 channel_remote_id=channel_remote_id,
-                root_message_remote_id=decoded_cursor.root_message_remote_id,
-                root_message_revision=decoded_cursor.root_message_revision,
+                root_message_remote_id=root_message_remote_id,
+                root_message_revision=root_message_revision,
             )
             changes = tuple(
                 self._message_to_change(
@@ -654,9 +670,9 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                     channel_remote_id=channel_remote_id,
                     phase="replies",
                     resume_root_continuation_url=decoded_cursor.resume_root_continuation_url,
-                    root_message_remote_id=decoded_cursor.root_message_remote_id,
-                    root_message_revision=decoded_cursor.root_message_revision,
-                    root_message_state=decoded_cursor.root_message_state,
+                    root_message_remote_id=root_message_remote_id,
+                    root_message_revision=root_message_revision,
+                    root_message_state=root_message_state,
                     reply_continuation_url=validated_page.continuation.url,
                 )
             )
@@ -855,12 +871,15 @@ class MsGraphTeamsChannelKnowledgeAdapter:
         team_remote_id: str,
         channel_remote_id: str,
     ) -> MsGraphTeamsChannelRootMessagePage:
-        if not isinstance(page, MsGraphTeamsChannelRootMessagePage):
+        if type(page) is not MsGraphTeamsChannelRootMessagePage:
             raise ValueError("page must be a MsGraphTeamsChannelRootMessagePage")
         if page.team_remote_id != team_remote_id or page.channel_remote_id != channel_remote_id:
             raise ValueError("page scope does not match source")
+        if type(page.items) is not tuple:
+            raise ValueError("page items must be a tuple")
         if len(page.items) > 1:
             raise ValueError("root page contains more than one item")
+        validated_items: list[MsGraphTeamsChannelMessage] = []
         for item in page.items:
             validated = validate_msgraph_teams_channel_message(item)
             if (
@@ -872,9 +891,16 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                 raise ValueError("item is not a root message")
             if validated.thread_root_remote_id != validated.remote_id:
                 raise ValueError("root thread root mismatch")
+            validated_items.append(validated)
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
         if page.continuation is not None:
-            self._validate_page_continuation(page.continuation)
-        return page
+            validated_continuation = self._deep_validate_continuation(page.continuation)
+        return MsGraphTeamsChannelRootMessagePage(
+            team_remote_id=team_remote_id,
+            channel_remote_id=channel_remote_id,
+            items=tuple(validated_items),
+            continuation=validated_continuation,
+        )
 
     def _validate_reply_page_for_source(
         self,
@@ -885,7 +911,7 @@ class MsGraphTeamsChannelKnowledgeAdapter:
         root_message_remote_id: str,
         root_message_revision: str,
     ) -> MsGraphTeamsChannelReplyPage:
-        if not isinstance(page, MsGraphTeamsChannelReplyPage):
+        if type(page) is not MsGraphTeamsChannelReplyPage:
             raise ValueError("page must be a MsGraphTeamsChannelReplyPage")
         if page.team_remote_id != team_remote_id or page.channel_remote_id != channel_remote_id:
             raise ValueError("page scope does not match source")
@@ -893,7 +919,10 @@ class MsGraphTeamsChannelKnowledgeAdapter:
             raise ValueError("page root id mismatch")
         if page.root_message_revision != root_message_revision:
             raise ValueError("page root revision mismatch")
+        if type(page.items) is not tuple:
+            raise ValueError("page items must be a tuple")
         seen_remote_ids: set[str] = set()
+        validated_items: list[MsGraphTeamsChannelMessage] = []
         for item in page.items:
             validated = validate_msgraph_teams_channel_message(item)
             if (
@@ -915,14 +944,72 @@ class MsGraphTeamsChannelKnowledgeAdapter:
             if opaque_id in seen_remote_ids:
                 raise ValueError("duplicate reply neutral id on page")
             seen_remote_ids.add(opaque_id)
+            validated_items.append(validated)
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
         if page.continuation is not None:
-            self._validate_page_continuation(page.continuation)
-        return page
+            validated_continuation = self._deep_validate_continuation(page.continuation)
+        return MsGraphTeamsChannelReplyPage(
+            team_remote_id=team_remote_id,
+            channel_remote_id=channel_remote_id,
+            root_message_remote_id=root_message_remote_id,
+            root_message_revision=root_message_revision,
+            items=tuple(validated_items),
+            continuation=validated_continuation,
+        )
 
-    def _validate_page_continuation(self, continuation: MsGraphKnowledgeContinuation) -> None:
-        if continuation.kind is not MsGraphKnowledgeContinuationKind.NEXT_PAGE:
+    def _deep_validate_continuation(
+        self,
+        continuation: MsGraphKnowledgeContinuation,
+    ) -> MsGraphKnowledgeContinuation:
+        validated = MsGraphKnowledgeContinuation.model_validate(
+            continuation.model_dump(mode="python")
+        )
+        if validated.kind is not MsGraphKnowledgeContinuationKind.NEXT_PAGE:
             raise ValueError("invalid continuation kind")
-        _validate_continuation_url(continuation.url)
+        _validate_continuation_url(validated.url)
+        return validated
+
+    def _require_replies_cursor_fields(
+        self,
+        decoded_cursor: _MsGraphTeamsChannelCursor,
+    ) -> tuple[str, str, Literal["active", "deleted"]]:
+        if decoded_cursor.phase != "replies":
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                safe_message="Microsoft Graph Teams Channel knowledge cursor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            )
+        if (
+            decoded_cursor.root_message_remote_id is None
+            or decoded_cursor.root_message_revision is None
+            or decoded_cursor.root_message_state is None
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                safe_message="Microsoft Graph Teams Channel knowledge cursor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            )
+        return (
+            decoded_cursor.root_message_remote_id,
+            decoded_cursor.root_message_revision,
+            decoded_cursor.root_message_state,
+        )
+
+    def _validate_descriptor_owned_fields(self, item: KnowledgeItemDescriptor) -> None:
+        if item.revision.etag is not None:
+            raise ValueError("revision etag must be None")
+        if item.revision.content_hash is not None:
+            raise ValueError("revision content_hash must be None")
+        if item.revision.acl_hash is not None:
+            raise ValueError("revision acl_hash must be None")
+        if item.provenance.web_url is not None:
+            raise ValueError("provenance web_url must be None")
+        if item.provenance.safe_locator is not None:
+            raise ValueError("provenance safe_locator must be None")
 
     def _message_to_change(
         self,
@@ -931,11 +1018,12 @@ class MsGraphTeamsChannelKnowledgeAdapter:
         team_remote_id: str,
         channel_remote_id: str,
     ) -> KnowledgeChange:
-        message_kind = (
-            "root"
-            if message.message_kind is MsGraphTeamsChannelMessageKind.ROOT
-            else "reply"
-        )
+        if message.message_kind is MsGraphTeamsChannelMessageKind.ROOT:
+            message_kind: Literal["root", "reply"] = "root"
+        elif message.message_kind is MsGraphTeamsChannelMessageKind.REPLY:
+            message_kind = "reply"
+        else:
+            raise ValueError("unknown message kind")
         opaque_id = self._encode_message_identity(
             team_remote_id=team_remote_id,
             channel_remote_id=channel_remote_id,
@@ -949,6 +1037,10 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                 remote_id=opaque_id,
                 descriptor=None,
             )
+        if message.state is not MsGraphTeamsChannelMessageState.ACTIVE:
+            raise ValueError("unknown message state")
+        if message.body_kind is None or message.body_content is None:
+            raise ValueError("active message body is missing")
         descriptor = self._active_message_to_descriptor(
             message,
             opaque_remote_id=opaque_id,
@@ -984,7 +1076,10 @@ class MsGraphTeamsChannelKnowledgeAdapter:
             subject=message.subject,
             message_kind=message_kind,
         )
-        assert message.body_kind is not None
+        if message.state is not MsGraphTeamsChannelMessageState.ACTIVE:
+            raise ValueError("message is not active")
+        if message.body_kind is None or message.body_content is None:
+            raise ValueError("active message body is missing")
         metadata: dict[str, object] = {
             "message_state": "active",
             "message_kind": message_kind,
@@ -1040,6 +1135,7 @@ class MsGraphTeamsChannelKnowledgeAdapter:
         channel_remote_id: str,
     ) -> tuple[_MsGraphTeamsChannelMessageIdentity, _MsGraphTeamsChannelMessageRevision]:
         self._validate_item_provenance(item, source=source)
+        self._validate_descriptor_owned_fields(item)
         if item.item_type != "msgraph_teams_channel_message":
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_SCOPE,
@@ -1195,16 +1291,21 @@ class MsGraphTeamsChannelKnowledgeAdapter:
         if updated_at is None or last_modified_at != updated_at:
             raise ValueError("last_modified_at mismatch")
         last_edited_raw = metadata["last_edited_at"]
+        last_edited_at: datetime | None = None
         if last_edited_raw is not None:
-            self._parse_timezone_aware_iso(last_edited_raw)
-        event_detail_type = metadata["event_detail_type"]
-        if event_detail_type is not None and not isinstance(event_detail_type, str):
-            raise ValueError("event_detail_type must be a string or None")
-        locale = metadata["locale"]
-        if locale is not None and not isinstance(locale, str):
-            raise ValueError("locale must be a string or None")
+            last_edited_at = self._parse_timezone_aware_iso(last_edited_raw)
+        _validate_optional_metadata_string(
+            metadata["event_detail_type"],
+            max_length=_MAX_EVENT_DETAIL_TYPE_LEN,
+        )
+        _validate_optional_metadata_string(
+            metadata["locale"],
+            max_length=_MAX_LOCALE_LEN,
+        )
         if created_at > last_modified_at:
             raise ValueError("created_at after last_modified_at")
+        if last_edited_at is not None and last_edited_at < created_at:
+            raise ValueError("last_edited_at before created_at")
         return metadata
 
     def _descriptor_to_provider_reference(
@@ -1285,15 +1386,21 @@ class MsGraphTeamsChannelKnowledgeAdapter:
             raise ValueError("locale mismatch")
 
     def _build_structured_record(self, message: MsGraphTeamsChannelMessage) -> JsonObject:
-        assert message.body_kind is not None
-        assert message.body_content is not None
+        if message.state is not MsGraphTeamsChannelMessageState.ACTIVE:
+            raise ValueError("message is not active")
+        if message.body_kind is None:
+            raise ValueError("body_kind is missing")
+        if message.body_content is None:
+            raise ValueError("body_content is missing")
+        if message.message_kind is MsGraphTeamsChannelMessageKind.ROOT:
+            message_kind: Literal["root", "reply"] = "root"
+        elif message.message_kind is MsGraphTeamsChannelMessageKind.REPLY:
+            message_kind = "reply"
+        else:
+            raise ValueError("unknown message kind")
         return {
             "schema": _STRUCTURED_RECORD_SCHEMA,
-            "message_kind": (
-                "root"
-                if message.message_kind is MsGraphTeamsChannelMessageKind.ROOT
-                else "reply"
-            ),
+            "message_kind": message_kind,
             "state": "active",
             "subject": message.subject,
             "body": {
@@ -1526,6 +1633,22 @@ class MsGraphTeamsChannelKnowledgeAdapter:
                 source_kind=self.source_kind,
                 retryable=True,
             ) from None
+
+
+def _validate_optional_metadata_string(value: object, *, max_length: int) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("metadata string must be a string or None")
+    if not value:
+        raise ValueError("metadata string must not be empty")
+    if value != value.strip():
+        raise ValueError("metadata string must not have leading or trailing whitespace")
+    if _ASCII_CONTROL.search(value):
+        raise ValueError("metadata string must not contain control characters")
+    if len(value) > max_length:
+        raise ValueError("metadata string exceeds maximum length")
+    return value
 
 
 def _encode_canonical_payload(payload: dict[str, object]) -> str:

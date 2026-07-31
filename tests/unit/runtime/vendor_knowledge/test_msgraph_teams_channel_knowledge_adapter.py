@@ -8,7 +8,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
@@ -73,6 +75,7 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_channel impor
     MSGRAPH_TEAMS_CHANNEL_CURSOR_VERSION,
     MSGRAPH_TEAMS_CHANNEL_SCOPE_TYPE,
     MsGraphTeamsChannelKnowledgeAdapter,
+    _MsGraphTeamsChannelCursor,
     encode_msgraph_teams_channel_scope_id,
     register_msgraph_teams_channel_knowledge_adapter,
 )
@@ -1903,3 +1906,463 @@ async def test_public_objects_do_not_leak_secrets() -> None:
     content_blob = json.dumps(content.model_dump(mode="json"))
     assert _ROOT_NEXT_URL not in content_blob
     assert fake.forbidden_calls == []
+
+
+# --- 12. Review-fix boundary regressions ---
+
+
+def test_production_file_has_no_assertions() -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    target = (
+        repo_root
+        / "intergrax"
+        / "runtime"
+        / "vendor_knowledge"
+        / "adapters"
+        / "ms365_graph_teams_channel.py"
+    )
+    try:
+        result = subprocess.run(
+            [
+                "rg",
+                "-n",
+                r"^\s*assert\b",
+                str(target),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        content = target.read_text(encoding="utf-8")
+        assert not any(
+            line.lstrip().startswith("assert ") or line.lstrip() == "assert"
+            for line in content.splitlines()
+        )
+    else:
+        assert result.returncode == 1
+        assert result.stdout.strip() == ""
+
+
+def _assert_invalid_cursor_boundary(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    *,
+    fake: _FakeTeamsChannelCollaborationSuite,
+    cursor_value: str,
+) -> None:
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert err.retryable is False
+    assert fake.root_calls == []
+    assert fake.reply_calls == []
+    rendered = f"{err!r} {err.safe_message}"
+    assert cursor_value not in rendered
+
+
+async def _read_page_invalid_cursor(cursor: KnowledgeCursor) -> pytest.ExceptionInfo[VendorKnowledgeError]:
+    adapter = MsGraphTeamsChannelKnowledgeAdapter()
+    fake = _FakeTeamsChannelCollaborationSuite(
+        root_pages=[_root_page(items=(_active_root(),))],
+        reply_pages={
+            (_ROOT_1, _ETAG_ROOT_1): [
+                _reply_page(
+                    items=(_active_reply(),),
+                    root_message_remote_id=_ROOT_1,
+                    root_message_revision=_ETAG_ROOT_1,
+                )
+            ]
+        },
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=cursor,
+            limit=50,
+        )
+    _assert_invalid_cursor_boundary(exc_info, fake=fake, cursor_value=cursor.value)
+    return exc_info
+
+
+@pytest.mark.parametrize(
+    ("cursor_payload",),
+    [
+        (
+            _MsGraphTeamsChannelCursor.model_construct(
+                schema_version=MSGRAPH_TEAMS_CHANNEL_CURSOR_VERSION,
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                phase="replies",
+                root_message_remote_id=None,
+                root_message_revision=None,
+                root_message_state=None,
+            ).model_dump(),
+        ),
+        (
+            {
+                "schema_version": MSGRAPH_TEAMS_CHANNEL_CURSOR_VERSION,
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "phase": "replies",
+                "resume_root_continuation_url": _ROOT_NEXT_URL,
+                "root_message_remote_id": None,
+                "root_message_revision": _ETAG_ROOT_1,
+                "root_message_state": "active",
+            },
+        ),
+        (
+            {
+                "schema_version": MSGRAPH_TEAMS_CHANNEL_CURSOR_VERSION,
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "phase": "replies",
+                "resume_root_continuation_url": _ROOT_NEXT_URL,
+                "root_message_remote_id": _ROOT_1,
+                "root_message_revision": None,
+                "root_message_state": "active",
+            },
+        ),
+        (
+            {
+                "schema_version": MSGRAPH_TEAMS_CHANNEL_CURSOR_VERSION,
+                "team_remote_id": _TEAM_ID,
+                "channel_remote_id": _CHANNEL_ID,
+                "phase": "replies",
+                "resume_root_continuation_url": _ROOT_NEXT_URL,
+                "root_message_remote_id": _ROOT_1,
+                "root_message_revision": _ETAG_ROOT_1,
+                "root_message_state": None,
+            },
+        ),
+        (
+            _MsGraphTeamsChannelCursor.model_construct(
+                schema_version=MSGRAPH_TEAMS_CHANNEL_CURSOR_VERSION,
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                phase="roots",
+                resume_root_continuation_url=_ROOT_NEXT_URL,
+                root_message_remote_id=_ROOT_1,
+                root_message_revision=_ETAG_ROOT_1,
+                root_message_state="active",
+            ).model_dump(),
+        ),
+    ],
+)
+async def test_malformed_replies_cursor_rejected(cursor_payload: dict[str, Any]) -> None:
+    cursor = _encode_cursor(cursor_payload)
+    await _read_page_invalid_cursor(cursor)
+
+
+async def _read_page_invalid_provider_response(
+    *,
+    root_pages: list[MsGraphTeamsChannelRootMessagePage] | None = None,
+    reply_pages: dict[tuple[str, str], list[MsGraphTeamsChannelReplyPage]] | None = None,
+    cursor: KnowledgeCursor | None = None,
+) -> pytest.ExceptionInfo[VendorKnowledgeError]:
+    adapter = MsGraphTeamsChannelKnowledgeAdapter()
+    fake = _FakeTeamsChannelCollaborationSuite(
+        root_pages=root_pages,
+        reply_pages=reply_pages,
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=cursor,
+            limit=50,
+        )
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert err.retryable is False
+    assert isinstance(err.__cause__, type(None)) or err.__cause__ is None
+    return exc_info
+
+
+def _malformed_active_root(*, body_kind: object = None, body_content: object = None) -> object:
+    return MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_ROOT_1,
+        message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+        remote_id=_ROOT_1,
+        revision=_ETAG_ROOT_1,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
+        created_at=_CREATED_TS,
+        last_modified_at=_TS,
+        body_kind=body_kind,
+        body_content=body_content,
+    )
+
+
+def _malformed_active_reply(*, body_kind: object = None, body_content: object = None) -> object:
+    return MsGraphTeamsChannelMessage.model_construct(
+        team_remote_id=_TEAM_ID,
+        channel_remote_id=_CHANNEL_ID,
+        thread_root_remote_id=_ROOT_1,
+        message_kind=MsGraphTeamsChannelMessageKind.REPLY,
+        remote_id=_REPLY_1,
+        revision=_ETAG_REPLY_1,
+        state=MsGraphTeamsChannelMessageState.ACTIVE,
+        message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+        importance=MsGraphTeamsChannelImportance.NORMAL,
+        created_at=_CREATED_TS,
+        last_modified_at=_TS,
+        body_kind=body_kind,
+        body_content=body_content,
+    )
+
+
+async def _read_page_with_malformed_message(
+    *,
+    message: object,
+    setup_reply: bool,
+) -> None:
+    if setup_reply:
+        adapter = MsGraphTeamsChannelKnowledgeAdapter()
+        fake = _FakeTeamsChannelCollaborationSuite(
+            root_pages=[_root_page(items=(_active_root(),))],
+            reply_pages={
+                (_ROOT_1, _ETAG_ROOT_1): [
+                    MsGraphTeamsChannelReplyPage.model_construct(
+                        team_remote_id=_TEAM_ID,
+                        channel_remote_id=_CHANNEL_ID,
+                        root_message_remote_id=_ROOT_1,
+                        root_message_revision=_ETAG_ROOT_1,
+                        items=(message,),
+                        continuation=None,
+                    )
+                ]
+            },
+        )
+        root_page = await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+        with pytest.raises(VendorKnowledgeError) as exc_info:
+            await adapter.read_page(
+                integration=_integration(fake),
+                source=_source(),
+                cursor=root_page.next_cursor,
+                limit=50,
+            )
+        assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+        return
+    await _read_page_invalid_provider_response(
+        root_pages=[
+            MsGraphTeamsChannelRootMessagePage.model_construct(
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                items=(message,),
+                continuation=None,
+            )
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("message", "setup_reply"),
+    [
+        (_malformed_active_root(), False),
+        (_malformed_active_root(body_kind=MsGraphTeamsChannelBodyKind.TEXT), False),
+        (_malformed_active_reply(), True),
+        (_malformed_active_reply(body_content="x"), True),
+    ],
+)
+async def test_malformed_active_provider_message_rejected(
+    message: object,
+    setup_reply: bool,
+) -> None:
+    await _read_page_with_malformed_message(message=message, setup_reply=setup_reply)
+
+
+@pytest.mark.parametrize(
+    ("message", "setup_reply"),
+    [
+        (
+            MsGraphTeamsChannelMessage.model_construct(
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                thread_root_remote_id=_ROOT_1,
+                message_kind="bogus",
+                remote_id=_ROOT_1,
+                revision=_ETAG_ROOT_1,
+                state=MsGraphTeamsChannelMessageState.ACTIVE,
+                message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+                importance=MsGraphTeamsChannelImportance.NORMAL,
+                created_at=_CREATED_TS,
+                last_modified_at=_TS,
+                body_kind=MsGraphTeamsChannelBodyKind.TEXT,
+                body_content="x",
+            ),
+            False,
+        ),
+        (
+            MsGraphTeamsChannelMessage.model_construct(
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                thread_root_remote_id=_ROOT_1,
+                message_kind=MsGraphTeamsChannelMessageKind.ROOT,
+                remote_id=_ROOT_1,
+                revision=_ETAG_ROOT_1,
+                state="bogus",
+                message_type=MsGraphTeamsChannelMessageType.MESSAGE,
+                importance=MsGraphTeamsChannelImportance.NORMAL,
+                created_at=_CREATED_TS,
+                last_modified_at=_TS,
+                body_kind=MsGraphTeamsChannelBodyKind.TEXT,
+                body_content="x",
+            ),
+            False,
+        ),
+    ],
+)
+async def test_unknown_provider_message_kind_or_state_rejected(
+    message: object,
+    setup_reply: bool,
+) -> None:
+    await _read_page_with_malformed_message(message=message, setup_reply=setup_reply)
+
+
+async def test_root_page_list_items_rejected() -> None:
+    await _read_page_invalid_provider_response(
+        root_pages=[
+            MsGraphTeamsChannelRootMessagePage.model_construct(
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                items=[_active_root()],
+                continuation=None,
+            )
+        ],
+    )
+
+
+async def test_reply_page_list_items_rejected() -> None:
+    adapter = MsGraphTeamsChannelKnowledgeAdapter()
+    fake = _FakeTeamsChannelCollaborationSuite(
+        root_pages=[_root_page(items=(_active_root(),))],
+        reply_pages={
+            (_ROOT_1, _ETAG_ROOT_1): [
+                MsGraphTeamsChannelReplyPage.model_construct(
+                    team_remote_id=_TEAM_ID,
+                    channel_remote_id=_CHANNEL_ID,
+                    root_message_remote_id=_ROOT_1,
+                    root_message_revision=_ETAG_ROOT_1,
+                    items=[_active_reply()],
+                    continuation=None,
+                )
+            ]
+        },
+    )
+    root_page = await adapter.read_page(
+        integration=_integration(fake),
+        source=_source(),
+        cursor=None,
+        limit=50,
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=root_page.next_cursor,
+            limit=50,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+
+
+async def test_malformed_continuation_rejected() -> None:
+    await _read_page_invalid_provider_response(
+        root_pages=[
+            MsGraphTeamsChannelRootMessagePage.model_construct(
+                team_remote_id=_TEAM_ID,
+                channel_remote_id=_CHANNEL_ID,
+                items=(_active_root(),),
+                continuation=MsGraphKnowledgeContinuation.model_construct(
+                    kind="bogus",
+                    url=_ROOT_NEXT_URL,
+                ),
+            )
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("metadata_patch",),
+    [
+        ({"event_detail_type": ""},),
+        ({"event_detail_type": "   "},),
+        ({"event_detail_type": " value "},),
+        ({"event_detail_type": "bad\x00value"},),
+        ({"event_detail_type": "x" * 1025},),
+        ({"locale": ""},),
+        ({"locale": "   "},),
+        ({"locale": " pl-PL "},),
+        ({"locale": "bad\x00locale"},),
+        ({"locale": "x" * 129},),
+        ({"last_edited_at": "2024-01-01T09:00:00+00:00"},),
+    ],
+)
+async def test_fetch_content_rejects_invalid_metadata_strings(
+    metadata_patch: dict[str, object],
+) -> None:
+    base = _message_descriptor().metadata or {}
+    merged = {**base, **metadata_patch}
+    await _fetch_content_invalid_descriptor(
+        _message_descriptor(metadata=merged, metadata_only=True),
+    )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("etag", '"etag-1"'),
+        ("content_hash", "abc123"),
+        ("acl_hash", "acl123"),
+    ],
+)
+async def test_fetch_content_rejects_forged_revision_fields(
+    field_name: str,
+    field_value: str,
+) -> None:
+    item = _message_descriptor()
+    revision = item.revision.model_copy(update={field_name: field_value})
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=item.provenance,
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("web_url", "https://teams.microsoft.com/l/message/secret"),
+        ("safe_locator", "secret-locator"),
+    ],
+)
+async def test_fetch_content_rejects_forged_provenance_locator_fields(
+    field_name: str,
+    field_value: str,
+) -> None:
+    item = _message_descriptor()
+    provenance = item.provenance.model_copy(update={field_name: field_value})
+    broken = KnowledgeItemDescriptor.model_construct(
+        identity=item.identity,
+        revision=item.revision,
+        title=item.title,
+        item_type=item.item_type,
+        content_mode=item.content_mode,
+        content_available=item.content_available,
+        provenance=provenance,
+        metadata=item.metadata,
+    )
+    await _fetch_content_invalid_descriptor(broken)
