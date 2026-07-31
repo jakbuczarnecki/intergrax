@@ -13,11 +13,12 @@
 Build one platform-level reusable provider foundation above existing category-specific vendor integrations so applications can consume external enterprise knowledge through **three separate consumption modes**:
 
 ```text
-durable normalized synchronization
-application/database materialization
-optional RAG indexing
-bounded live reads
+indexed RAG
+durable materialization without RAG
+bounded live access
 ```
+
+Synchronization is a lifecycle mechanism of the durable modes, not a separate fourth consumption mode.
 
 ```text
 existing provider/category integration
@@ -25,13 +26,27 @@ existing provider/category integration
         v
 shared provider read primitives
         |
-        +---------------------------+---------------------------+
-        |                           |                           |
-        v                           v                           v
-durable sync/materialization   application/database store   live capability execution
-        |                           |                           |
-        v                           v                           v
-optional RAG ingestion         (no RAG required)            ephemeral evidence
+        +----------------------------------+
+        |                                  |
+        v                                  v
+durable knowledge path                live capability path
+        |                                  |
+        v                                  v
+Vendor Knowledge Adapter           Live Capability Adapter
+        |                                  |
+        v                                  v
+Vendor Knowledge Facade            Validated Executor
+        |                                  |
+        v                                  v
+Sync / Materialization Runtime      ephemeral Live Evidence
+        |
+        v
+injected durable sink
+├── DocumentStore
+├── relational / NoSQL database
+├── object storage
+├── application repository
+└── optional LKW Knowledge Intake → RAG
 ```
 
 Existing integrations remain low-level and authoritative. Vendor Knowledge Facade and Sync Coordinator cover the **durable** path today. Live capability execution remains planned. The facade is not an integration category.
@@ -282,7 +297,9 @@ Bounded sync-handler retry/backoff implemented
 Jira issues knowledge adapter implemented
 Confluence pages knowledge adapter implemented
 First real vendor facade/coordinator proof implemented
-Vendor adapters beyond Jira and Confluence not implemented
+Jira Issues, Confluence Pages, Microsoft Graph Drive, Microsoft Graph Mail and Microsoft Graph Teams Channel Vendor Knowledge adapters implemented.
+
+Microsoft Graph Teams Chat and Calendar Vendor Knowledge adapters remain planned in the current adapter-family roadmap.
 LKW connected-source bridge not implemented
 ```
 
@@ -305,7 +322,7 @@ Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
 6. The facade is a platform service above integrations.
 7. Source adapters are thin mappings over already resolved integration instances.
 8. Adapters do not own clients, credentials, persistence or checkpoints.
-9. LKW communicates with the facade, not vendor SDKs.
+9. LKW and other knowledge-consuming applications use Vendor Knowledge Facade for durable operations and the validated live capability boundary for live operations; they do not call vendor SDKs or provider-specific integration methods directly.
 10. Reuse `IntegrationProfile` and the existing integration catalog for integration resolution.
 11. Reuse `SecretsStore` for secret material; durable bindings contain opaque references only.
 12. Reuse `DocumentStoreTaskQueue`, `DocumentStoreTaskWorker` and `TaskExecutionRegistry` for later asynchronous sync.
@@ -864,11 +881,11 @@ Registry keys:
 
 Content mapping:
 
-- `drive` → `BINARY` for files, with safe structured metadata for folders and inventory records;
-- `mail` → `STRUCTURED_RECORD`; attachments remain deferred in this adapter slice;
-- `calendar` → `STRUCTURED_RECORD`;
-- `teams_chat` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items;
-- `teams_channel` → `RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items.
+- `drive` → `BINARY` for files; metadata-only non-file records for folders and inventory records;
+- `mail` → `STRUCTURED_RECORD`; attachment binary content deferred;
+- `teams_channel` → `STRUCTURED_RECORD` only; safe attachment inventory included; attachment URLs, embedded payloads, hosted-content bytes and binary attachment materialization excluded;
+- `teams_chat` → planned / to be frozen by the adapter task (`RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items);
+- `calendar` → planned / to be frozen by the adapter task (`STRUCTURED_RECORD`).
 
 Each adapter:
 

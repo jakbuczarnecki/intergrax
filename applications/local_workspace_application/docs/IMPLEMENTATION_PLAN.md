@@ -297,7 +297,13 @@ Expected capabilities: connection listing and safe inspection; remote-resource d
 
 **Status:** **PLANNED**.
 
-First real connector proof should use Microsoft 365 unless repository evidence at implementation time shows another provider is materially more complete. Initial live access is read-only.
+Microsoft Graph remains an appropriate durable synchronization and exact-read connector proof because its low-level reads and several Vendor Knowledge adapters are implemented.
+
+Jira or Confluence is the preferred first provider-neutral live search/read capability proof because the existing integrations already expose operational search and exact-read methods.
+
+A Microsoft Graph live search capability requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
+
+Initial live access is read-only.
 
 **Acceptance gate:** Must prove that indexed evidence and live evidence can be combined; live evidence is **not** automatically persisted; each evidence item retains mode and provenance.
 
@@ -321,7 +327,21 @@ same vendor integration
 └── bounded live query/read toward Live Evidence
 ```
 
-Jira or Confluence should remain the preferred first live search/read proof because their existing integrations already expose operational search and exact-read methods. Microsoft Graph live search capabilities require separate bounded contracts and must **not** be faked through full synchronization.
+Jira or Confluence is the preferred first provider-neutral live search/read capability proof because the existing integrations already expose operational search and exact-read methods.
+
+A Microsoft Graph live search capability requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
+
+**Execution order:**
+
+```text
+1. complete Teams Chat and Calendar durable adapters;
+2. perform the adapter-family and three-mode capability audit;
+3. use Jira or Confluence for the first bounded live search/read capability proof;
+4. add bounded Microsoft Graph live capabilities separately;
+5. converge at Hybrid Ask.
+```
+
+The immediate current task remains `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`.
 
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 

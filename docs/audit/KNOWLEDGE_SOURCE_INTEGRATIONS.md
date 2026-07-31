@@ -1,9 +1,9 @@
-# Vendor Knowledge Facade â€” Reuse Audit
+# Vendor Knowledge Facade — Reuse Audit
 
-**Status:** `DONE / READY_FOR_REVIEW`
-**Task:** `VENDOR-KNOWLEDGE-FACADE-AUDIT-1`
-**Branch:** `development`
-**Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
+**Status:** `DONE / READY_FOR_REVIEW`  
+**Task:** `VENDOR-KNOWLEDGE-FACADE-AUDIT-1`  
+**Branch:** `development`  
+**Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
 **Plan:** [`../plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 
 ---
@@ -110,7 +110,7 @@ Purpose:
 resolved existing integration
 +
 (provider_id, integration_kind, source_kind)
-â†’ source adapter
+→ source adapter
 ```
 
 Recommended key:
@@ -346,7 +346,7 @@ The package name is a platform service namespace, not an integration category.
 
 ### `VENDOR-KNOWLEDGE-FACADE-CONTRACT-1`
 
-**Type:** small code task
+**Type:** small code task  
 **Status:** `DONE`
 
 Allowed initial scope:
@@ -400,8 +400,6 @@ LATER:   VENDOR-KNOWLEDGE-SYNC-1A
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
----
-
 ## Three-mode reuse audit
 
 **Date:** 2026-07-31
@@ -448,6 +446,7 @@ DONE:    VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
 IN_PROGRESS: MSGRAPH-KNOWLEDGE-ADAPTERS-1
   NEXT:  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
 DEFERRED: LKW-CONNECTED-SOURCE-1
-DEFERRED: VENDOR-LIVE-CAPABILITY-CONTRACT-1
-DEFERRED: VENDOR-LIVE-CAPABILITY-EXECUTOR-1
+PLANNED: VENDOR-LIVE-CAPABILITY-CONTRACT-1
+PLANNED: VENDOR-LIVE-CAPABILITY-EXECUTOR-1
+  (planned after adapter-family completion; not part of the immediate adapter task)
 ```

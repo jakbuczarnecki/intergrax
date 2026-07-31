@@ -65,10 +65,10 @@ One-sentence result:
 | No generic `knowledge_source` integration category | `REJECTED` | Knowledge ingestion is a cross-category application use case, not the primary domain identity of every vendor integration. |
 | No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
 | Vendor integration remains low-level | `FROZEN` | It owns provider transport, auth handoff, vendor request/response mapping, provider errors and category operations. It does not know LKW, workspaces, RAG or product workflows. |
-| Unified knowledge behavior is exposed by a facade | `FROZEN DIRECTION` | A shared platform service resolves existing integrations and exposes one vendor-neutral knowledge access boundary to consuming applications. |
+| Unified knowledge behavior is exposed by platform boundaries | `FROZEN DIRECTION` | Durable knowledge behavior uses Vendor Knowledge Facade; live knowledge behavior uses the validated live capability boundary. Both resolve the same existing integration through separate adapter paths. |
 | Facade is not an integration category | `FROZEN` | It is a platform service/facade and may use a registry of source adapters. It is not registered as another vendor integration. |
 | Existing integrations may expose additional provider methods | `FROZEN DIRECTION` | Delta reads, pagination, attachments, permissions or inventory methods may be added to the correct existing integration or to a private/provider-specific read facet behind it. |
-| Application does not call vendor methods directly | `FROZEN` | LKW communicates with the facade. The facade and its adapters resolve the correct vendor integration and normalize the result. |
+| Application does not call vendor methods directly | `FROZEN` | LKW and other knowledge-consuming applications do not call vendor APIs, vendor SDKs or provider-specific integration methods directly. Durable knowledge operations use: Vendor Knowledge Facade → Vendor Knowledge Adapter → existing vendor integration. Live knowledge operations use: Validated Capability Executor → Live Capability Adapter → existing vendor integration. Both paths must resolve the same Connection and existing provider/category integration. |
 | One shared synchronization runtime | `FROZEN DIRECTION` | Checkpoints, leases, retry, reconciliation, durable item state and replay semantics are common platform/application mechanisms, not independently reimplemented by each vendor. |
 | One shared ingestion pipeline | `FROZEN` | Parsing, structured normalization, chunking, embeddings, Document Store and Vector Store remain shared downstream capabilities. |
 | Stable remote identity is separate from revision | `FROZEN` | Vendor item identity must not be derived from a content hash. Version, ETag, content hash and ACL hash represent change state. |
@@ -476,7 +476,12 @@ The live capability layer does **not** own:
 
 ### 3.9 Layer 9 — consuming application
 
-LKW is the first platform proof and consumer of the facade.
+LKW is the first platform proof consuming both:
+
+- the durable Vendor Knowledge Facade boundary;
+- the governed live capability boundary.
+
+The live capability runtime is planned, not implemented.
 
 LKW owns:
 
@@ -502,29 +507,23 @@ LKW must not:
 ## 4. Target dependency direction
 
 ```text
-LKW / other application
+LKW / knowledge-consuming application
         |
-        +------------------------------+------------------------------+
-        |                              |                              |
-        v                              v                              v
-Vendor Knowledge Facade      Live Capability Adapter          (optional direct
-(durable path)               (live path)                     integration use)
-        |                              |
-        v                              v
-Sync / Materialization Runtime   Validated Capability Executor
-        |                              |
-        v                              v
-Knowledge Adapter Registry       Capability Registry
-        |                              |
-        v                              v
-source-kind adapter              shared provider read primitives
-        |                              |
-        +--------------+---------------+
-                       v
-existing category-correct vendor integration
-                       |
-                       v
-provider API / SDK / transport
+        +----------------------------+
+        |                            |
+        v                            v
+Vendor Knowledge Facade      Validated Capability Executor
+(durable path)               (live path)
+        |                            |
+        v                            v
+Vendor Knowledge Adapter     Live Capability Adapter
+        |                            |
+        +-------------+--------------+
+                      v
+      existing category-correct vendor integration
+                      |
+                      v
+          provider API / SDK / transport
 ```
 
 The reverse dependency is forbidden:
@@ -533,7 +532,7 @@ The reverse dependency is forbidden:
 vendor integration -> facade -> LKW
 ```
 
-Vendor integrations must remain reusable by agents, applications and tools that never use LKW or knowledge ingestion.
+The existing integration remains reusable by unrelated platform tools, agents or applications that do not consume knowledge through the LKW/Vendor Knowledge product boundary. That reuse must not imply that LKW may bypass its durable or live authorization boundary.
 
 ---
 
@@ -1240,7 +1239,7 @@ This architecture is accepted when all statements below are unambiguous:
 4. Vendor integrations remain independent of LKW and RAG.
 5. The facade is a platform service above integrations, not a vendor integration.
 6. Provider/source adapters normalize behavior without duplicating clients or auth.
-7. LKW communicates with the facade, not directly with vendor integrations.
+7. LKW communicates with Vendor Knowledge Facade (durable) and the validated live capability boundary (live), not directly with vendor integrations.
 8. Durable checkpoint, replay and reconciliation behavior is shared.
 9. Parsing, chunking, embeddings and stores remain one shared pipeline.
 10. Stable remote identity is distinct from content and ACL revisions.
@@ -1254,32 +1253,32 @@ This architecture is accepted when all statements below are unambiguous:
 ## 18. Final architecture statement
 
 ```text
-category-correct base contracts
-        |
-        v
-single vendor integration implementation
+existing provider/category integration
         |
         v
 shared provider read primitives
         |
-        +---------------------------+---------------------------+
-        |                           |                           |
-        v                           v                           v
-vendor knowledge adapter    live capability adapter     (other consumers)
-        |                           |
-        v                           v
-Vendor Knowledge Facade     Validated Capability Executor
-        |                           |
-        v                           v
-sync/materialization runtime  ephemeral Live Evidence
+        +----------------------------------+
+        |                                  |
+        v                                  v
+durable knowledge path                live capability path
+        |                                  |
+        v                                  v
+Vendor Knowledge Adapter           Live Capability Adapter
+        |                                  |
+        v                                  v
+Vendor Knowledge Facade            Validated Executor
+        |                                  |
+        v                                  v
+Sync / Materialization Runtime      ephemeral Live Evidence
         |
         v
 injected durable sink
-        |
-        +---------------------------+
-        |                           |
-        v                           v
-application/database store    LKW Knowledge Intake → RAG pipeline
+├── DocumentStore
+├── relational / NoSQL database
+├── object storage
+├── application repository
+└── optional LKW Knowledge Intake → RAG
 ```
 
-> Vendor integrations provide the low-level provider capabilities and shared read primitives. The durable path normalizes and materializes provider data through Vendor Knowledge adapters and the sync runtime. The live path executes bounded read-only capabilities at request time. Applications consume either or both paths without duplicating vendor clients, SDKs or integration categories. RAG is one downstream consumer of durable materialization — not the only durable outcome.
+> Vendor integrations provide the low-level provider capabilities and shared read primitives. The durable path normalizes and materializes provider data through Vendor Knowledge adapters and the sync runtime. The live path executes bounded read-only capabilities at request time. Applications consume either or both paths without duplicating vendor clients, SDKs or integration categories. Exactly three consumption modes apply: indexed RAG, durable materialization without RAG and bounded live access. Synchronization is a lifecycle mechanism of the durable modes, not a separate fourth consumption mode.
