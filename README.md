@@ -10,20 +10,21 @@
 
 **Agent OS and Harness AI runtime** for building, orchestrating, experimenting with, and validating specialized AI agents — with a **clear separation between who decides, who executes, and who orchestrates.**
 
-**First time evaluating?** Start with [Quick start](#quick-start) (lab host, ~5 min). **Next step:** [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) (Docker + Elasticsearch + Kibana). **Prerequisites:** Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
+**First time evaluating?** Start with [Quick start](#quick-start) (lab host, ~5 min) → [Token Optimization Engine](docs/features/token_optimization/README.md) (engine overview and proofs) → [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) (Docker + Elasticsearch + Kibana). **Prerequisites:** Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
 
 ---
 
 ## See Intergrax running
 
-Two evaluation paths — start with the lighter lab path, then run the full product proof when ready.
+Three evaluation paths — start with the lighter lab path, explore the Token Optimization engine and its proofs, then run the full product proof when ready.
 
 | Path | Best for | Requires |
 |------|----------|----------|
 | **[Quick start](#quick-start)** | First contact — clone, verify, lab run, trace inspect | `uv sync`, lab host on `:8090` |
+| **[Token Optimization Engine](docs/features/token_optimization/README.md)** | Engine architecture, deterministic layers, plugin model, cache-aware execution and reproducible proofs | Python 3.12; Docker + NVIDIA GPU only for the live vLLM proof |
 | **[LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)** | Full Tier-3 product proof — RAG, observability export, Elasticsearch, Kibana, Slack, qdrant, other vendors | Docker Compose, prerequisites above |
 
-**Quick start** runs the lab host and a traced Echo capability run. **LKW platform proof** validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
+**Quick start** runs the lab host and a traced Echo capability run. **Token Optimization** introduces the deterministic optimization engine, built-in layers, plugin contract, and proof catalog (live vLLM proof is optional and gated). **LKW platform proof** validates a real `run_id`, `tool_requested` / `tool_completed` events, duplicate-free export, and safety-checked observability documents.
 
 ## Overview
 
@@ -666,6 +667,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | **Close out a full harness layer** | [LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Understand the platform | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) → pick a domain pair |
 | Exploring multi-layer platform features | [Multi-layer feature docs](docs/features/README.md) |
+| **Token Optimization Engine** | [Engine guide](docs/features/token_optimization/README.md) · [architecture](docs/features/architecture/TOKEN_OPTIMIZATION.md) · [plan](docs/features/plan/TOKEN_OPTIMIZATION.md) |
 | **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) |
 | See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [plan ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) · [Appendix AC](docs/guides/AGENT_CREATION_GUIDE.md#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) |

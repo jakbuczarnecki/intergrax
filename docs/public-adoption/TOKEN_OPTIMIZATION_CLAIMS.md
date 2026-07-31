@@ -10,6 +10,8 @@ Use, modification, or distribution without written permission is prohibited.
 
 This document defines safe, bounded, non-marketing wording for public-facing references to Intergrax Token Optimization work. It is a claim-boundary control document, not a marketing brief. Use it before publishing blog posts, README excerpts, outreach copy, issue comments, or partner-facing summaries that mention token optimization.
 
+**Main engine guide:** [`../features/token_optimization/README.md`](../features/token_optimization/README.md)
+
 **README promotion gate:** main README Token Optimization promotion (badge, savings numbers, proof links) is allowed only after **TOKEN-10H** when a checked-in proof has passed **TOKEN-10G** hard gates and been independently audited.
 
 ---

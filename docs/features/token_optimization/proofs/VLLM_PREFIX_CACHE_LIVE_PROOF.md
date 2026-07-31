@@ -1,5 +1,7 @@
 # Intergrax Token Optimization — vLLM Prefix-Cache Live Proof
 
+> **See also:** [Token Optimization Engine guide](../README.md) · [Architecture](../../architecture/TOKEN_OPTIMIZATION.md) · [Plan](../../plan/TOKEN_OPTIMIZATION.md)
+
 ## Purpose
 
 This guide shows how to start the canonical local vLLM proof environment and verify real prefix-cache reuse through Intergrax.
@@ -375,6 +377,8 @@ uv run python -m intergrax.runtime.token_optimization.proofs.vllm_prefix_cache_l
 **Behavior:**
 
 - `manage_vllm` defaults to **false** — the runner **does not** start or stop Docker; it connects to the server you started manually.
+- Shared/manual servers are **never** stopped by the runner.
+- Managed lifecycle (`--manage-vllm`): the runner may start vLLM via Compose; after proof it runs `docker compose … stop vllm` only when it started or recreated the container and `--keep-vllm-running` is not set.
 - The runner performs one **warmup** inference (non-measured) then **three canonical runs**.
 - Each run executes three cases in order: **COLD**, **WARM**, **CHANGED_PREFIX**.
 - Default report directory: `build/proofs/token_optimization/vllm_prefix_cache/<timestamp_utc>/`.

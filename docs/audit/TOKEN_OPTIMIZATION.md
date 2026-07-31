@@ -14,6 +14,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Related domains:** `CONTEXT_ENGINEERING`, `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
+**Main engine guide:** [../features/token_optimization/README.md](../features/token_optimization/README.md)
+
 ---
 
 ## How to use
