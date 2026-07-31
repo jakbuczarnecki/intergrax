@@ -1,6 +1,6 @@
 # Local Workspace Application — Implementation Plan
 
-**Status:** Product-first MVP roadmap (2026-07-27)  
+**Status:** Product-first MVP roadmap (2026-07-31)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
@@ -14,14 +14,14 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP — Hybrid Knowledge Workspace
 Last accepted implementation:
-  LKW-WORKSPACE-CONTENTS-1B-5-2
-  including C1 and C2 corrections
+  LKW-MODEL-RUNTIME-1
+  including C1–C4 corrections and evidence v2
 
 Architecture:
   LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — ACCEPTED
 
 Next implementation:
-  LKW-MODEL-RUNTIME-1 — NEXT
+  LKW-KNOWLEDGE-ACCESS-1 — NEXT
 
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
@@ -97,10 +97,11 @@ LKW-WORKSPACE-CONTENTS-1B-5-2
 → END-TO-END WEB_URL KNOWLEDGE INTAKE
 → including accepted C1 and C2 corrections
 
-NEXT:
 LKW-MODEL-RUNTIME-1
 → OLLAMA / vLLM END-TO-END PORTABILITY
+→ accepted with full canonical proof and evidence v2
 
+NEXT:
 LKW-KNOWLEDGE-ACCESS-1
 → WORKSPACE CONNECTIONS, INDEXED SOURCES AND LIVE ACCESS CONFIGURATION
 
@@ -134,13 +135,14 @@ LKW-LIVE-PLATFORM-PROOF-1
 |---|---|---|
 | `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **ACCEPTED** |
 | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **ACCEPTED** |
+| `LKW-MODEL-RUNTIME-1` | The same LKW workspace, document and vector index pass generation, structured planning, validated tool calling, public HTTP Ask, citations and persisted runs on Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct` without reindexing | **ACCEPTED** |
 
 ### 3.2 Next and planned product blocks
 
 | Block | One-sentence outcome | Status |
 |---|---|---|
-| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **NEXT** |
-| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **PLANNED** |
+| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **ACCEPTED** |
+| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **NEXT** |
 | `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
 | `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts | **PLANNED** |
@@ -269,7 +271,7 @@ Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../doc
 
 ---
 
-## 7. Product block definitions (planned)
+## 7. Product block definitions
 
 Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). The sections below summarize one-sentence outcomes. Detailed `1B-6` / `1C`–`1E` material is preserved in §8–§10 as implementation reference mapped into the blocks above.
 
@@ -277,15 +279,24 @@ Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCH
 
 **One-sentence outcome:** The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates.
 
-**Status:** **NEXT**.
+**Status:** **ACCEPTED**.
 
-Proof must cover: basic generation; structured output; Conversation Interaction Plan generation; tool calling; grounded synthesis; health check; configuration switch; same product contracts. Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex.
+Accepted proof pair:
+
+```text
+Ollama qwen2.5:14b
+vLLM Qwen/Qwen2.5-3B-Instruct
+```
+
+The proof covers basic generation, structured Conversation Interaction planning, deterministic plan validation, native tool calling, real `local.workspace.search` execution, public HTTP Ask, verified citations, persisted Ask runs and full shared-index invariance without reindexing. Canonical evidence: [`LKW_MODEL_RUNTIME_PORTABILITY.md`](evidence/LKW_MODEL_RUNTIME_PORTABILITY.md).
+
+Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex. Runtime hot swapping and universal model compatibility are not claimed.
 
 ### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Workspace Knowledge Configuration
 
 **One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials.
 
-**Status:** **PLANNED**.
+**Status:** **NEXT**.
 
 Expected capabilities: connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
@@ -661,16 +672,16 @@ HYBRID KNOWLEDGE ACCESS AND LIVE PLATFORM PROOF ROADMAP
 → ACCEPTED
 
 LAST ACCEPTED IMPLEMENTATION:
-LKW-WORKSPACE-CONTENTS-1B-5-2
-END-TO-END WEB_URL KNOWLEDGE INTAKE
-→ ACCEPTED (including C1 and C2 corrections)
+LKW-MODEL-RUNTIME-1
+OLLAMA / vLLM END-TO-END PORTABILITY
+→ ACCEPTED (including C1–C4 corrections and evidence v2)
 
 NEXT:
-LKW-MODEL-RUNTIME-1 → Ollama / vLLM end-to-end portability
+LKW-KNOWLEDGE-ACCESS-1
+→ Connections, Remote Resources, Indexed Sources, Live Access Bindings and Query Policy
 
 THEN (functional blocks):
-LKW-KNOWLEDGE-ACCESS-1 → Connections, Indexed Sources, Live Access Bindings
-→ LKW-HYBRID-ASK-1 → RAG + live with unified provenance
+LKW-HYBRID-ASK-1 → RAG + live with unified provenance
 → LKW-CONVERSATIONAL-FRONTEND-1 (CONV-1B + CONV-1C internal)
 → LKW-VENDOR-ACCESS-COLLABORATION-1
 → LKW-VENDOR-ACCESS-DATA-1
