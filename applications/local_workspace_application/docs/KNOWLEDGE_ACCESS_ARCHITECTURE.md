@@ -741,6 +741,7 @@ Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`o
 
 | Document | Role |
 |----------|------|
+| [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) | Frozen implementation contract (`LKW-KNOWLEDGE-ACCESS-1A`) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Top-level LKW product architecture |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Canonical execution order |
 | [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Indexed knowledge intake contract |
