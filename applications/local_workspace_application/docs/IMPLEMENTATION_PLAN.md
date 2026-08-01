@@ -1,6 +1,6 @@
 # Local Workspace Application — Implementation Plan
 
-**Status:** Product-first MVP roadmap (2026-07-31)  
+**Status:** Product-first MVP roadmap (2026-08-01)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
@@ -22,6 +22,7 @@ Architecture:
 
 Next implementation:
   LKW-KNOWLEDGE-ACCESS-1 — NEXT
+  internal next slice: LKW-KNOWLEDGE-ACCESS-1B
 
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
@@ -37,6 +38,7 @@ This file is the canonical source of truth for:
 - the current next implementation block;
 - the Workspace Contents source-expansion roadmap;
 - the integration boundary between LKW and VENDOR-KNOWLEDGE;
+- the durable configuration boundary for tenant Connections and workspace knowledge access;
 - the planned synchronization, inspection and removal lifecycle;
 - the post-MVP direction toward LKW 1.0.
 
@@ -62,12 +64,15 @@ Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCH
 
 “Local” means user-controlled deployment and configuration, including first-class self-hosted topology. It does not mean that every source must be a local folder or that all upstream data must physically live on one device.
 
+The complete effective LKW configuration is durable product state. Tenant Connections, tenant knowledge bindings, workspace attachments, Indexed Source Bindings, Live Access Bindings, Query Policies, model-runtime-profile references, configuration revisions and mutation/recovery records must survive application restart. Raw credentials remain in `SecretsStore`; runtime clients and registries are reconstructed from durable metadata and opaque secret references.
+
 The knowledge portfolio grows through one LKW-owned lifecycle for **indexed** knowledge and a separate, governed path for **live** access:
 
 ```text
 managed files and channel attachments
 → preconfigured local folders
 → explicit Web URLs
+→ durable tenant Connections
 → organizational vendor systems (indexed and/or live)
 → Workspace Knowledge Configuration (Indexed Sources + Live Access Bindings + Query Policy)
 → grounded Hybrid Ask with unified provenance
@@ -84,6 +89,35 @@ Target vendor-backed knowledge includes, without making all providers one implem
 - e-mail, chats, documents, calendars, meeting material and future organizational sources.
 
 Microsoft Teams in vendor-access blocks means Teams-hosted organizational knowledge. It does not automatically add Microsoft Teams as a second conversational frontend.
+
+### 2.1 Configuration persistence boundary
+
+```text
+Platform Document Store
+├── durable tenant Connections
+├── safe connector metadata and lifecycle status
+├── opaque credential/configuration references
+├── tenant KnowledgeSourceBindings
+└── Model Runtime Profiles
+
+LKW Document Store
+├── Workspaces
+├── Workspace Connection Attachments
+├── Indexed Source Bindings
+├── Live Access Bindings
+├── Query Policies
+├── model-runtime-profile references
+├── configuration revision heads
+└── mutation, idempotency and recovery records
+
+SecretsStore
+└── raw tokens, API keys, passwords, client secrets and certificates
+
+Runtime memory
+└── constructed provider clients, registries, health observations and ephemeral discovery results
+```
+
+Environment variables remain deployment/bootstrap configuration. They must not become the sole durable source of truth for tenant-created connectors or workspace authorization.
 
 ---
 
@@ -103,7 +137,12 @@ LKW-MODEL-RUNTIME-1
 
 NEXT:
 LKW-KNOWLEDGE-ACCESS-1
-→ WORKSPACE CONNECTIONS, INDEXED SOURCES AND LIVE ACCESS CONFIGURATION
+→ DURABLE TENANT CONNECTIONS, WORKSPACE CONNECTIONS, INDEXED SOURCES AND LIVE ACCESS CONFIGURATION
+    ├── 1B: durable provider-neutral workspace authorization foundation
+    ├── 1C: durable tenant Connection catalog, startup reconstruction, discovery ports and typed capability catalog
+    ├── 1D: HTTP create/disable for Connections and bindings
+    ├── 1E: Query Policy and complete configuration projection
+    └── 1F: one tenant binding / one Connection indexed-live reuse proof
 
 LKW-HYBRID-ASK-1
 → RAG + LIVE KNOWLEDGE QUERY WITH UNIFIED PROVENANCE
@@ -135,6 +174,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 |---|---|---|
 | `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **ACCEPTED** |
 | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **ACCEPTED** |
+| `LKW-KNOWLEDGE-ACCESS-1A-C3` | Workspace Knowledge Configuration contract freezes revisioned publication, idempotency, recovery ownership and safe detach behavior | **ACCEPTED** |
 | `LKW-MODEL-RUNTIME-1` | The same LKW workspace, document and vector index pass generation, structured planning, validated tool calling, public HTTP Ask, citations and persisted runs on Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct` without reindexing | **ACCEPTED** |
 
 ### 3.2 Next and planned product blocks
@@ -142,7 +182,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | Block | One-sentence outcome | Status |
 |---|---|---|
 | `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **ACCEPTED** |
-| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **NEXT** |
+| `LKW-KNOWLEDGE-ACCESS-1` | Tenant Connections and workspace knowledge configuration are durably persisted so configured connectors, Indexed Sources, Live Access Bindings and bounded Query Policies survive restart without exposing credentials | **NEXT** |
 | `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
 | `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts | **PLANNED** |
@@ -159,7 +199,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `CONV-1C` | Slack natural-language cutover under `LKW-CONVERSATIONAL-FRONTEND-1` | **PLANNED** |
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
 | `1B-6-0` | LKW / VENDOR-KNOWLEDGE ownership contract | **REPLANNED** → architecture in `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1`; implementation in `LKW-KNOWLEDGE-ACCESS-1` |
-| `1B-6-1` | Connection and Remote Resource discovery | **MAPPED INTO** `LKW-KNOWLEDGE-ACCESS-1` |
+| `1B-6-1` | Durable tenant Connection catalog plus Connection and Remote Resource discovery | **MAPPED INTO** `LKW-KNOWLEDGE-ACCESS-1C` |
 | `1B-6-2` | First real provider vertical slice | **MAPPED INTO** `LKW-HYBRID-ASK-1` |
 | `1B-6-3` | Additional vendor packs | **MAPPED INTO** `LKW-VENDOR-ACCESS-COLLABORATION-1` and `LKW-VENDOR-ACCESS-DATA-1` |
 | `1C` | Shared synchronization lifecycle | **MAPPED INTO** `LKW-KNOWLEDGE-LIFECYCLE-1` |
@@ -174,7 +214,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `CONV-1B` | Internal slice of `LKW-CONVERSATIONAL-FRONTEND-1` | **MAPPED INTO** |
 | `CONV-1C` | Internal slice of `LKW-CONVERSATIONAL-FRONTEND-1` | **MAPPED INTO** |
 | `1B-6-0` | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` + `LKW-KNOWLEDGE-ACCESS-1` | **REPLANNED** |
-| `1B-6-1` | Connection and Remote Resource discovery in `LKW-KNOWLEDGE-ACCESS-1` | **MAPPED INTO** |
+| `1B-6-1` | Durable tenant Connection catalog and Remote Resource discovery in `LKW-KNOWLEDGE-ACCESS-1C` | **MAPPED INTO** |
 | `1B-6-2` | First real provider vertical slice in `LKW-HYBRID-ASK-1` | **MAPPED INTO** |
 | `1B-6-3` | Collaboration and Data connector packs | **MAPPED INTO** |
 | `1C` | Internal lifecycle slice of `LKW-KNOWLEDGE-LIFECYCLE-1` | **MAPPED INTO** |
@@ -292,15 +332,41 @@ The proof covers basic generation, structured Conversation Interaction planning,
 
 Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex. Runtime hot swapping and universal model compatibility are not claimed.
 
-### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Workspace Knowledge Configuration
+### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Durable Connections and Workspace Knowledge Configuration
 
-**One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials.
+**One-sentence outcome:** Tenant Connections and workspace knowledge configuration are durably persisted so configured connectors, Indexed Sources, Live Access Bindings and bounded Query Policies survive restart without exposing credentials.
 
 **Status:** **NEXT**.
 
-Expected capabilities: connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
+Expected capabilities: durable tenant Connection administration; startup/on-demand reconstruction of integration instances; connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
-**Acceptance gate:** Must prove that **one Connection** can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
+Internal sequence:
+
+```text
+1A — architecture and implementation contract
+     ACCEPTED through C3
+
+1B — provider-neutral durable workspace authorization foundation
+     NEXT
+     stores workspace attachments, bindings, query-policy records,
+     revision heads, mutation/idempotency and recovery state
+
+1C — durable tenant Connection catalog and discovery foundation
+     stores safe tenant Connection metadata and opaque credential references;
+     exposes TenantConnectionPort;
+     reconstructs KnowledgeConnectionRegistry integrations after restart;
+     adds safe Connection/Remote Resource reads and typed capability catalog
+
+1D — HTTP create/disable for Connections and workspace bindings
+
+1E — Query Policy and complete configuration projection
+
+1F — one tenant binding / one Connection indexed-live reuse proof
+```
+
+**Persistence acceptance gate:** after a clean application restart, the system must recover configured tenant Connections, workspace attachments, Indexed Source and Live Access authorization, Query Policy and model-runtime-profile selection without re-entering configuration. Constructed clients may be recreated, but raw credentials remain in `SecretsStore` and no second provider client may be created for separate indexed/live paths.
+
+**Acceptance gate:** Must prove that **one durable Connection** can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
 
 ### 7.3 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
 
@@ -374,12 +440,13 @@ The immediate current task remains `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`.
 
 **Status:** **PLANNED**.
 
-Target scenario: start with Ollama → create/select workspace → upload files → add Web URL → configure MS365, Jira, Confluence, Databricks, Power BI, Atlan → Hybrid Ask with indexed + live evidence → restart with vLLM → repeat without changing LKW domain behavior. Public claims must distinguish real provider proof, controlled integration proof and deterministic fixture proof.
+Target scenario: start with Ollama → create/select workspace → upload files → add Web URL → configure MS365, Jira, Confluence, Databricks, Power BI, Atlan → restart the LKW deployment and verify configuration survives → Hybrid Ask with indexed + live evidence → restart with vLLM → repeat without changing LKW domain behavior. Public claims must distinguish real provider proof, controlled integration proof and deterministic fixture proof.
 
 **Final platform proof requirement:**
 
 ```text
-one vendor connection
+one durable vendor Connection
+→ survives restart
 → one durable/indexed use
 → one live use
 → one hybrid answer
@@ -411,8 +478,14 @@ This ensures synchronization, operation inspection, completion notification, pro
 ### 8.2 Ownership boundary
 
 ```text
+PLATFORM CONNECTION FOUNDATION owns:
+durable tenant Connection metadata and lifecycle
+→ opaque credential/configuration references
+→ reconstruction of one runtime integration instance
+→ safe Connection health and availability projection
+
 VENDOR-KNOWLEDGE owns:
-provider authentication and credential handling
+provider authentication through resolved integration credentials
 → provider APIs and provider-specific errors
 → pagination, rate limits and token refresh
 → provider-specific resource discovery
@@ -472,7 +545,8 @@ They must not expose:
 
 Freeze, from the real VENDOR-KNOWLEDGE implementation rather than assumptions:
 
-- vendor connection identity;
+- durable tenant Connection identity and persistence owner;
+- runtime integration reconstruction contract;
 - vendor resource identity;
 - canonical knowledge item shape;
 - credential ownership and access boundary;
@@ -485,7 +559,9 @@ Freeze, from the real VENDOR-KNOWLEDGE implementation rather than assumptions:
 
 Do not freeze a provider-specific LKW Source architecture. Exact names of new `KnowledgeInputKind` or Source representation remain an architecture decision for this gate.
 
-### 8.5 `1B-6-1` — safe connection and resource discovery
+### 8.5 `1B-6-1` — durable Connection catalog and safe resource discovery
+
+Persist tenant-scoped Connections with safe metadata, lifecycle status, opaque `credential_ref` or equivalent secret reference and configuration version. Reconstruct the runtime registry after restart without storing raw credentials in LKW or the platform Document Store.
 
 Expose tenant-scoped, authorized and safely labelled vendor connections/resources. Discovery must support unavailable states without leaking credentials or technical locator details.
 
@@ -617,7 +693,10 @@ Every source-expansion slice must preserve:
 - one queue/worker lifecycle;
 - shared document indexing and provenance;
 - recovery without a parallel recovery table unless a separately accepted architecture gap requires it;
-- Slack and future conversational surfaces as API/capability clients only.
+- Slack and future conversational surfaces as API/capability clients only;
+- durable tenant and workspace configuration that survives restart;
+- raw credentials owned only by `SecretsStore`;
+- runtime clients and registries reconstructed from durable configuration rather than treated as the source of truth.
 
 Parallel work rules:
 
@@ -672,13 +751,19 @@ HYBRID KNOWLEDGE ACCESS AND LIVE PLATFORM PROOF ROADMAP
 → ACCEPTED
 
 LAST ACCEPTED IMPLEMENTATION:
-LKW-MODEL-RUNTIME-1
-OLLAMA / vLLM END-TO-END PORTABILITY
-→ ACCEPTED (including C1–C4 corrections and evidence v2)
+LKW-KNOWLEDGE-ACCESS-1A-C3
+MUTATION RESERVATION, NO-OP IDEMPOTENCY AND RECOVERY OWNERSHIP CLOSEOUT
+→ ACCEPTED
 
 NEXT:
-LKW-KNOWLEDGE-ACCESS-1
-→ Connections, Remote Resources, Indexed Sources, Live Access Bindings and Query Policy
+LKW-KNOWLEDGE-ACCESS-1B
+→ provider-neutral durable workspace authorization foundation
+
+THEN WITHIN LKW-KNOWLEDGE-ACCESS-1:
+1C → durable tenant Connection catalog, startup reconstruction, discovery and capability catalog
+→ 1D Connection/binding mutation APIs
+→ 1E Query Policy and complete configuration projection
+→ 1F one durable Connection reused for indexed and live proof
 
 THEN (functional blocks):
 LKW-HYBRID-ASK-1 → RAG + live with unified provenance
@@ -689,12 +774,13 @@ LKW-HYBRID-ASK-1 → RAG + live with unified provenance
 → LKW-LIVE-PLATFORM-PROOF-1
 
 FINAL TARGET:
-Live Slack platform proof — indexed + live + Hybrid Ask + Ollama/vLLM portability
+Live Slack platform proof — persistent connector configuration + indexed + live + Hybrid Ask + Ollama/vLLM portability
 
 ARCHITECTURE DOC:
-KNOWLEDGE_ACCESS_ARCHITECTURE.md — indexed/live/hybrid, Connections,
+KNOWLEDGE_ACCESS_ARCHITECTURE.md — indexed/live/hybrid, durable Connections,
 Live Access Bindings, Workspace Knowledge Configuration, Query Policy,
-Knowledge Query Orchestrator, Evidence Items, MCP boundary, security.
+configuration persistence boundaries, Knowledge Query Orchestrator,
+Evidence Items, MCP boundary, security.
 
 Conversational planning (CONV-1A):
 - LLM produces a strict semantic draft (`ConversationInteractionDraft`).
