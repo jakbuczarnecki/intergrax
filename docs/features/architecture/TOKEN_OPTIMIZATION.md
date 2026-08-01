@@ -646,7 +646,7 @@ changing stable tool catalog formatting per request
 
 `TOKEN-OPT-5E` adds a provider-neutral helper/policy layer that decides whether compaction should **RUN**, **DEFER**, **BYPASS**, or **REQUIRE_MANUAL_REVIEW**.
 
-**TOKEN-10D** places this decision in the real orchestration path. **TOKEN-10D-1** implemented `CacheAwareTokenOptimizationOrchestrator` as the runtime consumer. **TOKEN-10D-2** adds provider-neutral cache signal normalization. **TOKEN-10D-3** composes reconciliation, normalization, and orchestration behind one controlled entrypoint:
+**TOKEN-10D** places this decision in the real orchestration path and is **accepted / closed** in the provider-neutral runtime-contract scope. **TOKEN-10D-1** implemented `CacheAwareTokenOptimizationOrchestrator` as the runtime consumer. **TOKEN-10D-2** adds provider-neutral cache signal normalization. **TOKEN-10D-3** composes reconciliation, normalization, and orchestration behind one controlled entrypoint:
 
 ```text
 LLM adapter → typed usage (LLMAdapterResponse)
@@ -661,6 +661,13 @@ TokenOptimizationLLMRouter.route()
 ```
 
 **Ownership:** LLM adapter contracts → typed cache evidence; TOKEN-10D-2 normalizer → provider-neutral timing input; TOKEN-10D-3 runtime → reconciliation and controlled composition; TOKEN-10D-1 orchestrator → router, timing gate, and pipeline control.
+
+**Integration contract ownership:**
+
+- public TOKEN-10D integration contract → `intergrax.runtime.token_optimization` package root
+- application adoption → later application-owned wiring using public contracts
+
+**Not implemented in TOKEN-10D:** TOKEN-10E in-cache compaction; TOKEN-10F proof harness; TOKEN-10G hard gates; TOKEN-10H public promotion; LKW integration; production auto-enable.
 
 Router owns configuration selection; the gate owns execution timing; the pipeline owns deterministic transforms.
 

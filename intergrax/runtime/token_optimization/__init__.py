@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-6A/TOKEN-2/TOKEN-3/TOKEN-4)."""
+"""Public Token Optimization runtime contracts, policies, execution and safe reporting."""
 
 from __future__ import annotations
 

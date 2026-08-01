@@ -26,7 +26,7 @@ This document defines safe, bounded, non-marketing wording for public-facing ref
 - Deterministic exact deduplication, extractive filtering, and budget-aware context packing prototype (character-budget prototype).
 - Cache-stable prompt assembly with stable prefix and dynamic tail, append-only validation, and exact-send message and tool-schema integrity checks (**TOKEN-10B** — implemented / closed).
 - vLLM prefix-cache proof integration with health/version/metrics diagnostics, cold/warm/changed-prefix proof path, safe Markdown/JSON proof reporting, and canonical 3B reviewer path (**TOKEN-10C** — implemented / closed in bounded vLLM prefix-cache integration scope).
-- Cache-aware orchestration gate (**TOKEN-10D-1** — implemented / ready for review): router selection separated from execution timing; only `RUN` executes the pipeline; `DEFER`, `BYPASS`, and `REQUIRE_MANUAL_REVIEW` do not execute; timing input remains caller-supplied; router terminal statuses skip the timing gate and do not execute the pipeline.
+- Cache-aware orchestration gate (**TOKEN-10D** — accepted / closed in the provider-neutral runtime-contract scope): router selection separated from execution timing; only `RUN` executes the pipeline; `DEFER`, `BYPASS`, and `REQUIRE_MANUAL_REVIEW` do not execute; typed provider cache evidence normalized through provider-neutral contracts; conflicting evidence rejected before router invocation; normalization and orchestration composed behind one public runtime entrypoint (`CacheAwareTokenOptimizationRuntime.run()`); timing input remains caller-supplied; router terminal statuses skip the timing gate and do not execute the pipeline.
 - Provider-neutral cache-aware compaction timing policy helper (`decide_cache_aware_compaction_timing`).
 
 Supporting vocabulary: deterministic pipeline, approved configuration routing, protected regions, receipts, synthetic evaluation corpus, char-level prototype, strategy-separated attribution, cache-stable prompt assembly, exact-send integrity, bounded vLLM prefix-cache proof.
@@ -40,7 +40,6 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 
 ### Remaining roadmap
 
-- Remaining **TOKEN-10D** work: provider signal normalization and broader runtime wiring (not started in TOKEN-10D-1).
 - **TOKEN-10E** — policy-governed in-cache compaction (planned).
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
@@ -110,7 +109,7 @@ Not allowed without further proof:
 
 - For the documented vLLM 0.23.0 proof environment and canonical tested model, Intergrax can report bounded provider prefix-cache reuse metrics.
 - For the documented synthetic evaluation corpus, Intergrax can report character-level content reduction results when the metric unit and strategy are stated.
-- TOKEN-10D-1 implements controlled pipeline execution based on caller-supplied cache-aware timing signals; it does not yet provide universal provider-signal normalization.
+- TOKEN-10D implements controlled pipeline execution based on caller-supplied cache-aware timing signals with provider-neutral cache signal normalization and a public runtime entrypoint; it does not perform in-cache compaction.
 
 ### Allowed only after TOKEN-10G proof passes
 

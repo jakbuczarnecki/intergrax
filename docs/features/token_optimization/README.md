@@ -62,10 +62,10 @@ input
 
 | Label | Meaning in this repository |
 | ----- | -------------------------- |
-| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware orchestration gate (TOKEN-10D-1), cache signal normalization (TOKEN-10D-2), cache-aware runtime entrypoint (TOKEN-10D-3), vLLM proof runner |
+| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware runtime (TOKEN-10D), vLLM proof runner |
 | **Live-verified** | Manual vLLM prefix-cache proof path (documented environment); gated Ollama router E2E |
 | **Live-certified** | Not claimed for TOKEN-10C alone; universal proof packaging still planned |
-| **Planned** | TOKEN-10D–10H (cache-aware orchestration, in-cache compaction, universal harness, public promotion) |
+| **Planned** | TOKEN-10E–10H (in-cache compaction, universal harness, proof corpus, public promotion) |
 | **Public-proof-gated** | README promotion and broad public savings claims require TOKEN-10G + TOKEN-10H |
 
 **Phase snapshot (authoritative detail in [plan](../plan/TOKEN_OPTIMIZATION.md)):**
@@ -76,10 +76,11 @@ input
 | TOKEN-10A | Accepted / Closed (docs canon) |
 | TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 | Implemented / Ready for review |
 | TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Implemented / Ready for review |
-| TOKEN-10D-1 | Implemented / Ready for review |
-| TOKEN-10D-2 | Implemented / Ready for review |
-| TOKEN-10D-3 | Implemented / Ready for review |
-| TOKEN-10D (remainder) … TOKEN-10H | Planned / not yet accepted |
+| TOKEN-10D-1 | Accepted / Closed |
+| TOKEN-10D-2 | Accepted / Closed |
+| TOKEN-10D-3 | Accepted / Closed |
+| TOKEN-10D | Accepted / Closed |
+| TOKEN-10E … TOKEN-10H | Planned / not yet accepted |
 | TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
 
 TOKEN-10 is **not** complete. Do not treat cache reuse, universal proof, or public promotion as finished.
@@ -440,7 +441,21 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 
 **Cache signal normalization (TOKEN-10D-2):** `prompt_cache_usage_snapshot_from_adapter_response()` and `normalize_cache_aware_compaction_signals()` compile typed adapter usage and `PromptCacheAttribution` into `CacheAwareCompactionTimingInput`. Unknown cache state stays `None` (not a miss). Explicit zero requires confirmed provider reporting. Estimated usage is not provider-reported evidence. TTL is never inferred from policy or capability defaults. Char reduction estimates are not converted to tokens. Global KV metrics are not treated as per-request hotness. The normalizer performs no provider I/O and does not execute the pipeline or in-cache compaction.
 
-**Cache-aware runtime composition (TOKEN-10D-3):** `CacheAwareTokenOptimizationRuntime.run()` is the preferred cache-aware execution entrypoint. It composes typed adapter evidence extraction, reconciliation with `PromptCacheAttribution`, signal normalization, and the existing orchestrator — in that order. Reconciliation and normalization happen before router invocation. Conflicting provider/model cache evidence returns `SIGNALS_REJECTED` without calling the router, LLM, or pipeline. `PARTIAL` normalization still enters the orchestrator; unknown cache values remain unknown. The runtime does not poll providers, ingest global metrics, infer TTL, or perform in-cache compaction. Lower-level APIs (`normalize_cache_aware_compaction_signals()`, `CacheAwareTokenOptimizationOrchestrator.orchestrate()`) remain available for advanced callers.
+**Cache-aware runtime composition (TOKEN-10D):** `CacheAwareTokenOptimizationRuntime.run()` is the preferred cache-aware execution entrypoint. It composes typed adapter evidence extraction, reconciliation with `PromptCacheAttribution`, signal normalization, and the existing orchestrator — in that order. Reconciliation and normalization happen before router invocation. Conflicting provider/model cache evidence returns `SIGNALS_REJECTED` without calling the router, LLM, or pipeline. `PARTIAL` normalization still enters the orchestrator; unknown cache values remain unknown. The runtime does not poll providers, ingest global metrics, infer TTL, or perform in-cache compaction. Lower-level APIs (`normalize_cache_aware_compaction_signals()`, `CacheAwareTokenOptimizationOrchestrator.orchestrate()`) remain available for advanced callers.
+
+### Cache-aware runtime public contract
+
+`CacheAwareTokenOptimizationRuntime.run()` is the preferred public cache-aware execution entrypoint.
+
+Applications should import TOKEN-10D contracts from:
+
+```text
+intergrax.runtime.token_optimization
+```
+
+Applications must not duplicate cache evidence reconciliation, cache signal normalization, timing policy, or router-to-pipeline orchestration. Lower-level APIs remain available for tests and advanced integrators.
+
+**Product boundary:** TOKEN-10D closes the provider-neutral platform runtime contract. It does not add application wiring, Slack commands, UI, or LKW integration.
 
 **Orchestration semantics (TOKEN-10D-1):**
 
@@ -529,7 +544,7 @@ Expected: terminal summary with `final status: PASS` and reports under `build/pr
 
 - Reproducible universal platform proof (TOKEN-10F/10G).
 - Public README promotion (TOKEN-10H).
-- Cache-aware orchestration gate between router and pipeline (TOKEN-10D-1).
+- Cache-aware orchestration gate between router and pipeline (TOKEN-10D).
 - Real-customer workload savings.
 
 ### What must not be claimed
@@ -554,8 +569,7 @@ foundation (TOKEN-1…9)
 → LLM router (TOKEN-9)
 → cache-stable prompt (TOKEN-10B)
 → vLLM prefix cache (TOKEN-10C)
-→ cache-aware orchestration gate (TOKEN-10D-1 implemented)
-→ cache-aware orchestration remainder (TOKEN-10D)
+→ cache-aware runtime (TOKEN-10D — accepted / closed)
 → in-cache compaction (TOKEN-10E)
 → universal proof harness (TOKEN-10F)
 → proof corpus and hard gates (TOKEN-10G)
