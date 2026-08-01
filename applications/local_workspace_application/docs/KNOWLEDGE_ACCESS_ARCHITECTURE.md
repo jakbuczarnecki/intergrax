@@ -272,7 +272,7 @@ WorkspaceKnowledgeConfiguration
 └── limits and safety controls
 ```
 
-Exact persistence model and API schemas are **not** frozen in this document.
+Exact persistence model, revision-head CAS publication protocol and API schemas are frozen in [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) (`LKW-KNOWLEDGE-ACCESS-1A-C2`).
 
 ### 4.6 Query Policy
 
@@ -743,7 +743,7 @@ Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`o
 
 | Document | Role |
 |----------|------|
-| [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) | Frozen implementation contract (`LKW-KNOWLEDGE-ACCESS-1A`) |
+| [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) | Frozen implementation contract (`LKW-KNOWLEDGE-ACCESS-1A-C2`) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Top-level LKW product architecture |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Canonical execution order |
 | [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Indexed knowledge intake contract |
