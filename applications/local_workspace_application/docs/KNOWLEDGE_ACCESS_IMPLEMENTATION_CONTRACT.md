@@ -1,8 +1,8 @@
 # Workspace Knowledge Access - Implementation Contract
 
 **Status:** `READY_FOR_REVIEW`
-**Task:** `LKW-KNOWLEDGE-ACCESS-1A-C3 - MUTATION RESERVATION, NO-OP IDEMPOTENCY AND RECOVERY OWNERSHIP CLOSEOUT`
-**Prior task:** `LKW-KNOWLEDGE-ACCESS-1A-C2` (commit `3aa14268cbb268c80f45b4226e74e6675568ec6a`)
+**Task:** `LKW-KNOWLEDGE-ACCESS-1A-C4 - DURABLE TENANT CONNECTION CATALOG AND CONFIGURATION PERSISTENCE BOUNDARY`
+**Prior task:** `LKW-KNOWLEDGE-ACCESS-1A-C3` (commit `6fa2dffc6cecd2a7539dce01d4bf14c1db7d4a5d`)
 **Classification:** docs-only architecture-to-implementation contract
 
 **C1 correction (preserved):**
@@ -31,6 +31,17 @@
 - staged Sources carry exact mutation ownership (`creation_mutation_id`, `visibility_revision`);
 - rollback deletion always uses `delete_if_match`;
 - `Idempotency-Key` HTTP header is mandatory for every configuration mutation (not request body).
+
+**C4 correction:**
+
+- all user-managed product configuration that must survive restart is durable;
+- four separate state classes: durable database configuration, `SecretsStore`, runtime-only state, deployment configuration;
+- durable `TenantConnection` is platform-owned (**to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**);
+- `KnowledgeConnectionRegistry` is instance-local runtime projection only;
+- `IntegrationProfile` is application composition, not a tenant Connection catalog;
+- restart rehydration from durable Connections is the target contract;
+- `1C` decomposed into `1C-1` (durable catalog + rehydration) and `1C-2` (safe discovery + capability catalog);
+- `1F` proof must use a durable Connection reconstructed after restart.
 
 **Architecture:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
@@ -110,7 +121,7 @@ lkw.ask_run:{tenant_id}:ask_run
 | `KnowledgeSourceScope` | `remote_scope_id`, `remote_scope_type`, `safe_display_name`, safe `parameters` | **Direct** - maps to Remote Resource scope |
 | `KnowledgeScopeInfo` | Output of `inspect_scope` | **Direct** - discovery / inspect projection |
 | `KnowledgeSourceBinding` | Tenant-scoped durable sync binding (`connection_ref`, optional `credential_ref`) | **Reuse at tenant layer** - not workspace-scoped; LKW must not duplicate |
-| `KnowledgeConnectionRegistry` | Instance-local `(tenant_id, connection_ref) -> integration` | **Direct** - prevents second client when registered |
+| `KnowledgeConnectionRegistry` | Instance-local `(tenant_id, connection_ref) -> integration` | **Direct** - prevents second client when registered; **not** durable catalog; does not load secrets, create clients or persist Connection metadata |
 | `ConnectionAwareVendorResolver` | Registry-first resolver with profile fallback | **Direct** |
 | `IntegrationProfileVendorResolver` | Profile-only; **rejects** `connection_ref` | Fallback path only |
 | `VendorKnowledgeFacadeService` | Durable/indexed read path | **Direct** for indexed sync; not for live |
@@ -119,13 +130,13 @@ lkw.ask_run:{tenant_id}:ask_run
 
 **Implemented adapters (verified):** Jira issues, Confluence pages, MS365 Graph drive/mail/teams_channel.
 
-**Missing (gap):** durable tenant Connection catalog, `list_source_candidates`, live capability executor, provider-neutral live capability IDs.
+**Missing (gap):** durable tenant `TenantConnection` catalog (**owned by `LKW-KNOWLEDGE-ACCESS-1C-1`**), `list_source_candidates`, live capability executor, provider-neutral live capability IDs.
 
 ### 2.4 Integration and registry foundation
 
 | Path | Role |
 |------|------|
-| `intergrax/integrations/registry/profile.py` - `IntegrationProfile` | Application composition; `resolve(IntegrationCategory)` returns constructed integration |
+| `intergrax/integrations/registry/profile.py` - `IntegrationProfile` | Application composition; `resolve(IntegrationCategory)` returns constructed integration; **not** a tenant Connection database |
 | `intergrax/integrations/contracts/secrets_store.py` - `SecretsStore` | Credential storage; secrets never in LKW state |
 | `intergrax/tools/registry/runtime.py` - `ToolRegistry` | Tool execution registry (future live path, not LKW domain model) |
 
@@ -214,14 +225,36 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 
 ## 5. Ownership matrix
 
+### 5.1 Configuration persistence principle (frozen)
+
+```text
+All user-managed product configuration that must survive process or deployment
+restart is durable.
+
+Raw secrets remain in SecretsStore.
+
+Constructed clients, registries and current health observations remain runtime
+state.
+
+Deployment bootstrap and infrastructure topology remain deployment
+configuration unless a separately accepted administration-plane task moves
+them into durable product configuration.
+```
+
+Do **not** claim that all LKW configuration lives in one database. Four state classes apply: durable platform/tenant configuration, durable LKW workspace configuration, `SecretsStore` credentials, runtime-only state, and deployment configuration. See [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) §4.9.
+
+### 5.2 Persistence and ownership matrix
+
 | Concern | Owner | Verified / decision |
 |---------|-------|---------------------|
-| Raw credentials and tokens | Integration / `SecretsStore` | Confirmed - not in LKW models |
-| Global tenant Connection | Platform connection foundation | **Gap:** durable catalog not implemented; runtime `KnowledgeConnectionRegistry` + opaque `connection_ref` contract frozen |
-| Vendor API client | Existing integration instance | Confirmed via `IntegrationProfile` / connection registry |
-| Remote Resource discovery | Vendor Knowledge adapters + future list port | `inspect_scope` exists; list candidates planned |
-| Workspace connection attachment | **LKW** | New `WorkspaceConnectionAttachment` record |
-| Tenant knowledge source binding | **Vendor Knowledge** (`KnowledgeSourceBinding`) | Authoritative provider/resource/scope/connection; LKW references via `knowledge_source_binding_ref` |
+| Raw credentials and tokens | Integration / `SecretsStore` | Confirmed - not in LKW models; only opaque `credential_ref` in durable records |
+| Durable `TenantConnection` catalog | Platform connection foundation | **Gap — `LKW-KNOWLEDGE-ACCESS-1C-1`:** model, repository, service, administrative lifecycle, restart rehydration |
+| Runtime integration registration | `KnowledgeConnectionRegistry` | Instance-local runtime projection / cache; **not** durable catalog; **not** administrative source of truth |
+| Application integration bootstrap | `IntegrationProfile` | Application-level composition; **not** tenant Connection database, workspace configuration, multi-tenant connector catalog or credential record |
+| Vendor API client | Existing integration instance | Confirmed via `IntegrationProfile` / connection registry after rehydration |
+| Remote Resource discovery | Vendor Knowledge adapters + future list port | `inspect_scope` exists; `RemoteResourceDescriptorV1` ephemeral by default; list candidates in `1C-2` |
+| Workspace connection attachment | **LKW** | New `WorkspaceConnectionAttachment` record — reference + safe cached label only |
+| Tenant knowledge source binding | **Vendor Knowledge** (`KnowledgeSourceBinding`) | Authoritative provider/resource/scope/connection; durable; stores `connection_ref` and optional `credential_ref`; LKW references via `knowledge_source_binding_ref` |
 | Indexed Source authorization | **LKW** | `WorkspaceIndexedSourceBinding` (authorization reference) + `WorkspaceSource(CONNECTED_SOURCE)` |
 | Live Access Binding | **LKW** | New `WorkspaceLiveAccessBinding` |
 | Query Policy | **LKW** | New `WorkspaceQueryPolicy` |
@@ -231,8 +264,9 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 | Live execution authorization | LKW + platform policy | LKW binding allowlist + executor gate |
 | Live evidence normalization | Provider-neutral boundary (future executor) | Ephemeral by default |
 | Slack presentation | Slack frontend only | Confirmed thin-client architecture |
+| Deployment topology | Deployment configuration | Environment variables, manifests, bootstrap — not automatically tenant/workspace product configuration |
 
-**Discrepancy:** Architecture docs describe a durable tenant Connection record (`connection_id`, `credential_ref`, `status`). Repository has only opaque `connection_ref` on bindings and an **instance-local** registry. **Smallest correction:** introduce a platform `TenantConnectionPort` (read-only for LKW) in task `1C`; LKW never persists Connection metadata beyond cached safe labels on attachments.
+**Current gap (documented, sequenced):** Architecture describes a durable tenant `TenantConnection` record. Repository has only opaque `connection_ref` on bindings and an **instance-local** `KnowledgeConnectionRegistry`. **Owner:** `LKW-KNOWLEDGE-ACCESS-1C-1`. LKW never persists Connection metadata beyond cached safe labels on attachments.
 
 ---
 
@@ -243,8 +277,34 @@ Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live c
 A **Connection** is not a standalone durable LKW entity today. It is:
 
 1. An opaque **`connection_ref`** string carried on `KnowledgeSourceRef` / `KnowledgeSourceBinding`.
-2. A runtime registration in **`KnowledgeConnectionRegistry`** mapping `(tenant_id, connection_ref)` to an already-constructed integration instance with matching `provider_id` and `integration_kind`.
-3. An architectural tenant-owned record (documented in `docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md` Section 7.1) **not yet persisted** in code.
+2. A runtime registration in **`KnowledgeConnectionRegistry`** mapping `(tenant_id, connection_ref)` to an already-constructed integration instance with matching `provider_id` and `integration_kind`. The registry stores constructed integration objects only; it does not load secrets, create clients or persist Connection metadata. It is **not** durable state.
+3. Application **`IntegrationProfile`** bootstrap for deployment-level integration composition — **not** a tenant Connection database.
+4. An architectural durable tenant `TenantConnection` record documented here and in platform canon — **not yet persisted** in code; **to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**.
+
+### 6.1.1 Target durable `TenantConnection` (platform-owned — not implemented)
+
+```text
+connection_ref
+tenant_id
+provider_id
+integration_kind
+safe_display_name
+administrative_status      # ACTIVE | DISABLED | REVOKED
+credential_ref
+validated_secret_free_config
+configuration_version
+created_at
+updated_at
+connected_principal_ref      # optional
+```
+
+**Identity:** `(tenant_id, connection_ref)`.
+
+**Platform connection foundation owns (to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`):** `TenantConnection` model, `TenantConnectionRepository` port, durable repository implementation, `TenantConnectionService`, administrative lifecycle, configuration-version concurrency, `credential_ref` association, safe public projection, restart reconstruction contract.
+
+**`KnowledgeConnectionRegistry` owns:** instance-local mapping `(tenant_id, connection_ref) -> constructed integration instance`; runtime identity validation; runtime resolution. Documented as runtime projection / cache — not durable catalog, not administrative source of truth.
+
+**`IntegrationProfile` owns:** application-level integration composition; bootstrap defaults; category-to-provider selection; construction of application infrastructure. Must not be reused as tenant Connection database, workspace configuration, multi-tenant connector catalog or credential record.
 
 ### 6.2 LKW representation (frozen)
 
@@ -281,7 +341,7 @@ class SafeConnectionSummaryV1(BaseModel):
 | `connection_ref` | Issued by platform connection administration (out of LKW) |
 | `tenant_id` | Must match resolver tenant; cross-tenant ref -> fail closed |
 | `provider_id` / `integration_kind` | From platform Connection metadata |
-| Health / capability projection | Platform port + adapter registry |
+| Health / capability projection | Platform port + adapter registry; runtime health (`available`/`degraded`/`unavailable`) distinct from durable `administrative_status` |
 | Delete semantics | Removing LKW attachment does not delete tenant Connection |
 | Unavailable | `status=unavailable` -> discovery and binding mutations rejected; existing bindings -> `unavailable` state, no credential copy |
 
@@ -333,7 +393,7 @@ class RemoteResourceDescriptorV1(BaseModel):
 **Duplicate discovery:** dedupe by identity; deterministic sort by `(connection_ref, remote_resource_id, source_kind)`.
 **Unsafe metadata:** map to `KnowledgeSourceScope.parameters` rules - secret keys forbidden, URL credential embedding forbidden.
 
-**Implementation mapping:** build from `KnowledgeScopeInfo` + adapter-specific list operations when added in `1C`.
+**Implementation mapping:** build from `KnowledgeScopeInfo` + adapter-specific list operations when added in `1C-2`.
 
 ---
 
@@ -562,7 +622,7 @@ class TenantLiveCapabilityCatalogPort(Protocol):
         ...
 ```
 
-Task `1C` (or a separate prerequisite) establishes capability discovery/catalog. Task `1D` may persist Live Access Bindings only against validated read-only descriptors. Arbitrary capability IDs from the frontend are rejected.
+Task `1C-2` establishes capability discovery/catalog. Task `1D` may persist Live Access Bindings only against validated read-only descriptors. Arbitrary capability IDs from the frontend are rejected.
 
 ### 9.2 Model (to be implemented in 1B)
 
@@ -1506,9 +1566,9 @@ WorkspaceKnowledgeConfigurationService (LKW)
 ├── ManagedWorkspaceRepository (durable LKW records + revision head)
 ├── ManagedWorkspaceService (workspace existence authority)
 ├── TenantKnowledgeSourceBindingPort (read-only tenant binding lookup - 1B)
-├── TenantConnectionPort (read-only; platform - 1C)
-├── RemoteResourceDiscoveryPort (wraps VendorKnowledgeFacade inspect/list - 1C)
-├── TenantLiveCapabilityCatalogPort (typed read-only capability catalog - 1C)
+├── TenantConnectionPort (read-only; platform - 1C-1 catalog + 1C-2 discovery)
+├── RemoteResourceDiscoveryPort (wraps VendorKnowledgeFacade inspect/list - 1C-2)
+├── TenantLiveCapabilityCatalogPort (typed read-only capability catalog - 1C-2)
 └── WorkspaceKnowledgeAuthorizationService (tenant + workspace + binding checks)
 
 VendorKnowledgeFacadeService (Tier-1, unchanged)
@@ -1789,17 +1849,23 @@ For an existing mutation record:
 ### 23.1 Scenario
 
 ```text
-one tenant KnowledgeSourceBinding (binding_ref = bind-proof-1)
--> references connection_ref = conn-proof-1
+one durable TenantConnection (connection_ref = conn-proof-1) persisted in catalog
+-> application restart with empty in-memory KnowledgeConnectionRegistry
+-> restart rehydration reloads Connection, resolves credential_ref, registers one integration
+-> one tenant KnowledgeSourceBinding (binding_ref = bind-proof-1) references conn-proof-1
 -> attached to workspace W
 -> WorkspaceIndexedSourceBinding I (references bind-proof-1)
 -> WorkspaceLiveAccessBinding L (references conn-proof-1)
 ```
 
+The proof must use a **durable Connection reconstructed after restart**, not only an object manually inserted into the registry.
+
 ### 23.2 Required invariants
 
 | Invariant | Observable check |
 |-----------|-------------------|
+| Durable Connection survives restart | `TenantConnectionRepository` returns same `connection_ref` after process restart |
+| Registry rehydrated | Empty registry at start; exactly one registration after bootstrap |
 | One tenant binding | `TenantKnowledgeSourceBindingPort.get_binding` count == 1 |
 | Indexed authorization references tenant binding | `I.knowledge_source_binding_ref == bind-proof-1`; no `provider_id`/`connection_ref` on I |
 | Live authorization references same connection | `L.connection_ref == conn-proof-1` (derived from tenant binding at create) |
@@ -1809,6 +1875,7 @@ one tenant KnowledgeSourceBinding (binding_ref = bind-proof-1)
 | No second vendor client | Integration constructor counter == 1 per `(tenant_id, connection_ref)` |
 | Independent authorization | Disable I -> live still allowed; disable L -> indexed sync still allowed |
 | Same workspace boundary | Cross-workspace binding attempt -> 404 |
+| Missing secret does not delete Connection | Invalid `credential_ref` -> unavailable projection; Connection record remains |
 
 ### 23.3 Test harness sketch
 
@@ -1918,7 +1985,7 @@ physical Source deletion
 vector deletion
 ```
 
-Do not move capability discovery from `1C` into `1B`.
+Do not move capability discovery from `1C-2` into `1B`.
 
 **Required failure-injection tests:**
 
@@ -1956,25 +2023,75 @@ Do not move capability discovery from `1C` into `1B`.
 
 **Gate:** One tenant binding reference; no provider identity duplication; monotonic revision; zero provider-specific imports; publication protocol passes all failure-injection tests.
 
-### 26.3 `LKW-KNOWLEDGE-ACCESS-1C` - tenant ports, connection discovery and typed capability catalog
+### 26.3 `LKW-KNOWLEDGE-ACCESS-1C-1` - DURABLE TENANT CONNECTION CATALOG AND RESTART REHYDRATION
 
-**Outcome:** `TenantConnectionPort`, `TenantKnowledgeSourceBindingPort` adapter, `TenantLiveCapabilityCatalogPort`, Remote Resource discovery, safe connection/resource HTTP reads.
-**Dependencies:** 1B, `KnowledgeConnectionRegistry` wiring.
-**Code areas:** `serving/workspace_routes.py`, `serving/workspace_schemas.py`, host wiring, platform ports.
+**Outcome:** A tenant Connection is stored durably with safe configuration and an opaque credential reference, and the application can reconstruct its single runtime integration registration after restart without storing credentials in LKW.
+
+**Dependencies:** 1B (for workspace binding resolution only — catalog itself is platform-owned).
+
+**Exact scope:**
+
+```text
+TenantConnection model
+TenantConnectionRepository
+DocumentStore-backed repository
+TenantConnectionService
+administrative lifecycle (ACTIVE | DISABLED | REVOKED)
+configuration-version concurrency
+safe projection
+SecretsStore credential_ref resolution
+runtime integration factory boundary
+KnowledgeConnectionRegistry rehydration
+restart and unavailable-state tests
+```
+
+**Non-goals:**
+
+```text
+provider resource discovery
+workspace attachment mutations
+Indexed Source creation
+Live Access Binding creation
+Hybrid Ask
+Slack commands
+raw secret persistence
+provider-specific business workflows
+```
+
+**Gate:** Create durable Connection; restart with empty in-memory registry; reload Connection; resolve secret by `credential_ref`; construct one integration instance; register one runtime connection; preserve the same `connection_ref`; expose safe status; store no raw secret.
+
+### 26.4 `LKW-KNOWLEDGE-ACCESS-1C-2` - SAFE CONNECTION / REMOTE RESOURCE DISCOVERY AND TYPED CAPABILITY CATALOG
+
+**Outcome:** LKW can list safe durable tenant Connections, discover ephemeral Remote Resources and expose only validated read-only capability descriptors.
+
+**Dependencies:** 1B, 1C-1.
+
+**Exact scope:**
+
+```text
+TenantConnectionPort
+RemoteResourceDiscoveryPort
+TenantLiveCapabilityCatalogPort
+safe Connection reads
+Remote Resource discovery
+typed read-only capability descriptors
+cross-tenant fail-closed behavior
+```
+
 **Non-goals:** Indexed/live binding mutations.
-**Tests:** API tests with fakes; cross-tenant 404; capability catalog read-only validation.
+
 **Gate:** Discovery returns descriptors without secrets; only read-only capabilities listed.
 
-### 26.4 `LKW-KNOWLEDGE-ACCESS-1D` - HTTP create/disable for bindings with server-derived metadata
+### 26.5 `LKW-KNOWLEDGE-ACCESS-1D` - HTTP create/disable for bindings with server-derived metadata
 
 **Outcome:** HTTP create/disable for connection attachment, Indexed Source authorization, Live Access Binding; server-derived metadata; no physical indexed-data deletion.
-**Dependencies:** 1B, 1C.
+**Dependencies:** 1B, 1C-1, 1C-2.
 **Code areas:** routes, schemas, `WorkspaceKnowledgeConfigurationService`.
 **Non-goals:** Actual sync or live execution.
 **Tests:** API acceptance, idempotency, semantic duplicate, independent binding authorization, non-destructive detach, If-Match on every mutation.
 **Gate:** `CONNECTED_SOURCE` workspace Source created; indexed detach preserves Documents; no live binding auto-created.
 
-### 26.5 `LKW-KNOWLEDGE-ACCESS-1E` - Query Policy and complete configuration projection
+### 26.6 `LKW-KNOWLEDGE-ACCESS-1E` - Query Policy and complete configuration projection
 
 **Outcome:** Query policy CRUD + `GET knowledge-configuration` aggregate with revision head.
 **Dependencies:** 1D.
@@ -1982,10 +2099,10 @@ Do not move capability discovery from `1C` into `1B`.
 **Tests:** Unsupported mode rejection; cross-field invariant enforcement; deterministic ordering; revision concurrency; reader consistency retry.
 **Gate:** Full projection matches stored records; revision from head only.
 
-### 26.6 `LKW-KNOWLEDGE-ACCESS-1F` - one tenant binding / one connection indexed-live reuse proof
+### 26.7 `LKW-KNOWLEDGE-ACCESS-1F` - one tenant binding / one connection indexed-live reuse proof
 
-**Outcome:** Observable proof test - one tenant binding, one connection, one integration instance, no credential or provider-identity copy.
-**Dependencies:** 1E + minimal live executor stub OR facade-only proof with shared resolver instrumentation.
+**Outcome:** Observable proof test - one durable tenant Connection reconstructed after restart, one tenant binding, one connection, one integration instance, no credential or provider-identity copy.
+**Dependencies:** 1E + 1C-1 rehydration + minimal live executor stub OR facade-only proof with shared resolver instrumentation.
 **Non-goals:** Production live queries.
 **Tests:** Instrumented acceptance test per section 23.
 **Gate:** All invariants green in CI proof module.
@@ -2073,18 +2190,20 @@ Hybrid Ask, live Jira/Confluence/Graph queries, MCP execution, provider sync wor
 
 | Blocker | Severity | Mitigation |
 |---------|----------|------------|
-| No durable tenant Connection catalog | Medium | `TenantConnectionPort` + runtime registry for proofs (`1C`) |
-| No typed live capability catalog | Medium | `TenantLiveCapabilityCatalogPort` in `1C`; bindings-only in `1D` |
+| No durable tenant `TenantConnection` catalog | Medium | **`LKW-KNOWLEDGE-ACCESS-1C-1`** — model, repository, service, rehydration |
+| No typed live capability catalog | Medium | `TenantLiveCapabilityCatalogPort` in **`1C-2`**; bindings-only in `1D` |
 | No live capability executor | Medium | Executor in later platform task |
-| `list_source_candidates` not implemented on facade | Low | Use `inspect_scope` + adapter list in `1C` |
+| `list_source_candidates` not implemented on facade | Low | Use `inspect_scope` + adapter list in **`1C-2`** |
 | `CONNECTED_SOURCE` ingestion processor not wired | Medium | Separate intake task after configuration stable |
 
-**Contract freeze status:** Not blocked - gaps are explicit and sequenced.
+**Explicitly rejected (do not workaround):** storing raw tokens in LKW database; storing integration objects in DocumentStore; treating `KnowledgeConnectionRegistry` as durable; using `IntegrationProfile` as tenant catalog; copying Connection config into workspaces; copying credentials into attachments; auto-persisting discovered Remote Resources; manual Connection recreation after every restart; separate indexed/live clients; moving deployment topology into workspace state.
+
+**Contract freeze status:** Not blocked - gaps are explicit and sequenced; C3 mutation semantics unchanged.
 
 ---
 
 ## 30. Final architecture verdict
 
-The repository supports the intended design when LKW stores workspace authorization references to tenant `KnowledgeSourceBinding` records (not duplicated provider identity), maintains one monotonic `committed_revision` via CAS-protected head record with a single pending writer and publication point, uses immutable revisioned child records and a durable `WorkspaceKnowledgeMutationRecord` with `WorkspaceKnowledgeMutationOutcomeV1` for idempotency (including persistent `EXISTING_RESULT` semantic no-ops), assigns `target_revision` only after writer-slot acquisition, proves post-publication recovery from immutable revision rows and staged Source ownership (not solely `last_committed_mutation_id`), uses `delete_if_match` for all rollback deletions, requires canonical `Idempotency-Key` HTTP header for every mutation, reuses `to_source_ref(tenant_binding)` / `ConnectionAwareVendorResolver` / `VendorKnowledgeFacadeService` for indexed paths, validates live capabilities through typed `LiveCapabilityDescriptorV1`, and keeps live execution on a future shared executor. One `WorkspaceSource` continues to own all persisted Documents. Indexed detach is non-destructive via binding status. Connected Sources remain hidden until head publication and carry exact `creation_mutation_id` ownership. Every configuration mutation requires aggregate `If-Match`. Provider-specific LKW models and credential duplication are rejected.
+The repository supports the intended design when LKW stores workspace authorization references to tenant `KnowledgeSourceBinding` records (not duplicated provider identity), maintains one monotonic `committed_revision` via CAS-protected head record with a single pending writer and publication point, uses immutable revisioned child records and a durable `WorkspaceKnowledgeMutationRecord` with `WorkspaceKnowledgeMutationOutcomeV1` for idempotency (including persistent `EXISTING_RESULT` semantic no-ops), assigns `target_revision` only after writer-slot acquisition, proves post-publication recovery from immutable revision rows and staged Source ownership (not solely `last_committed_mutation_id`), uses `delete_if_match` for all rollback deletions, requires canonical `Idempotency-Key` HTTP header for every mutation, reuses `to_source_ref(tenant_binding)` / `ConnectionAwareVendorResolver` / `VendorKnowledgeFacadeService` for indexed paths, validates live capabilities through typed `LiveCapabilityDescriptorV1`, and keeps live execution on a future shared executor. One `WorkspaceSource` continues to own all persisted Documents. Indexed detach is non-destructive via binding status. Connected Sources remain hidden until head publication and carry exact `creation_mutation_id` ownership. Every configuration mutation requires aggregate `If-Match`. Provider-specific LKW models and credential duplication are rejected. Durable tenant `TenantConnection` persistence and restart rehydration are owned by **`LKW-KNOWLEDGE-ACCESS-1C-1`**; safe discovery and capability catalog by **`1C-2`**. `KnowledgeConnectionRegistry` remains runtime-only. `IntegrationProfile` remains application composition. Raw secrets remain in `SecretsStore` only.
 
 **STATUS: `READY_FOR_REVIEW`**

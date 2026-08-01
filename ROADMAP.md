@@ -84,7 +84,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | **Vendor knowledge three-mode reuse architecture** | `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` — **ACCEPTED** — one provider integration reused for indexed RAG, durable materialization and planned live access; [KNOWLEDGE_SOURCE_INTEGRATIONS.md](docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
 | **Slack Knowledge three-mode architecture** | `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` — **DONE** — freeze one `SlackConversationChannelIntegration` reused across indexed RAG, durable materialization and live access; Slack frontend and knowledge-source roles are independent |
 | **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — **ACCEPTED** — full canonical LKW proof for Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct`; [evidence](applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.md) |
-| **Workspace Knowledge Configuration** | `LKW-KNOWLEDGE-ACCESS-1` — **NEXT** — Connections, Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies |
+| **Workspace Knowledge Configuration** | `LKW-KNOWLEDGE-ACCESS-1` — **NEXT** — durable tenant Connection Catalog, restart-safe Connection configuration, SecretsStore-owned credentials, runtime registry rehydration; Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace over **indexed** knowledge; grounded answers, citations and persisted runs are implemented and live-verified |
 | Slack conversational MVP in active development | User can operate LKW through Slack and ask about knowledge already in the workspace; Slack channel/conversation history as searchable workspace knowledge is **not** yet available |
 | Knowledge Intake architecture being frozen | Channel-neutral intake and asynchronous ingestion contract documented; managed-file upload, Source Candidate intake and end-to-end `WEB_URL` indexed intake are **ACCEPTED** — see [Knowledge Intake discovery](applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) |
@@ -105,7 +105,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 
 | Item | Notes |
 |------|-------|
-| **LKW-KNOWLEDGE-ACCESS-1** | **NEXT** — Connections, Remote Resources, Indexed Sources, Live Access Bindings and Query Policy |
+| **LKW-KNOWLEDGE-ACCESS-1** | **NEXT** — durable tenant Connection Catalog, restart-safe Connection configuration, SecretsStore-owned credentials, runtime registry rehydration; Remote Resources, Indexed Sources, Live Access Bindings and Query Policy |
 | **Slack Knowledge vertical (application-first priority)** | Platform `SLACK-KNOWLEDGE-FOUNDATION-1` **NEXT** → LKW `LKW-SLACK-CONNECTED-SOURCE-1` → platform `SLACK-LIVE-CAPABILITY-1` → LKW `LKW-SLACK-KNOWLEDGE-PROOF-1`; complete vertical precedes Microsoft Graph Calendar |
 | **Vendor knowledge durable + live branches** | Microsoft Graph Calendar adapter after Slack vertical; durable materialization sink contract; live capability contract and executor — convergence at Hybrid Ask |
 | **LKW-HYBRID-ASK-1** | Indexed RAG + authorized live evidence with unified provenance |

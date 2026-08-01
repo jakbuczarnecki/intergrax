@@ -676,22 +676,26 @@ The following models belong to the facade/synchronization boundary, not to the v
 
 ### 7.1 Knowledge connection reference
 
-Represents a tenant-scoped reference to an existing integration connection.
+Represents a **durable tenant Connection record / reference** — not an in-memory registry entry or application bootstrap profile.
 
-Minimum semantics:
+Minimum semantics (conceptual `TenantConnection` — **to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**):
 
 ```text
-connection_id
+connection_ref          # durable identity component; opaque within tenant
 tenant_id
 provider_id
 integration_kind
-credential_ref
-connected_principal
+credential_ref          # opaque SecretsStore reference only
+connected_principal_ref # optional
 safe_display_name
-status
+administrative_status   # ACTIVE | DISABLED | REVOKED
+validated_secret_free_config
+configuration_version
 ```
 
-The connection record contains references and safe metadata, never secret values.
+The durable Connection catalog is **platform-owned**. Raw secrets remain in `SecretsStore`. `connection_ref` remains the correlation identity across bindings, workspace attachments and runtime resolution. The instance-local `KnowledgeConnectionRegistry` is reconstructed from durable state at startup — it is runtime projection only, not the administrative source of truth.
+
+The connection record contains references and safe metadata, never secret values. One provider integration is still reused across indexed RAG, durable materialization and live access (three consumption modes).
 
 ### 7.2 Source binding
 
@@ -904,7 +908,9 @@ Allowed durable value:
 credential_ref
 ```
 
-Forbidden in bindings, checkpoints, events, logs, errors and LKW workspace records:
+The durable tenant Connection catalog (`TenantConnection`) and `KnowledgeSourceBinding` public projections may carry only opaque `credential_ref`. The instance-local `KnowledgeConnectionRegistry` does not store credentials.
+
+Forbidden in bindings, Connection records, checkpoints, events, logs, errors and LKW workspace records:
 
 - access token;
 - refresh token;

@@ -189,17 +189,38 @@ A tenant-owned configured relationship with an external system.
 
 **Examples:** company Microsoft 365 tenant; engineering Jira instance; internal Confluence instance; analytics Databricks workspace; finance Power BI tenant; data-governance Atlan instance; approved Slack workspace installation (`PLANNED` for knowledge reads); approved MCP server.
 
-A Connection owns or references:
+#### 4.1.1 Durable `TenantConnection` (platform-owned)
 
-- provider identity;
-- integration type;
-- safe display metadata;
-- opaque credential reference;
-- health or availability state;
-- supported capability descriptors;
-- tenant ownership.
+A tenant Connection is a **durable platform entity** — not an LKW workspace record and not an in-memory registry entry. The conceptual model is `TenantConnection` (**to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**; not yet present as a Python model).
 
-A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials.
+**Durable identity:** `(tenant_id, connection_ref)` — `connection_ref` is opaque and unique within one tenant.
+
+**Minimum durable fields:**
+
+```text
+connection_ref
+tenant_id
+provider_id
+integration_kind
+safe_display_name
+administrative_status      # ACTIVE | DISABLED | REVOKED
+credential_ref             # opaque SecretsStore reference only
+validated_secret_free_config
+configuration_version
+created_at
+updated_at
+connected_principal_ref    # optional, when justified
+```
+
+**Administrative status** (`ACTIVE`, `DISABLED`, `REVOKED`) is the durable lifecycle. It must not be conflated with **runtime health** (`available`, `degraded`, `unavailable`), which is recomputed by resolution or health checks and is not the authoritative durable lifecycle.
+
+`validated_secret_free_config` may hold private, non-secret configuration required to construct or validate the provider integration (tenant or organization identifier, provider account reference, approved base endpoint, region, non-secret scopes, provider feature flags). It must not contain credentials and must not automatically be exposed through public LKW APIs.
+
+`credential_ref` points to `SecretsStore`. The Connection record does not contain the secret.
+
+**Current repository gap:** durable `TenantConnection` persistence does not exist yet. Today the repository has only opaque `connection_ref` on bindings, an **instance-local** `KnowledgeConnectionRegistry` (runtime projection / cache — not durable catalog, not administrative source of truth), and application `IntegrationProfile` bootstrap (application-level composition — not a tenant Connection database).
+
+A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials. LKW persists only a reference to the tenant Connection plus safe cached presentation data where already approved.
 
 ### 4.2 Remote Resource
 
@@ -344,6 +365,14 @@ qualification status
 health status
 ```
 
+**Persistence clarification:**
+
+- Constructed `LLMAdapter` objects and provider clients are **runtime-only**.
+- Deployment-wide default runtime (for example `INTERGRAX_LLM_PROVIDER`) may remain **deployment configuration**.
+- A future user-selectable workspace runtime profile must be represented by a **durable profile or durable profile reference** — not by a constructed adapter object in DocumentStore.
+- `LKW-MODEL-RUNTIME-1` (**ACCEPTED**) proves Ollama/vLLM portability; it does **not** imply that a multi-profile runtime catalog already exists.
+- This architecture task does not implement or schedule runtime-profile administration unless an existing canonical task already owns it. Do not expand `LKW-KNOWLEDGE-ACCESS-1B` with runtime-profile persistence.
+
 LKW receives a ready `LLMAdapter` through application wiring. The LKW domain must **not** contain provider branches such as `if provider == "ollama": … elif provider == "vllm": …`.
 
 **Conversation LLM and embedding provider are separate concerns.** Switching from Ollama to vLLM must not silently change the embedding model, vector dimensions, rebuild collections, invalidate indexed data or change LKW product contracts.
@@ -373,6 +402,138 @@ excerpt or structured result
 ```
 
 Not every field is required for every evidence type. Exact Pydantic models are **not** frozen here.
+
+### 4.9 Configuration persistence boundary
+
+**Canonical principle (frozen):**
+
+```text
+All user-managed product configuration that must survive process or deployment
+restart is durable.
+
+Raw secrets remain in SecretsStore.
+
+Constructed clients, registries and current health observations remain runtime
+state.
+
+Deployment bootstrap and infrastructure topology remain deployment
+configuration unless a separately accepted administration-plane task moves
+them into durable product configuration.
+```
+
+LKW configuration is **not** stored in one monolithic database. Four separate configuration/state classes apply:
+
+#### 4.9.1 Durable platform and tenant configuration
+
+Durable database / DocumentStore state includes:
+
+```text
+Tenant Connections
+KnowledgeSourceBindings
+safe provider and source configuration
+administrative connection lifecycle
+configuration versions
+tenant ownership
+opaque credential references
+```
+
+**Owner:** shared platform integration / connection foundation.
+
+**Not owner:** LKW workspace domain, Slack, `KnowledgeConnectionRegistry`, `IntegrationProfile`.
+
+#### 4.9.2 Durable LKW workspace configuration
+
+Durable LKW state includes:
+
+```text
+Workspace
+WorkspaceConnectionAttachment
+WorkspaceIndexedSourceBinding
+WorkspaceLiveAccessBinding
+WorkspaceQueryPolicy
+WorkspaceKnowledgeConfigurationHead
+WorkspaceKnowledgeMutationRecord
+WorkspaceSource
+WorkspaceDocumentReference
+KnowledgeInput
+operations
+Ask runs
+configuration revisions
+idempotency and recovery state
+```
+
+The C3 revision, publication, idempotency and recovery contract in [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) remains authoritative.
+
+#### 4.9.3 SecretsStore state
+
+`SecretsStore` owns OAuth access tokens, OAuth refresh tokens, client secrets, API keys, passwords, certificates and private keys, and other credential material.
+
+Database records may contain only an opaque `credential_ref`. No raw secret may appear in `TenantConnection`, `KnowledgeSourceBinding` public projection, LKW workspace records, logs, traces, Slack, public API responses or provenance.
+
+#### 4.9.4 Runtime-only state
+
+Runtime state includes constructed provider clients, constructed integration objects, `KnowledgeConnectionRegistry` entries, adapter registry entries, in-flight requests, leases held in process memory, current health checks, ephemeral Remote Resource discovery results and ephemeral live evidence.
+
+Runtime state is reconstructed from durable configuration and `SecretsStore`. It is not the source of truth.
+
+#### 4.9.5 Deployment configuration
+
+Deployment configuration includes DocumentStore endpoint, VectorStore endpoint, `SecretsStore` implementation, message bus endpoint, object storage endpoint, default application profile, default runtime provider, container topology, ports and bootstrap flags.
+
+These may remain in environment variables, deployment manifests, configuration files and application bootstrap. They are not automatically tenant or workspace product configuration.
+
+### 4.10 Startup and restart reconstruction
+
+**Target restart flow:**
+
+```text
+application starts
+→ load deployment/application bootstrap
+→ open durable Tenant Connection Catalog
+→ list enabled tenant Connections
+→ load safe Connection configuration
+→ resolve credential_ref through SecretsStore
+→ construct exactly one integration instance per active Connection
+→ register integration in KnowledgeConnectionRegistry
+→ expose safe Connection projection through TenantConnectionPort
+→ LKW workspace bindings continue to resolve through connection_ref
+```
+
+**Required properties:**
+
+- Connections survive process restart.
+- Workspace attachments survive process restart.
+- Indexed and Live Access authorization survives process restart.
+- Query Policy survives process restart.
+- No connector must be manually reconstructed after every restart.
+- A missing or invalid secret does not delete the Connection.
+- A failed reconstruction produces a safe unavailable/degraded projection.
+- A disabled Connection is not reconstructed as active.
+- The same `connection_ref` resolves to one runtime integration instance.
+- Workspace configuration remains readable when a Connection is temporarily unavailable.
+
+Do not claim automatic token refresh or provider-specific authentication behavior beyond existing integration contracts.
+
+### 4.11 Remote Resource persistence
+
+`RemoteResourceDescriptorV1` is **ephemeral discovery output by default**. Discovering a resource does not make it durable product configuration.
+
+A resource becomes durable only after an explicit operation creates a `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, `WorkspaceLiveAccessBinding`, or a separately approved `RemoteResourceSnapshot`. Do not add automatic provider inventory mirroring.
+
+### 4.12 Explicitly rejected configuration designs
+
+The following are **rejected**:
+
+- storing raw tokens in the LKW database;
+- storing integration/client Python objects in DocumentStore;
+- treating `KnowledgeConnectionRegistry` as durable state;
+- using `IntegrationProfile` as a multi-tenant Connection database;
+- copying full Connection configuration into each workspace;
+- copying credentials into `WorkspaceConnectionAttachment`;
+- automatically persisting all discovered Remote Resources;
+- recreating Connections manually after every restart;
+- creating separate provider clients for indexed and live use;
+- moving deployment infrastructure topology into workspace state.
 
 Requirements:
 
@@ -773,7 +934,7 @@ Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`o
 
 | Document | Role |
 |----------|------|
-| [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) | Frozen implementation contract (`LKW-KNOWLEDGE-ACCESS-1A-C3`) |
+| [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) | Frozen implementation contract (`LKW-KNOWLEDGE-ACCESS-1A-C3` mutation semantics; `1A-C4` persistence boundary) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Top-level LKW product architecture |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Canonical execution order |
 | [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Indexed knowledge intake contract |

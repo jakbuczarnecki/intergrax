@@ -328,13 +328,44 @@ Provider switch may require application restart. Conversation LLM and embedding 
 
 ### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Workspace Knowledge Configuration
 
-**One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials.
+**One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials. All user-managed product configuration that must survive restart is durable; tenant Connections are stored in a platform-owned durable Connection Catalog with `SecretsStore`-owned credentials and runtime registry rehydration.
 
-**Status:** **NEXT**.
+**Status:** **NEXT** (`1B` is the next internal slice).
 
-Expected capabilities: connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
+Expected capabilities: durable tenant Connection catalog with restart-safe rehydration; connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
-**Acceptance gate:** Must prove that **one Connection** can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
+**Internal decomposition:**
+
+| Slice | Title | Status |
+|-------|-------|--------|
+| `1A` | Implementation contract freeze | **ACCEPTED** (including C3 mutation semantics; C4 persistence boundary) |
+| `1B` | Provider-neutral durable workspace authorization foundation | **NEXT** |
+| `1C-1` | Durable tenant Connection catalog and restart rehydration | **PLANNED** |
+| `1C-2` | Safe Connection / Remote Resource discovery and typed capability catalog | **PLANNED** (depends on 1B, 1C-1) |
+| `1D` | HTTP create/disable for bindings with server-derived metadata | **PLANNED** (depends on 1B, 1C-1, 1C-2) |
+| `1E` | Query Policy and complete configuration projection | **PLANNED** |
+| `1F` | One-connection indexed/live reuse proof (with restart reconstruction) | **PLANNED** |
+
+**Acceptance gate:** Must prove that **one durable Connection** reconstructed after restart can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
+
+#### 7.2.1 User-visible roadmap
+
+**Available today:**
+
+- create/select an LKW workspace;
+- add already supported indexed inputs such as files and approved Web URLs;
+- ask questions against indexed knowledge;
+- use the current Slack/HTTP indexed workflow where already implemented.
+
+**After `1B`:** backend-only durable workspace authorization and configuration state; no new connector-management UI yet.
+
+**After `1C-1`:** an administrator can configure a connector once; the connector survives restart; LKW remembers that the Connection exists; secrets remain outside LKW. This may initially be backend/admin capability rather than Slack UI.
+
+**After `1C-2` and `1D`:** users can list available Connections; inspect discoverable resources; select which resources are indexed; separately authorize bounded live access.
+
+**Later frontend work:** natural-language configuration and use through Slack or another frontend.
+
+Do not claim that connector-management actions are already implemented.
 
 ### 7.3 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
 
@@ -414,7 +445,7 @@ Target scenario: start with Ollama → create/select workspace → upload files 
 **Final platform proof requirement:**
 
 ```text
-one vendor connection
+one durable vendor connection (reconstructed after restart)
 → one durable/indexed use
 → one live use
 → one hybrid answer
