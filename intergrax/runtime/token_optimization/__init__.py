@@ -102,6 +102,16 @@ from intergrax.runtime.token_optimization.cache_aware_orchestration import (
     CacheAwareTokenOptimizationOrchestrator,
     cache_aware_orchestration_result_to_safe_dict,
 )
+from intergrax.runtime.token_optimization.cache_aware_runtime import (
+    CacheAwareTokenOptimizationRuntime,
+    cache_aware_runtime_result_to_safe_dict,
+)
+from intergrax.runtime.token_optimization.cache_aware_runtime_contracts import (
+    CacheAwareTokenOptimizationEvidenceReconciliationReason,
+    CacheAwareTokenOptimizationRuntimeRequest,
+    CacheAwareTokenOptimizationRuntimeResult,
+    CacheAwareTokenOptimizationRuntimeStatus,
+)
 from intergrax.runtime.token_optimization.cache_aware_orchestration_contracts import (
     CacheAwareTokenOptimizationOrchestrationRequest,
     CacheAwareTokenOptimizationOrchestrationResult,
@@ -301,7 +311,12 @@ __all__ = [
     "CacheAwareTokenOptimizationOrchestrationRequest",
     "CacheAwareTokenOptimizationOrchestrationResult",
     "CacheAwareTokenOptimizationOrchestrationStatus",
+    "CacheAwareTokenOptimizationEvidenceReconciliationReason",
     "CacheAwareTokenOptimizationOrchestrator",
+    "CacheAwareTokenOptimizationRuntime",
+    "CacheAwareTokenOptimizationRuntimeRequest",
+    "CacheAwareTokenOptimizationRuntimeResult",
+    "CacheAwareTokenOptimizationRuntimeStatus",
     "CacheSignalValueSource",
     "CompressionLevel",
     "CompressionReceipt",
@@ -309,6 +324,7 @@ __all__ = [
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
     "cache_aware_orchestration_result_to_safe_dict",
+    "cache_aware_runtime_result_to_safe_dict",
     "cache_signal_normalization_result_to_safe_dict",
     "create_builtin_token_optimization_layer_catalog",
     "decide_cache_aware_compaction_timing",

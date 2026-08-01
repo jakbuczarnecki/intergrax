@@ -62,7 +62,7 @@ input
 
 | Label | Meaning in this repository |
 | ----- | -------------------------- |
-| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware orchestration gate (TOKEN-10D-1), cache signal normalization (TOKEN-10D-2), vLLM proof runner |
+| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware orchestration gate (TOKEN-10D-1), cache signal normalization (TOKEN-10D-2), cache-aware runtime entrypoint (TOKEN-10D-3), vLLM proof runner |
 | **Live-verified** | Manual vLLM prefix-cache proof path (documented environment); gated Ollama router E2E |
 | **Live-certified** | Not claimed for TOKEN-10C alone; universal proof packaging still planned |
 | **Planned** | TOKEN-10D–10H (cache-aware orchestration, in-cache compaction, universal harness, public promotion) |
@@ -78,6 +78,7 @@ input
 | TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Implemented / Ready for review |
 | TOKEN-10D-1 | Implemented / Ready for review |
 | TOKEN-10D-2 | Implemented / Ready for review |
+| TOKEN-10D-3 | Implemented / Ready for review |
 | TOKEN-10D (remainder) … TOKEN-10H | Planned / not yet accepted |
 | TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
 
@@ -118,6 +119,15 @@ Token Optimization request and policy
         ▼
 Optional LLM configuration router
   (TokenOptimizationLLMRouter + approved catalog)
+        │
+        ▼
+Cache-aware runtime entrypoint (TOKEN-10D-3)
+  (CacheAwareTokenOptimizationRuntime)
+        │
+        ├─ typed adapter/cache evidence extraction
+        ├─ evidence reconciliation (fail-closed on conflict)
+        ├─ signal normalization (TOKEN-10D-2)
+        └─ rejection boundary (no router/pipeline on reject)
         │
         ▼
 Cache-aware timing gate (TOKEN-10D-1)
@@ -430,7 +440,9 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 
 **Cache signal normalization (TOKEN-10D-2):** `prompt_cache_usage_snapshot_from_adapter_response()` and `normalize_cache_aware_compaction_signals()` compile typed adapter usage and `PromptCacheAttribution` into `CacheAwareCompactionTimingInput`. Unknown cache state stays `None` (not a miss). Explicit zero requires confirmed provider reporting. Estimated usage is not provider-reported evidence. TTL is never inferred from policy or capability defaults. Char reduction estimates are not converted to tokens. Global KV metrics are not treated as per-request hotness. The normalizer performs no provider I/O and does not execute the pipeline or in-cache compaction.
 
-**Orchestration semantics (TOKEN-10D-1):****
+**Cache-aware runtime composition (TOKEN-10D-3):** `CacheAwareTokenOptimizationRuntime.run()` is the preferred cache-aware execution entrypoint. It composes typed adapter evidence extraction, reconciliation with `PromptCacheAttribution`, signal normalization, and the existing orchestrator — in that order. Reconciliation and normalization happen before router invocation. Conflicting provider/model cache evidence returns `SIGNALS_REJECTED` without calling the router, LLM, or pipeline. `PARTIAL` normalization still enters the orchestrator; unknown cache values remain unknown. The runtime does not poll providers, ingest global metrics, infer TTL, or perform in-cache compaction. Lower-level APIs (`normalize_cache_aware_compaction_signals()`, `CacheAwareTokenOptimizationOrchestrator.orchestrate()`) remain available for advanced callers.
+
+**Orchestration semantics (TOKEN-10D-1):**
 
 | Timing decision | Pipeline execution |
 | ---------------- | ------------------ |
@@ -441,9 +453,9 @@ Supported kinds include: `code_block`, `inline_code`, `path`, `url`, `env_var`, 
 
 Router terminal statuses (`BLOCKED`, `NO_OPTIMIZATION`, `REVIEW_REQUIRED`, etc.) skip the timing gate and do not execute the pipeline.
 
-**Timing input wiring:** callers extract typed usage from `LLMAdapterResponse`, build `PromptCacheAttribution`, then call `normalize_cache_aware_compaction_signals()` before `CacheAwareTokenOptimizationOrchestrator.orchestrate()`. `REJECTED` normalization must not be silently coerced into orchestration.
+**Timing input wiring:** prefer `CacheAwareTokenOptimizationRuntime.run()` for cache-aware execution. Advanced callers may still extract typed usage from `LLMAdapterResponse`, build `PromptCacheAttribution`, call `normalize_cache_aware_compaction_signals()`, then `CacheAwareTokenOptimizationOrchestrator.orchestrate()`. `REJECTED` normalization or reconciliation must not be silently coerced into orchestration.
 
-**Direct `route_and_execute()`:** remains compatible (routes then executes without cache-aware gate). Use `CacheAwareTokenOptimizationOrchestrator.orchestrate()` for cache-aware entry.
+**Direct `route_and_execute()`:** remains compatible (routes then executes without cache-aware gate). Use `CacheAwareTokenOptimizationRuntime.run()` or `CacheAwareTokenOptimizationOrchestrator.orchestrate()` for cache-aware entry.
 
 **TOKEN-10D-1 does not perform in-cache compaction** — `RUN` means execute the deterministic pipeline, not rewrite provider cache bytes.
 
