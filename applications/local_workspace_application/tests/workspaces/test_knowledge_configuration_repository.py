@@ -27,6 +27,7 @@ from local_workspace_application.workspaces.models import Workspace, WorkspaceSt
 from local_workspace_application.workspaces.repository import (
     ManagedWorkspaceRepository,
     WorkspaceKnowledgeConfigurationRepositoryError,
+    _revision_row_key,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
 
@@ -800,6 +801,235 @@ def test_child_row_key_uses_20_digit_revision_padding(
             found = True
             break
     assert found
+
+
+# --- Revision bounds ---
+
+
+_MAX_VALID_REVISION = 10**20 - 1
+
+
+def test_max_valid_revision_accepted_with_exact_20_digit_suffix() -> None:
+    repo = _repo()
+    model = _indexed_source(effective_revision=_MAX_VALID_REVISION)
+    assert repo.put_knowledge_indexed_source_version_if_absent(model) is True
+    suffix = f"{_MAX_VALID_REVISION:020d}"
+    assert len(suffix) == 20
+    row_key = _revision_row_key(
+        workspace_id=_WORKSPACE,
+        entity_id="idx-1",
+        revision=_MAX_VALID_REVISION,
+    )
+    assert row_key.endswith(f":rev:{suffix}")
+    loaded = repo.get_knowledge_indexed_source_version(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id="idx-1",
+        effective_revision=_MAX_VALID_REVISION,
+    )
+    assert loaded is not None
+    assert loaded.effective_revision == _MAX_VALID_REVISION
+
+
+@pytest.mark.parametrize("invalid_revision", [10**20, 10**20 + 1])
+def test_oversized_revision_rejected_on_write(invalid_revision: int) -> None:
+    repo = _repo()
+    with pytest.raises(ValueError, match="knowledge_configuration_revision_invalid"):
+        repo.put_knowledge_indexed_source_version_if_absent(
+            _indexed_source(effective_revision=invalid_revision)
+        )
+
+
+@pytest.mark.parametrize("invalid_revision", [0, -1])
+def test_below_minimum_revision_rejected(invalid_revision: int) -> None:
+    repo = _repo()
+    with pytest.raises(ValueError, match="knowledge_configuration_revision_invalid"):
+        _revision_row_key(
+            workspace_id=_WORKSPACE,
+            entity_id="idx-1",
+            revision=invalid_revision,
+        )
+    with pytest.raises(ValueError, match="knowledge_configuration_revision_invalid"):
+        repo.get_knowledge_indexed_source_version(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id="idx-1",
+            effective_revision=invalid_revision,
+        )
+
+
+def test_oversized_revision_rejected_on_exact_read() -> None:
+    repo = _repo()
+    with pytest.raises(ValueError, match="knowledge_configuration_revision_invalid"):
+        repo.get_knowledge_indexed_source_version(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id="idx-1",
+            effective_revision=10**20,
+        )
+
+
+def _insert_child_revision_rows(
+    store: InMemoryDocumentStore,
+    *,
+    family: str,
+    tenant_id: str,
+    workspace_id: str,
+    count: int,
+) -> None:
+    partition_by_family = {
+        "connection_attachment": (
+            f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_connection_attachment"
+        ),
+        "indexed_source": (
+            f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_indexed_source"
+        ),
+        "live_access": (
+            f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_live_access"
+        ),
+        "query_policy": (
+            f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_query_policy"
+        ),
+    }
+    partition = partition_by_family[family]
+    for index in range(count):
+        if family == "connection_attachment":
+            entity_id = f"attachment-bulk-{index:04d}"
+            model = _connection_attachment(
+                workspace_id=workspace_id,
+                attachment_id=entity_id,
+                effective_revision=1,
+            )
+            revision = 1
+        elif family == "indexed_source":
+            entity_id = f"idx-bulk-{index:04d}"
+            model = _indexed_source(
+                workspace_id=workspace_id,
+                indexed_source_binding_id=entity_id,
+                effective_revision=1,
+            )
+            revision = 1
+        elif family == "live_access":
+            entity_id = f"live-bulk-{index:04d}"
+            model = _live_access(
+                workspace_id=workspace_id,
+                live_access_binding_id=entity_id,
+                effective_revision=1,
+            )
+            revision = 1
+        elif family == "query_policy":
+            entity_id = "query-policy"
+            revision = index + 1
+            model = _query_policy(workspace_id=workspace_id, effective_revision=revision)
+        else:
+            raise ValueError(f"unknown family: {family}")
+        row_key = _revision_row_key(
+            workspace_id=workspace_id,
+            entity_id=entity_id,
+            revision=revision,
+        )
+        store.put(
+            DocumentRecord(
+                partition_key=partition,
+                row_key=row_key,
+                data=model.model_dump(mode="json"),
+            )
+        )
+
+
+_LIST_METHOD_BY_FAMILY = {
+    "connection_attachment": "list_knowledge_connection_attachment_versions",
+    "indexed_source": "list_knowledge_indexed_source_versions",
+    "live_access": "list_knowledge_live_access_versions",
+    "query_policy": "list_knowledge_query_policy_versions",
+}
+
+
+@pytest.mark.parametrize("family", list(_LIST_METHOD_BY_FAMILY))
+def test_revision_scan_returns_exactly_2000_records(family: str) -> None:
+    repo = _repo()
+    _insert_child_revision_rows(
+        repo.document_store,
+        family=family,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        count=2000,
+    )
+    listed = getattr(repo, _LIST_METHOD_BY_FAMILY[family])(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert len(listed) == 2000
+    revisions = [item.effective_revision for item in listed]
+    assert revisions == sorted(revisions)
+
+
+def test_revision_scan_limit_exceeded_at_2001() -> None:
+    repo = _repo()
+    _insert_child_revision_rows(
+        repo.document_store,
+        family="indexed_source",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        count=2001,
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationRepositoryError) as exc_info:
+        repo.list_knowledge_indexed_source_versions(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    assert exc_info.value.error_code == "knowledge_configuration_revision_scan_limit_exceeded"
+
+
+@pytest.mark.parametrize("family", list(_LIST_METHOD_BY_FAMILY))
+def test_all_list_methods_route_through_guarded_revision_scan_helper(family: str) -> None:
+    repo = _repo()
+    _insert_child_revision_rows(
+        repo.document_store,
+        family=family,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        count=2001,
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationRepositoryError) as exc_info:
+        getattr(repo, _LIST_METHOD_BY_FAMILY[family])(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    assert exc_info.value.error_code == "knowledge_configuration_revision_scan_limit_exceeded"
+
+
+def test_unrelated_rows_do_not_count_toward_revision_scan_limit() -> None:
+    repo = _repo()
+    _insert_child_revision_rows(
+        repo.document_store,
+        family="indexed_source",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE_B,
+        count=2001,
+    )
+    _insert_child_revision_rows(
+        repo.document_store,
+        family="indexed_source",
+        tenant_id=_TENANT_B,
+        workspace_id=_WORKSPACE,
+        count=2001,
+    )
+    _insert_child_revision_rows(
+        repo.document_store,
+        family="connection_attachment",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        count=2001,
+    )
+    target = _indexed_source()
+    assert repo.put_knowledge_indexed_source_version_if_absent(target) is True
+    listed = repo.list_knowledge_indexed_source_versions(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert len(listed) == 1
+    assert listed[0].indexed_source_binding_id == "idx-1"
 
 
 # --- Isolation ---

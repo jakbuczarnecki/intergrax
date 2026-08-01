@@ -44,6 +44,8 @@ T = TypeVar("T", bound=BaseModel)
 _IDEMPOTENCY_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 _QUERY_POLICY_ENTITY_ID = "query-policy"
 _REVISION_ROW_KEY_MARKER = ":rev:"
+_KNOWLEDGE_CONFIGURATION_MAX_REVISION = 10**20 - 1
+_KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT = 2000
 
 _ENTITY_KNOWLEDGE_CONFIGURATION_HEAD = "knowledge_configuration_head"
 _ENTITY_KNOWLEDGE_CONFIGURATION_MUTATION = "knowledge_configuration_mutation"
@@ -88,7 +90,7 @@ def _revision_row_key(
     entity_id: str,
     revision: int,
 ) -> str:
-    if revision < 1:
+    if revision < 1 or revision > _KNOWLEDGE_CONFIGURATION_MAX_REVISION:
         raise ValueError("knowledge_configuration_revision_invalid")
     return f"{workspace_id}:{entity_id}{_REVISION_ROW_KEY_MARKER}{revision:020d}"
 
@@ -813,9 +815,13 @@ class ManagedWorkspaceRepository:
     ) -> list[T]:
         result = self._store.query(
             partition_key,
-            limit=2000,
+            limit=_KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT + 1,
             row_key_prefix=f"{workspace_id}:",
         )
+        if len(result.documents) > _KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "knowledge_configuration_revision_scan_limit_exceeded"
+            )
         items: list[T] = []
         for doc in result.documents:
             model = model_type.model_validate(dict(doc.data))
